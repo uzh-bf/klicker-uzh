@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationFieldType,
+  type ActivityLogModificationFieldType,
   ActivityType,
-  CatalogObject,
-  ObjectSharingRequest,
+  type CatalogObject,
+  type ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -882,10 +882,31 @@ export async function deleteCatalogCollection(
 
 // ! Request, Query and Resolve Sharing Requests
 // #region
+function getActiveSharingRequestWhere(): DB.Prisma.AccessRequestWhereInput {
+  return {
+    OR: [
+      { catalogCollectionId: { not: null } },
+      { answerCollectionId: { not: null } },
+      { elementId: { not: null } },
+      { course: { isDeleted: false } },
+      {
+        liveQuiz: {
+          OR: [{ courseId: null }, { course: { isDeleted: false } }],
+        },
+      },
+      { practiceQuiz: { course: { isDeleted: false } } },
+      { microLearning: { course: { isDeleted: false } } },
+      { groupActivity: { course: { isDeleted: false } } },
+    ],
+  }
+}
+
 export async function countCatalogSharingRequests(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
-    include: { pendingRequests: true },
+    include: {
+      pendingRequests: { where: getActiveSharingRequestWhere() },
+    },
   })
 
   if (!user) {
@@ -900,6 +921,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       pendingRequests: {
+        where: getActiveSharingRequestWhere(),
         include: {
           user: { select: { shortname: true, email: true } },
           catalogCollection: { select: { name: true } },
@@ -1015,7 +1037,7 @@ export async function requestCatalogObject(
         existingPermission: boolean
         existingRequest: boolean
       }
-    | undefined = undefined
+    | undefined
 
   if (typeof answerCollectionId !== 'undefined') {
     // fetch the answer collection including potential pending permission requests
@@ -2501,7 +2523,7 @@ export async function getCatalogCollectionPermissions(
   ctx: ContextWithUser
 ) {
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
     include: {
       directPermissions: {
         include: {
@@ -2542,7 +2564,7 @@ export async function getAnswerCollectionPermissions(
   ctx: ContextWithUser
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
     include: {
       directPermissions: {
         include: {
@@ -2581,7 +2603,7 @@ export async function getElementPermissions(
   ctx: ContextWithUser
 ) {
   const element = await ctx.prisma.element.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
     include: {
       directPermissions: {
         include: {
@@ -2617,7 +2639,7 @@ export async function getCoursePermissions(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
     include: {
       directPermissions: {
         include: {
@@ -2653,7 +2675,10 @@ export async function getLiveQuizPermissions(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+    },
     include: {
       directPermissions: {
         include: {
@@ -2689,7 +2714,7 @@ export async function getPracticeQuizPermissions(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       directPermissions: {
         include: {
@@ -2728,7 +2753,7 @@ export async function getMicroLearningPermissions(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       directPermissions: {
         include: {
@@ -2767,7 +2792,7 @@ export async function getGroupActivityPermissions(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       directPermissions: {
         include: {
@@ -2884,7 +2909,7 @@ export async function getDerivedCoursePermissions(
 ) {
   // fetch the course alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
     include: {
       permissions: {
         where: { derived: true },
@@ -2912,7 +2937,10 @@ export async function getDerivedLiveQuizPermissions(
 ) {
   // fetch the live quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+    },
     include: {
       permissions: {
         where: { derived: true },
@@ -2940,7 +2968,7 @@ export async function getDerivedPracticeQuizPermissions(
 ) {
   // fetch the practice quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       permissions: {
         where: { derived: true },
@@ -2968,7 +2996,7 @@ export async function getDerivedMicroLearningPermissions(
 ) {
   // fetch the microlearning alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       permissions: {
         where: { derived: true },
@@ -2996,7 +3024,7 @@ export async function getDerivedGroupActivityPermissions(
 ) {
   // fetch the practice quiz alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       permissions: {
         where: { derived: true },
@@ -3254,7 +3282,7 @@ export async function transferCourseOwnership(
 
   // find the course
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isDeleted: false },
   })
 
   if (!newOwner || !course) {
@@ -3364,7 +3392,10 @@ export async function transferLiveQuizOwnership(
 
   // find the live quiz
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+    },
   })
 
   if (!newOwner || !liveQuiz || liveQuiz.ownerId === newOwner.id) {
@@ -3474,7 +3505,7 @@ export async function transferPracticeQuizOwnership(
 
   // find the practice quiz
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
   })
 
   if (!newOwner || !practiceQuiz || practiceQuiz.ownerId === newOwner.id) {
@@ -3588,7 +3619,7 @@ export async function transferMicroLearningOwnership(
 
   // find the microlearning
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
   })
 
   if (!newOwner || !microLearning || microLearning.ownerId === newOwner.id) {
@@ -3706,7 +3737,7 @@ export async function transferGroupActivityOwnership(
 
   // find the group activity
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
   })
 
   if (!newOwner || !groupActivity || groupActivity.ownerId === newOwner.id) {
@@ -5550,7 +5581,10 @@ export async function getCatalogObjects(
             },
           },
           liveQuiz: {
-            where: { isDeleted: false },
+            where: {
+              isDeleted: false,
+              OR: [{ courseId: null }, { course: { isDeleted: false } }],
+            },
             select: {
               id: true,
               name: true,
@@ -5727,6 +5761,7 @@ export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
   const liveQuizzes = await ctx.prisma.liveQuiz.findMany({
     where: {
       status: DB.PublicationStatus.TEMPLATE,
+      OR: [{ courseId: null }, { course: { isDeleted: false } }],
       permissions: {
         some: {
           userId: ctx.user.sub,
@@ -5890,6 +5925,7 @@ export async function addObjectToCatalog(
       where: {
         id: liveQuizId,
         status: DB.PublicationStatus.TEMPLATE, // live quizzes are not supported by the catalog at the moment
+        OR: [{ courseId: null }, { course: { isDeleted: false } }],
         permissions: {
           some: {
             userId: ctx.user.sub,
@@ -6243,6 +6279,9 @@ export async function checkAccess(
           permissionLevel: {
             in: acceptedPermissionLevels[check.minimumPermissionLevel],
           },
+          liveQuiz: {
+            OR: [{ courseId: null }, { course: { isDeleted: false } }],
+          },
         },
       })
 
@@ -6262,6 +6301,7 @@ export async function checkAccess(
           permissionLevel: {
             in: acceptedPermissionLevels[check.minimumPermissionLevel],
           },
+          practiceQuiz: { course: { isDeleted: false } },
         },
       })
 
@@ -6281,6 +6321,7 @@ export async function checkAccess(
           permissionLevel: {
             in: acceptedPermissionLevels[check.minimumPermissionLevel],
           },
+          microLearning: { course: { isDeleted: false } },
         },
       })
 
@@ -6300,6 +6341,7 @@ export async function checkAccess(
           permissionLevel: {
             in: acceptedPermissionLevels[check.minimumPermissionLevel],
           },
+          groupActivity: { course: { isDeleted: false } },
         },
       })
 
@@ -6316,6 +6358,7 @@ export async function checkAccess(
           permissionLevel: {
             in: acceptedPermissionLevels[check.minimumPermissionLevel],
           },
+          course: { isDeleted: false },
         },
       })
 

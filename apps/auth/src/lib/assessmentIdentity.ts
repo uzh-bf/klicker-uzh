@@ -17,7 +17,7 @@ export async function updateAssessmentParticipantIdentity(
   return await tx.participation.updateMany({
     where: {
       participantId,
-      course: { isAssessmentEnabled: true },
+      course: { isAssessmentEnabled: true, isDeleted: false },
     },
     data: {
       assessmentGivenName: normalizeIdentityValue(profile.given_name),

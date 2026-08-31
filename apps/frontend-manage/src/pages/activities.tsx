@@ -1,8 +1,12 @@
 import { useQuery } from '@apollo/client'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
-  ActivityInfo,
-  ActivityType,
+  type ActivityInfo,
+  type ActivityType,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   PublicationStatus,
@@ -10,9 +14,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ActivityBatchOperationsModal from '../components/activities/overview/ActivityBatchOperationsModal'
 import ActivityList from '../components/activities/overview/ActivityList'
@@ -21,10 +25,7 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
 import ActivityOverviewFilters from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
-import Pagination, {
-  isPaginationPageSize,
-  type PaginationPageSize,
-} from '@components/common/Pagination'
+import { useCourseDeletionStatus } from '../components/courses/CourseDeletionStatusProvider'
 import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
@@ -39,6 +40,11 @@ type ActivityModeFilterVariables = {
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
+  const {
+    isCourseDeletionActive,
+    isCourseDeletionStateInitialized,
+    isDraftActivityDeletionActive,
+  } = useCourseDeletionStatus()
 
   const [searchString, setSearchString] = useState('')
 
@@ -137,7 +143,17 @@ function Activities() {
     fetchPolicy: 'network-only',
   })
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
-  const activities = dataActivities?.userActivities?.activities || []
+  const activities = (dataActivities?.userActivities?.activities || []).filter(
+    (activity) =>
+      !(
+        activity.status === PublicationStatus.Draft &&
+        activity.courseId &&
+        isDraftActivityDeletionActive(activity.courseId)
+      )
+  )
+  const availableCourses = (dataCourses?.getUserActivitiesCourses ?? []).filter(
+    (course) => !isCourseDeletionActive(course.id)
+  )
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -252,7 +268,7 @@ function Activities() {
             toggleReviewStatusFilter={toggleReviewStatusFilter}
             toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
-            availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
+            availableCourses={availableCourses}
             filtersActive={filtersActive}
           />
         </div>
@@ -290,7 +306,7 @@ function Activities() {
               ) : null}
             </div>
 
-            {loadingActivities ? (
+            {loadingActivities || !isCourseDeletionStateInitialized ? (
               <div className="flex flex-1 items-center justify-center">
                 <Loader />
               </div>

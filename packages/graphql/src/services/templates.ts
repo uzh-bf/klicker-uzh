@@ -1,16 +1,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  CaseStudyElementData,
-  ElementOptionsInput,
-  SelectionElementData,
-  TemplateBlockInput,
+  type CaseStudyElementData,
+  type ElementOptionsInput,
+  type SelectionElementData,
+  type TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -1571,6 +1571,7 @@ export async function createLiveQuizFromTemplate(
     ? await ctx.prisma.course.findUnique({
         where: {
           id: cleanCourseId,
+          isDeleted: false,
           permissions: { some: { userId: ctx.user.sub } },
         },
       })
@@ -1776,7 +1777,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null = undefined
+            let options: ElementOptionsInput | undefined | null
             if (
               values.type === DB.ElementType.SC ||
               values.type === DB.ElementType.MC ||

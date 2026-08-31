@@ -71,8 +71,7 @@ function CourseOverviewHeader({
   const router = useRouter()
   const { isSourceCourseDuplicating, startCourseDuplication } =
     useCourseDuplicationStatus()
-  const { isCourseDeletionActive, isCourseDeletionStatusHydrating } =
-    useCourseDeletionStatus()
+  const { isCourseDeletionActive } = useCourseDeletionStatus()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
@@ -81,9 +80,7 @@ function CourseOverviewHeader({
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
   const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
-  const courseDeletionInProgress = isCourseDeletionActive(course.id)
-  const courseMutationBlocked =
-    courseDeletionInProgress || isCourseDeletionStatusHydrating
+  const courseMutationBlocked = isCourseDeletionActive(course.id)
 
   useEffect(() => {
     if (!courseMutationBlocked) return
@@ -182,7 +179,7 @@ function CourseOverviewHeader({
 
         window.open(`/analytics/${course.id}/activity`, '_blank')
       },
-      disabled: !learningAnalyticsEnabled,
+      disabled: courseMutationBlocked || !learningAnalyticsEnabled,
       tooltip: !learningAnalyticsEnabled
         ? t('manage.analytics.featureUnavailable')
         : undefined,
@@ -227,6 +224,7 @@ function CourseOverviewHeader({
         t('manage.course.ltiLinks')
       ),
       data: { cy: 'course-lti-links' },
+      disabled: courseMutationBlocked,
       items: ltiDropdownItems,
     },
   ]
@@ -275,6 +273,7 @@ function CourseOverviewHeader({
         </Button>
         {!course.isAssessmentEnabled && course.pinCode && (
           <QRCodePopover
+            disabled={courseMutationBlocked}
             triggerStyle="primary"
             triggerText={t('manage.course.joinCourse')}
             infoComponent={
@@ -301,6 +300,7 @@ function CourseOverviewHeader({
           </Button>
         ) : null}
         <Dropdown
+          disabled={courseMutationBlocked}
           data={{ cy: 'course-actions-menu' }}
           className={{
             item: 'py-0.5 text-sm',
@@ -319,15 +319,6 @@ function CourseOverviewHeader({
           items={courseActionMenuItems}
         />
       </div>
-      {courseDeletionInProgress ? (
-        <UserNotification
-          className={{ root: 'mt-2 basis-full' }}
-          data={{ cy: 'course-deletion-read-only-notice' }}
-          type="warning"
-        >
-          {t('manage.courseList.courseDeletionInProgress')}
-        </UserNotification>
-      ) : null}
       {duplicationModal && !courseMutationBlocked && (
         <CourseDuplicationModal
           initialValues={course}

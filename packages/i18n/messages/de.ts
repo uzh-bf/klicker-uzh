@@ -3392,51 +3392,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showArchive: 'Archiv anzeigen',
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
-      courseDeletionStatusTab: 'Kurslöschungen',
-      courseDeletionPendingBadge: 'Löschung läuft',
-      courseDeletionStatusCount:
-        '{count, plural, one {# Kurslöschung läuft} other {# Kurslöschungen laufen}}',
-      courseDeletionStatusTitle: 'Kurslöschung läuft',
-      courseDeletionStatusDescription:
-        'Sie können weiterarbeiten, während die ausgewählten Kurse gelöscht werden.',
-      courseDeletionStarted:
-        'Die Löschung von «{name}» wurde gestartet. Sie können weiterarbeiten.',
-      courseDeletionSucceeded: 'Der Kurs «{name}» wurde gelöscht.',
-      courseDeletionFailed:
-        'Der Kurs konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.',
-      courseDeletionAccessFailed:
-        'Der Kurs konnte nicht gelöscht werden, weil die erforderliche Berechtigung fehlt.',
-      courseDeletionInProgress: 'Die Löschung dieses Kurses läuft bereits.',
       courseDeletionMessage:
-        'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
-      noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
-      deleteParticipations:
-        '{number} Teilnehmende(r) dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
-      noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
-      disconnectLiveQuizzes:
-        '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Aktivitätenliste aufgerufen werden.',
+        'Der Kurs wird im Hintergrund ausgeblendet und unzugänglich gemacht. Seine Aktivitäten, Teilnahmen, Gruppen, Resultate und Leaderboard-Daten bleiben erhalten.',
       deleteDraftActivitiesOption:
-        'Alle verknüpften Aktivitäten im Entwurfsstatus ebenfalls unwiderruflich löschen.',
-      deleteDraftActivities:
-        'Alle verknüpften Aktivitäten im Entwurfsstatus werden unwiderruflich gelöscht. Alle übrigen Live-Quizzes werden vom Kurs getrennt und bleiben über die Aktivitätenliste zugänglich.',
-      noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
-      deletePracticeQuizzes:
-        '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
-      noMicroLearningsToDelete: 'Dieser Kurs enthält keine Microlearnings.',
-      deleteMicroLearnings:
-        '{number} Microlearning(s) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
-      noGroupActivitiesToDelete:
-        'Dieser Kurs enthält keine Gruppenaktivitäten.',
-      deleteGroupActivities:
-        '{number} Gruppenaktivität(en) (inklusive der zugehörigen Abgaben) werden unwiderruflich gelöscht.',
-      noParticipantGroupsToDelete:
-        'Dieser Kurs enthält keine Teilnehmergruppen.',
-      deleteParticipantGroups:
-        '{number} Teilnehmergruppe(n) werden unwiderruflich gelöscht.',
-      noLeaderboardEntriesToDelete:
-        'Dieser Kurs enthält keine Leaderboard-Einträge.',
-      deleteLeaderboardEntries:
-        '{number} Leaderboard-Einträge werden unwiderruflich gelöscht.',
+        'Zusätzlich {number, plural, one {die # verknüpfte Aktivität im Entwurfsstatus} other {alle # verknüpften Aktivitäten im Entwurfsstatus}} dauerhaft löschen.',
       activityAnalytics: 'Quiz Analysen',
     },
     course: {

@@ -77,12 +77,9 @@ function CourseListButton({
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
-  const { isCourseDeletionActive, isCourseDeletionStatusHydrating } =
-    useCourseDeletionStatus()
+  const { isCourseDeletionActive } = useCourseDeletionStatus()
   const deletionActive = course ? isCourseDeletionActive(course.id) : false
-  const interactionDisabled = course
-    ? deletionActive || isCourseDeletionStatusHydrating
-    : false
+  const interactionDisabled = course ? deletionActive : false
 
   useEffect(() => {
     if (interactionDisabled) setActivityLogOpen(false)
@@ -128,14 +125,6 @@ function CourseListButton({
         {typeof course !== 'undefined' ? (
           <div className="flex flex-row items-center gap-2">
             <div className="flex flex-row gap-2">
-              {deletionActive && (
-                <span
-                  className="rounded-full bg-red-700 px-2 py-0.5 text-sm font-bold text-white"
-                  data-cy={`course-deletion-in-progress-${course.name}`}
-                >
-                  {t('manage.courseList.courseDeletionPendingBadge')}
-                </span>
-              )}
               {isPast && (
                 <Badge className="gap-2 bg-green-700 hover:bg-green-800">
                   <FontAwesomeIcon icon={faCheck} />

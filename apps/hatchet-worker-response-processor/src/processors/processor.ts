@@ -6,12 +6,17 @@ import type {
   DurableContext,
   JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
+import { prisma } from '@klicker-uzh/prisma'
 import type {
   FreeTextRestrictions,
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  getLiveQuizCourseDeletedKey,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -81,6 +86,26 @@ export async function processResponseMessage(
           })
       )
       return { status: 400 }
+    }
+
+    if (
+      await redisExec.exists(getLiveQuizCourseDeletedKey(message.sessionId))
+    ) {
+      ctx.logger.info('Course linked to live quiz has been deleted', {
+        sessionId: message.sessionId,
+      })
+      return { status: 410 }
+    }
+
+    const liveQuiz = await prisma.liveQuiz.findUnique({
+      where: { id: message.sessionId },
+      select: { course: { select: { isDeleted: true } } },
+    })
+    if (liveQuiz?.course?.isDeleted) {
+      ctx.logger.info('Course linked to live quiz is soft-deleted', {
+        sessionId: message.sessionId,
+      })
+      return { status: 410 }
     }
 
     let participantData: JWTPayload | null = null
@@ -175,7 +200,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)

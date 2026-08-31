@@ -1,4 +1,4 @@
-import { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
+import { createHash } from 'node:crypto'
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
@@ -54,12 +54,12 @@ import type {
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
-import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
+import type { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
 import type { Context } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,
@@ -1640,7 +1640,7 @@ export function updateChoicesResults({
   response: ResponseInput
 }): { results: ElementResultsChoices; modified: boolean } {
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   if (
     !('choices' in response) ||
@@ -1678,7 +1678,7 @@ export function updateNumericalResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response
   if (
@@ -1744,7 +1744,7 @@ export function updateFreeTextResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response and check that restrictions are fulfilled
   if (
@@ -1800,7 +1800,7 @@ export function updateSelectionResults({
   }
 
   // increment all values in updatedSelections that are contained in response.selection
-  let updatedSelections = { ...previousResults.selections }
+  const updatedSelections = { ...previousResults.selections }
   response.selection.forEach((ix) => {
     if (ix in updatedSelections && typeof updatedSelections[ix] === 'number') {
       updatedSelections[ix] = updatedSelections[ix] + 1
@@ -2164,7 +2164,7 @@ function computeAggregatedResponsesChoices({
   existingResponse: DB.QuestionResponse | null
   response: ResponseInput
 }): ElementResultsChoices {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsChoices
 
   // update aggregated responses for choices
@@ -2190,7 +2190,7 @@ function computeAggregatedResponsesOpen({
   responseValue: string
   correctness: number
 }) {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
 
   // update aggregated responses for open questions
@@ -3171,6 +3171,16 @@ export async function respondToElementStack(
   }: RespondToElementStackInput,
   ctx: Context
 ) {
+  const activeStack = await ctx.prisma.elementStack.findUnique({
+    where: {
+      id: stackId,
+      courseId,
+      course: { isDeleted: false },
+    },
+    select: { id: true },
+  })
+  if (!activeStack) return null
+
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const stack = await ctx.prisma.elementStack.findUnique({
@@ -3199,7 +3209,7 @@ export async function respondToElementStack(
     }
   }
 
-  let stackScore: number | undefined = undefined
+  let stackScore: number | undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: InstanceEvaluation[] = []
 
@@ -4206,7 +4216,11 @@ export async function getPreviousStackEvaluation(
   }
 
   const stack = await ctx.prisma.elementStack.findUnique({
-    where: { id: stackId, type: DB.ElementStackType.MICROLEARNING },
+    where: {
+      id: stackId,
+      type: DB.ElementStackType.MICROLEARNING,
+      course: { isDeleted: false },
+    },
     include: {
       elements: {
         include: {

@@ -4,20 +4,20 @@ import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
-import { useRouter } from 'next/router'
-
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetStaticPropsContext } from 'next'
+import type { GetStaticPropsContext } from 'next'
+import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useCourseDeletionStatus } from '../../components/courses/CourseDeletionStatusProvider'
 import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
 import CourseDeletionModal from '../../components/courses/modals/CourseDeletionModal'
 import CourseManipulationModal, {
-  CourseManipulationFormData,
+  type CourseManipulationFormData,
 } from '../../components/courses/modals/CourseManipulationModal'
 import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
 import Layout from '../../components/Layout'
@@ -26,6 +26,8 @@ function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
   const [createCourse] = useMutation(CreateCourseDocument)
+  const { isCourseDeletionActive, isCourseDeletionStateInitialized } =
+    useCourseDeletionStatus()
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
@@ -49,7 +51,7 @@ function CourseSelectionPage() {
     { fetchPolicy: 'cache-and-network' }
   )
 
-  if (loadingCourses) {
+  if (loadingCourses || !isCourseDeletionStateInitialized) {
     return (
       <Layout>
         <Loader />
@@ -57,7 +59,10 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) =>
+  const visibleCourses = dataCourses?.userCourses?.filter(
+    (course) => !isCourseDeletionActive(course.id)
+  )
+  const courses = visibleCourses?.filter((course) =>
     showArchive ? true : !course.isArchived
   )
 
@@ -67,7 +72,7 @@ function CourseSelectionPage() {
         <div className="md:w-180 flex w-full flex-col">
           <div className="mb-1 flex w-full flex-row justify-between">
             <H3>{t('manage.courseList.selectCourse')}:</H3>
-            {(dataCourses?.userCourses?.length ?? 0) > 0 ? (
+            {(visibleCourses?.length ?? 0) > 0 ? (
               <Switch
                 checked={showArchive}
                 onCheckedChange={(newValue) => setShowArchive(newValue)}
@@ -115,7 +120,7 @@ function CourseSelectionPage() {
             <div
               className={twMerge(
                 'w-full',
-                (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
+                (visibleCourses?.length ?? 0) > 0 && 'md:pr-24'
               )}
             >
               <UserNotification className={{ root: 'mb-3 text-base' }}>

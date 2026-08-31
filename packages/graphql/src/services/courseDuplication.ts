@@ -12,6 +12,7 @@ import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
+import { getCourseDeletionAdvisoryLockKey } from './courseDeletionGuard.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -460,7 +461,7 @@ export async function startCourseDuplication(
   }
 
   const sourceCourse = await ctx.prisma.course.findUnique({
-    where: { id: args.sourceCourseId },
+    where: { id: args.sourceCourseId, isDeleted: false },
     select: { name: true },
   })
   if (!sourceCourse) {
@@ -1633,7 +1634,7 @@ export async function duplicateCourse(
   if (!hasRefreshedDuplicationAccess) return null
 
   const oldCourse = await ctx.prisma.course.findUnique({
-    where: { id: sourceCourseId },
+    where: { id: sourceCourseId, isDeleted: false },
     include: courseDuplicationInclude,
   })
 
@@ -1654,6 +1655,18 @@ export async function duplicateCourse(
 
   return await ctx.prisma.$transaction(
     async (prisma) => {
+      // A deletion and duplication of the same source course must not copy a
+      // partially deleted graph. Re-check the source after taking the same
+      // transaction-scoped fence used by course deletion.
+      const advisoryLockKey = getCourseDeletionAdvisoryLockKey(sourceCourseId)
+      await prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0))`
+
+      const activeSourceCourse = await prisma.course.findUnique({
+        where: { id: sourceCourseId, isDeleted: false },
+        select: { id: true },
+      })
+      if (!activeSourceCourse) return null
+
       const newCourse = await createCourse(
         {
           courseId,

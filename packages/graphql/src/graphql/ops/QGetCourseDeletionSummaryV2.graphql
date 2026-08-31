@@ -1,0 +1,13 @@
+query GetCourseDeletionSummaryV2($courseId: String!) {
+  getCourseSummary(courseId: $courseId) {
+    numOfParticipations
+    numOfLiveQuizzes
+    numOfDraftLiveQuizzes
+    numOfDraftActivities
+    numOfPracticeQuizzes
+    numOfMicroLearnings
+    numOfGroupActivities
+    numOfLeaderboardEntries
+    numOfParticipantGroups
+  }
+}

@@ -6,8 +6,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import QR from '../../pages/qr/[...args]'
 
 function QRCodePopover({
@@ -16,12 +16,14 @@ function QRCodePopover({
   infoComponent,
   relHref,
   data,
+  disabled = false,
 }: {
   triggerStyle: 'basic' | 'button' | 'primary'
   triggerText: string
   infoComponent?: React.ReactNode
   relHref: string
   data?: { cy?: string; test?: string }
+  disabled?: boolean
 }) {
   const t = useTranslations()
 
@@ -29,6 +31,7 @@ function QRCodePopover({
     <Popover>
       {triggerStyle === 'basic' && (
         <PopoverTrigger
+          disabled={disabled}
           className="hover:bg-accent text-primary-100 mb-1 flex flex-row items-center gap-2.5 rounded px-2 py-0 text-sm"
           data-cy={data?.cy}
           data-test={data?.test}
@@ -39,6 +42,7 @@ function QRCodePopover({
       )}
       {triggerStyle === 'button' && (
         <PopoverTrigger
+          disabled={disabled}
           className="hover:bg-accent border-input flex h-8 flex-row items-center gap-2.5 rounded-md border px-3 py-0"
           data-cy={data?.cy}
           data-test={data?.test}
@@ -49,6 +53,7 @@ function QRCodePopover({
       )}
       {triggerStyle === 'primary' && (
         <PopoverTrigger
+          disabled={disabled}
           className="bg-primary-100 text-primary-foreground hover:bg-primary-80 focus-visible:ring-ring inline-flex h-8 flex-row items-center gap-2.5 rounded-md border border-primary-100 px-3.25 py-1.75 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
           data-cy={data?.cy}
           data-test={data?.test}

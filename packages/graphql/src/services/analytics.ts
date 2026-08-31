@@ -1,22 +1,22 @@
-import { ContextWithUser } from '@/lib/context.js'
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityFeedback,
-  ActivityPerformance,
+  type ActivityFeedback,
+  type ActivityPerformance,
   ActivityType,
-  InstanceFeedback,
-  InstancePerformance,
-  InstanceQuizAnalytics,
-  ParticipantActivityPerformance,
+  type InstanceFeedback,
+  type InstancePerformance,
+  type InstanceQuizAnalytics,
+  type ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
+import type { ContextWithUser } from '@/lib/context.js'
 
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -78,7 +78,7 @@ export async function getCourseWeeklyActivity(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -475,7 +475,7 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       _count: { select: { participations: true } },
       practiceQuizzes: {

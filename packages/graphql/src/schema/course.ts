@@ -42,6 +42,7 @@ export const CourseDeletionJobStatus = builder.enumType(
 export interface ICourseDeletionStatus {
   id: string
   status: CourseDeletionJobStatusValue
+  isQueued: boolean
   courseId: string
   courseName: string
   errorType?: string | null
@@ -59,6 +60,7 @@ export const CourseDeletionStatus = builder.objectType(
     fields: (t) => ({
       id: t.exposeID('id'),
       status: t.expose('status', { type: CourseDeletionJobStatus }),
+      isQueued: t.exposeBoolean('isQueued'),
       courseId: t.exposeString('courseId'),
       courseName: t.exposeString('courseName'),
       errorType: t.exposeString('errorType', { nullable: true }),
@@ -338,6 +340,7 @@ export interface ICourseSummary {
   numOfParticipations: number
   numOfLiveQuizzes: number
   numOfDraftLiveQuizzes: number
+  numOfDraftActivities: number
   numOfPracticeQuizzes: number
   numOfMicroLearnings: number
   numOfGroupActivities: number
@@ -351,6 +354,7 @@ export const CourseSummary = CourseSummaryRef.implement({
     numOfParticipations: t.exposeInt('numOfParticipations'),
     numOfLiveQuizzes: t.exposeInt('numOfLiveQuizzes'),
     numOfDraftLiveQuizzes: t.exposeInt('numOfDraftLiveQuizzes'),
+    numOfDraftActivities: t.exposeInt('numOfDraftActivities'),
     numOfPracticeQuizzes: t.exposeInt('numOfPracticeQuizzes'),
     numOfMicroLearnings: t.exposeInt('numOfMicroLearnings'),
     numOfGroupActivities: t.exposeInt('numOfGroupActivities'),

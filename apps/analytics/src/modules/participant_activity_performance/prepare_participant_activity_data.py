@@ -6,6 +6,7 @@ def prepare_participant_activity_data(db, course_id: str):
     course = db.course.find_first(
         where={
             "id": course_id,
+            "isDeleted": False,
         },
         include={
             "practiceQuizzes": {

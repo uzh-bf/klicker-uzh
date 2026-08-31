@@ -1,5 +1,5 @@
 // import webpush, { WebPushError } from 'web-push'
-import { HatchetHandlers } from '@klicker-uzh/types'
+import type { HatchetHandlers } from '@klicker-uzh/types'
 import axios from 'axios'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -24,6 +24,7 @@ export async function subscribeToPush(
   return ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
+      course: { isDeleted: false },
     },
     data: {
       subscriptions: {

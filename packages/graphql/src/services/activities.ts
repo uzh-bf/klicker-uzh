@@ -42,7 +42,7 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null } },
+        where: { courseId: { not: null }, course: { isDeleted: false } },
         include: {
           course: {
             select: {
@@ -462,6 +462,7 @@ export async function applyActivityBatchOperations(
     ? await ctx.prisma.course.findUnique({
         where: {
           id: courseId,
+          isDeleted: false,
           permissions: {
             some: {
               userId: ctx.user.sub,
@@ -533,6 +534,7 @@ export async function applyActivityBatchOperations(
       },
       status: { in: allowedActivityStatus },
       AND: [
+        { OR: [{ courseId: null }, { course: { isDeleted: false } }] },
         // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
         ...((setMultiplier && !newCourse) || setLiveQuizPoints
           ? [
@@ -581,6 +583,7 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
+          course: { isDeleted: false },
           AND: [
             // if the practice quiz is assigned to a new course, the scheduled publication date must lie within the course duration (or be null -> draft)
             ...(newCourse
@@ -649,6 +652,7 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
+          course: { isDeleted: false },
           // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
           scheduledStartAt: newCourse
             ? { gte: newCourse.startDate }
@@ -707,6 +711,7 @@ export async function applyActivityBatchOperations(
               },
             },
             status: { in: allowedActivityStatus },
+            course: { isDeleted: false },
             // if a new course is assigned, the group formation deadline should be before the start of the group activity
             // (start date of course does not need to be verified, since group formation deadline is always after start date)
             scheduledStartAt: newCourse
@@ -768,10 +773,10 @@ export async function applyActivityBatchOperations(
   }
 
   // apply activity updates
-  let updatedLiveQuizzes: string[] = []
-  let updatedPracticeQuizzes: string[] = []
-  let updatedMicroLearnings: string[] = []
-  let updatedGroupActivities: string[] = []
+  const updatedLiveQuizzes: string[] = []
+  const updatedPracticeQuizzes: string[] = []
+  const updatedMicroLearnings: string[] = []
+  const updatedGroupActivities: string[] = []
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
@@ -1111,7 +1116,10 @@ export async function getLiveQuizDetails(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+    },
     include: {
       owner: true,
       _count: {
@@ -1397,7 +1405,7 @@ export async function getPracticeQuizDetails(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       owner: true,
       _count: {
@@ -1495,7 +1503,7 @@ export async function getMicroLearningDetails(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       owner: true,
       _count: {
@@ -1594,7 +1602,7 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { isDeleted: false } },
     include: {
       owner: true,
       _count: {
@@ -1761,7 +1769,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!liveQuiz ? reviewStatus : null
+      return liveQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
       const practiceQuiz = await ctx.prisma.practiceQuiz.update({
         where: {
@@ -1778,7 +1786,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!practiceQuiz ? reviewStatus : null
+      return practiceQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.MICRO_LEARNING) {
       const microLearning = await ctx.prisma.microLearning.update({
         where: {
@@ -1795,7 +1803,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!microLearning ? reviewStatus : null
+      return microLearning ? reviewStatus : null
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
       const groupActivity = await ctx.prisma.groupActivity.update({
         where: {
@@ -1812,7 +1820,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!groupActivity ? reviewStatus : null
+      return groupActivity ? reviewStatus : null
     }
   } catch (error) {
     console.error('Error setting activity review status:', error)
@@ -1832,15 +1840,45 @@ export async function getCourseActivityIds(
       objects: {
         where: {
           OR: [
-            { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            {
+              liveQuiz: {
+                isDeleted: false,
+                courseId: courseId ?? null,
+                ...(courseId ? { course: { isDeleted: false } } : {}),
+              },
+            },
             ...(courseId
-              ? [{ practiceQuiz: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    practiceQuiz: {
+                      isDeleted: false,
+                      courseId,
+                      course: { isDeleted: false },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ microLearning: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    microLearning: {
+                      isDeleted: false,
+                      courseId,
+                      course: { isDeleted: false },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ groupActivity: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    groupActivity: {
+                      isDeleted: false,
+                      courseId,
+                      course: { isDeleted: false },
+                    },
+                  },
+                ]
               : []),
           ],
         },

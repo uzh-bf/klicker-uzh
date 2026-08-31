@@ -1,7 +1,7 @@
-import { Context as HatchetContext } from '@hatchet-dev/typescript-sdk/index.js'
+import type { Context as HatchetContext } from '@hatchet-dev/typescript-sdk/index.js'
 import * as DB from '@klicker-uzh/prisma/client'
-import { HatchetHandlers } from '@klicker-uzh/types'
-import { PrismaTransactionClient } from '@klicker-uzh/util'
+import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
@@ -22,7 +22,10 @@ export async function getSelf(
     // check if the live quiz is part of a course
     const liveQuiz = liveQuizId
       ? await ctx.prisma.liveQuiz.findUnique({
-          where: { id: liveQuizId },
+          where: {
+            id: liveQuizId,
+            OR: [{ courseId: null }, { course: { isDeleted: false } }],
+          },
           include: { course: true },
         })
       : null
@@ -192,9 +195,12 @@ export async function getParticipations(
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: assessmentOnly
-          ? { course: { isAssessmentEnabled: true } }
-          : undefined,
+        where: {
+          course: {
+            isDeleted: false,
+            isAssessmentEnabled: assessmentOnly ? true : undefined,
+          },
+        },
         include: {
           subscriptions: endpoint ? { where: { endpoint } } : undefined,
           course: {
@@ -237,6 +243,7 @@ export async function getParticipation(
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
+      course: { isDeleted: false },
     },
   })
 
@@ -499,6 +506,7 @@ export async function bookmarkElementStack(
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
+      course: { isDeleted: false },
     },
     data: {
       bookmarkedElementStacks: {
@@ -521,6 +529,7 @@ export async function getBookmarkedElementStacks(
         courseId,
         participantId: ctx.user.sub,
       },
+      course: { isDeleted: false },
     },
     include: {
       bookmarkedElementStacks: {
@@ -559,6 +568,7 @@ export async function flagElement(
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id: elementInstanceId,
+      elementStack: { course: { isDeleted: false } },
     },
     include: {
       elementStack: {
@@ -577,6 +587,8 @@ export async function flagElement(
       },
     },
   })
+
+  if (!elementInstance) return null
 
   const elementFeedback = await ctx.prisma.elementFeedback.upsert({
     where: {
@@ -655,6 +667,15 @@ export async function rateElement(
   if (rating !== 1 && rating !== -1) {
     return null
   }
+
+  const activeElementInstance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id: elementInstanceId,
+      elementStack: { course: { isDeleted: false } },
+    },
+    select: { id: true },
+  })
+  if (!activeElementInstance) return null
 
   let elementFeedback: DB.ElementFeedback | null = null
   await ctx.prisma.$transaction(async (prisma) => {
@@ -803,6 +824,7 @@ export async function getPracticeCourses(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
+      course: { isDeleted: false },
     },
     include: {
       course: {
@@ -828,6 +850,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
+      course: { isDeleted: false },
     },
     include: {
       course: {
@@ -874,6 +897,7 @@ export async function upsertDailyTimelineEntry({
         courseId,
         participantId,
       },
+      course: { isDeleted: false },
     },
   })
 
@@ -929,7 +953,7 @@ export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWee
 
     // get all course ids
     const courses = await globalCtx.prisma.course.findMany({
-      where: { endDate: { gt: new Date() } },
+      where: { endDate: { gt: new Date() }, isDeleted: false },
       select: { id: true, name: true },
     })
 
@@ -983,7 +1007,7 @@ export async function updateWeeklyTimelineEntriesCourse(
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
   const courseTimelineLastWeek = await prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       timelineEntries: {
         where: {
@@ -1001,7 +1025,7 @@ export async function updateWeeklyTimelineEntriesCourse(
   })
 
   const courseTimelineCurrentWeek = await prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       timelineEntries: {
         where: {
@@ -1191,6 +1215,7 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
     },
     include: {
       participations: {
+        where: { course: { isDeleted: false } },
         include: {
           timelineEntries: {
             where: {

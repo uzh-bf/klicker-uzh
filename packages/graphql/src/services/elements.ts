@@ -6,22 +6,22 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationDetails,
+  type ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
-  ElementManipulationInput,
+  type ElementManipulationInput,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import EventEmitter from 'events'
+import type EventEmitter from 'events'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type {
   ContextWithUser,
@@ -1200,11 +1200,38 @@ export async function getInstanceUpdateActivities(
     where: { id: elementId },
     include: {
       elementInstances: {
+        where: {
+          OR: [
+            {
+              elementStack: {
+                practiceQuiz: { course: { isDeleted: false } },
+              },
+            },
+            {
+              elementStack: {
+                microLearning: { course: { isDeleted: false } },
+              },
+            },
+            {
+              elementStack: {
+                groupActivity: { course: { isDeleted: false } },
+              },
+            },
+            {
+              elementBlock: {
+                liveQuiz: {
+                  OR: [{ courseId: null }, { course: { isDeleted: false } }],
+                },
+              },
+            },
+          ],
+        },
         include: {
           elementStack: {
             include: {
               microLearning: {
                 where: {
+                  course: { isDeleted: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
@@ -1220,6 +1247,7 @@ export async function getInstanceUpdateActivities(
               },
               practiceQuiz: {
                 where: {
+                  course: { isDeleted: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
@@ -1235,6 +1263,7 @@ export async function getInstanceUpdateActivities(
               },
               groupActivity: {
                 where: {
+                  course: { isDeleted: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {

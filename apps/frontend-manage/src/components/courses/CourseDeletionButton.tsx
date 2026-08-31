@@ -16,15 +16,12 @@ function CourseDeletionButton({
     SetStateAction<{ open: boolean; courseId: string | null }>
   >
 }) {
-  const { isCourseDeletionActive, isCourseDeletionStatusHydrating } =
-    useCourseDeletionStatus()
+  const { isCourseDeletionActive } = useCourseDeletionStatus()
   const deletionActive = isCourseDeletionActive(id)
 
   return (
     <Button
-      disabled={
-        isAssessmentEnabled || deletionActive || isCourseDeletionStatusHydrating
-      }
+      disabled={isAssessmentEnabled || deletionActive}
       className={{
         root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
       }}
@@ -35,7 +32,7 @@ function CourseDeletionButton({
       }}
       data={{ cy: `delete-course-${name}` }}
     >
-      <Button.Icon withoutLabel icon={faTrashCan} loading={deletionActive} />
+      <Button.Icon withoutLabel icon={faTrashCan} />
     </Button>
   )
 }

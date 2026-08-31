@@ -138,7 +138,7 @@ export async function createParticipantInvitations(
 
   // Validate course exists and has SSO enabled
   const course = await prismaClient.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
   })
 
   if (!course) {
@@ -463,7 +463,7 @@ async function requireAssessmentCourse(
   prismaClient: PrismaClient
 ) {
   const course = await prismaClient.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     select: { id: true, isAssessmentEnabled: true },
   })
 

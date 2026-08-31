@@ -1,10 +1,15 @@
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
-import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
+import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import {
+  getLiveQuizCourseDeletedKey,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
+import { randomUUID } from 'crypto'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { Redis } from 'ioredis'
 
 const redis = new Redis({
   family: 4,
@@ -109,6 +114,18 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       res,
       'Missing required fields: response, liveQuizId, instanceId'
     )
+  }
+
+  if (await redis.exists(getLiveQuizCourseDeletedKey(String(liveQuizId)))) {
+    return sendJson(req, res, 410, { error: 'course_deleted' })
+  }
+
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: { id: String(liveQuizId) },
+    select: { course: { select: { isDeleted: true } } },
+  })
+  if (liveQuiz?.course?.isDeleted) {
+    return sendJson(req, res, 410, { error: 'course_deleted' })
   }
 
   // Only forward participant-related cookies. If both exist, include both.

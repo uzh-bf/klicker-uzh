@@ -1,30 +1,10 @@
 import { useQuery } from '@apollo/client'
-import { GetCourseDeletionSummaryDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetCourseDeletionSummaryV2Document } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useCourseDeletionStatus } from '../CourseDeletionStatusProvider'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
-
-export interface CourseDeletionConfirmationType {
-  deleteParticipations: boolean
-  disconnectLiveQuizzes: boolean
-  deletePracticeQuizzes: boolean
-  deleteMicroLearnings: boolean
-  deleteGroupActivities: boolean
-  deleteParticipantGroups: boolean
-  deleteLeaderboardEntries: boolean
-}
-
-const initialConfirmations: CourseDeletionConfirmationType = {
-  deleteParticipations: false,
-  disconnectLiveQuizzes: false,
-  deletePracticeQuizzes: false,
-  deleteMicroLearnings: false,
-  deleteGroupActivities: false,
-  deleteParticipantGroups: false,
-  deleteLeaderboardEntries: false,
-}
 
 function CourseDeletionModal({
   onClose,
@@ -33,10 +13,6 @@ function CourseDeletionModal({
   onClose: () => void
   courseId: string | null
 }) {
-  const [confirmations, setConfirmations] =
-    useState<CourseDeletionConfirmationType>({
-      ...initialConfirmations,
-    })
   const [deleteDraftActivities, setDeleteDraftActivities] = useState(false)
   const [deletionStarting, setDeletionStarting] = useState(false)
   const t = useTranslations()
@@ -44,7 +20,7 @@ function CourseDeletionModal({
 
   // fetch course information
   const { data, loading: queryLoading } = useQuery(
-    GetCourseDeletionSummaryDocument,
+    GetCourseDeletionSummaryV2Document,
     {
       variables: { courseId: courseId ?? '' },
       skip: !courseId,
@@ -53,28 +29,8 @@ function CourseDeletionModal({
 
   const closeModal = () => {
     onClose()
-    setConfirmations({ ...initialConfirmations })
     setDeleteDraftActivities(false)
   }
-
-  // skip confirmation for the elements where none are present
-  useEffect(() => {
-    if (!courseId || !data?.getCourseSummary) {
-      return
-    }
-
-    setConfirmations({
-      deleteParticipations: data.getCourseSummary.numOfParticipations === 0,
-      disconnectLiveQuizzes: data.getCourseSummary.numOfLiveQuizzes === 0,
-      deletePracticeQuizzes: data.getCourseSummary.numOfPracticeQuizzes === 0,
-      deleteMicroLearnings: data.getCourseSummary.numOfMicroLearnings === 0,
-      deleteGroupActivities: data.getCourseSummary.numOfGroupActivities === 0,
-      deleteParticipantGroups:
-        data.getCourseSummary.numOfParticipantGroups === 0,
-      deleteLeaderboardEntries:
-        data.getCourseSummary.numOfLeaderboardEntries === 0,
-    })
-  }, [courseId, data?.getCourseSummary])
 
   const summary = data?.getCourseSummary
   if (!courseId) {
@@ -91,10 +47,7 @@ function CourseDeletionModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
       primaryLoading={deletionStarting}
-      primaryDisabled={
-        queryLoading ||
-        Object.values(confirmations).some((confirmation) => !confirmation)
-      }
+      primaryDisabled={queryLoading || !summary}
       onPrimaryAction={async () => {
         setDeletionStarting(true)
         let started = false
@@ -116,8 +69,6 @@ function CourseDeletionModal({
       {summary && (
         <CourseDeletionConfirmations
           summary={summary}
-          confirmations={confirmations}
-          setConfirmations={setConfirmations}
           deleteDraftActivities={deleteDraftActivities}
           setDeleteDraftActivities={setDeleteDraftActivities}
         />

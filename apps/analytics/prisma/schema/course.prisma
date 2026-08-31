@@ -16,6 +16,7 @@ model Course {
   notificationEmail String?
   areAnalyticsValid Boolean  @default(false)
   isArchived        Boolean  @default(false)
+  isDeleted         Boolean  @default(false)
 
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique

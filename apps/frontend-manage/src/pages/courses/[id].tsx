@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import CourseCalendarView from '@components/courses/CourseCalendarView'
+import { useCourseDeletionStatus } from '@components/courses/CourseDeletionStatusProvider'
 import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
 import CourseOverviewHeader from '@components/courses/CourseOverviewHeader'
 import GroupActivityList from '@components/courses/GroupActivityList'
@@ -37,6 +38,11 @@ import { twMerge } from 'tailwind-merge'
 function CourseOverviewPage() {
   const t = useTranslations()
   const router = useRouter()
+  const { isCourseDeletionActive, isCourseDeletionStateInitialized } =
+    useCourseDeletionStatus()
+  const courseId =
+    typeof router.query.id === 'string' ? router.query.id : undefined
+  const deletionActive = courseId ? isCourseDeletionActive(courseId) : false
   const [tabValue, setTabValue] = useState('liveQuizzes')
   const [gamificationTabValue, setGamificationTabValue] =
     useState('ind-leaderboard')
@@ -46,8 +52,8 @@ function CourseOverviewPage() {
   )
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
-    variables: { courseId: router.query.id as string },
-    skip: !router.query.id,
+    variables: { courseId: courseId ?? '' },
+    skip: !courseId || !isCourseDeletionStateInitialized || deletionActive,
     ssr: false,
     fetchPolicy: 'network-only', // critical query, should always be up to date
   })
@@ -61,6 +67,12 @@ function CourseOverviewPage() {
         ...(data?.course?.liveQuizzesInfo ?? []),
       ],
     })
+
+  useEffect(() => {
+    if (deletionActive) {
+      void router.replace('/courses')
+    }
+  }, [deletionActive, router])
 
   useEffect(() => {
     if (data && !data.course) {
@@ -118,7 +130,12 @@ function CourseOverviewPage() {
     return <div>{error.message}</div>
   }
 
-  if (loading || !data?.course)
+  if (
+    !isCourseDeletionStateInitialized ||
+    deletionActive ||
+    loading ||
+    !data?.course
+  )
     return (
       <Layout>
         <Loader />

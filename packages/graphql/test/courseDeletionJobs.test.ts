@@ -1,10 +1,11 @@
+import { EventEmitter } from 'node:events'
 import {
   PermissionLevel,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { Redis } from 'ioredis'
-import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
@@ -49,6 +50,23 @@ class FakeRedis {
 
   async del(key: string) {
     return this.values.delete(key) ? 1 : 0
+  }
+
+  pipeline() {
+    const operations: Array<[string, string]> = []
+    const pipeline = {
+      set: (key: string, value: string) => {
+        operations.push([key, value])
+        return pipeline
+      },
+      exec: async () => {
+        for (const [key, value] of operations) {
+          this.values.set(key, value)
+        }
+        return operations.map(() => [null, 'OK'])
+      },
+    }
+    return pipeline
   }
 
   async eval(
@@ -140,6 +158,7 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
   const findUnique = vi.fn().mockResolvedValue({
     id: 'course-id',
     name: 'Large course',
+    isDeleted: false,
     isAssessmentEnabled: false,
     liveQuizzes: [],
     practiceQuizzes: [],
@@ -148,7 +167,10 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
   })
   const push = vi.fn().mockResolvedValue(undefined)
   const deleteScheduledTask = vi.fn().mockResolvedValue(undefined)
-  const findActivity = vi.fn().mockResolvedValue({ courseId: 'course-id' })
+  const findActivity = vi.fn().mockResolvedValue({
+    courseId: 'course-id',
+    course: { isDeleted: false },
+  })
   const ctx = {
     user: {
       sub: userId,
@@ -246,6 +268,31 @@ describe('course deletion jobs', () => {
     ).resolves.toEqual([])
   })
 
+  it('fences linked live quiz responses while deletion is pending', async () => {
+    const { ctx, findUnique, redis } = createContext()
+    findUnique.mockResolvedValue({
+      id: 'course-id',
+      name: 'Large course',
+      isDeleted: false,
+      isAssessmentEnabled: false,
+      liveQuizzes: [
+        {
+          id: 'live-quiz-id',
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+          scheduledPublicationTaskId: null,
+        },
+      ],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
+
+    const job = await startCourseDeletion({ id: 'course-id' }, ctx)
+
+    expect(redis.values.get('lq:live-quiz-id:course-deleted')).toBe(job?.id)
+  })
+
   it('does not expose another user active job through a repeated start', async () => {
     const { ctx } = createContext()
     await startCourseDeletion({ id: 'course-id' }, ctx)
@@ -323,6 +370,27 @@ describe('course deletion jobs', () => {
     ).resolves.toBeUndefined()
   })
 
+  it('rejects writes after the course has been soft-deleted', async () => {
+    const { ctx, findUnique, redis } = createContext()
+    const job = await startCourseDeletion({ id: 'course-id' }, ctx)
+    const statusKey = `course-deletion:job:${job!.id}`
+    const storedJob = JSON.parse(redis.values.get(statusKey)!)
+    redis.values.set(
+      statusKey,
+      JSON.stringify({ ...storedJob, status: 'COMPLETED' })
+    )
+    findUnique.mockResolvedValue({
+      id: 'course-id',
+      isDeleted: true,
+    })
+
+    await expect(
+      assertCourseDeletionNotInProgress({ courseId: 'course-id' }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'COURSE_DELETED' },
+    })
+  })
+
   it('rejects writes when the deletion lock has no readable job', async () => {
     const { ctx, redis } = createContext()
     redis.values.set(
@@ -343,12 +411,13 @@ describe('course deletion jobs', () => {
 
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
 
-    expect(job).toMatchObject({ status: 'PENDING' })
+    expect(job).toMatchObject({ status: 'PENDING', isQueued: false })
     expect(push).toHaveBeenCalledTimes(2)
     expect(redis.values.get('course-deletion:course:course-id')).toBe(job?.id)
 
+    push.mockResolvedValue(undefined)
     const repeatedJob = await startCourseDeletion({ id: 'course-id' }, ctx)
-    expect(repeatedJob?.id).toBe(job?.id)
+    expect(repeatedJob).toMatchObject({ id: job?.id, isQueued: true })
   })
 
   it('republishes a pending job once from the stale-job sweep', async () => {
@@ -503,8 +572,54 @@ describe('course deletion jobs', () => {
     ])
   })
 
+  it('treats an already soft-deleted course as a completed retry', async () => {
+    const { ctx, findUnique } = createContext()
+    const job = await startCourseDeletion({ id: 'course-id' }, ctx)
+    findUnique.mockResolvedValue({
+      id: 'course-id',
+      isDeleted: true,
+      isAssessmentEnabled: false,
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
+
+    await expect(
+      handleProcessCourseDeletion(
+        { jobId: job!.id },
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(true)
+
+    expect(serviceMocks.deleteCourse).not.toHaveBeenCalled()
+    await expect(
+      getCourseDeletionStatuses({ ids: [job!.id] }, ctx)
+    ).resolves.toEqual([
+      expect.objectContaining({ id: job!.id, status: 'COMPLETED' }),
+    ])
+  })
+
   it('records revoked access as a terminal failure', async () => {
-    const { ctx } = createContext()
+    const { ctx, findUnique, redis } = createContext()
+    findUnique.mockResolvedValue({
+      id: 'course-id',
+      name: 'Large course',
+      isDeleted: false,
+      isAssessmentEnabled: false,
+      liveQuizzes: [
+        {
+          id: 'live-quiz-id',
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+          scheduledPublicationTaskId: null,
+        },
+      ],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
     serviceMocks.checkAccess.mockResolvedValueOnce(false)
 
@@ -517,6 +632,7 @@ describe('course deletion jobs', () => {
     ).resolves.toBe(false)
 
     expect(serviceMocks.deleteCourse).not.toHaveBeenCalled()
+    expect(redis.values.has('lq:live-quiz-id:course-deleted')).toBe(false)
     await expect(
       getCourseDeletionStatuses({ ids: [job!.id] }, ctx)
     ).resolves.toEqual([
@@ -534,6 +650,7 @@ describe('course deletion jobs', () => {
     findUnique.mockResolvedValue({
       id: 'course-id',
       name: 'Large course',
+      isDeleted: false,
       isAssessmentEnabled: true,
       liveQuizzes: [],
       practiceQuizzes: [],
@@ -588,7 +705,7 @@ describe('course deletion jobs', () => {
   })
 
   it('recovers post-commit scheduled cleanup before marking completion', async () => {
-    const { ctx, deleteScheduledTask, findUnique } = createContext()
+    const { ctx, deleteScheduledTask, findUnique, redis } = createContext()
     const job = await startCourseDeletion(
       { id: 'course-id', deleteDraftActivities: true },
       ctx
@@ -596,26 +713,44 @@ describe('course deletion jobs', () => {
     findUnique
       .mockResolvedValueOnce({
         id: 'course-id',
+        isDeleted: false,
         isAssessmentEnabled: false,
         liveQuizzes: [
           {
             id: 'draft-live-quiz',
             isDeleted: false,
-            status: 'DRAFT',
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: 'live-publication',
           },
         ],
         practiceQuizzes: [
-          { scheduledPublicationTaskId: 'practice-publication' },
+          {
+            id: 'draft-practice-quiz',
+            isDeleted: false,
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: 'practice-publication',
+          },
         ],
         microLearnings: [
           {
+            id: 'draft-micro-learning',
+            isDeleted: false,
+            status: PublicationStatus.DRAFT,
             scheduledPublicationTaskId: 'micro-publication',
             scheduledCompletionTaskId: 'micro-completion',
           },
         ],
-        groupActivities: [],
+        groupActivities: [
+          {
+            id: 'draft-group-activity',
+            isDeleted: false,
+            status: PublicationStatus.DRAFT,
+            scheduledPublicationTaskId: 'group-publication',
+            scheduledCompletionTaskId: 'group-completion',
+          },
+        ],
       })
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'course-id', isDeleted: true })
     serviceMocks.deleteCourse.mockRejectedValueOnce(
       new Error('worker stopped after commit')
     )
@@ -628,13 +763,29 @@ describe('course deletion jobs', () => {
       )
     ).resolves.toBe(true)
 
-    expect(deleteScheduledTask).toHaveBeenCalledTimes(3)
+    expect(deleteScheduledTask).toHaveBeenCalledTimes(6)
+    expect(deleteScheduledTask).toHaveBeenCalledWith('live-publication')
     expect(deleteScheduledTask).toHaveBeenCalledWith('practice-publication')
     expect(deleteScheduledTask).toHaveBeenCalledWith('micro-publication')
     expect(deleteScheduledTask).toHaveBeenCalledWith('micro-completion')
+    expect(deleteScheduledTask).toHaveBeenCalledWith('group-publication')
+    expect(deleteScheduledTask).toHaveBeenCalledWith('group-completion')
+    expect(redis.values.get('lq:draft-live-quiz:course-deleted')).toBe('1')
     expect(ctx.emitter.emit).toHaveBeenCalledWith('invalidate', {
       typename: 'LiveQuiz',
       id: 'draft-live-quiz',
+    })
+    expect(ctx.emitter.emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'PracticeQuiz',
+      id: 'draft-practice-quiz',
+    })
+    expect(ctx.emitter.emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'MicroLearning',
+      id: 'draft-micro-learning',
+    })
+    expect(ctx.emitter.emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'GroupActivity',
+      id: 'draft-group-activity',
     })
   })
 

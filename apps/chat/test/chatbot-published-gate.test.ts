@@ -42,6 +42,10 @@ describe('getChatbotOr404 publication gate', () => {
     // guard can enforce publication for every participant route.
     expect(mocks.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: {
+          id: VALID_ID,
+          course: { isDeleted: false },
+        },
         select: expect.objectContaining({ courseId: true, status: true }),
       })
     )

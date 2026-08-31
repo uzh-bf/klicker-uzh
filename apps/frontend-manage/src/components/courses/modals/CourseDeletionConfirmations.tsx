@@ -1,186 +1,39 @@
-import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
-import { Checkbox, UserNotification } from '@uzh-bf/design-system'
+import type { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
+import { Checkbox } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
-import ConfirmationItem from '../../common/ConfirmationItem'
-import { CourseDeletionConfirmationType } from './CourseDeletionModal'
+import type { Dispatch, SetStateAction } from 'react'
 
 interface CourseDeletionConfirmationsProps {
   summary: CourseSummary
-  confirmations: CourseDeletionConfirmationType
-  setConfirmations: Dispatch<SetStateAction<CourseDeletionConfirmationType>>
   deleteDraftActivities: boolean
   setDeleteDraftActivities: Dispatch<SetStateAction<boolean>>
 }
 
 function CourseDeletionConfirmations({
   summary,
-  confirmations,
-  setConfirmations,
   deleteDraftActivities,
   setDeleteDraftActivities,
 }: CourseDeletionConfirmationsProps) {
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col gap-2">
-      <UserNotification
-        type="warning"
-        message={t('manage.courseList.courseDeletionMessage')}
-        className={{ root: 'mb-1 text-base' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfParticipations === 0
-            ? t('manage.courseList.noParticipationsToDelete')
-            : t('manage.courseList.deleteParticipations', {
-                number: summary.numOfParticipations,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deleteParticipations: true,
-          }))
-        }}
-        confirmed={confirmations.deleteParticipations}
-        notApplicable={summary.numOfParticipations === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-participations-confirm' }}
-      />
-      {summary.numOfDraftLiveQuizzes > 0 && (
-        <div className="flex min-h-10 flex-row items-center border-b pb-2 pl-2">
+    <div className="flex flex-col gap-4">
+      <p className="text-base text-gray-700">
+        {t('manage.courseList.courseDeletionMessage')}
+      </p>
+      {summary.numOfDraftActivities > 0 && (
+        <div className="flex min-h-10 flex-row items-center border-t pt-4">
           <Checkbox
             checked={deleteDraftActivities}
-            onCheck={() => {
-              setDeleteDraftActivities((value) => !value)
-              setConfirmations((prev) => ({
-                ...prev,
-                disconnectLiveQuizzes: false,
-              }))
-            }}
-            label={t('manage.courseList.deleteDraftActivitiesOption')}
+            onCheck={() => setDeleteDraftActivities((value) => !value)}
+            label={t('manage.courseList.deleteDraftActivitiesOption', {
+              number: summary.numOfDraftActivities,
+            })}
             className={{ label: 'mr-4' }}
             data={{ cy: 'course-deletion-delete-draft-activities' }}
           />
         </div>
       )}
-      <ConfirmationItem
-        label={
-          summary.numOfLiveQuizzes === 0
-            ? t('manage.courseList.noLiveQuizzesDisconnected')
-            : deleteDraftActivities
-              ? t('manage.courseList.deleteDraftActivities')
-              : t('manage.courseList.disconnectLiveQuizzes', {
-                  number: summary.numOfLiveQuizzes,
-                })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            disconnectLiveQuizzes: true,
-          }))
-        }}
-        confirmed={confirmations.disconnectLiveQuizzes}
-        notApplicable={summary.numOfLiveQuizzes === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-live-quiz-confirm' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfPracticeQuizzes === 0
-            ? t('manage.courseList.noPracticeQuizzesToDelete')
-            : t('manage.courseList.deletePracticeQuizzes', {
-                number: summary.numOfPracticeQuizzes,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deletePracticeQuizzes: true,
-          }))
-        }}
-        confirmed={confirmations.deletePracticeQuizzes}
-        notApplicable={summary.numOfPracticeQuizzes === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-practice-quiz-confirm' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfMicroLearnings === 0
-            ? t('manage.courseList.noMicroLearningsToDelete')
-            : t('manage.courseList.deleteMicroLearnings', {
-                number: summary.numOfMicroLearnings,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deleteMicroLearnings: true,
-          }))
-        }}
-        confirmed={confirmations.deleteMicroLearnings}
-        notApplicable={summary.numOfMicroLearnings === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-micro-learning-confirm' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfGroupActivities === 0
-            ? t('manage.courseList.noGroupActivitiesToDelete')
-            : t('manage.courseList.deleteGroupActivities', {
-                number: summary.numOfGroupActivities,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deleteGroupActivities: true,
-          }))
-        }}
-        confirmed={confirmations.deleteGroupActivities}
-        notApplicable={summary.numOfGroupActivities === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-group-activity-confirm' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfParticipantGroups === 0
-            ? t('manage.courseList.noParticipantGroupsToDelete')
-            : t('manage.courseList.deleteParticipantGroups', {
-                number: summary.numOfParticipantGroups,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deleteParticipantGroups: true,
-          }))
-        }}
-        confirmed={confirmations.deleteParticipantGroups}
-        notApplicable={summary.numOfParticipantGroups === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-participant-group-confirm' }}
-      />
-      <ConfirmationItem
-        label={
-          summary.numOfLeaderboardEntries === 0
-            ? t('manage.courseList.noLeaderboardEntriesToDelete')
-            : t('manage.courseList.deleteLeaderboardEntries', {
-                number: summary.numOfLeaderboardEntries,
-              })
-        }
-        onClick={() => {
-          setConfirmations((prev) => ({
-            ...prev,
-            deleteLeaderboardEntries: true,
-          }))
-        }}
-        confirmed={confirmations.deleteLeaderboardEntries}
-        notApplicable={summary.numOfLeaderboardEntries === 0}
-        confirmationType="delete"
-        data={{ cy: 'course-deletion-leaderboard-entry-confirm' }}
-      />
     </div>
   )
 }

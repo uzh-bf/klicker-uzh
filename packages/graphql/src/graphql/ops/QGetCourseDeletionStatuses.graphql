@@ -2,6 +2,7 @@ query GetCourseDeletionStatuses($ids: [String!]!) {
   courseDeletionStatuses(ids: $ids) {
     id
     status
+    isQueued
     courseId
     courseName
     errorType

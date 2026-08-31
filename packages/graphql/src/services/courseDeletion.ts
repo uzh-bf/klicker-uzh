@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
+import { getLiveQuizCourseDeletedKey } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
@@ -35,6 +35,7 @@ export type CourseDeletionErrorType = 'access' | 'generic' | 'notAllowed'
 export interface CourseDeletionStatus {
   id: string
   status: CourseDeletionJobStatus
+  isQueued: boolean
   courseId: string
   courseName: string
   errorType?: CourseDeletionErrorType | null
@@ -43,18 +44,68 @@ export interface CourseDeletionStatus {
   updatedAt: Date
 }
 
-interface CourseDeletionJob extends CourseDeletionStatus {
+interface CourseDeletionJob extends Omit<CourseDeletionStatus, 'isQueued'> {
   userId: string
   userRole: DB.UserRole
   userScope: DB.UserLoginScope
   catalystInstitutional: boolean
   catalystIndividual: boolean
   deleteDraftActivities?: boolean
-  draftLiveQuizIds?: string[]
+  draftActivityIds?: {
+    liveQuizIds: string[]
+    practiceQuizIds: string[]
+    microLearningIds: string[]
+    groupActivityIds: string[]
+  }
+  liveQuizIds?: string[]
   lastPublicationAttemptAt?: number
   publicationRecoveryAttempts?: number
   publicationRecoveryNeeded?: boolean
   scheduledTaskIds?: string[]
+}
+
+async function persistCourseDeletionResponseFences(
+  redis: Redis,
+  liveQuizIds: string[],
+  value: string,
+  ttlSeconds?: number
+) {
+  if (liveQuizIds.length === 0) return
+
+  const pipeline = redis.pipeline()
+  for (const liveQuizId of liveQuizIds) {
+    if (ttlSeconds) {
+      pipeline.set(
+        getLiveQuizCourseDeletedKey(liveQuizId),
+        value,
+        'EX',
+        ttlSeconds
+      )
+    } else {
+      pipeline.set(getLiveQuizCourseDeletedKey(liveQuizId), value)
+    }
+  }
+
+  const results = await pipeline.exec()
+  for (const [error] of results ?? []) {
+    if (error) throw error
+  }
+}
+
+async function releaseCourseDeletionResponseFences(
+  redis: Redis,
+  liveQuizIds: string[],
+  expectedValue: string
+) {
+  await Promise.all(
+    liveQuizIds.map((liveQuizId) =>
+      releaseCourseDeletionLockValue(
+        redis,
+        getLiveQuizCourseDeletedKey(liveQuizId),
+        expectedValue
+      )
+    )
+  )
 }
 
 function getCourseDeletionProcessLockKey(jobId: string) {
@@ -137,6 +188,7 @@ function serializeCourseDeletionJob(job: CourseDeletionJob) {
   return JSON.stringify({
     id: job.id,
     status: job.status,
+    isQueued: true,
     courseId: job.courseId,
     courseName: job.courseName,
     errorType: job.errorType,
@@ -144,7 +196,7 @@ function serializeCourseDeletionJob(job: CourseDeletionJob) {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     userId: job.userId,
-  } satisfies Pick<CourseDeletionJob, keyof CourseDeletionStatus | 'userId'>)
+  } satisfies CourseDeletionStatus & Pick<CourseDeletionJob, 'userId'>)
 }
 
 async function persistCourseDeletionJob(redis: Redis, job: CourseDeletionJob) {
@@ -225,12 +277,13 @@ async function updateCourseDeletionJob(
   patch: Partial<
     Pick<
       CourseDeletionJob,
-      | 'draftLiveQuizIds'
+      | 'draftActivityIds'
       | 'errorMessage'
       | 'errorType'
       | 'lastPublicationAttemptAt'
       | 'publicationRecoveryAttempts'
       | 'publicationRecoveryNeeded'
+      | 'liveQuizIds'
       | 'scheduledTaskIds'
       | 'status'
     >
@@ -353,7 +406,9 @@ async function updateCourseDeletionJobForProcess(
   )
 
   if (Number(persisted) !== 1) {
-    throw new Error('Course deletion process lease was lost')
+    throw new GraphQLError('Course deletion process lease was lost', {
+      extensions: { code: 'COURSE_DELETION_PROCESS_LEASE_LOST' },
+    })
   }
 
   if (isTerminalCourseDeletionStatus(updatedJob.status)) {
@@ -365,26 +420,49 @@ async function updateCourseDeletionJobForProcess(
 
 async function recoverCourseDeletionPostCommit(
   job: CourseDeletionJob,
-  globalCtx: Parameters<HatchetHandlers['handleProcessCourseDeletion']>[1],
-  executionCtx: Parameters<HatchetHandlers['handleProcessCourseDeletion']>[2]
+  ctx: Pick<ContextWithUser, 'emitter' | 'hatchet' | 'redisExec'>,
+  warn: (message: string) => void
 ) {
+  if (job.liveQuizIds?.length) {
+    try {
+      await persistCourseDeletionResponseFences(
+        ctx.redisExec,
+        job.liveQuizIds,
+        '1'
+      )
+    } catch (error) {
+      warn(
+        `Failed to recover the response fence for course deletion job ${job.id}: ${getErrorMessage(error)}`
+      )
+    }
+  }
+
   for (const taskId of job.scheduledTaskIds ?? []) {
     try {
-      await globalCtx.hatchet.scheduled.delete(taskId)
+      await ctx.hatchet.scheduled.delete(taskId)
     } catch (error) {
-      executionCtx.logger.warn(
+      warn(
         `Failed to recover scheduled task cleanup ${taskId} for course deletion job ${job.id}: ${getErrorMessage(error)}`
       )
     }
   }
 
-  for (const liveQuizId of job.draftLiveQuizIds ?? []) {
-    globalCtx.emitter.emit('invalidate', {
-      typename: 'LiveQuiz',
-      id: liveQuizId,
-    })
+  const draftActivityIds = job.draftActivityIds
+  if (draftActivityIds) {
+    for (const id of draftActivityIds.liveQuizIds) {
+      ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+    }
+    for (const id of draftActivityIds.practiceQuizIds) {
+      ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    }
+    for (const id of draftActivityIds.microLearningIds) {
+      ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    }
+    for (const id of draftActivityIds.groupActivityIds) {
+      ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    }
   }
-  globalCtx.emitter.emit('invalidate', {
+  ctx.emitter.emit('invalidate', {
     typename: 'Course',
     id: job.courseId,
   })
@@ -396,6 +474,8 @@ function getPublicCourseDeletionStatus(
   return {
     id: job.id,
     status: job.status,
+    isQueued:
+      job.status !== 'PENDING' || job.publicationRecoveryNeeded !== true,
     courseId: job.courseId,
     courseName: job.courseName,
     errorType: job.errorType,
@@ -464,7 +544,7 @@ async function publishCourseDeletionEventKeepingPending(
           publicationRecoveryAttempts: job.publicationRecoveryAttempts ?? 0,
           lastPublicationAttemptAt: job.lastPublicationAttemptAt,
         }
-      )) ?? job
+      )) ?? { ...job, publicationRecoveryNeeded: false }
     )
   }
 
@@ -473,8 +553,9 @@ async function publishCourseDeletionEventKeepingPending(
 
 async function normalizeStaleCourseDeletionJob(
   redis: Redis,
-  prisma: PrismaClient,
-  job: CourseDeletionJob
+  ctx: Pick<ContextWithUser, 'emitter' | 'hatchet' | 'prisma' | 'redisExec'>,
+  job: CourseDeletionJob,
+  warn: (message: string) => void = console.warn
 ) {
   if (
     isTerminalCourseDeletionStatus(job.status) ||
@@ -484,18 +565,19 @@ async function normalizeStaleCourseDeletionJob(
     return job
   }
 
-  const course = await prisma.course.findUnique({
+  const course = await ctx.prisma.course.findUnique({
     where: { id: job.courseId },
-    select: { id: true },
+    select: { id: true, isDeleted: true },
   })
 
-  if (!course) {
+  if (!course || course.isDeleted) {
     const completedJob = await transitionStaleCourseDeletionJob(redis, job, {
       status: 'COMPLETED',
     })
     if (completedJob) {
+      await recoverCourseDeletionPostCommit(job, ctx, warn)
       console.warn(
-        `Course deletion job ${job.id} went stale after its course was deleted; marked COMPLETED.`
+        `Course deletion job ${job.id} went stale after its course was soft-deleted; marked COMPLETED.`
       )
       return completedJob
     }
@@ -509,6 +591,11 @@ async function normalizeStaleCourseDeletionJob(
     errorMessage: 'Course deletion did not finish in time.',
   })
   if (failedJob) {
+    await releaseCourseDeletionResponseFences(
+      redis,
+      job.liveQuizIds ?? [],
+      job.id
+    )
     console.warn(
       `Course deletion job ${job.id} went stale without a heartbeat; marked FAILED.`
     )
@@ -537,8 +624,13 @@ export async function startCourseDeletion(
   if (!hasDeletionAccess) return null
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id, isAssessmentEnabled: false },
-    select: { name: true },
+    where: { id, isAssessmentEnabled: false, isDeleted: false },
+    select: {
+      name: true,
+      liveQuizzes: {
+        select: { id: true },
+      },
+    },
   })
   if (!course) return null
 
@@ -551,8 +643,9 @@ export async function startCourseDeletion(
   if (existingJob && !isTerminalCourseDeletionStatus(existingJob.status)) {
     const normalizedJob = await normalizeStaleCourseDeletionJob(
       ctx.redisExec,
-      ctx.prisma,
-      existingJob
+      ctx,
+      existingJob,
+      console.warn
     )
 
     if (!isTerminalCourseDeletionStatus(normalizedJob.status)) {
@@ -563,7 +656,11 @@ export async function startCourseDeletion(
       }
 
       if (normalizedJob.status === 'PENDING') {
-        await publishCourseDeletionEventKeepingPending(ctx, normalizedJob)
+        const publishedJob = await publishCourseDeletionEventKeepingPending(
+          ctx,
+          normalizedJob
+        )
+        return getPublicCourseDeletionStatus(publishedJob)
       }
 
       return getPublicCourseDeletionStatus(normalizedJob)
@@ -586,6 +683,7 @@ export async function startCourseDeletion(
     catalystInstitutional: ctx.user.catalystInstitutional,
     catalystIndividual: ctx.user.catalystIndividual,
     deleteDraftActivities: deleteDraftActivities ?? false,
+    liveQuizIds: course.liveQuizzes.map((liveQuiz) => liveQuiz.id),
   }
 
   await persistCourseDeletionJob(ctx.redisExec, job)
@@ -613,7 +711,11 @@ export async function startCourseDeletion(
       }
 
       if (lockedJob.status === 'PENDING') {
-        await publishCourseDeletionEventKeepingPending(ctx, lockedJob)
+        const publishedJob = await publishCourseDeletionEventKeepingPending(
+          ctx,
+          lockedJob
+        )
+        return getPublicCourseDeletionStatus(publishedJob)
       }
 
       return getPublicCourseDeletionStatus(lockedJob)
@@ -637,9 +739,25 @@ export async function startCourseDeletion(
     }
   }
 
-  await publishCourseDeletionEventKeepingPending(ctx, job)
+  try {
+    await persistCourseDeletionResponseFences(
+      ctx.redisExec,
+      job.liveQuizIds ?? [],
+      job.id,
+      COURSE_DELETION_STATUS_TTL_SECONDS
+    )
+  } catch (error) {
+    await releaseCourseDeletionLockValue(ctx.redisExec, lockKey, job.id)
+    await deleteCourseDeletionJob(ctx.redisExec, job.id)
+    throw new GraphQLError('Course deletion could not be started', {
+      extensions: { code: 'COURSE_DELETION_START_FAILED' },
+      originalError: error instanceof Error ? error : undefined,
+    })
+  }
 
-  return getPublicCourseDeletionStatus(job)
+  const publishedJob = await publishCourseDeletionEventKeepingPending(ctx, job)
+
+  return getPublicCourseDeletionStatus(publishedJob)
 }
 
 export async function getCourseDeletionStatuses(
@@ -657,8 +775,9 @@ export async function getCourseDeletionStatuses(
 
     const normalizedJob = await normalizeStaleCourseDeletionJob(
       ctx.redisExec,
-      ctx.prisma,
-      job
+      ctx,
+      job,
+      console.warn
     )
     statuses.push(getPublicCourseDeletionStatus(normalizedJob))
   }
@@ -701,7 +820,9 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
     )
 
     if (processLockAcquired !== 'OK') {
-      throw new Error('Course deletion job is already being processed')
+      throw new GraphQLError('Course deletion job is already being processed', {
+        extensions: { code: 'COURSE_DELETION_ALREADY_PROCESSING' },
+      })
     }
 
     const currentJob = await getCourseDeletionJob(redis, jobId)
@@ -746,21 +867,38 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         where: { id: job.courseId },
         select: {
           id: true,
+          isDeleted: true,
           isAssessmentEnabled: true,
           liveQuizzes: {
-            select: { id: true, isDeleted: true, status: true },
+            select: {
+              id: true,
+              isDeleted: true,
+              status: true,
+              scheduledPublicationTaskId: true,
+            },
           },
           practiceQuizzes: {
-            select: { scheduledPublicationTaskId: true },
+            select: {
+              id: true,
+              isDeleted: true,
+              status: true,
+              scheduledPublicationTaskId: true,
+            },
           },
           microLearnings: {
             select: {
+              id: true,
+              isDeleted: true,
+              status: true,
               scheduledCompletionTaskId: true,
               scheduledPublicationTaskId: true,
             },
           },
           groupActivities: {
             select: {
+              id: true,
+              isDeleted: true,
+              status: true,
               scheduledCompletionTaskId: true,
               scheduledPublicationTaskId: true,
             },
@@ -768,8 +906,10 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         },
       })
 
-      if (!existingCourse) {
-        await recoverCourseDeletionPostCommit(job, globalCtx, executionCtx)
+      if (!existingCourse || existingCourse.isDeleted) {
+        await recoverCourseDeletionPostCommit(job, globalCtx, (message) =>
+          executionCtx.logger.warn(message)
+        )
         await updateCourseDeletionJobForProcess(
           redis,
           job,
@@ -781,6 +921,11 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
       }
 
       if (existingCourse.isAssessmentEnabled) {
+        await releaseCourseDeletionResponseFences(
+          redis,
+          job.liveQuizIds ?? [],
+          job.id
+        )
         await updateCourseDeletionJobForProcess(
           redis,
           job,
@@ -796,6 +941,9 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
       }
 
       const scheduledTaskIds = [
+        ...existingCourse.liveQuizzes.map(
+          (activity) => activity.scheduledPublicationTaskId
+        ),
         ...existingCourse.practiceQuizzes.map(
           (activity) => activity.scheduledPublicationTaskId
         ),
@@ -808,15 +956,28 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
           activity.scheduledCompletionTaskId,
         ]),
       ].filter((taskId): taskId is string => Boolean(taskId))
-      const draftLiveQuizIds = job.deleteDraftActivities
-        ? existingCourse.liveQuizzes
-            .filter(
-              (liveQuiz) =>
-                !liveQuiz.isDeleted &&
-                liveQuiz.status === DB.PublicationStatus.DRAFT
-            )
-            .map((liveQuiz) => liveQuiz.id)
-        : []
+      const getDraftIds = (
+        activities: Array<{
+          id: string
+          isDeleted: boolean
+          status: DB.PublicationStatus
+        }>
+      ) =>
+        job.deleteDraftActivities
+          ? activities
+              .filter(
+                (activity) =>
+                  !activity.isDeleted &&
+                  activity.status === DB.PublicationStatus.DRAFT
+              )
+              .map((activity) => activity.id)
+          : []
+      const draftActivityIds = {
+        liveQuizIds: getDraftIds(existingCourse.liveQuizzes),
+        practiceQuizIds: getDraftIds(existingCourse.practiceQuizzes),
+        microLearningIds: getDraftIds(existingCourse.microLearnings),
+        groupActivityIds: getDraftIds(existingCourse.groupActivities),
+      }
 
       job = await updateCourseDeletionJobForProcess(
         redis,
@@ -824,7 +985,10 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         {
           status: 'RUNNING',
           scheduledTaskIds: [...new Set(scheduledTaskIds)],
-          draftLiveQuizIds,
+          draftActivityIds,
+          liveQuizIds: existingCourse.liveQuizzes.map(
+            (activity) => activity.id
+          ),
         },
         processLockKey,
         processLockValue
@@ -859,6 +1023,11 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         ctx
       )
       if (!hasDeletionAccess) {
+        await releaseCourseDeletionResponseFences(
+          redis,
+          job.liveQuizIds ?? [],
+          job.id
+        )
         throw new GraphQLError('Course deletion access denied', {
           extensions: { code: 'FORBIDDEN' },
         })
@@ -873,7 +1042,9 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         ))
       ) {
         processLeaseLost = true
-        throw new Error('Course deletion process lease was lost')
+        throw new GraphQLError('Course deletion process lease was lost', {
+          extensions: { code: 'COURSE_DELETION_PROCESS_LEASE_LOST' },
+        })
       }
       await renewCourseDeletionHeartbeat(redis, jobId)
 
@@ -899,10 +1070,12 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
 
       const remainingCourse = await globalCtx.prisma.course.findUnique({
         where: { id: job.courseId },
-        select: { id: true },
+        select: { id: true, isDeleted: true },
       })
-      if (!remainingCourse) {
-        await recoverCourseDeletionPostCommit(job, globalCtx, executionCtx)
+      if (!remainingCourse || remainingCourse.isDeleted) {
+        await recoverCourseDeletionPostCommit(job, globalCtx, (message) =>
+          executionCtx.logger.warn(message)
+        )
         await updateCourseDeletionJobForProcess(
           redis,
           job,
@@ -1010,8 +1183,9 @@ export const handleSweepStaleCourseDeletions: HatchetHandlers['handleSweepStaleC
 
         const normalizedJob = await normalizeStaleCourseDeletionJob(
           redis,
-          globalCtx.prisma,
-          job
+          globalCtx,
+          job,
+          (message) => executionCtx.logger.warn(message)
         )
         if (isTerminalCourseDeletionStatus(normalizedJob.status)) {
           normalizedJobs += 1

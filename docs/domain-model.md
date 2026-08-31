@@ -59,31 +59,32 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ## Course deletion
 
-**Deleting a non-assessment course does not normally delete its live quizzes.**
-The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
-hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
-`SetNull`, so linked live quizzes are disconnected and remain in the activity
-list. The optional `deleteDraftActivities` argument on
-`packages/graphql/src/services/courses.ts:deleteCourse` additionally
-hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
-every other status are still disconnected. The lecturer UI keeps this option
-off by default and describes it in activity-level terms: the asynchronous
-activities already cascade with the course, while opting in additionally
-removes linked draft live quizzes
-(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+**Deleting a non-assessment course retains the course and its data.** The
+Hatchet worker sets `Course.isDeleted = true`; active-course filters then remove
+the course from lecturer, controller, participant, sharing, and mutation
+surfaces. Participations, groups, results, leaderboards, and linked activities
+remain stored, as do permissions needed for a deliberate future recovery. The
+optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` permanently deletes
+linked `LiveQuiz`, `PracticeQuiz`, `MicroLearning`, and `GroupActivity` records
+in `PublicationStatus.DRAFT`; activities in every other status are retained.
 
-The manage frontend starts deletion through `startCourseDeletion`, persists the
-Redis-backed job id in `localStorage`, and polls `courseDeletionStatuses` until
-the worker reports a terminal state. The modal closes after Hatchet accepts the
-job rather than waiting for the cascade; the course list is refetched only
-after completion or failure. The worker rechecks course-level `ADMIN` access
-and calls `packages/graphql/src/services/courses.ts:deleteCourse`, which keeps
-the deletion and derived-permission recomputation in one interactive
-transaction with a ten-minute timeout. A transaction-level advisory lock on the
-course id prevents background retries and legacy callers from executing the
-destructive transaction concurrently. A missing course row is the durable
-success marker for retries and stale-job reconciliation. The legacy
-`deleteCourse` mutation remains available for rolling-client compatibility.
+The manage frontend uses `startCourseDeletion` exclusively. It closes the modal
+after Hatchet accepts the job; an ambiguous publication acknowledgement keeps
+the modal open and can be retried with the same job id. It persists the
+Redis-backed job id, course id, and optional draft-cleanup choice in
+`localStorage`, and polls `courseDeletionStatuses` without showing lifecycle
+notifications. While the job is active, the affected course is hidden across
+tabs and reloads; linked draft activities are hidden too when their deletion
+was selected. Terminal polling removes the local target and refetches the
+course list. The worker rechecks course-level `ADMIN` access and calls
+`packages/graphql/src/services/courses.ts:deleteCourse`, which applies optional
+draft cleanup and the course soft-delete marker in one interactive transaction
+with a transaction-level advisory lock. `Course.isDeleted = true` is the
+durable success marker for retries and stale-job reconciliation; an absent row
+is also accepted for compatibility with deletion jobs committed by older code.
+The synchronous `deleteCourse` mutation remains temporarily available to
+rolling clients and invokes the same soft-delete transaction.
 
 ## Course duplication
 

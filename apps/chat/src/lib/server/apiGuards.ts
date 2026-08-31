@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 export async function getParticipantId(
@@ -67,7 +67,7 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   }
 
   const row = (await prisma.chatbot.findUnique({
-    where: { id: parsedId.data },
+    where: { id: parsedId.data, course: { isDeleted: false } },
     // `status` is always selected on top of the caller's projection so this one
     // guard can enforce publication for every participant route.
     select: { ...select, status: true },
@@ -139,6 +139,7 @@ export async function requireParticipation(
           courseId,
           participantId,
         },
+        course: { isDeleted: false },
       },
     })
 

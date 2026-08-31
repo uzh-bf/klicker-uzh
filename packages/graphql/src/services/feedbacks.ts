@@ -1,12 +1,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
+const activeLiveQuizCourseFilter = {
+  OR: [{ courseId: null }, { course: { isDeleted: false } }],
+}
+
 export async function getFeedbacks(
   { quizId }: { quizId: string },
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
+    where: { id: quizId, ...activeLiveQuizCourseFilter },
     include: {
       feedbacks: {
         include: { responses: { orderBy: { createdAt: 'desc' } } },
@@ -29,6 +33,7 @@ export async function upvoteFeedback(
   return ctx.prisma.feedback.update({
     where: {
       id: feedbackId,
+      liveQuiz: activeLiveQuizCourseFilter,
     },
     data: {
       votes: { increment: increment },
@@ -47,6 +52,7 @@ export async function voteFeedbackResponse(
   return ctx.prisma.feedbackResponse.update({
     where: {
       id: id,
+      feedback: { liveQuiz: activeLiveQuizCourseFilter },
     },
     data: {
       positiveReactions: { increment: incrementUpvote },
@@ -65,6 +71,7 @@ export async function createFeedback(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id: quizId,
+      ...activeLiveQuizCourseFilter,
     },
   })
 
@@ -75,7 +82,7 @@ export async function createFeedback(
       isPublished: !quiz.isModerationEnabled,
       content,
       liveQuiz: {
-        connect: { id: quizId },
+        connect: { id: quizId, ...activeLiveQuizCourseFilter },
       },
       participant: isLoggedInParticipant
         ? {
@@ -156,7 +163,7 @@ export async function addConfusionTimestep(
       difficulty,
       speed,
       liveQuiz: {
-        connect: { id: quizId },
+        connect: { id: quizId, ...activeLiveQuizCourseFilter },
       },
       createdAt: new Date(),
     },

@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import {
+import type {
   LiveQuiz,
   MicroLearning,
   PracticeQuiz,
@@ -9,7 +9,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
-import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
+import type { ActivityOlatConfigurationKey, ActivityType } from './types.js'
 
 export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({
@@ -24,7 +24,10 @@ export async function getCourses(provider: string, providerAccountId: string) {
         select: {
           // find all shared non-archived courses (permission level irrelevant - read permissions are sufficient)
           objects: {
-            where: { courseId: { not: null }, course: { isArchived: false } },
+            where: {
+              courseId: { not: null },
+              course: { isArchived: false, isDeleted: false },
+            },
             select: { course: { select: { id: true, name: true } } },
           },
         },
@@ -91,6 +94,7 @@ export async function getCourseActivityTypes(
   const course = await prisma.course.findUnique({
     where: {
       id: courseID,
+      isDeleted: false,
       permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
     },
     select: {
@@ -213,6 +217,7 @@ export async function getActivities(
     const course = await prisma.course.findUnique({
       where: {
         id: courseID,
+        isDeleted: false,
         permissions: {
           some: {
             userId: account.userId,
@@ -241,6 +246,7 @@ export async function getActivities(
   const course = await prisma.course.findUnique({
     where: {
       id: courseID,
+      isDeleted: false,
       permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
     },
     select: {

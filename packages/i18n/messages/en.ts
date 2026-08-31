@@ -3334,51 +3334,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showArchive: 'Show archive',
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
-      courseDeletionStatusTab: 'Course deletions',
-      courseDeletionPendingBadge: 'Deletion in progress',
-      courseDeletionStatusCount:
-        '{count, plural, one {# course deletion in progress} other {# course deletions in progress}}',
-      courseDeletionStatusTitle: 'Course deletion in progress',
-      courseDeletionStatusDescription:
-        'You can continue working while the selected courses are deleted.',
-      courseDeletionStarted:
-        'Deletion of “{name}” started. You can continue working.',
-      courseDeletionSucceeded: 'Course “{name}” was deleted.',
-      courseDeletionFailed:
-        'The course could not be deleted. Please try again.',
-      courseDeletionAccessFailed:
-        'The course could not be deleted because the required access is missing.',
-      courseDeletionInProgress:
-        'Deletion of this course is already in progress.',
       courseDeletionMessage:
-        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
-      noParticipationsToDelete: 'This course contains no participations.',
-      deleteParticipations:
-        '{number} participant(s) of this course will lose their collected points and access to all course materials and activities.',
-      noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
-      disconnectLiveQuizzes:
-        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
+        'The course will be hidden and made inaccessible in the background. Its activities, participations, groups, results, and leaderboard data will be retained.',
       deleteDraftActivitiesOption:
-        'Also irreversibly delete all linked draft activities.',
-      deleteDraftActivities:
-        'All linked draft activities will be irreversibly deleted. Any remaining live quizzes will be disconnected from the course and remain accessible through the activity list.',
-      noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
-      deletePracticeQuizzes:
-        '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
-      noMicroLearningsToDelete: 'This course contains no microlearnings.',
-      deleteMicroLearnings:
-        '{number} microlearning(s) (including their results) will be irreversibly deleted.',
-      noGroupActivitiesToDelete: 'This course contains no group activities.',
-      deleteGroupActivities:
-        '{number} group activitie(s) (including their submissions) will be irreversibly deleted.',
-      noParticipantGroupsToDelete:
-        'This course contains no participant groups.',
-      deleteParticipantGroups:
-        '{number} participant group(s) will be irreversibly deleted.',
-      noLeaderboardEntriesToDelete:
-        'This course contains no leaderboard entries.',
-      deleteLeaderboardEntries:
-        '{number} leaderboard entrie(s) will be irreversibly deleted.',
+        'Also permanently delete {number, plural, one {the # linked draft activity} other {all # linked draft activities}}.',
       activityAnalytics: 'Activity Analytics',
     },
     course: {

@@ -544,7 +544,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   })
 
   // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
+  const deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
     if (group.participants.length === 1) {
       deletionPromises.push(
@@ -829,7 +829,7 @@ export async function createParticipantAccount(
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, isDeleted: false },
     })
 
     if (!course || course.isAssessmentEnabled) {
@@ -991,7 +991,7 @@ export async function loginParticipantWithLti(
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, isDeleted: false },
     })
 
     if (!course || course.isAssessmentEnabled) {

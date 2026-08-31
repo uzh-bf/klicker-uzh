@@ -1,4 +1,3 @@
-import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -13,7 +12,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import EventEmitter from 'events'
+import type EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import {
@@ -23,6 +22,7 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
+import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   splitGroupsFinal,
@@ -55,7 +55,7 @@ export async function createParticipantGroup(
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
   })
 
   if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
@@ -92,7 +92,7 @@ export async function joinRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
   })
 
   if (!course || !course.isGroupCreationEnabled) {
@@ -124,7 +124,7 @@ export async function leaveRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course and if a corresponding pool entry exists
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       groupAssignmentPoolEntries: { where: { participantId: ctx.user.sub } },
     },
@@ -203,6 +203,7 @@ export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunning
     // fetch all courses with future group deadlines
     const courses = await globalCtx.prisma.course.findMany({
       where: {
+        isDeleted: false,
         randomAssignmentFinalized: false,
         isGroupCreationEnabled: true,
         groupDeadlineDate: { gt: new Date() },
@@ -365,6 +366,7 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
     // fetch all courses with past group deadlines
     const courses = await globalCtx.prisma.course.findMany({
       where: {
+        isDeleted: false,
         randomAssignmentFinalized: false,
         isGroupCreationEnabled: true,
         groupDeadlineDate: {
@@ -498,8 +500,6 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
         await executionCtx.logger.error(
           `[ERROR] [FinalRandomGroupAssignments] Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${e || 'missing'}`
         )
-
-        continue
       }
     }
 
@@ -518,6 +518,7 @@ export async function manualRandomGroupAssignments(
   const course = await ctx.prisma.course.findUnique({
     where: {
       id: courseId,
+      isDeleted: false,
       randomAssignmentFinalized: false,
       isGroupCreationEnabled: true,
     },
@@ -628,6 +629,7 @@ export async function joinParticipantGroup(
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
     where: {
       courseId_code: { courseId, code },
+      course: { isDeleted: false },
     },
     include: {
       course: true,
@@ -682,7 +684,7 @@ export async function leaveParticipantGroup(
 ) {
   // find participantgroup with corresponding id
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
-    where: { id: groupId },
+    where: { id: groupId, courseId, course: { isDeleted: false } },
     include: { participants: { include: { leaderboards: true } } },
   })
 
@@ -762,7 +764,7 @@ export async function renameParticipantGroup(
   }
 
   const updatedGroup = await ctx.prisma.participantGroup.update({
-    where: { id: groupId },
+    where: { id: groupId, course: { isDeleted: false } },
     data: { name: name.trim() },
   })
 
@@ -784,7 +786,7 @@ export async function getParticipantGroups(
     where: { id: ctx.user.sub },
     include: {
       participantGroups: {
-        where: { course: { id: courseId } },
+        where: { course: { id: courseId, isDeleted: false } },
         include: {
           messages: {
             orderBy: { createdAt: 'desc' },
@@ -887,7 +889,7 @@ export async function manipulateGroupActivity(
 
   // get the course to which the practice quiz should be assigned
   const course = await prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
 
@@ -1137,7 +1139,9 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
 
     const groupsWithParticipants =
       await globalCtx.prisma.participantGroup.findMany({
-        where: { course: { endDate: { gt: new Date() } } },
+        where: {
+          course: { endDate: { gt: new Date() }, isDeleted: false },
+        },
         include: {
           participants: {
             include: {
@@ -1230,6 +1234,7 @@ export async function getGroupActivityDetails(
         ],
       },
       isDeleted: false,
+      course: { isDeleted: false },
     },
     include: {
       course: true,
@@ -1320,7 +1325,11 @@ export async function startGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id: activityId, status: DB.PublicationStatus.PUBLISHED },
+    where: {
+      id: activityId,
+      status: DB.PublicationStatus.PUBLISHED,
+      course: { isDeleted: false },
+    },
     include: {
       course: true,
       clues: { orderBy: { displayName: 'asc' } },
@@ -1441,7 +1450,10 @@ export async function submitGroupActivityDecisions(
 ) {
   const groupActivityInstance =
     await ctx.prisma.groupActivityInstance.findUnique({
-      where: { id: activityId },
+      where: {
+        id: activityId,
+        groupActivity: { course: { isDeleted: false } },
+      },
       include: {
         groupActivity: true,
         group: { include: { participants: { where: { id: ctx.user.sub } } } },
@@ -1453,7 +1465,7 @@ export async function submitGroupActivityDecisions(
   if (
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
-    !!groupActivityInstance.decisionsSubmittedAt ||
+    groupActivityInstance.decisionsSubmittedAt ||
     groupActivityInstance.groupActivity.status === DB.PublicationStatus.DRAFT ||
     groupActivityInstance.groupActivity.status ===
       DB.PublicationStatus.SCHEDULED ||
@@ -1574,7 +1586,7 @@ export async function getGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, course: { isDeleted: false } },
     include: {
       course: true,
       clues: true,
@@ -1868,7 +1880,7 @@ export async function deleteGroupActivity(
   }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
-  let groupActivity = await ctx.prisma.groupActivity.findUnique({
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
       activityInstances: true,
@@ -2105,6 +2117,7 @@ export async function getCourseGroupActivities(
   const course = await ctx.prisma.course.findUnique({
     where: {
       id: courseId,
+      isDeleted: false,
       participations: { some: { participantId: ctx.user.sub } },
     },
     include: {
@@ -2139,6 +2152,7 @@ export async function getGroupActivityInstances(
       groupActivity: {
         course: {
           id: courseId,
+          isDeleted: false,
         },
       },
       group: {
@@ -2407,8 +2421,8 @@ export async function finalizeGroupActivityGrading(
       participantAchievementMap
     )) {
       // keep track of the total number of points and XP awarded (for student timeline update)
-      let pointsAwarded: number | undefined = undefined
-      let xpAwarded: number | undefined = undefined
+      let pointsAwarded: number | undefined
+      let xpAwarded: number | undefined
 
       for (const id of results.achievements) {
         // create the participant achievement instance
@@ -2494,7 +2508,7 @@ export async function getCourseGroups(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, isDeleted: false },
     include: {
       participantGroups: {
         include: {
@@ -2524,7 +2538,7 @@ export async function addMessageToGroup(
 ) {
   // ensure that the currently logged in user is actually a participant of the group
   const group = await ctx.prisma.participantGroup.findUnique({
-    where: { id: groupId },
+    where: { id: groupId, course: { isDeleted: false } },
     include: {
       participants: true,
     },
@@ -2563,13 +2577,11 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
   async ({ groupActivityId }, globalCtx) => {
     try {
       const groupActivity = await globalCtx.prisma.groupActivity.findUnique({
-        where: {
-          id: groupActivityId,
-          isDeleted: false,
-          status: DB.PublicationStatus.PUBLISHED,
-          scheduledEndAt: { lte: new Date() },
-        },
+        where: { id: groupActivityId },
+        include: { course: { select: { isDeleted: true } } },
       })
+
+      if (groupActivity?.course.isDeleted) return true
 
       if (!groupActivity) {
         await sendTeamsNotification({
@@ -2581,9 +2593,27 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
         )
       }
 
+      if (
+        groupActivity.isDeleted ||
+        groupActivity.status !== DB.PublicationStatus.PUBLISHED ||
+        groupActivity.scheduledEndAt > new Date()
+      ) {
+        await sendTeamsNotification({
+          scope: 'hatchet/group-activity-end',
+          text: `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`,
+        })
+        throw new Error(
+          `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`
+        )
+      }
+
       // end the group activity
       const updatedGroupActivity = await globalCtx.prisma.groupActivity.update({
-        where: { id: groupActivityId },
+        where: {
+          id: groupActivityId,
+          isDeleted: false,
+          course: { isDeleted: false },
+        },
         data: { status: DB.PublicationStatus.ENDED },
       })
 
@@ -2616,12 +2646,11 @@ export const handlePublishScheduledGroupActivity: HatchetHandlers['handlePublish
     try {
       // check if the group activity exists and if its start date is in the past
       const groupActivity = await globalCtx.prisma.groupActivity.findUnique({
-        where: {
-          id: groupActivityId,
-          scheduledStartAt: { lte: new Date() },
-          status: DB.PublicationStatus.SCHEDULED,
-        },
+        where: { id: groupActivityId },
+        include: { course: { select: { isDeleted: true } } },
       })
+
+      if (groupActivity?.course.isDeleted) return true
 
       if (!groupActivity) {
         await sendTeamsNotification({
@@ -2633,9 +2662,27 @@ export const handlePublishScheduledGroupActivity: HatchetHandlers['handlePublish
         )
       }
 
+      if (
+        groupActivity.isDeleted ||
+        groupActivity.status !== DB.PublicationStatus.SCHEDULED ||
+        groupActivity.scheduledStartAt > new Date()
+      ) {
+        await sendTeamsNotification({
+          scope: 'hatchet/group-activity-start',
+          text: `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`
+        )
+      }
+
       // publish the group activity
       await globalCtx.prisma.groupActivity.update({
-        where: { id: groupActivityId },
+        where: {
+          id: groupActivityId,
+          isDeleted: false,
+          course: { isDeleted: false },
+        },
         data: { status: DB.PublicationStatus.PUBLISHED },
       })
 

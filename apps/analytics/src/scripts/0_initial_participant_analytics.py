@@ -3,6 +3,7 @@
 
 from datetime import datetime
 from prisma import Prisma
+from prisma.types import CourseWhereInput
 import pandas as pd
 
 # set the python path correctly for module imports to work
@@ -79,15 +80,15 @@ if compute_monthly:
 # Fetch all ongoing / past courses
 if compute_course:
     curr_date = datetime.now().strftime("%Y-%m-%d")
-    courses = db.course.find_many(
-        where={
-            # Incremental scripts can add this statement to reduce the amount of required computations
-            # 'endDate': {
-            #     'gt': datetime.now().strftime('%Y-%m-%d') + 'T00:00:00.000Z'
-            # }
-            "startDate": {"lte": curr_date + "T23:59:59.999Z"},
-        }
-    )
+    course_filter: CourseWhereInput = {
+        "isDeleted": False,
+        # Incremental scripts can add this statement to reduce the amount of required computations
+        # 'endDate': {
+        #     'gt': datetime.now().strftime('%Y-%m-%d') + 'T00:00:00.000Z'
+        # }
+        "startDate": {"lte": datetime.now().replace(hour=23, minute=59, second=59, microsecond=999000)},
+    }
+    courses = db.course.find_many(where=course_filter)
 
     df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
     print("Found {} courses with a start date before {}".format(len(df_courses), curr_date))

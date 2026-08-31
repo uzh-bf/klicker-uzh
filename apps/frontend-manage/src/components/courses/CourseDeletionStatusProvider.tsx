@@ -1,7 +1,4 @@
 import { useApolloClient, useLazyQuery, useMutation } from '@apollo/client'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { faChevronUp } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CourseDeletionJobStatus,
   type CourseDeletionStatus as CourseDeletionStatusData,
@@ -10,15 +7,6 @@ import {
   GetUserCoursesDocument,
   StartCourseDeletionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { getGraphQLErrorCode } from '@lib/utils/graphqlErrors'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  toast,
-} from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import {
   createContext,
   type ReactNode,
@@ -32,13 +20,7 @@ import {
 
 type CourseDeletionJob = Pick<
   CourseDeletionStatusData,
-  | 'courseId'
-  | 'courseName'
-  | 'createdAt'
-  | 'errorType'
-  | 'id'
-  | 'status'
-  | 'updatedAt'
+  'courseId' | 'createdAt' | 'id' | 'isQueued' | 'status'
 >
 
 type CourseDeletionStatusResponse =
@@ -49,9 +31,12 @@ interface StartCourseDeletionArgs {
   deleteDraftActivities: boolean
 }
 
+type CourseDeletionTarget = StartCourseDeletionArgs
+
 interface CourseDeletionStatusContextValue {
+  isCourseDeletionStateInitialized: boolean
   isCourseDeletionActive: (courseId: string) => boolean
-  isCourseDeletionStatusHydrating: boolean
+  isDraftActivityDeletionActive: (courseId: string) => boolean
   startCourseDeletion: (args: StartCourseDeletionArgs) => Promise<boolean>
 }
 
@@ -62,7 +47,6 @@ const COURSE_DELETION_LEGACY_STORAGE_KEY = 'course-deletion-job-ids'
 const COURSE_DELETION_STORAGE_KEY_PREFIX = 'course-deletion-job:'
 const COURSE_DELETION_POLL_INTERVAL = 5000
 const COURSE_DELETION_STATUS_BATCH_SIZE = 50
-const COURSE_DELETION_HANDLED_TERMINAL_JOB_LIMIT = 100
 
 function isActiveCourseDeletionStatus(status: CourseDeletionJob['status']) {
   return (
@@ -128,13 +112,62 @@ function readStoredCourseDeletionJobIds() {
   }
 }
 
-function writeStoredCourseDeletionJobId(jobId: string) {
+function readStoredCourseDeletionTargets() {
+  if (typeof window === 'undefined') {
+    return {} as Record<string, CourseDeletionTarget>
+  }
+
+  const targetsByJobId: Record<string, CourseDeletionTarget> = {}
+  try {
+    for (let index = 0; index < window.localStorage.length; index++) {
+      const key = window.localStorage.key(index)
+      if (!key?.startsWith(COURSE_DELETION_STORAGE_KEY_PREFIX)) continue
+
+      const storedTarget = window.localStorage.getItem(key)
+      if (!storedTarget || storedTarget === '1') continue
+
+      let target: CourseDeletionTarget | null = null
+      try {
+        const parsedTarget = JSON.parse(storedTarget) as unknown
+        if (
+          typeof parsedTarget === 'object' &&
+          parsedTarget !== null &&
+          'courseId' in parsedTarget &&
+          typeof parsedTarget.courseId === 'string' &&
+          'deleteDraftActivities' in parsedTarget &&
+          typeof parsedTarget.deleteDraftActivities === 'boolean'
+        ) {
+          target = {
+            courseId: parsedTarget.courseId,
+            deleteDraftActivities: parsedTarget.deleteDraftActivities,
+          }
+        }
+      } catch {
+        // Values from the previous storage format contain only the course ID.
+        target = { courseId: storedTarget, deleteDraftActivities: false }
+      }
+
+      if (target) {
+        targetsByJobId[key.slice(COURSE_DELETION_STORAGE_KEY_PREFIX.length)] =
+          target
+      }
+    }
+  } catch (error) {
+    console.error('Failed to read persisted course deletion targets', error)
+  }
+  return targetsByJobId
+}
+
+function writeStoredCourseDeletionTarget(
+  jobId: string,
+  target: CourseDeletionTarget
+) {
   if (typeof window === 'undefined') return
 
   try {
     window.localStorage.setItem(
       `${COURSE_DELETION_STORAGE_KEY_PREFIX}${jobId}`,
-      '1'
+      JSON.stringify(target)
     )
   } catch (error) {
     console.error('Failed to persist course deletion jobs', error)
@@ -153,97 +186,30 @@ function removeStoredCourseDeletionJobId(jobId: string) {
   }
 }
 
-function CourseDeletionStatusDropdown({
-  jobs,
-}: Readonly<{ jobs: CourseDeletionJob[] }>) {
-  const t = useTranslations()
-
-  if (jobs.length === 0) return null
-
-  return (
-    <div
-      className="fixed right-4 bottom-20 z-30 max-w-[calc(100vw-2rem)]"
-      data-cy="course-deletion-loading"
-      role="status"
-    >
-      <Popover>
-        <PopoverTrigger
-          className="flex h-12 items-center gap-3 rounded-md border border-gray-200 bg-white px-4 text-left text-sm shadow-lg transition hover:border-primary-80 focus:outline-none focus:ring-2 focus:ring-primary-80"
-          data-cy="course-deletion-status-trigger"
-        >
-          <Loader basic data={{ cy: 'course-deletion-spinner' }} />
-          <span className="max-w-[14rem] truncate font-bold text-gray-900">
-            {t('manage.courseList.courseDeletionStatusTab')}
-          </span>
-          <span className="sr-only">
-            {t('manage.courseList.courseDeletionStatusCount', {
-              count: jobs.length,
-            })}
-          </span>
-          <span
-            aria-hidden="true"
-            className="rounded-full bg-red-700 px-2 py-0.5 text-xs font-bold text-white"
-          >
-            {jobs.length}
-          </span>
-          <FontAwesomeIcon
-            aria-hidden="true"
-            className="h-3 w-3 text-gray-600"
-            icon={faChevronUp}
-          />
-        </PopoverTrigger>
-        <PopoverContent
-          align="end"
-          className="w-[min(24rem,calc(100vw-2rem))] p-0"
-          side="top"
-        >
-          <div className="border-b border-gray-100 p-4">
-            <div className="flex items-center gap-2 font-bold text-gray-900">
-              <FontAwesomeIcon icon={faTrashCan} className="h-4 w-4" />
-              {t('manage.courseList.courseDeletionStatusTitle')}
-            </div>
-            <p className="mt-1 text-sm text-gray-600">
-              {t('manage.courseList.courseDeletionStatusDescription')}
-            </p>
-          </div>
-          <ul className="max-h-72 overflow-y-auto">
-            {jobs.map((job) => (
-              <li
-                className="flex items-start gap-3 border-gray-100 border-t px-4 py-3 first:border-t-0"
-                key={job.id}
-              >
-                <Loader basic data={{ cy: 'course-deletion-spinner' }} />
-                <div className="min-w-0 truncate font-bold text-gray-900">
-                  {job.courseName}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </PopoverContent>
-      </Popover>
-    </div>
-  )
-}
-
 export function CourseDeletionProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const t = useTranslations()
   const client = useApolloClient()
   const [startCourseDeletionMutation] = useMutation(StartCourseDeletionDocument)
   const [jobIds, setJobIds] = useState<string[]>([])
   const [jobsById, setJobsById] = useState<Record<string, CourseDeletionJob>>(
     {}
   )
+  const [targetsByJobId, setTargetsByJobId] = useState<
+    Record<string, CourseDeletionTarget>
+  >({})
   const [storageInitialized, setStorageInitialized] = useState(false)
-  const handledTerminalJobIdsRef = useRef(new Set<string>())
   const inFlightCourseIdsRef = useRef(new Set<string>())
   const jobIdsRef = useRef<string[]>([])
+  const targetsByJobIdRef = useRef<Record<string, CourseDeletionTarget>>({})
 
   useEffect(() => {
     const storedJobIds = readStoredCourseDeletionJobIds()
+    const storedTargets = readStoredCourseDeletionTargets()
     jobIdsRef.current = storedJobIds
+    targetsByJobIdRef.current = storedTargets
     setJobIds(storedJobIds)
+    setTargetsByJobId(storedTargets)
     setStorageInitialized(true)
   }, [])
 
@@ -256,9 +222,12 @@ export function CourseDeletionProvider({
         return
       }
       const storedJobIds = readStoredCourseDeletionJobIds()
+      const storedTargets = readStoredCourseDeletionTargets()
       const storedJobIdSet = new Set(storedJobIds)
       jobIdsRef.current = storedJobIds
+      targetsByJobIdRef.current = storedTargets
       setJobIds(storedJobIds)
+      setTargetsByJobId(storedTargets)
       setJobsById((currentJobs) =>
         Object.fromEntries(
           Object.entries(currentJobs).filter(([jobId]) =>
@@ -272,36 +241,61 @@ export function CourseDeletionProvider({
     return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
-  const addJobId = useCallback((jobId: string) => {
-    writeStoredCourseDeletionJobId(jobId)
-    const storedJobIds = readStoredCourseDeletionJobIds()
-    const nextJobIds = [
-      ...new Set([...jobIdsRef.current, ...storedJobIds, jobId]),
-    ]
+  const addJobId = useCallback(
+    (jobId: string, target: CourseDeletionTarget) => {
+      writeStoredCourseDeletionTarget(jobId, target)
+      const storedJobIds = readStoredCourseDeletionJobIds()
+      const nextJobIds = [
+        ...new Set([...jobIdsRef.current, ...storedJobIds, jobId]),
+      ]
 
-    jobIdsRef.current = nextJobIds
-    setJobIds(nextJobIds)
-  }, [])
+      jobIdsRef.current = nextJobIds
+      setJobIds(nextJobIds)
+      targetsByJobIdRef.current = {
+        ...targetsByJobIdRef.current,
+        [jobId]: target,
+      }
+      setTargetsByJobId(targetsByJobIdRef.current)
+    },
+    []
+  )
 
   const removeJobId = useCallback((jobId: string) => {
     removeStoredCourseDeletionJobId(jobId)
     const storedJobIds = readStoredCourseDeletionJobIds()
-    removeStoredCourseDeletionJobId(jobId)
     const nextJobIds = storedJobIds.filter((id) => id !== jobId)
     jobIdsRef.current = nextJobIds
     setJobIds(nextJobIds)
+    const { [jobId]: _removedTarget, ...nextTargets } =
+      targetsByJobIdRef.current
+    targetsByJobIdRef.current = nextTargets
+    setTargetsByJobId(nextTargets)
     setJobsById((currentJobs) => {
       const { [jobId]: _removedJob, ...nextJobs } = currentJobs
       return nextJobs
     })
   }, [])
 
-  const upsertJob = useCallback((job: CourseDeletionJob) => {
-    setJobsById((currentJobs) => ({
-      ...currentJobs,
-      [job.id]: job,
-    }))
-  }, [])
+  const upsertJob = useCallback(
+    (job: CourseDeletionJob, target?: CourseDeletionTarget) => {
+      const nextTarget = target ??
+        targetsByJobIdRef.current[job.id] ?? {
+          courseId: job.courseId,
+          deleteDraftActivities: false,
+        }
+      writeStoredCourseDeletionTarget(job.id, nextTarget)
+      targetsByJobIdRef.current = {
+        ...targetsByJobIdRef.current,
+        [job.id]: nextTarget,
+      }
+      setTargetsByJobId(targetsByJobIdRef.current)
+      setJobsById((currentJobs) => ({
+        ...currentJobs,
+        [job.id]: job,
+      }))
+    },
+    []
+  )
 
   const [fetchStatuses] = useLazyQuery(GetCourseDeletionStatusesDocument, {
     fetchPolicy: 'network-only',
@@ -317,6 +311,7 @@ export function CourseDeletionProvider({
       for (const jobId of requestedJobIds) {
         if (currentJobIdSet.has(jobId) && !returnedJobIds.has(jobId)) {
           removeJobId(jobId)
+          shouldRefetchCourses = true
         }
       }
 
@@ -331,45 +326,8 @@ export function CourseDeletionProvider({
         }
 
         if (!isTerminalCourseDeletionStatus(job.status)) continue
-        if (handledTerminalJobIdsRef.current.has(job.id)) continue
-
-        handledTerminalJobIdsRef.current.add(job.id)
-        if (
-          handledTerminalJobIdsRef.current.size >
-          COURSE_DELETION_HANDLED_TERMINAL_JOB_LIMIT
-        ) {
-          const oldestJobId = handledTerminalJobIdsRef.current
-            .values()
-            .next().value
-          if (oldestJobId) {
-            handledTerminalJobIdsRef.current.delete(oldestJobId)
-          }
-        }
         removeJobId(job.id)
         shouldRefetchCourses = true
-
-        if (job.status === CourseDeletionJobStatus.Completed) {
-          toast({
-            type: 'success',
-            message: (
-              <span data-cy="course-deletion-succeeded">
-                {t('manage.courseList.courseDeletionSucceeded', {
-                  name: job.courseName,
-                })}
-              </span>
-            ),
-            options: { duration: 6000 },
-          })
-        } else {
-          toast({
-            type: 'error',
-            message:
-              job.errorType === 'access'
-                ? t('manage.courseList.courseDeletionAccessFailed')
-                : t('manage.courseList.courseDeletionFailed'),
-            options: { duration: 6000 },
-          })
-        }
       }
 
       if (shouldRefetchCourses) {
@@ -380,7 +338,7 @@ export function CourseDeletionProvider({
           )
       }
     },
-    [client, removeJobId, t, upsertJob]
+    [client, removeJobId, upsertJob]
   )
 
   const hasJobs = jobIds.length > 0
@@ -410,11 +368,14 @@ export function CourseDeletionProvider({
           const result = await fetchStatuses({
             variables: { ids: batchJobIds },
           })
-          if (result.errors && !cancelled) {
-            console.error(
-              'Failed to poll course deletion status',
-              result.errors
-            )
+          if (result.errors) {
+            if (!cancelled) {
+              console.error(
+                'Failed to poll course deletion status',
+                result.errors
+              )
+            }
+            continue
           }
 
           const statuses = result.data?.courseDeletionStatuses
@@ -453,30 +414,27 @@ export function CourseDeletionProvider({
         ),
     [jobsById]
   )
-  const hasUnresolvedJobs = useMemo(
-    () => jobIds.some((jobId) => !jobsById[jobId]),
-    [jobIds, jobsById]
-  )
-
   const isCourseDeletionActive = useCallback(
     (courseId: string) =>
       inFlightCourseIdsRef.current.has(courseId) ||
+      Object.values(targetsByJobId).some(
+        (target) => target.courseId === courseId
+      ) ||
       activeJobs.some((job) => job.courseId === courseId),
-    [activeJobs]
+    [activeJobs, targetsByJobId]
+  )
+  const isDraftActivityDeletionActive = useCallback(
+    (courseId: string) =>
+      Object.values(targetsByJobId).some(
+        (target) => target.courseId === courseId && target.deleteDraftActivities
+      ),
+    [targetsByJobId]
   )
 
   const startCourseDeletion = useCallback(
     async ({ courseId, deleteDraftActivities }: StartCourseDeletionArgs) => {
-      if (
-        inFlightCourseIdsRef.current.has(courseId) ||
-        hasUnresolvedJobs ||
-        activeJobs.some((job) => job.courseId === courseId)
-      ) {
-        toast({
-          type: 'error',
-          message: t('manage.courseList.courseDeletionInProgress'),
-          options: { duration: 6000 },
-        })
+      const existingJob = activeJobs.find((job) => job.courseId === courseId)
+      if (inFlightCourseIdsRef.current.has(courseId) || existingJob?.isQueued) {
         return false
       }
 
@@ -489,67 +447,40 @@ export function CourseDeletionProvider({
         const job = result.data?.startCourseDeletion
 
         if (job) {
-          upsertJob(job)
-          addJobId(job.id)
-          toast({
-            type: 'success',
-            message: (
-              <span data-cy="course-deletion-started">
-                {t('manage.courseList.courseDeletionStarted', {
-                  name: job.courseName,
-                })}
-              </span>
-            ),
-            options: { duration: 6000 },
-          })
-          return true
+          const target = { courseId: job.courseId, deleteDraftActivities }
+          upsertJob(job, target)
+          addJobId(job.id, target)
+          return job.isQueued
         }
-
-        toast({
-          type: 'error',
-          message: t('manage.courseList.courseDeletionFailed'),
-          options: { duration: 6000 },
-        })
       } catch (error) {
-        const code = getGraphQLErrorCode(error)
-        toast({
-          type: 'error',
-          message:
-            code === 'COURSE_DELETION_IN_PROGRESS'
-              ? t('manage.courseList.courseDeletionInProgress')
-              : t('manage.courseList.courseDeletionFailed'),
-          options: { duration: 6000 },
-        })
-        console.error(error)
+        console.error('Failed to start course deletion', error)
       } finally {
         inFlightCourseIdsRef.current.delete(courseId)
       }
 
       return false
     },
-    [
-      activeJobs,
-      addJobId,
-      hasUnresolvedJobs,
-      startCourseDeletionMutation,
-      t,
-      upsertJob,
-    ]
+    [activeJobs, addJobId, startCourseDeletionMutation, upsertJob]
   )
 
   const value = useMemo(
     () => ({
+      isCourseDeletionStateInitialized: storageInitialized,
       isCourseDeletionActive,
-      isCourseDeletionStatusHydrating: hasUnresolvedJobs,
+      isDraftActivityDeletionActive,
       startCourseDeletion,
     }),
-    [hasUnresolvedJobs, isCourseDeletionActive, startCourseDeletion]
+    [
+      isCourseDeletionActive,
+      isDraftActivityDeletionActive,
+      startCourseDeletion,
+      storageInitialized,
+    ]
   )
 
   return (
     <CourseDeletionStatusContext.Provider value={value}>
       {children}
-      <CourseDeletionStatusDropdown jobs={activeJobs} />
     </CourseDeletionStatusContext.Provider>
   )
 }

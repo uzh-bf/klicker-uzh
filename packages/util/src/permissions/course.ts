@@ -6,7 +6,7 @@
  */
 
 import * as DB from '@klicker-uzh/prisma/client'
-import { type PrismaTransactionClient } from '../types.js'
+import type { PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import { inversePermissionLevelMap } from './constants.js'
 import {
@@ -144,13 +144,13 @@ export async function recomputeCoursePermissionsUser(
   }
 
   // determine the maximum access level of the user
-  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
-  let parentPermissionId: number | undefined = undefined
-  let derived = false
+  let maxAccessLevel: DB.PermissionLevel | undefined
+  let parentPermissionId: number | undefined
+  const derived = false
 
-  if (course.ownerId === userId) {
+  if (!course.isDeleted && course.ownerId === userId) {
     maxAccessLevel = DB.PermissionLevel.OWNER
-  } else if (course.directPermissions.length > 0) {
+  } else if (!course.isDeleted && course.directPermissions.length > 0) {
     // determine the highest available direct permission level (groups and individual direct permissions)
     const { maxDirectPermission, directPermissionId } =
       getMaxAccessLevelIndividual({
@@ -298,7 +298,7 @@ export async function recomputeCoursePermissionsObject(
   // determine the access map based on ownership and direct permissions (no derived access on courses is possible)
   const userAccess = getMaxAccessLevelCombined({
     directPermissions: course.directPermissions,
-    objectDeleted: false, // soft-deletion is not possible for courses
+    objectDeleted: course.isDeleted,
     ownerId: course.ownerId,
   })
 

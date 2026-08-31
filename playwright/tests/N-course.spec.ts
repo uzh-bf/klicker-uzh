@@ -931,43 +931,162 @@ async function openStudentGroupTab(page: Page) {
 
 async function confirmCourseDeletion(page: Page) {
   const finalConfirm = page.getByTestId('course-deletion-modal-confirm')
-
-  for (let ix = 0; ix < 10; ix++) {
-    if (await finalConfirm.isEnabled().catch(() => false)) {
-      await finalConfirm.click()
-      return
-    }
-
-    const confirmButtons = page.getByRole('button', { name: 'Confirm' })
-    const count = await confirmButtons.count()
-    let clicked = false
-
-    for (let buttonIx = 0; buttonIx < count; buttonIx++) {
-      const button = confirmButtons.nth(buttonIx)
-      if (await button.isEnabled().catch(() => false)) {
-        await button.click()
-        clicked = true
-        break
-      }
-    }
-
-    if (!clicked) break
-  }
-
   await expect(finalConfirm).toBeEnabled()
   await finalConfirm.click()
+}
+
+async function mockPendingCourseDeletionStatus({
+  courseId,
+  courseName,
+  jobId,
+  page,
+}: {
+  courseId: string
+  courseName: string
+  jobId: string
+  page: Page
+}) {
+  const persistedOperations = JSON.parse(
+    await readFile(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const statusHash = persistedOperations.GetCourseDeletionStatuses
+
+  const installMock = ({
+    courseId,
+    courseName,
+    jobId,
+    statusHash,
+  }: {
+    courseId: string
+    courseName: string
+    jobId: string
+    statusHash: string
+  }) => {
+    const testWindow = window as typeof window & {
+      __courseDeletionStatusPollCount?: number
+      __courseDeletionStatusMockInstalled?: boolean
+    }
+    if (testWindow.__courseDeletionStatusMockInstalled) return
+    testWindow.__courseDeletionStatusMockInstalled = true
+
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      let isStatusPoll = false
+
+      if (
+        typeof input === 'string' ||
+        input instanceof URL ||
+        input instanceof Request
+      ) {
+        try {
+          const url = new URL(
+            input instanceof Request ? input.url : String(input),
+            window.location.origin
+          )
+          isStatusPoll = (url.searchParams.get('extensions') ?? '').includes(
+            statusHash
+          )
+        } catch {
+          // Relative or malformed URL; inspect a JSON body below.
+        }
+      }
+
+      if (!isStatusPoll && typeof init?.body === 'string') {
+        try {
+          isStatusPoll =
+            JSON.parse(init.body).operationName === 'GetCourseDeletionStatuses'
+        } catch {
+          // Non-JSON request; pass it through unchanged.
+        }
+      }
+
+      if (!isStatusPoll) return originalFetch(input, init)
+
+      testWindow.__courseDeletionStatusPollCount =
+        (testWindow.__courseDeletionStatusPollCount ?? 0) + 1
+      const responseMode = window.localStorage.getItem(
+        'course-deletion-test-status-mode'
+      )
+      if (responseMode === 'partial-error') {
+        return new window.Response(
+          JSON.stringify({
+            data: { courseDeletionStatuses: [] },
+            errors: [{ message: 'Synthetic partial status failure' }],
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+
+      return new window.Response(
+        JSON.stringify({
+          data: {
+            courseDeletionStatuses:
+              responseMode === 'missing'
+                ? []
+                : [
+                    {
+                      id: jobId,
+                      status: 'PENDING',
+                      courseId,
+                      courseName,
+                      isQueued: true,
+                      errorType: null,
+                      errorMessage: null,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    },
+                  ],
+          },
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+  }
+  const mockArgs = { courseId, courseName, jobId, statusHash }
+  await page.addInitScript(installMock, mockArgs)
+  await page.evaluate(installMock, mockArgs)
+}
+
+async function setCourseDeletionTracking({
+  active,
+  courseId,
+  deleteDraftActivities,
+  jobId,
+  page,
+}: {
+  active: boolean
+  courseId: string
+  deleteDraftActivities: boolean
+  jobId: string
+  page: Page
+}) {
+  await page.evaluate(
+    ({ active, courseId, deleteDraftActivities, jobId }) => {
+      const storageKey = `course-deletion-job:${jobId}`
+      if (active) {
+        window.localStorage.setItem(
+          storageKey,
+          JSON.stringify({ courseId, deleteDraftActivities })
+        )
+      } else {
+        window.localStorage.removeItem(storageKey)
+      }
+
+      const storageEvent = new Event('storage')
+      Object.defineProperty(storageEvent, 'key', { value: storageKey })
+      window.dispatchEvent(storageEvent)
+    },
+    { active, courseId, deleteDraftActivities, jobId }
+  )
 }
 
 async function expectCourseDeletionCompleted(page: Page, courseName: string) {
   await expect(
     page.getByTestId('course-deletion-modal-confirm')
   ).not.toBeVisible()
-  await expect(page.getByTestId('course-deletion-started')).toHaveText(
-    `Deletion of “${courseName}” started. You can continue working.`
-  )
-  await expect(page.getByTestId('course-deletion-succeeded')).toHaveText(
-    `Course “${courseName}” was deleted.`
-  )
   await expect(
     page.getByTestId(`course-list-button-${courseName}`)
   ).not.toBeVisible({ timeout: 30_000 })
@@ -2280,334 +2399,171 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
 })
 
 // ===========================================================================
-// Part 4: Course deletion and required confirmations
+// Part 4: Background course deletion
 // ===========================================================================
 test.describe('Part 4: Course deletion', () => {
   test.beforeEach(async ({ loginLecturer }) => {
     await loginLecturer()
   })
 
-  test('Makes a course read-only while its deletion is pending', async ({
+  test('Silently hides a course while its deletion is pending', async ({
     page,
   }) => {
     const jobId = '88888888-8888-4888-8888-888888888888'
-    const persistedOperations = JSON.parse(
-      await readFile(
-        new URL(
-          '../../packages/graphql/src/public/client.json',
-          import.meta.url
-        ),
-        'utf8'
-      )
-    ) as Record<string, string>
-    const statusHash = persistedOperations.GetCourseDeletionStatuses
-
     await openCourseInManage(page, PAST_COURSE.name)
     const courseId = new URL(page.url()).pathname.split('/').at(-1)
     expect(courseId).toBeTruthy()
-    await page.getByTestId('course-settings-button').click()
-    await expect(page.getByTestId('course-name')).toBeVisible()
-    await page.evaluate(
-      ({ courseId, courseName, jobId, statusHash }) => {
-        const testWindow = window as typeof window & {
-          __courseDeletionPollDeferred?: boolean
-          __courseDeletionPollResolved?: boolean
-          __courseDeletionPollStarted?: boolean
-          __resolveCourseDeletionPoll?: () => void
-        }
-        const originalFetch = window.fetch.bind(window)
-        window.fetch = async (input, init) => {
-          let isStatusPoll = false
-
-          if (
-            typeof input === 'string' ||
-            input instanceof URL ||
-            input instanceof Request
-          ) {
-            try {
-              const url = new URL(
-                input instanceof Request ? input.url : String(input),
-                window.location.origin
-              )
-              isStatusPoll = (
-                url.searchParams.get('extensions') ?? ''
-              ).includes(statusHash)
-            } catch {
-              // Relative or malformed URL; inspect a JSON body below.
-            }
-          }
-
-          if (!isStatusPoll && typeof init?.body === 'string') {
-            try {
-              isStatusPoll =
-                JSON.parse(init.body).operationName ===
-                'GetCourseDeletionStatuses'
-            } catch {
-              // Non-JSON request; pass it through unchanged.
-            }
-          }
-
-          if (!isStatusPoll) return originalFetch(input, init)
-
-          if (testWindow.__courseDeletionPollDeferred) {
-            testWindow.__courseDeletionPollStarted = true
-            await new Promise<void>((resolve) => {
-              testWindow.__resolveCourseDeletionPoll = resolve
-            })
-            testWindow.__courseDeletionPollResolved = true
-          }
-
-          return new window.Response(
-            JSON.stringify({
-              data: {
-                courseDeletionStatuses: [
-                  {
-                    id: jobId,
-                    status: 'PENDING',
-                    courseId,
-                    courseName,
-                    errorType: null,
-                    errorMessage: null,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  },
-                ],
-              },
-            }),
-            { headers: { 'Content-Type': 'application/json' } }
-          )
-        }
-      },
-      {
-        courseId: courseId!,
-        courseName: PAST_COURSE.name,
-        jobId,
-        statusHash,
-      }
-    )
-
-    const setDeletionTracking = async (active: boolean) => {
-      await page.evaluate(
-        ({ active, jobId }) => {
-          const storageKey = `course-deletion-job:${jobId}`
-          if (active) {
-            window.localStorage.setItem(storageKey, '1')
-          } else {
-            window.localStorage.removeItem(storageKey)
-          }
-
-          window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
-        },
-        { active, jobId }
-      )
-    }
-
-    await setDeletionTracking(true)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('course-name')).not.toBeAttached()
-    await expect(page.getByTestId('course-settings-button')).toBeDisabled()
-
-    await setDeletionTracking(false)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).not.toBeAttached()
-    await expect(page.getByTestId('course-settings-button')).toBeEnabled()
-    await expect(page.getByTestId('course-name')).not.toBeAttached()
-
-    await chooseCourseAction(page, 'course-share-button')
-    await expect(page.getByTestId('close-share-object')).toBeVisible()
-    await setDeletionTracking(true)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('close-share-object')).not.toBeAttached()
-    await setDeletionTracking(false)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).not.toBeAttached()
-    await expect(page.getByTestId('close-share-object')).not.toBeAttached()
-
-    await chooseCourseAction(page, 'course-duplicate-button')
-    await expect(page.getByTestId('course-name')).toBeVisible()
-    await setDeletionTracking(true)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('course-name')).not.toBeAttached()
-    await setDeletionTracking(false)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).not.toBeAttached()
-    await expect(page.getByTestId('course-name')).not.toBeAttached()
-
-    await page.getByTestId('course-activity-log-button').click()
-    await expect(page.getByTestId('activity-log-dialog')).toBeVisible()
-    await setDeletionTracking(true)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
-    await expect(page.getByTestId('course-activity-log-button')).toBeDisabled()
-    await setDeletionTracking(false)
-    await expect(
-      page.getByTestId('course-deletion-read-only-notice')
-    ).not.toBeAttached()
-    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
-
-    await setDeletionTracking(true)
-    await page.getByTestId('course-actions-menu').click()
-    await expect(page.getByTestId('course-duplicate-button')).toHaveAttribute(
-      'data-disabled'
-    )
-
-    await page.getByTestId('courses').click()
-    await expect(
-      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
-    ).toBeVisible()
-    await expect(
-      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId(`activity-log-course-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId(`archive-course-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-
-    await setDeletionTracking(false)
-    await expect(
-      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
-    ).not.toBeAttached()
-    await expect(
-      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeEnabled()
-    await expect(
-      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
-    ).toBeEnabled()
-
-    await page.getByTestId(`activity-log-course-${PAST_COURSE.name}`).click()
-    await expect(page.getByTestId('activity-log-dialog')).toBeVisible()
-    await setDeletionTracking(true)
-    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
-    await expect(
-      page.getByTestId(`activity-log-course-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await setDeletionTracking(false)
-    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
-
-    await page.evaluate((jobId) => {
-      const testWindow = window as typeof window & {
-        __courseDeletionPollDeferred?: boolean
-        __courseDeletionPollResolved?: boolean
-        __courseDeletionPollStarted?: boolean
-      }
-      testWindow.__courseDeletionPollDeferred = true
-      testWindow.__courseDeletionPollResolved = false
-      testWindow.__courseDeletionPollStarted = false
-      const storageKey = `course-deletion-job:${jobId}`
-      window.localStorage.setItem(storageKey, '1')
-      window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
-    }, jobId)
-    await page.waitForFunction(() =>
-      Boolean(
-        (
-          window as typeof window & {
-            __courseDeletionPollStarted?: boolean
-          }
-        ).__courseDeletionPollStarted
-      )
-    )
-    await expect(
-      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
-    ).not.toBeAttached()
-    await page.evaluate((jobId) => {
-      const testWindow = window as typeof window & {
-        __resolveCourseDeletionPoll?: () => void
-      }
-      const storageKey = `course-deletion-job:${jobId}`
-      window.localStorage.removeItem(storageKey)
-      window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
-      testWindow.__resolveCourseDeletionPoll?.()
-    }, jobId)
-    await page.waitForFunction(() =>
-      Boolean(
-        (
-          window as typeof window & {
-            __courseDeletionPollResolved?: boolean
-          }
-        ).__courseDeletionPollResolved
-      )
-    )
-    await page.waitForTimeout(250)
-    await expect(
-      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
-    ).not.toBeAttached()
-    await expect(
-      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeEnabled()
-    await expect(
-      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
-    ).toBeEnabled()
-
-    const secondJobId = '99999999-9999-4999-8999-999999999999'
-    const secondPage = await page.context().newPage()
-    await secondPage.goto(page.url())
-    await expect(
-      secondPage.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeVisible()
-    await secondPage.evaluate(() => {
-      window.fetch = async () => await new Promise<never>(() => {})
+    const courseUrl = page.url()
+    await mockPendingCourseDeletionStatus({
+      courseId: courseId!,
+      courseName: PAST_COURSE.name,
+      jobId,
+      page,
     })
 
-    await Promise.all([
-      page.evaluate((id) => {
-        window.localStorage.setItem(`course-deletion-job:${id}`, '1')
-      }, jobId),
-      secondPage.evaluate((id) => {
-        window.localStorage.setItem(`course-deletion-job:${id}`, '1')
-      }, secondJobId),
-    ])
-
-    await expect
-      .poll(async () => {
-        return await page.evaluate(() =>
-          Object.keys(window.localStorage)
-            .filter((key) => key.startsWith('course-deletion-job:'))
-            .sort()
-        )
-      })
-      .toEqual(
-        [
-          `course-deletion-job:${jobId}`,
-          `course-deletion-job:${secondJobId}`,
-        ].sort()
-      )
+    await setCourseDeletionTracking({
+      active: true,
+      courseId: courseId!,
+      deleteDraftActivities: false,
+      jobId,
+      page,
+    })
+    await expect(page).toHaveURL(/\/courses$/)
+    await expect(page.getByTestId('course-deletion-loading')).not.toBeAttached()
     await expect(
       page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
-    ).toBeDisabled()
+    ).not.toBeAttached()
+    await expect(
+      page.getByTestId(`course-list-button-${RUNNING_COURSE.name}`)
+    ).toBeEnabled()
 
-    await page.evaluate(
-      (ids) => {
-        for (const id of ids) {
-          const storageKey = `course-deletion-job:${id}`
-          window.localStorage.removeItem(storageKey)
-          window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
-        }
-      },
-      [jobId, secondJobId]
+    await page.reload()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).not.toBeAttached()
+
+    await page.goto(courseUrl)
+    await expect(page).toHaveURL(/\/courses$/)
+    await expect(page.getByTestId('course-settings-button')).not.toBeAttached()
+
+    await page.evaluate(() => {
+      window.localStorage.setItem(
+        'course-deletion-test-status-mode',
+        'partial-error'
+      )
+    })
+    await page.reload()
+    await page.waitForFunction(
+      () =>
+        (
+          window as typeof window & {
+            __courseDeletionStatusPollCount?: number
+          }
+        ).__courseDeletionStatusPollCount === 1
     )
-    await secondPage.close()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).not.toBeAttached()
+    await expect
+      .poll(
+        async () =>
+          await page.evaluate((id) =>
+            window.localStorage.getItem(`course-deletion-job:${id}`)
+          ),
+        jobId
+      )
+      .not.toBeNull()
+
+    await page.evaluate(() => {
+      window.localStorage.setItem('course-deletion-test-status-mode', 'missing')
+    })
+    await page.reload()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeEnabled()
+    await expect
+      .poll(
+        async () =>
+          await page.evaluate((id) =>
+            window.localStorage.getItem(`course-deletion-job:${id}`)
+          ),
+        jobId
+      )
+      .toBeNull()
+    await page.evaluate(() => {
+      window.localStorage.removeItem('course-deletion-test-status-mode')
+    })
+  })
+
+  test('Hides linked drafts only when draft deletion is selected', async ({
+    page,
+  }) => {
+    const jobId = '99999999-9999-4999-8999-999999999999'
+    await openCourseInManage(page, RUNNING_COURSE.name)
+    const courseId = new URL(page.url()).pathname.split('/').at(-1)
+    expect(courseId).toBeTruthy()
+    await mockPendingCourseDeletionStatus({
+      courseId: courseId!,
+      courseName: RUNNING_COURSE.name,
+      jobId,
+      page,
+    })
+    await page.evaluate(() => {
+      window.localStorage.setItem('activity-page-size', JSON.stringify('all'))
+      window.localStorage.removeItem('activities-filtering-sorting')
+    })
+    await page.getByTestId('activities').click()
+
+    const draftActivities = [
+      page.getByTestId('activity-LIVE_QUIZ-Seed Live Quiz'),
+      page.getByTestId('activity-PRACTICE_QUIZ-Seed Practice Quiz'),
+      page.getByTestId('activity-MICRO_LEARNING-Seed Microlearning'),
+      page.getByTestId('activity-GROUP_ACTIVITY-Seed Group Activity'),
+    ]
+    for (const activity of draftActivities) {
+      await expect(activity).toBeVisible()
+    }
+
+    await setCourseDeletionTracking({
+      active: true,
+      courseId: courseId!,
+      deleteDraftActivities: true,
+      jobId,
+      page,
+    })
+    for (const activity of draftActivities) {
+      await expect(activity).not.toBeAttached()
+    }
+
+    await setCourseDeletionTracking({
+      active: false,
+      courseId: courseId!,
+      deleteDraftActivities: true,
+      jobId,
+      page,
+    })
+    for (const activity of draftActivities) {
+      await expect(activity).toBeVisible()
+    }
+
+    await setCourseDeletionTracking({
+      active: true,
+      courseId: courseId!,
+      deleteDraftActivities: false,
+      jobId,
+      page,
+    })
+    for (const activity of draftActivities) {
+      await expect(activity).toBeVisible()
+    }
+
+    await setCourseDeletionTracking({
+      active: false,
+      courseId: courseId!,
+      deleteDraftActivities: false,
+      jobId,
+      page,
+    })
   })
 
   test('Create a course with live quiz, practice quiz, and microlearning, and delete it again', async ({
@@ -2695,50 +2651,14 @@ test.describe('Part 4: Course deletion', () => {
 
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
 
-    // No participations — participation confirm should not exist
-    await expect(
-      page.getByTestId('course-deletion-participations-confirm')
-    ).not.toBeVisible()
-
-    // Changing the draft-deletion option invalidates the previous LQ confirmation
-    await expect(
-      page.getByTestId('course-deletion-live-quiz-confirm')
-    ).toBeVisible()
-    await page.getByTestId('course-deletion-live-quiz-confirm').click()
+    // The course data is retained by default; draft cleanup is the only option.
     await expect(
       page.getByTestId('course-deletion-delete-draft-activities')
     ).toBeVisible()
     await page.getByTestId('course-deletion-delete-draft-activities').click()
     await expect(
-      page.getByTestId('course-deletion-live-quiz-confirm')
-    ).toBeVisible()
-
-    // Confirm LQ, PQ, and ML deletion after opting into draft cleanup
-    await page.getByTestId('course-deletion-live-quiz-confirm').click()
-    await expect(
       page.getByTestId('course-deletion-modal-confirm')
-    ).toBeDisabled()
-
-    await expect(
-      page.getByTestId('course-deletion-practice-quiz-confirm')
-    ).toBeVisible()
-    await page.getByTestId('course-deletion-practice-quiz-confirm').click()
-    await expect(
-      page.getByTestId('course-deletion-modal-confirm')
-    ).toBeDisabled()
-
-    await expect(
-      page.getByTestId('course-deletion-micro-learning-confirm')
-    ).toBeVisible()
-    await page.getByTestId('course-deletion-micro-learning-confirm').click()
-    await expect(
-      page.getByTestId('course-deletion-modal-confirm')
-    ).not.toBeDisabled()
-
-    // Group activity: not created so should not be visible
-    await expect(
-      page.getByTestId('course-deletion-group-activity-confirm')
-    ).not.toBeVisible()
+    ).toBeEnabled()
 
     await page.getByTestId('course-deletion-modal-confirm').click()
     await expectCourseDeletionCompleted(page, DELETION.courseName)
@@ -2747,10 +2667,16 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).not.toBeVisible()
 
-    // Verify the linked draft live quiz was deleted instead of disconnected
+    // Verify linked draft activities of every created type were deleted.
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
+    ).not.toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByTestId(`activity-PRACTICE_QUIZ-${DELETION.pqName}`)
+    ).not.toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByTestId(`activity-MICRO_LEARNING-${DELETION.mlName}`)
     ).not.toBeVisible({ timeout: 30_000 })
   })
 
@@ -2773,26 +2699,23 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('course-deletion-modal-confirm').click()
     await expectCourseDeletionCompleted(page, COURSE1.nameNew)
 
-    // Delete gamified course (has participations and groups)
+    // Delete gamified course (its participations and groups are retained)
     await page.getByTestId(`delete-course-${COURSE2.name}`).click()
-    const participationsConfirm = page.getByTestId(
-      'course-deletion-participations-confirm'
-    )
-    if (
-      await participationsConfirm
-        .isVisible({ timeout: 2000 })
-        .catch(() => false)
-    ) {
-      await participationsConfirm.click()
-    }
-    const groupConfirm = page.getByTestId(
-      'course-deletion-participant-group-confirm'
-    )
-    if (await groupConfirm.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await groupConfirm.click()
-    }
     await confirmCourseDeletion(page)
     await expectCourseDeletionCompleted(page, COURSE2.name)
+
+    // UI deletion is intentionally soft; fixture cleanup remains physical so
+    // repeated E2E runs do not retain activities that reference this question.
+    for (const courseName of [
+      COURSE1.nameNew,
+      COURSE2.name,
+      DELETION.courseName,
+    ]) {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
 
     // Delete question
     await page.getByTestId('library').click()

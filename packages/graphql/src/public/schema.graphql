@@ -1115,6 +1115,7 @@ type CourseDeletionStatus {
   errorMessage: String
   errorType: String
   id: ID!
+  isQueued: Boolean!
   status: CourseDeletionJobStatus!
   updatedAt: Date!
 }
@@ -1193,6 +1194,7 @@ type CourseStudentTimelineEntry {
 }
 
 type CourseSummary {
+  numOfDraftActivities: Int!
   numOfDraftLiveQuizzes: Int!
   numOfGroupActivities: Int!
   numOfLeaderboardEntries: Int!

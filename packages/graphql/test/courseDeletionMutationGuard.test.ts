@@ -42,9 +42,27 @@ function createContext() {
         }),
         delete: activityLogEntryDelete,
       },
-      course: { findUnique: vi.fn() },
+      course: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'course-id',
+          isDeleted: false,
+        }),
+      },
+      feedback: {
+        findUnique: vi.fn().mockResolvedValue({
+          liveQuizId: 'live-quiz-id',
+        }),
+      },
+      feedbackResponse: {
+        findUnique: vi.fn().mockResolvedValue({
+          feedback: { liveQuizId: 'live-quiz-id' },
+        }),
+      },
       liveQuiz: {
-        findUnique: vi.fn().mockResolvedValue({ courseId: 'course-id' }),
+        findUnique: vi.fn().mockResolvedValue({
+          courseId: 'course-id',
+          course: { isDeleted: false },
+        }),
         update: liveQuizUpdate,
       },
     },
@@ -132,5 +150,52 @@ describe('course deletion mutation guard', () => {
       executeMutation('deleteActivityMessage', { id: 1 }, ctx)
     )
     expect(activityLogEntryDelete).not.toHaveBeenCalled()
+  })
+
+  it('rejects anonymous feedback writes while course deletion is active', async () => {
+    const { ctx } = createContext()
+
+    await expectDeletionInProgress(
+      executeMutation(
+        'createFeedback',
+        { quizId: 'live-quiz-id', content: 'Question' },
+        ctx
+      )
+    )
+    await expectDeletionInProgress(
+      executeMutation(
+        'addConfusionTimestep',
+        { quizId: 'live-quiz-id', difficulty: 1, speed: 1 },
+        ctx
+      )
+    )
+    await expectDeletionInProgress(
+      executeMutation('upvoteFeedback', { feedbackId: 1, increment: 1 }, ctx)
+    )
+    await expectDeletionInProgress(
+      executeMutation(
+        'voteFeedbackResponse',
+        { id: 1, incrementUpvote: 1, incrementDownvote: 0 },
+        ctx
+      )
+    )
+  })
+
+  it('rejects anonymous stack responses while course deletion is active', async () => {
+    const { ctx } = createContext()
+
+    await expectDeletionInProgress(
+      executeMutation(
+        'respondToElementStack',
+        {
+          courseId: 'course-id',
+          isOwner: false,
+          responses: [],
+          stackAnswerTime: 1,
+          stackId: 1,
+        },
+        ctx
+      )
+    )
   })
 })
