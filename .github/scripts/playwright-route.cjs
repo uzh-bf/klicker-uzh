@@ -48,8 +48,18 @@ function choosePlaywrightRoute(input) {
   }
 
   const reasons = []
+  const nonEmptyString = (value) =>
+    typeof value === 'string' && value.trim().length > 0
+  const validRepository = nonEmptyString(repository)
+  const validHeadRepository = nonEmptyString(headRepository)
+  const validAuthor = nonEmptyString(prAuthor)
+  const validPullRequestNumber =
+    typeof pullRequestNumber === 'string' && /^[1-9]\d*$/.test(pullRequestNumber)
   const samePublicRepository =
-    repositoryPrivate === 'false' && headRepository === repository
+    repositoryPrivate === 'false' &&
+    validRepository &&
+    validHeadRepository &&
+    headRepository === repository
   const bot =
     typeof prAuthor === 'string' && prAuthor.toLowerCase().endsWith('[bot]')
   const validDraft = prDraft === 'true' || prDraft === 'false'
@@ -61,12 +71,18 @@ function choosePlaywrightRoute(input) {
     smartDraftEnabled === 'true' ||
     exactCanaryMatch(smartDraftCanaryPr, pullRequestNumber)
 
+  if (!validRepository || !validHeadRepository) {
+    reasons.push('invalid-repository')
+  }
+  if (!validAuthor) reasons.push('invalid-author')
+  if (!validPullRequestNumber) reasons.push('invalid-pull-request')
   if (repositoryPrivate !== 'false') reasons.push('private-repository')
   if (headRepository !== repository) reasons.push('fork')
   if (bot) reasons.push('bot')
   if (!validDraft) reasons.push('invalid-draft-state')
 
-  const publicEligible = samePublicRepository && !bot && validDraft
+  const publicEligible =
+    samePublicRepository && validAuthor && validPullRequestNumber && !bot && validDraft
   if (forceHosted) reasons.push('force-hosted-canary')
 
   if (prDraft === 'true' && publicEligible && smartDraft) {

@@ -96,6 +96,19 @@ test('forks, bots, and private repositories remain hosted and full', () => {
   }
 })
 
+test('missing identity fields fail closed to hosted full execution', () => {
+  for (const overrides of [
+    { repository: undefined },
+    { headRepository: undefined },
+    { prAuthor: undefined },
+    { pullRequestNumber: undefined },
+  ]) {
+    const route = choosePlaywrightRoute(pullRequest(overrides))
+    assert.equal(route.route, 'hosted')
+    assert.equal(route.selectorPrState, 'ready')
+  }
+})
+
 test('the exact force-hosted canary overrides public execution', () => {
   const route = choosePlaywrightRoute(
     pullRequest({ forceHostedCanaryPr: '1234' })
