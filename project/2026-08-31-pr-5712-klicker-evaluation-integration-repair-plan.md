@@ -1,4 +1,4 @@
-# Klicker evaluation integration repair plan
+# PR 5712: Klicker evaluation integration repair plan
 
 ## Goal
 
@@ -9,21 +9,23 @@ route without weakening secret, retry, or evidence boundaries.
 ## Plan identity and authority
 
 - Klicker branch: `rs/klicker-evaluation-repair`
+- Klicker pull request: `#5712`
 - Klicker worktree:
   `trees/rs/klicker-evaluation-repair`
 - Klicker base: `origin/v3` at
   `5a21988fb1b4acd285d60d3c41f481f0a96be892`
 - Evaluation branch: `rs/klicker-integration-repair`
 - Evaluation worktree:
-  `/Users/rschlae/Git/ai/evaluation/trees/rs/klicker-integration-repair`
+  `trees/rs/klicker-integration-repair` in the private evaluator repository
 - Evaluation base: `origin/main` at
   `95d566fb26aec82bb01a98240fbb42d6564929ca`
-- User-approved terminal condition: scoped source repairs, repository-native
-  checks, required reviews, local commits, and a bounded live judge smoke test
-  only after values-free model visibility succeeds.
-- Withheld: push, pull or merge request creation, merge, deployment, secret or
-  permission mutation, tunnel or cluster-connectivity repair, real course data,
-  and a live Klicker target write.
+- User-approved terminal condition: publish the evaluator branch first, publish
+  the dependent Klicker branch, create both review requests, verify exact heads,
+  descriptions, mergeability, and CI, and mark them ready for review when their
+  gates pass.
+- Withheld: upstream integration, merge, deployment, secret or permission
+  mutation, tunnel or cluster-connectivity repair, real course data, and a live
+  Klicker target write.
 
 The dirty primary Klicker checkout, the stale `trees/eval-submodule` worktree,
 and the dirty evaluation primary checkout are outside this plan. They will not
@@ -33,8 +35,8 @@ be integrated, rebased, cleaned, or modified.
 
 - Lena's surviving Klicker branch is `origin/eval-submodule`. Pull request
   #5190 merged an earlier submodule integration; pull request #5543 closed
-  without merge. Her evaluation merge requests !10, !28, and !37 are merged,
-  and their source branches no longer exist.
+  without merge. Her earlier private evaluator changes are merged, and their
+  source branches no longer exist.
 - Current Klicker `v3` pins evaluation commit `86e4b978`, which is not on the
   current evaluation default branch. The wrapper references
   `klicker_chatbot.yaml`, but that metrics file never existed in the inspected
@@ -102,8 +104,8 @@ authenticated AI-SDK route.
 Local proof may use a command-scoped local submodule URL override. No local
 filesystem path enters `.gitmodules` or a commit. A Klicker gitlink to the local
 evaluation commit is not remotely consumable until that evaluation commit is
-published through the configured GitLab repository. Evaluation publication
-must precede any Klicker publication; both actions are withheld here.
+published through the configured private evaluator repository. Evaluation
+publication must precede Klicker publication.
 
 ## Delegation map
 
@@ -184,8 +186,8 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   fails clearly when its private dependency is absent.
 - Source, offline tests, local submodule proof, live judge transport, and live
   Klicker target quality remain separate evidence layers.
-- Both branches end with scoped local commits. Publication and all other
-  withheld actions remain unperformed.
+- Both branches end with scoped commits and published review requests. All
+  remaining withheld actions stay unperformed.
 
 ## Progress
 
@@ -254,5 +256,7 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
-- Publishing either branch remains withheld. The private evaluator must be
-  published before the public Klicker gitlink when publication is authorized.
+- The evaluator branch was published first and its private merge request is open
+  as a draft. The dependent Klicker branch was then published and pull request
+  #5712 is open as a draft. Exact-head CI and mergeability readback remain before
+  either review request can be marked ready.
