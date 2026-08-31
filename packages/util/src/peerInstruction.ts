@@ -221,6 +221,15 @@ function assertScope(scope: PeerInstructionScope) {
   }
 }
 
+export function isValidPeerInstructionScope(scope: PeerInstructionScope) {
+  try {
+    assertScope(scope)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function rootKey(scope: PeerInstructionScope) {
   assertScope(scope)
   return `pi:${scope.liveQuizId}:b:${scope.blockId}:e:${scope.originalExecution}`
@@ -512,6 +521,25 @@ export async function readPeerInstructionRevisionMessage({
 }) {
   const encoded = await redis.hget(attemptKeys(event).messages, event.messageId)
   return encoded ? (JSON.parse(encoded) as StoredRevisionMessage) : null
+}
+
+export async function readPeerInstructionRevisionMessageByIdentity({
+  redis,
+  scope,
+  instanceId,
+  identity,
+}: {
+  redis: Redis
+  scope: PeerInstructionScope
+  instanceId: number
+  identity: string
+}) {
+  const messageId = await redis.hget(claimsKey(scope, instanceId), identity)
+  if (!messageId) return null
+
+  const event: PeerInstructionRevisionEvent = { ...scope, messageId }
+  const message = await readPeerInstructionRevisionMessage({ redis, event })
+  return message ? { event, message } : null
 }
 
 export async function readPeerInstructionInstanceMeta({

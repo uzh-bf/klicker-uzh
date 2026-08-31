@@ -7,6 +7,8 @@ import type {
 import {
   createPeerInstructionParticipantIdentity,
   getPeerInstructionAnonymousIdentity,
+  isValidPeerInstructionScope,
+  readPeerInstructionRevisionMessageByIdentity,
   type PeerInstructionRevisionRegistration,
   registerPeerInstructionRevisionMessage,
   releasePeerInstructionRevisionMessage,
@@ -17,6 +19,26 @@ import type { Redis } from 'ioredis'
 type SubmissionResult = {
   status: number
   body: Record<string, string | number>
+}
+
+async function releaseRevisionClaim({
+  redis,
+  event,
+  releaseRevision,
+}: {
+  redis: Redis
+  event: PeerInstructionRevisionEvent
+  releaseRevision: typeof releasePeerInstructionRevisionMessage
+}) {
+  try {
+    await releaseRevision({ redis, event })
+  } catch (error) {
+    // Keep the queue failure response stable if claim cleanup is unavailable.
+    console.error('Failed to release Peer Instruction revision claim', {
+      messageId: event.messageId,
+      error,
+    })
+  }
 }
 
 export function getForwardedParticipantCookie(rawCookie?: string) {
@@ -136,6 +158,7 @@ export async function submitPeerInstructionRevision({
   redis,
   appSecret,
   pushEvent,
+  releaseRevision = releasePeerInstructionRevisionMessage,
   now = Date.now,
 }: {
   payload: unknown
@@ -146,11 +169,15 @@ export async function submitPeerInstructionRevision({
     eventName: string,
     event: PeerInstructionRevisionEvent
   ) => Promise<unknown>
+  releaseRevision?: typeof releasePeerInstructionRevisionMessage
   now?: () => number
 }): Promise<SubmissionResult> {
   const submission = parseSubmission(payload)
   if (!submission) {
     return { status: 400, body: { error: 'invalid_peer_instruction_response' } }
+  }
+  if (!isValidPeerInstructionScope(submission.scope)) {
+    return { status: 400, body: { error: 'invalid_peer_instruction_scope' } }
   }
 
   const identity = await resolveIdentity({
@@ -179,10 +206,38 @@ export async function submitPeerInstructionRevision({
       responseTimestamp,
     })
   } catch {
-    return { status: 400, body: { error: 'invalid_peer_instruction_scope' } }
+    return {
+      status: 503,
+      body: { error: 'peer_instruction_store_unavailable' },
+    }
   }
 
   if (registration === 'duplicate') {
+    let existing
+    try {
+      existing = await readPeerInstructionRevisionMessageByIdentity({
+        redis,
+        scope: submission.scope,
+        instanceId: submission.instanceId,
+        identity,
+      })
+    } catch {
+      return {
+        status: 503,
+        body: { error: 'peer_instruction_store_unavailable' },
+      }
+    }
+
+    if (existing?.message.status === 'accepted') {
+      try {
+        await pushEvent('peer-instruction-revision-received', existing.event)
+      } catch {
+        // An earlier request may already have published this accepted claim.
+        // Keep it for a later retry when this duplicate publication fails.
+        return { status: 503, body: { error: 'revision_queue_unavailable' } }
+      }
+    }
+
     return {
       status: 208,
       body: { status: 'response_recorded_before', responseTimestamp },
@@ -204,15 +259,7 @@ export async function submitPeerInstructionRevision({
   try {
     await pushEvent('peer-instruction-revision-received', event)
   } catch {
-    try {
-      await releasePeerInstructionRevisionMessage({ redis, event })
-    } catch (error) {
-      // Keep the queue failure response stable if claim cleanup is unavailable.
-      console.error('Failed to release Peer Instruction revision claim', {
-        messageId: event.messageId,
-        error,
-      })
-    }
+    await releaseRevisionClaim({ redis, event, releaseRevision })
     return { status: 503, body: { error: 'revision_queue_unavailable' } }
   }
 

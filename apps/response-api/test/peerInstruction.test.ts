@@ -39,7 +39,7 @@ describeRedis('Peer Instruction response API', () => {
     await redis.quit()
   })
 
-  it('publishes only an opaque event pointer and deduplicates concurrency', async () => {
+  it('keeps concurrent retries opaque and idempotent', async () => {
     const token = await signJWT(
       { sub: 'participant-1', role: 'PARTICIPANT' },
       'secret'
@@ -66,7 +66,8 @@ describeRedis('Peer Instruction response API', () => {
       }),
     ])
     expect(results.map((result) => result.status).sort()).toEqual([200, 208])
-    expect(published).toHaveLength(1)
+    expect(published).toHaveLength(2)
+    expect(published[0]).toEqual(published[1])
     expect(Object.keys(published[0]!).sort()).toEqual([
       'attempt',
       'blockId',
@@ -138,6 +139,98 @@ describeRedis('Peer Instruction response API', () => {
       accepted: 1,
       terminal: 0,
       failed: 0,
+    })
+  })
+
+  it('re-publishes an accepted claim when its first cleanup also fails', async () => {
+    const token = await signJWT(
+      { sub: 'participant-1', role: 'PARTICIPANT' },
+      'secret'
+    )
+    const published: PeerInstructionRevisionEvent[] = []
+    let publishAttempts = 0
+    const pushEvent = vi.fn(async (_name, event) => {
+      publishAttempts += 1
+      if (publishAttempts <= 2) throw new Error('queue unavailable')
+      published.push(event)
+    })
+
+    const failed = await submitPeerInstructionRevision({
+      payload,
+      cookie: `participant_token=${token}`,
+      redis,
+      appSecret: 'secret',
+      pushEvent,
+      releaseRevision: vi.fn(async () => {
+        throw new Error('redis unavailable')
+      }),
+    })
+    expect(failed.status).toBe(503)
+    expect(await readPeerInstructionAttemptStatus({ redis, scope })).toEqual({
+      ingress: 'open',
+      accepted: 1,
+      terminal: 0,
+      failed: 0,
+    })
+
+    const unavailableRetry = await submitPeerInstructionRevision({
+      payload,
+      cookie: `participant_token=${token}`,
+      redis,
+      appSecret: 'secret',
+      pushEvent,
+    })
+    expect(unavailableRetry).toMatchObject({
+      status: 503,
+      body: { error: 'revision_queue_unavailable' },
+    })
+    expect(await readPeerInstructionAttemptStatus({ redis, scope })).toEqual({
+      ingress: 'open',
+      accepted: 1,
+      terminal: 0,
+      failed: 0,
+    })
+
+    const retry = await submitPeerInstructionRevision({
+      payload,
+      cookie: `participant_token=${token}`,
+      redis,
+      appSecret: 'secret',
+      pushEvent,
+    })
+    expect(retry).toMatchObject({
+      status: 208,
+      body: { status: 'response_recorded_before' },
+    })
+    expect(published).toHaveLength(1)
+    expect(await readPeerInstructionAttemptStatus({ redis, scope })).toEqual({
+      ingress: 'open',
+      accepted: 1,
+      terminal: 0,
+      failed: 0,
+    })
+  })
+
+  it('returns a service error when the transient store is unavailable', async () => {
+    const token = await signJWT(
+      { sub: 'participant-1', role: 'PARTICIPANT' },
+      'secret'
+    )
+    const unavailableRedis = {
+      eval: vi.fn().mockRejectedValue(new Error('redis unavailable')),
+    } as unknown as Redis
+
+    const result = await submitPeerInstructionRevision({
+      payload,
+      cookie: `participant_token=${token}`,
+      redis: unavailableRedis,
+      appSecret: 'secret',
+      pushEvent: vi.fn(async () => undefined),
+    })
+
+    expect(result).toEqual({
+      status: 503,
+      body: { error: 'peer_instruction_store_unavailable' },
     })
   })
 })

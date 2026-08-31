@@ -5,6 +5,21 @@ import type {
   PeerInstructionQuestionType,
 } from '@klicker-uzh/types'
 
+function isValidChoiceResponse(value: unknown): value is {
+  ix: number
+  selected?: boolean
+} {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const entry = value as Record<string, unknown>
+  return (
+    typeof entry.ix === 'number' &&
+    Number.isInteger(entry.ix) &&
+    entry.ix >= 0 &&
+    (typeof entry.selected === 'boolean' ||
+      typeof entry.selected === 'undefined')
+  )
+}
+
 export function validateStudentResponse({
   type,
   response,
@@ -19,12 +34,9 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.choices) ||
       response.choices.length === 0 ||
-      !response.choices.every(
-        (entry) =>
-          typeof entry.ix === 'number' &&
-          (typeof entry.selected === 'boolean' ||
-            typeof entry.selected === 'undefined')
-      )
+      !response.choices.every(isValidChoiceResponse) ||
+      new Set(response.choices.map((entry) => entry.ix)).size !==
+        response.choices.length
     ) {
       return {
         valid: false,
@@ -102,7 +114,7 @@ export function validateStudentResponse({
 
   if (type === 'FREE_TEXT') {
     // response should be a string
-    if (!response.value || typeof response.value !== 'string') {
+    if (typeof response.value !== 'string' || !response.value.trim()) {
       return {
         valid: false,
         message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
@@ -131,12 +143,11 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      // TODO: re-introduce the following check once the incoming responses are guaranteed to be correct through response-api validation
-      // !response.selection.every((r) => typeof r === 'number') ||
-      response.selection.filter(
+      !response.selection.every(
         (entry) =>
-          entry !== -1 && typeof entry !== 'undefined' && entry !== null
-      ).length === 0 // at least one selection must be made (excluding skipped fields with value -1 / undefined / null)
+          typeof entry === 'number' && Number.isInteger(entry) && entry >= -1
+      ) ||
+      response.selection.every((entry) => entry === -1) // at least one selection must be made
     ) {
       return {
         valid: false,
@@ -163,7 +174,9 @@ export function validateStudentResponse({
               itemValue !== null &&
               Object.keys(itemValue).length > 0 &&
               Object.values(itemValue).every(
-                (criterionResponse) => typeof criterionResponse === 'number'
+                (criterionResponse) =>
+                  typeof criterionResponse === 'number' &&
+                  Number.isFinite(criterionResponse)
               )
           )
       )
