@@ -267,7 +267,11 @@ export function GenerationStatusProvider({
 
   useEffect(() => {
     if (!storageReady) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs))
+    } catch {
+      // Keep in-memory generation tracking available when browser storage fails.
+    }
   }, [jobs, storageReady])
 
   useEffect(() => {
