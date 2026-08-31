@@ -54,7 +54,8 @@ function choosePlaywrightRoute(input) {
   const validHeadRepository = nonEmptyString(headRepository)
   const validAuthor = nonEmptyString(prAuthor)
   const validPullRequestNumber =
-    typeof pullRequestNumber === 'string' && /^[1-9]\d*$/.test(pullRequestNumber)
+    typeof pullRequestNumber === 'string' &&
+    /^[1-9]\d*$/.test(pullRequestNumber)
   const samePublicRepository =
     repositoryPrivate === 'false' &&
     validRepository &&
@@ -82,7 +83,11 @@ function choosePlaywrightRoute(input) {
   if (!validDraft) reasons.push('invalid-draft-state')
 
   const publicEligible =
-    samePublicRepository && validAuthor && validPullRequestNumber && !bot && validDraft
+    samePublicRepository &&
+    validAuthor &&
+    validPullRequestNumber &&
+    !bot &&
+    validDraft
   if (forceHosted) reasons.push('force-hosted-canary')
 
   if (prDraft === 'true' && publicEligible && smartDraft) {

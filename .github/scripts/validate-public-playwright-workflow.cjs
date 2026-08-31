@@ -19,6 +19,10 @@ function readAction(root, name) {
   )
 }
 
+function namedSteps(text) {
+  return text.split(/\n(?=\s+- name: )/)
+}
+
 function validatePublicPlaywrightWorkflow(root) {
   const caller = readWorkflow(root, 'test-playwright.yml')
   const publicWorkflow = readWorkflow(root, 'public-pr-playwright-shards.yml')
@@ -27,6 +31,12 @@ function validatePublicPlaywrightWorkflow(root) {
     readAction(root, 'playwright-build'),
     readAction(root, 'playwright-shard'),
   ].join('\n')
+  const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
+    step.includes('uses: actions/cache/restore@v4')
+  )
+  const publicCacheContractSteps = namedSteps(publicActions).filter((step) =>
+    step.includes('id: cache-contract')
+  )
   const issues = []
 
   if (!caller.includes(EXPECTED_CALL)) {
@@ -159,6 +169,27 @@ function validatePublicPlaywrightWorkflow(root) {
   ) {
     issues.push(
       'selector shadow must be draft-only and hosted by the trusted preparation job'
+    )
+  }
+
+  if (
+    publicCacheRestoreSteps.length !== 3 ||
+    publicCacheRestoreSteps.some(
+      (step) => !step.includes('continue-on-error: true')
+    )
+  ) {
+    issues.push(
+      'public cache restores must fail open so cache-service errors do not fail Playwright'
+    )
+  }
+  if (
+    publicCacheContractSteps.length !== 2 ||
+    publicCacheContractSteps.some(
+      (step) => !step.includes('continue-on-error: true')
+    )
+  ) {
+    issues.push(
+      'public cache-contract computation must fail open so malformed candidate inputs use no cache'
     )
   }
 

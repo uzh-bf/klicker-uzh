@@ -68,6 +68,7 @@ runs:
 
     - name: Compute cache contract
       id: cache-contract
+      continue-on-error: true
       shell: bash
       run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
 
@@ -76,8 +77,9 @@ runs:
       run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
     - name: Restore pnpm cache
-      if: inputs.cache-enabled == 'true'
+      if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
       id: pnpm-cache
+      continue-on-error: true
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.STORE_PATH }}
@@ -86,8 +88,9 @@ runs:
           playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
 
     - name: Restore turbo build artifacts
-      if: inputs.cache-enabled == 'true'
+      if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
       id: turbo-cache
+      continue-on-error: true
       uses: actions/cache/restore@v4
       with:
         path: .turbo

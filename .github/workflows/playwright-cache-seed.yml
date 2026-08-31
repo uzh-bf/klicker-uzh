@@ -80,6 +80,7 @@ jobs:
 
       - name: Restore pnpm cache
         id: pnpm-cache
+        continue-on-error: true
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -89,6 +90,7 @@ jobs:
 
       - name: Restore Turbo cache
         id: turbo-cache
+        continue-on-error: true
         uses: actions/cache/restore@v4
         with:
           path: .turbo
