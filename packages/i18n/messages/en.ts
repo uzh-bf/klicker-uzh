@@ -1839,7 +1839,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       progress: 'Step {current} of {total}',
       replayTitle: 'Take the tour',
       replayDesc: 'A short walk through the KlickerUZH interface',
-      replayMenu: 'Show intro',
       onboarding: {
         welcomeTitle: 'Welcome to KlickerUZH',
         welcomeBody:

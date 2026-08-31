@@ -1851,7 +1851,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       progress: 'Schritt {current} von {total}',
       replayTitle: 'Tour starten',
       replayDesc: 'Ein kurzer Rundgang durch die KlickerUZH-Oberfläche',
-      replayMenu: 'Einführung anzeigen',
       onboarding: {
         welcomeTitle: 'Willkommen bei KlickerUZH',
         welcomeBody:

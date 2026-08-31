@@ -320,7 +320,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           // is label-only where the chat entry shows a compass.
           key: 'onboarding-tour',
           type: 'link',
-          label: t('manage.productTours.replayMenu'),
+          label: t('manage.productTours.replayTitle'),
           onClick: () => router.push(TOUR_REPLAY_HREF),
           data: { cy: 'menu-start-tour' },
         },
