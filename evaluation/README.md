@@ -22,8 +22,11 @@ The root wrapper uses the restricted `klicker-uzh-stg` Infisical operator
 profile. It maps only the approved LiteLLM credential, selects Klicker's
 namespaced Azure deployment, and points the framework at the FineCo ground
 truth and tool catalogue. Caller-provided model and framework settings win over
-these defaults. Set `LITELLM_API_BASE` to an approved reachable proxy route;
-the public repository does not store an internal hostname.
+these defaults. Changing only `EVAL_MODEL` leaves the Luna capability mapping
+unset, so a different model uses its own metadata; set both variables when a
+different deployment alias needs explicit capability metadata. Set
+`LITELLM_API_BASE` to an approved reachable proxy route; the public repository
+does not store an internal hostname.
 
 Eval mode judges an existing synthetic QA artifact; it does not query Klicker:
 

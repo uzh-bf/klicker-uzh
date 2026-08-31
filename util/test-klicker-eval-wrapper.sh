@@ -110,6 +110,19 @@ assert_line 'TOOL_PROFILE=caller-profile' "$CHILD_LOG"
 assert_line 'ARG=--tool-profile' "$CHILD_LOG"
 assert_line 'ARG=explicit-profile' "$CHILD_LOG"
 
+: >"$CHILD_LOG"
+env -i \
+  EVAL_MODEL='caller/model-with-own-metadata' \
+  LITELLM_API_BASE='https://caller.example.test' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval --qa-file synthetic-qa.json
+
+assert_line 'EVAL_MODEL=caller/model-with-own-metadata' "$CHILD_LOG"
+assert_line 'EVAL_MODEL_CAPABILITY_MODEL=' "$CHILD_LOG"
+
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"
 status=0

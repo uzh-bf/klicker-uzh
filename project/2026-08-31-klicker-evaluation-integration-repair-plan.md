@@ -199,12 +199,13 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
     judge entry point, plus normalized conversation imports.
   - `9f73aa6` — preserve inherited schema fallback and raw-response retry
     behavior when single-attempt mode is disabled.
-- Evaluation verification: 349 tests pass; the final correction tree has 127
-  focused passing tests, and Ruff format and lint pass. The private-safe
-  generic-continuity simplifier's reduction and the slice reviewer's findings
-  were applied. Final correction review is approved at `9f73aa6`.
+  - `e191248` — bind capability metadata to the configured alias and preserve
+    reserved property names during strict-schema traversal.
+- Evaluation verification: 351 tests pass; the final correction tree has 129
+  focused passing tests, and Ruff format and lint pass. The private-safe review
+  findings were applied; integrated re-review is pending at `e191248`.
 - Klicker Slice B implementation and verification are complete. The local
-  integration branch pins evaluator commit `9f73aa6`; the wrapper contract and
+  integration branch pins evaluator commit `e191248`; the wrapper contract and
   shell syntax pass, and all 20 FineCo cases validate with zero tool warnings,
   both supported modes, and matching expected tools.
 - Privacy correction: `LITELLM_API_BASE` is required at runtime. The public
@@ -213,8 +214,9 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   validator still reports 25 pre-existing core conformance errors in unrelated
   ADR, agent, screenshot, and solution files; the edited guide introduces no
   new core error.
-- The Klicker slice reviewer is approved, and the simplifier's accepted
-  test-isolation, dependency, and documentation reductions are applied.
+- The prior Klicker slice findings and the simplifier's accepted test-isolation,
+  dependency, and documentation reductions are applied. Current-head
+  revalidation is pending after the capability-binding correction.
 - The exact pinned evaluator passes a no-cost one-case eval against a local fake
   proxy with one `/v1/chat/completions` request, the exact Klicker alias, strict
   `json_schema`, and no parse request. A synthetic 503 produces one request and
