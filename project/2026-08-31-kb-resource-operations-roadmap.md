@@ -349,3 +349,9 @@ The package's final review must explicitly verify that source type and material 
 - The review identified one medium acceptance-evidence gap rather than a correctness issue. The manual desktop proof covered the authenticated English resource flow, category persistence, complete-KB summary, filter, and `Ingest all` confirmation. It did not confirm a live dispatch, mixed-result summary, duplicate-click behavior while work is active, or the German and error/pagination states.
 - This gap is explicitly accepted as deferred browser evidence, not as a source or security waiver. The automated Playwright run could not start because the host launcher requires Azurite under the Manage profile; the full profile previously OOM-killed the backend, and no runtime workaround was used. The deferred states remain required before merge or activation when a healthy routed runtime is available.
 - W1 is otherwise locally verified at `b30d8df0f`; the branch remains unpushed and unmerged. W2, deployment, live ingestion, graph generation, production actions, secret access/write, cluster writes, and cleanup remain out of scope.
+
+### 2026-08-31 — W1 published as draft PR
+
+- The W1 branch was pushed to `origin/rs/kb-resource-operations-w1` at `930aa455593d0388e9afeae61b72a6b496006ac9` and opened as draft PR `#5710` against `feat/kb-element-generation-followups`.
+- The initial PR readback reports `MERGEABLE` and GitGuardian passing; the repository checks, gitleaks, trusted policy, and OpenCodeReview were pending at publication. Build-only jobs were skipped by the branch filters.
+- The PR description carries the complete branch accounting, verification evidence, deferred browser states, and W2 follow-up. The branch remains draft; no merge, deployment, live ingestion, graph generation, production action, secret access/write, cluster write, or cleanup action has occurred.
