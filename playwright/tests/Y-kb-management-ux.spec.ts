@@ -1,5 +1,6 @@
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
+import { selectOption } from '../util/fixtures/activities.js'
 
 test.describe('Knowledge base management workspace', () => {
   test('keeps the resource workspace scannable and add flow keyboard-accessible in English and German', async ({
@@ -81,6 +82,7 @@ test.describe('Knowledge base management workspace', () => {
       let releasePendingUpload = () => {}
       let signalUploadStarted = () => {}
       let failNextKbMetricsRefresh = false
+      let bulkIngestCalls = 0
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -120,6 +122,25 @@ test.describe('Knowledge base management workspace', () => {
             contentType: 'application/json',
             body: JSON.stringify({
               data: { confirmKbFileUpload: { id: 'synthetic-resource' } },
+            }),
+          })
+          return
+        }
+        if (operationName === 'IngestAllKbResources') {
+          bulkIngestCalls += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                ingestAllKbResources: {
+                  queuedCount: 1,
+                  retriedFailedCount: 0,
+                  alreadyCurrentCount: 0,
+                  alreadyInProgressCount: 0,
+                  queueFailureCount: 0,
+                },
+              },
             }),
           })
           return
@@ -190,6 +211,11 @@ test.describe('Knowledge base management workspace', () => {
       await page
         .getByTestId('kb-url')
         .fill(`https://example.org/${resourceTitle.replaceAll(' ', '-')}`)
+      await selectOption(
+        page,
+        '[data-cy="kb-url-material-type"]',
+        'Administrative'
+      )
       failNextKbMetricsRefresh = true
       await page.getByTestId('add-kb-url-resource').click()
       await expect(modal).toBeHidden()
@@ -206,15 +232,48 @@ test.describe('Knowledge base management workspace', () => {
           name: /Latest ingestion|Letzte Verarbeitung/,
         })
       ).toBeVisible()
+      await expect(
+        resourceTable.getByRole('columnheader', {
+          name: /Material category|Materialkategorie/,
+        })
+      ).toBeVisible()
       const resourceRow = resourceTable.getByRole('row').filter({
         hasText: resourceTitle,
       })
       await expect(resourceRow).toBeVisible()
+      await expect(resourceRow).toContainText(/Administrative/)
       await expect(
         resourceRow.locator('[data-cy^="kb-resource-status-"]')
       ).toContainText(/Added|Hinzugefügt/)
+      await expect(page.getByTestId('kb-ingestion-summary')).toContainText(
+        /1 need ingestion/
+      )
+      await expect(page.getByTestId('ingest-all-kb-resources')).toBeVisible()
+      await selectOption(
+        page,
+        '[data-cy="kb-resource-material-type-filter"]',
+        'Administrative'
+      )
+      await expect(resourceRow).toBeVisible()
+      await selectOption(
+        page,
+        '[data-cy="kb-resource-material-type-filter"]',
+        'All'
+      )
+      await page.getByTestId('ingest-all-kb-resources').click()
+      const ingestAllModal = page.getByTestId('ingest-all-kb-resources-modal')
+      await expect(ingestAllModal).toBeVisible()
+      await expect(ingestAllModal).toContainText('1 resources')
+      await ingestAllModal
+        .getByTestId('confirm-ingest-all-kb-resources')
+        .click()
+      await expect(ingestAllModal).toBeHidden()
+      expect(bulkIngestCalls).toBe(1)
       await resourceRow.getByTestId(/inspect-kb-resource-/).click()
       await expect(page.getByTestId('kb-resource-inspector')).toBeVisible()
+      await expect(
+        page.getByTestId('kb-inspector-material-type')
+      ).toContainText('Administrative')
       await expect(
         page.getByTestId('ingest-kb-resource-inspector')
       ).toContainText(/Ingest|Verarbeiten/)

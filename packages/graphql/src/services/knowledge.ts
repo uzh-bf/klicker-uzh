@@ -52,6 +52,7 @@ const KB_DELETE_QUEUE_CONCURRENCY = 8
 const KB_DEFAULT_PAGE_SIZE = 20
 const KB_MAX_PAGE_SIZE = 50
 const KB_BULK_DELETE_LIMIT = 50
+const KB_BULK_INGEST_DISPATCH_CONCURRENCY = 8
 const KB_CURSOR_VERSION = 1
 const KB_MCP_SERVER_NAME = 'KB'
 const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
@@ -105,6 +106,72 @@ export interface KBResourceConnection {
   items: Array<DB.KBResource & { ingestionRuns: DB.KBIngestionRun[] }>
   pageInfo: KBPageInfo
   totalCount: number
+  needsIngestionCount: number
+  failedIngestionCount: number
+  inProgressCount: number
+}
+
+export interface KBIngestAllResult {
+  queuedCount: number
+  retriedFailedCount: number
+  alreadyCurrentCount: number
+  alreadyInProgressCount: number
+  queueFailureCount: number
+}
+
+type KBResourceReconciliationRecord = Pick<
+  DB.KBResource,
+  | 'status'
+  | 'resourceVersion'
+  | 'contentSha256'
+  | 'activeResourceVersion'
+  | 'activeContentSha256'
+  | 'ingestionAttemptId'
+>
+
+function hasCurrentServingIdentity(resource: KBResourceReconciliationRecord) {
+  return (
+    resource.activeResourceVersion !== null &&
+    resource.activeContentSha256 !== null &&
+    resource.contentSha256 !== null &&
+    resource.activeResourceVersion === resource.resourceVersion &&
+    resource.activeContentSha256 === resource.contentSha256
+  )
+}
+
+function getResourceReconciliationState(
+  resource: KBResourceReconciliationRecord,
+  currentRun?: Pick<DB.KBIngestionRun, 'status'>
+) {
+  if (
+    resource.status === DB.KBResourceStatus.QUEUED ||
+    resource.status === DB.KBResourceStatus.PROCESSING ||
+    currentRun?.status === DB.KBIngestionStatus.QUEUED ||
+    currentRun?.status === DB.KBIngestionStatus.PROCESSING
+  ) {
+    return 'in-progress' as const
+  }
+
+  // A newer platform serving revision is authoritative. Never create a
+  // lecturer attempt that would move this resource backwards.
+  if (
+    resource.activeResourceVersion !== null &&
+    resource.activeResourceVersion > resource.resourceVersion
+  ) {
+    return 'current' as const
+  }
+
+  if (
+    resource.status === DB.KBResourceStatus.ADDED ||
+    (resource.status === DB.KBResourceStatus.FAILED &&
+      !hasCurrentServingIdentity(resource)) ||
+    (resource.status === DB.KBResourceStatus.READY &&
+      !hasCurrentServingIdentity(resource))
+  ) {
+    return 'needs-ingestion' as const
+  }
+
+  return 'current' as const
 }
 
 function invalidPaginationInput(message: string): never {
@@ -265,6 +332,12 @@ function validateKbResourceTitle(title: string) {
     throw new GraphQLError('KB resource title is required')
   }
   return normalizedTitle
+}
+
+function normalizeKbResourceMaterialType(
+  materialType: DB.KBResourceMaterialType | null | undefined
+) {
+  return materialType ?? DB.KBResourceMaterialType.UNCLASSIFIED
 }
 
 async function getKbQuotaUsage(
@@ -716,6 +789,7 @@ export async function getKbResourcesConnection(
     search,
     type,
     status,
+    materialType,
   }: {
     kbId: string
     first?: number | null
@@ -723,6 +797,7 @@ export async function getKbResourcesConnection(
     search?: string | null
     type?: DB.KBResourceType | null
     status?: DB.KBIngestionStatus | null
+    materialType?: DB.KBResourceMaterialType | null
   },
   ctx: ContextWithUser
 ): Promise<KBResourceConnection> {
@@ -736,6 +811,7 @@ export async function getKbResourcesConnection(
     search: normalizedSearch,
     type: type ?? null,
     status: status ?? null,
+    materialType: materialType ?? null,
   })
   const cursor = decodePaginationCursor(after, 'resources', filterHash)
   const operationStatusResourceIds = status
@@ -777,6 +853,7 @@ export async function getKbResourcesConnection(
     },
     deletedAt: null,
     ...(type ? { type } : {}),
+    ...(materialType ? { materialType } : {}),
     ...(operationStatusResourceIds
       ? { id: { in: operationStatusResourceIds.map(({ id }) => id) } }
       : {}),
@@ -799,16 +876,36 @@ export async function getKbResourcesConnection(
       }
     : baseWhere
 
-  const [items, totalCount] = await Promise.all([
+  const [items, totalCount, summaryResources] = await Promise.all([
     ctx.prisma.kBResource.findMany({
       where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: pageSize + 1,
     }),
     ctx.prisma.kBResource.count({ where: baseWhere }),
+    ctx.prisma.kBResource.findMany({
+      where: {
+        kbId,
+        kb: {
+          is: {
+            ownerId: ctx.user.sub,
+            deletedAt: null,
+          },
+        },
+        deletedAt: null,
+      },
+      select: {
+        status: true,
+        resourceVersion: true,
+        contentSha256: true,
+        activeResourceVersion: true,
+        activeContentSha256: true,
+        ingestionAttemptId: true,
+      },
+    }),
   ])
-  const currentAttemptIds = items.flatMap(({ ingestionAttemptId }) =>
-    ingestionAttemptId ? [ingestionAttemptId] : []
+  const currentAttemptIds = summaryResources.flatMap(
+    ({ ingestionAttemptId }) => (ingestionAttemptId ? [ingestionAttemptId] : [])
   )
   const currentRuns =
     currentAttemptIds.length === 0
@@ -817,6 +914,28 @@ export async function getKbResourcesConnection(
           where: { id: { in: currentAttemptIds } },
         })
   const currentRunsById = new Map(currentRuns.map((run) => [run.id, run]))
+  const summary = summaryResources.reduce(
+    (counts, resource) => {
+      const currentRun = resource.ingestionAttemptId
+        ? currentRunsById.get(resource.ingestionAttemptId)
+        : undefined
+      const state = getResourceReconciliationState(resource, currentRun)
+      if (state === 'needs-ingestion') counts.needsIngestionCount += 1
+      if (state === 'in-progress') counts.inProgressCount += 1
+      if (
+        resource.status === DB.KBResourceStatus.FAILED ||
+        currentRun?.status === DB.KBIngestionStatus.FAILED
+      ) {
+        counts.failedIngestionCount += 1
+      }
+      return counts
+    },
+    {
+      needsIngestionCount: 0,
+      failedIngestionCount: 0,
+      inProgressCount: 0,
+    }
+  )
   const itemsWithCurrentRuns = items.map((resource) => {
     const currentRun = resource.ingestionAttemptId
       ? currentRunsById.get(resource.ingestionAttemptId)
@@ -830,18 +949,21 @@ export async function getKbResourcesConnection(
     }
   })
 
-  return createPaginationResult(
-    itemsWithCurrentRuns,
-    pageSize,
-    (resource) => ({
-      version: KB_CURSOR_VERSION,
-      kind: 'resources',
-      filterHash,
-      timestamp: resource.createdAt.toISOString(),
-      id: resource.id,
-    }),
-    totalCount
-  )
+  return {
+    ...createPaginationResult(
+      itemsWithCurrentRuns,
+      pageSize,
+      (resource) => ({
+        version: KB_CURSOR_VERSION,
+        kind: 'resources',
+        filterHash,
+        timestamp: resource.createdAt.toISOString(),
+        id: resource.id,
+      }),
+      totalCount
+    ),
+    ...summary,
+  }
 }
 
 export async function getKbChatbotBindings(
@@ -1334,6 +1456,7 @@ export async function confirmKbFileUpload(
     originalFilename,
     mimeType,
     sizeBytes,
+    materialType,
   }: {
     kbId: string
     blobName: string
@@ -1341,6 +1464,7 @@ export async function confirmKbFileUpload(
     originalFilename: string
     mimeType: string
     sizeBytes: number
+    materialType?: DB.KBResourceMaterialType | null
   },
   ctx: ContextWithUser
 ) {
@@ -1439,6 +1563,7 @@ export async function confirmKbFileUpload(
         id: blobId,
         kbId,
         type: DB.KBResourceType.BLOB,
+        materialType: normalizeKbResourceMaterialType(materialType),
         title: normalizedTitle,
         originalFilename,
         mimeType: validated.contentType,
@@ -1458,10 +1583,12 @@ export async function createKbUrlResource(
     kbId,
     url,
     title,
+    materialType,
   }: {
     kbId: string
     url: string
     title: string
+    materialType?: DB.KBResourceMaterialType | null
   },
   ctx: ContextWithUser
 ) {
@@ -1487,10 +1614,31 @@ export async function createKbUrlResource(
       data: {
         kbId,
         type: DB.KBResourceType.URL,
+        materialType: normalizeKbResourceMaterialType(materialType),
         title: validateKbResourceTitle(title),
         sourceUrl,
         status: DB.KBResourceStatus.ADDED,
       },
+    })
+  })
+}
+
+export async function updateKbResourceMaterialType(
+  {
+    id,
+    materialType,
+  }: {
+    id: string
+    materialType: DB.KBResourceMaterialType
+  },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbResourceOrThrow(prisma, id, ctx.user.sub)
+    return prisma.kBResource.update({
+      where: { id },
+      data: { materialType },
     })
   })
 }
@@ -1657,6 +1805,83 @@ export async function deleteKbResources(
   return resources
 }
 
+function buildKbIngestionPayload(
+  resource: DB.KBResource,
+  ingestionAttemptId: string,
+  resourceVersion: number,
+  ownerId: string
+): IngestKBResourceInput {
+  const basePayload = {
+    resourceId: resource.id,
+    kbId: resource.kbId,
+    title: resource.title,
+    ingestionAttemptId,
+    resourceVersion,
+  }
+  if (resource.type === DB.KBResourceType.BLOB) {
+    if (
+      !resource.blobName ||
+      !resource.mimeType ||
+      resource.sizeBytes === null
+    ) {
+      throw new GraphQLError('KB blob metadata is invalid')
+    }
+    return {
+      ...basePayload,
+      type: DB.KBResourceType.BLOB,
+      blobName: resource.blobName,
+      containerName: getKbContainerName(ownerId),
+      mimeType: resource.mimeType,
+      sizeBytes: resource.sizeBytes,
+    }
+  }
+  if (!resource.sourceUrl) {
+    throw new GraphQLError('KB resource URL is invalid')
+  }
+  return {
+    ...basePayload,
+    type: DB.KBResourceType.URL,
+    sourceUrl: resource.sourceUrl,
+  }
+}
+
+async function markKbIngestionQueueFailure(
+  ctx: ContextWithUser,
+  resourceId: string,
+  ingestionAttemptId: string
+) {
+  const finishedAt = new Date()
+  await ctx.prisma.$transaction(async (prisma) => {
+    const failed = await prisma.kBResource.updateMany({
+      where: {
+        id: resourceId,
+        status: DB.KBResourceStatus.QUEUED,
+        ingestionAttemptId,
+      },
+      data: {
+        status: DB.KBResourceStatus.FAILED,
+        statusMessage: 'The ingestion operation could not be queued.',
+        errorCode: 'QUEUE_DISPATCH_FAILED',
+      },
+    })
+    if (failed.count === 1) {
+      await prisma.kBIngestionRun.updateMany({
+        where: {
+          id: ingestionAttemptId,
+          resourceId,
+          status: DB.KBIngestionStatus.QUEUED,
+        },
+        data: {
+          status: DB.KBIngestionStatus.FAILED,
+          statusMessage: 'The ingestion operation could not be queued.',
+          errorCode: 'QUEUE_DISPATCH_FAILED',
+          finishedAt,
+        },
+      })
+    }
+  })
+}
+
 export async function ingestKbResource(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1677,40 +1902,12 @@ export async function ingestKbResource(
 
   const ingestionAttemptId = randomUUID()
   const resourceVersion = resource.resourceVersion + 1
-  const basePayload = {
-    resourceId: resource.id,
-    kbId: resource.kbId,
-    title: resource.title,
+  const payload = buildKbIngestionPayload(
+    resource,
     ingestionAttemptId,
     resourceVersion,
-  }
-  let payload: IngestKBResourceInput
-  if (resource.type === DB.KBResourceType.BLOB) {
-    if (
-      !resource.blobName ||
-      !resource.mimeType ||
-      resource.sizeBytes === null
-    ) {
-      throw new GraphQLError('KB blob metadata is invalid')
-    }
-    payload = {
-      ...basePayload,
-      type: DB.KBResourceType.BLOB,
-      blobName: resource.blobName,
-      containerName: getKbContainerName(ctx.user.sub),
-      mimeType: resource.mimeType,
-      sizeBytes: resource.sizeBytes,
-    }
-  } else {
-    if (!resource.sourceUrl) {
-      throw new GraphQLError('KB resource URL is invalid')
-    }
-    payload = {
-      ...basePayload,
-      type: DB.KBResourceType.URL,
-      sourceUrl: resource.sourceUrl,
-    }
-  }
+    ctx.user.sub
+  )
 
   await ctx.prisma.$transaction(async (prisma) => {
     const claim = await prisma.kBResource.updateMany({
@@ -1749,38 +1946,156 @@ export async function ingestKbResource(
   try {
     await ctx.tasks.ingestKBResource.runNoWait(payload)
   } catch {
-    const finishedAt = new Date()
-    await ctx.prisma.$transaction(async (prisma) => {
-      const failed = await prisma.kBResource.updateMany({
-        where: {
-          id: resource.id,
-          status: DB.KBResourceStatus.QUEUED,
-          ingestionAttemptId,
-        },
-        data: {
-          status: DB.KBResourceStatus.FAILED,
-          statusMessage: 'The ingestion operation could not be queued.',
-          errorCode: 'QUEUE_DISPATCH_FAILED',
-        },
-      })
-      if (failed.count === 1) {
-        await prisma.kBIngestionRun.update({
-          where: { id: ingestionAttemptId },
-          data: {
-            status: DB.KBIngestionStatus.FAILED,
-            statusMessage: 'The ingestion operation could not be queued.',
-            errorCode: 'QUEUE_DISPATCH_FAILED',
-            finishedAt,
-          },
-        })
-      }
-    })
+    await markKbIngestionQueueFailure(ctx, resource.id, ingestionAttemptId)
     throw new GraphQLError('KB ingestion could not be queued')
   }
 
   return ctx.prisma.kBResource.findUniqueOrThrow({
     where: { id: resource.id },
   })
+}
+
+type QueuedKbIngestion = {
+  payload: IngestKBResourceInput
+  resourceId: string
+  ingestionAttemptId: string
+  retriedFailed: boolean
+}
+
+export async function ingestAllKbResources(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+): Promise<KBIngestAllResult> {
+  await assertManageAiEnabled(ctx)
+  assertKbIngestionEnabled()
+  await getOwnedKbOrThrow(ctx, kbId)
+
+  const { queued, alreadyCurrentCount, alreadyInProgressCount } =
+    await ctx.prisma.$transaction(async (prisma) => {
+      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+      const resources = await prisma.kBResource.findMany({
+        where: { kbId, deletedAt: null },
+        orderBy: { id: 'asc' },
+      })
+      const currentAttemptIds = resources.flatMap(({ ingestionAttemptId }) =>
+        ingestionAttemptId ? [ingestionAttemptId] : []
+      )
+      const currentRuns =
+        currentAttemptIds.length === 0
+          ? []
+          : await prisma.kBIngestionRun.findMany({
+              where: { id: { in: currentAttemptIds } },
+              select: { id: true, status: true },
+            })
+      const currentRunsById = new Map(currentRuns.map((run) => [run.id, run]))
+      const queued: QueuedKbIngestion[] = []
+      let alreadyCurrentCount = 0
+      let alreadyInProgressCount = 0
+
+      for (const resource of resources) {
+        const currentRun = resource.ingestionAttemptId
+          ? currentRunsById.get(resource.ingestionAttemptId)
+          : undefined
+        const state = getResourceReconciliationState(resource, currentRun)
+        if (state === 'current') {
+          alreadyCurrentCount += 1
+          continue
+        }
+        if (state === 'in-progress') {
+          alreadyInProgressCount += 1
+          continue
+        }
+        if (resource.resourceVersion >= 2_147_483_647) {
+          throw new GraphQLError('KB resource version limit reached')
+        }
+
+        const ingestionAttemptId = randomUUID()
+        const resourceVersion = resource.resourceVersion + 1
+        const claim = await prisma.kBResource.updateMany({
+          where: {
+            id: resource.id,
+            status: resource.status,
+            ingestionAttemptId: resource.ingestionAttemptId,
+            resourceVersion: resource.resourceVersion,
+            deletedAt: null,
+          },
+          data: {
+            status: DB.KBResourceStatus.QUEUED,
+            statusMessage: null,
+            ingestionOperation: DB.KBIngestionOperation.UPSERT,
+            ingestionAttemptId,
+            resourceVersion,
+            contentSha256: null,
+            externalOperationId: null,
+            externalOperationStartedAt: null,
+            errorCode: null,
+          },
+        })
+        if (claim.count !== 1) continue
+
+        await prisma.kBIngestionRun.create({
+          data: {
+            id: ingestionAttemptId,
+            resourceId: resource.id,
+            operation: DB.KBIngestionOperation.UPSERT,
+            resourceVersion,
+          },
+        })
+        queued.push({
+          payload: buildKbIngestionPayload(
+            resource,
+            ingestionAttemptId,
+            resourceVersion,
+            ctx.user.sub
+          ),
+          resourceId: resource.id,
+          ingestionAttemptId,
+          retriedFailed: resource.status === DB.KBResourceStatus.FAILED,
+        })
+      }
+
+      return { queued, alreadyCurrentCount, alreadyInProgressCount }
+    })
+
+  let queuedCount = 0
+  let retriedFailedCount = 0
+  let queueFailureCount = 0
+  for (
+    let index = 0;
+    index < queued.length;
+    index += KB_BULK_INGEST_DISPATCH_CONCURRENCY
+  ) {
+    const batch = queued.slice(
+      index,
+      index + KB_BULK_INGEST_DISPATCH_CONCURRENCY
+    )
+    await Promise.all(
+      batch.map(
+        async ({ payload, resourceId, ingestionAttemptId, retriedFailed }) => {
+          try {
+            await ctx.tasks.ingestKBResource.runNoWait(payload)
+            queuedCount += 1
+            if (retriedFailed) retriedFailedCount += 1
+          } catch {
+            queueFailureCount += 1
+            await markKbIngestionQueueFailure(
+              ctx,
+              resourceId,
+              ingestionAttemptId
+            )
+          }
+        }
+      )
+    )
+  }
+
+  return {
+    queuedCount,
+    retriedFailedCount,
+    alreadyCurrentCount,
+    alreadyInProgressCount,
+    queueFailureCount,
+  }
 }
 
 export interface KBKnowledgeGraphConfig {

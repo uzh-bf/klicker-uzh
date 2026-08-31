@@ -95,6 +95,7 @@ import {
   KBIngestionRun,
   KBIngestionStatus,
   KBResourceConnection,
+  KBResourceMaterialType,
   KBResourceType,
 } from './knowledge.js'
 import {
@@ -1538,6 +1539,10 @@ export const Query = builder.queryType({
           search: t.arg.string({ required: false }),
           type: t.arg({ type: KBResourceType, required: false }),
           status: t.arg({ type: KBIngestionStatus, required: false }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbResourcesConnection(args, ctx)

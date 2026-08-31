@@ -1,9 +1,10 @@
 import { useMutation } from '@apollo/client'
 import {
   ConfirmKbFileUploadDocument,
+  KbResourceMaterialType,
   RequestKbFileUploadDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3, toast } from '@uzh-bf/design-system'
+import { H3, SelectField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
@@ -35,6 +36,9 @@ function KnowledgeBaseFileDropzone({
 }) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
+  const [materialType, setMaterialType] = useState(
+    KbResourceMaterialType.CourseContent
+  )
   const [requestUpload] = useMutation(RequestKbFileUploadDocument)
   const [confirmUpload] = useMutation(ConfirmKbFileUploadDocument)
 
@@ -84,6 +88,7 @@ function KnowledgeBaseFileDropzone({
             originalFilename: file.name,
             mimeType: contentType,
             sizeBytes: file.size,
+            materialType,
           },
         })
       } catch (error) {
@@ -104,6 +109,7 @@ function KnowledgeBaseFileDropzone({
       }
 
       await refreshAfterMutation(onResourceCreated, 'KB resources after upload')
+      setMaterialType(KbResourceMaterialType.CourseContent)
       toast({ type: 'success', message: t('kb.fileUploadSuccess') })
     } finally {
       setUploading(false)
@@ -126,6 +132,28 @@ function KnowledgeBaseFileDropzone({
       <p className="mt-1 text-sm text-slate-600">
         {t('kb.fileUploadDescription')}
       </p>
+      <SelectField
+        id="kb-file-material-type"
+        label={t('kb.materialType')}
+        value={materialType}
+        onChange={(value) => setMaterialType(value as KbResourceMaterialType)}
+        items={[
+          {
+            value: KbResourceMaterialType.Unclassified,
+            label: t('kb.materialTypeUnclassified'),
+          },
+          {
+            value: KbResourceMaterialType.CourseContent,
+            label: t('kb.materialTypeCourseContent'),
+          },
+          {
+            value: KbResourceMaterialType.Administrative,
+            label: t('kb.materialTypeAdministrative'),
+          },
+        ]}
+        disabled={uploading}
+        data={{ cy: 'kb-file-material-type' }}
+      />
       <div
         {...getRootProps({
           role: 'button',

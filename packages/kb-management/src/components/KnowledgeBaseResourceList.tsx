@@ -19,10 +19,13 @@ import {
   GetKbResourcesDocument,
   type GetKbResourcesQuery,
   type GetKbResourcesQueryVariables,
+  IngestAllKbResourcesDocument,
   IngestKbResourceDocument,
   KbIngestionStatus,
+  KbResourceMaterialType,
   KbResourceStatus,
   KbResourceType,
+  UpdateKbResourceMaterialTypeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -328,12 +331,19 @@ function KnowledgeBaseResourceList({
   const deferredSearch = useDeferredValue(search.trim())
   const [typeFilter, setTypeFilter] = useState<KbResourceType | ''>('')
   const [statusFilter, setStatusFilter] = useState<KbIngestionStatus | ''>('')
+  const [materialTypeFilter, setMaterialTypeFilter] = useState<
+    KbResourceMaterialType | ''
+  >('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
   const [bulkDeletionOpen, setBulkDeletionOpen] = useState(false)
+  const [bulkIngestOpen, setBulkIngestOpen] = useState(false)
   const [inspectorId, setInspectorId] = useState<string | null>(null)
   const [ingestingId, setIngestingId] = useState<string | null>(null)
+  const [updatingMaterialTypeId, setUpdatingMaterialTypeId] = useState<
+    string | null
+  >(null)
   const [historyRefreshes, setHistoryRefreshes] = useState<
     Record<string, number>
   >({})
@@ -359,6 +369,7 @@ function KnowledgeBaseResourceList({
     search: deferredSearch || null,
     type: typeFilter || null,
     status: statusFilter || null,
+    materialType: materialTypeFilter || null,
   }
   const { data, loading, error, fetchMore, networkStatus, updateQuery } =
     useQuery(GetKbResourcesDocument, {
@@ -367,6 +378,10 @@ function KnowledgeBaseResourceList({
     })
   const apolloClient = useApolloClient()
   const [ingestResource] = useMutation(IngestKbResourceDocument)
+  const [ingestAllResources, { loading: bulkIngesting }] = useMutation(
+    IngestAllKbResourcesDocument
+  )
+  const [updateMaterialType] = useMutation(UpdateKbResourceMaterialTypeDocument)
   const connection = data?.getKbResources
   const resources = connection?.items ?? []
   const loadedResourceCountRef = useRef(resources.length)
@@ -396,8 +411,9 @@ function KnowledgeBaseResourceList({
       search: deferredSearch || null,
       type: typeFilter || null,
       status: statusFilter || null,
+      materialType: materialTypeFilter || null,
     }),
-    [deferredSearch, kbId, statusFilter, typeFilter]
+    [deferredSearch, kbId, materialTypeFilter, statusFilter, typeFilter]
   )
 
   const refreshLoadedResources = useCallback(async () => {
@@ -662,7 +678,7 @@ function KnowledgeBaseResourceList({
     pageCursorsRef.current = [null]
     activePageIndexesRef.current = new Set()
     bookkeepingValidRef.current = false
-  }, [deferredSearch, kbId, statusFilter, typeFilter])
+  }, [deferredSearch, kbId, materialTypeFilter, statusFilter, typeFilter])
 
   useEffect(() => {
     if (refreshKey === 0) return
@@ -800,6 +816,72 @@ function KnowledgeBaseResourceList({
     }
   }
 
+  const handleIngestAll = async () => {
+    if (bulkIngesting) return
+
+    try {
+      const { data: result } = await ingestAllResources({
+        variables: { kbId },
+      })
+      await refreshAfterMutation(
+        refreshWorkspace,
+        'KB resources after bulk ingestion'
+      )
+      setBulkIngestOpen(false)
+      const summary = result?.ingestAllKbResources
+      toast({
+        type: summary?.queueFailureCount ? 'error' : 'success',
+        message: summary
+          ? t('kb.ingestAllSuccess', {
+              queued: summary.queuedCount,
+              retried: summary.retriedFailedCount,
+              current: summary.alreadyCurrentCount,
+              inProgress: summary.alreadyInProgressCount,
+              failed: summary.queueFailureCount,
+            })
+          : t('kb.ingestAllError'),
+      })
+    } catch (error) {
+      console.error('Failed to queue all KB resources', error)
+      const code = getGraphQLErrorCode(error)
+      toast({
+        type: 'error',
+        message:
+          code === 'KB_INGESTION_DISABLED'
+            ? t('kb.ingestionDisabledError')
+            : t('kb.ingestAllError'),
+      })
+    }
+  }
+
+  const handleMaterialTypeChange = async (
+    resource: KnowledgeBaseResource,
+    materialType: KbResourceMaterialType
+  ) => {
+    if (
+      updatingMaterialTypeId !== null ||
+      resource.materialType === materialType
+    ) {
+      return
+    }
+    setUpdatingMaterialTypeId(resource.id)
+    try {
+      await updateMaterialType({
+        variables: { id: resource.id, materialType },
+      })
+      await refreshAfterMutation(
+        refreshWorkspace,
+        'KB resources after material classification'
+      )
+      toast({ type: 'success', message: t('kb.updateMaterialTypeSuccess') })
+    } catch (error) {
+      console.error('Failed to update KB resource material type', error)
+      toast({ type: 'error', message: t('kb.updateMaterialTypeError') })
+    } finally {
+      setUpdatingMaterialTypeId(null)
+    }
+  }
+
   const getIngestActionLabel = (resource: KnowledgeBaseResource) => {
     if (resource.status === KbResourceStatus.Added) {
       return t('kb.ingestResource')
@@ -808,6 +890,17 @@ function KnowledgeBaseResourceList({
       return t('kb.retryIngestion')
     }
     return t('kb.reingestResource')
+  }
+
+  const getMaterialTypeLabel = (materialType: KbResourceMaterialType) => {
+    switch (materialType) {
+      case KbResourceMaterialType.CourseContent:
+        return t('kb.materialTypeCourseContent')
+      case KbResourceMaterialType.Administrative:
+        return t('kb.materialTypeAdministrative')
+      case KbResourceMaterialType.Unclassified:
+        return t('kb.materialTypeUnclassified')
+    }
   }
 
   const loadMore = async () => {
@@ -919,7 +1012,7 @@ function KnowledgeBaseResourceList({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+      <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]">
         <TextField
           id="kb-resource-search"
           autoComplete="off"
@@ -978,7 +1071,61 @@ function KnowledgeBaseResourceList({
           data={{ cy: 'kb-resource-status-filter' }}
           className={{ root: 'w-full', select: { trigger: 'w-full' } }}
         />
+        <SelectField
+          id="kb-resource-material-type-filter"
+          label={t('kb.filterMaterialType')}
+          value={materialTypeFilter || FILTER_ALL_VALUE}
+          onChange={(newValue) =>
+            setMaterialTypeFilter(
+              newValue === FILTER_ALL_VALUE
+                ? ''
+                : (newValue as KbResourceMaterialType)
+            )
+          }
+          items={[
+            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+            {
+              value: KbResourceMaterialType.Unclassified,
+              label: t('kb.materialTypeUnclassified'),
+            },
+            {
+              value: KbResourceMaterialType.CourseContent,
+              label: t('kb.materialTypeCourseContent'),
+            },
+            {
+              value: KbResourceMaterialType.Administrative,
+              label: t('kb.materialTypeAdministrative'),
+            },
+          ]}
+          data={{ cy: 'kb-resource-material-type-filter' }}
+          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+        />
       </div>
+
+      {connection ? (
+        <div
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary-100/20 bg-primary-100/5 px-4 py-3 text-sm"
+          data-cy="kb-ingestion-summary"
+        >
+          <p className="text-slate-700" aria-live="polite">
+            {t('kb.ingestAllSummary', {
+              needs: connection.needsIngestionCount,
+              failed: connection.failedIngestionCount,
+              inProgress: connection.inProgressCount,
+            })}
+          </p>
+          {connection.needsIngestionCount > 0 ? (
+            <Button
+              onClick={() => setBulkIngestOpen(true)}
+              disabled={bulkIngesting || ingestingId !== null}
+              data={{ cy: 'ingest-all-kb-resources' }}
+              className={{ root: 'shrink-0 px-3 text-sm' }}
+            >
+              <Button.Label>{t('kb.ingestAll')}</Button.Label>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {polling ? (
         <UserNotification
@@ -1016,11 +1163,14 @@ function KnowledgeBaseResourceList({
           data-cy="kb-resources-empty"
         >
           <p className="text-slate-600">
-            {deferredSearch || typeFilter || statusFilter
+            {deferredSearch || typeFilter || statusFilter || materialTypeFilter
               ? t('kb.noResourceResults')
               : t('kb.noResources')}
           </p>
-          {!deferredSearch && !typeFilter && !statusFilter ? (
+          {!deferredSearch &&
+          !typeFilter &&
+          !statusFilter &&
+          !materialTypeFilter ? (
             <p className="mt-2 text-sm text-slate-500">
               {t('kb.emptyResourceHint')}
             </p>
@@ -1064,6 +1214,12 @@ function KnowledgeBaseResourceList({
                   scope="col"
                 >
                   {t('kb.sourceType')}
+                </ShadcnTableHead>
+                <ShadcnTableHead
+                  className="hidden whitespace-normal md:table-cell"
+                  scope="col"
+                >
+                  {t('kb.materialType')}
                 </ShadcnTableHead>
                 <ShadcnTableHead scope="col">
                   {t('kb.operationStatus')}
@@ -1167,6 +1323,11 @@ function KnowledgeBaseResourceList({
                           : t('kb.typeUrl')}
                       </Badge>
                     </ShadcnTableCell>
+                    <ShadcnTableCell className="hidden whitespace-normal align-top md:table-cell">
+                      <Badge variant="outline">
+                        {getMaterialTypeLabel(resource.materialType)}
+                      </Badge>
+                    </ShadcnTableCell>
                     <ShadcnTableCell
                       className="whitespace-normal align-top"
                       aria-live="polite"
@@ -1246,7 +1407,8 @@ function KnowledgeBaseResourceList({
                           items={[
                             {
                               id: `delete-kb-resource-${resource.id}`,
-                              disabled: active || ingestingId !== null,
+                              disabled:
+                                active || ingestingId !== null || bulkIngesting,
                               label: t('shared.generic.delete'),
                               onClick: () => setDeletionTarget(resource),
                               data: {
@@ -1296,6 +1458,57 @@ function KnowledgeBaseResourceList({
         </>
       )}
 
+      {bulkIngestOpen && connection ? (
+        <Modal
+          open
+          onClose={() => {
+            if (!bulkIngesting) setBulkIngestOpen(false)
+          }}
+          escapeDisabled={bulkIngesting}
+          hideCloseButton={bulkIngesting}
+          title={t('kb.ingestAllTitle')}
+          primaryLabel={t('kb.ingestAllConfirm')}
+          primaryLoading={bulkIngesting}
+          primaryDisabled={bulkIngesting}
+          onPrimaryAction={handleIngestAll}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => {
+            if (!bulkIngesting) setBulkIngestOpen(false)
+          }}
+          dataContent={{ cy: 'ingest-all-kb-resources-modal' }}
+          dataCloseButton={{ cy: 'close-ingest-all-kb-resources' }}
+          dataPrimaryAction={{ cy: 'confirm-ingest-all-kb-resources' }}
+          dataSecondaryAction={{ cy: 'cancel-ingest-all-kb-resources' }}
+          className={{ content: 'max-w-xl' }}
+        >
+          <p>
+            {t('kb.ingestAllDescription', {
+              count: connection.needsIngestionCount,
+            })}
+          </p>
+          <dl className="mt-4 grid gap-3 rounded-md bg-slate-50 p-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllNeeds')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.needsIngestionCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllFailed')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.failedIngestionCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllInProgress')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.inProgressCount}
+              </dd>
+            </div>
+          </dl>
+        </Modal>
+      ) : null}
+
       {inspectorResource ? (
         <Modal
           open
@@ -1304,7 +1517,9 @@ function KnowledgeBaseResourceList({
           primaryLabel={getIngestActionLabel(inspectorResource)}
           primaryLoading={ingestingId === inspectorResource.id}
           primaryDisabled={
-            ingestingId !== null || isActiveResource(inspectorResource)
+            ingestingId !== null ||
+            bulkIngesting ||
+            isActiveResource(inspectorResource)
           }
           onPrimaryAction={() => handleIngest(inspectorResource)}
           secondaryLabel={t('shared.generic.close')}
@@ -1333,6 +1548,36 @@ function KnowledgeBaseResourceList({
                     ? t('kb.typeFile')
                     : t('kb.typeUrl')}
                 </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <SelectField
+                  id="kb-inspector-material-type"
+                  label={t('kb.materialType')}
+                  value={inspectorResource.materialType}
+                  onChange={(value) =>
+                    void handleMaterialTypeChange(
+                      inspectorResource,
+                      value as KbResourceMaterialType
+                    )
+                  }
+                  items={[
+                    {
+                      value: KbResourceMaterialType.Unclassified,
+                      label: t('kb.materialTypeUnclassified'),
+                    },
+                    {
+                      value: KbResourceMaterialType.CourseContent,
+                      label: t('kb.materialTypeCourseContent'),
+                    },
+                    {
+                      value: KbResourceMaterialType.Administrative,
+                      label: t('kb.materialTypeAdministrative'),
+                    },
+                  ]}
+                  disabled={updatingMaterialTypeId !== null || bulkIngesting}
+                  data={{ cy: 'kb-inspector-material-type' }}
+                  className={{ select: { trigger: 'w-full' } }}
+                />
               </div>
               <div>
                 <dt className="font-medium text-slate-600">
@@ -1393,7 +1638,9 @@ function KnowledgeBaseResourceList({
             <Button
               destructive
               disabled={
-                isActiveResource(inspectorResource) || ingestingId !== null
+                isActiveResource(inspectorResource) ||
+                ingestingId !== null ||
+                bulkIngesting
               }
               onClick={() => {
                 setInspectorId(null)

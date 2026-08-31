@@ -44,6 +44,9 @@ The owner lifecycle is documented in the [GraphQL API layer](./graphql-api-layer
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+
+The KB resource material category is an additive enum column with a database default of `UNCLASSIFIED`, so existing rows and legacy callers remain valid. Keep this kind of model change in one reviewable migration, run `prisma:sync` for the Analytics twin, and regenerate the shared client before building GraphQL dependents. The migration named `20260831165143_kb_resource_material_type` was isolated from unrelated pre-existing local drift because the development database was not schema-clean; do not reset that database to manufacture a migration.
+
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations

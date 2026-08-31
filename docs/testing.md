@@ -36,7 +36,7 @@ offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
 200 data rows before submission, and must verify page totals and page-one reset
 after import or deletion.
 
-The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
+The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, terminal-event ordering, material-category defaults and filtering, complete-KB ingestion summaries, bulk freshness reconciliation, conditional claims, repeated calls, and per-resource queue-failure compensation.
 
 KB quota coverage must use real PostgreSQL for parent-row lock serialization, exact count/byte boundaries, pending tickets, tombstones, confirmation conversion, and cleanup release. Hatchet unit coverage owns persisted KB-scope rejection plus URL-size replacement arithmetic and the no-dispatch `KB_STORAGE_LIMIT_REACHED` transition.
 
