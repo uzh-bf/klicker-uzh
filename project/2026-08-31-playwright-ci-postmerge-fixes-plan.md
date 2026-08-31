@@ -46,11 +46,11 @@ the trusted ARM64 cache seed can verify and fingerprint its checkout.
 - Base: merged `origin/v3`
 - Owner: main session
 - Granted: isolated local edits, repository-native checks, plan updates, and
-  local conventional commits.
-- Withheld: push, PR publication, merge, runner or variable changes, and live
-  canary activation.
+  local conventional commits, push, and draft PR publication.
+- Withheld: merge, runner or variable changes, and live canary activation.
 - Terminal: clean local branch with focused workflow-policy tests, syntax and
-  formatting checks, exact diff review, and a recorded follow-up status.
+  formatting checks, exact diff review, and a draft PR awaiting current-head
+  CI.
 - Pause: stop if the fix requires changing the runner-group policy or broadens
   the public execution trust boundary.
 
@@ -106,10 +106,12 @@ the trusted ARM64 cache seed can verify and fingerprint its checkout.
 - [x] Local final diff review and conventional commit `abb96c810`.
 - [x] Focused CI suite passes: 57 tests; Biome, Prettier, YAML parsing, and the
   workflow policy validator also pass.
-- [ ] External PR delivery and exact-head CI, pending explicit approval.
+- [x] Pushed the branch and opened draft PR #5711 at local head
+  `190e7bdeaeedf106046b8fa0ef141f2874210d75`.
+- [ ] Exact-head GitHub CI and post-publication workflow/cache acceptance.
 
 ## Next Steps
 
-- If delivery is approved later, push `abb96c810`, open a follow-up PR, and
-  require exact-head CI to prove that the reusable workflow creates jobs and
-  the cache seed reaches install and build.
+- Keep PR #5711 draft while exact-head CI runs. If merge is authorized later,
+  require the PR checks and post-merge workflow/cache acceptance before
+  merging.
