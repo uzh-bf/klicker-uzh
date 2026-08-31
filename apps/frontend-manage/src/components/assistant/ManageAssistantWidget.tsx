@@ -140,6 +140,7 @@ export function ManageAssistantWidget() {
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
+  const pointerDownInsidePanelRef = useRef(false)
   const resizeSessionRef = useRef<{
     pointerId: number
     startSize: ManageAssistantPanelSize
@@ -356,18 +357,57 @@ export function ManageAssistantWidget() {
 
     function handleFocusIn(event: FocusEvent) {
       const target = event.target
-      if (target instanceof Node && !panelElement.contains(target)) {
-        closeButtonRef.current?.focus()
+      if (!(target instanceof Node) || panelElement.contains(target)) return
+
+      // A click on a non-focusable panel surface can transiently focus the
+      // document body. Keep the user's existing focus in that case, while
+      // still redirecting keyboard or iframe focus that genuinely escaped.
+      if (target === document.body && pointerDownInsidePanelRef.current) {
+        return
       }
+
+      pointerDownInsidePanelRef.current = false
+      closeButtonRef.current?.focus()
+    }
+
+    function handlePointerDown() {
+      pointerDownInsidePanelRef.current = true
+    }
+
+    function clearPointerDown() {
+      pointerDownInsidePanelRef.current = false
+    }
+
+    function handleIframeBlur() {
+      window.requestAnimationFrame(() => {
+        if (!open || isDesktop) return
+        const activeElement = document.activeElement
+        if (
+          !(activeElement instanceof Node) ||
+          !panelElement.contains(activeElement)
+        ) {
+          closeButtonRef.current?.focus()
+        }
+      })
     }
 
     panelElement.addEventListener('keydown', handleKeyDown)
+    panelElement.addEventListener('pointerdown', handlePointerDown)
     document.addEventListener('focusin', handleFocusIn)
+    window.addEventListener('pointerup', clearPointerDown)
+    window.addEventListener('pointercancel', clearPointerDown)
+    const iframe = iframeRef.current
+    iframe?.addEventListener('blur', handleIframeBlur)
     return () => {
       panelElement.removeEventListener('keydown', handleKeyDown)
+      panelElement.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('focusin', handleFocusIn)
+      window.removeEventListener('pointerup', clearPointerDown)
+      window.removeEventListener('pointercancel', clearPointerDown)
+      iframe?.removeEventListener('blur', handleIframeBlur)
+      pointerDownInsidePanelRef.current = false
     }
-  }, [assistantUrl, enabled, isDesktop, open])
+  }, [assistantUrl, enabled, frameState.generation, isDesktop, open])
 
   useEffect(() => {
     if (!open || isDesktop || !enabled || !assistantUrl) return
@@ -409,6 +449,7 @@ export function ManageAssistantWidget() {
 
     function handleMediaChange(event: MediaQueryListEvent) {
       setIsDesktop(event.matches)
+      setPanelPreset('custom')
       if (event.matches) {
         setPanelSize((currentSize) =>
           clampManageAssistantPanelSize(readStoredPanelSize() ?? currentSize, {
@@ -431,6 +472,7 @@ export function ManageAssistantWidget() {
   useEffect(() => {
     function handleResize() {
       if (!isDesktop) return
+      setPanelPreset('custom')
       setPanelSize((currentSize) =>
         clampManageAssistantPanelSize(currentSize, {
           height: window.innerHeight,

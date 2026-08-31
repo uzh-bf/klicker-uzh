@@ -1094,3 +1094,11 @@ follow_up_stacks:
   verified OCR thread with evidence, and rerun exact-head CI plus the final
   review. Hosted Playwright remains a stack-layer acceptance limitation because
   this PR targets the workflow-continuity branch.
+- A4 OCR round two: OpenCodeReview raised three additional medium findings on
+  the pushed correction. The cross-origin iframe could not participate in the
+  parent Tab listener, the document focus redirect treated ordinary blank-panel
+  clicks as escapes, and viewport or breakpoint changes could leave a named
+  preset displayed for a clamped custom size. Each finding is valid and is
+  corrected by an iframe blur boundary that follows frame generations,
+  pointer-aware body-focus handling, and resetting the preset on viewport
+  changes.
