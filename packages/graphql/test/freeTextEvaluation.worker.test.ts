@@ -272,6 +272,15 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
 
+    expect(state).toMatchObject({
+      cycleStatus: 'CORRECT',
+      currentAttempt: {
+        aggregateScore: 80,
+        correctness: 'CORRECT',
+        pointsAwarded: 8,
+        xpAwarded: 10,
+      },
+    })
     expect(state?.currentAttempt?.structuredResult?.rubricAssessments).toEqual([
       expect.objectContaining({
         proposedLevel: 'excellent',
@@ -279,6 +288,18 @@ describe('semantic free-text evaluation worker', () => {
         criterionStatus: 'CORRECT',
       }),
     ])
+    expect(
+      await prisma.freeTextPracticeCycle.findUniqueOrThrow({
+        where: { id: pending.cycleId },
+        select: { pointsAwarded: true, xpAwarded: true, bestXp: true },
+      })
+    ).toEqual({ pointsAwarded: 8, xpAwarded: 10, bestXp: 10 })
+    expect(
+      await prisma.participant.findUniqueOrThrow({
+        where: { id: fixture.participant.id },
+        select: { xp: true },
+      })
+    ).toEqual({ xp: 10 })
   })
 
   it('applies a recovered evaluated attempt exactly once under concurrency', async () => {

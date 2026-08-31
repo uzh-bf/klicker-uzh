@@ -71,15 +71,17 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
   const previousScore = previousPercentage * POINTS_PER_INSTANCE * multiplier
   const currentPercentage = attempt.aggregateScore / 100
   const currentScore = currentPercentage * POINTS_PER_INSTANCE * multiplier
-  const currentXp = computeAwardedXp({ pointsPercentage: currentPercentage })
-  const previousXp = computeAwardedXp({ pointsPercentage: previousPercentage })
+  const currentXp = computeAwardedXp({
+    pointsPercentage:
+      attempt.correctness === DB.FreeTextCorrectnessCategory.CORRECT ? 1 : 0,
+  })
   const pointsAwarded = attempt.cycle.participation.isActive
     ? attempt.cycle.pointsRewardEligible
       ? Math.max(0, currentScore - previousScore)
       : 0
     : null
   const xpAwarded = attempt.cycle.xpRewardEligible
-    ? Math.max(0, currentXp - previousXp)
+    ? Math.max(0, currentXp - attempt.cycle.bestXp)
     : 0
 
   const result = await applyQuestionResponseInTransaction(
