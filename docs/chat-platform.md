@@ -421,6 +421,21 @@ identity are built. Missing, inactive, unavailable, malformed, or colliding stri
 `503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
+The current-v3 Doc Query binding is the same reserved policy plus a `kb_id` on
+the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
+"kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
+configurations must contain exactly one binding per mode, with one server ID and
+one normalized UUID across the chatbot; the selected mode must also contain one.
+Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
+`503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
+keeps the opaque bearer transport credential in `Authorization` and adds a
+five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
+`kb_id`, `chatbot_id`, the request ID as `sub`, and a request `jti`; issuer,
+audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
+`DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
+`DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
+non-KB MCP servers retain their existing behavior.
+
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
 - A source returned again by a later search keeps its original number; no second index is ever

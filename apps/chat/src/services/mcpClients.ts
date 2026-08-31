@@ -3,15 +3,21 @@
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbId,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -39,6 +45,8 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+  kbId?: string
+  sessionId?: string
 }
 
 function toToolNameHash(rawName: string): string {
@@ -108,13 +116,42 @@ function toSafeToolName(
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+export async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  options: MCPRequestOptions = {}
+): Promise<Record<string, string>> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    if (!(options.kbId && options.sessionId)) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+    if (authType !== 'bearer' || !server.authSecret) {
+      throw new Error('Doc Query transport authentication is invalid')
+    }
+    if (
+      typeof options.sessionId !== 'string' ||
+      options.sessionId.trim().length === 0
+    ) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+
+    const kbId = normalizeDocQueryKbId(options.kbId)
+    baseHeaders.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+    const token = await signDocQueryScopeToken({
+      kbId,
+      chatbotId,
+      sessionId: options.sessionId,
+      jti: randomUUID(),
+    })
+    baseHeaders[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+    return baseHeaders
+  }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -129,7 +166,7 @@ function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -192,7 +229,7 @@ export async function createMCPClient(
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const headers = await createAuthHeaders(server, chatbotId, options)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -234,12 +271,76 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   return allowedTools.some((pattern) => {
     // Convert wildcard pattern to regex
     const regexPattern = pattern
-      .replace(/\*/g, '.*') // Replace * with .*
-      .replace(/\?/g, '.') // Replace ? with .
+      .replaceAll('*', '.*') // Replace * with .*
+      .replaceAll('?', '.') // Replace ? with .
 
     const regex = new RegExp(`^${regexPattern}$`, 'i')
     return regex.test(toolName)
   })
+}
+
+function requiredToolName(
+  config: MCPConfigSettings,
+  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>
+): string | undefined {
+  if (!runtimePolicy.required) return undefined
+
+  const configuredTool = config.allowedTools?.[0]
+  if (
+    !Array.isArray(config.allowedTools) ||
+    config.allowedTools.length !== 1 ||
+    typeof configuredTool !== 'string' ||
+    configuredTool.length === 0 ||
+    /[*?]/.test(configuredTool)
+  ) {
+    throw new RequiredMCPUnavailableError()
+  }
+  return configuredTool
+}
+
+function assertRequiredToolAvailable(
+  rawTools: Record<string, any>,
+  requiredRawToolName: string,
+  runtimePolicy: Extract<
+    ReturnType<typeof parseMCPRuntimePolicy>,
+    { required: true }
+  >
+): void {
+  if (
+    !Object.hasOwn(rawTools, requiredRawToolName) ||
+    (requiredRawToolName !== runtimePolicy.toolAlias &&
+      Object.hasOwn(rawTools, runtimePolicy.toolAlias))
+  ) {
+    throw new RequiredMCPUnavailableError()
+  }
+}
+
+function filterServerTools(
+  rawTools: Record<string, any>,
+  serverName: string,
+  config: MCPConfigSettings,
+  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>,
+  requiredRawToolName: string | undefined
+): Record<string, any> {
+  const filteredTools: Record<string, any> = {}
+  const usedNames = new Set<string>()
+
+  for (const [toolName, toolDefinition] of Object.entries(rawTools)) {
+    const allowed = runtimePolicy.required
+      ? toolName === requiredRawToolName
+      : isToolAllowed(toolName, config.allowedTools || [])
+    if (!allowed) continue
+
+    const modelToolName = runtimePolicy.required
+      ? runtimePolicy.toolAlias
+      : toolName
+    // Keep tool names in OpenAI-compatible format and make them deterministic.
+    const namespacedName = toSafeToolName(serverName, modelToolName, usedNames)
+    filteredTools[namespacedName] = toolDefinition
+    usedNames.add(namespacedName)
+  }
+
+  return filteredTools
 }
 
 /**
@@ -252,21 +353,7 @@ async function loadServerTools(
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
-  let requiredRawToolName: string | undefined
-
-  if (runtimePolicy.required) {
-    const configuredTool = config.allowedTools?.[0]
-    if (
-      !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
-      typeof configuredTool !== 'string' ||
-      configuredTool.length === 0 ||
-      /[*?]/.test(configuredTool)
-    ) {
-      throw new RequiredMCPUnavailableError()
-    }
-    requiredRawToolName = configuredTool
-  }
+  const requiredRawToolName = requiredToolName(config, runtimePolicy)
 
   if (server.isActive === false) {
     if (runtimePolicy.required) {
@@ -280,39 +367,16 @@ async function loadServerTools(
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
-      const rawToolName = requiredRawToolName
-      if (
-        !Object.hasOwn(rawTools, rawToolName) ||
-        (rawToolName !== runtimePolicy.toolAlias &&
-          Object.hasOwn(rawTools, runtimePolicy.toolAlias))
-      ) {
-        throw new RequiredMCPUnavailableError()
-      }
+      assertRequiredToolAvailable(rawTools, requiredRawToolName, runtimePolicy)
     }
 
-    // Apply tool filtering
-    const filteredTools: Record<string, any> = {}
-    const usedNames = new Set<string>()
-
-    Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
-      const allowed = runtimePolicy.required
-        ? toolName === requiredRawToolName
-        : isToolAllowed(toolName, config.allowedTools || [])
-
-      if (allowed) {
-        const modelToolName = runtimePolicy.required
-          ? runtimePolicy.toolAlias
-          : toolName
-        // Keep tool names in OpenAI-compatible format and make them deterministic.
-        const namespacedName = toSafeToolName(
-          server.name,
-          modelToolName,
-          usedNames
-        )
-        filteredTools[namespacedName] = toolDefinition
-        usedNames.add(namespacedName)
-      }
-    })
+    const filteredTools = filterServerTools(
+      rawTools,
+      server.name,
+      config,
+      runtimePolicy,
+      requiredRawToolName
+    )
 
     console.log(
       `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`

@@ -115,6 +115,57 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
+  test('passes the request ID and resolved KB scope to MCP discovery', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      systemPrompts: { tutor: { prompt: 'Use course material.' } },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          priority: 0,
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+          },
+          mcpServer: {
+            id: 'kb-server',
+            name: 'KB',
+            url: 'https://mcp.example.test',
+            authType: 'bearer',
+            authSecret: 'opaque-transport-token',
+            parameters: null,
+            isActive: true,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          server: expect.objectContaining({ name: 'KB' }),
+        }),
+      ],
+      'chatbot-1',
+      {
+        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+        sessionId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+      }
+    )
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
   test('rejects an unsupported mode before MCP and thread work', async () => {
     const response = await POST(createRequest('unsupported'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
