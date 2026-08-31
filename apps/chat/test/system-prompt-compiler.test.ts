@@ -194,7 +194,7 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain('at most one optional comprehension')
   })
 
-  test('defines Quizzer topic selection, recommendation, and continuation', () => {
+  test('defines Quizzer topic selection, feedback, and bounded checkpoints', () => {
     const prompt = DEFAULT_PROMPT.quizzer.prompt
 
     expect(prompt).toContain('Establish the practice topic')
@@ -209,13 +209,33 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain(
       'Continue automatically after each assessed attempt'
     )
+    expect(prompt).toContain('After every completed practice attempt')
+    expect(prompt).toContain('one actionable next step')
+    expect(prompt).toContain('student explicitly asks how they are doing')
+    expect(prompt).toContain('too little evidence for a reliable pattern')
     expect(prompt).toContain(
       'ask whether the student wants another AI-generated practice question'
+    )
+    expect(prompt).toContain(
+      'at least three completed question-answer-assessment cycles'
+    )
+    expect(prompt).toContain('at least two distinct course-grounded criteria')
+    expect(prompt).toContain('with no hint or retry pending')
+    expect(prompt).toContain('practice checkpoint')
+    expect(prompt).toContain('Based on the questions practised in this chat')
+    expect(prompt).toContain('snapshot of this short practice round')
+    expect(prompt).toContain(
+      'Do not use grades, percentages, proficiency labels, mastery, completion'
+    )
+    expect(prompt).toContain('Reset checkpoint evidence')
+    expect(prompt).toContain(
+      'Never infer that a topic is complete from retrieval exhaustion'
     )
     expect(prompt).toContain(
       'change topics or explore the current topic in more depth'
     )
     expect(prompt).toContain('suggest a better-supported course topic')
+    expect(prompt).not.toContain('topic is sufficiently covered')
     expect(prompt).not.toContain(
       'After the explanation, ask whether to continue'
     )

@@ -352,16 +352,24 @@ mode. Stored standard-mode text remains lower-priority lecturer guidance rather 
 the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
 practice topic when the student's request is unclear and asks for simple confirmation rather than
 presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
-generates one AI-generated practice question at a time from retrieved course material and continues
-automatically after each assessed attempt. When the current topic is sufficiently covered, it asks
-whether to change topics or explore the topic in more depth and proposes grounded next steps. It does
-not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
-retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
-request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
-an ungrounded question. Once discovered, the route requires that document-query tool on Quizzer's
-first model step, then restores automatic tool selection for later steps. Optional retrieval outages
-can still degrade gracefully in Tutor and Explainer. No stored prompt or database migration is
-required.
+generates one AI-generated practice question at a time from retrieved course material, gives brief
+criterion-linked formative feedback after each completed attempt, and continues automatically. On
+request, it gives a formative snapshot based only on completed question-and-answer cycles visible in
+the conversation; fewer than two cycles are described as too little evidence for a reliable pattern.
+After at least three completed cycles on one established topic covering at least two distinct
+course-grounded criteria, with no hint or retry pending, it gives a practice checkpoint with
+strengths, next focuses, and one concrete practice action before asking whether to change topics or
+explore the current topic in more depth. If two distinct criteria cannot be identified from the
+visible attempts and grounded material, it does not issue the automatic checkpoint. This checkpoint
+is explicitly a short-round snapshot, not a claim that the topic is complete, and it does not use
+grades, proficiency, mastery, or other broad ability claims. Quizzer never infers coverage from
+retrieval exhaustion or a partial list of retrieved topics. It does not present questions as
+lecturer-authored or exam-equivalent. Chatbots without a safe course retrieval binding do not expose
+Quizzer. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
+returns the required-tool-unavailable response instead of generating an ungrounded question. Once
+discovered, the route requires that document-query tool on Quizzer's first model step, then restores
+automatic tool selection for later steps. Optional retrieval outages can still degrade gracefully in
+Tutor and Explainer. No stored prompt or database migration is required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
