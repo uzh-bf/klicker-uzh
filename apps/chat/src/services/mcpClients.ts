@@ -271,12 +271,76 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   return allowedTools.some((pattern) => {
     // Convert wildcard pattern to regex
     const regexPattern = pattern
-      .replace(/\*/g, '.*') // Replace * with .*
-      .replace(/\?/g, '.') // Replace ? with .
+      .replaceAll('*', '.*') // Replace * with .*
+      .replaceAll('?', '.') // Replace ? with .
 
     const regex = new RegExp(`^${regexPattern}$`, 'i')
     return regex.test(toolName)
   })
+}
+
+function requiredToolName(
+  config: MCPConfigSettings,
+  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>
+): string | undefined {
+  if (!runtimePolicy.required) return undefined
+
+  const configuredTool = config.allowedTools?.[0]
+  if (
+    !Array.isArray(config.allowedTools) ||
+    config.allowedTools.length !== 1 ||
+    typeof configuredTool !== 'string' ||
+    configuredTool.length === 0 ||
+    /[*?]/.test(configuredTool)
+  ) {
+    throw new RequiredMCPUnavailableError()
+  }
+  return configuredTool
+}
+
+function assertRequiredToolAvailable(
+  rawTools: Record<string, any>,
+  requiredRawToolName: string,
+  runtimePolicy: Extract<
+    ReturnType<typeof parseMCPRuntimePolicy>,
+    { required: true }
+  >
+): void {
+  if (
+    !Object.hasOwn(rawTools, requiredRawToolName) ||
+    (requiredRawToolName !== runtimePolicy.toolAlias &&
+      Object.hasOwn(rawTools, runtimePolicy.toolAlias))
+  ) {
+    throw new RequiredMCPUnavailableError()
+  }
+}
+
+function filterServerTools(
+  rawTools: Record<string, any>,
+  serverName: string,
+  config: MCPConfigSettings,
+  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>,
+  requiredRawToolName: string | undefined
+): Record<string, any> {
+  const filteredTools: Record<string, any> = {}
+  const usedNames = new Set<string>()
+
+  for (const [toolName, toolDefinition] of Object.entries(rawTools)) {
+    const allowed = runtimePolicy.required
+      ? toolName === requiredRawToolName
+      : isToolAllowed(toolName, config.allowedTools || [])
+    if (!allowed) continue
+
+    const modelToolName = runtimePolicy.required
+      ? runtimePolicy.toolAlias
+      : toolName
+    // Keep tool names in OpenAI-compatible format and make them deterministic.
+    const namespacedName = toSafeToolName(serverName, modelToolName, usedNames)
+    filteredTools[namespacedName] = toolDefinition
+    usedNames.add(namespacedName)
+  }
+
+  return filteredTools
 }
 
 /**
@@ -289,21 +353,7 @@ async function loadServerTools(
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
-  let requiredRawToolName: string | undefined
-
-  if (runtimePolicy.required) {
-    const configuredTool = config.allowedTools?.[0]
-    if (
-      !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
-      typeof configuredTool !== 'string' ||
-      configuredTool.length === 0 ||
-      /[*?]/.test(configuredTool)
-    ) {
-      throw new RequiredMCPUnavailableError()
-    }
-    requiredRawToolName = configuredTool
-  }
+  const requiredRawToolName = requiredToolName(config, runtimePolicy)
 
   if (server.isActive === false) {
     if (runtimePolicy.required) {
@@ -317,39 +367,16 @@ async function loadServerTools(
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
-      const rawToolName = requiredRawToolName
-      if (
-        !Object.hasOwn(rawTools, rawToolName) ||
-        (rawToolName !== runtimePolicy.toolAlias &&
-          Object.hasOwn(rawTools, runtimePolicy.toolAlias))
-      ) {
-        throw new RequiredMCPUnavailableError()
-      }
+      assertRequiredToolAvailable(rawTools, requiredRawToolName, runtimePolicy)
     }
 
-    // Apply tool filtering
-    const filteredTools: Record<string, any> = {}
-    const usedNames = new Set<string>()
-
-    Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
-      const allowed = runtimePolicy.required
-        ? toolName === requiredRawToolName
-        : isToolAllowed(toolName, config.allowedTools || [])
-
-      if (allowed) {
-        const modelToolName = runtimePolicy.required
-          ? runtimePolicy.toolAlias
-          : toolName
-        // Keep tool names in OpenAI-compatible format and make them deterministic.
-        const namespacedName = toSafeToolName(
-          server.name,
-          modelToolName,
-          usedNames
-        )
-        filteredTools[namespacedName] = toolDefinition
-        usedNames.add(namespacedName)
-      }
-    })
+    const filteredTools = filterServerTools(
+      rawTools,
+      server.name,
+      config,
+      runtimePolicy,
+      requiredRawToolName
+    )
 
     console.log(
       `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`

@@ -292,9 +292,13 @@ function fail(code: string, message: string): never {
   throw new CohortActivationError(code, message)
 }
 
+function compareStrings(left: string, right: string): number {
+  return left.localeCompare(right)
+}
+
 function cloneJson(value: JsonValue): JsonValue {
   if (value === null || typeof value !== 'object') return value
-  return JSON.parse(JSON.stringify(value)) as JsonValue
+  return structuredClone(value)
 }
 
 function jsonEqual(left: JsonValue, right: JsonValue): boolean {
@@ -313,8 +317,8 @@ function jsonEqual(left: JsonValue, right: JsonValue): boolean {
   }
   const leftRecord = left as Record<string, JsonValue>
   const rightRecord = right as Record<string, JsonValue>
-  const leftKeys = Object.keys(leftRecord).sort()
-  const rightKeys = Object.keys(rightRecord).sort()
+  const leftKeys = Object.keys(leftRecord).sort(compareStrings)
+  const rightKeys = Object.keys(rightRecord).sort(compareStrings)
   return (
     leftKeys.length === rightKeys.length &&
     leftKeys.every(
@@ -514,7 +518,7 @@ function exclusionValues(
 }
 
 function canonicalExclusion(value: string): string {
-  return value.trim().replace(/_/g, ' ').replace(/\s+/g, ' ').toLowerCase()
+  return value.trim().replaceAll('_', ' ').replaceAll(/\s+/g, ' ').toLowerCase()
 }
 
 function canonicalExcludedCorpora(
@@ -522,7 +526,7 @@ function canonicalExcludedCorpora(
 ): string[] {
   return exclusionValues(manifest)
     .map((value) => value.trim())
-    .sort((left, right) => left.localeCompare(right))
+    .sort(compareStrings)
 }
 
 function excludedConfigValues(
@@ -576,7 +580,7 @@ function canonicalManifest(
   return {
     target: manifest.target,
     entries: [...manifest.entries]
-      .sort((left, right) => left.configId.localeCompare(right.configId))
+      .sort((left, right) => compareStrings(left.configId, right.configId))
       .map((entry) => ({
         configId: entry.configId,
         chatbotId: entry.chatbotId,
@@ -590,9 +594,9 @@ function canonicalManifest(
         corpusIdentity: entry.corpusIdentity ?? entry.corpusId,
         corpusOwner: entry.corpusOwner ?? entry.corpusOwnerId,
       })),
-    heldConfigIds: [...manifest.heldConfigIds].sort(),
+    heldConfigIds: [...manifest.heldConfigIds].sort(compareStrings),
     excludedCorpora: canonicalExcludedCorpora(manifest),
-    excludedConfigIds: excludedConfigValues(manifest).sort(),
+    excludedConfigIds: excludedConfigValues(manifest).sort(compareStrings),
   }
 }
 
@@ -600,7 +604,7 @@ function assertNamedExclusions(manifest: CohortActivationManifest): string[] {
   const actual = canonicalExclusionValues(manifest)
   const expected = [...COHORT_ACTIVATION_EXCLUDED_CORPORA]
     .map(canonicalExclusion)
-    .sort()
+    .sort(compareStrings)
   if (
     actual.length !== expected.length ||
     actual.some((value, index) => value !== expected[index])
@@ -613,7 +617,7 @@ function assertNamedExclusions(manifest: CohortActivationManifest): string[] {
 function canonicalExclusionValues(
   manifest: Pick<CohortActivationManifest, 'excludedCorpora' | 'exclusions'>
 ): string[] {
-  return exclusionValues(manifest).map(canonicalExclusion).sort()
+  return exclusionValues(manifest).map(canonicalExclusion).sort(compareStrings)
 }
 
 function canonicalExcludedConfigIds(
@@ -621,7 +625,7 @@ function canonicalExcludedConfigIds(
 ): string[] {
   return excludedConfigValues(manifest)
     .map((value) => normalizeUuid(value, 'excludedConfigIds'))
-    .sort()
+    .sort(compareStrings)
 }
 
 function assertCorpusOwnership(manifest: CohortActivationManifest): void {
@@ -656,7 +660,7 @@ function chatbotIds(entries: CohortActivationManifestEntry[]): string[] {
     ...new Set(
       entries.map((entry) => normalizeUuid(entry.chatbotId, 'entry.chatbotId'))
     ),
-  ].sort()
+  ].sort(compareStrings)
 }
 
 function groupEntriesByChatbot(
@@ -670,7 +674,7 @@ function groupEntriesByChatbot(
     groups.set(chatbotId, group)
   }
   return [...groups.entries()].sort(([left], [right]) =>
-    left.localeCompare(right)
+    compareStrings(left, right)
   )
 }
 
@@ -702,7 +706,13 @@ export function fingerprintManifest(
     .digest('hex')
 }
 
-export function validateManifest(manifest: CohortActivationManifest): void {
+type ManifestValidationState = {
+  configIds: Set<string>
+  chatbotModes: Set<string>
+  sourceServersByChatbot: Map<string, string>
+}
+
+function assertManifestShape(manifest: CohortActivationManifest): void {
   if (!manifest || typeof manifest !== 'object') {
     fail('INVALID_MANIFEST', 'manifest is malformed')
   }
@@ -717,68 +727,79 @@ export function validateManifest(manifest: CohortActivationManifest): void {
   ) {
     fail('TARGET_CONTRACT_MISMATCH', 'manifest target is not the PRD contract')
   }
-
   if (!Array.isArray(manifest.entries) || manifest.entries.length === 0) {
     fail('EMPTY_MANIFEST', 'manifest entries are required')
   }
   if (!Array.isArray(manifest.heldConfigIds)) {
     fail('INVALID_MANIFEST', 'held config ids must be an array')
   }
-  assertNamedExclusions(manifest)
+}
 
-  const configIds = new Set<string>()
-  const chatbotModes = new Set<string>()
-  const sourceServersByChatbot = new Map<string, string>()
-  for (const entry of manifest.entries) {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      fail('INVALID_MANIFEST', 'manifest entry is malformed')
-    }
-    const configId = normalizeUuid(entry.configId, 'entry.configId')
-    const chatbotId = normalizeUuid(entry.chatbotId, 'entry.chatbotId')
-    const sourceServerId = normalizeUuid(
-      entry.sourceServerId,
-      'entry.sourceServerId'
-    )
-    assertNonEmpty(entry.chatMode, 'entry.chatMode')
-    if (
-      entry.targetTool !== undefined &&
-      typeof entry.targetTool !== 'string'
-    ) {
-      fail('INVALID_TARGET_SHAPE', 'target tool is malformed')
-    }
-    const targetTool = entryTargetTool(entry)
-    if (!TOOL_PATTERN.test(targetTool)) {
-      fail('INVALID_TARGET_SHAPE', 'target tool contains unsafe characters')
-    }
-    if (targetTool !== DOC_QUERY_TOOL_ALIAS) {
-      fail(
-        'UNKNOWN_TARGET_TOOL',
-        'target tool is not the multi-tenant reader tool'
-      )
-    }
-    normalizeUuid(entry.kbId, 'entry.kbId')
-    entryCorpusIdentity(entry)
-    entryCorpusOwner(entry)
-    assertEntryNotExcluded(entry)
-    if (configIds.has(configId)) {
-      fail('DUPLICATE_CONFIG', 'manifest contains a duplicate config')
-    }
-    configIds.add(configId)
-    const priorSourceServer = sourceServersByChatbot.get(chatbotId)
-    if (priorSourceServer && priorSourceServer !== sourceServerId) {
-      fail(
-        'MIXED_MODE_COVERAGE',
-        'one chatbot uses more than one source server'
-      )
-    }
-    sourceServersByChatbot.set(chatbotId, sourceServerId)
-    const chatbotMode = `${chatbotId}:${entry.chatMode}`
-    if (chatbotModes.has(chatbotMode)) {
-      fail('DUPLICATE_TARGET_CONFIG', 'manifest targets one chatbot mode twice')
-    }
-    chatbotModes.add(chatbotMode)
+function validateManifestEntry(
+  entry: CohortActivationManifestEntry,
+  state: ManifestValidationState
+): void {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    fail('INVALID_MANIFEST', 'manifest entry is malformed')
   }
+  const configId = normalizeUuid(entry.configId, 'entry.configId')
+  const chatbotId = normalizeUuid(entry.chatbotId, 'entry.chatbotId')
+  const sourceServerId = normalizeUuid(
+    entry.sourceServerId,
+    'entry.sourceServerId'
+  )
+  assertNonEmpty(entry.chatMode, 'entry.chatMode')
+  if (entry.targetTool !== undefined && typeof entry.targetTool !== 'string') {
+    fail('INVALID_TARGET_SHAPE', 'target tool is malformed')
+  }
+  const targetTool = entryTargetTool(entry)
+  if (!TOOL_PATTERN.test(targetTool)) {
+    fail('INVALID_TARGET_SHAPE', 'target tool contains unsafe characters')
+  }
+  if (targetTool !== DOC_QUERY_TOOL_ALIAS) {
+    fail(
+      'UNKNOWN_TARGET_TOOL',
+      'target tool is not the multi-tenant reader tool'
+    )
+  }
+  normalizeUuid(entry.kbId, 'entry.kbId')
+  entryCorpusIdentity(entry)
+  entryCorpusOwner(entry)
+  assertEntryNotExcluded(entry)
+  if (state.configIds.has(configId)) {
+    fail('DUPLICATE_CONFIG', 'manifest contains a duplicate config')
+  }
+  state.configIds.add(configId)
+  const priorSourceServer = state.sourceServersByChatbot.get(chatbotId)
+  if (priorSourceServer && priorSourceServer !== sourceServerId) {
+    fail('MIXED_MODE_COVERAGE', 'one chatbot uses more than one source server')
+  }
+  state.sourceServersByChatbot.set(chatbotId, sourceServerId)
+  const chatbotMode = `${chatbotId}:${entry.chatMode}`
+  if (state.chatbotModes.has(chatbotMode)) {
+    fail('DUPLICATE_TARGET_CONFIG', 'manifest targets one chatbot mode twice')
+  }
+  state.chatbotModes.add(chatbotMode)
+}
 
+function validateManifestEntries(
+  manifest: CohortActivationManifest
+): Set<string> {
+  const state: ManifestValidationState = {
+    configIds: new Set<string>(),
+    chatbotModes: new Set<string>(),
+    sourceServersByChatbot: new Map<string, string>(),
+  }
+  for (const entry of manifest.entries) {
+    validateManifestEntry(entry, state)
+  }
+  return state.configIds
+}
+
+function validateHeldConfigIds(
+  manifest: CohortActivationManifest,
+  configIds: Set<string>
+): Set<string> {
   const held = new Set<string>()
   for (const configId of manifest.heldConfigIds) {
     const normalizedId = normalizeUuid(configId, 'heldConfigIds')
@@ -787,6 +808,14 @@ export function validateManifest(manifest: CohortActivationManifest): void {
     }
     held.add(normalizedId)
   }
+  return held
+}
+
+function validateExcludedConfigIds(
+  manifest: CohortActivationManifest,
+  configIds: Set<string>,
+  held: Set<string>
+): void {
   const excluded = new Set<string>()
   for (const configId of canonicalExcludedConfigIds(manifest)) {
     if (
@@ -801,7 +830,14 @@ export function validateManifest(manifest: CohortActivationManifest): void {
     }
     excluded.add(configId)
   }
+}
 
+export function validateManifest(manifest: CohortActivationManifest): void {
+  assertManifestShape(manifest)
+  assertNamedExclusions(manifest)
+  const configIds = validateManifestEntries(manifest)
+  const held = validateHeldConfigIds(manifest, configIds)
+  validateExcludedConfigIds(manifest, configIds, held)
   assertCorpusOwnership(manifest)
 
   const expectedFingerprint = fingerprintManifest(manifest)
@@ -1093,7 +1129,7 @@ export function makeCohortActivationReceiptIntent(
   }
 }
 
-export function validateCohortActivationReceiptIntent(
+function assertReceiptIntentHeader(
   intent: CohortActivationReceiptIntent
 ): void {
   if (!isRecord(intent)) {
@@ -1118,6 +1154,11 @@ export function validateCohortActivationReceiptIntent(
   ) {
     fail('RECEIPT_INVALID', 'cohortActivation intent target is malformed')
   }
+}
+
+function validateReceiptIntentHeldIds(
+  intent: CohortActivationReceiptIntent
+): void {
   if (!Array.isArray(intent.heldConfigIds)) {
     fail('RECEIPT_INVALID', 'cohortActivation held ids are malformed')
   }
@@ -1129,38 +1170,30 @@ export function validateCohortActivationReceiptIntent(
     }
     heldIds.add(normalized)
   }
-  if (intent.targetServerId !== null) {
-    assertUuid(intent.targetServerId, 'targetServerId')
-  }
+}
+
+function validateReceiptIntentExclusions(
+  intent: CohortActivationReceiptIntent
+): void {
+  const expected = [...COHORT_ACTIVATION_EXCLUDED_CORPORA]
+    .map(canonicalExclusion)
+    .sort(compareStrings)
   if (
     !Array.isArray(intent.excludedCorpora) ||
     intent.excludedCorpora.some((value) => typeof value !== 'string') ||
-    intent.excludedCorpora.length !==
-      COHORT_ACTIVATION_EXCLUDED_CORPORA.length ||
+    intent.excludedCorpora.length !== expected.length ||
     intent.excludedCorpora
       .map(canonicalExclusion)
-      .sort()
-      .some(
-        (value, index) =>
-          value !==
-          [...COHORT_ACTIVATION_EXCLUDED_CORPORA]
-            .map(canonicalExclusion)
-            .sort()[index]
-      )
+      .sort(compareStrings)
+      .some((value, index) => value !== expected[index])
   ) {
     fail('RECEIPT_INVALID', 'cohortActivation exclusions are malformed')
   }
-  if (!Array.isArray(intent.excludedConfigIds)) {
-    fail('RECEIPT_INVALID', 'cohortActivation excluded ids are malformed')
-  }
-  const excludedIds = new Set<string>()
-  for (const configId of intent.excludedConfigIds) {
-    const normalized = normalizeUuid(configId, 'excludedConfigIds')
-    if (excludedIds.has(normalized)) {
-      fail('RECEIPT_INVALID', 'cohortActivation excluded ids repeat')
-    }
-    excludedIds.add(normalized)
-  }
+}
+
+function validateReceiptIntentTargetConfigIds(
+  intent: CohortActivationReceiptIntent
+): void {
   if (
     !intent.targetConfigIds ||
     typeof intent.targetConfigIds !== 'object' ||
@@ -1182,6 +1215,11 @@ export function validateCohortActivationReceiptIntent(
     }
     targetIds.add(targetConfigId)
   }
+}
+
+function assertReceiptIntentDigest(
+  intent: CohortActivationReceiptIntent
+): void {
   if (
     typeof intent.payloadDigest !== 'string' ||
     !/^[0-9a-f]{64}$/i.test(intent.payloadDigest)
@@ -1197,6 +1235,30 @@ export function validateCohortActivationReceiptIntent(
   }
 }
 
+export function validateCohortActivationReceiptIntent(
+  intent: CohortActivationReceiptIntent
+): void {
+  assertReceiptIntentHeader(intent)
+  validateReceiptIntentHeldIds(intent)
+  if (intent.targetServerId !== null) {
+    assertUuid(intent.targetServerId, 'targetServerId')
+  }
+  validateReceiptIntentExclusions(intent)
+  if (!Array.isArray(intent.excludedConfigIds)) {
+    fail('RECEIPT_INVALID', 'cohortActivation excluded ids are malformed')
+  }
+  const excludedIds = new Set<string>()
+  for (const configId of intent.excludedConfigIds) {
+    const normalized = normalizeUuid(configId, 'excludedConfigIds')
+    if (excludedIds.has(normalized)) {
+      fail('RECEIPT_INVALID', 'cohortActivation excluded ids repeat')
+    }
+    excludedIds.add(normalized)
+  }
+  validateReceiptIntentTargetConfigIds(intent)
+  assertReceiptIntentDigest(intent)
+}
+
 function assertIntentMatchesManifest(
   manifest: CohortActivationManifest,
   intent: CohortActivationReceiptIntent
@@ -1209,14 +1271,14 @@ function assertIntentMatchesManifest(
   }
   const expectedHeldConfigIds = manifest.heldConfigIds
     .map((configId) => normalizeUuid(configId, 'heldConfigIds'))
-    .sort()
+    .sort(compareStrings)
   const actualHeldConfigIds = intent.heldConfigIds
     .map((configId) => normalizeUuid(configId, 'heldConfigIds'))
-    .sort()
+    .sort(compareStrings)
   const expectedExcludedConfigIds = canonicalExcludedConfigIds(manifest)
   const actualExcludedConfigIds = intent.excludedConfigIds
     .map((configId) => normalizeUuid(configId, 'excludedConfigIds'))
-    .sort()
+    .sort(compareStrings)
   if (
     JSON.stringify(actualHeldConfigIds) !==
       JSON.stringify(expectedHeldConfigIds) ||
@@ -1230,7 +1292,7 @@ function assertIntentMatchesManifest(
   }
 }
 
-export function validateReceipt(receipt: CohortActivationReceipt): void {
+function assertReceiptShape(receipt: CohortActivationReceipt): void {
   if (!isRecord(receipt)) {
     fail('RECEIPT_INVALID', 'cohortActivation receipt is malformed')
   }
@@ -1271,14 +1333,9 @@ export function validateReceipt(receipt: CohortActivationReceipt): void {
       fail('RECEIPT_INVALID', 'cohortActivation receipt entry is malformed')
     }
   }
-  validateManifest({
-    fingerprint: receipt.manifestFingerprint,
-    target: receipt.target,
-    entries: receipt.entries.map(({ manifest }) => manifest),
-    heldConfigIds: receipt.heldConfigIds,
-    excludedCorpora: receipt.excludedCorpora,
-    excludedConfigIds: receipt.excludedConfigIds,
-  })
+}
+
+function assertReceiptTargetServer(receipt: CohortActivationReceipt): void {
   assertUuid(receipt.targetServer.id, 'targetServer.id')
   if (
     typeof receipt.targetServer.updatedAt !== 'string' ||
@@ -1299,9 +1356,12 @@ export function validateReceipt(receipt: CohortActivationReceipt): void {
   ) {
     fail('RECEIPT_INVALID', 'target server snapshot is malformed')
   }
-  const manifestChatbotIds = new Set(
-    chatbotIds(receipt.entries.map(({ manifest }) => manifest))
-  )
+}
+
+function validateSwitchedChatbotIds(
+  receipt: CohortActivationReceipt,
+  manifestChatbotIds: Set<string>
+): Set<string> {
   const switchedChatbotIds = new Set(
     receipt.switchedChatbotIds.map((chatbotId) => chatbotId.toLowerCase())
   )
@@ -1330,67 +1390,86 @@ export function validateReceipt(receipt: CohortActivationReceipt): void {
   ) {
     fail('RECEIPT_INVALID', 'rolled-back receipt has switched chatbot ids')
   }
+  return switchedChatbotIds
+}
+
+function validateReceiptEntry(
+  receipt: CohortActivationReceipt,
+  item: CohortActivationReceiptEntry,
+  switchedChatbotIds: Set<string>,
+  targetConfigIds: Set<string>
+): void {
+  assertUuid(item.prior.id, 'receipt.prior.id')
+  assertUuid(item.prior.chatbotId, 'receipt.prior.chatbotId')
+  assertUuid(item.prior.mcpServerId, 'receipt.prior.mcpServerId')
+  assertUuid(item.target.id, 'receipt.target.id')
+  assertUuid(item.target.chatbotId, 'receipt.target.chatbotId')
+  assertUuid(item.target.mcpServerId, 'receipt.target.mcpServerId')
+  if (targetConfigIds.has(item.target.id.toLowerCase())) {
+    fail('RECEIPT_INVALID', 'target config ids repeat')
+  }
+  targetConfigIds.add(item.target.id.toLowerCase())
+  if (
+    typeof item.prior.updatedAt !== 'string' ||
+    Number.isNaN(Date.parse(item.prior.updatedAt)) ||
+    typeof item.target.updatedAt !== 'string' ||
+    Number.isNaN(Date.parse(item.target.updatedAt)) ||
+    typeof item.prior.priority !== 'number' ||
+    !Number.isFinite(item.prior.priority) ||
+    typeof item.target.priority !== 'number' ||
+    !Number.isFinite(item.target.priority)
+  ) {
+    fail('RECEIPT_INVALID', 'cohortActivation config snapshot is malformed')
+  }
+  if (
+    (item.prior.parameters !== null &&
+      !isEmptyJsonObject(item.prior.parameters)) ||
+    !isSafeSourceAllowedTools(item.prior.allowedTools)
+  ) {
+    fail('RECEIPT_INVALID', 'receipt contains an unsafe source snapshot')
+  }
+  if (
+    !item.prior.isEnabled ||
+    item.target.mcpServerId.toLowerCase() !==
+      receipt.targetServer.id.toLowerCase() ||
+    item.target.chatbotId.toLowerCase() !==
+      item.manifest.chatbotId.toLowerCase() ||
+    item.target.chatMode !== item.manifest.chatMode ||
+    item.prior.id.toLowerCase() !== item.manifest.configId.toLowerCase() ||
+    item.prior.mcpServerId.toLowerCase() !==
+      item.manifest.sourceServerId.toLowerCase() ||
+    item.target.priority !== item.prior.priority ||
+    item.prior.chatbotId.toLowerCase() !==
+      item.manifest.chatbotId.toLowerCase() ||
+    item.prior.chatMode !== item.manifest.chatMode ||
+    !jsonEqual(item.target.allowedTools, [DOC_QUERY_TOOL_ALIAS]) ||
+    !jsonEqual(item.target.parameters, {
+      required: true,
+      toolAlias: DOC_QUERY_TOOL_ALIAS,
+      kb_id: normalizeUuid(item.manifest.kbId, 'entry.kbId'),
+    })
+  ) {
+    fail('RECEIPT_INVALID', 'target config snapshot is malformed')
+  }
+  const expectedTargetEnabled = switchedChatbotIds.has(
+    item.manifest.chatbotId.toLowerCase()
+  )
+  if (item.target.isEnabled !== expectedTargetEnabled) {
+    fail('RECEIPT_INVALID', 'target config state does not match checkpoint')
+  }
+}
+
+function validateReceiptEntries(
+  receipt: CohortActivationReceipt,
+  switchedChatbotIds: Set<string>
+): void {
   const targetConfigIds = new Set<string>()
   for (const item of receipt.entries) {
-    assertUuid(item.prior.id, 'receipt.prior.id')
-    assertUuid(item.prior.chatbotId, 'receipt.prior.chatbotId')
-    assertUuid(item.prior.mcpServerId, 'receipt.prior.mcpServerId')
-    assertUuid(item.target.id, 'receipt.target.id')
-    assertUuid(item.target.chatbotId, 'receipt.target.chatbotId')
-    assertUuid(item.target.mcpServerId, 'receipt.target.mcpServerId')
-    if (targetConfigIds.has(item.target.id.toLowerCase())) {
-      fail('RECEIPT_INVALID', 'target config ids repeat')
-    }
-    targetConfigIds.add(item.target.id.toLowerCase())
-    if (
-      typeof item.prior.updatedAt !== 'string' ||
-      Number.isNaN(Date.parse(item.prior.updatedAt)) ||
-      typeof item.target.updatedAt !== 'string' ||
-      Number.isNaN(Date.parse(item.target.updatedAt)) ||
-      typeof item.prior.priority !== 'number' ||
-      !Number.isFinite(item.prior.priority) ||
-      typeof item.target.priority !== 'number' ||
-      !Number.isFinite(item.target.priority)
-    ) {
-      fail('RECEIPT_INVALID', 'cohortActivation config snapshot is malformed')
-    }
-    if (
-      (item.prior.parameters !== null &&
-        !isEmptyJsonObject(item.prior.parameters)) ||
-      !isSafeSourceAllowedTools(item.prior.allowedTools)
-    ) {
-      fail('RECEIPT_INVALID', 'receipt contains an unsafe source snapshot')
-    }
-    if (
-      !item.prior.isEnabled ||
-      item.target.mcpServerId.toLowerCase() !==
-        receipt.targetServer.id.toLowerCase() ||
-      item.target.chatbotId.toLowerCase() !==
-        item.manifest.chatbotId.toLowerCase() ||
-      item.target.chatMode !== item.manifest.chatMode ||
-      item.prior.id.toLowerCase() !== item.manifest.configId.toLowerCase() ||
-      item.prior.mcpServerId.toLowerCase() !==
-        item.manifest.sourceServerId.toLowerCase() ||
-      item.target.priority !== item.prior.priority ||
-      item.prior.chatbotId.toLowerCase() !==
-        item.manifest.chatbotId.toLowerCase() ||
-      item.prior.chatMode !== item.manifest.chatMode ||
-      !jsonEqual(item.target.allowedTools, [DOC_QUERY_TOOL_ALIAS]) ||
-      !jsonEqual(item.target.parameters, {
-        required: true,
-        toolAlias: DOC_QUERY_TOOL_ALIAS,
-        kb_id: normalizeUuid(item.manifest.kbId, 'entry.kbId'),
-      })
-    ) {
-      fail('RECEIPT_INVALID', 'target config snapshot is malformed')
-    }
-    const expectedTargetEnabled = switchedChatbotIds.has(
-      item.manifest.chatbotId.toLowerCase()
-    )
-    if (item.target.isEnabled !== expectedTargetEnabled) {
-      fail('RECEIPT_INVALID', 'target config state does not match checkpoint')
-    }
+    validateReceiptEntry(receipt, item, switchedChatbotIds, targetConfigIds)
   }
+}
+
+function assertReceiptDigest(receipt: CohortActivationReceipt): void {
   if (
     typeof receipt.payloadDigest !== 'string' ||
     !/^[0-9a-f]{64}$/i.test(receipt.payloadDigest)
@@ -1404,6 +1483,28 @@ export function validateReceipt(receipt: CohortActivationReceipt): void {
   if (expected !== receipt.payloadDigest) {
     fail('RECEIPT_INVALID', 'cohortActivation receipt digest does not match')
   }
+}
+
+export function validateReceipt(receipt: CohortActivationReceipt): void {
+  assertReceiptShape(receipt)
+  validateManifest({
+    fingerprint: receipt.manifestFingerprint,
+    target: receipt.target,
+    entries: receipt.entries.map(({ manifest }) => manifest),
+    heldConfigIds: receipt.heldConfigIds,
+    excludedCorpora: receipt.excludedCorpora,
+    excludedConfigIds: receipt.excludedConfigIds,
+  })
+  assertReceiptTargetServer(receipt)
+  const manifestChatbotIds = new Set(
+    chatbotIds(receipt.entries.map(({ manifest }) => manifest))
+  )
+  const switchedChatbotIds = validateSwitchedChatbotIds(
+    receipt,
+    manifestChatbotIds
+  )
+  validateReceiptEntries(receipt, switchedChatbotIds)
+  assertReceiptDigest(receipt)
 }
 
 function validateReceiptFile(receipt: CohortActivationReceiptFile): void {
@@ -1759,7 +1860,7 @@ export async function switchCohortActivation(
     )
     const switchedChatbotIds = [
       ...new Set([...current.switchedChatbotIds, chatbotId]),
-    ].sort()
+    ].sort(compareStrings)
     const entries = current.entries.map(
       (entry) => changed.get(entry.manifest.configId) ?? entry
     )
@@ -1772,6 +1873,120 @@ export async function switchCohortActivation(
     await checkpoint?.(current)
   }
   return current
+}
+
+type RollbackTransactionState = {
+  item: CohortActivationReceiptEntry
+  source: CohortActivationConfigRecord
+  target: CohortActivationConfigRecord
+  state: 'old' | 'new'
+}
+
+function rollbackItemState(
+  source: CohortActivationConfigRecord,
+  target: CohortActivationConfigRecord
+): 'old' | 'new' {
+  if (source.isEnabled && !target.isEnabled) return 'old'
+  if (!source.isEnabled && target.isEnabled) return 'new'
+  fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
+}
+
+async function readRollbackStates(
+  tx: CohortActivationTransactionStore,
+  receipt: CohortActivationReceipt,
+  group: CohortActivationReceiptEntry[]
+): Promise<{
+  targetServer: CohortActivationServerRecord
+  states: RollbackTransactionState[]
+}> {
+  const targetServer = await tx.findServerById(receipt.targetServer.id)
+  if (
+    !targetServer ||
+    !serverSnapshotEqual(targetServer, receipt.targetServer)
+  ) {
+    fail('TARGET_SERVER_DRIFT', 'target server changed before rollback')
+  }
+  const states: RollbackTransactionState[] = []
+  for (const item of group) {
+    const source = await tx.findConfigById(item.manifest.configId)
+    const target = await tx.findConfigById(item.target.id)
+    if (!source || !target)
+      fail('CONFIG_MISSING', 'cohortActivation config is missing')
+    if (!configShapeEqual(source, item.prior)) {
+      fail('SOURCE_DRIFT', 'source config changed before rollback')
+    }
+    if (!configShapeEqual(target, item.target)) {
+      fail('TARGET_DRIFT', 'target config changed before rollback')
+    }
+    states.push({
+      item,
+      source,
+      target,
+      state: rollbackItemState(source, target),
+    })
+  }
+  const hasOld = states.some(({ state }) => state === 'old')
+  const hasNew = states.some(({ state }) => state === 'new')
+  if (hasOld && hasNew) {
+    fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
+  }
+  return { targetServer, states }
+}
+
+async function restoreRollbackStates(
+  tx: CohortActivationTransactionStore,
+  targetServer: CohortActivationServerRecord,
+  states: RollbackTransactionState[]
+): Promise<CohortActivationReceiptEntry[]> {
+  const entries: CohortActivationReceiptEntry[] = []
+  for (const { item, source, target, state } of states) {
+    if (state === 'old') {
+      entries.push({
+        ...item,
+        target: { ...item.target, isEnabled: false },
+      })
+      continue
+    }
+    const disabledTarget = await tx.updateConfig(
+      target.id,
+      target.updatedAt,
+      targetConfigData(
+        item.manifest,
+        targetServer.id,
+        item.prior.priority,
+        false
+      )
+    )
+    if (!disabledTarget || disabledTarget.isEnabled) {
+      fail('ROLLBACK_FAILED', 'target config was not disabled')
+    }
+    const enabledSource = await tx.updateConfig(
+      source.id,
+      source.updatedAt,
+      sourceConfigData(item.prior, true)
+    )
+    if (!enabledSource || !configContentEqual(enabledSource, item.prior)) {
+      fail('ROLLBACK_FAILED', 'source config was not restored')
+    }
+    entries.push({ ...item, target: snapshotConfig(disabledTarget) })
+  }
+  return entries
+}
+
+async function rollbackChatbotGroup(
+  tx: CohortActivationTransactionStore,
+  receipt: CohortActivationReceipt,
+  group: CohortActivationReceiptEntry[]
+): Promise<CohortActivationReceiptEntry[]> {
+  const { targetServer, states } = await readRollbackStates(tx, receipt, group)
+  return restoreRollbackStates(tx, targetServer, states)
+}
+
+function rollbackReceiptState(
+  groupIndex: number,
+  groupCount: number
+): 'rolled_back' | 'rolling_back' {
+  return groupIndex === groupCount - 1 ? 'rolled_back' : 'rolling_back'
 }
 
 export async function rollbackCohortActivation(
@@ -1791,81 +2006,9 @@ export async function rollbackCohortActivation(
       })
     )
     // Roll back one chatbot at a time so another chatbot cannot be half-restored.
-    const restoredEntries = await store.transaction(async (tx) => {
-      const targetServer = await tx.findServerById(current.targetServer.id)
-      if (
-        !targetServer ||
-        !serverSnapshotEqual(targetServer, current.targetServer)
-      ) {
-        fail('TARGET_SERVER_DRIFT', 'target server changed before rollback')
-      }
-      const states: Array<{
-        item: CohortActivationReceiptEntry
-        source: CohortActivationConfigRecord
-        target: CohortActivationConfigRecord
-        state: 'old' | 'new'
-      }> = []
-      for (const item of group) {
-        const source = await tx.findConfigById(item.manifest.configId)
-        const target = await tx.findConfigById(item.target.id)
-        if (!source || !target)
-          fail('CONFIG_MISSING', 'cohortActivation config is missing')
-        if (!configShapeEqual(source, item.prior)) {
-          fail('SOURCE_DRIFT', 'source config changed before rollback')
-        }
-        if (!configShapeEqual(target, item.target)) {
-          fail('TARGET_DRIFT', 'target config changed before rollback')
-        }
-        const state =
-          source.isEnabled && !target.isEnabled
-            ? 'old'
-            : !source.isEnabled && target.isEnabled
-              ? 'new'
-              : null
-        if (!state) {
-          fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
-        }
-        states.push({ item, source, target, state })
-      }
-      const hasOld = states.some(({ state }) => state === 'old')
-      const hasNew = states.some(({ state }) => state === 'new')
-      if (hasOld && hasNew) {
-        fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
-      }
-      const entries: CohortActivationReceiptEntry[] = []
-      for (const { item, source, target, state } of states) {
-        if (state === 'old') {
-          entries.push({
-            ...item,
-            target: { ...item.target, isEnabled: false },
-          })
-          continue
-        }
-        const disabledTarget = await tx.updateConfig(
-          target.id,
-          target.updatedAt,
-          targetConfigData(
-            item.manifest,
-            targetServer.id,
-            item.prior.priority,
-            false
-          )
-        )
-        if (!disabledTarget || disabledTarget.isEnabled) {
-          fail('ROLLBACK_FAILED', 'target config was not disabled')
-        }
-        const enabledSource = await tx.updateConfig(
-          source.id,
-          source.updatedAt,
-          sourceConfigData(item.prior, true)
-        )
-        if (!enabledSource || !configContentEqual(enabledSource, item.prior)) {
-          fail('ROLLBACK_FAILED', 'source config was not restored')
-        }
-        entries.push({ ...item, target: snapshotConfig(disabledTarget) })
-      }
-      return entries
-    })
+    const restoredEntries = await store.transaction((tx) =>
+      rollbackChatbotGroup(tx, current, group)
+    )
     const changed = new Map(
       restoredEntries.map((entry) => [entry.manifest.configId, entry])
     )
@@ -1877,7 +2020,7 @@ export async function rollbackCohortActivation(
     )
     current = makeReceiptFrom(current, {
       entries,
-      state: groupIndex === groups.length - 1 ? 'rolled_back' : 'rolling_back',
+      state: rollbackReceiptState(groupIndex, groups.length),
       switchedChatbotIds,
     })
     await checkpoint?.(current)
@@ -1885,80 +2028,124 @@ export async function rollbackCohortActivation(
   return current
 }
 
+function readbackItemState(
+  source: CohortActivationConfigRecord,
+  target: CohortActivationConfigRecord
+): 'prepared' | 'switched' {
+  if (source.isEnabled && !target.isEnabled) return 'prepared'
+  if (!source.isEnabled && target.isEnabled) return 'switched'
+  fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
+}
+
+async function readReceiptStateItem(
+  tx: CohortActivationTransactionStore,
+  item: CohortActivationReceiptEntry
+): Promise<{
+  source: CohortActivationConfigRecord
+  target: CohortActivationConfigRecord
+  state: 'prepared' | 'switched'
+}> {
+  const source = await tx.findConfigById(item.manifest.configId)
+  const target = await tx.findConfigById(item.target.id)
+  if (!source || !target)
+    fail('CONFIG_MISSING', 'cohortActivation config is missing')
+  const sourceShapeMatches = configShapeEqual(source, item.prior)
+  const targetShapeMatches = configShapeEqual(target, item.target)
+  if (!sourceShapeMatches) {
+    fail('SOURCE_READBACK_MISMATCH', 'source config differs from receipt')
+  }
+  if (!targetShapeMatches) {
+    fail('TARGET_READBACK_MISMATCH', 'target config differs from receipt')
+  }
+  return { source, target, state: readbackItemState(source, target) }
+}
+
+function makeReadbackResult(
+  receipt: CohortActivationReceipt,
+  targetServer: CohortActivationServerRecord
+): CohortActivationReadback {
+  return {
+    state: receipt.state,
+    entryCount: receipt.entries.length,
+    chatbotCount: chatbotIds(receipt.entries.map(({ manifest }) => manifest))
+      .length,
+    switchedChatbotCount: 0,
+    sourceEnabled: 0,
+    sourceDisabled: 0,
+    targetEnabled: 0,
+    targetDisabled: 0,
+    targetServerActive: targetServer.isActive,
+  }
+}
+
+function recordReadbackItem(
+  result: CohortActivationReadback,
+  actualChatbotStates: Map<string, 'prepared' | 'switched'>,
+  item: CohortActivationReceiptEntry,
+  source: CohortActivationConfigRecord,
+  target: CohortActivationConfigRecord,
+  state: 'prepared' | 'switched'
+): void {
+  const priorState = actualChatbotStates.get(item.manifest.chatbotId)
+  if (priorState && priorState !== state) {
+    fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
+  }
+  actualChatbotStates.set(item.manifest.chatbotId, state)
+  if (source.isEnabled) result.sourceEnabled += 1
+  else result.sourceDisabled += 1
+  if (target.isEnabled) result.targetEnabled += 1
+  else result.targetDisabled += 1
+}
+
+function finalizeReadback(
+  result: CohortActivationReadback,
+  receipt: CohortActivationReceipt,
+  actualChatbotStates: Map<string, 'prepared' | 'switched'>
+): void {
+  const actualStates = new Set(actualChatbotStates.values())
+  if (actualStates.size > 1) result.state = 'partial'
+  else if (actualStates.has('switched')) result.state = 'switched'
+  else if (actualStates.has('prepared')) {
+    result.state = receipt.state === 'rolled_back' ? 'rolled_back' : 'prepared'
+  }
+  result.switchedChatbotCount = [...actualChatbotStates.values()].filter(
+    (state) => state === 'switched'
+  ).length
+  if (receipt.state === 'switched' && result.state !== 'switched') {
+    fail('READBACK_STATE_MISMATCH', 'switched state is not active')
+  }
+  if (receipt.state === 'rolled_back' && result.state !== 'rolled_back') {
+    fail('READBACK_STATE_MISMATCH', 'rolled-back state is not restored')
+  }
+}
+
+async function readCohortActivationStateInTransaction(
+  tx: CohortActivationTransactionStore,
+  receipt: CohortActivationReceipt
+): Promise<CohortActivationReadback> {
+  const targetServer = await tx.findServerById(receipt.targetServer.id)
+  if (
+    !targetServer ||
+    !serverSnapshotEqual(targetServer, receipt.targetServer)
+  ) {
+    fail('TARGET_SERVER_DRIFT', 'target server differs from receipt')
+  }
+  const result = makeReadbackResult(receipt, targetServer)
+  const actualChatbotStates = new Map<string, 'prepared' | 'switched'>()
+  for (const item of receipt.entries) {
+    const { source, target, state } = await readReceiptStateItem(tx, item)
+    recordReadbackItem(result, actualChatbotStates, item, source, target, state)
+  }
+  finalizeReadback(result, receipt, actualChatbotStates)
+  return result
+}
+
 export async function readCohortActivationState(
   store: CohortActivationStore,
   receipt: CohortActivationReceipt
 ): Promise<CohortActivationReadback> {
   validateReceipt(receipt)
-  return store.transaction(async (tx) => {
-    const targetServer = await tx.findServerById(receipt.targetServer.id)
-    if (
-      !targetServer ||
-      !serverSnapshotEqual(targetServer, receipt.targetServer)
-    ) {
-      fail('TARGET_SERVER_DRIFT', 'target server differs from receipt')
-    }
-    const result: CohortActivationReadback = {
-      state: receipt.state,
-      entryCount: receipt.entries.length,
-      chatbotCount: chatbotIds(receipt.entries.map(({ manifest }) => manifest))
-        .length,
-      switchedChatbotCount: 0,
-      sourceEnabled: 0,
-      sourceDisabled: 0,
-      targetEnabled: 0,
-      targetDisabled: 0,
-      targetServerActive: targetServer.isActive,
-    }
-    const actualChatbotStates = new Map<string, 'prepared' | 'switched'>()
-    for (const item of receipt.entries) {
-      const source = await tx.findConfigById(item.manifest.configId)
-      const target = await tx.findConfigById(item.target.id)
-      if (!source || !target)
-        fail('CONFIG_MISSING', 'cohortActivation config is missing')
-      const sourceShapeMatches = configShapeEqual(source, item.prior)
-      const targetShapeMatches = configShapeEqual(target, item.target)
-      if (!sourceShapeMatches) {
-        fail('SOURCE_READBACK_MISMATCH', 'source config differs from receipt')
-      }
-      if (!targetShapeMatches) {
-        fail('TARGET_READBACK_MISMATCH', 'target config differs from receipt')
-      }
-      const state =
-        source.isEnabled && !target.isEnabled
-          ? 'prepared'
-          : !source.isEnabled && target.isEnabled
-            ? 'switched'
-            : null
-      if (!state) {
-        fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
-      }
-      const priorState = actualChatbotStates.get(item.manifest.chatbotId)
-      if (priorState && priorState !== state) {
-        fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
-      }
-      actualChatbotStates.set(item.manifest.chatbotId, state)
-      if (source.isEnabled) result.sourceEnabled += 1
-      else result.sourceDisabled += 1
-      if (target.isEnabled) result.targetEnabled += 1
-      else result.targetDisabled += 1
-    }
-    const actualStates = new Set(actualChatbotStates.values())
-    if (actualStates.size > 1) result.state = 'partial'
-    else if (actualStates.has('switched')) result.state = 'switched'
-    else if (actualStates.has('prepared')) {
-      result.state =
-        receipt.state === 'rolled_back' ? 'rolled_back' : 'prepared'
-    }
-    result.switchedChatbotCount = [...actualChatbotStates.values()].filter(
-      (state) => state === 'switched'
-    ).length
-    if (receipt.state === 'switched' && result.state !== 'switched') {
-      fail('READBACK_STATE_MISMATCH', 'switched state is not active')
-    }
-    if (receipt.state === 'rolled_back' && result.state !== 'rolled_back') {
-      fail('READBACK_STATE_MISMATCH', 'rolled-back state is not restored')
-    }
-    return result
-  })
+  return store.transaction((tx) =>
+    readCohortActivationStateInTransaction(tx, receipt)
+  )
 }

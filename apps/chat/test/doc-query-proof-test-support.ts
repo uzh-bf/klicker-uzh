@@ -1,4 +1,4 @@
-import { mkdtemp, open, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, open, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -71,6 +71,10 @@ function getChatbotCount(index: number, extraChatbotCases: number): number {
   return 1
 }
 
+function compareStrings(left: string, right: string): number {
+  return left.localeCompare(right)
+}
+
 export function createTemporaryDirectoryRegistry() {
   const directories: string[] = []
   return {
@@ -86,6 +90,23 @@ export function createTemporaryDirectoryRegistry() {
     },
   }
 }
+
+type TemporaryDirectoryRegistry = {
+  register: (directory: string) => void
+}
+
+async function createPrivateDirectory(
+  registry: TemporaryDirectoryRegistry,
+  prefix: string
+): Promise<string> {
+  const directory = await mkdtemp(join(tmpdir(), prefix))
+  await chmod(directory, 0o700)
+  registry.register(directory)
+  return directory
+}
+
+const defaultProofEnvironmentRegistry = createTemporaryDirectoryRegistry()
+afterEach(() => defaultProofEnvironmentRegistry.cleanup())
 
 export function createProofManifest({
   environment,
@@ -131,15 +152,21 @@ export function createProofManifest({
     : manifest
 }
 
-export async function proofDummyEnvironment(): Promise<Record<string, string>> {
+export async function proofDummyEnvironment(
+  registry: TemporaryDirectoryRegistry = defaultProofEnvironmentRegistry
+): Promise<Record<string, string>> {
   const { privateKey } = await generateKeyPair('ES256')
+  const directory = await createPrivateDirectory(
+    registry,
+    'klicker-doc-query-proof-env-'
+  )
   return {
     DOC_QUERY_JWT_TOKEN_KLICKER: 'dummy-transport-token',
     DOC_QUERY_SCOPE_PRIVATE_KEY: await exportPKCS8(privateKey),
     DOC_QUERY_SCOPE_KID: 'dummy-key',
     DOC_QUERY_SCOPE_ISSUER: 'https://chat.klicker.test',
     DOC_QUERY_SCOPE_AUDIENCE: 'klicker-doc-query-test',
-    DOC_QUERY_PROOF_MANIFEST_PATH: '/private/tmp/dummy-manifest.json',
+    DOC_QUERY_PROOF_MANIFEST_PATH: join(directory, 'dummy-manifest.json'),
   }
 }
 
@@ -208,10 +235,10 @@ export function createProofChildWriter(registry: {
   register: (directory: string) => void
 }) {
   return async function writeDummy(source: string) {
-    const directory = await mkdtemp(
-      join(tmpdir(), 'klicker-doc-query-proof-test-')
+    const directory = await createPrivateDirectory(
+      registry,
+      'klicker-doc-query-proof-test-'
     )
-    registry.register(directory)
     const path = join(directory, 'child.mjs')
     await writeFile(path, source, { mode: 0o700 })
     return { path, lockPath: join(directory, 'proof.lock') }
@@ -522,8 +549,8 @@ export function defineProofSupervisorSuite(
       if (config.expectProofManifestFingerprint) {
         expectedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
       }
-      expect(Object.keys(childEnvironment).sort()).toEqual(
-        expectedEnvironmentNames.sort()
+      expect(Object.keys(childEnvironment).sort(compareStrings)).toEqual(
+        expectedEnvironmentNames.sort(compareStrings)
       )
     })
 
@@ -570,7 +597,7 @@ export function defineProofSupervisorSuite(
         () =>
           config
             .passedReceiptSource()
-            .replace("phase: 'complete'", "phase: 'matrix'"),
+            .replaceAll("phase: 'complete'", "phase: 'matrix'"),
         'protocol_failed',
       ],
       [
@@ -592,7 +619,7 @@ export function defineProofSupervisorSuite(
         () =>
           config
             .passedReceiptSource()
-            .replace('process.exit(0)', 'process.exit(1)'),
+            .replaceAll('process.exit(0)', 'process.exit(1)'),
         'child_failed',
       ],
       ['a missing receipt', () => 'process.exit(0)', 'child_failed'],
@@ -643,10 +670,10 @@ export function defineProofSupervisorSuite(
     })
 
     test('passes no unrelated environment or file descriptor to the child', async () => {
-      const directory = await mkdtemp(
-        join(tmpdir(), 'klicker-doc-query-fd-test-')
+      const directory = await createPrivateDirectory(
+        suiteRegistry,
+        'klicker-doc-query-fd-test-'
       )
-      suiteRegistry.register(directory)
       const unrelated = await open(join(directory, 'unrelated'), 'w')
       const allowedEnvironmentNames = [
         'DOC_QUERY_JWT_TOKEN_KLICKER',

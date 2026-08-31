@@ -442,7 +442,7 @@ async function createScopeSigner(environment) {
   let privateKey
   try {
     privateKey = await importPKCS8(
-      environment.DOC_QUERY_SCOPE_PRIVATE_KEY.replaceAll('\\n', '\n'),
+      environment.DOC_QUERY_SCOPE_PRIVATE_KEY.replaceAll(String.raw`\n`, '\n'),
       'ES256'
     )
   } catch {
@@ -537,8 +537,7 @@ async function provePositive(
   })
   const documents = extractDocuments(result)
   return Boolean(
-    documents &&
-      documents.summary.sources_returned >= proofCase.positive.minSources &&
+    documents?.summary.sources_returned >= proofCase.positive.minSources &&
       hasAnyDocumentMarker(documents, proofCase.positive.expectAny)
   )
 }
@@ -558,7 +557,7 @@ async function proveIsolation(
   })
   const documents = extractDocuments(result)
   return Boolean(
-    documents &&
+    documents?.sources &&
       !hasAnyReferenceMarker(documents, proofCase.foreign.forbidReferences)
   )
 }
@@ -615,6 +614,85 @@ async function proveRejections(
   receipt.counts.rejectionsPassed += 1
 }
 
+function recordPositivePass(receipt) {
+  receipt.counts.positivePassed += 1
+}
+
+function recordCompletedCase(receipt) {
+  receipt.counts.isolationPassed += 1
+  receipt.counts.representativeChatbotsPassed += 1
+  receipt.counts.kbPassed += 1
+}
+
+async function runCanaryProof(invoke, signer, environment, manifest, receipt) {
+  const canary = manifest.cases[0]
+  const canaryChatbotId = canary.chatbotIds[0]
+  receipt.phase = 'canary'
+
+  if (
+    !(await provePositive(invoke, signer, environment, canary, canaryChatbotId))
+  ) {
+    throw new ProofFailure('canary_positive_failed', canary.id)
+  }
+  recordPositivePass(receipt)
+  if (
+    !(await proveIsolation(
+      invoke,
+      signer,
+      environment,
+      canary,
+      canaryChatbotId
+    ))
+  ) {
+    throw new ProofFailure('canary_isolation_failed', canary.id)
+  }
+  recordCompletedCase(receipt)
+
+  receipt.phase = 'rejections'
+  await proveRejections(
+    invoke,
+    signer,
+    environment,
+    canary,
+    canaryChatbotId,
+    manifest.cases[1].kbId,
+    receipt
+  )
+}
+
+async function runSerialProof(invoke, signer, environment, manifest, receipt) {
+  receipt.phase = 'matrix'
+  for (const proofCase of manifest.cases.slice(1)) {
+    const representativeChatbotId = [...proofCase.chatbotIds]
+      .sort(compareUtf16Strings)
+      .at(-1)
+    if (
+      !(await provePositive(
+        invoke,
+        signer,
+        environment,
+        proofCase,
+        representativeChatbotId
+      ))
+    ) {
+      throw new ProofFailure('positive_failed', proofCase.id)
+    }
+    recordPositivePass(receipt)
+    if (
+      !(await proveIsolation(
+        invoke,
+        signer,
+        environment,
+        proofCase,
+        representativeChatbotId
+      ))
+    ) {
+      throw new ProofFailure('isolation_failed', proofCase.id)
+    }
+    recordCompletedCase(receipt)
+  }
+}
+
 export async function runProofMatrix({
   manifest,
   environment,
@@ -630,80 +708,8 @@ export async function runProofMatrix({
       return invoke(request)
     }
     const signer = await createScopeSigner(environment)
-    const canary = manifest.cases[0]
-    const canaryChatbotId = canary.chatbotIds[0]
-    receipt.phase = 'canary'
-
-    if (
-      !(await provePositive(
-        invokeWithCap,
-        signer,
-        environment,
-        canary,
-        canaryChatbotId
-      ))
-    ) {
-      throw new ProofFailure('canary_positive_failed', canary.id)
-    }
-    receipt.counts.positivePassed += 1
-    if (
-      !(await proveIsolation(
-        invokeWithCap,
-        signer,
-        environment,
-        canary,
-        canaryChatbotId
-      ))
-    ) {
-      throw new ProofFailure('canary_isolation_failed', canary.id)
-    }
-    receipt.counts.isolationPassed += 1
-    receipt.counts.representativeChatbotsPassed += 1
-    receipt.counts.kbPassed += 1
-
-    receipt.phase = 'rejections'
-    await proveRejections(
-      invokeWithCap,
-      signer,
-      environment,
-      canary,
-      canaryChatbotId,
-      manifest.cases[1].kbId,
-      receipt
-    )
-
-    receipt.phase = 'matrix'
-    for (const proofCase of manifest.cases.slice(1)) {
-      const representativeChatbotId = [...proofCase.chatbotIds]
-        .sort(compareUtf16Strings)
-        .at(-1)
-      if (
-        !(await provePositive(
-          invokeWithCap,
-          signer,
-          environment,
-          proofCase,
-          representativeChatbotId
-        ))
-      ) {
-        throw new ProofFailure('positive_failed', proofCase.id)
-      }
-      receipt.counts.positivePassed += 1
-      if (
-        !(await proveIsolation(
-          invokeWithCap,
-          signer,
-          environment,
-          proofCase,
-          representativeChatbotId
-        ))
-      ) {
-        throw new ProofFailure('isolation_failed', proofCase.id)
-      }
-      receipt.counts.isolationPassed += 1
-      receipt.counts.representativeChatbotsPassed += 1
-      receipt.counts.kbPassed += 1
-    }
+    await runCanaryProof(invokeWithCap, signer, environment, manifest, receipt)
+    await runSerialProof(invokeWithCap, signer, environment, manifest, receipt)
 
     receipt.phase = 'complete'
     receipt.result = 'passed'

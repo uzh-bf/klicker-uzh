@@ -1,36 +1,36 @@
-import { encrypt } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { createConnection, createServer, type Server } from 'node:net'
+import { randomUUID } from 'node:crypto'
 import {
   chmod,
+  mkdir,
   readFile,
   rename,
-  mkdir,
   unlink,
   writeFile,
 } from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
+import { createConnection, createServer, type Server } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { encrypt } from '@klicker-uzh/util'
+import { PrismaPg } from '@prisma/adapter-pg'
 import {
   assertReceiptMatchesManifest,
   assertReceiptTransition,
   type CohortActivationManifest,
+  type CohortActivationReceipt,
   type CohortActivationReceiptExpectation,
   type CohortActivationReceiptFile,
-  type CohortActivationReceipt,
   type CohortActivationReceiptIntent,
   dryRunCohortActivation,
   makeCohortActivationReceiptIntent,
   prepareCohortActivation,
-  recoverPreparedCohortActivation,
   readCohortActivationState,
-  rollbackCohortActivation,
   receiptExpectation,
+  recoverPreparedCohortActivation,
+  rollbackCohortActivation,
   switchCohortActivation,
-  validatePinnedManifest,
   validateCohortActivationReceiptIntent,
+  validatePinnedManifest,
   validateReceipt,
 } from './doc-query-cohort-activation.js'
 import { createPrismaCohortActivationStore } from './doc-query-cohort-activation-prisma.js'
@@ -261,6 +261,162 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({ adapter })
 }
 
+type ReceiptPersister = (receipt: ReceiptFile) => Promise<void>
+
+async function runDryRun(
+  store: ReturnType<typeof createPrismaCohortActivationStore>,
+  manifest: CohortActivationManifest
+): Promise<void> {
+  const result = await dryRunCohortActivation(store, manifest)
+  printResult({
+    status: result.status,
+    entryCount: result.entryCount,
+    heldCount: result.heldCount,
+    wouldCreateServer: result.wouldCreateServer,
+    wouldCreateConfigs: result.wouldCreateConfigs,
+    wouldSwitch: result.wouldSwitch,
+    wouldPreserveSourceRows: result.wouldPreserveSourceRows,
+  })
+}
+
+async function runMigrate(
+  store: ReturnType<typeof createPrismaCohortActivationStore>,
+  manifest: CohortActivationManifest,
+  existingReceipt: ReceiptFile | null,
+  persistReceipt: ReceiptPersister
+): Promise<void> {
+  if (existingReceipt) {
+    printResult({ status: 'refused', reason: 'receipt_exists' })
+    process.exitCode = 3
+    return
+  }
+  const existingTargetServerId = await store.transaction(async (tx) => {
+    const target = await tx.findServerByName(manifest.target.serverName)
+    return target?.id ?? null
+  })
+  const bearer = existingTargetServerId ? undefined : process.env[TOKEN_ENV]
+  if (
+    !existingTargetServerId &&
+    (!bearer || bearer.trim() === '' || /[\r\n]/.test(bearer))
+  ) {
+    printResult({ status: 'refused', reason: 'bearer_missing_or_invalid' })
+    process.exitCode = 3
+    return
+  }
+  const intent = makeCohortActivationReceiptIntent(
+    manifest,
+    existingTargetServerId
+  )
+  await persistReceipt(intent)
+  // The token is read only long enough to encrypt it. It is never written
+  // to a receipt, argument list, log, or child process.
+  const encryptedBearer = bearer ? encrypt(bearer) : undefined
+  if (bearer) delete process.env[TOKEN_ENV]
+  const prepared = await prepareCohortActivation(store, manifest, {
+    encryptedBearer,
+    intent,
+  })
+  await persistReceipt(prepared)
+  const switched = await switchCohortActivation(
+    store,
+    prepared,
+    (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
+  )
+  await persistReceipt(switched)
+  const state = await readCohortActivationState(store, switched)
+  printResult({
+    status: 'switched',
+    state: state.state,
+    entryCount: state.entryCount,
+    chatbotCount: state.chatbotCount,
+    sourceDisabled: state.sourceDisabled,
+    targetEnabled: state.targetEnabled,
+  })
+}
+
+async function runRecover(
+  store: ReturnType<typeof createPrismaCohortActivationStore>,
+  manifest: CohortActivationManifest,
+  existingReceipt: ReceiptFile | null,
+  persistReceipt: ReceiptPersister
+): Promise<void> {
+  if (!existingReceipt) {
+    printResult({ status: 'refused', reason: 'receipt_missing' })
+    process.exitCode = 3
+    return
+  }
+  if (!isCohortActivationIntent(existingReceipt)) {
+    printResult({ status: 'refused', reason: 'receipt_complete' })
+    process.exitCode = 3
+    return
+  }
+  if (existingReceipt.manifestFingerprint !== manifest.fingerprint) {
+    printResult({ status: 'refused', reason: 'receipt_manifest_mismatch' })
+    process.exitCode = 3
+    return
+  }
+  const recovered = await recoverPreparedCohortActivation(
+    store,
+    manifest,
+    existingReceipt
+  )
+  await persistReceipt(recovered)
+  printResult({
+    status: 'prepared_recovered',
+    state: recovered.state,
+    entryCount: recovered.entries.length,
+  })
+}
+
+async function runSettledCommand(
+  store: ReturnType<typeof createPrismaCohortActivationStore>,
+  command: Command,
+  manifest: CohortActivationManifest,
+  existingReceipt: ReceiptFile | null,
+  persistReceipt: ReceiptPersister
+): Promise<void> {
+  if (!existingReceipt) {
+    printResult({ status: 'refused', reason: 'receipt_missing' })
+    process.exitCode = 3
+    return
+  }
+  if (isCohortActivationIntent(existingReceipt)) {
+    printResult({ status: 'refused', reason: 'preparing_receipt' })
+    process.exitCode = 3
+    return
+  }
+  assertReceiptMatchesManifest(existingReceipt, manifest)
+  if (command === 'rollback') {
+    const rolledBack = await rollbackCohortActivation(
+      store,
+      existingReceipt,
+      (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
+    )
+    await persistReceipt(rolledBack)
+    const state = await readCohortActivationState(store, rolledBack)
+    printResult({
+      status: 'rolled_back',
+      state: state.state,
+      entryCount: state.entryCount,
+      chatbotCount: state.chatbotCount,
+      sourceEnabled: state.sourceEnabled,
+      targetDisabled: state.targetDisabled,
+    })
+    return
+  }
+
+  const state = await readCohortActivationState(store, existingReceipt)
+  printResult({
+    status: 'readback',
+    state: state.state,
+    entryCount: state.entryCount,
+    sourceEnabled: state.sourceEnabled,
+    sourceDisabled: state.sourceDisabled,
+    targetEnabled: state.targetEnabled,
+    targetDisabled: state.targetDisabled,
+  })
+}
+
 async function main(): Promise<void> {
   let args: ReturnType<typeof parseArgs>
   try {
@@ -302,16 +458,7 @@ async function main(): Promise<void> {
     )
     validatePinnedManifest(manifest)
     if (args.command === 'dry-run') {
-      const result = await dryRunCohortActivation(store, manifest)
-      printResult({
-        status: result.status,
-        entryCount: result.entryCount,
-        heldCount: result.heldCount,
-        wouldCreateServer: result.wouldCreateServer,
-        wouldCreateConfigs: result.wouldCreateConfigs,
-        wouldSwitch: result.wouldSwitch,
-        wouldPreserveSourceRows: result.wouldPreserveSourceRows,
-      })
+      await runDryRun(store, manifest)
       return
     }
 
@@ -322,126 +469,22 @@ async function main(): Promise<void> {
       expectedReceipt = receiptExpectation(receipt)
     }
     if (args.command === 'migrate') {
-      if (existingReceipt) {
-        printResult({ status: 'refused', reason: 'receipt_exists' })
-        process.exitCode = 3
-        return
-      }
-      const existingTargetServerId = await store.transaction(async (tx) => {
-        const target = await tx.findServerByName(manifest.target.serverName)
-        return target?.id ?? null
-      })
-      const bearer = existingTargetServerId ? undefined : process.env[TOKEN_ENV]
-      if (
-        !existingTargetServerId &&
-        (!bearer || bearer.trim() === '' || /[\r\n]/.test(bearer))
-      ) {
-        printResult({ status: 'refused', reason: 'bearer_missing_or_invalid' })
-        process.exitCode = 3
-        return
-      }
-      const intent = makeCohortActivationReceiptIntent(
-        manifest,
-        existingTargetServerId
-      )
-      await persistReceipt(intent)
-      // The token is read only long enough to encrypt it. It is never written
-      // to a receipt, argument list, log, or child process.
-      const encryptedBearer = bearer ? encrypt(bearer) : undefined
-      if (bearer) delete process.env[TOKEN_ENV]
-      const prepared = await prepareCohortActivation(store, manifest, {
-        encryptedBearer,
-        intent,
-      })
-      await persistReceipt(prepared)
-      const switched = await switchCohortActivation(
-        store,
-        prepared,
-        (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
-      )
-      await persistReceipt(switched)
-      const state = await readCohortActivationState(store, switched)
-      printResult({
-        status: 'switched',
-        state: state.state,
-        entryCount: state.entryCount,
-        chatbotCount: state.chatbotCount,
-        sourceDisabled: state.sourceDisabled,
-        targetEnabled: state.targetEnabled,
-      })
+      await runMigrate(store, manifest, existingReceipt, persistReceipt)
       return
     }
 
     if (args.command === 'recover') {
-      if (!existingReceipt) {
-        printResult({ status: 'refused', reason: 'receipt_missing' })
-        process.exitCode = 3
-        return
-      }
-      if (!isCohortActivationIntent(existingReceipt)) {
-        printResult({ status: 'refused', reason: 'receipt_complete' })
-        process.exitCode = 3
-        return
-      }
-      if (existingReceipt.manifestFingerprint !== manifest.fingerprint) {
-        printResult({ status: 'refused', reason: 'receipt_manifest_mismatch' })
-        process.exitCode = 3
-        return
-      }
-      const recovered = await recoverPreparedCohortActivation(
-        store,
-        manifest,
-        existingReceipt
-      )
-      await persistReceipt(recovered)
-      printResult({
-        status: 'prepared_recovered',
-        state: recovered.state,
-        entryCount: recovered.entries.length,
-      })
+      await runRecover(store, manifest, existingReceipt, persistReceipt)
       return
     }
 
-    if (!existingReceipt) {
-      printResult({ status: 'refused', reason: 'receipt_missing' })
-      process.exitCode = 3
-      return
-    }
-    if (isCohortActivationIntent(existingReceipt)) {
-      printResult({ status: 'refused', reason: 'preparing_receipt' })
-      process.exitCode = 3
-      return
-    }
-    assertReceiptMatchesManifest(existingReceipt, manifest)
-    if (args.command === 'rollback') {
-      const rolledBack = await rollbackCohortActivation(
-        store,
-        existingReceipt,
-        (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
-      )
-      await persistReceipt(rolledBack)
-      const state = await readCohortActivationState(store, rolledBack)
-      printResult({
-        status: 'rolled_back',
-        state: state.state,
-        entryCount: state.entryCount,
-        chatbotCount: state.chatbotCount,
-        sourceEnabled: state.sourceEnabled,
-        targetDisabled: state.targetDisabled,
-      })
-      return
-    }
-
-    const state = await readCohortActivationState(store, existingReceipt)
-    printResult({
-      status: 'readback',
-      state: state.state,
-      entryCount: state.entryCount,
-      sourceEnabled: state.sourceEnabled,
-      sourceDisabled: state.sourceDisabled,
-      targetEnabled: state.targetEnabled,
-      targetDisabled: state.targetDisabled,
-    })
+    await runSettledCommand(
+      store,
+      args.command,
+      manifest,
+      existingReceipt,
+      persistReceipt
+    )
   } catch (error) {
     printResult({ status: 'failed', category: classifyError(error) })
     process.exitCode = 1
