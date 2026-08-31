@@ -77,6 +77,14 @@ atomically. Closing an attempt seals ingress before the server waits for
 drain snapshot. Attempt two is the only technical replacement and reuses the
 unchanged initial map.
 
+Queue delivery is intentionally at least once for accepted revision messages.
+A duplicate request that finds an accepted claim republishes the same opaque
+pointer, while the processor's terminal transition makes repeated delivery a
+no-op. A failed first publication releases its claim when cleanup succeeds; if
+cleanup is unavailable, the accepted claim remains retryable rather than being
+silently discarded. Malformed scopes return a client error, while transient
+Redis failures return a service-unavailable response.
+
 All keys join a root registry and share the first root key's absolute expiry.
 Later writes reapply that timestamp but never extend it. Successful
 finalization, cancellation, reset, abandonment, or a later block can unlink

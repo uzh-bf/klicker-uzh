@@ -175,7 +175,10 @@ reached. It is not synchronized as learning history.
   publication. Remove a claim after definitive publication failure. The
   dedicated revision processor records one terminal status and one response per
   identity without importing or calling scoring, gamification, assessment, or
-  durable response-history helpers.
+  durable response-history helpers. Accepted duplicate submissions may
+  republish the same opaque pointer for at-least-once delivery; terminal
+  processing makes repeated delivery idempotent. If a duplicate publication
+  fails, the existing accepted claim remains available for a later retry.
 - Closing revision seals ingress, then waits for every accepted message to
   become terminal before aggregation. A bounded drain failure clears only the
   revised attempt and permits one replacement against the same initial map and
@@ -229,7 +232,7 @@ persistence, or public privacy into a third layer.
 | --- | --- | --- | --- |
 | S0 — Persist the reviewed plan | Main | Gate 1 approval | Plan, research, ADR, CONTEXT, branch/base, and authority boundary are committed without implementation. |
 | S1 — Minimum persistent model | Main | S0 | One generated additive migration; analytics sync; default-off preparation; no durable identity; schema and domain docs agree. |
-| S2 — Transient pairing and revision processor | Main | S1 | Duplicate/concurrent tests prove one response per identity, complete drain accounting, one replacement, hard cleanup, and zero scoring or durable response writes. |
+| S2 — Transient pairing and revision processor | Main | S1 | Duplicate/concurrent tests prove one response per identity, at-least-once opaque delivery with idempotent processing, complete drain accounting, one replacement, hard cleanup, strict primitive response validation, and zero scoring or durable response writes. |
 | S3 — Lifecycle, aggregation, and projection | Main | S2 | GraphQL integration tests cover permissions, phases, all supported types, identical paired cohorts, atomic finalization, threshold, HMAC, and free-text fail-closed behavior. Gate 2 follows. |
 | S4 — Authoring and lecturer/controller loop | Native executor, authoring/control paths | S3 and Gate 2 approval | Preparation survives create/edit/template/duplication; controller owns transitions; cockpit reconnects to persisted phase; lecturer browser evidence passes. |
 | S5 — Participant and projected journey | Native executor, PWA/comparison paths | S4 | Revision uses separate session keys; own answers remain visible; suppression and narrow layout pass browser and O1/O2 checks. |
@@ -416,7 +419,8 @@ Stop and return to the user if any of these becomes necessary or true:
   two-layer topology and corrections; public, ungated ownership ruling aligned
   with ADR 0006; product-contract commit `b1dc3d9c6`; reviewed plan commit
   `0b48f9404`; S1 foundation commit `b4721f835`; S1 review-correction commit
-  `720321124`; and S2 transient revision commit `e07992566`.
+  `720321124`; S2 transient revision commit `e07992566`; first final-review
+  correction commit `9fc58c072`; and ingress hardening commit `ea2a2016e`.
 - **Base state:** The branch was integrated once from `origin/v3` at
   `8de87d731` in merge commit `78637beb0`. The target then advanced to
   `5a21988fb` through two commits affecting nine CI, deployment, and
@@ -452,9 +456,25 @@ Stop and return to the user if any of these becomes necessary or true:
   tests is stopped; no task runtime is running.
 - **Active children:** none after the planner is closed.
 - **Post-merge verification:** `CI=true pnpm run check:all` passed with 25/25
-  tasks. Sequential Redis-backed tests passed: util 62/62, response-api 3/3,
-  and response-processor 3/3. The host Node 26.8.1 versus the repository's
-  Node 24 pin remains a warning.
-- **Next action:** complete the integrated final review, push the bottom branch,
-  rename/update this plan after the PR number is known, and publish the draft
-  PR. Do not begin S3 or create the top UX branch in this delivery checkpoint.
+  tasks, and the pre-commit hook passed the same checks plus gitleaks with no
+  leaks. The full `pnpm run build` passed. Sequential Redis-backed focused
+  tests passed: util 62/62, response-api 5/5, and response processor 5/5.
+  The host Node 26.8.1 versus the repository's Node 24 pin remains a warning;
+  existing build warnings remain non-blocking.
+- **Final review disposition:** the trusted final reviewer initially returned
+  `DONE_WITH_CONCERNS` for the S2 range. The first correction commit fixed
+  failed-publication claim release and best-effort anonymous registration. The
+  correction pass identified accepted-claim replay, Redis error classification,
+  and primitive response-shape gaps. Commit `ea2a2016e` addresses those gaps:
+  accepted duplicates republish the same opaque pointer without releasing an
+  existing claim on a failed retry, transient Redis failures return 503,
+  malformed scopes remain 400, and revision validation rejects malformed
+  choice, selection, free-text, and non-finite case-study values. The plan and
+  async-worker documentation now record the at-least-once contract. No further
+  reviewer pass is available within the correction budget; the last reviewer
+  result and the main-session verification remain distinct evidence. S3
+  lifecycle, aggregation, projection, cleanup, and teaching UX findings remain
+  intentionally deferred.
+- **Next action:** push the bottom branch, create the draft PR, rename/update
+  this plan after the PR number is known, and update the PR description. Do not
+  begin S3 or create the top UX branch in this delivery checkpoint.
