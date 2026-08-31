@@ -97,12 +97,19 @@ the trusted ARM64 cache seed can verify and fingerprint its checkout.
 - [x] Confirmed the zero-job workflow-resolution failure and the cache-seed
   container ownership failure from exact GitHub logs.
 - [x] Baseline workflow-policy tests pass: 19 tests.
-- [ ] Slice 1 caller-reference fix and verification.
-- [ ] Slice 2 cache-seed safe-directory fix and verification.
-- [ ] Local final diff review and conventional commits.
+- [x] Slice 1 caller-reference fix and verification: the caller now uses
+  `@v3`, while trusted composite action and runner-group policy references keep
+  their full normalized form.
+- [x] Slice 2 cache-seed safe-directory fix and verification: the container
+  trusts only `$GITHUB_WORKSPACE` before checkout verification and cache
+  fingerprinting.
+- [x] Local final diff review and conventional commit `abb96c810`.
+- [x] Focused CI suite passes: 57 tests; Biome, Prettier, YAML parsing, and the
+  workflow policy validator also pass.
 - [ ] External PR delivery and exact-head CI, pending explicit approval.
 
 ## Next Steps
 
-- Implement Slice 1 and Slice 2, then run the focused contract suite and
-  repository-native formatting/syntax checks.
+- If delivery is approved later, push `abb96c810`, open a follow-up PR, and
+  require exact-head CI to prove that the reusable workflow creates jobs and
+  the cache seed reaches install and build.
