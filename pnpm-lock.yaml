@@ -443,6 +443,9 @@ importers:
       clsx:
         specifier: 2.1.1
         version: 2.1.1
+      driver.js:
+        specifier: 1.8.0
+        version: 1.8.0
       heic2any:
         specifier: 0.0.4
         version: 0.0.4
