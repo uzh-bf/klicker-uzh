@@ -956,12 +956,19 @@ native planner gate.
   33368808077](https://github.com/uzh-bf/klicker-uzh/actions/runs/33368808077)
   used hosted build and eight hosted shards; the build took 2m10s and the
   shards started within one second and finished 11m14s–16m18s later. The run
-  was not a public-runner sample. The prior [public canary
+  was not a public-runner sample. Its build succeeded, while one hosted shard
+  failed six Playwright tests; the public route was skipped. This is a test
+  baseline failure, not evidence of a runner or cache regression. The prior
+  [public canary
   33205237613](https://github.com/uzh-bf/klicker-uzh/actions/runs/33205237613)
   used three ARM64 shards: preparation took 19s, build took 7m51s, and shards
   took 35m30s–40m27s, with one failure. These samples are not comparable and
   are far below the M4 threshold of 20 accepted ready/full cache-hit runs, so
   no M4 package is armed.
+- [x] Current remote drift was rechecked after the final local gate: `origin/v3`
+  is `fed364a338104b4cdd12f97649d22edb5b124a8b`, two commits beyond this
+  branch's base. The two commits overlap the workflow, helper, package, and
+  documentation files in this plan, so no automatic integration was attempted.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact
