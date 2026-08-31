@@ -5,7 +5,10 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
-const { FINAL_REVIEW_MODEL } = require('./final-ai-review.js')
+const {
+  FINAL_REVIEW_MODEL,
+  mergeOCRResumeResults,
+} = require('./final-ai-review.js')
 const {
   FINAL_STACK_REVIEW_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
@@ -1143,32 +1146,72 @@ test('keeps actions read permission for stack revalidation', () => {
   }
 })
 
-test('uses Claude Opus only for cumulative stack review jobs', () => {
+test('uses GLM Flash for individual and cumulative stack review jobs', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
-  const individualJob =
-    workflow.match(
-      /\n {2}review:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
-    )?.[1] ?? ''
-  const stackJob =
-    workflow.match(
-      /\n {2}review_stack:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
-    )?.[1] ?? ''
 
+  assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
+  assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
+  assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
+})
+
+test('retains only the rejected stack publisher inputs for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const stageStep = workflow.match(
+    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+  )?.[0]
+  const uploadStep = workflow.match(
+    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+  )?.[0]
+
+  assert.ok(stageStep)
+  assert.ok(uploadStep)
+  assert.ok(
+    workflow.indexOf('Publish consolidated stack review') <
+      workflow.indexOf('Stage rejected stack publisher inputs')
+  )
+  assert.ok(
+    workflow.indexOf('Stage rejected stack publisher inputs') <
+      workflow.indexOf('Upload rejected stack publisher inputs')
+  )
   assert.match(
-    individualJob,
-    new RegExp(`OCR_LLM_MODEL: ${FINAL_REVIEW_MODEL}`)
+    stageStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
   )
-  assert.doesNotMatch(individualJob, new RegExp(FINAL_STACK_REVIEW_MODEL))
-  assert.equal(
-    stackJob.match(
-      new RegExp(`OCR_LLM_MODEL: ${FINAL_STACK_REVIEW_MODEL}`, 'g')
-    )?.length,
-    2
+  assert.match(stageStep, /test -f "\$\{code_result\}"/)
+  assert.match(stageStep, /test -f "\$\{topology_result\}"/)
+  assert.match(
+    stageStep,
+    /cp -- "\$\{code_result\}" "\$\{topology_result\}" "\$\{staging_dir\}\/"/
   )
-  assert.doesNotMatch(stackJob, new RegExp(FINAL_REVIEW_MODEL))
+  assert.match(stageStep, /mv -- "\$\{staging_dir\}" "\$\{artifact_dir\}"/)
+  assert.match(
+    uploadStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(
+    uploadStep,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    uploadStep,
+    /name: final-ai-stack-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    uploadStep,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-stack-publisher-failure/
+  )
+  assert.match(uploadStep, /if-no-files-found: error/)
+  assert.match(uploadStep, /retention-days: 1/)
+  assert.doesNotMatch(
+    `${stageStep}\n${uploadStep}`,
+    /stderr|config|manifest|ranges|\*/i
+  )
 })
 
 test('checks trusted review code out from the default branch', () => {
@@ -2369,6 +2412,103 @@ test('combines complete OCR results for per-layer attestation ranges', () => {
   assert.deepEqual(combined.warnings, [])
 })
 
+test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
+  const parentId = '11111111-1111-4111-8111-111111111111'
+  const resumedId = '22222222-2222-4222-8222-222222222222'
+  const completed = {
+    item_id: 'completed',
+    path: 'src/one.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'failed',
+    path: 'src/two.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+  }
+  const identity = {
+    repository: { identity_sha256: 'c'.repeat(64) },
+    input: {
+      mode: 'range',
+      resolved_base: 'd'.repeat(40),
+      resolved_head: 'e'.repeat(40),
+      source_artifact_sha256: 'f'.repeat(64),
+    },
+    execution: {
+      provider: 'openrouter',
+      model: FINAL_STACK_REVIEW_MODEL,
+      rule_config_sha256: '1'.repeat(64),
+    },
+  }
+  const parent = {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_STACK_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 60,
+      input_tokens: 45,
+      output_tokens: 15,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: parentId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: parentId,
+      operation: 'review',
+      terminal_state: 'partial',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+    },
+  }
+  const resumed = {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 40,
+      input_tokens: 30,
+      output_tokens: 10,
+      elapsed: '4m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: resumedId,
+    resume: { resumed_from: parentId, reused_files: 1, rerun_files: 1 },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: resumedId,
+      parent_run_id: parentId,
+      operation: 'review',
+      terminal_state: 'complete',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [failed],
+        reused: [completed],
+        failed: [],
+        waived: [],
+      },
+    },
+  }
+
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+  const combined = combineOCRResults([completeOCRResult([]), merged], [1, 2])
+  assert.equal(combined.status, 'complete')
+  assert.equal(combined.summary.files_reviewed, 5)
+  assert.equal(combined.summary.total_tokens, 200)
+  assert.deepEqual(combined.warnings, [])
+})
+
 test('publishes incremental code findings with their exact owning repair layer', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -2645,6 +2785,57 @@ test('rejects duplicate code and topology finding IDs before publication', async
   )
 })
 
+test('suppresses topology findings that restate an overlapping code finding', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const duplicateContent =
+    'The topology pass repeated the same failure on the same changed line.'
+  const report = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: membership.top.head.sha,
+    manifestBundle,
+    topologyResult: topologyResult([
+      {
+        category: 'bug',
+        content: duplicateContent,
+        end_line: 4,
+        layer_numbers: [1],
+        path: 'src/one.ts',
+        severity: 'high',
+        start_line: 4,
+      },
+    ]),
+    policyDigest: plan.policyDigest,
+    trustedPolicySha: 'a'.repeat(40),
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+
+  assert.match(report, /The cumulative change can fail after merge\./)
+  assert.doesNotMatch(report, new RegExp(duplicateContent))
+  const metadata = parseStackReviewMetadata(report)
+  assert.equal(metadata.findings.length, 1)
+  assert.equal(metadata.findings[0].kind, 'code')
+  assert.equal(metadata.topology_pass.comments, 0)
+  assert.equal(metadata.topology_pass.generated_comments, 1)
+})
+
 test('renders consolidated code and topology findings with one stack marker', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -2819,6 +3010,11 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
+  assert.match(
+    request.messages[1].content,
+    /The cumulative change can fail after merge\./
+  )
+  assert.match(request.messages[1].content, /"start_line":4/)
   assert.throws(
     () =>
       validateTopologyResult(

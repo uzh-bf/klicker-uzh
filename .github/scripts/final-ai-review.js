@@ -13,6 +13,7 @@ const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const { isDeepStrictEqual } = require('node:util')
 
 const {
   compareRange: compareNativeRange,
@@ -33,6 +34,12 @@ const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review cle
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
+// Long-lived consolidation branches (for example, v3-ai) that staging
+// deployments are cut from. Individual final reviews treat open ready pull
+// requests targeting one of these bases exactly like pull requests targeting
+// the default branch. Stack review and native-stack root validation stay
+// bound to the default branch.
+const CONSOLIDATION_BASE_BRANCHES = Object.freeze(['v3-ai'])
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -54,6 +61,10 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
   ].sort()
 )
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const OPENROUTER_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
+const OPENROUTER_TOOL_CANARY_NAME = 'final_review_probe'
+const OPENROUTER_TOOL_CANARY_TIMEOUT_MS = 30_000
+const OCR_MAX_COMPLETION_TOKENS = 16_384
 const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
@@ -453,36 +464,166 @@ function isTrustedPermission(permission) {
   return permission === 'write' || permission === 'admin'
 }
 
-function buildOCRPolicy({ model = FINAL_REVIEW_MODEL } = {}) {
-  const extraBody = {
-    reasoning: {
-      effort: 'high',
-    },
-  }
-  if (model === FINAL_REVIEW_MODEL) {
-    extraBody.provider = {
-      order: ['deepinfra', 'fireworks'],
-      allow_fallbacks: true,
-    }
-  }
-
+function buildOCRPolicy() {
   return {
     language: 'English',
     llm: {
       url: OPENROUTER_URL,
-      model,
+      model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
-      extra_body: extraBody,
+      extra_body: {
+        reasoning: {
+          effort: 'high',
+        },
+      },
     },
   }
 }
 
-function buildOCRConfig({ token, model = FINAL_REVIEW_MODEL }) {
+function buildOpenRouterToolCanaryRequest() {
+  const policy = buildOCRPolicy()
+  return {
+    model: policy.llm.model,
+    max_completion_tokens: OCR_MAX_COMPLETION_TOKENS,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'This is a public compatibility check. Return only the required function call.',
+      },
+      {
+        role: 'user',
+        content: `Call ${OPENROUTER_TOOL_CANARY_NAME} with marker ${OPENROUTER_TOOL_CANARY_MARKER}.`,
+      },
+    ],
+    ...policy.llm.extra_body,
+    tools: [
+      {
+        type: 'function',
+        function: {
+          name: OPENROUTER_TOOL_CANARY_NAME,
+          description: 'Confirm that the selected route supports tool calls.',
+          parameters: {
+            type: 'object',
+            properties: {
+              marker: {
+                type: 'string',
+                const: OPENROUTER_TOOL_CANARY_MARKER,
+              },
+            },
+            required: ['marker'],
+            additionalProperties: false,
+          },
+        },
+      },
+    ],
+    tool_choice: {
+      type: 'function',
+      function: { name: OPENROUTER_TOOL_CANARY_NAME },
+    },
+  }
+}
+
+function sanitizeOpenRouterDiagnostic(value, token, limit = 160) {
+  if (!['number', 'string'].includes(typeof value)) return ''
+  const redacted = String(value).split(token).join('[redacted]')
+  return normalizeTitle(redacted, limit)
+}
+
+function openRouterCanaryFailure(status, payload, token) {
+  const error = payload?.error
+  const provider =
+    payload?.provider ??
+    error?.metadata?.provider_name ??
+    error?.metadata?.provider
+  const fields = [`HTTP ${status}`]
+  for (const [label, value] of [
+    ['code', error?.code],
+    ['provider', provider],
+    ['message', error?.message],
+  ]) {
+    const sanitized = sanitizeOpenRouterDiagnostic(value, token)
+    if (sanitized) fields.push(`${label}=${sanitized}`)
+  }
+  return new Error(`OpenRouter tool canary failed (${fields.join('; ')})`)
+}
+
+function validateOpenRouterToolCanaryResponse(payload, token) {
+  const toolCalls = payload?.choices?.[0]?.message?.tool_calls
+  if (
+    payload?.model !== FINAL_REVIEW_MODEL ||
+    !Array.isArray(toolCalls) ||
+    toolCalls.length !== 1 ||
+    toolCalls[0]?.type !== 'function' ||
+    toolCalls[0]?.function?.name !== OPENROUTER_TOOL_CANARY_NAME
+  ) {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  let args
+  try {
+    args = JSON.parse(toolCalls[0].function.arguments)
+  } catch {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  if (
+    !args ||
+    typeof args !== 'object' ||
+    Array.isArray(args) ||
+    Object.keys(args).length !== 1 ||
+    args.marker !== OPENROUTER_TOOL_CANARY_MARKER
+  ) {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  return {
+    provider: sanitizeOpenRouterDiagnostic(payload.provider, token),
+  }
+}
+
+async function verifyOpenRouterToolAccess({
+  token,
+  fetchImpl = globalThis.fetch,
+}) {
+  if (!token) throw new Error('OPENROUTER_API_KEY is required')
+  if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
+  let response
+  try {
+    response = await fetchImpl(OPENROUTER_URL, {
+      body: JSON.stringify(buildOpenRouterToolCanaryRequest()),
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      signal: AbortSignal.timeout(OPENROUTER_TOOL_CANARY_TIMEOUT_MS),
+    })
+  } catch {
+    throw new Error('OpenRouter tool canary request failed')
+  }
+  let payload
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+  if (!response.ok) {
+    throw openRouterCanaryFailure(response.status, payload, token)
+  }
+  if (!payload) throw new Error('OpenRouter tool canary returned invalid JSON')
+  return validateOpenRouterToolCanaryResponse(payload, token)
+}
+
+function buildOCRConfig({ token }) {
   if (!token) {
     throw new Error('OPENROUTER_API_KEY is required')
   }
 
-  const policy = buildOCRPolicy({ model })
+  const policy = buildOCRPolicy()
   return {
     ...policy,
     llm: {
@@ -496,18 +637,11 @@ function defaultOCRConfigPath() {
   return path.join(os.homedir(), '.opencodereview', 'config.json')
 }
 
-function writeOCRConfig({
-  token,
-  model = FINAL_REVIEW_MODEL,
-  configPath = defaultOCRConfigPath(),
-}) {
+function writeOCRConfig({ token, configPath = defaultOCRConfigPath() }) {
   fs.mkdirSync(path.dirname(configPath), { recursive: true, mode: 0o700 })
   const descriptor = fs.openSync(configPath, 'wx', 0o600)
   try {
-    fs.writeFileSync(
-      descriptor,
-      JSON.stringify(buildOCRConfig({ token, model }))
-    )
+    fs.writeFileSync(descriptor, JSON.stringify(buildOCRConfig({ token })))
   } finally {
     fs.closeSync(descriptor)
   }
@@ -798,12 +932,19 @@ async function getPull(github, context, pullNumber) {
   return response.data
 }
 
+function isEligibleBaseBranch({ baseRef, context }) {
+  return (
+    baseRef === context.payload.repository.default_branch ||
+    CONSOLIDATION_BASE_BRANCHES.includes(baseRef)
+  )
+}
+
 function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {
   const repository = repositoryName(context)
   return (
     pull.state === 'open' &&
     !pull.draft &&
-    pull.base.ref === context.payload.repository.default_branch &&
+    isEligibleBaseBranch({ baseRef: pull.base.ref, context }) &&
     pull.base.repo.full_name === repository &&
     pull.head.repo?.full_name === repository &&
     (!baseSha || pull.base.sha === baseSha) &&
@@ -2126,7 +2267,7 @@ async function initializeFinalReview({
       if (!eligibility.eligible) {
         state = 'error'
         description =
-          'Final review requires the default branch or a verified native stack member'
+          'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
       }
     } catch (error) {
       state = 'error'
@@ -2176,7 +2317,7 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (!plan.eligible) {
     return deny(
-      'Final review requires an open, ready PR targeting the default branch or a verified native stack'
+      'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack'
     )
   }
   if (
@@ -2430,6 +2571,175 @@ function validateReviewSummary(summary, commentCount) {
     input_tokens: summary.input_tokens,
     output_tokens: summary.output_tokens,
     total_tokens: summary.total_tokens,
+  }
+}
+
+function validateOCRTokenCounters(summary, label) {
+  const keys = ['total_tokens', 'input_tokens', 'output_tokens']
+  if (
+    !summary ||
+    typeof summary !== 'object' ||
+    keys.some(
+      (key) => !Number.isSafeInteger(summary[key]) || summary[key] < 0
+    ) ||
+    summary.total_tokens !== summary.input_tokens + summary.output_tokens
+  ) {
+    throw new Error(`${label} has invalid token usage counters`)
+  }
+  return {
+    inputTokens: summary.input_tokens,
+    outputTokens: summary.output_tokens,
+    totalTokens: summary.total_tokens,
+  }
+}
+
+function validateOCRCoverage(manifest, label) {
+  const coverage = manifest?.coverage
+  const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
+  if (
+    !coverage ||
+    keys.some((key) => !Array.isArray(coverage[key])) ||
+    coverage.selected.length !==
+      coverage.completed.length +
+        coverage.reused.length +
+        coverage.failed.length +
+        coverage.waived.length
+  ) {
+    throw new Error(`${label} has invalid manifest coverage`)
+  }
+  return coverage
+}
+
+function validateOCRSessionEnvelope(result, expectedStatus, label) {
+  const sessionId = result?.session_id
+  if (
+    typeof sessionId !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(sessionId)
+  ) {
+    throw new Error(`${label} has no safe session ID`)
+  }
+  const manifest = result.manifest
+  if (
+    manifest?.schema_version !== 'ocr.run-manifest/v1' ||
+    manifest.run_id !== sessionId ||
+    manifest.operation !== 'review' ||
+    manifest.terminal_state !== expectedStatus ||
+    result.status !== expectedStatus
+  ) {
+    throw new Error(`${label} has inconsistent session or manifest identity`)
+  }
+  return { coverage: validateOCRCoverage(manifest, label), manifest, sessionId }
+}
+
+function hasOCRBudgetExhaustion(result, coverage) {
+  return (
+    result.summary?.budget_exceeded === true ||
+    result.warnings?.some(
+      (warning) => warning?.type === 'token_budget_reached'
+    ) ||
+    coverage.failed.some((item) => item?.classification === 'budget')
+  )
+}
+
+function planOCRResume(result, maxTokensBudget) {
+  if (!Number.isSafeInteger(maxTokensBudget) || maxTokensBudget <= 0) {
+    throw new Error('OCR resume ceiling must be a positive safe integer')
+  }
+  if (result?.status !== 'partial') return null
+
+  const { coverage, manifest, sessionId } = validateOCRSessionEnvelope(
+    result,
+    'partial',
+    'Partial OCR result'
+  )
+  if (result.resume != null || manifest.parent_run_id) {
+    throw new Error('Partial OCR result is already a resumed run')
+  }
+  if (coverage.failed.length === 0) {
+    throw new Error('Partial OCR result has no failed coverage to resume')
+  }
+  if (result.warnings != null && !Array.isArray(result.warnings)) {
+    throw new Error('Partial OCR result has an invalid warnings array')
+  }
+  const usage = validateOCRTokenCounters(result.summary, 'Partial OCR result')
+  if (hasOCRBudgetExhaustion(result, coverage)) {
+    throw new Error('Partial OCR result exhausted its token budget')
+  }
+  const remainingTokens = maxTokensBudget - usage.totalTokens
+  if (remainingTokens <= 0) {
+    throw new Error('Partial OCR result has no token budget left to resume')
+  }
+  return { remainingTokens, sessionId }
+}
+
+function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
+  const resumePlan = planOCRResume(initialResult, maxTokensBudget)
+  if (!resumePlan) {
+    throw new Error('OCR resume merge requires a partial parent result')
+  }
+  const resumed = validateOCRSessionEnvelope(
+    resumedResult,
+    'complete',
+    'Resumed OCR result'
+  )
+  if (
+    resumed.sessionId === resumePlan.sessionId ||
+    resumedResult.resume?.resumed_from !== resumePlan.sessionId ||
+    resumed.manifest.parent_run_id !== initialResult.manifest.run_id
+  ) {
+    throw new Error('Resumed OCR result has incorrect parent lineage')
+  }
+  if (
+    !isDeepStrictEqual(
+      resumed.manifest.repository,
+      initialResult.manifest.repository
+    ) ||
+    !isDeepStrictEqual(resumed.manifest.input, initialResult.manifest.input) ||
+    resumed.manifest.execution?.rule_config_sha256 !==
+      initialResult.manifest.execution?.rule_config_sha256 ||
+    resumed.manifest.execution?.provider !==
+      initialResult.manifest.execution?.provider ||
+    resumed.manifest.execution?.model !==
+      initialResult.manifest.execution?.model ||
+    resumedResult.llm?.provider !== initialResult.llm?.provider ||
+    resumedResult.llm?.model !== initialResult.llm?.model
+  ) {
+    throw new Error('Resumed OCR result changed its review identity')
+  }
+  if (resumed.coverage.failed.length > 0) {
+    throw new Error('Resumed OCR result retained failed coverage')
+  }
+  if (
+    resumedResult.warnings != null &&
+    !Array.isArray(resumedResult.warnings)
+  ) {
+    throw new Error('Resumed OCR result has an invalid warnings array')
+  }
+  const initialUsage = validateOCRTokenCounters(
+    initialResult.summary,
+    'Partial OCR result'
+  )
+  const resumedUsage = validateOCRTokenCounters(
+    resumedResult.summary,
+    'Resumed OCR result'
+  )
+  const totalTokens = initialUsage.totalTokens + resumedUsage.totalTokens
+  const inputTokens = initialUsage.inputTokens + resumedUsage.inputTokens
+  const outputTokens = initialUsage.outputTokens + resumedUsage.outputTokens
+  if (
+    hasOCRBudgetExhaustion(resumedResult, resumed.coverage) ||
+    totalTokens > maxTokensBudget
+  ) {
+    throw new Error('Resumed OCR result exceeded the original token budget')
+  }
+  return {
+    ...resumedResult,
+    summary: {
+      ...resumedResult.summary,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      total_tokens: totalTokens,
+    },
   }
 }
 
@@ -3152,15 +3462,61 @@ function runCli() {
   if (command === 'configure-ocr') {
     writeOCRConfig({
       token: fs.readFileSync(0, 'utf8'),
-      model: process.env.OCR_LLM_MODEL || FINAL_REVIEW_MODEL,
-      configPath: process.env.OCR_CONFIG_PATH || undefined,
     })
     console.log('Ephemeral OCR configuration created')
     return
   }
   if (command === 'cleanup-ocr') {
-    removeOCRConfig(process.env.OCR_CONFIG_PATH || undefined)
+    removeOCRConfig()
     console.log('Ephemeral OCR configuration removed')
+    return
+  }
+  if (command === 'verify-openrouter-tools') {
+    return verifyOpenRouterToolAccess({
+      token: fs.readFileSync(0, 'utf8'),
+    }).then(({ provider }) => {
+      console.log(
+        provider
+          ? `OpenRouter tool canary passed via ${provider}`
+          : 'OpenRouter tool canary passed via automatic routing'
+      )
+    })
+  }
+  if (command === 'plan-ocr-resume') {
+    const resultPath = process.argv[3]
+    const budgetText = process.argv[4]
+    if (!resultPath || !/^[1-9][0-9]*$/.test(budgetText ?? '')) {
+      throw new Error(
+        'Usage: final-ai-review.js plan-ocr-resume <result-path> <token-budget>'
+      )
+    }
+    const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
+    const plan = planOCRResume(result, Number(budgetText))
+    if (plan) {
+      console.log(plan.sessionId)
+      console.log(plan.remainingTokens)
+    }
+    return
+  }
+  if (command === 'merge-ocr-resume') {
+    const initialPath = process.argv[3]
+    const resumedPath = process.argv[4]
+    const budgetText = process.argv[5]
+    if (
+      !initialPath ||
+      !resumedPath ||
+      !/^[1-9][0-9]*$/.test(budgetText ?? '')
+    ) {
+      throw new Error(
+        'Usage: final-ai-review.js merge-ocr-resume <initial-path> <resumed-path> <token-budget>'
+      )
+    }
+    const merged = mergeOCRResumeResults(
+      JSON.parse(fs.readFileSync(initialPath, 'utf8')),
+      JSON.parse(fs.readFileSync(resumedPath, 'utf8')),
+      Number(budgetText)
+    )
+    console.log(JSON.stringify(merged, null, 2))
     return
   }
   if (command === 'verify-clean-status') {
@@ -3213,6 +3569,7 @@ module.exports = {
   buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
+  buildOpenRouterToolCanaryRequest,
   buildReviewPlan,
   buildReviewBackground,
   createGhGithub,
@@ -3232,7 +3589,9 @@ module.exports = {
   hasCurrentSuccessfulFinalReview,
   hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
+  mergeOCRResumeResults,
   normalizeTitle,
+  planOCRResume,
   parseIndividualCleanEvidence,
   listReviewArtifacts,
   parseDispositionRecord,
@@ -3251,5 +3610,6 @@ module.exports = {
   validatePromotionContract,
   validateFinding,
   verifyPromotionBuilds,
+  verifyOpenRouterToolAccess,
   writeOCRConfig,
 }

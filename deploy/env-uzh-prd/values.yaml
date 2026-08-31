@@ -360,7 +360,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.73
+    tag: v3.4.0-alpha.73.2
 
   ingress:
     annotations:
