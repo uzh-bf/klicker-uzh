@@ -19,7 +19,14 @@ import type { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -353,7 +360,7 @@ function ElementStack({
     previewOnly,
   ])
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     setStudentResponse({})
 
     if (currentStep === totalSteps) {
@@ -361,9 +368,9 @@ function ElementStack({
     } else {
       handleNextElement()
     }
-  }
+  }, [currentStep, handleNextElement, onAllStacksCompletion, totalSteps])
 
-  const handleMarkAsRead = () => {
+  const handleMarkAsRead = useCallback(() => {
     // update the read status of all content elements in studentResponse to true
     setStudentResponse((currentResponses) =>
       Object.fromEntries(
@@ -375,9 +382,9 @@ function ElementStack({
         ])
       )
     )
-  }
+  }, [])
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     const result = await respondToElementStack({
       variables: {
         isOwner: previewOnly,
@@ -542,14 +549,38 @@ function ElementStack({
         handleNextElement()
       }
     }
-  }
+  }, [
+    courseId,
+    currentStep,
+    handleNextElement,
+    onAllStacksCompletion,
+    previewOnly,
+    respondToElementStack,
+    setStackStorage,
+    setStepStatus,
+    stack.id,
+    studentResponse,
+    totalSteps,
+  ])
 
-  hostAdvanceActionRef.current =
-    typeof stackStorage !== 'undefined' && !showMarkAsRead
-      ? handleContinue
-      : showMarkAsRead
-        ? handleMarkAsRead
-        : handleSubmit
+  useEffect(() => {
+    hostAdvanceActionRef.current =
+      typeof stackStorage !== 'undefined' && !showMarkAsRead
+        ? handleContinue
+        : showMarkAsRead
+          ? handleMarkAsRead
+          : handleSubmit
+
+    return () => {
+      hostAdvanceActionRef.current = null
+    }
+  }, [
+    handleContinue,
+    handleMarkAsRead,
+    handleSubmit,
+    showMarkAsRead,
+    stackStorage,
+  ])
 
   useEffect(() => {
     if (!hostNavigation) {
