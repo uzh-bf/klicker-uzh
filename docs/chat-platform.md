@@ -352,18 +352,19 @@ mode. Stored standard-mode text remains lower-priority lecturer guidance rather 
 the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
 practice topic when the student's request is unclear and asks for simple confirmation rather than
 presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
-generates one AI-generated practice question at a time from retrieved course material, gives brief
-criterion-linked formative feedback after each completed attempt, and continues automatically. On
-request, it gives a formative snapshot based only on completed question-and-answer cycles visible in
-the conversation; fewer than two cycles are described as too little evidence for a reliable pattern.
-After at least three completed cycles on one established topic covering at least two distinct
-course-grounded criteria, with no hint or retry pending, it gives a practice checkpoint with
-strengths, next focuses, and one concrete practice action before asking whether to change topics or
-explore the current topic in more depth. If two distinct criteria cannot be identified from the
-visible attempts and grounded material, it does not issue the automatic checkpoint. This checkpoint
-is explicitly a short-round snapshot, not a claim that the topic is complete, and it does not use
-grades, proficiency, mastery, or other broad ability claims. Quizzer never infers coverage from
-retrieval exhaustion or a partial list of retrieved topics. It does not present questions as
+presents one concise, exam-style course question at a time from retrieved course material without a
+provenance label. It gives brief criterion-linked formative feedback after each completed attempt and
+continues automatically. On request, it gives a formative snapshot based only on completed
+question-and-answer cycles visible in the conversation; fewer than two cycles are described as too
+little evidence for a reliable pattern. After at least three completed cycles on one established topic
+covering at least two distinct course-grounded criteria, with no hint or retry pending, it gives a
+practice checkpoint with strengths, next focuses, and one concrete practice action before asking
+whether to change topics or explore the current topic in more depth. If two distinct criteria cannot be
+identified from the visible attempts and grounded material, it does not issue the automatic
+checkpoint. This checkpoint is explicitly a short-round snapshot, not a claim that the topic is
+complete, and it does not use grades, proficiency, mastery, or other broad ability claims. Quizzer
+never infers coverage from retrieval exhaustion or a partial list of retrieved topics. It does not
+present questions as
 lecturer-authored or exam-equivalent. Chatbots without a safe course retrieval binding do not expose
 Quizzer. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
 returns the required-tool-unavailable response instead of generating an ungrounded question. Once

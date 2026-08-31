@@ -209,12 +209,14 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain(
       'Continue automatically after each assessed attempt'
     )
+    expect(prompt).toContain('Make the session feel like a mock exam')
+    expect(prompt).toContain('without a provenance label')
     expect(prompt).toContain('After every completed practice attempt')
     expect(prompt).toContain('one actionable next step')
     expect(prompt).toContain('student explicitly asks how they are doing')
     expect(prompt).toContain('too little evidence for a reliable pattern')
     expect(prompt).toContain(
-      'ask whether the student wants another AI-generated practice question'
+      'ask whether the student wants another practice question'
     )
     expect(prompt).toContain(
       'at least three completed question-answer-assessment cycles'
@@ -235,6 +237,7 @@ describe('compileSystemPrompt', () => {
       'change topics or explore the current topic in more depth'
     )
     expect(prompt).toContain('suggest a better-supported course topic')
+    expect(prompt).not.toContain('AI-generated')
     expect(prompt).not.toContain('topic is sufficiently covered')
     expect(prompt).not.toContain(
       'After the explanation, ask whether to continue'
