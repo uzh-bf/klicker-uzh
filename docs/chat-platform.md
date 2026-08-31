@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-27'
+timestamp: '2026-08-31'
 tags:
   - frontend
   - chat
@@ -38,12 +38,15 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
-- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
+- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
+  `[n–m]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
-  read-only `doc_query` tool on port 1417 for the seeded Benibot.
+  read-only `doc_query` tool on port 1417 for the seeded Benibot. It returns
+  synthetic Banking and Finance excerpts for matching topic or practice
+  queries, including source pages, and returns no sources for unmatched terms.
 - Local runtime profiles keep these capabilities independent: `chat` starts
   the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
   fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
@@ -345,12 +348,17 @@ composer with a localized unavailable notice and suppresses edit and retry gener
 instead of allowing requests the server would reject.
 
 Standard prompt changes apply automatically to chatbots that do not store an override for that
-mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
-does not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
-retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
-request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
-an ungrounded question; optional retrieval outages can still degrade gracefully in Tutor and
-Explainer. No stored prompt or database migration is required.
+mode. Stage 1 Quizzer chooses one specific grounded practice topic when the student's request is
+unclear and asks for simple confirmation rather than presenting only an unprioritised menu. Agreement
+or no preference starts the first question. It then generates one AI-generated practice question at a
+time from retrieved course material and continues automatically after each assessed attempt. When the
+current topic is sufficiently covered, it asks whether to change topics or explore the topic in more
+depth and proposes grounded next steps. It does not present questions as lecturer-authored or
+exam-equivalent. Chatbots without a safe course retrieval binding do not expose Quizzer. If an
+optional binding produces no `doc_query` tool during request-time discovery, Quizzer returns the
+required-tool-unavailable response instead of generating an ungrounded question; optional retrieval
+outages can still degrade gracefully in Tutor and Explainer. No stored prompt or database migration
+is required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -392,8 +400,10 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
-than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
-while active until the participant manually chooses an open state; that manual choice then wins.
+than one, and a single tool call keeps its direct result disclosure. These trace rows use the
+same compact spacing, with 32px controls by default and 44px touch targets on coarse pointers.
+Reasoning auto-opens only while active until the participant manually chooses an open state; that
+manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
 including after answer text begins. This lets the viewport follow the growing
@@ -570,10 +580,12 @@ numbers, or postal addresses, participant or student identifiers, and other sens
 information. Retrieved content is evidence rather than instruction.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
-claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
-gaps from general knowledge. Free-text queries start in the locked conversation language but may
-preserve exact non-personal course and source labels, titles, codes, and identifiers, or
-reformulate in a source language when retrieval genuinely needs it.
+claims, use only relevant results, treat returned chunks as a partial view rather than a complete
+course inventory, introduce retrieved topic or source lists as examples, and acknowledge
+insufficient course evidence instead of filling gaps from general knowledge. Free-text queries start
+in the locked conversation language but may preserve exact non-personal course and source labels,
+titles, codes, and identifiers, or reformulate in a source language when retrieval genuinely needs
+it.
 
 Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
 applies to existing and newly created chatbots as soon as this application revision is deployed.
@@ -630,8 +642,8 @@ message write. Chat may create a short-lived thread and assistant lifecycle clai
 preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
-- `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
-  literal text in the answer — which is the intended failure mode, not a bug.
+- `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
+  that range stays literal text in the answer — which is the intended failure mode, not a bug.
 - A source returned again by a later search keeps its original number; no second index is ever
   minted. `src/lib/server/citationInstructions.ts` therefore tells the model to **reuse** a repeat
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
@@ -640,11 +652,13 @@ configs without the reserved keys retain the existing optional/fail-open behavio
 - **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
-On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** nodes into
-`#cite-n` links, skipping anything inside a link label (including nested emphasis), and
-`markdown-text.tsx` intercepts those in its `a` override to render `CitationChip`. Normalization
-runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
-the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
+On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
+markdown **text** nodes into adjacent `#cite-n` links, expanding a range into one link per source
+number. It skips anything inside a link label (including nested emphasis), and
+`markdown-text.tsx` intercepts those links in its `a` override to render `CitationChip`.
+Normalization runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both
+the cards and the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf
+component.
 
 A chip must wrap **with** the word it cites, never start a line on its own — and the
 punctuation after it must not wrap alone either. Two mechanisms enforce that and both are

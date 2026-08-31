@@ -52,13 +52,13 @@ const GroupedDisclosure: FC<
   const isOpen = resolveDisclosureOpen(manualOpen, autoOpen, active)
 
   return (
-    <div className="mt-1">
+    <div className="mt-0.5">
       <button
         type="button"
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-1 text-xs touch-manipulation fine-pointer:min-h-8"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center gap-1 text-xs touch-manipulation [@media(pointer:coarse)]:min-h-11"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />

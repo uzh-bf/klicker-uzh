@@ -43,6 +43,8 @@ describe('withCitationContract', () => {
     const result = withCitationContract('Base prompt.', ['doc_query'])
     expect(result).toContain('[1]')
     expect(result).toContain('[2]')
+    expect(result).toContain('[2–4]')
+    expect(result.toLowerCase()).toContain('every number in the range')
     expect(result.toLowerCase()).toContain('citation')
   })
 

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import {
   citationHrefFor,
+  type MarkdownAstNode,
   parseCitationHref,
   splitCitationMarkers,
   transformCitationMarkers,
-  type MarkdownAstNode,
 } from '../src/lib/markdown/remarkCitationMarkers'
 import { resolveCitationSource } from '../src/lib/sources/normalizeSources'
 import type { ChatSource } from '../src/lib/sources/types'
@@ -72,6 +72,25 @@ describe('splitCitationMarkers', () => {
 
   test('two-digit marker', () => {
     expect(splitCitationMarkers('[12]')).toEqual([citationLinkNode(12)])
+  })
+
+  test('expands an en-dash citation range into adjacent linked source numbers', () => {
+    expect(splitCitationMarkers('See [2–4] for details.')).toEqual([
+      textNode('See'),
+      citationLinkNode(2),
+      citationLinkNode(3),
+      citationLinkNode(4),
+      textNode(' for details.'),
+    ])
+  })
+
+  test('accepts spaced hyphen ranges and leaves descending ranges literal', () => {
+    expect(splitCitationMarkers('[2 - 4]')).toEqual([
+      citationLinkNode(2),
+      citationLinkNode(3),
+      citationLinkNode(4),
+    ])
+    expect(splitCitationMarkers('[4–2]')).toEqual([textNode('[4–2]')])
   })
 
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {

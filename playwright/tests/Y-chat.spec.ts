@@ -2497,6 +2497,71 @@ test.describe('Chatbot Source Citations', () => {
     ).toContainText('[9]')
   })
 
+  test('A compact citation range renders one citation chip per source number', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Citation ranges',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the sources' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-range',
+              sources: [
+                {
+                  file_name: 'Range One.pdf',
+                  source_url: 'https://example.com/range-one.pdf',
+                  source_type: 'document',
+                  page_number: 1,
+                },
+                {
+                  file_name: 'Range Two.pdf',
+                  source_url: 'https://example.com/range-two.pdf',
+                  source_type: 'document',
+                  page_number: 2,
+                },
+                {
+                  file_name: 'Range Three.pdf',
+                  source_url: 'https://example.com/range-three.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+            { type: 'text', text: 'Compare the evidence in [1–3].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const citations = page.getByTestId('chat-citation')
+    await expect(citations).toHaveCount(3)
+    await expect(citations.nth(0)).toHaveAccessibleName(
+      'Source 1: Range One.pdf'
+    )
+    await expect(citations.nth(1)).toHaveAccessibleName(
+      'Source 2: Range Two.pdf'
+    )
+    await expect(citations.nth(2)).toHaveAccessibleName(
+      'Source 3: Range Three.pdf'
+    )
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).not.toContainText('[1–3]')
+    await expect(
+      page
+        .getByTestId('chat-assistant-message-content')
+        .locator('a[href="#cite-range-separator"]')
+    ).toHaveCount(0)
+  })
+
   test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({
     page,
   }) => {

@@ -2,14 +2,14 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 
 /**
  * Appended to a chatbot's system prompt only when a doc_query-style RAG tool
- * is available for the request, so the model actually emits the `[n]`
- * markers the UI resolves into citation chips (see
+ * is available for the request, so the model actually emits the `[n]` or
+ * `[n–m]` markers the UI resolves into citation chips (see
  * `src/lib/sources/normalizeSources.ts`).
  *
  * Numbering here must match what the UI implements: sources are deduped in
  * first-appearance order across all doc_query calls in one assistant
- * message and numbered 1..N (`normalizeSourcesFromParts`), and `[n]` only
- * resolves for `1 <= n <= N` (`resolveCitationSource`).
+ * message and numbered 1..N (`normalizeSourcesFromParts`). Each number in a
+ * marker or range only resolves for `1 <= n <= N` (`resolveCitationSource`).
  *
  * The reuse sentence is load-bearing for that match. A source returned again
  * by a later search is skipped by the dedupe and keeps its original number —
@@ -29,7 +29,9 @@ const CITATION_CONTRACT =
   '[1]. If a later search returns a source you have already cited, reuse the ' +
   'number you gave it the first time instead of assigning a new one. Only ' +
   'use numbers that a search actually returned - never invent a ' +
-  'citation. Do not add a citation when you are not drawing on retrieved ' +
+  'citation. For multiple consecutive sources, a compact range such as ' +
+  '[2–4] is allowed only when every number in the range was returned. ' +
+  'Do not add a citation when you are not drawing on retrieved ' +
   'material. These bracketed numbers are citation markers, not formula ' +
   'delimiters. This citation format overrides conflicting bracket or formula ' +
   'instructions in the base persona.'

@@ -11,6 +11,7 @@ const DEFAULT_QUIZZER_MARK = 'Conduct active practice'
 const INPUT_CONTEXT_MARK = 'Attachment context:'
 const COURSE_POLICY_MARK = 'Course scope:' // unconditional course policy
 const GROUNDING_MARK = 'Course grounding:' // doc_query-only grounding policy
+const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const CITATION_MARK = 'Citation format:' // only in the citation contract
 const LANGUAGE_MARK = 'Swiss High German orthography' // only in the language contract
 
@@ -51,6 +52,7 @@ describe('compileSystemPrompt', () => {
     expect(inputContextIdx).toBeGreaterThan(baseIdx)
     expect(coursePolicyIdx).toBeGreaterThan(inputContextIdx)
     expect(groundingIdx).toBeGreaterThan(coursePolicyIdx)
+    expect(result).toContain(PARTIAL_RETRIEVAL_MARK)
     expect(citationIdx).toBeGreaterThan(groundingIdx)
     expect(languageIdx).toBeGreaterThan(citationIdx)
   })
@@ -114,6 +116,33 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).toContain(DEFAULT_QUIZZER_MARK)
     expect(quizzer).not.toContain(DEFAULT_TUTOR_MARK)
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
+  })
+
+  test('defines Quizzer topic selection, recommendation, and continuation', () => {
+    const prompt = DEFAULT_PROMPT.quizzer.prompt
+
+    expect(prompt).toContain('Establish the practice topic')
+    expect(prompt).toContain('one specific recommended course topic')
+    expect(prompt).toContain('ask for simple confirmation')
+    expect(prompt).toContain('Do not respond with only a menu')
+    expect(prompt).toContain('If the student agrees')
+    expect(prompt).toContain('Treat retrieved topic suggestions as examples')
+    expect(prompt).toContain(
+      'never imply that topics missing from the retrieved results are absent'
+    )
+    expect(prompt).toContain(
+      'Continue automatically after each assessed attempt'
+    )
+    expect(prompt).toContain(
+      'ask whether the student wants another AI-generated practice question'
+    )
+    expect(prompt).toContain(
+      'change topics or explore the current topic in more depth'
+    )
+    expect(prompt).toContain('suggest a better-supported course topic')
+    expect(prompt).not.toContain(
+      'After the explanation, ask whether to continue'
+    )
   })
 
   test('keeps fixed platform contracts out of the mode personas', () => {

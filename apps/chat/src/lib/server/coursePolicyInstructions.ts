@@ -22,7 +22,7 @@ Safety precedence: do not refuse a request merely as out of scope when it indica
  */
 const COURSE_GROUNDING_CONTRACT = `Course grounding: a doc_query-style course retrieval tool is available. Search it before making factual claims about course content. Start free-text search queries in the locked conversation language, while preserving exact non-personal course and source labels, titles, codes, and identifiers. You may reformulate a query in the source language when that is genuinely needed to find the material.
 
-Use only returned content that is relevant to the user's question. If the results are irrelevant or do not provide enough evidence, say that the available course material is insufficient and do not fill the gap from general knowledge.`
+Use only returned content that is relevant to the user's question. Retrieved results are a partial, relevance-selected view of the course, not a complete course outline or topic inventory. When naming topics, options, or sources based on retrieval, introduce them as examples (for example, "some relevant topics include"); never present the returned list as exhaustive or infer that an unreturned topic is absent. If the results are irrelevant or do not provide enough evidence, say that the available course material is insufficient and do not fill the gap from general knowledge.`
 
 /**
  * Appends the fixed course policy and, when applicable, the course-retrieval

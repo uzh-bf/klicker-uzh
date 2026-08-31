@@ -1,10 +1,4 @@
 import {
-  isDocQueryToolName,
-  normalizeSourcesFromParts,
-  parseDocQueryPayload,
-} from '@/src/lib/sources/normalizeSources'
-import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import {
   AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -12,8 +6,14 @@ import {
   SearchIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useState, type FC } from 'react'
+import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  isDocQueryToolName,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+} from '@/src/lib/sources/normalizeSources'
+import type { Translate } from '@/src/lib/sources/sourceDisplay'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -240,14 +240,14 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         : JSON.stringify(result, null, 2)
 
   return (
-    <div className="mb-1">
+    <div className="mb-0.5">
       <button
         type="button"
         data-cy="chat-tool-call-toggle"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
         className={twMerge(
-          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
+          'inline-flex min-h-8 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
           isFailed
             ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
