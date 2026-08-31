@@ -19,7 +19,7 @@ import {
   WandSparkles,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { useManageAssistantCapabilities } from '../hooks/useManageAssistantCapabilities'
@@ -54,7 +54,56 @@ function ManageAssistantInner() {
   const capability = useManageAssistantCapabilities()
   const welcomeCapability =
     capability.phase === 'settled' ? capability.capability : null
-  const contextLabel = getManageContextLabel(context)
+  const contextLabel = getManageContextLabel(context, {
+    surfaces: {
+      'activity-creation': t('context.surface.activityCreation'),
+      'course-dashboard': t('context.surface.courseDashboard'),
+      'element-editor': t('context.surface.elementEditor'),
+      evaluation: t('context.surface.evaluation'),
+      general: t('context.surface.general'),
+      'question-pool': t('context.surface.questionPool'),
+    },
+    entities: {
+      activity: (id) => t('context.activity', { id }),
+      course: (id) => t('context.course', { id }),
+      question: (id) => t('context.question', { id }),
+    },
+  })
+  const [contextAnnouncement, setContextAnnouncement] = useState('')
+  const contextKeyRef = useRef<string | null>(null)
+  const hasReceivedContextRef = useRef(false)
+
+  useEffect(() => {
+    if (!embedded) {
+      contextKeyRef.current = null
+      hasReceivedContextRef.current = false
+      setContextAnnouncement('')
+      return
+    }
+
+    // The hook starts with no context while the cross-origin handshake is
+    // pending. Do not treat that placeholder as the first context change.
+    if (!hasReceivedContextRef.current && context === null) return
+
+    const nextContextKey = context ? JSON.stringify(context) : null
+    const previousContextKey = contextKeyRef.current
+    contextKeyRef.current = nextContextKey
+    const isInitialContext = !hasReceivedContextRef.current
+    hasReceivedContextRef.current = true
+
+    // The first context message establishes the embedded session; it is not a
+    // change the lecturer needs announced. Subsequent JSON-distinct messages
+    // represent real Manage navigation or identifier changes.
+    if (isInitialContext || previousContextKey === nextContextKey) {
+      return
+    }
+
+    setContextAnnouncement(
+      contextLabel
+        ? t('context.changed', { context: contextLabel })
+        : t('context.cleared')
+    )
+  }, [context, contextLabel, embedded, t])
   const suggestions = welcomeCapability
     ? getManageSuggestions(context, welcomeCapability).map((suggestion) => {
         const textKey = (suggestion.textKey ??
@@ -121,9 +170,26 @@ function ManageAssistantInner() {
           </div>
         )}
         {embedded && (
-          <div className="flex shrink-0 justify-end px-3 pt-3">
+          <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2">
+            <div
+              className="min-w-0 truncate rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800"
+              data-cy="manage-assistant-context-label"
+              title={contextLabel ?? t('manageContext')}
+            >
+              {contextLabel ?? t('manageContext')}
+            </div>
             <ManageAssistantToolbar />
           </div>
+        )}
+        {embedded && (
+          <span
+            aria-live="polite"
+            className="sr-only"
+            data-cy="manage-assistant-context-announcement"
+            role="status"
+          >
+            {contextAnnouncement}
+          </span>
         )}
         <ManageCapabilityNotice
           capability={capability.capability}

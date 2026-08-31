@@ -3,6 +3,10 @@ import {
   isManageElementCreatedMessage,
   sanitizeManageElementCreatedPayload,
 } from '../src/components/assistant/manageElementCreatedMessage.ts'
+import {
+  isManageElementOpenRequestMessage,
+  sanitizeManageElementOpenRequestPayload,
+} from '../src/components/assistant/manageElementOpenRequestMessage.ts'
 
 assert.equal(
   isManageElementCreatedMessage({
@@ -44,3 +48,21 @@ assert.equal(
 )
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42 }), null)
 assert.equal(sanitizeManageElementCreatedPayload(null), null)
+
+assert.equal(
+  isManageElementOpenRequestMessage({
+    type: 'klicker:manage-element-open-request',
+    payload: { id: 42 },
+  }),
+  true
+)
+assert.equal(
+  isManageElementOpenRequestMessage({ type: 'klicker:manage-element-created' }),
+  false
+)
+assert.deepEqual(sanitizeManageElementOpenRequestPayload({ id: 42 }), {
+  id: 42,
+})
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: 0 }), null)
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: 1.5 }), null)
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: '42' }), null)

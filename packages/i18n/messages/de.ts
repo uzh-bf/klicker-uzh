@@ -91,6 +91,21 @@ export default {
     manageAssistant: {
       welcome: 'Hallo! Wie kann ich helfen?',
       manageContext: 'Verwalten',
+      context: {
+        surface: {
+          questionPool: 'Fragepool',
+          elementEditor: 'Frageneditor',
+          courseDashboard: 'Kursübersicht',
+          activityCreation: 'Aktivität einrichten',
+          evaluation: 'Auswertung',
+          general: 'Verwalten',
+        },
+        course: 'Kurs {id}',
+        activity: 'Aktivität {id}',
+        question: 'Frage {id}',
+        changed: 'Der Manage-Kontext wurde zu {context} geändert',
+        cleared: 'Der aktuelle Manage-Kontext ist nicht mehr verfügbar',
+      },
       capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
       capabilityDraft:
         'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
@@ -153,6 +168,19 @@ export default {
         singleChoice: 'Single Choice',
         multipleChoice: 'Multiple Choice',
         freeText: 'Freitext',
+      },
+      proposal: {
+        dismissed: 'Verworfen: {summary}',
+        draftCreated: 'Entwurf erstellt',
+        confirmationRequired: 'Bestätigung erforderlich',
+        draft: 'Entwurf',
+        createDraft: 'Entwurf erstellen',
+        dismiss: 'Verwerfen',
+        draftCreatedInQuestionPool: 'Entwurf im Fragepool erstellt',
+        openDraft: 'Entwurf öffnen',
+        confirmationFailed:
+          'Der Entwurf konnte nicht erstellt werden. Versuche es erneut.',
+        showRawJson: 'Rohes JSON anzeigen',
       },
     },
     recovery: {

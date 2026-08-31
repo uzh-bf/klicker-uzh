@@ -96,24 +96,44 @@ export function sanitizeManageAssistantContext(
 }
 
 export function getManageContextLabel(
-  context: ManageAssistantContext | null
+  context: ManageAssistantContext | null,
+  labels?: ManageContextLabels
 ): string | null {
   if (!context) return null
 
-  const surfaceLabel = getSurfaceLabel(context.surface)
+  const surfaceLabel =
+    labels?.surfaces[context.surface] ?? getSurfaceLabel(context.surface)
   if (context.ids?.courseId) {
-    return `${surfaceLabel} - Course ${context.ids.courseId}`
+    return `${surfaceLabel} - ${
+      labels?.entities.course(context.ids.courseId) ??
+      `Course ${context.ids.courseId}`
+    }`
   }
 
   if (context.ids?.activityId) {
-    return `${surfaceLabel} - Activity ${context.ids.activityId}`
+    return `${surfaceLabel} - ${
+      labels?.entities.activity(context.ids.activityId) ??
+      `Activity ${context.ids.activityId}`
+    }`
   }
 
   if (context.ids?.elementId) {
-    return `${surfaceLabel} - Question ${context.ids.elementId}`
+    return `${surfaceLabel} - ${
+      labels?.entities.question(context.ids.elementId) ??
+      `Question ${context.ids.elementId}`
+    }`
   }
 
   return surfaceLabel
+}
+
+export type ManageContextLabels = {
+  surfaces: Record<ManageAssistantContext['surface'], string>
+  entities: {
+    course: (id: string) => string
+    activity: (id: string) => string
+    question: (id: string) => string
+  }
 }
 
 export function formatManageContextForPrompt(

@@ -375,9 +375,8 @@ export const DEFAULT_CONFIRMED_ELEMENT: ConfirmedManageElement = {
 }
 
 /** A rejected proposal confirmation, e.g. a tampered/expired token (403) or a
- * lost session (401). `error` is returned verbatim in the JSON body's
- * `error` field, which confirmProposal() in manage-proposal-card.tsx reads
- * and renders as-is on a non-ok response. */
+ * lost session (401). The assistant deliberately maps this server detail to
+ * a generic localized card message. */
 export type ManageProposalConfirmError = {
   status: number
   error: string

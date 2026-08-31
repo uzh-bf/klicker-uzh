@@ -32,7 +32,10 @@ import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
 import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
-import { buildManageAssistantUrl } from './manageAssistantConfig'
+import {
+  buildManageAssistantElementEditRoute,
+  buildManageAssistantUrl,
+} from './manageAssistantConfig'
 import {
   buildManageAssistantContext,
   type ManageAssistantContext,
@@ -55,6 +58,10 @@ import {
   isManageElementCreatedMessage,
   sanitizeManageElementCreatedPayload,
 } from './manageElementCreatedMessage'
+import {
+  isManageElementOpenRequestMessage,
+  sanitizeManageElementOpenRequestPayload,
+} from './manageElementOpenRequestMessage'
 
 const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
 const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
@@ -251,10 +258,23 @@ export function ManageAssistantWidget() {
     )
   }, [assistantOrigin])
 
-  const closeWidget = useCallback(() => {
-    shouldRestoreFocusRef.current = true
+  const closeWidget = useCallback((restoreFocus = true) => {
+    shouldRestoreFocusRef.current = restoreFocus
     setOpen(false)
   }, [])
+
+  const openConfirmedElement = useCallback(
+    (id: number) => {
+      const route = buildManageAssistantElementEditRoute(id)
+      if (!route) return
+
+      // Let the Manage editor own focus before changing the route. The
+      // assistant must not return focus to its launcher during this handoff.
+      closeWidget(false)
+      void router.push(route)
+    },
+    [closeWidget, router]
+  )
 
   useEffect(() => {
     if (open || !shouldRestoreFocusRef.current) return
@@ -393,6 +413,16 @@ export function ManageAssistantWidget() {
         return
       }
 
+      if (isManageElementOpenRequestMessage(event.data)) {
+        const payload = sanitizeManageElementOpenRequestPayload(
+          event.data.payload
+        )
+        if (!payload) return
+
+        openConfirmedElement(payload.id)
+        return
+      }
+
       // The iframe announces readiness once its listener exists. Re-send the
       // current context then: this handshake alone is enough to deliver the
       // context to a slow-hydrating iframe, without a timed retry burst.
@@ -431,6 +461,7 @@ export function ManageAssistantWidget() {
     assistantUrl,
     closeWidget,
     frameState.generation,
+    openConfirmedElement,
     sendCurrentContext,
     t,
   ])
@@ -544,7 +575,7 @@ export function ManageAssistantWidget() {
               <button
                 ref={closeButtonRef}
                 type="button"
-                onClick={closeWidget}
+                onClick={() => closeWidget()}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={t('shared.generic.close')}
                 data-cy="manage-assistant-close"

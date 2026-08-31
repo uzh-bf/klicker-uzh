@@ -1,18 +1,27 @@
 'use client'
 
-import { CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
+import {
+  CheckIcon,
+  ExternalLinkIcon,
+  LoaderCircleIcon,
+  XIcon,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
-import { notifyManageParent } from '../services/manageParentNotify'
+import {
+  notifyManageParent,
+  requestManageParentOpen,
+} from '../services/manageParentNotify'
 import type { ManageProposalResult } from '../services/manageProposalResult'
 import { parseManageProposalPayload } from '../services/proposalToElementInstance'
+import { useManageParentStore } from '../stores/manageParentStore'
+import { useChatUi } from './chat-ui-context'
 import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
 
 type ConfirmedElement = {
   id: number
   name: string
-  status: string
-  type: string
 }
 
 type ConfirmationState =
@@ -56,6 +65,11 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   status,
   toolName,
 }) => {
+  const t = useTranslations('chat.manageAssistant.proposal')
+  const { embedded } = useChatUi()
+  const hasManageParent = useManageParentStore(
+    (state) => embedded && Boolean(state.manageParentOrigin)
+  )
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
     type: 'idle',
   })
@@ -70,7 +84,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
         className="my-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500"
       >
         <XIcon className="size-3.5 shrink-0" aria-hidden />
-        <span>Dismissed: {result.summary ?? tool}</span>
+        <span>{t('dismissed', { summary: result.summary ?? tool })}</span>
       </div>
     )
   }
@@ -99,20 +113,16 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
       })
       const data = await response.json().catch(() => null)
       if (!response.ok) {
-        throw new Error(
-          typeof data?.error === 'string' ? data.error : 'Draft creation failed'
-        )
+        throw new Error('confirmation-failed')
       }
-      if (!data?.element) {
-        throw new Error('Draft creation returned no element')
-      }
+      const element = parseConfirmedElement(data?.element)
+      if (!element) throw new Error('confirmation-failed')
 
-      setConfirmation({ type: 'success', element: data.element })
-      notifyManageParent({ id: data.element.id, name: data.element.name })
-    } catch (error) {
+      setConfirmation({ type: 'success', element })
+      notifyManageParent(element)
+    } catch {
       setConfirmation({
-        message:
-          error instanceof Error ? error.message : 'Draft creation failed',
+        message: t('confirmationFailed'),
         type: 'error',
       })
     }
@@ -130,10 +140,10 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
           )}
           <span className="text-xs font-semibold uppercase text-slate-500">
             {created
-              ? 'Draft created'
+              ? t('draftCreated')
               : result.requiresConfirmation
-                ? 'Confirmation required'
-                : 'Draft'}
+                ? t('confirmationRequired')
+                : t('draft')}
           </span>
           <span className="rounded bg-white px-1.5 py-0.5 text-[11px] text-slate-500">
             {result.kind}
@@ -167,7 +177,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
               ) : (
                 <CheckIcon className="size-3.5" aria-hidden />
               )}
-              Create draft
+              {t('createDraft')}
             </button>
           )}
           {!created && (
@@ -185,7 +195,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
               }
             >
               <XIcon className="size-3.5" aria-hidden />
-              Dismiss
+              {t('dismiss')}
             </button>
           )}
         </div>
@@ -196,7 +206,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
               <CheckIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
               <div>
                 <div className="font-semibold">
-                  Draft created in the question pool
+                  {t('draftCreatedInQuestionPool')}
                 </div>
                 <div className="mt-0.5">
                   {confirmation.element.name} (#{confirmation.element.id})
@@ -211,9 +221,23 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
           )}
         </div>
 
+        {confirmation.type === 'success' && hasManageParent && (
+          <button
+            type="button"
+            data-cy="chat-manage-proposal-open-draft"
+            onClick={() =>
+              requestManageParentOpen({ id: confirmation.element.id })
+            }
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 text-xs font-semibold text-blue-800 hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <ExternalLinkIcon className="size-3.5" aria-hidden />
+            {t('openDraft')}
+          </button>
+        )}
+
         <details>
           <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
-            Show raw JSON
+            {t('showRawJson')}
           </summary>
           <pre className="mt-2 max-h-72 overflow-auto rounded bg-slate-950 p-3 text-xs leading-5 text-slate-50">
             {payloadText}
@@ -222,4 +246,22 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
       </div>
     </div>
   )
+}
+
+function parseConfirmedElement(value: unknown): ConfirmedElement | null {
+  if (typeof value !== 'object' || value === null) return null
+
+  const { id, name } = value as Record<string, unknown>
+  if (
+    typeof id !== 'number' ||
+    !Number.isInteger(id) ||
+    id <= 0 ||
+    typeof name !== 'string' ||
+    name.length === 0 ||
+    name.length > 200
+  ) {
+    return null
+  }
+
+  return { id, name }
 }

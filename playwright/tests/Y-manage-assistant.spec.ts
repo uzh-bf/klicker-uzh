@@ -215,6 +215,94 @@ test.describe('Manage Assistant — Messaging', () => {
         `Draft "${DEFAULT_CONFIRMED_ELEMENT.name}" added to your question pool`
       )
     ).toBeVisible()
+
+    const openDraft = assistant.getByRole('button', { name: 'Open draft' })
+    await expect(openDraft).toBeVisible()
+    await openDraft.click()
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page).toHaveURL(/editElementId=4242/)
+  })
+
+  test('Manage context stays visible after a message and announces a changed context', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      text: 'The current Manage context is available.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Question pool')
+    await sendManageAssistantMessage(assistant, 'Summarize this question pool')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The current Manage context is available.')
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Question pool')
+
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    await page.evaluate(
+      ({ chatOrigin, context }) => {
+        const frame = document.querySelector(
+          '[data-cy="manage-assistant-frame"]'
+        ) as HTMLIFrameElement | null
+        frame?.contentWindow?.postMessage(
+          { payload: context, type: 'klicker:manage-context' },
+          new URL(chatOrigin).origin
+        )
+      },
+      {
+        chatOrigin,
+        context: {
+          version: 1,
+          source: 'manage',
+          surface: 'course-dashboard',
+          locale: 'en',
+          route: {
+            asPath: '/courses/42',
+            pathname: '/courses/[id]',
+          },
+          ids: { courseId: '42' },
+        },
+      }
+    )
+
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Course dashboard - Course 42')
+    await expect(
+      assistant.getByTestId('manage-assistant-context-announcement')
+    ).toHaveText('Manage context changed to Course dashboard - Course 42')
+  })
+
+  test('German draft actions stay localized and open the confirmed draft in Manage', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, { mode: 'proposal' })
+    await mockManageProposalConfirm(page)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/de`)
+
+    const assistant = await openManageAssistantWidget(page)
+    await sendManageAssistantMessage(assistant, 'Entwirf eine Frage')
+
+    await expect(assistant.getByText('Bestätigung erforderlich')).toBeVisible()
+    const createDraft = assistant.getByRole('button', {
+      name: 'Entwurf erstellen',
+    })
+    await expect(createDraft).toBeEnabled()
+    await createDraft.click()
+
+    await expect(
+      assistant.getByText('Entwurf im Fragepool erstellt')
+    ).toBeVisible()
+    const openDraft = assistant.getByRole('button', { name: 'Entwurf öffnen' })
+    await expect(openDraft).toBeVisible()
+    await openDraft.click()
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page).toHaveURL(/editElementId=4242/)
   })
 
   test('Dismissing a proposal collapses the card into a muted note and fires no confirm request', async ({
@@ -1093,11 +1181,14 @@ test.describe('Manage Assistant — Error paths', () => {
     await expect(confirmButton).toBeEnabled()
     await confirmButton.click()
 
-    // Card renders confirmation.type === 'error' with the server's message
-    // verbatim (manage-proposal-card.tsx confirmProposal()).
+    // The card keeps provider and server details out of the visible UI and
+    // maps the failed confirmation to a localized generic category.
+    await expect(
+      assistant.getByText('The draft could not be created. Please try again.')
+    ).toBeVisible()
     await expect(
       assistant.getByText('This proposal is no longer valid. Please ask again.')
-    ).toBeVisible()
+    ).toHaveCount(0)
 
     // No success state: the draft was never created.
     await expect(
@@ -1137,8 +1228,11 @@ test.describe('Manage Assistant — Error paths', () => {
     await confirmButton.click()
 
     await expect(
-      assistant.getByText('Your session has expired. Please sign in again.')
+      assistant.getByText('The draft could not be created. Please try again.')
     ).toBeVisible()
+    await expect(
+      assistant.getByText('Your session has expired. Please sign in again.')
+    ).toHaveCount(0)
     await expect(
       assistant.getByText('Draft created in the question pool')
     ).toHaveCount(0)

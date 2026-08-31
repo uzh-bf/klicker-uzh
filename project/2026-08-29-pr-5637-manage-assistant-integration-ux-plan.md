@@ -1007,12 +1007,14 @@ follow_up_stacks:
   status remains pending by design. The final OCR finding about the general
   suggestion literal union is already fixed in `5efb100a8` and now has a
   disposition reply; all current review feedback has been checked.
-- A3 start: The approved A3 slice now begins from the accepted A2 head in the
-  existing stack worktree. It will keep the sanitized context payload,
-  localize visible EN/DE workflow copy, persist and announce genuine Manage
-  context changes, and add validated parent-owned navigation for confirmed
-  drafts. The A3 branch and draft PR remain to be created.
-- Next: Create `rs/manage-assistant-workflow-continuity` from
-  `66d63923535a`, implement the localized draft-revise-confirm-open journey,
-  and verify its message, context, route, proposal, toast, reset, and EN/DE
-  browser contracts before the A3 review fan-out.
+- A3 start: The approved A3 slice begins in the existing stack worktree from
+  the exact published A2 head `39edc3ce4`, which records the A2 acceptance and
+  A3 start receipt. The branch `rs/manage-assistant-workflow-continuity` is
+  created locally without rewriting the stale rebased A0/A1 refs or touching
+  the dirty primary checkout. It keeps the sanitized context payload,
+  localizes visible EN/DE workflow copy, persists and announces genuine Manage
+  context changes, and adds validated parent-owned navigation for confirmed
+  drafts.
+- Next: Implement the localized draft-revise-confirm-open journey and verify
+  its message, context, route, proposal, toast, reset, and EN/DE browser
+  contracts before the A3 review fan-out.
