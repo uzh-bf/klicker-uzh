@@ -2,11 +2,98 @@
 // or React lives here, so the pure entry point stays importable from the
 // backend. Consuming apps import `driver.js/dist/driver.css` themselves — a
 // tsc-built package cannot ship CSS, and pnpm does not hoist the dependency.
+// That import has to happen from the app's stylesheet inside a cascade layer
+// (`@import 'driver.js/dist/driver.css' layer(components);`), because an
+// unlayered stylesheet outranks every layered Tailwind utility no matter how
+// specific: imported from JavaScript, driver's own look would silently beat
+// `TOUR_POPOVER_CLASS`.
 
 import type { Alignment, Driver, DriveStep, Side } from 'driver.js'
 import { driver } from 'driver.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { escapeHtml } from './index.js'
+
+/**
+ * The structural class on the documentation link a step may carry. It is not a
+ * Tailwind utility: it only gives `TOUR_POPOVER_CLASS` something stable to
+ * style, the way driver.js' own `driver-popover-*` classes do.
+ */
+const DOCUMENTATION_LINK_CLASS = 'driver-popover-doc-link'
+
+/**
+ * The look of every product-tour popover, in one place, so the lecturer
+ * interface, the student app and the chat introduce themselves the same way.
+ *
+ * Driver.js renders a fixed skeleton of `driver-popover-*` elements that the
+ * caller cannot reach, so the card is styled through descendant variants on
+ * this single class. Two constraints keep it working:
+ *
+ * - It must stay one literal string. Tailwind finds utilities by reading the
+ *   source, so a class assembled at runtime produces no CSS at all. Consuming
+ *   apps additionally need `@source` pointed at this package's `src`, because
+ *   the package is deliberately not transpiled by the apps.
+ * - The app must import `driver.js/dist/driver.css` into a cascade layer; see
+ *   the file header.
+ *
+ * Only tokens that all three apps define are used — `popover`, `foreground`,
+ * `muted-foreground`, `border`, `primary`, `primary-foreground` and `accent`.
+ * Their values differ per app on purpose: the accent is UZH blue in the chat
+ * and the neutral design-system primary in the lecturer and student apps.
+ */
+export const TOUR_POPOVER_CLASS = `
+  font-sans max-w-sm rounded-lg border border-border bg-popover p-5
+  text-popover-foreground shadow-lg
+  [&_.driver-popover-title]:text-base
+  [&_.driver-popover-title]:font-bold
+  [&_.driver-popover-title]:leading-6
+  [&_.driver-popover-title]:text-foreground
+  [&_.driver-popover-description]:mt-2
+  [&_.driver-popover-description]:text-sm
+  [&_.driver-popover-description]:leading-6
+  [&_.driver-popover-description]:text-muted-foreground
+  [&_.driver-popover-doc-link]:mt-3
+  [&_.driver-popover-doc-link]:block
+  [&_.driver-popover-doc-link]:text-sm
+  [&_.driver-popover-doc-link]:font-medium
+  [&_.driver-popover-doc-link]:text-primary
+  [&_.driver-popover-doc-link]:underline
+  [&_.driver-popover-doc-link]:underline-offset-2
+  [&_.driver-popover-footer]:mt-5
+  [&_.driver-popover-footer]:gap-4
+  [&_.driver-popover-progress-text]:text-xs
+  [&_.driver-popover-progress-text]:text-muted-foreground
+  [&_.driver-popover-navigation-btns]:gap-2
+  [&_.driver-popover-navigation-btns_button]:ml-0
+  [&_.driver-popover-next-btn]:rounded-md
+  [&_.driver-popover-next-btn]:border-transparent
+  [&_.driver-popover-next-btn]:bg-primary
+  [&_.driver-popover-next-btn]:px-3
+  [&_.driver-popover-next-btn]:py-1.5
+  [&_.driver-popover-next-btn]:text-sm
+  [&_.driver-popover-next-btn]:font-semibold
+  [&_.driver-popover-next-btn]:text-primary-foreground
+  [&_.driver-popover-next-btn:hover]:bg-primary/90
+  [&_.driver-popover-prev-btn]:rounded-md
+  [&_.driver-popover-prev-btn]:border
+  [&_.driver-popover-prev-btn]:border-border
+  [&_.driver-popover-prev-btn]:bg-transparent
+  [&_.driver-popover-prev-btn]:px-3
+  [&_.driver-popover-prev-btn]:py-1.5
+  [&_.driver-popover-prev-btn]:text-sm
+  [&_.driver-popover-prev-btn]:font-medium
+  [&_.driver-popover-prev-btn]:text-foreground
+  [&_.driver-popover-prev-btn:hover]:bg-accent
+  [&_.driver-popover-close-btn]:top-2
+  [&_.driver-popover-close-btn]:right-2
+  [&_.driver-popover-close-btn]:text-lg
+  [&_.driver-popover-close-btn]:leading-none
+  [&_.driver-popover-close-btn]:text-muted-foreground
+  [&_.driver-popover-close-btn:hover]:text-foreground
+  [&_.driver-popover-arrow-side-left]:border-l-popover
+  [&_.driver-popover-arrow-side-right]:border-r-popover
+  [&_.driver-popover-arrow-side-top]:border-t-popover
+  [&_.driver-popover-arrow-side-bottom]:border-b-popover
+`
 
 // One slot per browser tab for everything the user did not ask for: the
 // onboarding tour and the product-update spotlight both claim it, so a lecturer
@@ -96,6 +183,13 @@ export function createFeatureTargetRegistry<Key extends string>({
 
 export type ProductTourEndReason = 'complete' | 'skip' | 'dismiss'
 
+export interface ProductTourDocumentation {
+  /** Absolute URL of the documentation page the step points at. */
+  href: string
+  /** What the reader sees, in the language the tour is running in. */
+  label: string
+}
+
 export interface ProductTourStep {
   /**
    * Resolved when the tour starts. A step whose element is not on the page is
@@ -105,8 +199,30 @@ export interface ProductTourStep {
   element?: () => HTMLElement | null
   title: string
   description: string
+  /**
+   * An optional link to the page in the user-facing documentation that covers
+   * what the step points at, for the reader who wants more than a card.
+   */
+  documentation?: ProductTourDocumentation
   side?: Side
   align?: Alignment
+}
+
+/**
+ * Renders a step's body, plus its documentation link when it has one.
+ *
+ * Both fields are structured rather than a snippet of HTML, so that no
+ * translation can ever carry markup into the popover: driver.js assigns this
+ * string with innerHTML, and everything that reaches it is escaped here.
+ */
+function renderDescription(step: ProductTourStep): string {
+  const description = escapeHtml(step.description)
+  if (!step.documentation) return description
+
+  const href = escapeHtml(step.documentation.href)
+  const label = escapeHtml(step.documentation.label)
+
+  return `${description}<a class="${DOCUMENTATION_LINK_CLASS}" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
 }
 
 export interface ProductTourLabels {
@@ -195,7 +311,7 @@ export function useProductTour({
         popover: {
           // Driver.js writes every popover string into the DOM with innerHTML.
           title: escapeHtml(step.title),
-          description: escapeHtml(step.description),
+          description: renderDescription(step),
           side: step.side,
           align: step.align,
         },
@@ -218,6 +334,7 @@ export function useProductTour({
       steps: driverSteps,
       allowClose: true,
       stagePadding: 6,
+      popoverClass: TOUR_POPOVER_CLASS,
       showProgress: driverSteps.length > 1,
       progressText: escapeHtml(current.labels.progress),
       nextBtnText: escapeHtml(current.labels.next),

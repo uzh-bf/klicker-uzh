@@ -1882,10 +1882,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       onboarding: {
         welcomeTitle: 'Welcome to KlickerUZH',
         welcomeBody:
-          'A short tour shows you where everything lives. You can leave it at any time and start it again from the support menu.',
+          'A short tour shows you where everything lives. You can leave it at any time and start it again from the account menu.',
+        welcomeLink: 'Getting started',
         navigationTitle: 'Library, activities and courses',
         navigationBody:
           'Your questions live in the library, activities are what students work on, and courses bring both together.',
+        elementCreationTitle: 'Create your first element',
+        elementCreationBody:
+          'Elements are the questions and content blocks every activity is built from. This button starts a new one and files it in your library.',
+        elementCreationLink: 'Managing elements',
+        activityTypesTitle: 'Four kinds of activity',
+        activityTypesBody:
+          'A live quiz runs during the lecture, a microlearning follows it in a short window, a practice quiz stays open for repetition, and a group activity has students solve it together.',
+        activityTypesLink: 'Core concepts',
         analyticsTitle: 'Learning analytics',
         analyticsBody:
           'Once a course is running, this menu shows how your students are doing.',

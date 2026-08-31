@@ -2,11 +2,11 @@ import { escapeHtml } from '@klicker-uzh/product-tours'
 import {
   claimUnsolicitedOverlaySlot,
   deferToNextFrame,
+  TOUR_POPOVER_CLASS,
   unsolicitedOverlayShownThisSession,
 } from '@klicker-uzh/product-tours/react'
 import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import { type Driver, driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -80,6 +80,9 @@ export function useProductUpdateSpotlight({
       const instance = driver({
         allowClose: true,
         stagePadding: 6,
+        // The spotlight builds its own driver instance, so it has to opt into
+        // the shared popover look that the tour hook applies for its callers.
+        popoverClass: TOUR_POPOVER_CLASS,
         onDestroyed: () => {
           activeDriver.current = null
         },

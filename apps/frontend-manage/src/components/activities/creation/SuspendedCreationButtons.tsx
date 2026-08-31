@@ -6,6 +6,7 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
+import { featureTargetProps } from '../../onboarding/featureTargets'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
@@ -16,7 +17,12 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const t = useTranslations()
 
   return (
-    <div className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2">
+    // The onboarding tour points at the group rather than at one button: the
+    // step is about the four activity types existing, not about picking one.
+    <div
+      className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2"
+      {...featureTargetProps('manage-home-activity-types')}
+    >
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
