@@ -328,9 +328,11 @@ per-chatbot allocation, and participant-credit migration remain deferred.
   even when the chatbot allow-list excludes it. The registry must contain a
   `fallback` GPT-5.6 Luna `BASE` entry; the route denies the turn only if that
   entry is absent. Retired model IDs in persisted allow-lists are ignored, and
-  an automatic chatbot with no current allowed model resolves to Luna. A
-  `CHAT_FALLBACK_MODEL_ID` override changes only automatic-mode selection, not
-  this zero-credit safety fallback.
+  an automatic chatbot with no current allowed model resolves to Luna. The
+  chart still emits `CHAT_FALLBACK_MODEL_ID` for mixed-version compatibility
+  and the one-off maintenance script, but the current Chat runtime ignores it.
+  `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
+  safety fallback is always Luna.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
