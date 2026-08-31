@@ -725,6 +725,9 @@ function sanitizeReceipt(value) {
   ) {
     return fixedFailureReceipt('protocol_failed')
   }
+  if (!hasExactZeroPreservation(value.preservation)) {
+    return fixedFailureReceipt('protocol_failed')
+  }
   if (value.result === 'failed' && value.failureClass === 'none') {
     return fixedFailureReceipt('protocol_failed')
   }
@@ -746,8 +749,7 @@ function sanitizeReceipt(value) {
       value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
       value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
-      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed') ||
-      !hasExactZeroPreservation(value.preservation))
+      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
   ) {
     return fixedFailureReceipt('protocol_failed')
   }
