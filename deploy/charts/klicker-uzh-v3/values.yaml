@@ -54,11 +54,6 @@ codeApi:
   jwtAlgorithm: EdDSA
   jwtTtlSeconds: 60
   requestTimeoutMs: 120000
-  jwtIssuer: ''
-  jwtAudience: ''
-  tenantId: ''
-  jwtPrivateKey: ''
-  jwtKeyId: ''
 
 hatchet:
   client:

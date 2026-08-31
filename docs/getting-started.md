@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-31'
+timestamp: '2026-09-01'
 tags:
   - environment
   - onboarding
@@ -121,7 +121,7 @@ kubectl --context aks-stg-apps port-forward -n codeapi \
   svc/codeapi-api-klicker-test 43112:3112
 ```
 
-Set `CODEAPI_BASE_URL=http://127.0.0.1:43112` plus the five `CODEAPI_JWT_*` signing variables in the process that runs the GraphQL backend and grading worker. The local client permits HTTP on loopback; it never permits arbitrary remote HTTP. The staging service must trust the matching public key and include `klicker_jwt` in its principal-source allow-list. The tunnel is ephemeral and does not modify cluster resources.
+Set `CODEAPI_BASE_URL=http://127.0.0.1:43112` plus the five `CODEAPI_JWT_*` signing variables in the process that runs the general grading worker. The local client permits HTTP on loopback; it never permits arbitrary remote HTTP. The staging service must trust the matching public key and include `klicker_jwt` in its principal-source allow-list. The tunnel is ephemeral and does not modify cluster resources.
 
 Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
 

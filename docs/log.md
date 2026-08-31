@@ -1,8 +1,12 @@
 # Log
 
+## 2026-09-01
+
+- **Correction**: CodeAPI signing settings are scoped to the general grading worker; legacy response processors and GraphQL backends no longer receive the private signing key, and the v3 chart no longer advertises unused secret values because its Secrets are externally managed.
+
 ## 2026-08-31
 
-- **Update**: the CodeAPI deployment contract now targets the read-only-discovered staging `codeapi-api-klicker-test` Service, wires non-secret endpoint settings through both Helm chart generations, carries signing settings through the existing backend/worker secret paths, and restricts HTTP exceptions to explicitly enabled Kubernetes service DNS.
+- **Update**: the CodeAPI deployment contract now targets the read-only-discovered staging `codeapi-api-klicker-test` Service, wires non-secret endpoint settings through both Helm chart generations, carries signing settings only through the general grading-worker secret path, and restricts HTTP exceptions to explicitly enabled Kubernetes service DNS.
 - **Correction**: LiveQuiz CODE receipt creation now serializes with block
   closure, quiz end rejects active blocks and in-flight grading, and Redis
   projection rejects stale block executions before writing results,
