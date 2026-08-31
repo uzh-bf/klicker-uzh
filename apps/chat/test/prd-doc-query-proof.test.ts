@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, test } from 'vitest'
 import {
   createMcpTransport,
+  computeManifestFingerprint,
   minimalChildEnvironment,
   runProofMatrix,
   superviseProof,
@@ -25,12 +26,30 @@ import {
   rejected,
 } from './doc-query-proof-test-support'
 
-const manifest = () =>
-  createProofManifest({
+const activationManifestFingerprint = 'a'.repeat(64)
+const manifest = () => {
+  const base = createProofManifest({
     environment: 'prd',
     collection: 'klicker_course_materials_v1',
     extraChatbotCases: 7,
+    version: 2,
+    activationManifestFingerprint,
   })
+  return {
+    ...base,
+    manifestFingerprint: computeManifestFingerprint(base),
+  }
+}
+const proofManifestFingerprint = (manifest() as { manifestFingerprint: string })
+  .manifestFingerprint
+const validateTestManifest = (input: unknown) =>
+  validateManifest(input, proofManifestFingerprint)
+async function proofDummyEnvironmentWithPin(): Promise<Record<string, string>> {
+  return {
+    ...(await proofDummyEnvironment()),
+    DOC_QUERY_PROOF_MANIFEST_FINGERPRINT: proofManifestFingerprint,
+  }
+}
 const receiptSources = createProofReceiptSources({
   environment: 'prd',
   collection: 'klicker_course_materials_v1',
@@ -44,7 +63,7 @@ const writeDummy = createProofChildWriter(proofRegistry)
 afterEach(() => proofRegistry.cleanup())
 
 async function proofProcessEnvironment(): Promise<NodeJS.ProcessEnv> {
-  return { ...(await proofDummyEnvironment()), NODE_ENV: 'test' }
+  return { ...(await proofDummyEnvironmentWithPin()), NODE_ENV: 'test' }
 }
 
 async function prepareDuplicateLock(lockPath: string) {
@@ -61,9 +80,25 @@ async function prepareDuplicateLock(lockPath: string) {
 
 defineProofManifestSuite(
   'PRD',
-  { validateManifest },
-  { manifest, expectedChatbotCount: 22 }
+  { validateManifest: validateTestManifest },
+  {
+    manifest,
+    expectedChatbotCount: 22,
+    expectFingerprintBinding: true,
+  }
 )
+
+describe('PRD Doc Query proof manifest integrity', () => {
+  test('refuses a manifest whose fingerprint does not match the trusted pin', () => {
+    const trustedPin = proofManifestFingerprint.replace(
+      /^./,
+      proofManifestFingerprint.startsWith('0') ? '1' : '0'
+    )
+    expect(() => validateManifest(manifest(), trustedPin)).toThrow(
+      'manifest_refused'
+    )
+  })
+})
 
 describe('PRD Doc Query proof transport', () => {
   test('disables Streamable HTTP reconnection attempts', () => {
@@ -134,8 +169,8 @@ describe('PRD Doc Query proof transport', () => {
 
 describe('PRD Doc Query proof matrix', () => {
   test('does not accept an unrelated tool error as an auth rejection', async () => {
-    const validated = validateManifest(manifest())
-    const environment = await proofDummyEnvironment()
+    const validated = validateTestManifest(manifest())
+    const environment = await proofDummyEnvironmentWithPin()
     let call = 0
     const receipt = await runProofMatrix({
       manifest: validated,
@@ -171,12 +206,12 @@ describe('PRD Doc Query proof matrix', () => {
 defineProofMatrixSuite(
   'PRD',
   {
-    validateManifest,
+    validateManifest: validateTestManifest,
     runProofMatrix: runProofMatrix as unknown as RunProofMatrix,
   },
   {
     manifest,
-    environment: proofDummyEnvironment,
+    environment: proofDummyEnvironmentWithPin,
     rejection: rejected,
     rejectionWithArguments: () => rejected('invalid arguments'),
     expectedDirectCalls: 37,
@@ -201,11 +236,12 @@ defineProofSupervisorSuite(
     superviseProof: superviseProof as unknown as SuperviseProof,
   },
   {
-    dummyEnvironment: proofDummyEnvironment,
+    dummyEnvironment: proofDummyEnvironmentWithPin,
     writeDummy,
     prepareDuplicateLock,
     passedReceiptSource: receiptSources.passedReceiptSource,
     failedReceiptSource: receiptSources.failedReceiptSource,
+    expectProofManifestFingerprint: true,
   }
 )
 

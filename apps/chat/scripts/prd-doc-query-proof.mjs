@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
 import { open, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -12,7 +12,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { generateKeyPair, importPKCS8, SignJWT } from 'jose'
 
 const RECEIPT_VERSION = 1
-const MANIFEST_VERSION = 1
+const MANIFEST_VERSION = 2
 const EXPECTED_KB_COUNT = 15
 const EXPECTED_CHATBOT_COUNT = 22
 const EXPECTED_EXCLUDED_CHATBOT_COUNT = 2
@@ -33,6 +33,7 @@ const DEFAULT_LOCK_PATH = resolve(
 const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/
 
 function compareUtf16Strings(left, right) {
   if (left < right) return -1
@@ -55,9 +56,13 @@ const WORKER_CONTROL_ENV_NAMES = new Set([
   'DOC_QUERY_PROOF_PARENT_PID',
   'DOC_QUERY_PROOF_MANIFEST_PATH',
 ])
+const WORKER_INTEGRITY_ENV_NAMES = new Set([
+  'DOC_QUERY_PROOF_MANIFEST_FINGERPRINT',
+])
 const ALLOWED_WORKER_ENV_NAMES = new Set([
   ...SECRET_ENV_NAMES,
   ...WORKER_CONTROL_ENV_NAMES,
+  ...WORKER_INTEGRITY_ENV_NAMES,
   ...PLATFORM_ENV_NAMES,
 ])
 
@@ -121,6 +126,10 @@ function requireUuid(value) {
   return requireString(value, UUID_PATTERN).toLowerCase()
 }
 
+function requireFingerprint(value) {
+  return requireString(value, FINGERPRINT_PATTERN)
+}
+
 function requireMarkerList(value) {
   if (
     !Array.isArray(value) ||
@@ -150,7 +159,43 @@ function hasExactZeroPreservation(value) {
   )
 }
 
-export function validateManifest(input) {
+function normalizeManifestForFingerprint(input) {
+  return {
+    version: input.version,
+    environment: input.environment,
+    collection: input.collection,
+    singletonCanaryCaseId: input.singletonCanaryCaseId,
+    cases: input.cases.map((entry) => ({
+      id: entry.id,
+      kbId: entry.kbId.toLowerCase(),
+      chatbotIds: entry.chatbotIds.map((chatbotId) => chatbotId.toLowerCase()),
+      positive: {
+        question: entry.positive.question,
+        expectAny: [...entry.positive.expectAny],
+        minSources: entry.positive.minSources,
+      },
+      foreign: {
+        question: entry.foreign.question,
+        forbidReferences: [...entry.foreign.forbidReferences],
+      },
+    })),
+    excludedChatbotIds: input.excludedChatbotIds.map((chatbotId) =>
+      chatbotId.toLowerCase()
+    ),
+    activationManifestFingerprint: input.activationManifestFingerprint,
+  }
+}
+
+export function computeManifestFingerprint(input) {
+  return createHash('sha256')
+    .update(JSON.stringify(normalizeManifestForFingerprint(input)), 'utf8')
+    .digest('hex')
+}
+
+export function validateManifest(
+  input,
+  trustedFingerprint = process.env.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
+) {
   if (
     !input ||
     typeof input !== 'object' ||
@@ -237,13 +282,30 @@ export function validateManifest(input) {
     throw new ProofFailure('manifest_refused')
   }
 
-  return {
+  const activationManifestFingerprint = requireFingerprint(
+    input.activationManifestFingerprint
+  )
+  const manifestFingerprint = requireFingerprint(input.manifestFingerprint)
+  const normalizedManifest = {
     version: MANIFEST_VERSION,
     environment: 'prd',
     collection: COLLECTION,
     singletonCanaryCaseId: canaryCaseId,
     cases,
     excludedChatbotIds,
+    activationManifestFingerprint,
+  }
+  const recomputedFingerprint = computeManifestFingerprint(normalizedManifest)
+  if (
+    manifestFingerprint !== recomputedFingerprint ||
+    manifestFingerprint !== requireFingerprint(trustedFingerprint)
+  ) {
+    throw new ProofFailure('manifest_refused')
+  }
+
+  return {
+    ...normalizedManifest,
+    manifestFingerprint,
   }
 }
 
@@ -677,6 +739,9 @@ function requiredWorkerEnvironment(source) {
     throw new ProofFailure('manifest_refused')
   }
   environment.DOC_QUERY_PROOF_MANIFEST_PATH = manifestPath
+  environment.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT = requireFingerprint(
+    source.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
+  )
   return environment
 }
 
@@ -695,7 +760,7 @@ export function minimalChildEnvironment(source, parentPid) {
   }
 }
 
-async function readManifest(path) {
+async function readManifest(path, trustedFingerprint) {
   let raw
   try {
     raw = await readFile(path, 'utf8')
@@ -703,7 +768,7 @@ async function readManifest(path) {
     throw new ProofFailure('manifest_refused')
   }
   try {
-    return validateManifest(JSON.parse(raw))
+    return validateManifest(JSON.parse(raw), trustedFingerprint)
   } catch (error) {
     if (error instanceof ProofFailure) throw error
     throw new ProofFailure('manifest_refused')
@@ -990,7 +1055,8 @@ async function workerMain() {
     validateWorkerEnvironment(process.env)
     const environment = requiredWorkerEnvironment(process.env)
     const manifest = await readManifest(
-      environment.DOC_QUERY_PROOF_MANIFEST_PATH
+      environment.DOC_QUERY_PROOF_MANIFEST_PATH,
+      environment.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
     )
     const receipt = await runProofMatrix({ manifest, environment })
     sendWorkerReceipt(receipt, receipt.result === 'passed' ? 0 : 1)

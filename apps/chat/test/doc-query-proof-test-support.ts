@@ -91,10 +91,14 @@ export function createProofManifest({
   environment,
   collection,
   extraChatbotCases,
+  version = 1,
+  activationManifestFingerprint,
 }: {
   environment: string
   collection: string
   extraChatbotCases: number
+  version?: number
+  activationManifestFingerprint?: string
 }) {
   let chatbotIndex = 100
   const cases = Array.from({ length: 15 }, (_, index) => ({
@@ -114,14 +118,17 @@ export function createProofManifest({
       forbidReferences: [`foreign-reference-${index + 1}`],
     },
   }))
-  return {
-    version: 1,
+  const manifest = {
+    version,
     environment,
     collection,
     singletonCanaryCaseId: 'corpus_1',
     cases,
     excludedChatbotIds: [proofUuid(900), proofUuid(901)],
   }
+  return activationManifestFingerprint
+    ? { ...manifest, activationManifestFingerprint }
+    : manifest
 }
 
 export async function proofDummyEnvironment(): Promise<Record<string, string>> {
@@ -214,7 +221,11 @@ export function createProofChildWriter(registry: {
 export function defineProofManifestSuite(
   label: string,
   behaviors: { validateManifest: ValidateProofManifest },
-  config: { manifest: () => unknown; expectedChatbotCount: number }
+  config: {
+    manifest: () => unknown
+    expectedChatbotCount: number
+    expectFingerprintBinding?: boolean
+  }
 ) {
   describe(`${label} Doc Query proof manifest`, () => {
     test('accepts exactly 15 KBs, the configured chatbot targets, and two exclusions', () => {
@@ -226,6 +237,18 @@ export function defineProofManifestSuite(
       expect(validated.cases[0].chatbotIds).toHaveLength(1)
       expect(validated.excludedChatbotIds).toHaveLength(2)
     })
+
+    if (config.expectFingerprintBinding) {
+      test('refuses a same-cardinality substitution with a different cohort fingerprint', () => {
+        const substituted = config.manifest() as {
+          cases: Array<{ kbId: string }>
+        }
+        substituted.cases[0].kbId = proofUuid(999)
+        expect(() => behaviors.validateManifest(substituted)).toThrow(
+          'manifest_refused'
+        )
+      })
+    }
 
     test('refuses duplicate target chatbots before any proof call', () => {
       const duplicate = config.manifest() as {
@@ -472,6 +495,7 @@ export function defineProofSupervisorSuite(
     prepareDuplicateLock?: (lockPath: string) => Promise<() => Promise<void>>
     passedReceiptSource: (extra?: string, preservation?: string) => string
     failedReceiptSource: (preservation?: string) => string
+    expectProofManifestFingerprint?: boolean
   }
 ) {
   const suiteRegistry = createTemporaryDirectoryRegistry()
@@ -486,16 +510,20 @@ export function defineProofSupervisorSuite(
       )
       expect(childEnvironment).not.toHaveProperty('LEAK_ME')
       expect(childEnvironment).not.toHaveProperty('PATH')
+      const expectedEnvironmentNames = [
+        'DOC_QUERY_JWT_TOKEN_KLICKER',
+        'DOC_QUERY_SCOPE_AUDIENCE',
+        'DOC_QUERY_SCOPE_ISSUER',
+        'DOC_QUERY_SCOPE_KID',
+        'DOC_QUERY_SCOPE_PRIVATE_KEY',
+        'DOC_QUERY_PROOF_PARENT_PID',
+        'DOC_QUERY_PROOF_MANIFEST_PATH',
+      ]
+      if (config.expectProofManifestFingerprint) {
+        expectedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
       expect(Object.keys(childEnvironment).sort()).toEqual(
-        [
-          'DOC_QUERY_JWT_TOKEN_KLICKER',
-          'DOC_QUERY_SCOPE_AUDIENCE',
-          'DOC_QUERY_SCOPE_ISSUER',
-          'DOC_QUERY_SCOPE_KID',
-          'DOC_QUERY_SCOPE_PRIVATE_KEY',
-          'DOC_QUERY_PROOF_PARENT_PID',
-          'DOC_QUERY_PROOF_MANIFEST_PATH',
-        ].sort()
+        expectedEnvironmentNames.sort()
       )
     })
 
@@ -631,6 +659,9 @@ export function defineProofSupervisorSuite(
         'DOC_QUERY_PROOF_MANIFEST_PATH',
         '__CF_USER_TEXT_ENCODING',
       ]
+      if (config.expectProofManifestFingerprint) {
+        allowedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
       const source = [
         "import { fstatSync, readFileSync } from 'node:fs'",
         'const allowed = new Set(' +
