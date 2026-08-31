@@ -16,6 +16,7 @@ import {
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
+import { getCodeActivityStackViolation } from '@klicker-uzh/types'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button, toast } from '@uzh-bf/design-system'
 import { FormikProps } from 'formik'
@@ -43,6 +44,7 @@ const acceptedTypes = [
   ElementType.Content,
   ElementType.Selection,
   ElementType.CaseStudy,
+  ElementType.Code,
 ]
 
 export interface LiveQuizWizardStepProps {
@@ -133,7 +135,19 @@ function LiveQuizWizard({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.activityWizard.validMultiplicator')),
-    courseId: yup.string(),
+    courseId: yup
+      .string()
+      .test(
+        'code-course-required',
+        t('manage.activityWizard.codeLiveQuizCourseRequired'),
+        function (courseId) {
+          const blocks = (this.parent as LiveQuizFormValues).blocks ?? []
+          const containsCode = blocks.some((block) =>
+            block.elements.some((element) => element.type === ElementType.Code)
+          )
+          return !containsCode || courseId !== 'no-course-selected'
+        }
+      ),
     isGamificationEnabled: yup
       .boolean()
       .required(t('manage.activityWizard.liveQuizGamified')),
@@ -170,6 +184,17 @@ function LiveQuizWizard({
                 .oneOf(acceptedTypes, t('manage.activityWizard.liveQuizTypes')),
               hasSampleSolution: yup.boolean().nullable(),
             })
+          )
+          .test(
+            'code-only-block',
+            t('manage.activityWizard.codeOnlyBlock'),
+            (elements) =>
+              getCodeActivityStackViolation(
+                (elements ?? []).flatMap((element) =>
+                  element?.type ? [element.type] : []
+                ),
+                true
+              ) === null
           ),
         timeLimit: yup
           .number()

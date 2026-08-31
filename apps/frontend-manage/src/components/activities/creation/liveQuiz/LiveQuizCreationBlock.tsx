@@ -11,6 +11,7 @@ import {
   ElementInstanceVersionInfo,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getCodeActivityStackViolation } from '@klicker-uzh/types'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -64,7 +65,24 @@ function LiveQuizCreationBlock({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
+      canDrop: (item: ElementDragDropTypes) =>
+        getCodeActivityStackViolation(
+          [...block.elements.map((element) => element.type), item.questionType],
+          true
+        ) === null,
       drop: (item: ElementDragDropTypes) => {
+        if (
+          getCodeActivityStackViolation(
+            [
+              ...block.elements.map((element) => element.type),
+              item.questionType,
+            ],
+            true
+          ) !== null
+        ) {
+          return
+        }
+
         replace(blockIx, {
           ...block,
           elements: [
@@ -81,10 +99,10 @@ function LiveQuizCreationBlock({
         })
       },
       collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
+        isOver: monitor.isOver() && monitor.canDrop(),
       }),
     }),
-    [block]
+    [acceptedTypes, block, blockIx, replace]
   )
 
   return (

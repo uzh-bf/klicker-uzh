@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-30'
+timestamp: '2026-08-28'
 tags:
   - frontend
 ---
@@ -59,9 +59,9 @@ Element-editor autosaves contain full authoring state, including CODE sample sol
 
 The Manage artificial preview updates its GraphQL typename and student response through separate effects. During an element-type transition those discriminants can briefly disagree; narrow the response at strict component boundaries (for CODE, require an actual string before passing it to CodeMirror) instead of trusting the transient enum value alone.
 
-In the participant PWA, CODE stacks use the asynchronous receipt lifecycle instead of the synchronous stack-response mutation. Persist the submitted code and receipt id under a separate activity-and-stack-scoped local-storage key, include and verify the authenticated participant id before restoring either receipt or completion state, recover it after reload, and subscribe with polling fallback while it is active. Terminal receipts are monotonic: a stale active poll or subscription result must not regress `COMPLETED` or `FAILED`, and a `FAILED` receipt must leave the editor enabled for a new attempt.
+In the participant PWA, CODE questions use the asynchronous receipt lifecycle instead of synchronous stack-response or LiveQuiz `/AddResponse` ingestion. Persist the submitted code and receipt id under a separate activity-and-stack-or-execution-scoped local-storage key, include and verify the authenticated participant id before restoring either receipt or completion state, recover it after reload, and subscribe with polling fallback while it is active. Terminal receipts are monotonic: a stale active poll or subscription result must not regress `COMPLETED` or `FAILED`, and a `FAILED` receipt must leave the editor enabled for a new attempt.
 
-Practice quizzes derive their local completion directly from the completed receipt. Microlearning is single-submission, so `COMPLETED` instead triggers one fresh `getPreviousStackEvaluation` readback and writes the finalized database evaluation into a participant-scoped `qi-code-*` key before enabling Continue. A failed readback is visible, offers an explicit retry, and never fabricates local points. Participant rendering and readback may show public test inputs, expectations, and results only; hidden test metadata and execution output never cross the participant GraphQL boundary. Manage evaluation uses a plain per-test aggregate table, including hidden test names and counts for authorized lecturers; CODE deliberately does not enter the generic chart selector.
+Practice quizzes derive their local completion directly from the completed receipt. Microlearning is single-submission, so `COMPLETED` instead triggers one fresh `getPreviousStackEvaluation` readback and writes the finalized database evaluation into a participant-scoped `qi-code-*` key before enabling Continue. LiveQuiz allows CODE only as the sole element of a course-linked block for permanent participants with an active Participation; its receipt, draft, answered marker, and remaining-instance index are all participant-scoped and include the quiz, block execution, and instance where applicable. Timer expiry may enqueue the CODE submission, but it must not mark the instance answered or advance the block until the receipt reaches `COMPLETED`. A failed readback is visible, offers an explicit retry, and never fabricates local points. Participant rendering and readback may show public test inputs, expectations, and results only; hidden test metadata and execution output never cross the participant GraphQL boundary. Manage evaluation uses a plain per-test aggregate table, including hidden test names and counts for authorized lecturers; CODE deliberately does not enter the generic chart selector.
 
 ## Gotchas absorbed from experience
 

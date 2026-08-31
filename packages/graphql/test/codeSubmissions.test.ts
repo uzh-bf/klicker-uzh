@@ -1,6 +1,8 @@
+import { computeAwardedCorrectnessPoints } from '@klicker-uzh/grading'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   CodeSubmissionStatus,
+  ElementBlockStatus,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
@@ -40,6 +42,7 @@ import {
   submitCodeResponse,
 } from '../src/services/codeSubmissions.js'
 import { getSingleElement } from '../src/services/elements.js'
+import { endLiveQuiz } from '../src/services/liveQuizzes.js'
 import { manipulatePracticeQuiz } from '../src/services/practiceQuizzes.js'
 import {
   computeStackEvaluation,
@@ -82,7 +85,7 @@ describe('CODE submission lifecycle', () => {
   })
 
   async function fixture(
-    activityKind: 'practiceQuiz' | 'microLearning' = 'practiceQuiz'
+    activityKind: 'practiceQuiz' | 'microLearning' | 'liveQuiz' = 'practiceQuiz'
   ) {
     const ownerId = randomUUID()
     const participantId = randomUUID()
@@ -206,24 +209,73 @@ describe('CODE submission lifecycle', () => {
               stacks: { include: { elements: true } },
             },
           })
-        : await prisma.microLearning.create({
-            data: {
-              name: `micro-${ownerId}`,
-              displayName: 'CODE microlearning',
-              status: PublicationStatus.PUBLISHED,
-              scheduledStartAt: new Date(now.getTime() - 86_400_000),
-              scheduledEndAt: new Date(now.getTime() + 86_400_000),
-              ownerId: owner.id,
-              courseId: course.id,
-              stacks: { create: stackData },
-            },
-            include: {
-              stacks: { include: { elements: true } },
-            },
-          })
-    const instance = activity.stacks[0]!.elements[0]!
+        : activityKind === 'microLearning'
+          ? await prisma.microLearning.create({
+              data: {
+                name: `micro-${ownerId}`,
+                displayName: 'CODE microlearning',
+                status: PublicationStatus.PUBLISHED,
+                scheduledStartAt: new Date(now.getTime() - 86_400_000),
+                scheduledEndAt: new Date(now.getTime() + 86_400_000),
+                ownerId: owner.id,
+                courseId: course.id,
+                stacks: { create: stackData },
+              },
+              include: {
+                stacks: { include: { elements: true } },
+              },
+            })
+          : await prisma.liveQuiz.create({
+              data: {
+                name: `live-${ownerId}`,
+                displayName: 'CODE live quiz',
+                status: PublicationStatus.PUBLISHED,
+                startedAt: now,
+                ownerId: owner.id,
+                courseId: course.id,
+                blocks: {
+                  create: {
+                    order: 0,
+                    status: ElementBlockStatus.ACTIVE,
+                    startedAt: now,
+                    elements: {
+                      create: {
+                        type: ElementInstanceType.LIVE_QUIZ,
+                        elementType: ElementType.CODE,
+                        order: 0,
+                        options: {
+                          pointsMultiplier: 1,
+                          basePoints: true,
+                        },
+                        elementData: codeElementData,
+                        results: getInitialInstanceResults(codeElementData),
+                        anonymousResults:
+                          getInitialInstanceResults(codeElementData),
+                        elementId: element.id,
+                        ownerId: owner.id,
+                        instanceStatistics: { create: {} },
+                      },
+                    },
+                  },
+                },
+              },
+              include: {
+                blocks: { include: { elements: true } },
+              },
+            })
+    const instance =
+      'stacks' in activity
+        ? activity.stacks[0]!.elements[0]!
+        : activity.blocks[0]!.elements[0]!
+    if ('blocks' in activity) {
+      await prisma.liveQuiz.update({
+        where: { id: activity.id },
+        data: { activeBlockId: activity.blocks[0]!.id },
+      })
+    }
     const runNoWait = vi.fn().mockResolvedValue({ workflowRunId: randomUUID() })
     const publish = vi.fn()
+    const projectToRedis = vi.fn().mockResolvedValue(1)
     const ctx = {
       user: {
         sub: participant.id,
@@ -240,6 +292,8 @@ describe('CODE submission lifecycle', () => {
     const globalCtx = {
       prisma,
       pubSub: { publish },
+      redisExec: { eval: projectToRedis },
+      redisAssessmentExec: { eval: projectToRedis },
     } as unknown as HatchetHandlerGlobalContext
 
     return {
@@ -253,6 +307,7 @@ describe('CODE submission lifecycle', () => {
       globalCtx,
       runNoWait,
       publish,
+      projectToRedis,
     }
   }
 
@@ -269,6 +324,13 @@ describe('CODE submission lifecycle', () => {
       },
       data.ctx
     )
+  }
+
+  function getLiveQuizActivity(data: Awaited<ReturnType<typeof fixture>>) {
+    if (!('blocks' in data.activity)) {
+      throw new Error('Expected a Live Quiz fixture')
+    }
+    return data.activity
   }
 
   async function addParticipant(data: Awaited<ReturnType<typeof fixture>>) {
@@ -324,6 +386,352 @@ describe('CODE submission lifecycle', () => {
       status: CodeSubmissionStatus.PENDING,
       failureCode: 'ENQUEUE_FAILED',
     })
+  })
+
+  it('binds and finalizes a Live Quiz receipt for its active block execution', async () => {
+    const data = await fixture('liveQuiz')
+    const liveQuiz = getLiveQuizActivity(data)
+
+    const receipt = await submit(data)
+    expect(
+      await prisma.codeSubmission.findUniqueOrThrow({
+        where: { id: receipt.id },
+      })
+    ).toMatchObject({
+      liveQuizId: data.activity.id,
+      elementBlockExecution: 0,
+      practiceQuizId: null,
+      microLearningId: null,
+    })
+
+    const execute = vi.fn().mockResolvedValue(executorResult)
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).toBe(true)
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).toBe(false)
+    expect((await submit(data)).id).toBe(receipt.id)
+    expect(data.runNoWait).toHaveBeenCalledTimes(1)
+
+    const [response, instance] = await Promise.all([
+      prisma.liveQuizResponse.findUniqueOrThrow({
+        where: {
+          instanceId_elementBlockExecution_participantId: {
+            instanceId: data.instance.id,
+            elementBlockExecution: 0,
+            participantId: data.participant.id,
+          },
+        },
+      }),
+      prisma.elementInstance.findUniqueOrThrow({
+        where: { id: data.instance.id },
+      }),
+    ])
+    expect(response).toMatchObject({
+      response: {
+        code: 'def solve(a, b):\n    return a + b',
+        correctness: 1,
+      },
+      correctness: 'CORRECT',
+      basePoints: 10,
+      correctnessPoints: 5,
+      elementBlockExecution: 0,
+    })
+    expect(response.bonusPoints).toBeGreaterThan(44)
+    expect(response.bonusPoints).toBeLessThanOrEqual(45)
+    expect(instance.anonymousResults).toMatchObject({
+      total: 1,
+      tests: {
+        public: { passed: 1, total: 1 },
+        hidden: { passed: 1, total: 1 },
+      },
+    })
+    expect(data.projectToRedis).toHaveBeenCalledTimes(1)
+    const [script, keyCount, ...projectionArguments] =
+      data.projectToRedis.mock.calls[0]!
+    expect(keyCount).toBe(6)
+    expect(script).toContain("HGET', KEYS[1], 'blockExecution'")
+    expect(projectionArguments.slice(0, 6)).toEqual([
+      `lq:${data.activity.id}:i:${data.instance.id}:info`,
+      `lq:${data.activity.id}:i:${data.instance.id}:code-submissions:0`,
+      `lq:${data.activity.id}:i:${data.instance.id}:results`,
+      `lq:${data.activity.id}:lb`,
+      `lq:${data.activity.id}:b:${liveQuiz.blocks[0]!.id}:lb`,
+      `lq:${data.activity.id}:xp`,
+    ])
+    expect(projectionArguments[6]).toBe('0')
+    expect(projectionArguments[10]).toBe('1')
+    expect(
+      await prisma.liveQuizResponse.count({
+        where: {
+          instanceId: data.instance.id,
+          elementBlockExecution: 0,
+          participantId: data.participant.id,
+        },
+      })
+    ).toBe(1)
+  })
+
+  it('finalizes a Live Quiz receipt that was accepted before block closure', async () => {
+    const data = await fixture('liveQuiz')
+    const receipt = await submit(data)
+    const submission = await prisma.codeSubmission.findUniqueOrThrow({
+      where: { id: receipt.id },
+    })
+    const block = getLiveQuizActivity(data).blocks[0]!
+
+    await prisma.liveQuiz.update({
+      where: { id: data.activity.id },
+      data: {
+        activeBlock: { disconnect: true },
+        blocks: {
+          update: {
+            where: { id: block.id },
+            data: {
+              status: ElementBlockStatus.EXECUTED,
+              closedAt: new Date(),
+            },
+          },
+        },
+      },
+    })
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockResolvedValue(executorResult)
+      )
+    ).toBe(true)
+    expect(
+      await prisma.liveQuizResponse.findUniqueOrThrow({
+        where: {
+          instanceId_elementBlockExecution_participantId: {
+            instanceId: data.instance.id,
+            elementBlockExecution: block.execution,
+            participantId: data.participant.id,
+          },
+        },
+      })
+    ).toMatchObject({ submittedAt: submission.createdAt })
+    await expect(submit(data)).rejects.toMatchObject({
+      message: 'CODE element instance is unavailable',
+      extensions: { code: 'NOT_FOUND' },
+    })
+  })
+
+  it('keeps the first finalized correct bonus anchor when grading finishes out of order', async () => {
+    const data = await fixture('liveQuiz')
+    const liveQuiz = getLiveQuizActivity(data)
+    const firstReceipt = await submit(data)
+    const firstSubmission = await prisma.codeSubmission.findUniqueOrThrow({
+      where: { id: firstReceipt.id },
+    })
+
+    const second = await addParticipant(data)
+    const secondReceipt = await submitCodeResponse(
+      {
+        instanceId: data.instance.id,
+        courseId: data.course.id,
+        code: 'def solve(a, b):\n    return a + b',
+        timeSpent: 22,
+      },
+      second.ctx
+    )
+    await prisma.codeSubmission.update({
+      where: { id: secondReceipt.id },
+      data: {
+        createdAt: new Date(firstSubmission.createdAt.getTime() + 10_000),
+      },
+    })
+    await processCodeSubmission(
+      { submissionId: secondReceipt.id },
+      data.globalCtx,
+      vi.fn().mockResolvedValue(executorResult)
+    )
+    const secondResponse = await prisma.liveQuizResponse.findFirstOrThrow({
+      where: {
+        instanceId: data.instance.id,
+        participantId: second.participant.id,
+      },
+    })
+
+    await processCodeSubmission(
+      { submissionId: firstReceipt.id },
+      data.globalCtx,
+      vi.fn().mockResolvedValue(executorResult)
+    )
+    const firstResponse = await prisma.liveQuizResponse.findFirstOrThrow({
+      where: {
+        instanceId: data.instance.id,
+        participantId: data.participant.id,
+      },
+    })
+
+    const third = await addParticipant(data)
+    const thirdReceipt = await submitCodeResponse(
+      {
+        instanceId: data.instance.id,
+        courseId: data.course.id,
+        code: 'def solve(a, b):\n    return a + b',
+        timeSpent: 22,
+      },
+      third.ctx
+    )
+    await prisma.codeSubmission.update({
+      where: { id: thirdReceipt.id },
+      data: {
+        createdAt: new Date(secondResponse.submittedAt.getTime() + 10_000),
+      },
+    })
+    await processCodeSubmission(
+      { submissionId: thirdReceipt.id },
+      data.globalCtx,
+      vi.fn().mockResolvedValue(executorResult)
+    )
+    const thirdResponse = await prisma.liveQuizResponse.findFirstOrThrow({
+      where: {
+        instanceId: data.instance.id,
+        participantId: third.participant.id,
+      },
+    })
+
+    expect(secondResponse.bonusPoints).toBe(45)
+    expect(firstResponse.submittedAt.getTime()).toBeLessThan(
+      secondResponse.submittedAt.getTime()
+    )
+    expect(firstResponse.id).toBeGreaterThan(secondResponse.id)
+    const expectedBonus = computeAwardedCorrectnessPoints({
+      firstResponseReceivedAt: String(secondResponse.submittedAt.getTime()),
+      responseTimestamp: thirdResponse.submittedAt.getTime(),
+      maxBonus: liveQuiz.maxBonusPoints,
+      timeToZeroBonus: liveQuiz.timeToZeroBonus,
+      defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
+      pointsPercentage: 1,
+      pointsMultiplier: 1,
+    }).bonusPoints
+    expect(thirdResponse.bonusPoints).toBe(expectedBonus)
+    expect(thirdResponse.bonusPoints).toBeGreaterThan(0)
+    expect(thirdResponse.bonusPoints).toBeLessThan(secondResponse.bonusPoints)
+  })
+
+  it('does not end a Live Quiz while accepted CODE submissions are in flight', async () => {
+    const data = await fixture('liveQuiz')
+    await submit(data)
+    const block = getLiveQuizActivity(data).blocks[0]!
+
+    await prisma.liveQuiz.update({
+      where: { id: data.activity.id },
+      data: {
+        activeBlock: { disconnect: true },
+        blocks: {
+          update: {
+            where: { id: block.id },
+            data: {
+              status: ElementBlockStatus.EXECUTED,
+              closedAt: new Date(),
+            },
+          },
+        },
+      },
+    })
+
+    await expect(
+      endLiveQuiz({ id: data.activity.id }, data.ctx)
+    ).rejects.toMatchObject({
+      message: 'CODE submissions are still being graded',
+      extensions: { code: 'CODE_SUBMISSIONS_PENDING' },
+    })
+  })
+
+  it('recovers a Live Quiz cache projection without grading twice', async () => {
+    const data = await fixture('liveQuiz')
+    const receipt = await submit(data)
+    const execute = vi.fn().mockResolvedValue(executorResult)
+    data.projectToRedis.mockRejectedValue(new Error('redis unavailable'))
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await expect(
+        processCodeSubmission(
+          { submissionId: receipt.id },
+          data.globalCtx,
+          execute
+        )
+      ).rejects.toThrow('redis unavailable')
+      expect(
+        await prisma.codeSubmission.findUniqueOrThrow({
+          where: { id: receipt.id },
+        })
+      ).toMatchObject({
+        status: CodeSubmissionStatus.PENDING,
+        claimAttempts: 0,
+        result: executorResult,
+      })
+      expect((await submit(data)).id).toBe(receipt.id)
+    }
+
+    data.projectToRedis.mockResolvedValue(1)
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).toBe(true)
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(data.projectToRedis).toHaveBeenCalledTimes(5)
+    expect(
+      await prisma.liveQuizResponse.count({
+        where: {
+          instanceId: data.instance.id,
+          elementBlockExecution: 0,
+          participantId: data.participant.id,
+        },
+      })
+    ).toBe(1)
+  })
+
+  it('keeps a Live Quiz receipt recoverable when its cache execution is stale', async () => {
+    const data = await fixture('liveQuiz')
+    const receipt = await submit(data)
+    const execute = vi.fn().mockResolvedValue(executorResult)
+    data.projectToRedis.mockResolvedValueOnce(-1)
+
+    await expect(
+      processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).rejects.toThrow('Live Quiz CODE cache projection execution is stale')
+    expect(
+      await prisma.codeSubmission.findUniqueOrThrow({
+        where: { id: receipt.id },
+      })
+    ).toMatchObject({
+      status: CodeSubmissionStatus.PENDING,
+      claimAttempts: 0,
+      result: executorResult,
+    })
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).toBe(true)
+    expect(execute).toHaveBeenCalledTimes(1)
   })
 
   it('rejects an inactive participation', async () => {

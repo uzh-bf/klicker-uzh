@@ -152,12 +152,16 @@ function flattenValue(
   elementType: ElementType,
   ctx: PiiContext
 ): string {
-  if (resp != null && 'value' in resp) {
-    // Free-text answers can carry PII; gate them behind pseudonymize mode.
-    if (elementType === 'FREE_TEXT' && ctx.mode === 'pseudonymize') {
+  if (resp != null && ('value' in resp || 'code' in resp)) {
+    // Free-text and source-code answers can carry PII; gate them behind
+    // pseudonymize mode.
+    if (
+      (elementType === 'FREE_TEXT' || elementType === 'CODE') &&
+      ctx.mode === 'pseudonymize'
+    ) {
       return '[redacted]'
     }
-    return resp.value
+    return 'value' in resp ? resp.value : resp.code
   }
   return ''
 }

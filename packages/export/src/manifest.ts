@@ -46,7 +46,7 @@ const DATA_DICTIONARY = {
     response_choices:
       'SC/MC/KPRIM: comma-separated indices of selected choices.',
     response_value:
-      'NUMERICAL value or FREE_TEXT answer (free text redacted in pseudonymize mode).',
+      'NUMERICAL value, FREE_TEXT answer, or CODE source (free text and source code redacted in pseudonymize mode).',
     response_selection: 'SELECTION: comma-separated selected entry ids.',
     response_assessment: 'CASE_STUDY: per-criterion assessment JSON.',
   },

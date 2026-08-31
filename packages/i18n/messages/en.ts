@@ -897,6 +897,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered:
         'You have already answered all active questions or the block has been closed.',
+      codeSubmissionUnavailable:
+        'Programming questions require a signed-in account with active participation in this course.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
@@ -2024,6 +2026,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       minOneElementPerStack: 'Every stack must contain at least one element.',
       codeOnlyStack:
         'A programming question must be the only element in its stack.',
+      codeOnlyBlock:
+        'A programming question must be the only element in its block.',
+      codeLiveQuizCourseRequired:
+        'A live quiz with a programming question must be assigned to a course.',
       minOneElementPerBlock: 'Every block must contain at least one element.',
       minOneQuestionGroupActivity:
         'A group activity must contain at least one question.',

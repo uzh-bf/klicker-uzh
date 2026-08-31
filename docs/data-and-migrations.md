@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-19'
+timestamp: '2026-08-28'
 tags:
   - backend
   - prisma
@@ -80,13 +80,14 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **CODE activity scope is database-enforced**: every `CodeSubmission` belongs to exactly one PracticeQuiz, MicroLearning, or LiveQuiz. LiveQuiz receipts also require `elementBlockExecution`; their active uniqueness includes that execution, while the asynchronous activity index excludes LiveQuiz rows. Preserve the check constraint and both partial unique indexes when changing the model.
 - **CODE rate-limit deferral is durable**: `CodeSubmission.retryAt` holds the earliest recovery time after a CodeAPI `429`. Keep the `(status, retryAt, createdAt)` index and due-time predicate aligned so recovery cannot hot-loop deferred work; timing policy lives in [Async and workers](./async-and-workers.md).
 
 ## Adjacent: export package (`packages/export`)
 
 Data-export gotchas that bite when touching report generation:
 
-- The standalone export CLI is intentionally live-quiz-only. CODE is excluded from live quizzes, so this package is not a CODE export surface. The complete CODE authoring snapshot is exposed through the instructor-authorized GraphQL `element` query; participant and unauthorized reads retain the public-only/null projection.
+- The standalone export CLI is intentionally live-quiz-only. A finalized LiveQuiz CODE response appears in the raw response JSON and in `response_value`; submitted source is redacted together with free text in pseudonymized exports. The complete CODE authoring snapshot remains available only through the instructor-authorized GraphQL `element` query; participant and unauthorized reads retain the public-only/null projection.
 - Prisma relation inference can collapse nested `ElementInstance`/`ElementBlock` selects to `never` — keep explicit row DTOs at the query boundary and cast once there.
 - ExcelJS sheet names collide **case-insensitively** and cap at 31 chars — dedupe on a lowercase key (`exportCourse.ts`).
 - ExcelJS `autoFilter` must span data rows: a header-only range (or autoFilter on an empty sheet) makes Excel flag the workbook as corrupt on open — set `to.row` to the last data row and skip autoFilter on header-only sheets (`exportCourse.ts:addSheet`).

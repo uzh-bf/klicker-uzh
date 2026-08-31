@@ -104,6 +104,18 @@ export function useStudentInstanceResponseMapper() {
         }
       }
 
+      if (elementType === ElementType.Code) {
+        if (!('code' in submission) || typeof submission.code !== 'string') {
+          return null
+        }
+
+        return {
+          type: ElementType.Code,
+          response: submission.code,
+          valid: true,
+        }
+      }
+
       if (elementType === ElementType.Selection) {
         if (!('selection' in submission) || !submission.selection) return null
 

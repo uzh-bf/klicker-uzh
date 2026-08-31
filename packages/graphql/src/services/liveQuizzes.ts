@@ -4,6 +4,7 @@ import {
   ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
+  ElementResultsCode,
   ElementResultsOpen,
   HatchetHandlers,
   type ElementBlockInput,
@@ -309,12 +310,28 @@ export async function manipulateLiveQuiz(
   } = await splitActivityInstances(
     {
       stacksOrBlocks: blocks,
+      allowCodeElements: true,
       ...(id
         ? { persistentInstanceScope: { elementBlock: { liveQuizId: id } } }
         : {}),
     },
     ctx
   )
+
+  if (
+    !courseId &&
+    (Object.values(elementMap).some(
+      (element) => element.type === DB.ElementType.CODE
+    ) ||
+      persistentInstances.some(
+        (instance) => instance.elementType === DB.ElementType.CODE
+      ) ||
+      duplicationInstances.some(
+        (instance) => instance.elementType === DB.ElementType.CODE
+      ))
+  ) {
+    throw new GraphQLError('Live Quiz CODE questions require a course')
+  }
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
@@ -1369,6 +1386,24 @@ export async function activateLiveQuizBlock(
 
         break
       }
+
+      case DB.ElementType.CODE: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...Object.fromEntries(
+            elementData.options.testCases.flatMap(({ id }) => {
+              const encodedId = encodeURIComponent(id)
+              return [
+                [`test:${encodedId}:passed`, 0],
+                [`test:${encodedId}:total`, 0],
+              ]
+            })
+          ),
+        })
+
+        break
+      }
     }
   })
 
@@ -1530,9 +1565,11 @@ async function removeCacheEntriesBlock({
 function aggregateLiveQuizResponses({
   responses,
   elementData,
+  codeSubmissions = [],
 }: {
   responses: DB.LiveQuizResponse[]
   elementData: ElementData
+  codeSubmissions?: DB.CodeSubmission[]
 }): ElementInstanceResults {
   switch (elementData.type) {
     case DB.ElementType.SC:
@@ -1701,6 +1738,27 @@ function aggregateLiveQuizResponses({
     case DB.ElementType.CONTENT: {
       return { total: responses.length }
     }
+    case DB.ElementType.CODE: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsCode
+      return codeSubmissions.reduce<ElementResultsCode>((acc, submission) => {
+        if (!submission.result) return acc
+
+        const allTestResults = [
+          ...submission.result.publicTestResults,
+          ...submission.result.hiddenTestResults,
+        ]
+        for (const testResult of allTestResults) {
+          const counts = acc.tests[testResult.id]
+          if (!counts) continue
+          counts.total += 1
+          if (testResult.passed) counts.passed += 1
+        }
+        acc.total += 1
+        return acc
+      }, initialResults)
+    }
     default:
       return { total: 0 }
   }
@@ -1734,6 +1792,26 @@ export async function endLiveQuiz(
     quiz.status === DB.PublicationStatus.SCHEDULED
   ) {
     return null
+  }
+
+  if (quiz.activeBlockId !== null) {
+    throw new GraphQLError('Close the active block before ending the quiz', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  const inFlightCodeSubmissions = await ctx.prisma.codeSubmission.count({
+    where: {
+      liveQuizId: id,
+      status: {
+        in: [DB.CodeSubmissionStatus.PENDING, DB.CodeSubmissionStatus.RUNNING],
+      },
+    },
+  })
+  if (inFlightCodeSubmissions > 0) {
+    throw new GraphQLError('CODE submissions are still being graded', {
+      extensions: { code: 'CODE_SUBMISSIONS_PENDING' },
+    })
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
@@ -2221,6 +2299,7 @@ export async function cancelLiveQuiz(
           activeBlock: { disconnect: true },
           leaderboard: { deleteMany: {} },
           temporaryLeaderboard: { deleteMany: {} },
+          codeSubmissions: { deleteMany: {} },
           feedbacks: { deleteMany: {} },
           confusionFeedbacks: { deleteMany: {} },
           blocks: {
@@ -2587,6 +2666,7 @@ export async function resetAssessmentLiveQuiz(
             confusionFeedbacks: { deleteMany: {} },
             leaderboard: { deleteMany: {} },
             temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
+            codeSubmissions: { deleteMany: {} },
           },
           include: {
             course: true,
@@ -3353,7 +3433,18 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       },
       include: {
         blocks: {
-          include: { elements: { include: { liveQuizResponses: true } } },
+          include: {
+            elements: {
+              include: {
+                liveQuizResponses: true,
+                codeSubmissions: {
+                  where: {
+                    liveQuizId,
+                  },
+                },
+              },
+            },
+          },
           orderBy: { order: 'asc' },
         },
       },
@@ -3446,11 +3537,21 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
                         : aggregateLiveQuizResponses({
                             responses: instance.liveQuizResponses,
                             elementData: instance.elementData,
+                            codeSubmissions: instance.codeSubmissions.filter(
+                              (submission) =>
+                                submission.elementBlockExecution ===
+                                block.execution
+                            ),
                           }),
                       results: quiz.isAssessmentEnabled
                         ? aggregateLiveQuizResponses({
                             responses: instance.liveQuizResponses,
                             elementData: instance.elementData,
+                            codeSubmissions: instance.codeSubmissions.filter(
+                              (submission) =>
+                                submission.elementBlockExecution ===
+                                block.execution
+                            ),
                           })
                         : undefined,
                     },

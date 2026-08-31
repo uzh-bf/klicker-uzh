@@ -1,6 +1,10 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CodeSubmissionStatus,
+  ElementInstance,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
@@ -14,7 +18,10 @@ import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useRemainingInstances from '../hooks/useRemainingInstances'
+import CodeSubmissionStatusPanel from '../practiceQuiz/CodeSubmissionStatus'
+import useCodeSubmission from '../practiceQuiz/useCodeSubmission'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
@@ -41,6 +48,9 @@ interface QuestionAreaProps {
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number
+  courseId?: string
+  participantId?: string
+  codeSubmissionEnabled?: boolean
   timeLimit?: number
   isStaticPreview?: boolean
 }
@@ -54,8 +64,13 @@ function QuestionArea({
   quizId,
   timeLimit,
   execution,
+  courseId,
+  participantId,
+  codeSubmissionEnabled = false,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
+  const timeRef = useRef(0)
+  useComponentVisibleCounter({ timeRef })
 
   const [showConfetti, setShowConfetti] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -66,6 +81,27 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const currentInstanceIsCode =
+    currentInstance?.elementType === ElementType.Code
+  const codeSubmissionAvailable =
+    currentInstanceIsCode &&
+    codeSubmissionEnabled &&
+    !!courseId &&
+    !!participantId
+  const completedCodeReceiptRef = useRef<string | null>(null)
+  const {
+    submission: codeSubmission,
+    submit: submitCodeResponse,
+    submitting: submittingCodeResponse,
+    submissionError: codeSubmissionError,
+    pollingError: codePollingError,
+    retryPolling: retryCodePolling,
+    active: codeSubmissionActive,
+  } = useCodeSubmission({
+    storageKey: `code-submission-live-${quizId}-${execution}-${currentInstance?.id ?? 'none'}`,
+    enabled: codeSubmissionAvailable,
+    participantId,
+  })
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -106,6 +142,7 @@ function QuestionArea({
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
       setSubmittedAt,
+      participantId,
     })
 
     return () => {
@@ -113,7 +150,71 @@ function QuestionArea({
     }
 
     // re-run when quizId/execution/instance changes
-  }, [quizId, execution, currentInstance?.id])
+  }, [quizId, execution, currentInstance?.id, participantId])
+
+  useEffect(() => {
+    if (
+      !currentInstanceIsCode ||
+      !codeSubmission?.code ||
+      codeSubmission.gradingStatus === CodeSubmissionStatus.Failed
+    ) {
+      return
+    }
+
+    setStudentResponse({
+      type: ElementType.Code,
+      response: codeSubmission.code,
+      valid: codeSubmission.code.length > 0,
+    })
+  }, [
+    codeSubmission?.code,
+    codeSubmission?.gradingStatus,
+    currentInstanceIsCode,
+  ])
+
+  useEffect(() => {
+    if (
+      !currentInstance ||
+      !currentInstanceIsCode ||
+      !participantId ||
+      !codeSubmission ||
+      codeSubmission.gradingStatus !== CodeSubmissionStatus.Completed ||
+      completedCodeReceiptRef.current === codeSubmission.receiptId
+    ) {
+      return
+    }
+    completedCodeReceiptRef.current = codeSubmission.receiptId
+
+    void (async () => {
+      const responseTimestamp = Date.now()
+      const storageKey = `lq-${quizId}-p-${participantId}-ex-${execution}-i-${currentInstance.id}`
+      await localforage.setItem(storageKey, {
+        response: codeSubmission.code,
+        responseTimestamp,
+      })
+      await localforage.removeItem(`${storageKey}-temp`)
+      await updateStoredResponses(
+        currentInstance.id,
+        quizId,
+        execution,
+        participantId
+      )
+      setSubmittedAt(responseTimestamp)
+      setRemainingQuestions((current) =>
+        (current ?? []).filter((question) => question !== activeInstance)
+      )
+      if (gamificationEnabled) setShowConfetti(true)
+    })()
+  }, [
+    activeInstance,
+    codeSubmission,
+    currentInstance,
+    currentInstanceIsCode,
+    execution,
+    gamificationEnabled,
+    participantId,
+    quizId,
+  ])
 
   // periodically store the in-progress response in a temporary key
   useEffect(() => {
@@ -124,11 +225,18 @@ function QuestionArea({
       if (!currentInstance) return
 
       // if the answer to this instance has already been submitted, do not store a temporary response
-      const storageKey = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+      if (currentInstance.elementType === ElementType.Code && !participantId) {
+        return
+      }
+      const participantScope =
+        currentInstance.elementType === ElementType.Code
+          ? `-p-${participantId}`
+          : ''
+      const storageKey = `lq-${quizId}${participantScope}-ex-${execution}-i-${currentInstance.id}`
       const stored = await localforage.getItem(storageKey)
       if (stored) return
 
-      const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-temp`
+      const key = `${storageKey}-temp`
       interval = setInterval(async () => {
         const latest = latestStudentResponseRef.current
         // only persist if there is something to store
@@ -144,7 +252,7 @@ function QuestionArea({
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [quizId, execution, currentInstance?.id])
+  }, [quizId, execution, currentInstance?.id, participantId])
 
   // compute remaining instances based on stored responses
   useRemainingInstances({
@@ -154,6 +262,7 @@ function QuestionArea({
     isBlockCompleted: !isBlockActive,
     setRemainingQuestions,
     setActiveInstance,
+    participantId,
   })
 
   const onSubmit = async (): Promise<void> => {
@@ -165,6 +274,31 @@ function QuestionArea({
       elementType,
       correlationKey,
     } = instances[activeInstance]
+
+    if (elementType === ElementType.Code) {
+      const code =
+        studentResponse.type === ElementType.Code &&
+        typeof studentResponse.response === 'string'
+          ? studentResponse.response
+          : null
+      const accepted =
+        code && codeSubmissionAvailable && courseId
+          ? await submitCodeResponse({
+              instanceId,
+              courseId,
+              code,
+              timeSpent: timeRef.current,
+            })
+          : false
+      setSubmitting(false)
+      if (!accepted) {
+        toast({
+          message: t('pwa.practiceQuiz.codeSubmissionFailed'),
+          type: 'error',
+        })
+      }
+      return
+    }
 
     // if the question has been answered, add a response
     const success = await answerQuestion({
@@ -204,6 +338,33 @@ function QuestionArea({
       elementType,
       correlationKey,
     } = instances[activeInstance]
+
+    // CODE stays pending until its receipt completes; expiry must not mark it
+    // answered before grading has finished.
+    if (elementType === ElementType.Code) {
+      if (
+        studentResponse.type === ElementType.Code &&
+        typeof studentResponse.response === 'string' &&
+        codeSubmissionAvailable &&
+        courseId &&
+        !codeSubmissionActive
+      ) {
+        const accepted = await submitCodeResponse({
+          instanceId,
+          courseId,
+          code: studentResponse.response,
+          timeSpent: timeRef.current,
+        })
+        if (!accepted) {
+          toast({
+            message: t('pwa.practiceQuiz.codeSubmissionFailed'),
+            type: 'error',
+          })
+        }
+      }
+      push(['trackEvent', 'Live Quiz', 'Time expired'])
+      return
+    }
 
     // save the response, if one was given before the time expired
     if (studentResponse.valid) {
@@ -532,7 +693,16 @@ function QuestionArea({
           isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
-          canSubmit={!!studentResponse.valid && !submitting}
+          canSubmit={
+            !!studentResponse.valid &&
+            !submitting &&
+            !submittingCodeResponse &&
+            (!currentInstanceIsCode ||
+              (codeSubmissionAvailable &&
+                !codeSubmissionActive &&
+                codeSubmission?.gradingStatus !==
+                  CodeSubmissionStatus.Completed))
+          }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
             setActiveInstance((prev) =>
@@ -554,13 +724,42 @@ function QuestionArea({
           sequential
           hideReadButton
           disabledInput={
-            !isBlockActive || !remainingQuestions.includes(activeInstance)
+            !isBlockActive ||
+            !remainingQuestions.includes(activeInstance) ||
+            (currentInstanceIsCode &&
+              (!codeSubmissionAvailable ||
+                codeSubmissionActive ||
+                codeSubmission?.gradingStatus ===
+                  CodeSubmissionStatus.Completed))
           }
           element={currentInstance}
           elementIx={activeInstance}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
         />
+        {currentInstanceIsCode && codeSubmission ? (
+          <CodeSubmissionStatusPanel
+            submission={codeSubmission}
+            pollingUnavailable={!!codePollingError}
+            retryPolling={retryCodePolling}
+          />
+        ) : null}
+        {currentInstanceIsCode && !codeSubmissionAvailable ? (
+          <div className="mt-4" data-cy="live-quiz-code-unavailable">
+            <UserNotification
+              type="warning"
+              message={t('pwa.liveQuiz.codeSubmissionUnavailable')}
+            />
+          </div>
+        ) : null}
+        {currentInstanceIsCode && codeSubmissionError && !codeSubmission ? (
+          <div className="mt-4" data-cy="code-submission-failed">
+            <UserNotification
+              type="error"
+              message={t('pwa.practiceQuiz.codeSubmissionFailed')}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   )

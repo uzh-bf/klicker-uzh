@@ -6,6 +6,7 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { parseCookiesHeader, verifyJWT } from '@klicker-uzh/util'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -15,6 +16,70 @@ import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
+
+function getConnectionToken(
+  connectionParams?: Readonly<Record<string, unknown>>
+) {
+  const authorization = connectionParams?.authorization
+  if (typeof authorization !== 'string') return undefined
+
+  return authorization.replace(/^Bearer\s+/i, '')
+}
+
+function getSubscriptionCookieToken({
+  cookies,
+  origin,
+}: {
+  cookies: Record<string, string>
+  origin?: string
+}) {
+  const isManageOrControl =
+    origin?.includes(process.env.APP_MANAGE_SUBDOMAIN ?? 'manage') ||
+    origin?.includes(process.env.APP_CONTROL_SUBDOMAIN ?? 'control')
+
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    if (isManageOrControl) return cookies['next-auth.session-token']
+    if (
+      origin?.includes(process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment')
+    ) {
+      return cookies['next-auth.participant-session-token']
+    }
+    return undefined
+  }
+
+  if (isManageOrControl) return cookies['next-auth.session-token']
+  if (origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')) {
+    return (
+      cookies['participant_token'] ??
+      cookies['temporary_participant_token'] ??
+      cookies['next-auth.session-token']
+    )
+  }
+  return undefined
+}
+
+async function authenticateSubscriptionRequest({
+  cookieHeader,
+  origin,
+  connectionParams,
+}: {
+  cookieHeader?: string
+  origin?: string
+  connectionParams?: Readonly<Record<string, unknown>>
+}) {
+  const cookies = parseCookiesHeader(cookieHeader)
+  const token =
+    getConnectionToken(connectionParams) ??
+    getSubscriptionCookieToken({ cookies, origin })
+
+  if (!token) return undefined
+
+  try {
+    return await verifyJWT(token, process.env.APP_SECRET as string)
+  } catch {
+    return undefined
+  }
+}
 
 let prisma = prismaBase
 
@@ -156,6 +221,17 @@ migrate(prisma).then(() => {
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),
         onSubscribe: async (ctx, msg) => {
+          const request = ctx.extra.request as typeof ctx.extra.request & {
+            locals?: { user?: unknown }
+          }
+          request.locals = {
+            user: await authenticateSubscriptionRequest({
+              cookieHeader: request.headers.cookie,
+              origin: request.headers.origin,
+              connectionParams: ctx.connectionParams,
+            }),
+          }
+
           const {
             schema,
             execute,
@@ -165,7 +241,7 @@ migrate(prisma).then(() => {
             validate,
           } = yogaApp.getEnveloped({
             ...ctx,
-            req: ctx.extra.request,
+            req: request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })

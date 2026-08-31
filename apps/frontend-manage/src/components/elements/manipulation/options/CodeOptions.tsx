@@ -201,6 +201,13 @@ function CodeOptions({
                       name={`options.testCases.${index}.visibility`}
                       label={t('manage.elements.codeVisibility')}
                       items={visibilityOptions}
+                      className={{
+                        root: 'w-full',
+                        select: {
+                          root: 'w-full',
+                          trigger: 'w-full lg:w-44',
+                        },
+                      }}
                       data={{ cy: `code-test-visibility-${index}` }}
                     />
                     <FormikNumberField

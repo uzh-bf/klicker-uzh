@@ -124,6 +124,7 @@ function ElementStack({
     submitting: submittingCodeResponse,
     submissionError: codeSubmissionError,
     pollingError: codePollingError,
+    retryPolling: retryCodePolling,
     active: codeSubmissionActive,
   } = useCodeSubmission({
     storageKey: `code-submission-${parentId}-${stack.id}`,
@@ -523,6 +524,7 @@ function ElementStack({
           <CodeSubmissionStatusPanel
             submission={codeSubmission}
             pollingUnavailable={!!codePollingError}
+            retryPolling={retryCodePolling}
           />
         )}
         {codeElement && codeSubmissionError && !codeSubmission && (

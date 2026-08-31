@@ -474,6 +474,40 @@ test.describe('Create different types of elements (with and without sample solut
     })
   })
 
+  test.describe('CODE authoring layout', () => {
+    test.beforeEach(async ({ loginLecturer }) => {
+      await loginLecturer()
+    })
+
+    test('Keep test visibility from overlapping weight', async ({ page }) => {
+      await page.getByTestId('create-question').click()
+      await selectOption(
+        page,
+        '[data-cy="select-question-type"]',
+        messages.shared.CODE.typeLabel
+      )
+
+      const visibility = page.getByTestId('code-test-visibility-0')
+      const weight = page.getByTestId('code-test-weight-0')
+      await expect(visibility).toBeVisible()
+      await expect(weight).toBeVisible()
+
+      const [visibilityBox, weightBox] = await Promise.all([
+        visibility.boundingBox(),
+        weight.boundingBox(),
+      ])
+      expect(visibilityBox).not.toBeNull()
+      expect(weightBox).not.toBeNull()
+      expect(visibilityBox!.x + visibilityBox!.width).toBeLessThanOrEqual(
+        weightBox!.x
+      )
+
+      await weight.click({ position: { x: 8, y: 18 } })
+      await expect(visibility).toHaveAttribute('aria-expanded', 'false')
+      await expect(weight).toBeFocused()
+    })
+  })
+
   test.describe('Part 2: Auto-Save functionality for Elements', () => {
     test.beforeEach(async ({ loginLecturer }) => {
       await loginLecturer()

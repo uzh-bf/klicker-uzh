@@ -1,5 +1,24 @@
 # Log
 
+## 2026-08-31
+
+- **Correction**: LiveQuiz CODE receipt creation now serializes with block
+  closure, quiz end rejects active blocks and in-flight grading, and Redis
+  projection rejects stale block executions before writing results,
+  leaderboards, or XP.
+- **Correction**: LiveQuiz CODE bonus timing now uses the first correct response,
+  stale/missing cache execution markers remain recoverable, and WebSocket
+  authentication follows the same origin/mode-specific cookie selection as
+  HTTP while retaining explicit bearer precedence.
+- **Update**: participant polling failures expose a retry action; focused CODE
+  service/export tests and real routed authoring, Live Quiz placement/start, and
+  participant rendering were reverified.
+
+## 2026-08-28
+
+- **Update**: course-linked LiveQuiz blocks now support one CODE element for permanent participants with active course Participation. CODE receipts bind the block execution, finalize into `LiveQuizResponse`, project idempotent cockpit/gamification counters, recover cache failures without grading twice, and remain unsupported for course-less quizzes, temporary participants, mixed blocks, groups, and templates.
+- **Update**: Manage/PWA authoring and participant receipt flows, assessment response rendering, pseudonymized export handling, lifecycle tests, browser expectations, and the matching CODE skills now document the LiveQuiz path.
+
 ## 2026-07-30
 
 - **Security**: activity edits now accept persistent instance IDs only from the exact activity and recheck the scope transactionally; group-activity clue replacement happens after that fence in the same transaction. CODE submission lookup normalizes missing, wrong-type, foreign-course, unavailable, and inactive-participation cases.

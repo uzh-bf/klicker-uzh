@@ -1,5 +1,12 @@
 # PR 5142 CODE Element Implementation Plan
 
+> **Scope addendum (2026-08-31):** The initial CODE release described below
+> excluded Live Quizzes. PR 5142 now also includes the deliberately constrained
+> Live Quiz slice in
+> [PLAN-code-live-quiz-support.md](plans_wip/PLAN-code-live-quiz-support.md): one
+> CODE-only block in a course-linked quiz for a permanent participant with an
+> active Participation. Group Activities and templates remain unsupported.
+
 ## Research
 
 - Architecture source: [CODE element future plan](plans_future/PLAN-code-element-type.md) and [codeapi research](plans_future/RESEARCH-codeapi-integration.md).
@@ -19,7 +26,7 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 
 ## Non-goals
 
-- No live-quiz or group-activity support.
+- No Group Activity support. Live Quiz support is limited to the addendum above.
 - No language beyond Python.
 - No arbitrary instructor assertions in codeapi.
 - No mixed or multi-CODE stacks.
@@ -72,7 +79,9 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 ### Slice 2a: Enforce CODE-only activity stacks
 
 - Enforce one CODE element per stack in shared activity construction and backend validation.
-- Allow CODE only in practice quizzes and microlearning; reject it in live quizzes, group activities, mixed stacks, and multi-element stacks.
+- For this original slice, allow CODE only in practice quizzes and microlearning;
+  the later Live Quiz slice supersedes that single exclusion. Continue to reject
+  CODE in group activities, mixed stacks, and multi-element stacks.
 - Keep the picker and form validation aligned with the backend policy.
 - Check: focused pure policy tests, GraphQL checks, frontend checks, and `agent-browser` stack-builder validation.
 - Commit: `feat(code): enforce CODE-only activity stacks`

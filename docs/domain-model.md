@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-30'
+timestamp: '2026-08-28'
 tags:
   - backend
   - prisma
@@ -37,9 +37,9 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 - A CODE element is Python-only and contains starter code, an entrypoint, and 1–20 declarative JSON input/output tests. Test IDs are non-empty, unique, and at most 128 characters; the positive weights must also have a finite total. Tests are either public or hidden; participant-facing instance data contains public tests only.
 - Each test's argument array and expected output use the same authoring/runtime JSON boundary: at most 20 levels, 2,000 nodes, and 16 KiB when serialized. Breadth is rejected before its children are added to the traversal worklist.
-- CODE is supported only as the single element in a PracticeQuiz or MicroLearning stack. LiveQuiz, GroupActivity, mixed/multi-element stacks, and activity templates reject it.
-- Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. One partial unique index permits only one active attempt per participant and element instance. The worker claims with an expiring token, executes outside the transaction, then locks the shared element instance and records participant-specific response history, instance-wide aggregates/statistics, spaced repetition, points, XP, leaderboard, timeline, and `COMPLETED` atomically. Provider rate-limit deferrals set `retryAt` without consuming the three-attempt execution budget. Failed attempts release the active index so a later submission can create a new receipt.
-- A finalized CODE `QuestionResponseDetail` stores the submitted code plus the server-computed numeric correctness. The Analytics service maps `0` to incorrect, `1` to correct, and intermediate values to partial; it never tries to re-grade student code.
+- CODE is supported as the single element in a PracticeQuiz or MicroLearning stack and as the single element in a course-linked LiveQuiz block. GroupActivity, course-less LiveQuiz, mixed/multi-element stacks, and activity templates reject it.
+- Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. PracticeQuiz and MicroLearning allow one active receipt per participant and element instance. LiveQuiz receipts additionally bind `liveQuizId` and `elementBlockExecution`; active-receipt uniqueness and completed-receipt reuse are execution-scoped so replaying a block cannot collide with its previous run. The worker claims with an expiring token and executes outside the transaction. Provider rate-limit deferrals set `retryAt` without consuming the three-attempt execution budget. Failed attempts release the active index so a later submission can create a new receipt.
+- PracticeQuiz and MicroLearning finalization records the normal response detail, participant and instance aggregates/statistics, spaced repetition, points, XP, leaderboard, and timeline. LiveQuiz finalization instead creates one `LiveQuizResponse`, updates CODE test aggregates, and projects participant/test counters plus optional leaderboard/XP data into the execution cache. Both persistence paths store the submitted code plus server-computed `0..1` correctness; Analytics and exports consume that trusted value and never re-grade student code.
 
 ## Activities
 

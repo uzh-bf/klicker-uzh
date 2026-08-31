@@ -75,7 +75,10 @@ export const buildExecuteCodeTool = (ctx: {
       timedOut: z.boolean().optional(),
     }),
     execute: async ({ code }, context) => {
-      const jwt = await mintCodeapiJwt({ sub: ctx.participantId }) // TTL ≤300s, server-side key
+      const jwt = await mintCodeApiJwt(loadCodeApiConfig(), {
+        subject: ctx.participantId,
+        role: 'PARTICIPANT',
+      }) // helper adds the complete CodeAPI claim set and signs with TTL ≤300s
       const res = await codeapiExec({
         lang: 'python',
         code,
@@ -126,7 +129,7 @@ Per-chatbot system prompts (DB-driven) for enabled bots get a standard clause:
 
 ### 6. Security
 
-- JWT minted server-side per tool invocation (route handler context), private key via Infisical/ESO env, never in client bundle. Claims per RESEARCH doc §auth (`tenant_id=klicker-<env>`, `sub=participantId`, TTL ≤300s).
+- JWT minted server-side per tool invocation (route handler context), private key via Infisical/ESO env, never in client bundle. `mintCodeApiJwt` receives the semantic subject/role and derives the complete CodeAPI contract: `iss`, `aud`, `sub`, `jti`, `iat`, `nbf`, `exp` (TTL ≤300s), `tenant_id=klicker-<env>`, `principal_source=klicker_jwt`, and `auth_context_hash`.
 - Prompt-injected malicious code is contained by the sandbox (no egress, non-root, ephemeral). Output truncation caps token/DOM blowups. `code` input capped at 20k chars.
 - Log executions (participantId, chatbotId, wall_time, exit code — NOT code content by default) for abuse monitoring.
 

@@ -52,6 +52,7 @@ function useCodeSubmission({
     data: queryData,
     error: queryError,
     loading: queryLoading,
+    refetch,
   } = useQuery(CodeSubmissionDocument, {
     variables: { id: submission?.receiptId ?? '' },
     skip: !enabled || !submission?.receiptId,
@@ -162,6 +163,7 @@ function useCodeSubmission({
     submitting,
     submissionError,
     pollingError: queryError,
+    retryPolling: refetch,
     active,
   }
 }

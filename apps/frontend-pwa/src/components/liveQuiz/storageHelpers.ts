@@ -17,13 +17,15 @@ import { Dispatch, SetStateAction } from 'react'
 export async function updateStoredResponses(
   instanceId: number | number[],
   quizId: string,
-  execution: number
+  execution: number,
+  participantId?: string
 ) {
   if (typeof window !== 'undefined') {
     try {
-      const prevResponses: any = await localforage.getItem(
-        `${quizId}-responses`
-      )
+      const responsesKey = participantId
+        ? `${quizId}-p-${participantId}-responses`
+        : `${quizId}-responses`
+      const prevResponses: any = await localforage.getItem(responsesKey)
       let newResponses: string[] = []
 
       if (Array.isArray(instanceId)) {
@@ -47,7 +49,7 @@ export async function updateStoredResponses(
               timestamp: dayjs().unix(),
             }
       )
-      await localforage.setItem(`${quizId}-responses`, stringified)
+      await localforage.setItem(responsesKey, stringified)
     } catch (e) {
       console.error(e)
     }
@@ -60,16 +62,23 @@ export async function loadStoredResponse({
   currentInstance,
   setStudentResponse,
   setSubmittedAt,
+  participantId,
 }: {
   quizId: string
   execution: number
   currentInstance: ElementInstance | undefined
   setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
   setSubmittedAt: Dispatch<SetStateAction<number | null>>
+  participantId?: string
 }) {
   if (!currentInstance) return
+  if (currentInstance.elementType === ElementType.Code && !participantId) return
   try {
-    const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+    const participantScope =
+      currentInstance.elementType === ElementType.Code
+        ? `-p-${participantId}`
+        : ''
+    const key = `lq-${quizId}${participantScope}-ex-${execution}-i-${currentInstance.id}`
     const stored = (await localforage.getItem(key)) as any
     const tempStored = (await localforage.getItem(`${key}-temp`)) as any
 

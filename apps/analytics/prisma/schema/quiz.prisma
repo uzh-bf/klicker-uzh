@@ -131,6 +131,8 @@ model LiveQuiz {
 
   corrections PointCorrection[]
 
+  codeSubmissions CodeSubmission[]
+
   templateInfo ActivityTemplate?
   templateName String? // name of the template the quiz was created from
 

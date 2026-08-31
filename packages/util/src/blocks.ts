@@ -7,6 +7,7 @@ import {
   type CaseStudyCaseSolution,
   type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsCode,
   type ElementResultsContent,
   type ElementResultsFlashcard,
   type ElementResultsOpen,
@@ -53,6 +54,7 @@ export async function getCachedBlockResults({
         | ElementResultsOpen
         | ElementResultsFlashcard
         | ElementResultsContent
+        | ElementResultsCode
         | ElementResultsSelection
     }
   > = {}
@@ -79,6 +81,7 @@ export async function getCachedBlockResults({
       | ElementResultsOpen
       | ElementResultsFlashcard
       | ElementResultsContent
+      | ElementResultsCode
       | ElementResultsSelection
       | ElementResultsCaseStudy
       | undefined
@@ -304,6 +307,26 @@ export async function getCachedBlockResults({
       anonymousResults = {
         total: parseInt(results.participants),
       } as ElementResultsChoices
+    } else if (instance.elementType === DB.ElementType.CODE) {
+      const initialResults = getInitialInstanceResults(
+        instance.elementData
+      ) as ElementResultsCode
+      const tests = Object.fromEntries(
+        Object.keys(initialResults.tests).map((id) => {
+          const encodedId = encodeURIComponent(id)
+          return [
+            id,
+            {
+              passed: parseInt(results[`test:${encodedId}:passed`] ?? '0', 10),
+              total: parseInt(results[`test:${encodedId}:total`] ?? '0', 10),
+            },
+          ]
+        })
+      )
+      anonymousResults = {
+        tests,
+        total: parseInt(results.participants ?? '0', 10),
+      }
     }
 
     instanceResults[instance.id] = {

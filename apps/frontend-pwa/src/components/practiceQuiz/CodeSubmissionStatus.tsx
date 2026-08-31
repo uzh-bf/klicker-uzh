@@ -1,16 +1,18 @@
 import { CodeSubmissionStatus as GradingStatus } from '@klicker-uzh/graphql/dist/ops'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { PersistedCodeSubmission } from './useCodeSubmission'
 
 interface CodeSubmissionStatusProps {
   submission: PersistedCodeSubmission
   pollingUnavailable?: boolean
+  retryPolling?: () => Promise<unknown>
 }
 
 function CodeSubmissionStatus({
   submission,
   pollingUnavailable = false,
+  retryPolling,
 }: CodeSubmissionStatusProps) {
   const t = useTranslations()
 
@@ -20,11 +22,21 @@ function CodeSubmissionStatus({
   ) {
     return (
       <div className="mt-4" data-cy="code-submission-pending">
-        <UserNotification type="info">
-          {pollingUnavailable
-            ? t('pwa.practiceQuiz.codePollingUnavailable')
-            : t('pwa.practiceQuiz.codeSubmissionPending')}
-        </UserNotification>
+        <div className="space-y-2">
+          <UserNotification type="info">
+            {pollingUnavailable
+              ? t('pwa.practiceQuiz.codePollingUnavailable')
+              : t('pwa.practiceQuiz.codeSubmissionPending')}
+          </UserNotification>
+          {pollingUnavailable && retryPolling ? (
+            <Button
+              onClick={() => void retryPolling()}
+              data={{ cy: 'code-polling-retry' }}
+            >
+              <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+            </Button>
+          ) : null}
+        </div>
       </div>
     )
   }

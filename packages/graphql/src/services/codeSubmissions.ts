@@ -1,8 +1,14 @@
+import {
+  computeAwardedCorrectnessPoints,
+  computeAwardedXp,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   CodeSubmissionReceipt,
   CodeSubmissionResult,
+  ElementResultsCode,
   HatchetHandlers,
+  SingleQuestionResponseCode,
 } from '@klicker-uzh/types'
 import {
   CodeApiClientError,
@@ -10,6 +16,7 @@ import {
   loadCodeApiConfig,
 } from '@klicker-uzh/util/code-api'
 import { GraphQLError } from 'graphql'
+import type { Redis } from 'ioredis'
 import { randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 import { recordCodeQuestionResponse } from './stacks.js'
@@ -68,21 +75,34 @@ function isUniqueConstraintError(error: unknown): boolean {
   )
 }
 
-async function findActiveCodeSubmission({
+async function findReusableCodeSubmission({
   prisma,
   participantId,
   elementInstanceId,
+  liveQuizId,
+  elementBlockExecution,
 }: {
   prisma: CodeSubmissionReader
   participantId: string
   elementInstanceId: number
+  liveQuizId?: string | null
+  elementBlockExecution?: number | null
 }) {
   return await prisma.codeSubmission.findFirst({
     where: {
       participantId,
       elementInstanceId,
+      ...(liveQuizId
+        ? { liveQuizId, elementBlockExecution }
+        : { liveQuizId: null }),
       status: {
-        in: [DB.CodeSubmissionStatus.PENDING, DB.CodeSubmissionStatus.RUNNING],
+        in: liveQuizId
+          ? [
+              DB.CodeSubmissionStatus.PENDING,
+              DB.CodeSubmissionStatus.RUNNING,
+              DB.CodeSubmissionStatus.COMPLETED,
+            ]
+          : [DB.CodeSubmissionStatus.PENDING, DB.CodeSubmissionStatus.RUNNING],
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -125,6 +145,292 @@ function claimableCodeSubmissionWhere(
   }
 }
 
+function updateCodeResults({
+  previous,
+  result,
+  configuredTestIds,
+}: {
+  previous: ElementResultsCode
+  result: CodeSubmissionResult
+  configuredTestIds: Set<string>
+}): ElementResultsCode {
+  const allTestResults = [
+    ...result.publicTestResults,
+    ...result.hiddenTestResults,
+  ]
+  const resultTestIds = new Set(allTestResults.map(({ id }) => id))
+  if (
+    allTestResults.length !== configuredTestIds.size ||
+    resultTestIds.size !== configuredTestIds.size ||
+    allTestResults.some(({ id }) => !configuredTestIds.has(id)) ||
+    !Number.isFinite(result.pointsPercentage) ||
+    result.pointsPercentage < 0 ||
+    result.pointsPercentage > 1
+  ) {
+    throw new Error('CODE submission results do not match configured tests')
+  }
+
+  const tests = Object.fromEntries(
+    Object.entries(previous.tests).map(([id, counts]) => [id, { ...counts }])
+  )
+  for (const testResult of allTestResults) {
+    const counts = tests[testResult.id]
+    if (!counts) {
+      throw new Error('CODE submission result references an unknown test')
+    }
+    counts.total += 1
+    if (testResult.passed) counts.passed += 1
+  }
+
+  return { tests, total: previous.total + 1 }
+}
+
+type LiveQuizCodeProjection = {
+  receiptId: string
+  liveQuizId: string
+  blockId: number
+  blockExecution: number
+  instanceId: number
+  participantId: string
+  isAssessmentEnabled: boolean
+  isGamificationEnabled: boolean
+  pointsAwarded: number
+  xpAwarded: number
+  testResults: { id: string; passed: boolean }[]
+}
+
+async function recordLiveQuizCodeResponse({
+  prisma,
+  submission,
+  result,
+}: {
+  prisma: DB.Prisma.TransactionClient
+  submission: SubmissionRow
+  result: CodeSubmissionResult
+}): Promise<LiveQuizCodeProjection> {
+  if (!submission.liveQuizId || submission.elementBlockExecution === null) {
+    throw new Error('Live Quiz CODE submission scope is invalid')
+  }
+
+  const participation = await prisma.participation.findUnique({
+    where: { id: submission.participationId },
+  })
+  if (
+    !participation ||
+    participation.participantId !== submission.participantId ||
+    participation.courseId !== submission.courseId
+  ) {
+    throw new Error('CODE submission participation is invalid')
+  }
+
+  const instance = await prisma.elementInstance.findUnique({
+    where: { id: submission.elementInstanceId },
+    include: {
+      elementBlock: { include: { liveQuiz: true } },
+      liveQuizResponses: {
+        where: {
+          participantId: submission.participantId,
+          elementBlockExecution: submission.elementBlockExecution,
+        },
+        take: 1,
+      },
+    },
+  })
+  const block = instance?.elementBlock
+  const liveQuiz = block?.liveQuiz
+  if (
+    !instance ||
+    instance.elementType !== DB.ElementType.CODE ||
+    instance.elementData.type !== DB.ElementType.CODE ||
+    !block ||
+    !liveQuiz ||
+    liveQuiz.id !== submission.liveQuizId ||
+    liveQuiz.courseId !== submission.courseId ||
+    block.execution !== submission.elementBlockExecution ||
+    !block.startedAt ||
+    submission.createdAt < block.startedAt ||
+    (block.closedAt && submission.createdAt > block.closedAt)
+  ) {
+    throw new Error('Live Quiz CODE submission instance is invalid')
+  }
+
+  const configuredTestIds = new Set(
+    instance.elementData.options.testCases.map(({ id }) => id)
+  )
+  const allTestResults = [
+    ...result.publicTestResults,
+    ...result.hiddenTestResults,
+  ]
+  const existingResponse = instance.liveQuizResponses[0]
+  const options = instance.options as {
+    basePoints?: boolean
+    pointsMultiplier?: number
+  }
+
+  const basePoints = options.basePoints ? liveQuiz.defaultPoints : 0
+  const xpAwarded = computeAwardedXp({
+    pointsPercentage: result.pointsPercentage,
+  })
+  let correctnessPoints = existingResponse?.correctnessPoints ?? 0
+  let bonusPoints = existingResponse?.bonusPoints ?? 0
+
+  if (!existingResponse) {
+    const firstCorrectResponse = await prisma.liveQuizResponse.findFirst({
+      where: {
+        instanceId: instance.id,
+        elementBlockExecution: submission.elementBlockExecution,
+        correctness: DB.ResponseCorrectness.CORRECT,
+      },
+      // CODE grading is asynchronous, so submission timestamps can arrive here
+      // out of order. The instance row lock serializes finalization; the
+      // sequence-backed id is assigned on insertion after that lock and keeps
+      // the selected first-correct anchor immutable.
+      orderBy: { id: 'asc' },
+      select: { submittedAt: true },
+    })
+    const awardedCorrectness = computeAwardedCorrectnessPoints({
+      firstResponseReceivedAt: firstCorrectResponse
+        ? String(firstCorrectResponse.submittedAt.getTime())
+        : undefined,
+      responseTimestamp: submission.createdAt.getTime(),
+      maxBonus: liveQuiz.maxBonusPoints,
+      timeToZeroBonus: liveQuiz.timeToZeroBonus,
+      defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
+      pointsPercentage: result.pointsPercentage,
+      pointsMultiplier: options.pointsMultiplier,
+    })
+    correctnessPoints = awardedCorrectness.correctnessPoints
+    bonusPoints = awardedCorrectness.bonusPoints
+
+    const previousResults = (
+      liveQuiz.isAssessmentEnabled
+        ? instance.results
+        : instance.anonymousResults
+    ) as ElementResultsCode
+    const nextResults = updateCodeResults({
+      previous: previousResults,
+      result,
+      configuredTestIds,
+    })
+    const response: SingleQuestionResponseCode = {
+      code: submission.code,
+      correctness: result.pointsPercentage,
+    }
+
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: submission.createdAt,
+        response,
+        timeSpent: submission.timeSpent,
+        correctness:
+          result.pointsPercentage === 1
+            ? DB.ResponseCorrectness.CORRECT
+            : result.pointsPercentage === 0
+              ? DB.ResponseCorrectness.WRONG
+              : DB.ResponseCorrectness.PARTIAL,
+        basePoints,
+        correctnessPoints,
+        bonusPoints,
+        elementBlockExecution: submission.elementBlockExecution,
+        instanceId: submission.elementInstanceId,
+        participantId: submission.participantId,
+      },
+    })
+    await prisma.elementInstance.update({
+      where: { id: submission.elementInstanceId },
+      data: liveQuiz.isAssessmentEnabled
+        ? { results: nextResults }
+        : { anonymousResults: nextResults },
+    })
+  }
+
+  const pointsAwarded = Math.round(
+    (existingResponse?.basePoints ?? basePoints) +
+      correctnessPoints +
+      bonusPoints
+  )
+
+  return {
+    receiptId: submission.id,
+    liveQuizId: liveQuiz.id,
+    blockId: block.id,
+    blockExecution: submission.elementBlockExecution,
+    instanceId: instance.id,
+    participantId: submission.participantId,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    isGamificationEnabled: liveQuiz.isGamificationEnabled,
+    pointsAwarded,
+    xpAwarded,
+    testResults: allTestResults.map(({ id, passed }) => ({ id, passed })),
+  }
+}
+
+async function projectLiveQuizCodeResponse({
+  redis,
+  projection,
+}: {
+  redis: Pick<Redis, 'eval'>
+  projection: LiveQuizCodeProjection
+}) {
+  const instanceKey = `lq:${projection.liveQuizId}:i:${projection.instanceId}`
+  const markerKey = `${instanceKey}:code-submissions:${projection.blockExecution}`
+  const resultsKey = `${instanceKey}:results`
+  const liveQuizKey = `lq:${projection.liveQuizId}`
+  const script = `
+    if redis.call('HGET', KEYS[1], 'blockExecution') ~= ARGV[1] then
+      return -1
+    end
+    if redis.call('HEXISTS', KEYS[2], ARGV[2]) == 1 then
+      return 0
+    end
+    redis.call('HSET', KEYS[2], ARGV[2], '1')
+    redis.call('EXPIRE', KEYS[2], 86400)
+    redis.call('HINCRBY', KEYS[3], 'participants', 1)
+    local testCount = tonumber(ARGV[6])
+    local offset = 7
+    for index = 0, testCount - 1 do
+      local testId = ARGV[offset + index * 2]
+      local passed = tonumber(ARGV[offset + index * 2 + 1])
+      redis.call('HINCRBY', KEYS[3], 'test:' .. testId .. ':total', 1)
+      if passed == 1 then
+        redis.call('HINCRBY', KEYS[3], 'test:' .. testId .. ':passed', 1)
+      end
+    end
+    if ARGV[5] == '1' then
+      redis.call('HINCRBY', KEYS[4], ARGV[3], tonumber(ARGV[4]))
+      redis.call('HINCRBY', KEYS[5], ARGV[3], tonumber(ARGV[4]))
+      redis.call('HINCRBY', KEYS[6], ARGV[3], tonumber(ARGV[7 + testCount * 2]))
+    end
+    return 1
+  `
+  const projectionResult = await redis.eval(
+    script,
+    6,
+    `${instanceKey}:info`,
+    markerKey,
+    resultsKey,
+    `${liveQuizKey}:lb`,
+    `${liveQuizKey}:b:${projection.blockId}:lb`,
+    `${liveQuizKey}:xp`,
+    String(projection.blockExecution),
+    projection.receiptId,
+    projection.participantId,
+    String(projection.pointsAwarded),
+    !projection.isAssessmentEnabled || projection.isGamificationEnabled
+      ? '1'
+      : '0',
+    String(projection.testResults.length),
+    ...projection.testResults.flatMap(({ id, passed }) => [
+      encodeURIComponent(id),
+      passed ? '1' : '0',
+    ]),
+    String(projection.xpAwarded)
+  )
+  if (projectionResult !== 0 && projectionResult !== 1) {
+    throw new Error('Live Quiz CODE cache projection execution is stale')
+  }
+}
+
 export async function submitCodeResponse(
   {
     instanceId,
@@ -147,6 +453,9 @@ export async function submitCodeResponse(
   }
 
   let receipt: CodeSubmissionReceipt
+  let liveQuizScope:
+    | { liveQuizId: string; elementBlockExecution: number }
+    | undefined
   try {
     receipt = await ctx.prisma.$transaction(async (prisma) => {
       const participation = await prisma.participation.findUnique({
@@ -191,6 +500,16 @@ export async function submitCodeResponse(
                 },
               },
             },
+            {
+              elementBlock: {
+                status: DB.ElementBlockStatus.ACTIVE,
+                liveQuiz: {
+                  courseId,
+                  isDeleted: false,
+                  status: DB.PublicationStatus.PUBLISHED,
+                },
+              },
+            },
           ],
         },
         include: {
@@ -200,6 +519,7 @@ export async function submitCodeResponse(
               microLearning: true,
             },
           },
+          elementBlock: { include: { liveQuiz: true } },
         },
       })
       if (!instance || instance.elementData.type !== DB.ElementType.CODE) {
@@ -208,10 +528,48 @@ export async function submitCodeResponse(
 
       const practiceQuiz = instance.elementStack?.practiceQuiz
       const microLearning = instance.elementStack?.microLearning
-      const activityCount = Number(!!practiceQuiz) + Number(!!microLearning)
-      const activityCourseId = practiceQuiz?.courseId ?? microLearning?.courseId
+      const liveQuiz = instance.elementBlock?.liveQuiz
+      const activityCount =
+        Number(!!practiceQuiz) + Number(!!microLearning) + Number(!!liveQuiz)
+      const activityCourseId =
+        practiceQuiz?.courseId ?? microLearning?.courseId ?? liveQuiz?.courseId
       if (activityCount !== 1 || activityCourseId !== courseId) {
         throw codeSubmissionUnavailable()
+      }
+
+      if (liveQuiz) {
+        const block = instance.elementBlock
+        await prisma.$queryRaw`
+          SELECT "id"
+          FROM "LiveQuiz"
+          WHERE "id" = ${liveQuiz.id}::uuid
+          FOR UPDATE
+        `
+        const currentBlock = block
+          ? await prisma.elementBlock.findFirst({
+              where: {
+                id: block.id,
+                status: DB.ElementBlockStatus.ACTIVE,
+                liveQuiz: {
+                  id: liveQuiz.id,
+                  courseId,
+                  isDeleted: false,
+                  status: DB.PublicationStatus.PUBLISHED,
+                  activeBlockId: block.id,
+                },
+              },
+            })
+          : null
+        if (
+          !currentBlock ||
+          (currentBlock.expiresAt && currentBlock.expiresAt <= now)
+        ) {
+          throw codeSubmissionUnavailable()
+        }
+        liveQuizScope = {
+          liveQuizId: liveQuiz.id,
+          elementBlockExecution: currentBlock.execution,
+        }
       }
 
       if (microLearning) {
@@ -232,10 +590,12 @@ export async function submitCodeResponse(
         }
       }
 
-      const existing = await findActiveCodeSubmission({
+      const existing = await findReusableCodeSubmission({
         prisma,
         participantId: ctx.user.sub,
         elementInstanceId: instanceId,
+        liveQuizId: liveQuizScope?.liveQuizId,
+        elementBlockExecution: liveQuizScope?.elementBlockExecution,
       })
       if (existing) return toReceipt(existing)
 
@@ -248,6 +608,8 @@ export async function submitCodeResponse(
           elementInstanceId: instance.id,
           practiceQuizId: practiceQuiz?.id,
           microLearningId: microLearning?.id,
+          liveQuizId: liveQuizScope?.liveQuizId,
+          elementBlockExecution: liveQuizScope?.elementBlockExecution,
           courseId,
         },
       })
@@ -255,13 +617,19 @@ export async function submitCodeResponse(
     })
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error
-    const concurrent = await findActiveCodeSubmission({
+    const concurrent = await findReusableCodeSubmission({
       prisma: ctx.prisma,
       participantId: ctx.user.sub,
       elementInstanceId: instanceId,
+      liveQuizId: liveQuizScope?.liveQuizId,
+      elementBlockExecution: liveQuizScope?.elementBlockExecution,
     })
     if (!concurrent) throw error
     receipt = toReceipt(concurrent)
+  }
+
+  if (receipt.gradingStatus === DB.CodeSubmissionStatus.COMPLETED) {
+    return receipt
   }
 
   try {
@@ -336,12 +704,82 @@ async function finalizeCodeSubmission({
   claimToken,
   result,
   prisma,
+  redisExec,
+  redisAssessmentExec,
 }: {
   submission: SubmissionRow
   claimToken: string
   result: CodeSubmissionResult
   prisma: DB.PrismaClient
+  redisExec: Redis
+  redisAssessmentExec: Redis
 }) {
+  if (submission.liveQuizId) {
+    const projection = await prisma.$transaction(async (transaction) => {
+      const locked = await transaction.codeSubmission.updateMany({
+        where: {
+          id: submission.id,
+          status: DB.CodeSubmissionStatus.RUNNING,
+          claimToken,
+        },
+        data: {
+          claimExpiresAt: new Date(Date.now() + CODE_SUBMISSION_FINALIZE_MS),
+          result,
+        },
+      })
+      if (locked.count !== 1) return null
+
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "ElementInstance"
+        WHERE "id" = ${submission.elementInstanceId}
+        FOR UPDATE
+      `
+      return await recordLiveQuizCodeResponse({
+        prisma: transaction,
+        submission,
+        result,
+      })
+    })
+    if (!projection) return null
+
+    // Keep the external Redis projection outside the database transaction. If
+    // this call fails, the RUNNING receipt remains recoverable; a retry sees
+    // the existing LiveQuizResponse and the receipt marker makes projection
+    // idempotent.
+    await projectLiveQuizCodeResponse({
+      redis: projection.isAssessmentEnabled ? redisAssessmentExec : redisExec,
+      projection,
+    })
+
+    return await prisma.$transaction(async (transaction) => {
+      const completed = await transaction.codeSubmission.updateMany({
+        where: {
+          id: submission.id,
+          status: DB.CodeSubmissionStatus.RUNNING,
+          claimToken,
+        },
+        data: {
+          status: DB.CodeSubmissionStatus.COMPLETED,
+          result,
+          completedAt: new Date(),
+          claimToken: null,
+          claimExpiresAt: null,
+          failureCode: null,
+          failureDetails: null,
+          failedAt: null,
+          retryAt: null,
+        },
+      })
+      if (completed.count !== 1) {
+        throw new Error('CODE submission claim was lost during finalization')
+      }
+      return await transaction.codeSubmission.findUniqueOrThrow({
+        where: { id: submission.id },
+      })
+    })
+  }
+
   return await prisma.$transaction(async (transaction) => {
     const locked = await transaction.codeSubmission.updateMany({
       where: {
@@ -436,46 +874,66 @@ async function releaseOrFailCodeSubmission({
   const failure = failureMetadata(error)
   const retryAt = rateLimitRetryAt(error, now)
   const deferred = retryAt !== null
+  const persistedLiveQuizResult = submission.liveQuizId
+    ? await prisma.codeSubmission.findUnique({
+        where: { id: submission.id },
+        select: { result: true },
+      })
+    : null
+  const projectionPending = !!persistedLiveQuizResult?.result
   const exhausted =
-    !deferred && submission.claimAttempts >= CODE_SUBMISSION_MAX_ATTEMPTS
+    !projectionPending &&
+    !deferred &&
+    submission.claimAttempts >= CODE_SUBMISSION_MAX_ATTEMPTS
   const updated = await prisma.codeSubmission.updateMany({
     where: {
       id: submission.id,
       status: DB.CodeSubmissionStatus.RUNNING,
       claimToken,
     },
-    data: deferred
+    data: projectionPending
       ? {
           status: DB.CodeSubmissionStatus.PENDING,
-          claimAttempts: { decrement: 1 },
+          claimAttempts: 0,
           failureCode: failure.code,
           failureDetails: failure.details,
           claimToken: null,
           claimExpiresAt: null,
-          retryAt,
+          retryAt: null,
         }
-      : exhausted
+      : deferred
         ? {
-            status: DB.CodeSubmissionStatus.FAILED,
-            failureCode: failure.code,
-            failureDetails: failure.details,
-            failedAt: now,
-            claimToken: null,
-            claimExpiresAt: null,
-            retryAt: null,
-          }
-        : {
             status: DB.CodeSubmissionStatus.PENDING,
+            claimAttempts: { decrement: 1 },
             failureCode: failure.code,
             failureDetails: failure.details,
             claimToken: null,
             claimExpiresAt: null,
             retryAt,
-          },
+          }
+        : exhausted
+          ? {
+              status: DB.CodeSubmissionStatus.FAILED,
+              failureCode: failure.code,
+              failureDetails: failure.details,
+              failedAt: now,
+              claimToken: null,
+              claimExpiresAt: null,
+              retryAt: null,
+            }
+          : {
+              status: DB.CodeSubmissionStatus.PENDING,
+              failureCode: failure.code,
+              failureDetails: failure.details,
+              claimToken: null,
+              claimExpiresAt: null,
+              retryAt,
+            },
   })
   if (updated.count !== 1) {
     return { kind: 'retry' } as const
   }
+  if (projectionPending) return { kind: 'retry' } as const
   if (deferred) return { kind: 'deferred' } as const
   if (!exhausted) return { kind: 'retry' } as const
   return {
@@ -510,19 +968,23 @@ export async function processCodeSubmission(
       throw new Error('CODE submission element instance is invalid')
     }
     const options = claimed.elementInstance.elementData.options
-    const result = await executor({
-      subject: claimed.participantId,
-      role: DB.UserRole.PARTICIPANT,
-      studentCode: claimed.code,
-      entrypoint: options.entrypoint,
-      tests: options.testCases,
-      perTestTimeoutSeconds: options.executionLimits.perTestTimeoutSeconds,
-    })
+    const result =
+      claimed.result ??
+      (await executor({
+        subject: claimed.participantId,
+        role: DB.UserRole.PARTICIPANT,
+        studentCode: claimed.code,
+        entrypoint: options.entrypoint,
+        tests: options.testCases,
+        perTestTimeoutSeconds: options.executionLimits.perTestTimeoutSeconds,
+      }))
     const completed = await finalizeCodeSubmission({
       submission: claimed,
       claimToken: claimed.claimToken,
       result,
       prisma: globalCtx.prisma,
+      redisExec: globalCtx.redisExec,
+      redisAssessmentExec: globalCtx.redisAssessmentExec,
     })
     if (!completed) return false
     globalCtx.pubSub.publish('codeSubmissionUpdated', {
@@ -570,9 +1032,32 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
         id: true,
         participantId: true,
         claimToken: true,
+        liveQuizId: true,
+        result: true,
       },
     })
     for (const submission of exhausted) {
+      if (submission.liveQuizId && submission.result) {
+        await globalCtx.prisma.codeSubmission.updateMany({
+          where: {
+            id: submission.id,
+            status: DB.CodeSubmissionStatus.RUNNING,
+            claimToken: submission.claimToken,
+            claimExpiresAt: { lt: now },
+          },
+          data: {
+            status: DB.CodeSubmissionStatus.PENDING,
+            claimAttempts: 0,
+            failureCode: 'CACHE_PROJECTION_RECOVERY',
+            failureDetails: 'Recovering the Live Quiz CODE cache projection',
+            claimToken: null,
+            claimExpiresAt: null,
+            retryAt: null,
+          },
+        })
+        continue
+      }
+
       const updated = await globalCtx.prisma.codeSubmission.updateMany({
         where: {
           id: submission.id,

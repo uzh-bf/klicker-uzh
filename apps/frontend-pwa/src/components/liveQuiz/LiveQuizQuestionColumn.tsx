@@ -24,6 +24,9 @@ interface LiveQuizQuestionColumnProps {
   selectedBlock: number | null
   onSelectBlock: (value: number) => void
   isGamificationEnabled: boolean
+  courseId?: string
+  participantId?: string
+  codeSubmissionEnabled?: boolean
   handleNewResponse: (params: {
     liveQuizId: string
     instanceId: number
@@ -44,6 +47,9 @@ function LiveQuizQuestionColumn({
   selectedBlock,
   onSelectBlock,
   isGamificationEnabled,
+  courseId,
+  participantId,
+  codeSubmissionEnabled = false,
   handleNewResponse,
   className,
 }: LiveQuizQuestionColumnProps) {
@@ -140,6 +146,9 @@ function LiveQuizQuestionColumn({
           handleNewResponse={handleNewResponse}
           timeLimit={activeBlock?.timeLimit ?? undefined}
           execution={activeBlock?.execution ?? 0}
+          courseId={courseId}
+          participantId={participantId}
+          codeSubmissionEnabled={codeSubmissionEnabled}
         />
       ) : null}
 
@@ -153,6 +162,9 @@ function LiveQuizQuestionColumn({
           gamificationEnabled={isGamificationEnabled}
           instances={blocks[selectedBlock]?.elements ?? []}
           execution={blocks[selectedBlock]?.execution ?? 0}
+          courseId={courseId}
+          participantId={participantId}
+          codeSubmissionEnabled={codeSubmissionEnabled}
           handleNewResponse={async () => ({ statusCode: 0 })}
         />
       ) : null}

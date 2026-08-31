@@ -481,6 +481,23 @@ describe('@klicker-uzh/export', () => {
     } as unknown as Parameters<typeof transformLiveQuizResponse>[0])
     expect(numerical[23]).toBe('42') // response_value
 
+    const code = transformLiveQuizResponse({
+      ...base,
+      instance: { ...base.instance, elementType: 'CODE' },
+      response: { code: 'print("hello")', correctness: 1 },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0])
+    expect(code[23]).toBe('print("hello")') // response_value
+
+    const pseudonymizedCode = transformLiveQuizResponse(
+      {
+        ...base,
+        instance: { ...base.instance, elementType: 'CODE' },
+        response: { code: 'print("hello")', correctness: 1 },
+      } as unknown as Parameters<typeof transformLiveQuizResponse>[0],
+      { mode: 'pseudonymize', salt: 'test-salt' }
+    )
+    expect(pseudonymizedCode[23]).toBe('[redacted]')
+
     const selection = transformLiveQuizResponse({
       ...base,
       instance: { ...base.instance, elementType: 'SELECTION' },

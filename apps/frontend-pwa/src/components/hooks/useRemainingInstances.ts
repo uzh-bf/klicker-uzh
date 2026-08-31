@@ -1,4 +1,4 @@
-import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
+import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import localForage from 'localforage'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
@@ -9,6 +9,7 @@ function useRemainingInstances({
   isBlockCompleted,
   setRemainingQuestions,
   setActiveInstance,
+  participantId,
 }: {
   quizId: string
   instances: ElementInstance[]
@@ -16,6 +17,7 @@ function useRemainingInstances({
   isBlockCompleted: boolean
   setRemainingQuestions: Dispatch<SetStateAction<number[] | null>>
   setActiveInstance: Dispatch<SetStateAction<number>>
+  participantId?: string
 }): void {
   useEffect((): void => {
     const exec = async () => {
@@ -27,22 +29,36 @@ function useRemainingInstances({
           return
         }
 
-        let storedResponses: any = (await localForage.getItem(
-          `${quizId}-responses`
-        )) || {
-          responses: [],
+        const parseStoredResponses = (stored: unknown): string[] => {
+          const parsed =
+            typeof stored === 'string' ? JSON.parse(stored) : stored
+          return Array.isArray((parsed as any)?.responses)
+            ? (parsed as any).responses
+            : []
         }
-
-        if (typeof storedResponses === 'string') {
-          storedResponses = JSON.parse(storedResponses)
-        }
+        const storedResponses = new Set(
+          parseStoredResponses(await localForage.getItem(`${quizId}-responses`))
+        )
+        const storedCodeResponses = new Set(
+          participantId
+            ? parseStoredResponses(
+                await localForage.getItem(
+                  `${quizId}-p-${participantId}-responses`
+                )
+              )
+            : []
+        )
 
         const remaining = instances
           .map((instance) => instance.id)
           .reduce<number[]>((indices, instanceId, index) => {
-            if (
-              storedResponses?.responses?.includes(`${instanceId}-${execution}`)
-            ) {
+            const instance = instances[index]
+            const responseKey = `${instanceId}-${execution}`
+            const answered =
+              instance?.elementType === ElementType.Code
+                ? storedCodeResponses.has(responseKey)
+                : storedResponses.has(responseKey)
+            if (answered) {
               return indices
             }
 
@@ -57,7 +73,7 @@ function useRemainingInstances({
     }
     exec()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, instances, execution, isBlockCompleted])
+  }, [quizId, instances, execution, isBlockCompleted, participantId])
 }
 
 export default useRemainingInstances

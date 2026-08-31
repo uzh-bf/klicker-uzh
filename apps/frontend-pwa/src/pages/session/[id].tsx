@@ -14,6 +14,7 @@ import {
   GetRunningLiveQuizDocument,
   SelfDocument,
   SetLiveQuizPinDocument,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
@@ -379,6 +380,10 @@ function Index({ id }: { id: string }) {
 
   const feedbackAvailable = isLiveQAEnabled || isConfusionFeedbackEnabled
   const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
+  const codeSubmissionEnabled =
+    selfData?.self?.role === UserRole.Participant &&
+    !!selfData.self.isCourseParticipationActive &&
+    !!course?.id
   const hasQuestionPanel = !!(blocks && blocks.length > 0)
   const hasSidebarPanel = feedbackAvailable || leaderboardAvailable
 
@@ -439,6 +444,9 @@ function Index({ id }: { id: string }) {
         selectedBlock={selectedBlock}
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
+        courseId={course?.id}
+        participantId={selfData?.self?.id}
+        codeSubmissionEnabled={codeSubmissionEnabled}
         handleNewResponse={handleNewResponse}
         className={extraClassName}
       />

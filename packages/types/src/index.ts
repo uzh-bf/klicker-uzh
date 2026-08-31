@@ -632,6 +632,7 @@ export type SingleQuestionResponseLiveQuiz =
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
   | SingleQuestionResponseLiveQuizCaseStudy
+  | SingleQuestionResponseCode
 
 export type Choice = {
   ix: number

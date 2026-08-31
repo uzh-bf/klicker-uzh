@@ -899,6 +899,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet oder der Block wurde geschlossen.',
+      codeSubmissionUnavailable:
+        'Programmierfragen erfordern ein angemeldetes Konto mit aktiver Teilnahme an diesem Kurs.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
@@ -2039,6 +2041,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Jeder Stack muss mindestens ein Element enthalten.',
       codeOnlyStack:
         'Eine Programmierfrage muss das einzige Element in ihrem Stack sein.',
+      codeOnlyBlock:
+        'Eine Programmierfrage muss das einzige Element in ihrem Block sein.',
+      codeLiveQuizCourseRequired:
+        'Ein Live Quiz mit einer Programmierfrage muss einem Kurs zugeordnet sein.',
       minOneElementPerBlock:
         'Jeder Block muss mindestens ein Element enthalten.',
       minOneQuestionGroupActivity:
