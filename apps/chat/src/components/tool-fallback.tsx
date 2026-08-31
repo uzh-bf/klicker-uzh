@@ -253,25 +253,24 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
       >
-        {/* Every icon here sits next to the chip's own text label, so none of
-            them carry meaning of their own. */}
+        {/* Keep a fixed status slot so trace labels align across row types. */}
         {isCollapsed ? (
           <ChevronRightIcon className="size-3" aria-hidden />
         ) : (
           <ChevronDownIcon className="size-3" aria-hidden />
         )}
-        {isRunning && (
-          <LoaderCircleIcon
-            className="text-primary size-3 animate-spin"
-            aria-hidden
-          />
-        )}
-        {isFailed && (
-          <AlertCircleIcon className="text-destructive size-3" aria-hidden />
-        )}
-        {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
-          <SearchIcon className="size-3" aria-hidden />
-        )}
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {isRunning && (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          )}
+          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+          {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
+            <SearchIcon className="size-3" />
+          )}
+        </span>
         {docQueryState
           ? docQueryChipLabel(t, docQueryState)
           : isFailed

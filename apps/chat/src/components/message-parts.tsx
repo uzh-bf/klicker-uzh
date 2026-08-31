@@ -58,16 +58,21 @@ const GroupedDisclosure: FC<
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center gap-1 text-xs touch-manipulation [@media(pointer:coarse)]:min-h-11"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />
         ) : (
           <ChevronRightIcon className="size-3" />
         )}
-        {active ? (
-          <LoaderCircleIcon className="text-primary size-3 animate-spin" />
-        ) : null}
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {active ? (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          ) : null}
+        </span>
         {label}
       </button>
       {isOpen ? <div className={contentClassName}>{children}</div> : null}
