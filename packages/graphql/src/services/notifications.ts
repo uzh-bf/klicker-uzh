@@ -24,7 +24,7 @@ export async function subscribeToPush(
   return ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     data: {
       subscriptions: {

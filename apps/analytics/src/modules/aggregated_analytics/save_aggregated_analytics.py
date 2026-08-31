@@ -38,7 +38,11 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
     elif analytics_type == "COURSE":
         for _, row in df_analytics.iterrows():
             course = db.course.find_unique_or_raise(
-                where={"id": row["courseId"], "isDeleted": False},
+                where={
+                    "id": row["courseId"],
+                    "isDeleted": False,
+                    "isDeletionPending": False,
+                },
                 include={
                     "practiceQuizzes": {
                         "include": {

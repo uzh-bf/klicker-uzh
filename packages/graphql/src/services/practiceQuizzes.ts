@@ -32,7 +32,7 @@ export async function getPracticeQuizData(
     where: {
       id,
       isDeleted: false,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
       OR: [
         { status: DB.PublicationStatus.PUBLISHED },
         { status: DB.PublicationStatus.SCHEDULED },
@@ -97,7 +97,7 @@ export async function getPracticeQuizEvaluation(
       id,
       status: DB.PublicationStatus.PUBLISHED,
       isDeleted: false,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       stacks: {
@@ -129,7 +129,11 @@ export async function getSinglePracticeQuiz(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, isDeleted: false, course: { isDeleted: false } },
+    where: {
+      id,
+      isDeleted: false,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     include: {
       course: true,
       stacks: {
@@ -147,7 +151,7 @@ export async function getCoursePublishedPracticeQuizzes(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       practiceQuizzes: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -213,7 +217,7 @@ export async function manipulatePracticeQuiz(
 
   // get the course to which the practice quiz should be assigned
   const course = await prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
 
@@ -795,10 +799,16 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
       // check if the practice quiz exists and if its availableFrom date is in the past
       const practiceQuiz = await globalCtx.prisma.practiceQuiz.findUnique({
         where: { id: practiceQuizId },
-        include: { course: { select: { isDeleted: true } } },
+        include: {
+          course: { select: { isDeleted: true, isDeletionPending: true } },
+        },
       })
 
-      if (practiceQuiz?.course.isDeleted) return true
+      if (
+        practiceQuiz?.course.isDeleted ||
+        practiceQuiz?.course.isDeletionPending
+      )
+        return true
 
       if (!practiceQuiz) {
         await sendTeamsNotification({
@@ -830,7 +840,7 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
         where: {
           id: practiceQuizId,
           isDeleted: false,
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
         },
         data: { status: DB.PublicationStatus.PUBLISHED },
         include: { stacks: true },
@@ -844,7 +854,11 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
 
       // link stacks of practice quiz to course
       await globalCtx.prisma.course.update({
-        where: { id: updatedPracticeQuiz.courseId, isDeleted: false },
+        where: {
+          id: updatedPracticeQuiz.courseId,
+          isDeleted: false,
+          isDeletionPending: false,
+        },
         data: {
           elementStacks: {
             connect: updatedPracticeQuiz.stacks.map((stack) => ({

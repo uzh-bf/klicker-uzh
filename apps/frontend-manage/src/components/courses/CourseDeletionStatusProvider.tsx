@@ -4,6 +4,8 @@ import {
   type CourseDeletionStatus as CourseDeletionStatusData,
   GetCourseDeletionStatusesDocument,
   type GetCourseDeletionStatusesQuery,
+  GetUserActivitiesCoursesDocument,
+  GetUserActivitiesDocument,
   GetUserCoursesDocument,
   StartCourseDeletionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -47,6 +49,11 @@ const COURSE_DELETION_LEGACY_STORAGE_KEY = 'course-deletion-job-ids'
 const COURSE_DELETION_STORAGE_KEY_PREFIX = 'course-deletion-job:'
 const COURSE_DELETION_POLL_INTERVAL = 5000
 const COURSE_DELETION_STATUS_BATCH_SIZE = 50
+const COURSE_DELETION_REFETCH_QUERIES = [
+  GetUserCoursesDocument,
+  GetUserActivitiesCoursesDocument,
+  GetUserActivitiesDocument,
+]
 
 function isActiveCourseDeletionStatus(status: CourseDeletionJob['status']) {
   return (
@@ -306,12 +313,12 @@ export function CourseDeletionProvider({
       const requestedJobIdSet = new Set(requestedJobIds)
       const returnedJobIds = new Set(statuses.map((job) => job.id))
       const currentJobIdSet = new Set(jobIdsRef.current)
-      let shouldRefetchCourses = false
+      let shouldRefetchDeletionTargets = false
 
       for (const jobId of requestedJobIds) {
         if (currentJobIdSet.has(jobId) && !returnedJobIds.has(jobId)) {
           removeJobId(jobId)
-          shouldRefetchCourses = true
+          shouldRefetchDeletionTargets = true
         }
       }
 
@@ -327,14 +334,17 @@ export function CourseDeletionProvider({
 
         if (!isTerminalCourseDeletionStatus(job.status)) continue
         removeJobId(job.id)
-        shouldRefetchCourses = true
+        shouldRefetchDeletionTargets = true
       }
 
-      if (shouldRefetchCourses) {
+      if (shouldRefetchDeletionTargets) {
         void client
-          .refetchQueries({ include: [GetUserCoursesDocument] })
+          .refetchQueries({ include: COURSE_DELETION_REFETCH_QUERIES })
           .catch((error) =>
-            console.error('Failed to refetch courses after deletion', error)
+            console.error(
+              'Failed to refetch courses and activities after deletion',
+              error
+            )
           )
       }
     },
@@ -446,11 +456,19 @@ export function CourseDeletionProvider({
         })
         const job = result.data?.startCourseDeletion
 
-        if (job) {
+        if (job?.isQueued) {
           const target = { courseId: job.courseId, deleteDraftActivities }
           upsertJob(job, target)
           addJobId(job.id, target)
-          return job.isQueued
+          void client
+            .refetchQueries({ include: COURSE_DELETION_REFETCH_QUERIES })
+            .catch((error) =>
+              console.error(
+                'Failed to refetch courses and activities after starting deletion',
+                error
+              )
+            )
+          return true
         }
       } catch (error) {
         console.error('Failed to start course deletion', error)
@@ -460,7 +478,7 @@ export function CourseDeletionProvider({
 
       return false
     },
-    [activeJobs, addJobId, startCourseDeletionMutation, upsertJob]
+    [activeJobs, addJobId, client, startCourseDeletionMutation, upsertJob]
   )
 
   const value = useMemo(

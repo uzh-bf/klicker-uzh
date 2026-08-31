@@ -3,6 +3,10 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PrismaPg } from '@prisma/adapter-pg'
+import {
+  allowCourseDeletionMutationInTransaction,
+  allowCoursePurgeInTransaction,
+} from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { randomUUID } from 'node:crypto'
 import { beforeAll, afterAll, describe, expect, it } from 'vitest'
@@ -98,9 +102,16 @@ function runFailingScript(args: Array<string>): string {
     afterAll(async () => {
       await prisma.chatbot.deleteMany({ where: { courseId } })
       await prisma.chatbotDisclaimer.deleteMany({ where: { ownerId: userId } })
-      await prisma.course
-        .delete({ where: { id: courseId } })
-        .catch(() => undefined)
+      await prisma.$transaction(async (tx) => {
+        await tx.course.updateMany({
+          where: { id: courseId },
+          data: { isDeleted: true },
+        })
+        await allowCoursePurgeInTransaction(tx)
+        await tx.course
+          .delete({ where: { id: courseId, isDeleted: true } })
+          .catch(() => undefined)
+      })
       await prisma.user.delete({ where: { id: userId } }).catch(() => undefined)
       await prisma.$disconnect()
     })
@@ -206,6 +217,33 @@ function runFailingScript(args: Array<string>): string {
         randomUUID(),
       ])
       expect(output2).toContain('FAIL: owner_not_found')
+    })
+
+    it('fails closed while the target course is pending deletion', async () => {
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { isDeletionPending: true },
+      })
+      try {
+        const output = runFailingScript([
+          '--config',
+          configPath,
+          '--course-id',
+          courseId,
+          '--owner-id',
+          userId,
+          '--apply',
+        ])
+        expect(output).toContain('FAIL: course_not_found')
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          await allowCourseDeletionMutationInTransaction(tx)
+          await tx.course.update({
+            where: { id: courseId },
+            data: { isDeletionPending: false },
+          })
+        })
+      }
     })
 
     it('fails closed on course-owner mismatch without writing', async () => {

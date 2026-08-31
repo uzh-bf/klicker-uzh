@@ -23,7 +23,7 @@ function createExecutionContext() {
 function createGlobalContext(modelName: string) {
   const update = vi.fn()
   const findUnique = vi.fn().mockResolvedValue({
-    course: { isDeleted: true },
+    course: { isDeleted: false, isDeletionPending: true },
   })
   const prisma = {
     [modelName]: { findUnique, update },
@@ -40,7 +40,7 @@ function createGlobalContext(modelName: string) {
   }
 }
 
-describe('scheduled activity handlers for soft-deleted courses', () => {
+describe('scheduled activity handlers for courses pending deletion', () => {
   it('does not publish a scheduled live quiz', async () => {
     const { ctx, update } = createGlobalContext('liveQuiz')
 

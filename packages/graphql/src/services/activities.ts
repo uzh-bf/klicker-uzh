@@ -42,7 +42,10 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null }, course: { isDeleted: false } },
+        where: {
+          courseId: { not: null },
+          course: { isDeleted: false, isDeletionPending: false },
+        },
         include: {
           course: {
             select: {
@@ -464,6 +467,7 @@ export async function applyActivityBatchOperations(
         where: {
           id: courseId,
           isDeleted: false,
+          isDeletionPending: false,
           permissions: {
             some: {
               userId: ctx.user.sub,
@@ -535,7 +539,12 @@ export async function applyActivityBatchOperations(
       },
       status: { in: allowedActivityStatus },
       AND: [
-        { OR: [{ courseId: null }, { course: { isDeleted: false } }] },
+        {
+          OR: [
+            { courseId: null },
+            { course: { isDeleted: false, isDeletionPending: false } },
+          ],
+        },
         // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
         ...((setMultiplier && !newCourse) || setLiveQuizPoints
           ? [
@@ -584,7 +593,7 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
           AND: [
             // if the practice quiz is assigned to a new course, the scheduled publication date must lie within the course duration (or be null -> draft)
             ...(newCourse
@@ -653,7 +662,7 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
           // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
           scheduledStartAt: newCourse
             ? { gte: newCourse.startDate }
@@ -712,7 +721,7 @@ export async function applyActivityBatchOperations(
               },
             },
             status: { in: allowedActivityStatus },
-            course: { isDeleted: false },
+            course: { isDeleted: false, isDeletionPending: false },
             // if a new course is assigned, the group formation deadline should be before the start of the group activity
             // (start date of course does not need to be verified, since group formation deadline is always after start date)
             scheduledStartAt: newCourse
@@ -1119,7 +1128,10 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       owner: true,
@@ -1406,7 +1418,7 @@ export async function getPracticeQuizDetails(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, course: { isDeleted: false } },
+    where: { id, course: { isDeleted: false, isDeletionPending: false } },
     include: {
       owner: true,
       _count: {
@@ -1504,7 +1516,7 @@ export async function getMicroLearningDetails(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, course: { isDeleted: false } },
+    where: { id, course: { isDeleted: false, isDeletionPending: false } },
     include: {
       owner: true,
       _count: {
@@ -1603,7 +1615,7 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, course: { isDeleted: false } },
+    where: { id, course: { isDeleted: false, isDeletionPending: false } },
     include: {
       owner: true,
       _count: {
@@ -1845,7 +1857,9 @@ export async function getCourseActivityIds(
               liveQuiz: {
                 isDeleted: false,
                 courseId: courseId ?? null,
-                ...(courseId ? { course: { isDeleted: false } } : {}),
+                ...(courseId
+                  ? { course: { isDeleted: false, isDeletionPending: false } }
+                  : {}),
               },
             },
             ...(courseId
@@ -1854,7 +1868,7 @@ export async function getCourseActivityIds(
                     practiceQuiz: {
                       isDeleted: false,
                       courseId,
-                      course: { isDeleted: false },
+                      course: { isDeleted: false, isDeletionPending: false },
                     },
                   },
                 ]
@@ -1865,7 +1879,7 @@ export async function getCourseActivityIds(
                     microLearning: {
                       isDeleted: false,
                       courseId,
-                      course: { isDeleted: false },
+                      course: { isDeleted: false, isDeletionPending: false },
                     },
                   },
                 ]
@@ -1876,7 +1890,7 @@ export async function getCourseActivityIds(
                     groupActivity: {
                       isDeleted: false,
                       courseId,
-                      course: { isDeleted: false },
+                      course: { isDeleted: false, isDeletionPending: false },
                     },
                   },
                 ]

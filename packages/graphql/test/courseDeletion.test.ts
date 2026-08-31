@@ -1,4 +1,5 @@
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
+import { ActivityType } from '@klicker-uzh/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
@@ -6,6 +7,7 @@ const permissionMocks = vi.hoisted(() => ({
   propagateActivityToElements: vi.fn(),
   recomputeDerivedPermissions: vi.fn(),
 }))
+const serviceMocks = vi.hoisted(() => ({ checkAccess: vi.fn() }))
 
 vi.mock('@klicker-uzh/util', async (importOriginal) => {
   const original = await importOriginal<typeof import('@klicker-uzh/util')>()
@@ -13,7 +15,17 @@ vi.mock('@klicker-uzh/util', async (importOriginal) => {
   return { ...original, ...permissionMocks }
 })
 
-import { deleteCourse, getCourseSummary } from '../src/services/courses.js'
+vi.mock('../src/services/sharing.js', async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import('../src/services/sharing.js')>()
+  return { ...original, checkAccess: serviceMocks.checkAccess }
+})
+
+import {
+  deleteCourse,
+  getActiveUserCourses,
+  getCourseSummary,
+} from '../src/services/courses.js'
 
 function stack(id: number, elementId: number) {
   return { id, elements: [{ elementId }] }
@@ -90,7 +102,9 @@ function createContext() {
   ]
   const course = {
     id: 'course-id',
+    deletionJobId: 'job-id',
     isDeleted: false,
+    isDeletionPending: true,
     isAssessmentEnabled: false,
     liveQuizzes,
     practiceQuizzes,
@@ -99,6 +113,11 @@ function createContext() {
   }
   const transactionClient = {
     $executeRaw: vi.fn().mockResolvedValue(1),
+    $queryRaw: vi.fn().mockResolvedValue([{ acquired: true }]),
+    liveQuizResponseAdmission: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
     course: {
       findUnique: vi.fn().mockResolvedValue(course),
       update: vi.fn().mockResolvedValue({ ...course, isDeleted: true }),
@@ -199,7 +218,7 @@ describe('deleteCourse', () => {
       transactionClient,
     } = createContext()
 
-    await deleteCourse({ id: 'course-id' }, ctx)
+    await deleteCourse({ deletionJobId: 'job-id', id: 'course-id' }, ctx)
 
     expect(transactionClient.liveQuiz.delete).not.toHaveBeenCalled()
     expect(transactionClient.liveQuiz.findMany).not.toHaveBeenCalled()
@@ -217,19 +236,39 @@ describe('deleteCourse', () => {
       '1'
     )
     expect(responseFenceExec).toHaveBeenCalledOnce()
-    expect(transactionClient.$executeRaw).toHaveBeenCalledOnce()
     expect(
-      transactionClient.$executeRaw.mock.invocationCallOrder[0] ?? 0
+      transactionClient.liveQuizResponseAdmission.findFirst
+    ).toHaveBeenCalledWith({
+      where: { courseId: 'course-id', failedAt: null },
+      select: { token: true },
+    })
+    expect(
+      transactionClient.liveQuizResponseAdmission.deleteMany
+    ).toHaveBeenCalledWith({
+      where: { courseId: 'course-id', failedAt: { not: null } },
+    })
+    expect(transactionClient.$queryRaw).toHaveBeenCalledOnce()
+    expect(
+      transactionClient.$queryRaw.mock.invocationCallOrder[0] ?? 0
     ).toBeLessThan(
       transactionClient.course.update.mock.invocationCallOrder[0] ?? 0
     )
     expect(transactionClient.course.update).toHaveBeenCalledWith({
       where: {
         id: 'course-id',
+        deletionJobId: 'job-id',
         isAssessmentEnabled: false,
         isDeleted: false,
+        isDeletionPending: true,
       },
-      data: { isDeleted: true },
+      data: {
+        deletionJobId: null,
+        deletionRequestedById: null,
+        deletionPendingAt: null,
+        deleteDraftActivitiesOnDeletion: false,
+        isDeleted: true,
+        isDeletionPending: false,
+      },
     })
     expect(emitter.emit).toHaveBeenCalledWith('invalidate', {
       typename: 'Course',
@@ -243,7 +282,14 @@ describe('deleteCourse', () => {
   it('permanently deletes only linked draft activities when requested', async () => {
     const { ctx, emitter, transactionClient } = createContext()
 
-    await deleteCourse({ id: 'course-id', deleteDraftActivities: true }, ctx)
+    await deleteCourse(
+      {
+        deletionJobId: 'job-id',
+        id: 'course-id',
+        deleteDraftActivities: true,
+      },
+      ctx
+    )
 
     expect(transactionClient.liveQuiz.delete).toHaveBeenCalledOnce()
     expect(transactionClient.liveQuiz.delete).toHaveBeenCalledWith({
@@ -324,12 +370,12 @@ describe('deleteCourse', () => {
       groupActivities: [],
     })
 
-    await expect(deleteCourse({ id: 'course-id' }, ctx)).resolves.toMatchObject(
-      {
-        id: 'course-id',
-        isDeleted: true,
-      }
-    )
+    await expect(
+      deleteCourse({ deletionJobId: 'job-id', id: 'course-id' }, ctx)
+    ).resolves.toMatchObject({
+      id: 'course-id',
+      isDeleted: true,
+    })
 
     expect(transactionClient.course.update).not.toHaveBeenCalled()
     expect(transactionClient.liveQuiz.updateMany).not.toHaveBeenCalled()
@@ -343,12 +389,29 @@ describe('deleteCourse', () => {
       new Error('transaction rolled back')
     )
 
-    await expect(deleteCourse({ id: 'course-id' }, ctx)).rejects.toThrow(
-      'transaction rolled back'
-    )
+    await expect(
+      deleteCourse({ deletionJobId: 'job-id', id: 'course-id' }, ctx)
+    ).rejects.toThrow('transaction rolled back')
     expect(ctx.hatchet.scheduled.delete).not.toHaveBeenCalled()
     expect(responseFenceExec).not.toHaveBeenCalled()
     expect(emitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('does not soft-delete while an accepted response handoff is pending', async () => {
+    const { ctx, responseFenceExec, transactionClient } = createContext()
+    transactionClient.liveQuizResponseAdmission.findFirst.mockResolvedValueOnce(
+      { token: 'response-token' }
+    )
+
+    await expect(
+      deleteCourse({ deletionJobId: 'job-id', id: 'course-id' }, ctx)
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'COURSE_DELETION_RESPONSE_ADMISSION_PENDING',
+      },
+    })
+    expect(transactionClient.course.update).not.toHaveBeenCalled()
+    expect(responseFenceExec).not.toHaveBeenCalled()
   })
 })
 
@@ -387,7 +450,11 @@ describe('getCourseSummary', () => {
       numOfParticipantGroups: 8,
     })
     expect(findUnique).toHaveBeenCalledWith({
-      where: { id: 'course-id', isDeleted: false },
+      where: {
+        id: 'course-id',
+        isDeleted: false,
+        isDeletionPending: false,
+      },
       include: {
         liveQuizzes: {
           where: {
@@ -430,5 +497,35 @@ describe('getCourseSummary', () => {
         },
       },
     })
+  })
+})
+
+describe('getActiveUserCourses', () => {
+  it.each([
+    { isDeleted: false, isDeletionPending: true },
+    { isDeleted: true, isDeletionPending: false },
+  ])('does not reinsert an activity course hidden by deletion state', async (deletionState) => {
+    serviceMocks.checkAccess.mockResolvedValueOnce(true)
+    const activityCourse = {
+      id: 'hidden-course',
+      createdAt: new Date(),
+      ...deletionState,
+    }
+    const ctx = {
+      user: { sub: 'user-id' },
+      prisma: {
+        user: { findUnique: vi.fn().mockResolvedValue({ objects: [] }) },
+        liveQuiz: {
+          findUnique: vi.fn().mockResolvedValue({ course: activityCourse }),
+        },
+      },
+    } as unknown as ContextWithUser
+
+    await expect(
+      getActiveUserCourses(
+        { activityId: 'quiz-id', activityType: ActivityType.LIVE_QUIZ },
+        ctx
+      )
+    ).resolves.toEqual([])
   })
 })

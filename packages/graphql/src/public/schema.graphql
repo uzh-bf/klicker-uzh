@@ -2049,7 +2049,7 @@ type Mutation {
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
-  deleteCourse(deleteDraftActivities: Boolean, id: String!): Course
+  deleteCourse(deleteDraftActivities: Boolean, id: String!): Course @deprecated(reason: "Use startCourseDeletion.")
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback

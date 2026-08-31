@@ -366,6 +366,7 @@ export async function buildAssessmentReportSnapshotV1({
     where: {
       id: courseId,
       isDeleted: false,
+      isDeletionPending: false,
       isAssessmentEnabled: true,
       participations: {
         some: {

@@ -51,22 +51,30 @@ async function getCourseTargetForDeletionGuard(
   if ('courseId' in selector) {
     const course = await ctx.prisma.course.findUnique({
       where: { id: selector.courseId },
-      select: { id: true, isDeleted: true },
+      select: { id: true, isDeleted: true, isDeletionPending: true },
     })
     return course
-      ? { courseId: course.id, isDeleted: course.isDeleted }
+      ? {
+          courseId: course.id,
+          isDeleted: course.isDeleted,
+          isDeletionPending: course.isDeletionPending,
+        }
       : undefined
   }
 
   if ('liveQuizId' in selector) {
     const activity = await ctx.prisma.liveQuiz.findUnique({
       where: { id: selector.liveQuizId },
-      select: { courseId: true, course: { select: { isDeleted: true } } },
+      select: {
+        courseId: true,
+        course: { select: { isDeleted: true, isDeletionPending: true } },
+      },
     })
     return activity?.courseId
       ? {
           courseId: activity.courseId,
           isDeleted: activity.course?.isDeleted ?? false,
+          isDeletionPending: activity.course?.isDeletionPending ?? false,
         }
       : undefined
   }
@@ -74,30 +82,51 @@ async function getCourseTargetForDeletionGuard(
   if ('practiceQuizId' in selector) {
     const activity = await ctx.prisma.practiceQuiz.findUnique({
       where: { id: selector.practiceQuizId },
-      select: { courseId: true, course: { select: { isDeleted: true } } },
+      select: {
+        courseId: true,
+        course: { select: { isDeleted: true, isDeletionPending: true } },
+      },
     })
     return activity
-      ? { courseId: activity.courseId, isDeleted: activity.course.isDeleted }
+      ? {
+          courseId: activity.courseId,
+          isDeleted: activity.course.isDeleted,
+          isDeletionPending: activity.course.isDeletionPending,
+        }
       : undefined
   }
 
   if ('microLearningId' in selector) {
     const activity = await ctx.prisma.microLearning.findUnique({
       where: { id: selector.microLearningId },
-      select: { courseId: true, course: { select: { isDeleted: true } } },
+      select: {
+        courseId: true,
+        course: { select: { isDeleted: true, isDeletionPending: true } },
+      },
     })
     return activity
-      ? { courseId: activity.courseId, isDeleted: activity.course.isDeleted }
+      ? {
+          courseId: activity.courseId,
+          isDeleted: activity.course.isDeleted,
+          isDeletionPending: activity.course.isDeletionPending,
+        }
       : undefined
   }
 
   if ('groupActivityId' in selector) {
     const activity = await ctx.prisma.groupActivity.findUnique({
       where: { id: selector.groupActivityId },
-      select: { courseId: true, course: { select: { isDeleted: true } } },
+      select: {
+        courseId: true,
+        course: { select: { isDeleted: true, isDeletionPending: true } },
+      },
     })
     return activity
-      ? { courseId: activity.courseId, isDeleted: activity.course.isDeleted }
+      ? {
+          courseId: activity.courseId,
+          isDeleted: activity.course.isDeleted,
+          isDeletionPending: activity.course.isDeletionPending,
+        }
       : undefined
   }
 
@@ -195,6 +224,23 @@ async function releaseCourseMutationFence(
   )
 }
 
+export async function acquireCourseMutationLease(
+  redis: Redis,
+  courseId: string
+) {
+  const token = randomUUID()
+  const acquired = await acquireCourseMutationFence(redis, courseId, token)
+  return Number(acquired) === 1 ? token : null
+}
+
+export async function releaseCourseMutationLease(
+  redis: Redis,
+  courseId: string,
+  token: string
+) {
+  await releaseCourseMutationFence(redis, courseId, token)
+}
+
 function registerCourseMutationFenceCleanup(
   ctx: Context,
   state: CourseMutationFenceState
@@ -288,6 +334,11 @@ export async function assertCourseDeletionNotInProgress(
       extensions: { code: 'COURSE_DELETED' },
     })
   }
+  if (target.isDeletionPending) {
+    throw new GraphQLError('Course deletion is already in progress', {
+      extensions: { code: 'COURSE_DELETION_IN_PROGRESS' },
+    })
+  }
   const { courseId } = target
 
   const activeJobId = await ctx.redisExec.get(
@@ -325,7 +376,7 @@ export async function assertCoursePinMutationAllowed(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin, isDeleted: false },
+    where: { pinCode: pin, isDeleted: false, isDeletionPending: false },
     select: { id: true },
   })
   await assertCourseMutationAllowed(course?.id, ctx)

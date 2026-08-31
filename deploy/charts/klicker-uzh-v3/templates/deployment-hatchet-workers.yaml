@@ -126,6 +126,15 @@ spec:
           image: "{{ .Values.hatchet.workers.responseProcessor.image.repository }}:{{ .Values.hatchet.workers.responseProcessor.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessor.image.pullPolicy }}
 
+          env:
+            # Standard response processing validates durable course deletion
+            # state against the GraphQL database. Reuse its established Secret
+            # instead of requiring a duplicate DATABASE_URL key.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

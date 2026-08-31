@@ -15,7 +15,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import type { ChainableCommander } from 'ioredis'
+import type { LiveQuizResponseRedisMutationSink } from '@klicker-uzh/util'
 import {
   DEFAULT_CORRECT_POINTS,
   DEFAULT_POINTS,
@@ -32,7 +32,7 @@ export function updateLeaderboards({
   pointsAwarded,
   xpAwarded,
 }: {
-  redisMulti: ChainableCommander
+  redisMulti: LiveQuizResponseRedisMutationSink
   participantId: string
   participantRole: string
   liveQuizKey: string

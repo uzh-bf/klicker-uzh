@@ -61,7 +61,7 @@ function createContext() {
       liveQuiz: {
         findUnique: vi.fn().mockResolvedValue({
           courseId: 'course-id',
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
         }),
         update: liveQuizUpdate,
       },
@@ -97,6 +97,15 @@ function expectDeletionInProgress(result: Promise<unknown>) {
 }
 
 describe('course deletion mutation guard', () => {
+  it('keeps the legacy deleteCourse mutation as a deprecated adapter', () => {
+    const deleteCourseField = schema.getMutationType()?.getFields().deleteCourse
+
+    expect(deleteCourseField).toBeDefined()
+    expect(deleteCourseField?.deprecationReason).toBe(
+      'Use startCourseDeletion.'
+    )
+  })
+
   it('rejects direct course removal while deletion is active', async () => {
     const { ctx } = createContext()
 

@@ -461,7 +461,11 @@ export async function startCourseDuplication(
   }
 
   const sourceCourse = await ctx.prisma.course.findUnique({
-    where: { id: args.sourceCourseId, isDeleted: false },
+    where: {
+      id: args.sourceCourseId,
+      isDeleted: false,
+      isDeletionPending: false,
+    },
     select: { name: true },
   })
   if (!sourceCourse) {
@@ -1665,7 +1669,7 @@ export async function duplicateCourse(
   if (!hasRefreshedDuplicationAccess) return null
 
   const oldCourse = await ctx.prisma.course.findUnique({
-    where: { id: sourceCourseId, isDeleted: false },
+    where: { id: sourceCourseId, isDeleted: false, isDeletionPending: false },
     include: courseDuplicationInclude,
   })
 
@@ -1690,10 +1694,21 @@ export async function duplicateCourse(
       // partially deleted graph. Re-check the source after taking the same
       // transaction-scoped fence used by course deletion.
       const advisoryLockKey = getCourseDeletionAdvisoryLockKey(sourceCourseId)
-      await prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0))`
+      const [lock] = await prisma.$queryRaw<Array<{ acquired: boolean }>>`
+        SELECT pg_try_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0)) AS "acquired"
+      `
+      if (!lock?.acquired) {
+        throw new GraphQLError('Course is currently being changed', {
+          extensions: { code: 'COURSE_MUTATION_IN_PROGRESS' },
+        })
+      }
 
       const activeSourceCourse = await prisma.course.findUnique({
-        where: { id: sourceCourseId, isDeleted: false },
+        where: {
+          id: sourceCourseId,
+          isDeleted: false,
+          isDeletionPending: false,
+        },
         select: { id: true },
       })
       if (!activeSourceCourse) return null

@@ -1,4 +1,7 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  allowCoursePurgeInTransaction,
+  prisma as prismaClient,
+} from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
@@ -100,8 +103,16 @@ async function cleanupTestData() {
     })
   }
 
-  await prisma.course.deleteMany({
-    where: { name: { startsWith: TEST_PREFIX } },
+  const courseWhere = { name: { startsWith: TEST_PREFIX } }
+  await prisma.$transaction(async (tx) => {
+    await tx.course.updateMany({
+      where: courseWhere,
+      data: { isDeleted: true },
+    })
+    await allowCoursePurgeInTransaction(tx)
+    await tx.course.deleteMany({
+      where: { ...courseWhere, isDeleted: true },
+    })
   })
 
   await prisma.user.deleteMany({

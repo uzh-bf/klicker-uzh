@@ -7,6 +7,7 @@ def prepare_participant_activity_data(db, course_id: str):
         where={
             "id": course_id,
             "isDeleted": False,
+            "isDeletionPending": False,
         },
         include={
             "practiceQuizzes": {

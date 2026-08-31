@@ -9,7 +9,7 @@
  * canary package.
  */
 import { encrypt } from '@klicker-uzh/util'
-import { prisma } from '@klicker-uzh/prisma'
+import { allowCoursePurgeInTransaction, prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, rmdir, writeFile } from 'node:fs/promises'
@@ -1714,8 +1714,17 @@ async function deleteFixture(
       })
       if (participant.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic participant was not deleted')
-      const course = await tx.course.deleteMany({
+      await tx.course.updateMany({
         where: { id: fixture.ids.courseId, ownerId: fixture.ids.ownerId },
+        data: { isDeleted: true },
+      })
+      await allowCoursePurgeInTransaction(tx)
+      const course = await tx.course.deleteMany({
+        where: {
+          id: fixture.ids.courseId,
+          ownerId: fixture.ids.ownerId,
+          isDeleted: true,
+        },
       })
       if (course.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic course was not deleted')

@@ -82,7 +82,11 @@ async function resolveTargetState(input: {
 }) {
   const [course, owner, existingChatbots] = await Promise.all([
     prisma.course.findUnique({
-      where: { id: input.courseId },
+      where: {
+        id: input.courseId,
+        isDeleted: false,
+        isDeletionPending: false,
+      },
       select: { id: true, displayName: true, ownerId: true, isArchived: true },
     }),
     prisma.user.findUnique({
@@ -178,7 +182,11 @@ async function main() {
       // Re-validate inside the transaction so concurrent writes fail closed.
       const [txCourse, txOwner, txExisting] = await Promise.all([
         tx.course.findUnique({
-          where: { id: args.courseId },
+          where: {
+            id: args.courseId,
+            isDeleted: false,
+            isDeletionPending: false,
+          },
           select: { id: true, ownerId: true, displayName: true },
         }),
         tx.user.findUnique({

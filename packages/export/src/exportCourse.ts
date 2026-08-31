@@ -142,7 +142,7 @@ export async function exportCourseData(
   }
 
   const course = await prisma.course.findUniqueOrThrow({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     select: { id: true, name: true, displayName: true },
   })
 

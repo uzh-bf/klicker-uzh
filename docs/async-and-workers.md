@@ -51,6 +51,12 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
   confirmation modal stays open; the stale sweep uses an atomic
   pending/no-lease transition for bounded five-minute recovery publications
   until Hatchet acknowledges one or the job reaches its stale deadline. The
+  acknowledged job is also recorded durably on `Course` through
+  `isDeletionPending`, `deletionJobId`, `deletionPendingAt`, and the optional
+  draft-cleanup choice. Server-side active-course filters therefore hide the
+  course for every client, not only the browser that initiated the deletion;
+  the `UserActivities` view also hides the snapshotted linked drafts when
+  cleanup was selected. Terminal failure clears that durable pending state. The
   worker renews a token-checked process lease and heartbeat, fences status
   writes with the lease token, reconstructs the initiating user context,
   rechecks course-level `ADMIN`, and invokes the existing atomic deletion
@@ -58,14 +64,39 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
   course and retains course-owned data by default; an optional flag permanently
   removes linked draft activities of all four activity types. It takes a
   transaction-scoped PostgreSQL advisory lock derived from the course id before
-  destructive work, fencing background retries. Before deletion the worker
-  stores scheduled-task and all-type draft-activity cleanup metadata so a retry
-  can finish best-effort post-commit cleanup after a worker loss. It also stores
-  the linked live-quiz ids and creates durable Redis response fences after the
-  database commit; both the response API and response worker reject stale
-  submissions, and independently recheck the durable parent-course marker as a
-  fail-closed fallback if a Redis tombstone is unavailable. Generic failures
-  remain retryable; revoked access and assessment conversion are terminal.
+  destructive work, fencing background retries and same-source duplication.
+  Draft activity ids are snapshotted when the job is accepted, so later drafts
+  are not silently added to the destructive scope. Before the database
+  transaction, the worker atomically installs each linked live quiz's Redis
+  deletion fence only after all response-processing leases have drained. The
+  response API acquires a Redis admission lease and creates a durable
+  `LiveQuizResponseAdmission` before publishing to Hatchet. It acknowledges
+  HTTP only after recording publication. Admission transactions take a shared
+  form of the course advisory lock, so responses remain concurrent with one
+  another while the exclusive deletion transaction is excluded. The response
+  worker can therefore reacquire an expired Redis lease after a long backlog,
+  renews it through processing, and removes the durable admission only after
+  completing. Worker attempts deduplicate by the stable admission token (or the
+  Hatchet message id for rolling tokenless events) while using a unique nonce
+  for attempt ownership. Redis conditionally applies result increments and the
+  completed marker in one owner-checked script. Concurrent attempts are
+  serialized, an expired worker cannot act on its successor's claim, and a
+  retry after an ambiguous commit observes the completed marker instead of
+  counting the response twice.
+  Retryable results fail the Hatchet task; after retries are exhausted, a
+  retried workflow-failure handler marks the admission terminal so it cannot
+  block deletion forever. The response API also records Hatchet's event ID,
+  and the independent five-minute deletion sweep reconciles stale admissions
+  whose events have no active workflow runs. This closes an admission even if
+  the failure handler itself exhausts its retries; missing or ambiguous Hatchet
+  state remains fail-closed. Reconciliation attempts are durably rotated so an
+  ambiguous batch cannot starve newer terminal admissions. Course deletion
+  waits for non-terminal durable admissions and Redis processing leases. Both
+  services also recheck the durable parent-course state under compatible
+  shared/exclusive PostgreSQL advisory locks. This prevents an HTTP 200 response
+  from being discarded merely because deletion started while its Hatchet event
+  was queued. Generic failures remain retryable; revoked access and assessment
+  conversion are terminal.
   Stale normalization uses an absolute 75-minute deadline, then atomically
   requires the expected Redis record and no process lease or heartbeat before
   reconciling against Postgres: `Course.isDeleted = true` (or an absent legacy
@@ -75,10 +106,24 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
   frontend persists each job id with its course id and optional draft-cleanup
   choice, polls `courseDeletionStatuses` invisibly, and hides the affected
   course plus selected linked drafts across tabs and reloads until terminal
-  status. It then removes the local target and refetches the course list.
+  status. It then removes the local target and refetches course and activity
+  queries. The deprecated `deleteCourse` mutation remains for rolling-client
+  compatibility, but it only queues the same Hatchet workflow; there is no
+  public synchronous deletion path. A database trigger rejects hard deletion
+  unless the transaction explicitly enables the privileged purge context, and
+  rejects updates to pending/deleted rows outside the deletion worker context.
+  This prevents old application pods from mutating or destroying retained data
+  during a rolling deployment.
+  Production deliberately ships the first rollout with
+  `COURSE_DELETION_ENABLED=false`. Enable it in a second rollout only after all
+  Response API and response-worker pods have been replaced and tokenless events
+  from the previous version have drained. Other environments default to
+  enabled.
 - `sweep-stale-course-deletions` — cron task (every 5 minutes) scanning
   non-terminal deletion records and applying heartbeat + Postgres
-  reconciliation.
+  reconciliation. It also scans stale durable pending rows and restores a
+  course when its matching Redis job, process lease, and heartbeat have all
+  disappeared, preventing a Redis eviction from hiding a course indefinitely.
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
 - `sweep-stale-course-duplications` — cron task (every 5 minutes) scanning non-terminal duplication records and applying stale normalization with heartbeat + Postgres reconciliation.
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
@@ -110,13 +155,14 @@ To inspect a reported job, read the job id from the per-course lock while it
 exists, then inspect its status record and worker logs using that id. Status
 records are intentionally short-lived and are not an audit history. Rolling
 back removes the worker registration, so queued events wait and active Redis
-records eventually expire. The synchronous `deleteCourse` mutation remains a
-rolling-client compatibility path and uses the same soft-delete transaction;
-the Manage frontend never calls it. Release an abandoned course lock only after
-confirming that no worker attempt is active.
+records eventually expire; the database hard-delete guard remains in effect.
+The deprecated `deleteCourse` field is a background-queue adapter and must not
+be changed back to direct deletion. Release an abandoned course lock only after
+confirming that no worker attempt is active, and clear the matching durable
+pending fields only after confirming the Hatchet job cannot resume.
 
 ## Running locally (config-derived — verify on your machine)
 
-The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. In the managed devcontainer, `devrouter ensure . --profile live-quiz` starts Response API and both workers, then proves `/healthz` and one live runtime process per worker before reporting ready. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
+The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. The standard Response API and response processor now fail startup when `DATABASE_URL` is absent and verify the database connection before becoming ready. They must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a service pointed at the wrong database rejects or processes events against the wrong course state. The v3 chart injects `DATABASE_URL` into both standard response workloads directly from the existing `backend-graphql` Secret; their own externally provisioned Secrets continue to provide service-specific credentials. In the managed devcontainer, `devrouter ensure . --profile live-quiz` starts Response API and both workers, then proves `/healthz` and one live runtime process per worker before reporting ready. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
 
 Both development workers compile with Rollup and run the emitted JavaScript under nodemon. Do not replace that runner with `tsx --watch` or `node --watch`: their in-process watch protocols reach Hatchet's heartbeat worker-thread listener, which treats the watch message as a logger method and crashes with `TypeError: this.logger[message.type] is not a function`. When checking worker health, verify that the process stays alive for more than one four-second heartbeat interval; the initial `Connection established using LISTEN_STRATEGY_V2` message alone is insufficient. See [Hatchet heartbeat workers crash under in-process watch mode](./solutions/runtime-error/hatchet-heartbeat-workers-crash-under-in-process-watch-mode.md).

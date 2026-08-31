@@ -4073,6 +4073,30 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
     const courseIdsUserFive = userFiveCourses.map((course) => course.id)
     expect(courseIdsUserFive).toContain(course1.id)
     expect(courseIdsUserFive).toContain(course5.id)
+
+    await prisma.course.update({
+      where: { id: course1.id },
+      data: { isDeletionPending: true },
+    })
+    const coursesWhilePending = await getActiveUserCourses(
+      { activityId: liveQuiz.id, activityType: ActivityType.LIVE_QUIZ },
+      userFourCtx
+    )
+    expect(coursesWhilePending.map((course) => course.id)).not.toContain(
+      course1.id
+    )
+
+    await prisma.course.update({
+      where: { id: course1.id },
+      data: { isDeleted: true, isDeletionPending: false },
+    })
+    const coursesAfterSoftDeletion = await getActiveUserCourses(
+      { activityId: liveQuiz.id, activityType: ActivityType.LIVE_QUIZ },
+      userFourCtx
+    )
+    expect(coursesAfterSoftDeletion.map((course) => course.id)).not.toContain(
+      course1.id
+    )
   })
 
   it('Verify that users can remove their own direct permission to a live quiz', async () => {

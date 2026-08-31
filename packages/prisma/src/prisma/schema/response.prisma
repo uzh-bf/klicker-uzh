@@ -144,6 +144,25 @@ model LiveQuizResponse {
   @@index([instanceId, elementBlockExecution])
 }
 
+/// Durable handoff record for a live-quiz response accepted by the HTTP API
+/// but not yet completed by Hatchet. The identifiers intentionally have no
+/// foreign keys: course deletion must be blocked while this record exists,
+/// rather than cascading the admission away with its course or live quiz.
+model LiveQuizResponseAdmission {
+  token      String   @id @db.Uuid
+  liveQuizId String   @db.Uuid
+  courseId   String?  @db.Uuid
+  eventId    String?
+  createdAt  DateTime @default(now())
+  publishedAt DateTime?
+  failedAt    DateTime?
+  lastReconciliationAttemptAt DateTime?
+
+  @@index([courseId])
+  @@index([liveQuizId])
+  @@index([failedAt, lastReconciliationAttemptAt, publishedAt], map: "LiveQuizResponseAdmission_reconcile_idx")
+}
+
 enum PointCorrectionType {
   ALL_COURSE
   PARTICIPATING

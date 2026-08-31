@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
+  allowCourseDeletionMutationInTransaction,
+  tryAcquireCourseDeletionAdvisoryLock,
+} from '@klicker-uzh/prisma'
+import {
   type ActivityStudentPerformance,
   ActivityType,
   type AssessmentResultsCourse,
@@ -19,6 +23,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
@@ -29,7 +34,7 @@ import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
-import { getCourseDeletionAdvisoryLockKey } from './courseDeletionGuard.js'
+import type { CourseDeletionDraftActivityIds } from './courseDeletionState.js'
 import { hardDeleteLiveQuiz } from './liveQuizzes.js'
 import { checkAccess } from './sharing.js'
 
@@ -39,7 +44,7 @@ export async function getBasicCourseInformation(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: { owner: true },
   })
 
@@ -55,7 +60,12 @@ export async function joinCourseWithPin(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin, isAssessmentEnabled: false, isDeleted: false },
+    where: {
+      pinCode: pin,
+      isAssessmentEnabled: false,
+      isDeleted: false,
+      isDeletionPending: false,
+    },
   })
 
   if (
@@ -102,7 +112,7 @@ export async function joinCourseLeaderboard(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     select: { id: true },
   })
   if (!course) return null
@@ -114,11 +124,13 @@ export async function joinCourseLeaderboard(
         courseId,
         participantId: ctx.user.sub,
       },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     create: {
       isActive: true,
-      course: { connect: { id: courseId, isDeleted: false } },
+      course: {
+        connect: { id: courseId, isDeleted: false, isDeletionPending: false },
+      },
       participant: { connect: { id: ctx.user.sub } },
     },
     update: { isActive: true },
@@ -138,7 +150,9 @@ export async function joinCourseLeaderboard(
     create: {
       type: DB.LeaderboardType.COURSE,
       participant: { connect: { id: ctx.user.sub } },
-      course: { connect: { id: courseId, isDeleted: false } },
+      course: {
+        connect: { id: courseId, isDeleted: false, isDeletionPending: false },
+      },
       participation: { connect: { id: participation.id } },
       score: 0,
     },
@@ -168,7 +182,7 @@ export async function ensureParticipation(
 ) {
   try {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
       select: { id: true },
     })
 
@@ -207,7 +221,7 @@ export async function leaveCourseLeaderboard(
         courseId,
         participantId: ctx.user.sub,
       },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     select: { id: true },
   })
@@ -219,7 +233,7 @@ export async function leaveCourseLeaderboard(
   const participation = await ctx.prisma.participation.update({
     where: {
       id: existingParticipation.id,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     data: {
       isActive: false,
@@ -277,7 +291,7 @@ export async function getCourseOverviewData(
           courseId,
           participantId: ctx.user.sub,
         },
-        course: { isDeleted: false },
+        course: { isDeleted: false, isDeletionPending: false },
       },
       include: {
         course: {
@@ -356,7 +370,7 @@ export async function getCourseOverviewData(
   }
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       awards: { include: { participant: true, participantGroup: true } },
     },
@@ -616,7 +630,12 @@ export async function getStudentAssessmentResults(
 
   // fetch all activities of the course, including the participants results
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isAssessmentEnabled: true, isDeleted: false },
+    where: {
+      id: courseId,
+      isAssessmentEnabled: true,
+      isDeleted: false,
+      isDeletionPending: false,
+    },
     include: {
       liveQuizzes: {
         where: { isDeleted: false, finishedAt: { not: null } },
@@ -2222,7 +2241,7 @@ export async function getPreviousPointCorrections(
 
   // fetch the course and include all live quiz and instance corrections
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId!, isDeleted: false },
+    where: { id: courseId!, isDeleted: false, isDeletionPending: false },
     include: {
       liveQuizzes: {
         include: {
@@ -2318,7 +2337,7 @@ async function computeRollingLeaderboardEntries(
   const detailsLatest = dayjs().subtract(days, 'days').toDate()
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       // fetch live quizzes where the leaderboard entries are not part of the timeline entries
       liveQuizzes: {
@@ -2477,7 +2496,7 @@ export async function getStudentCourseLeaderboard(
     })
 
     const course = ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
     })
 
     const lbEntries =
@@ -2751,7 +2770,7 @@ export async function updateCourseSettings(
 ) {
   // verify that no past dates are modified or enabled gamification / group creation settings are disabled
   const course = await ctx.prisma.course.findUnique({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, isDeletionPending: false },
     include: {
       _count: {
         select: {
@@ -2906,7 +2925,10 @@ export async function getUserCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null }, course: { isDeleted: false } },
+        where: {
+          courseId: { not: null },
+          course: { isDeleted: false, isDeletionPending: false },
+        },
         include: {
           directPermission: true,
           course: {
@@ -2975,6 +2997,7 @@ export async function getActiveUserCourses(
             endDate: { gte: new Date() },
             isArchived: false,
             isDeleted: false,
+            isDeletionPending: false,
           },
         },
         include: { course: true },
@@ -3080,6 +3103,13 @@ export async function getActiveUserCourses(
       activityCourse = groupActivity!.course
     }
 
+    // A directly shared activity may outlive its soft-deleted course. Never let
+    // that activity-specific augmentation reinsert a course hidden by the
+    // primary active-course query.
+    if (activityCourse?.isDeleted || activityCourse?.isDeletionPending) {
+      return courses
+    }
+
     // deduplicate the course linked to the activity with the other user courses and sort it accordingly
     if (activityCourse) {
       const userHasActivityCourseAssess = courses.some(
@@ -3116,7 +3146,7 @@ export async function getCourseSummary(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       liveQuizzes: {
         where: {
@@ -3183,9 +3213,16 @@ const DELETE_COURSE_TRANSACTION_TIMEOUT = 10 * 60 * 1000
 
 export async function deleteCourse(
   {
+    deletionJobId,
+    draftActivityIds,
     id,
     deleteDraftActivities,
-  }: { id: string; deleteDraftActivities?: boolean | null },
+  }: {
+    deletionJobId: string
+    draftActivityIds?: CourseDeletionDraftActivityIds
+    id: string
+    deleteDraftActivities?: boolean | null
+  },
   ctx: ContextWithUser
 ) {
   const isActiveDraft = (activity: {
@@ -3198,8 +3235,34 @@ export async function deleteCourse(
       // Fence all synchronous and background deletion attempts for this course
       // inside PostgreSQL. The transaction-scoped lock is released
       // automatically on commit or rollback.
-      const advisoryLockKey = getCourseDeletionAdvisoryLockKey(id)
-      await prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0))`
+      if (!(await tryAcquireCourseDeletionAdvisoryLock(prisma, id))) {
+        throw new GraphQLError('Course is currently being changed', {
+          extensions: { code: 'COURSE_MUTATION_IN_PROGRESS' },
+        })
+      }
+      await allowCourseDeletionMutationInTransaction(prisma)
+
+      // Redis leases make the common response handoff fast, while this durable
+      // admission is the fail-safe for worker backlogs and Redis loss. The
+      // surrounding advisory lock serializes this check with new admissions.
+      const pendingResponseAdmission =
+        await prisma.liveQuizResponseAdmission.findFirst({
+          where: { courseId: id, failedAt: null },
+          select: { token: true },
+        })
+      if (pendingResponseAdmission) {
+        throw new GraphQLError(
+          'Accepted live quiz responses are still being processed',
+          {
+            extensions: {
+              code: 'COURSE_DELETION_RESPONSE_ADMISSION_PENDING',
+            },
+          }
+        )
+      }
+      await prisma.liveQuizResponseAdmission.deleteMany({
+        where: { courseId: id, failedAt: { not: null } },
+      })
 
       // Re-read lightweight activity metadata after taking the database fence.
       // Full element graphs are loaded below only for draft activities that
@@ -3245,35 +3308,51 @@ export async function deleteCourse(
       })
 
       if (!course) {
-        throw new Error('Course not found or permission denied')
+        throw new GraphQLError('Course not found or permission denied', {
+          extensions: { code: 'COURSE_DELETION_NOT_ALLOWED' },
+        })
       }
       if (course.isAssessmentEnabled) {
-        throw new Error('Assessment courses cannot be deleted')
+        throw new GraphQLError('Assessment courses cannot be deleted', {
+          extensions: { code: 'COURSE_DELETION_NOT_ALLOWED' },
+        })
+      }
+      if (
+        !course.isDeleted &&
+        (!course.isDeletionPending || course.deletionJobId !== deletionJobId)
+      ) {
+        throw new GraphQLError('Course deletion job does not own the target', {
+          extensions: { code: 'COURSE_DELETION_NOT_ALLOWED' },
+        })
       }
 
       const draftLiveQuizIds =
         deleteDraftActivities && !course.isDeleted
-          ? course.liveQuizzes
+          ? (draftActivityIds?.liveQuizIds ??
+            course.liveQuizzes
               .filter(isActiveDraft)
-              .map((activity) => activity.id)
+              .map((activity) => activity.id))
           : []
       const draftPracticeQuizIds =
         deleteDraftActivities && !course.isDeleted
-          ? course.practiceQuizzes
+          ? (draftActivityIds?.practiceQuizIds ??
+            course.practiceQuizzes
               .filter(isActiveDraft)
-              .map((activity) => activity.id)
+              .map((activity) => activity.id))
           : []
       const draftMicroLearningIds =
         deleteDraftActivities && !course.isDeleted
-          ? course.microLearnings
+          ? (draftActivityIds?.microLearningIds ??
+            course.microLearnings
               .filter(isActiveDraft)
-              .map((activity) => activity.id)
+              .map((activity) => activity.id))
           : []
       const draftGroupActivityIds =
         deleteDraftActivities && !course.isDeleted
-          ? course.groupActivities
+          ? (draftActivityIds?.groupActivityIds ??
+            course.groupActivities
               .filter(isActiveDraft)
-              .map((activity) => activity.id)
+              .map((activity) => activity.id))
           : []
 
       if (course.isDeleted) {
@@ -3411,8 +3490,21 @@ export async function deleteCourse(
       })
 
       const deletedCourse = await prisma.course.update({
-        where: { id, isAssessmentEnabled: false, isDeleted: false },
-        data: { isDeleted: true },
+        where: {
+          id,
+          deletionJobId,
+          isAssessmentEnabled: false,
+          isDeleted: false,
+          isDeletionPending: true,
+        },
+        data: {
+          deletionJobId: null,
+          deletionRequestedById: null,
+          deletionPendingAt: null,
+          deleteDraftActivitiesOnDeletion: false,
+          isDeleted: true,
+          isDeletionPending: false,
+        },
       })
 
       return {
@@ -3544,6 +3636,7 @@ export async function removeCourse(
     where: {
       id,
       isDeleted: false,
+      isDeletionPending: false,
       directPermissions: { some: { userId: ctx.user.sub } },
     },
   })
@@ -3594,7 +3687,7 @@ export async function getParticipantCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: { course: { isDeleted: false } },
+        where: { course: { isDeleted: false, isDeletionPending: false } },
         include: { course: true },
       },
     },
@@ -3608,7 +3701,7 @@ export async function getControlCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       courses: {
-        where: { isDeleted: false },
+        where: { isDeleted: false, isDeletionPending: false },
         orderBy: { createdAt: 'desc' },
       },
     },
@@ -3655,7 +3748,7 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, isDeletionPending: false },
     include: {
       _count: { select: { participantGroups: true, permissions: true } },
       permissions: {
@@ -4029,7 +4122,7 @@ export async function getCourseLeaderboard(
 ) {
   if (courseSelection) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
       include: {
         leaderboard: {
           include: { participation: { include: { participant: true } } },
@@ -4106,7 +4199,7 @@ export async function getCourseLeaderboard(
     const startDateUTC = convertDateToUTCDatetime(startDate)
     const endDateUTC = convertDateToUTCDatetime(endDate)
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
       include: {
         timelineEntries: {
           where: {
@@ -4278,7 +4371,7 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, isDeletionPending: false },
     include: {
       liveQuizzes: {
         where: { isDeleted: false },
@@ -4308,7 +4401,7 @@ export async function checkValidCoursePin(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin, isDeleted: false },
+    where: { pinCode: pin, isDeleted: false, isDeletionPending: false },
   })
 
   if (!course || course.pinCode !== pin) {
@@ -4323,7 +4416,7 @@ export async function getCoursePracticeQuiz(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       elementStacks: {
         include: {
@@ -4382,7 +4475,7 @@ export async function enableGamification(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     data: { isGamificationEnabled: true },
   })
 
@@ -4394,7 +4487,7 @@ export async function getCourseActivities(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       practiceQuizzes: {
         where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
@@ -4422,7 +4515,7 @@ export async function getEndedLiveQuizzesCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       liveQuizzes: {
         where: { isDeleted: false, status: DB.PublicationStatus.ENDED },
@@ -4462,7 +4555,12 @@ export async function getAssessmentCourseParticipants(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isAssessmentEnabled: true, isDeleted: false },
+    where: {
+      id: courseId,
+      isAssessmentEnabled: true,
+      isDeleted: false,
+      isDeletionPending: false,
+    },
     include: {
       participations: {
         include: {

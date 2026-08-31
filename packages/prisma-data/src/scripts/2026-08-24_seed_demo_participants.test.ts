@@ -1,6 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { PrismaPg } from '@prisma/adapter-pg'
+import {
+  allowCourseDeletionMutationInTransaction,
+  allowCoursePurgeInTransaction,
+} from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -175,7 +179,14 @@ testDescribe('seed demo participants', () => {
     if (fixtureInitialized) {
       await rememberCreatedParticipants()
       await cleanupCreatedParticipants()
-      await prisma.course.deleteMany({ where: { ownerId } })
+      await prisma.$transaction(async (tx) => {
+        await tx.course.updateMany({
+          where: { ownerId },
+          data: { isDeleted: true },
+        })
+        await allowCoursePurgeInTransaction(tx)
+        await tx.course.deleteMany({ where: { ownerId, isDeleted: true } })
+      })
       await prisma.user
         .delete({ where: { id: ownerId } })
         .catch(() => undefined)
@@ -208,6 +219,29 @@ testDescribe('seed demo participants', () => {
         where: { username: { in: USERNAMES } },
       })
     ).toBe(0)
+  })
+
+  it('fails closed when a target course is pending deletion', async () => {
+    const courseId = courseIds.get('testkurs IuW')!
+    await prisma.course.update({
+      where: { id: courseId },
+      data: { isDeletionPending: true },
+    })
+    try {
+      const output = runFailingScript(
+        [APPLY_FLAG],
+        ['IuW', 'RadioSurfVet', 'Culture']
+      )
+      expect(output).toContain('status=failed code=target_resolution_IuW')
+    } finally {
+      await prisma.$transaction(async (tx) => {
+        await allowCourseDeletionMutationInTransaction(tx)
+        await tx.course.update({
+          where: { id: courseId },
+          data: { isDeletionPending: false },
+        })
+      })
+    }
   })
 
   it('creates all three accounts and replays as a database no-op', async () => {

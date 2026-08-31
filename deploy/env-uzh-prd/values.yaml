@@ -553,6 +553,9 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+  # Enable in a second rollout only after the new Response API and worker
+  # versions have fully replaced pods that can emit tokenless response events.
+  courseDeletionEnabled: false
 
   replicaCount: 4
 

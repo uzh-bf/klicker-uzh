@@ -1,12 +1,76 @@
 -- Add durable Course soft-deletion without removing the retained graph.
+SET lock_timeout = '5s';
+
 ALTER TABLE "Course" ADD COLUMN "isDeleted" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Course" ADD COLUMN "isDeletionPending" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Course" ADD COLUMN "deletionJobId" TEXT;
+ALTER TABLE "Course" ADD COLUMN "deletionRequestedById" UUID;
+ALTER TABLE "Course" ADD COLUMN "deletionPendingAt" TIMESTAMP(3);
+ALTER TABLE "Course" ADD COLUMN "deleteDraftActivitiesOnDeletion" BOOLEAN NOT NULL DEFAULT false;
 
--- Update UserActivities view to include pinCode for LiveQuiz
--- Drop and recreate view with consistent schema across unions
+CREATE UNIQUE INDEX "Course_deletionJobId_key" ON "Course"("deletionJobId");
 
-DROP VIEW IF EXISTS "UserActivities";
+-- Keep accepted response handoffs durable across Redis expiry, worker outages,
+-- and course-deletion retries. No foreign keys are intentional: deleting a
+-- parent must never erase the fence that protects an acknowledged response.
+CREATE TABLE "LiveQuizResponseAdmission" (
+  "token" UUID NOT NULL,
+  "liveQuizId" UUID NOT NULL,
+  "courseId" UUID,
+  "eventId" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "publishedAt" TIMESTAMP(3),
+  "failedAt" TIMESTAMP(3),
+  "lastReconciliationAttemptAt" TIMESTAMP(3),
+  CONSTRAINT "LiveQuizResponseAdmission_pkey" PRIMARY KEY ("token")
+);
 
-CREATE VIEW "UserActivities" AS
+CREATE INDEX "LiveQuizResponseAdmission_courseId_idx" ON "LiveQuizResponseAdmission"("courseId");
+CREATE INDEX "LiveQuizResponseAdmission_liveQuizId_idx" ON "LiveQuizResponseAdmission"("liveQuizId");
+CREATE INDEX "LiveQuizResponseAdmission_reconcile_idx" ON "LiveQuizResponseAdmission"("failedAt", "lastReconciliationAttemptAt", "publishedAt");
+
+-- During a rolling deployment, old application pods still issue a hard DELETE.
+-- Fail those legacy requests atomically before they can remove retained data.
+CREATE OR REPLACE FUNCTION "preventCourseHardDelete"()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Physical cleanup is deliberately privileged and transaction-local. Merely
+  -- setting isDeleted is not sufficient: a rolling old pod can see the retained
+  -- row but must never be able to cascade-delete it.
+  IF current_setting('klicker.allow_course_purge', true) = 'on' THEN
+    RETURN OLD;
+  END IF;
+
+  RAISE EXCEPTION 'Course hard deletion is disabled; use the background soft-deletion workflow.';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER "Course_preventHardDelete"
+BEFORE DELETE ON "Course"
+FOR EACH ROW EXECUTE FUNCTION "preventCourseHardDelete"();
+
+-- Old application pods may still resolve retained rows during a rolling
+-- deployment. Once deletion is pending or complete, reject their writes at the
+-- database boundary. Only the transaction that owns deletion recovery/finalize
+-- may change the marker.
+CREATE OR REPLACE FUNCTION "preventCourseMutationDuringDeletion"()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (OLD."isDeletionPending" = true OR OLD."isDeleted" = true)
+     AND current_setting('klicker.allow_course_deletion_mutation', true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'Course mutation is disabled while deletion is pending or complete.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER "Course_preventMutationDuringDeletion"
+BEFORE UPDATE ON "Course"
+FOR EACH ROW EXECUTE FUNCTION "preventCourseMutationDuringDeletion"();
+
+-- Replace the compatible view definition without dropping grants or dependents.
+CREATE OR REPLACE VIEW "UserActivities" AS
 SELECT
   -- Core activity fields
   lq.id,
@@ -109,7 +173,14 @@ LEFT JOIN (
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"
 ) course_perm_counts ON course_perm_counts."courseId" = lq."courseId" AND course_perm_counts."userId" = dp."userId"
-WHERE lq."courseId" IS NULL OR c."isDeleted" = false
+WHERE lq."courseId" IS NULL OR (
+  c."isDeleted" = false
+  AND (
+    c."isDeletionPending" = false
+    OR c."deleteDraftActivitiesOnDeletion" = false
+    OR lq.status <> 'DRAFT'
+  )
+)
 
 UNION ALL
 
@@ -217,6 +288,11 @@ LEFT JOIN (
   GROUP BY p."courseId", p."userId"
 ) course_perm_counts ON course_perm_counts."courseId" = pq."courseId" AND course_perm_counts."userId" = dp."userId"
 WHERE c."isDeleted" = false
+AND (
+  c."isDeletionPending" = false
+  OR c."deleteDraftActivitiesOnDeletion" = false
+  OR pq.status <> 'DRAFT'
+)
 
 UNION ALL
 
@@ -324,6 +400,11 @@ LEFT JOIN (
   GROUP BY p."courseId", p."userId"
 ) course_perm_counts ON course_perm_counts."courseId" = ml."courseId" AND course_perm_counts."userId" = dp."userId"
 WHERE c."isDeleted" = false
+AND (
+  c."isDeletionPending" = false
+  OR c."deleteDraftActivitiesOnDeletion" = false
+  OR ml.status <> 'DRAFT'
+)
 
 UNION ALL
 
@@ -437,4 +518,9 @@ LEFT JOIN (
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"
 ) course_perm_counts ON course_perm_counts."courseId" = ga."courseId" AND course_perm_counts."userId" = dp."userId"
-WHERE c."isDeleted" = false;
+WHERE c."isDeleted" = false
+AND (
+  c."isDeletionPending" = false
+  OR c."deleteDraftActivitiesOnDeletion" = false
+  OR ga.status <> 'DRAFT'
+);

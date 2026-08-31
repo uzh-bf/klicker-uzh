@@ -2,7 +2,6 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import type { ContextWithUser } from '../lib/context.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
@@ -113,35 +112,8 @@ import {
   UserLoginScope,
 } from './user.js'
 
-// Mutation permission checks also fence writes against active course deletion.
-async function checkAccess(
-  checks: SharingService.PermissionCheck[],
-  ctx: ContextWithUser
-) {
-  const access = await SharingService.checkAccess(checks, ctx)
-  if (!access) return false
-
-  for (const check of checks) {
-    const { minimumPermissionLevel: _minimumPermissionLevel, ...selector } =
-      check
-    await CourseDeletionGuard.assertCourseDeletionNotInProgress(selector, ctx)
-  }
-
-  return true
-}
-
-const withPermission: typeof SharingService.withPermission = (
-  selector,
-  level,
-  resolver
-) =>
-  SharingService.withPermission(selector, level, async (root, args, ctx) => {
-    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
-      selector(args),
-      ctx
-    )
-    return resolver(root, args, ctx)
-  })
+const checkAccess = SharingService.checkMutationAccess
+const withPermission = SharingService.withMutationPermission
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -803,36 +775,35 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      deleteCourse: t.withAuth(asUser).field({
-        nullable: true,
-        type: Course,
-        args: {
-          id: t.arg.string({ required: true }),
-          deleteDraftActivities: t.arg.boolean(),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.id }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
-          }
-        ),
-      }),
-
-      startCourseDeletion: t.withAuth(asUser).field({
+      startCourseDeletion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CourseDeletionStatus,
         args: {
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
         },
-        resolve: SharingService.withPermission(
-          (args) => ({ courseId: args.id }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await CourseDeletionService.startCourseDeletion(args, ctx)
-          }
-        ),
+        resolve: async (_, args, ctx) => {
+          return await CourseDeletionService.startCourseDeletion(args, ctx)
+        },
+      }),
+
+      deleteCourse: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Course,
+        deprecationReason: 'Use startCourseDeletion.',
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
+        resolve: async (_, args, ctx) => {
+          const course = await ctx.prisma.course.findUnique({
+            where: { id: args.id, isDeleted: false },
+          })
+          if (!course) return null
+
+          const job = await CourseDeletionService.startCourseDeletion(args, ctx)
+          return job ? course : null
+        },
       }),
 
       deleteTag: t.withAuth(asUserFullAccess).field({

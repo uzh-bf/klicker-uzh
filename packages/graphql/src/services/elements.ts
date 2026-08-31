@@ -1204,23 +1204,32 @@ export async function getInstanceUpdateActivities(
           OR: [
             {
               elementStack: {
-                practiceQuiz: { course: { isDeleted: false } },
+                practiceQuiz: {
+                  course: { isDeleted: false, isDeletionPending: false },
+                },
               },
             },
             {
               elementStack: {
-                microLearning: { course: { isDeleted: false } },
+                microLearning: {
+                  course: { isDeleted: false, isDeletionPending: false },
+                },
               },
             },
             {
               elementStack: {
-                groupActivity: { course: { isDeleted: false } },
+                groupActivity: {
+                  course: { isDeleted: false, isDeletionPending: false },
+                },
               },
             },
             {
               elementBlock: {
                 liveQuiz: {
-                  OR: [{ courseId: null }, { course: { isDeleted: false } }],
+                  OR: [
+                    { courseId: null },
+                    { course: { isDeleted: false, isDeletionPending: false } },
+                  ],
                 },
               },
             },
@@ -1231,7 +1240,7 @@ export async function getInstanceUpdateActivities(
             include: {
               microLearning: {
                 where: {
-                  course: { isDeleted: false },
+                  course: { isDeleted: false, isDeletionPending: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
@@ -1247,7 +1256,7 @@ export async function getInstanceUpdateActivities(
               },
               practiceQuiz: {
                 where: {
-                  course: { isDeleted: false },
+                  course: { isDeleted: false, isDeletionPending: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {
@@ -1263,7 +1272,7 @@ export async function getInstanceUpdateActivities(
               },
               groupActivity: {
                 where: {
-                  course: { isDeleted: false },
+                  course: { isDeleted: false, isDeletionPending: false },
                   status: { in: acceptedStatusValues },
                   // only activities where the user has at least WRITE permissions should be updated
                   permissions: {

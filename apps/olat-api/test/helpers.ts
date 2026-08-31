@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { allowCoursePurgeInTransaction, prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -363,7 +363,11 @@ export async function testCleanup(prisma: PrismaClient) {
   await prisma.practiceQuiz.deleteMany()
   await prisma.microLearning.deleteMany()
   await prisma.groupActivity.deleteMany()
-  await prisma.course.deleteMany()
+  await prisma.$transaction(async (tx) => {
+    await tx.course.updateMany({ data: { isDeleted: true } })
+    await allowCoursePurgeInTransaction(tx)
+    await tx.course.deleteMany({ where: { isDeleted: true } })
+  })
 
   // verify that no permission or derived permission entries are left in the database (deleted through cascading)
   const dbPermissions = await prisma.permission.count()

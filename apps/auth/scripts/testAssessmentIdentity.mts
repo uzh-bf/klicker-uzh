@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
+import { allowCoursePurgeInTransaction, prisma } from '@klicker-uzh/prisma'
 import { updateAssessmentParticipantIdentity } from '../src/lib/assessmentIdentity.ts'
 
 if (!process.env.DATABASE_URL) {
@@ -212,8 +212,22 @@ try {
   console.log('Auth assessment identity persistence passed')
 } finally {
   try {
-    await prisma.course.deleteMany({
-      where: { id: { in: fixtureIds.courseIds } },
+    await prisma.$transaction(async (tx) => {
+      await tx.course.updateMany({
+        where: { id: { in: fixtureIds.courseIds } },
+        data: {
+          deletionJobId: null,
+          deletionRequestedById: null,
+          deletionPendingAt: null,
+          deleteDraftActivitiesOnDeletion: false,
+          isDeleted: true,
+          isDeletionPending: false,
+        },
+      })
+      await allowCoursePurgeInTransaction(tx)
+      await tx.course.deleteMany({
+        where: { id: { in: fixtureIds.courseIds } },
+      })
     })
     await prisma.participant.deleteMany({
       where: { id: { in: fixtureIds.participantIds } },

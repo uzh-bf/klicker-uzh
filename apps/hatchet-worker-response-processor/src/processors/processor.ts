@@ -13,13 +13,22 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
+  claimLiveQuizResponseProcessing,
+  commitLiveQuizResponseProcessing,
   getLiveQuizCourseDeletedKey,
+  getLiveQuizResponseProcessingToken,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_LEASE_RENEWAL_MS,
+  type LiveQuizResponseRedisMutation,
+  type LiveQuizResponseRedisMutationSink,
+  releaseLiveQuizResponseProcessingClaim,
+  renewLiveQuizResponseProcessingClaim,
+  shouldRetryLiveQuizResponseProcessingResult,
+  throwLiveQuizResponseProcessingClaimLost,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
-import type { ChainableCommander } from 'ioredis'
+import { createHash, randomUUID } from 'crypto'
 import { getRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
@@ -36,15 +45,18 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
+export interface LiveQuizResponseMessage {
+  messageId: string
+  sessionId: string
+  instanceId: string
+  response: LiveQuizResponseInput
+  cookie?: string
+  responseTimestamp: number
+  responseLeaseToken?: string
+}
+
 export async function processResponseMessage(
-  message: {
-    messageId: string
-    sessionId: string
-    instanceId: string
-    response: LiveQuizResponseInput
-    cookie?: string
-    responseTimestamp: number
-  },
+  message: LiveQuizResponseMessage,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   ctx.logger.info('ProcessResponse: received message', {
@@ -67,9 +79,142 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti: ChainableCommander
-  // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  const durableAdmission = message.responseLeaseToken
+    ? await prisma.liveQuizResponseAdmission.findUnique({
+        where: { token: message.responseLeaseToken },
+        select: { liveQuizId: true },
+      })
+    : null
+  const wasAdmittedBeforeDeletion =
+    durableAdmission?.liveQuizId === message.sessionId
+  const responseProcessingToken = getLiveQuizResponseProcessingToken(message)
+  const processingOwnerNonce = randomUUID()
+  const processingClaim = await claimLiveQuizResponseProcessing(
+    redisExec,
+    message.sessionId,
+    responseProcessingToken,
+    processingOwnerNonce
+  )
+  if (processingClaim === 'processed') {
+    if (wasAdmittedBeforeDeletion && message.responseLeaseToken) {
+      await prisma.liveQuizResponseAdmission.delete({
+        where: { token: message.responseLeaseToken },
+      })
+    }
+    return { status: 200 }
+  }
+  if (processingClaim === 'busy') {
+    throw new Error('Live quiz response is already being processed')
+  }
+  if (processingClaim === 'fenced') {
+    if (wasAdmittedBeforeDeletion) {
+      throw new Error(
+        'Durably admitted live quiz response is temporarily fenced'
+      )
+    }
+    ctx.logger.info('Course deletion is fencing this live quiz response', {
+      sessionId: message.sessionId,
+    })
+    return { status: 410 }
+  }
+
+  let responseLeaseLost = false
+  const responseLeaseRenewal = setInterval(() => {
+    void renewLiveQuizResponseProcessingClaim(
+      redisExec,
+      message.sessionId,
+      responseProcessingToken,
+      processingOwnerNonce
+    )
+      .then((renewed) => {
+        if (!renewed) responseLeaseLost = true
+      })
+      .catch((error) => {
+        responseLeaseLost = true
+        ctx.logger.error(
+          `Live quiz response lease renewal failed: ${String(error)}`
+        )
+      })
+  }, LIVE_QUIZ_RESPONSE_LEASE_RENEWAL_MS)
+
+  let processingCompleted = false
+  try {
+    const result = await processResponseWithLease(
+      message,
+      ctx,
+      responseProcessingToken,
+      processingOwnerNonce,
+      wasAdmittedBeforeDeletion,
+      () => responseLeaseLost
+    )
+    if (
+      shouldRetryLiveQuizResponseProcessingResult({
+        status: result.status,
+        wasDurablyAdmitted: wasAdmittedBeforeDeletion,
+      })
+    ) {
+      throw new Error(
+        `Live quiz response processing must be retried after status ${result.status}`
+      )
+    }
+    processingCompleted = true
+    return result
+  } finally {
+    clearInterval(responseLeaseRenewal)
+    try {
+      await releaseLiveQuizResponseProcessingClaim(
+        redisExec,
+        message.sessionId,
+        responseProcessingToken,
+        processingOwnerNonce
+      )
+    } catch (error) {
+      // The lease expires automatically. A cleanup failure after a successful
+      // write must not make Hatchet retry and count the response twice.
+      ctx.logger.error(
+        `Failed to release live quiz response lease: ${String(error)}`
+      )
+    }
+    if (
+      processingCompleted &&
+      wasAdmittedBeforeDeletion &&
+      message.responseLeaseToken
+    ) {
+      // A failed durable cleanup is retriable. The Redis processed marker makes
+      // that retry idempotent even for anonymous aggregate responses.
+      await prisma.liveQuizResponseAdmission.delete({
+        where: { token: message.responseLeaseToken },
+      })
+    }
+  }
+}
+
+function createResponseMutationSink(
+  mutations: LiveQuizResponseRedisMutation[]
+): LiveQuizResponseRedisMutationSink {
+  const sink: LiveQuizResponseRedisMutationSink = {
+    hincrby(key, field, increment) {
+      mutations.push({ command: 'hincrby', field, increment, key })
+      return sink
+    },
+    hset(key, field, value) {
+      mutations.push({ command: 'hset', field, key, value })
+      return sink
+    },
+  }
+  return sink
+}
+
+async function processResponseWithLease(
+  message: Parameters<typeof processResponseMessage>[0],
+  ctx: Parameters<typeof processResponseMessage>[1],
+  responseProcessingToken: string,
+  processingOwnerNonce: string,
+  wasAdmittedBeforeDeletion: boolean,
+  isResponseLeaseLost: () => boolean
+) {
+  const redisMutations: LiveQuizResponseRedisMutation[] = []
+  const redisMulti = createResponseMutationSink(redisMutations)
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -99,10 +244,16 @@ export async function processResponseMessage(
 
     const liveQuiz = await prisma.liveQuiz.findUnique({
       where: { id: message.sessionId },
-      select: { course: { select: { isDeleted: true } } },
+      select: {
+        course: { select: { isDeleted: true, isDeletionPending: true } },
+      },
     })
-    if (liveQuiz?.course?.isDeleted) {
-      ctx.logger.info('Course linked to live quiz is soft-deleted', {
+    if (
+      !liveQuiz ||
+      liveQuiz.course?.isDeleted ||
+      (liveQuiz.course?.isDeletionPending && !wasAdmittedBeforeDeletion)
+    ) {
+      ctx.logger.info('Course linked to live quiz is being deleted', {
         sessionId: message.sessionId,
       })
       return { status: 410 }
@@ -686,12 +837,37 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
+    redisMutations.length = 0
     return { status: 500 }
   }
 
   try {
-    await redisMulti.exec()
+    if (
+      isResponseLeaseLost() ||
+      !(await renewLiveQuizResponseProcessingClaim(
+        redisExec,
+        message.sessionId,
+        responseProcessingToken,
+        processingOwnerNonce
+      ))
+    ) {
+      redisMutations.length = 0
+      ctx.logger.info('Live quiz response lease was lost before commit', {
+        sessionId: message.sessionId,
+      })
+      throwLiveQuizResponseProcessingClaimLost()
+    }
+
+    const committed = await commitLiveQuizResponseProcessing(
+      redisExec,
+      message.sessionId,
+      responseProcessingToken,
+      processingOwnerNonce,
+      redisMutations
+    )
+    if (!committed) {
+      throw new Error('Live quiz response processing claim was lost')
+    }
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,
@@ -707,7 +883,6 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }

@@ -31,7 +31,7 @@ export async function getMicroLearningData(
     where: {
       id,
       isDeleted: false,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
       OR: [
         { status: DB.PublicationStatus.PUBLISHED },
         // if user has access to the microlearning, the query should be enabled for loading the preview
@@ -81,7 +81,7 @@ export async function getMicroLearningEvaluation(
         in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       stacks: {
@@ -121,7 +121,11 @@ export async function getSingleMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, isDeleted: false, course: { isDeleted: false } },
+    where: {
+      id,
+      isDeleted: false,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     include: {
       course: true,
       stacks: {
@@ -139,7 +143,7 @@ export async function getCoursePublishedMicroLearnings(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       microLearnings: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -230,7 +234,7 @@ export async function manipulateMicroLearning(
 
   // get the course to which the microlearning should be assigned
   const course = await prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
 
@@ -933,10 +937,16 @@ export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMic
     try {
       const microLearning = await globalCtx.prisma.microLearning.findUnique({
         where: { id: microLearningId },
-        include: { course: { select: { isDeleted: true } } },
+        include: {
+          course: { select: { isDeleted: true, isDeletionPending: true } },
+        },
       })
 
-      if (microLearning?.course.isDeleted) return true
+      if (
+        microLearning?.course.isDeleted ||
+        microLearning?.course.isDeletionPending
+      )
+        return true
 
       if (!microLearning) {
         await sendTeamsNotification({
@@ -967,7 +977,7 @@ export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMic
         where: {
           id: microLearningId,
           isDeleted: false,
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
         },
         data: { status: DB.PublicationStatus.ENDED },
       })
@@ -1001,10 +1011,16 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
       // check if the microlearning exists and if its start date is in the past
       const microLearning = await globalCtx.prisma.microLearning.findUnique({
         where: { id: microLearningId },
-        include: { course: { select: { isDeleted: true } } },
+        include: {
+          course: { select: { isDeleted: true, isDeletionPending: true } },
+        },
       })
 
-      if (microLearning?.course.isDeleted) return true
+      if (
+        microLearning?.course.isDeleted ||
+        microLearning?.course.isDeletionPending
+      )
+        return true
 
       if (!microLearning) {
         await sendTeamsNotification({
@@ -1035,7 +1051,7 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         where: {
           id: microLearningId,
           isDeleted: false,
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
         },
         data: { status: DB.PublicationStatus.PUBLISHED },
       })

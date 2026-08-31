@@ -361,6 +361,7 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+  courseDeletionEnabled: true
 
   replicaCount: 3
 

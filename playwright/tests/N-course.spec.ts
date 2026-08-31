@@ -67,6 +67,7 @@ import {
   deleteLiveQuizDirectPermission,
   ensureCourseParticipation,
   getCourseDuplicationSummary,
+  getCourseDeletionPersistenceSummary,
   getCourseLiveQuizResponseSummary,
   getCoursePin,
   grantLiveQuizDirectPermission,
@@ -122,6 +123,7 @@ const DELETION = {
   lqName: 'Course Live Quiz',
   pqName: 'Course Practice Quiz',
   mlName: 'Course Micro Learning',
+  gaName: 'Course Group Activity',
 }
 
 const SHARING = {
@@ -1105,6 +1107,23 @@ async function expectCourseDeletionCompleted(page: Page, courseName: string) {
   await expect(
     page.getByTestId(`course-list-button-${courseName}`)
   ).not.toBeVisible({ timeout: 30_000 })
+  await expect
+    .poll(
+      async () => {
+        const course = await getCourseDeletionPersistenceSummary({
+          courseName,
+          ownerId: LECTURER_ID,
+        })
+        return course
+          ? {
+              isDeleted: course.isDeleted,
+              isDeletionPending: course.isDeletionPending,
+            }
+          : null
+      },
+      { timeout: 60_000 }
+    )
+    .toEqual({ isDeleted: true, isDeletionPending: false })
 }
 
 async function openCourseInManage(page: Page, courseName: string) {
@@ -2714,6 +2733,36 @@ test.describe('Part 4: Course deletion', () => {
     })
     await goToCreateNewActivity(page)
 
+    await createGroupActivityActivity(page, {
+      name: DELETION.gaName,
+      displayName: DELETION.gaName,
+      task: 'Course deletion group activity',
+      courseName: DELETION.courseName,
+      scheduledStartDate: {
+        monthDelta: -2,
+        day: 16,
+        hour: 2,
+        minute: 0,
+        validation: `${getDatetimeValidationString(-2, '16')}, 02:00`,
+      },
+      scheduledEndDate: {
+        monthDelta: 4,
+        day: 14,
+        hour: 18,
+        minute: 0,
+        validation: `${getDatetimeValidationString(4, '14')}, 18:00`,
+      },
+      clues: [
+        {
+          type: 'text',
+          name: 'Deletion clue',
+          displayName: 'Deletion clue',
+          content: 'Deletion fixture',
+        },
+      ],
+      stack: { elements: [DELETION.qTitle] },
+    })
+
     // --- Delete course ---
     await page.getByTestId('courses').click()
     await expect(
@@ -2736,6 +2785,15 @@ test.describe('Part 4: Course deletion', () => {
 
     await page.getByTestId('course-deletion-modal-confirm').click()
     await expectCourseDeletionCompleted(page, DELETION.courseName)
+    const persistedDeletion = await getCourseDeletionPersistenceSummary({
+      courseName: DELETION.courseName,
+      ownerId: LECTURER_ID,
+    })
+    expect(persistedDeletion).not.toBeNull()
+    expect(persistedDeletion!.liveQuizNames).not.toContain(DELETION.lqName)
+    expect(persistedDeletion!.practiceQuizNames).not.toContain(DELETION.pqName)
+    expect(persistedDeletion!.microLearningNames).not.toContain(DELETION.mlName)
+    expect(persistedDeletion!.groupActivityNames).not.toContain(DELETION.gaName)
     await page.reload()
     await expect(
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
@@ -2751,6 +2809,9 @@ test.describe('Part 4: Course deletion', () => {
     ).not.toBeVisible({ timeout: 30_000 })
     await expect(
       page.getByTestId(`activity-MICRO_LEARNING-${DELETION.mlName}`)
+    ).not.toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByTestId(`activity-GROUP_ACTIVITY-${DELETION.gaName}`)
     ).not.toBeVisible({ timeout: 30_000 })
   })
 
@@ -2774,9 +2835,28 @@ test.describe('Part 4: Course deletion', () => {
     await expectCourseDeletionCompleted(page, COURSE1.nameNew)
 
     // Delete gamified course (its participations and groups are retained)
+    const courseTwoBeforeDeletion = await getCourseDeletionPersistenceSummary({
+      courseName: COURSE2.name,
+      ownerId: LECTURER_ID,
+    })
     await page.getByTestId(`delete-course-${COURSE2.name}`).click()
     await confirmCourseDeletion(page)
     await expectCourseDeletionCompleted(page, COURSE2.name)
+    const courseTwoAfterDeletion = await getCourseDeletionPersistenceSummary({
+      courseName: COURSE2.name,
+      ownerId: LECTURER_ID,
+    })
+    expect(courseTwoBeforeDeletion).not.toBeNull()
+    expect(courseTwoAfterDeletion).not.toBeNull()
+    expect(courseTwoAfterDeletion!.participations).toBe(
+      courseTwoBeforeDeletion!.participations
+    )
+    expect(courseTwoAfterDeletion!.participantGroups).toBe(
+      courseTwoBeforeDeletion!.participantGroups
+    )
+    expect(courseTwoAfterDeletion!.leaderboardEntries).toBe(
+      courseTwoBeforeDeletion!.leaderboardEntries
+    )
 
     // UI deletion is intentionally soft; fixture cleanup remains physical so
     // repeated E2E runs do not retain activities that reference this question.

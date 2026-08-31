@@ -82,6 +82,7 @@ if compute_course:
     curr_date = datetime.now().strftime("%Y-%m-%d")
     course_filter: CourseWhereInput = {
         "isDeleted": False,
+        "isDeletionPending": False,
         # Incremental scripts can add this statement to reduce the amount of required computations
         # 'endDate': {
         #     'gt': datetime.now().strftime('%Y-%m-%d') + 'T00:00:00.000Z'

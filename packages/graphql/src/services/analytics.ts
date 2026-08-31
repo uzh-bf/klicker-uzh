@@ -16,7 +16,7 @@ export async function getCourseActivityAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -78,7 +78,7 @@ export async function getCourseWeeklyActivity(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -475,7 +475,7 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       _count: { select: { participations: true } },
       practiceQuizzes: {

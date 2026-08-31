@@ -7,6 +7,7 @@ def get_running_past_courses(db):
     courses = db.course.find_many(
         where={
             "isDeleted": False,
+            "isDeletionPending": False,
             # Incremental scripts can add this statement to reduce the amount of required computations
             # 'endDate': {
             #     'gt': datetime.now().strftime('%Y-%m-%d') + 'T00:00:00.000Z'

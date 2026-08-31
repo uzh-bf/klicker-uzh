@@ -24,7 +24,10 @@ export async function getSelf(
       ? await ctx.prisma.liveQuiz.findUnique({
           where: {
             id: liveQuizId,
-            OR: [{ courseId: null }, { course: { isDeleted: false } }],
+            OR: [
+              { courseId: null },
+              { course: { isDeleted: false, isDeletionPending: false } },
+            ],
           },
           include: { course: true },
         })
@@ -198,6 +201,7 @@ export async function getParticipations(
         where: {
           course: {
             isDeleted: false,
+            isDeletionPending: false,
             isAssessmentEnabled: assessmentOnly ? true : undefined,
           },
         },
@@ -243,7 +247,7 @@ export async function getParticipation(
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
   })
 
@@ -506,7 +510,7 @@ export async function bookmarkElementStack(
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     data: {
       bookmarkedElementStacks: {
@@ -529,7 +533,7 @@ export async function getBookmarkedElementStacks(
         courseId,
         participantId: ctx.user.sub,
       },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       bookmarkedElementStacks: {
@@ -568,7 +572,7 @@ export async function flagElement(
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id: elementInstanceId,
-      elementStack: { course: { isDeleted: false } },
+      elementStack: { course: { isDeleted: false, isDeletionPending: false } },
     },
     include: {
       elementStack: {
@@ -671,7 +675,7 @@ export async function rateElement(
   const activeElementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id: elementInstanceId,
-      elementStack: { course: { isDeleted: false } },
+      elementStack: { course: { isDeleted: false, isDeletionPending: false } },
     },
     select: { id: true },
   })
@@ -824,7 +828,7 @@ export async function getPracticeCourses(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       course: {
@@ -850,7 +854,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       course: {
@@ -897,7 +901,7 @@ export async function upsertDailyTimelineEntry({
         courseId,
         participantId,
       },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
   })
 
@@ -953,7 +957,11 @@ export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWee
 
     // get all course ids
     const courses = await globalCtx.prisma.course.findMany({
-      where: { endDate: { gt: new Date() }, isDeleted: false },
+      where: {
+        endDate: { gt: new Date() },
+        isDeleted: false,
+        isDeletionPending: false,
+      },
       select: { id: true, name: true },
     })
 
@@ -1007,7 +1015,7 @@ export async function updateWeeklyTimelineEntriesCourse(
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
   const courseTimelineLastWeek = await prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       timelineEntries: {
         where: {
@@ -1025,7 +1033,7 @@ export async function updateWeeklyTimelineEntriesCourse(
   })
 
   const courseTimelineCurrentWeek = await prisma.course.findUnique({
-    where: { id: courseId, isDeleted: false },
+    where: { id: courseId, isDeleted: false, isDeletionPending: false },
     include: {
       timelineEntries: {
         where: {
@@ -1215,7 +1223,7 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
     },
     include: {
       participations: {
-        where: { course: { isDeleted: false } },
+        where: { course: { isDeleted: false, isDeletionPending: false } },
         include: {
           timelineEntries: {
             where: {

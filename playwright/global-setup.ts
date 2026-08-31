@@ -81,7 +81,14 @@ export async function cleanupDatabase() {
     await prisma.practiceQuiz.deleteMany()
     await prisma.groupActivity.deleteMany()
 
-    await prisma.course.deleteMany()
+    const { allowCoursePurgeInTransaction } = await import(
+      '@klicker-uzh/prisma'
+    )
+    await prisma.$transaction(async (tx) => {
+      await tx.course.updateMany({ data: { isDeleted: true } })
+      await allowCoursePurgeInTransaction(tx)
+      await tx.course.deleteMany({ where: { isDeleted: true } })
+    })
 
     await prisma.element.deleteMany()
     await prisma.answerCollection.deleteMany()

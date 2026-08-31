@@ -253,7 +253,7 @@ export async function getParticipantCourseChatbots(
         courseId,
         participantId: ctx.user.sub,
       },
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
   })
 
@@ -273,7 +273,7 @@ export async function getParticipantCourseChatbots(
     // in the course overview (F2, mirrors the chat-app access gate).
     where: {
       courseId,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
       status: DB.ChatbotStatus.PUBLISHED,
     },
   })
@@ -328,7 +328,10 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   const chatbots = await ctx.prisma.chatbot.findMany({
-    where: { ownerId: ctx.user.sub, course: { isDeleted: false } },
+    where: {
+      ownerId: ctx.user.sub,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
@@ -496,7 +499,7 @@ export async function updateChatbotModelSettings(
     where: {
       id: args.chatbotId,
       ownerId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     select: {
       ...chatbotOwnerSelect,
@@ -572,7 +575,10 @@ export async function updateChatbotModelSettings(
   }
 
   const updated = await ctx.prisma.chatbot.update({
-    where: { id: chatbot.id, course: { isDeleted: false } },
+    where: {
+      id: chatbot.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     data: {
       modelSelection: args.modelSelection,
       allowedModelIds: normalizedAllowedModelIds,
@@ -605,7 +611,12 @@ export async function createChatbot(
   // requesting lecturer. Pothos already checked authenticate + catalyst; this
   // is the third (execute-time ownership) layer of the auth model.
   const course = await ctx.prisma.course.findFirst({
-    where: { id: args.courseId, ownerId: ctx.user.sub, isDeleted: false },
+    where: {
+      id: args.courseId,
+      ownerId: ctx.user.sub,
+      isDeleted: false,
+      isDeletionPending: false,
+    },
     select: { id: true },
   })
   if (!course) {
@@ -641,7 +652,13 @@ export async function createChatbot(
         [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
       },
       owner: { connect: { id: ctx.user.sub } },
-      course: { connect: { id: args.courseId, isDeleted: false } },
+      course: {
+        connect: {
+          id: args.courseId,
+          isDeleted: false,
+          isDeletionPending: false,
+        },
+      },
       // systemPrompts intentionally left unset (null): when no modes are
       // configured, the chat runtime derives a tutor-only default from
       // DEFAULT_PROMPT (getSupportedChatModes). Custom modes are added and
@@ -673,7 +690,7 @@ export async function updateChatbot(
     where: {
       id: args.id,
       ownerId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     select: { id: true },
   })
@@ -685,7 +702,10 @@ export async function updateChatbot(
   }
 
   const updated = await ctx.prisma.chatbot.update({
-    where: { id: existing.id, course: { isDeleted: false } },
+    where: {
+      id: existing.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     data: {
       // name is a required column, so only overwrite it when a value is given.
       ...(args.name != null ? { name: args.name } : {}),
@@ -722,7 +742,7 @@ export async function requestChatbotPublication(
     where: {
       id: args.id,
       ownerId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     select: { id: true, status: true },
   })
@@ -779,7 +799,7 @@ export async function requestChatbotPublication(
     where: {
       id: chatbot.id,
       ownerId: ctx.user.sub,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
       status: {
         in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
       },
@@ -806,7 +826,10 @@ export async function requestChatbotPublication(
   }
 
   const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id, course: { isDeleted: false } },
+    where: {
+      id: chatbot.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
@@ -828,7 +851,10 @@ export async function approveChatbotPublication(
   }
 
   const chatbot = await ctx.prisma.chatbot.findUnique({
-    where: { id: args.id, course: { isDeleted: false } },
+    where: {
+      id: args.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: {
       id: true,
       status: true,
@@ -857,7 +883,7 @@ export async function approveChatbotPublication(
     where: {
       id: chatbot.id,
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
       owner: { aiChatbotPublishingEnabled: true },
     },
     data: {
@@ -874,7 +900,10 @@ export async function approveChatbotPublication(
   }
 
   const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id, course: { isDeleted: false } },
+    where: {
+      id: chatbot.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
@@ -893,7 +922,10 @@ export async function rejectChatbotPublication(
   }
 
   const chatbot = await ctx.prisma.chatbot.findUnique({
-    where: { id: args.id, course: { isDeleted: false } },
+    where: {
+      id: args.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: { id: true, status: true },
   })
   if (!chatbot) {
@@ -910,7 +942,7 @@ export async function rejectChatbotPublication(
     where: {
       id: chatbot.id,
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     data: {
       status: DB.ChatbotStatus.REJECTED,
@@ -924,7 +956,10 @@ export async function rejectChatbotPublication(
   }
 
   const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id, course: { isDeleted: false } },
+    where: {
+      id: chatbot.id,
+      course: { isDeleted: false, isDeletionPending: false },
+    },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },

@@ -7,6 +7,7 @@ import {
   ResponseCorrectness,
   type Prisma,
 } from '@klicker-uzh/prisma/client'
+import { allowCoursePurgeInTransaction } from '@klicker-uzh/prisma'
 import { getPrisma } from '../../global-setup.js'
 import { USER_ID_TEST } from '../constants.js'
 
@@ -105,6 +106,59 @@ export type CourseLiveQuizResponseSummary = {
   resultTotals: number[]
 }
 
+export type CourseDeletionPersistenceSummary = {
+  isDeleted: boolean
+  isDeletionPending: boolean
+  liveQuizNames: string[]
+  practiceQuizNames: string[]
+  microLearningNames: string[]
+  groupActivityNames: string[]
+  participations: number
+  participantGroups: number
+  leaderboardEntries: number
+}
+
+export async function getCourseDeletionPersistenceSummary({
+  courseName,
+  ownerId,
+}: {
+  courseName: string
+  ownerId?: string
+}): Promise<CourseDeletionPersistenceSummary | null> {
+  const prisma = await getPrisma()
+  const course = await prisma.course.findFirst({
+    where: { name: courseName, ownerId },
+    select: {
+      isDeleted: true,
+      isDeletionPending: true,
+      liveQuizzes: { select: { name: true } },
+      practiceQuizzes: { select: { name: true } },
+      microLearnings: { select: { name: true } },
+      groupActivities: { select: { name: true } },
+      _count: {
+        select: {
+          participations: true,
+          participantGroups: true,
+          leaderboard: true,
+        },
+      },
+    },
+  })
+  if (!course) return null
+
+  return {
+    isDeleted: course.isDeleted,
+    isDeletionPending: course.isDeletionPending,
+    liveQuizNames: course.liveQuizzes.map((activity) => activity.name),
+    practiceQuizNames: course.practiceQuizzes.map((activity) => activity.name),
+    microLearningNames: course.microLearnings.map((activity) => activity.name),
+    groupActivityNames: course.groupActivities.map((activity) => activity.name),
+    participations: course._count.participations,
+    participantGroups: course._count.participantGroups,
+    leaderboardEntries: course._count.leaderboard,
+  }
+}
+
 export async function getCoursePin(courseName: string) {
   const prisma = await getPrisma()
   const course = await prisma.course.findFirst({
@@ -127,8 +181,15 @@ export async function deleteCourseByName({
   ownerId?: string
 }) {
   const prisma = await getPrisma()
-  await prisma.course.deleteMany({
-    where: { name: courseName, ownerId },
+  await prisma.$transaction(async (tx) => {
+    await tx.course.updateMany({
+      where: { name: courseName, ownerId },
+      data: { isDeleted: true },
+    })
+    await allowCoursePurgeInTransaction(tx)
+    await tx.course.deleteMany({
+      where: { name: courseName, ownerId, isDeleted: true },
+    })
   })
 }
 
@@ -148,23 +209,28 @@ export async function deleteCourseWithActivitiesByName({
 
   if (courseIds.length === 0) return
 
-  await prisma.$transaction([
-    prisma.groupActivity.deleteMany({
+  await prisma.$transaction(async (tx) => {
+    await tx.groupActivity.deleteMany({
       where: { courseId: { in: courseIds } },
-    }),
-    prisma.microLearning.deleteMany({
+    })
+    await tx.microLearning.deleteMany({
       where: { courseId: { in: courseIds } },
-    }),
-    prisma.practiceQuiz.deleteMany({
+    })
+    await tx.practiceQuiz.deleteMany({
       where: { courseId: { in: courseIds } },
-    }),
-    prisma.liveQuiz.deleteMany({
+    })
+    await tx.liveQuiz.deleteMany({
       where: { courseId: { in: courseIds } },
-    }),
-    prisma.course.deleteMany({
+    })
+    await tx.course.updateMany({
       where: { id: { in: courseIds } },
-    }),
-  ])
+      data: { isDeleted: true },
+    })
+    await allowCoursePurgeInTransaction(tx)
+    await tx.course.deleteMany({
+      where: { id: { in: courseIds }, isDeleted: true },
+    })
+  })
 }
 
 export async function createCourseRecord({

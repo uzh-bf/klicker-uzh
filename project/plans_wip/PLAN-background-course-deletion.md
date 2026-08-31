@@ -16,9 +16,9 @@ invisible to the user.
 - Do not delete participations, groups, results, leaderboards, or non-draft
   activities when a course is soft-deleted.
 - Do not change the optional draft-activity cleanup default (off).
-- Do not remove the existing synchronous `deleteCourse` mutation during a
-  rolling release; it keeps the same soft-delete semantics for old clients,
-  while the Manage UI uses Hatchet exclusively.
+- Keep the deprecated `deleteCourse` field for rolling clients, but route it to
+  the same Hatchet workflow rather than retaining a synchronous deletion escape
+  hatch. A database trigger rejects hard deletion of active rows.
 - Do not refactor course duplication into a generic background-job framework.
 - Do not add user-visible progress, completion, or failure notifications.
 
@@ -26,9 +26,11 @@ invisible to the user.
 
 Retain the deletion-specific Redis/Hatchet lifecycle and concurrency fence, but
 change its durable success marker from an absent course row to
-`Course.isDeleted = true`. The frontend keeps status polling only to hide the
-pending target across tabs/reloads and refresh the course list; it renders no
-deletion-job dropdown or terminal toast.
+`Course.isDeleted = true`. Hatchet acknowledgement writes a durable pending
+marker to `Course`, which is the shared visibility and write-protection
+boundary. Frontend status polling refreshes terminal state and provides an
+immediate initiating-tab fallback; it renders no deletion-job dropdown or
+terminal toast.
 
 ## Design
 
@@ -44,8 +46,9 @@ deletion-job dropdown or terminal toast.
   rule for drafts; the background deletion job is **reused** as orchestration
   and concurrency state; the visible deletion notification/status surface is
   **retired** while invisible polling remains an implementation detail.
-- **Layer footprint:** add `Course.isDeleted` plus an expand-only Prisma
-  migration and Analytics schema sync. Update GraphQL course filtering,
+- **Layer footprint:** add the deleted marker plus durable pending job fields
+  through an expand-only Prisma migration and Analytics schema sync. Update
+  GraphQL course filtering,
   deletion logic, worker reconciliation, summary data, generated operations,
   and focused tests. Simplify the Manage confirmation modal and status provider,
   update paired i18n and Playwright coverage, and revise the domain/worker docs.
@@ -55,7 +58,8 @@ deletion-job dropdown or terminal toast.
   50 unique ids and only return jobs owned by the caller.
 - **Job contract:** Redis stores `PENDING | RUNNING | COMPLETED | FAILED`, job
   id, course id/name, timestamps, initiating user context, and the draft cleanup
-  option. Terminal records strip execution context and options while retaining
+  option. The accepted job id and cleanup choice are mirrored durably on the
+  course. Terminal records strip execution context and options while retaining
   the owner id for status authorization. A per-course lock prevents concurrent
   starts; a per-job renewable processing lease and heartbeat make Hatchet
   retries and stale normalization safe. A transaction-level PostgreSQL advisory
@@ -71,8 +75,9 @@ deletion-job dropdown or terminal toast.
   absence.
 - **Reliability:** keep the 30-minute Hatchet attempt timeout, 60-minute queue
   timeout, low-priority serialized execution, renewable leases, and the
-  transaction-level advisory lock. Soft deletion is retry-safe and optional
-  draft cleanup occurs in the same transaction.
+  transaction-level advisory lock. Snapshot optional draft ids when the job is
+  accepted. Drain response-processing leases and install Redis deletion fences
+  before committing the soft deletion and optional draft cleanup.
 - **Gamification:** no rule changes and no gamification data deletion.
 - **UI:** the confirmation modal explains retention and offers one optional
   draft-activity checkbox. It submits `startCourseDeletion` and closes after
@@ -211,3 +216,13 @@ deletion-job dropdown or terminal toast.
   direct links; linked draft activities are absent only when optional draft
   cleanup was selected. A terminal failure removes the local target so retained
   data becomes visible again.
+- 2026-08-31: Production hardening moved pending visibility and write
+  protection into durable `Course` state, converted the deprecated GraphQL
+  deletion field into a background compatibility adapter, snapshotted optional
+  draft cleanup scope, added durable response admissions plus Redis leases
+  before deletion fencing,
+  and added a database
+  trigger that blocks old pods from hard-deleting active course rows. The full
+  migration chain was rehearsed on fresh PostgreSQL 15; active hard deletion
+  was rejected, an explicitly soft-deleted row could be purged, and the
+  pending-aware `UserActivities` view was installed successfully.

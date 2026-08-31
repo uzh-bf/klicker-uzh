@@ -288,7 +288,7 @@ export async function manipulateLiveQuiz(
   // fetch the course to which the live quiz should be linked regarding the gamification and assessment settings
   const course = courseId
     ? await prisma.course.findUnique({
-        where: { id: courseId, isDeleted: false },
+        where: { id: courseId, isDeleted: false, isDeletionPending: false },
         select: { isGamificationEnabled: true, isAssessmentEnabled: true },
       })
     : null
@@ -629,7 +629,10 @@ export async function getLiveQuizData(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       blocks: {
@@ -668,7 +671,10 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
           },
           liveQuiz: {
             status: DB.PublicationStatus.PUBLISHED,
-            OR: [{ courseId: null }, { course: { isDeleted: false } }],
+            OR: [
+              { courseId: null },
+              { course: { isDeleted: false, isDeletionPending: false } },
+            ],
           },
         },
         include: { liveQuiz: { include: { course: true } } },
@@ -686,7 +692,10 @@ export async function getLecturerViewLiveQuiz(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       confusionFeedbacks: true,
@@ -715,7 +724,10 @@ export async function getControlLiveQuiz(
     where: {
       id,
       status: DB.PublicationStatus.PUBLISHED,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       activeBlock: true,
@@ -756,7 +768,10 @@ export async function getShortnameQuizzes(
           liveQuiz: {
             status: DB.PublicationStatus.PUBLISHED,
             accessMode: DB.AccessMode.PUBLIC,
-            OR: [{ courseId: null }, { course: { isDeleted: false } }],
+            OR: [
+              { courseId: null },
+              { course: { isDeleted: false, isDeletionPending: false } },
+            ],
           },
           // only users with at least execution permissions can execute a live quiz
           permissionLevel: {
@@ -983,7 +998,10 @@ export async function getCockpitQuiz(
     where: {
       id,
       status: DB.PublicationStatus.PUBLISHED,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
@@ -2065,7 +2083,10 @@ export async function getLiveQuizSummary(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id: quizId,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       _count: {
@@ -2252,7 +2273,10 @@ export async function getLiveQuizEvaluation(
         in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
@@ -2771,7 +2795,10 @@ export async function setLiveQuizPinCookie(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id: liveQuizId,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     select: { id: true, status: true, pinCode: true },
   })
@@ -2903,7 +2930,10 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   const quizInfo = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
   })
 
@@ -2981,7 +3011,10 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       activeBlock: {
@@ -3070,7 +3103,7 @@ export async function validateAvailableLiveQuiz(
       id: quizId,
       status: DB.PublicationStatus.PUBLISHED,
       courseId,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
   })
 
@@ -3085,6 +3118,7 @@ export async function getCourseRunningLiveQuizzes(
     where: {
       id: courseId,
       isDeleted: false,
+      isDeletionPending: false,
     },
     include: {
       liveQuizzes: {
@@ -3108,7 +3142,10 @@ export async function getLiveQuizLeaderboard(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id: quizId,
-      OR: [{ courseId: null }, { course: { isDeleted: false } }],
+      OR: [
+        { courseId: null },
+        { course: { isDeleted: false, isDeletionPending: false } },
+      ],
     },
     include: {
       leaderboard: {
@@ -3227,10 +3264,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         where: {
           id: liveQuizId,
         },
-        include: { course: { select: { isDeleted: true } } },
+        include: {
+          course: { select: { isDeleted: true, isDeletionPending: true } },
+        },
       })
 
-      if (liveQuiz?.course?.isDeleted) return true
+      if (liveQuiz?.course?.isDeleted || liveQuiz?.course?.isDeletionPending)
+        return true
 
       if (!liveQuiz) {
         await sendTeamsNotification({
@@ -3275,7 +3315,10 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         where: {
           id: liveQuizId,
           isDeleted: false,
-          OR: [{ courseId: null }, { course: { isDeleted: false } }],
+          OR: [
+            { courseId: null },
+            { course: { isDeleted: false, isDeletionPending: false } },
+          ],
         },
         data: {
           status: DB.PublicationStatus.PUBLISHED,

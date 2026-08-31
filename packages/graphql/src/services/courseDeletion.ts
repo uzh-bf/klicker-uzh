@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
-import { getLiveQuizCourseDeletedKey } from '@klicker-uzh/util'
+import {
+  getLiveQuizCourseDeletedKey,
+  trySetLiveQuizCourseDeletedFence,
+} from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
@@ -11,8 +14,12 @@ import {
   getCourseDeletionStatusKey,
   isTerminalCourseDeletionStatus,
 } from './courseDeletionGuard.js'
+import {
+  type CourseDeletionDraftActivityIds,
+  clearCourseDeletionPending,
+  markCourseDeletionPending,
+} from './courseDeletionState.js'
 import { deleteCourse } from './courses.js'
-import { checkAccess } from './sharing.js'
 
 const COURSE_DELETION_STATUS_TTL_SECONDS = 24 * 60 * 60
 const COURSE_DELETION_STALE_AFTER_MS = 75 * 60 * 1000
@@ -20,6 +27,13 @@ const COURSE_DELETION_REPUBLISH_AFTER_MS = 5 * 60 * 1000
 const COURSE_DELETION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DELETION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
 const COURSE_DELETION_HEARTBEAT_TTL_SECONDS = 120
+const COURSE_DELETION_RESPONSE_FENCE_WAIT_MS = 5 * 60 * 1000
+const COURSE_DELETION_RESPONSE_FENCE_POLL_MS = 250
+const COURSE_DELETION_UNPUBLISHED_ADMISSION_STALE_MS = 15 * 60 * 1000
+const COURSE_DELETION_PUBLISHED_ADMISSION_RECONCILE_MS = 15 * 60 * 1000
+const COURSE_DELETION_ADMISSION_RECONCILE_COOLDOWN_MS = 30 * 60 * 1000
+const COURSE_DELETION_ADMISSION_RECONCILE_BATCH_SIZE = 20
+const COURSE_DELETION_RETRY_PROTECTION_MS = 60 * 60 * 1000
 
 export const COURSE_DELETION_JOB_STATUS_VALUES = [
   'COMPLETED',
@@ -51,17 +65,13 @@ interface CourseDeletionJob extends Omit<CourseDeletionStatus, 'isQueued'> {
   catalystInstitutional: boolean
   catalystIndividual: boolean
   deleteDraftActivities?: boolean
-  draftActivityIds?: {
-    liveQuizIds: string[]
-    practiceQuizIds: string[]
-    microLearningIds: string[]
-    groupActivityIds: string[]
-  }
+  draftActivityIds?: CourseDeletionDraftActivityIds
   liveQuizIds?: string[]
   lastPublicationAttemptAt?: number
   publicationRecoveryAttempts?: number
   publicationRecoveryNeeded?: boolean
   scheduledTaskIds?: string[]
+  retryProtectedUntil?: number
 }
 
 async function persistCourseDeletionResponseFences(
@@ -89,6 +99,86 @@ async function persistCourseDeletionResponseFences(
   const results = await pipeline.exec()
   for (const [error] of results ?? []) {
     if (error) throw error
+  }
+}
+
+async function waitForCourseDeletionResponseFences(
+  redis: Redis,
+  liveQuizIds: string[],
+  value: string,
+  ttlSeconds: number
+) {
+  const pendingIds = new Set(liveQuizIds)
+  const deadline = Date.now() + COURSE_DELETION_RESPONSE_FENCE_WAIT_MS
+
+  while (pendingIds.size > 0) {
+    for (const liveQuizId of pendingIds) {
+      if (
+        await trySetLiveQuizCourseDeletedFence(
+          redis,
+          liveQuizId,
+          value,
+          ttlSeconds
+        )
+      ) {
+        pendingIds.delete(liveQuizId)
+      }
+    }
+
+    if (pendingIds.size === 0) return
+    if (Date.now() >= deadline) {
+      throw new GraphQLError(
+        'Timed out waiting for active response processing to finish',
+        { extensions: { code: 'COURSE_DELETION_RESPONSE_FENCE_TIMEOUT' } }
+      )
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, COURSE_DELETION_RESPONSE_FENCE_POLL_MS)
+    )
+  }
+}
+
+async function waitForCourseDeletionResponseAdmissions(
+  prisma: ContextWithUser['prisma'],
+  courseId: string
+) {
+  const deadline = Date.now() + COURSE_DELETION_RESPONSE_FENCE_WAIT_MS
+
+  while (true) {
+    await prisma.liveQuizResponseAdmission.deleteMany({
+      where: {
+        courseId,
+        OR: [
+          { failedAt: { not: null } },
+          {
+            publishedAt: null,
+            createdAt: {
+              lte: new Date(
+                Date.now() - COURSE_DELETION_UNPUBLISHED_ADMISSION_STALE_MS
+              ),
+            },
+          },
+        ],
+      },
+    })
+    const pendingAdmission = await prisma.liveQuizResponseAdmission.findFirst({
+      where: { courseId, failedAt: null },
+      select: { token: true },
+    })
+    if (!pendingAdmission) return
+    if (Date.now() >= deadline) {
+      throw new GraphQLError(
+        'Timed out waiting for accepted responses to finish',
+        {
+          extensions: {
+            code: 'COURSE_DELETION_RESPONSE_ADMISSION_TIMEOUT',
+          },
+        }
+      )
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, COURSE_DELETION_RESPONSE_FENCE_POLL_MS)
+    )
   }
 }
 
@@ -128,6 +218,115 @@ function getErrorMessage(error: unknown): string {
   return String(error)
 }
 
+function isTerminalHatchetEventSummary(summary: {
+  cancelled?: number
+  failed?: number
+  pending?: number
+  queued?: number
+  running?: number
+  succeeded?: number
+}) {
+  const active =
+    (summary.pending ?? 0) + (summary.queued ?? 0) + (summary.running ?? 0)
+  const terminal =
+    (summary.cancelled ?? 0) + (summary.failed ?? 0) + (summary.succeeded ?? 0)
+
+  return active === 0 && terminal > 0
+}
+
+async function reconcileTerminalLiveQuizResponseAdmissions(
+  globalCtx: Parameters<HatchetHandlers['handleSweepStaleCourseDeletions']>[1],
+  warn: (message: string) => void
+) {
+  const reconciliationStartedAt = new Date()
+  const reconciliationRetryBefore = new Date(
+    reconciliationStartedAt.getTime() -
+      COURSE_DELETION_ADMISSION_RECONCILE_COOLDOWN_MS
+  )
+  const admissions = await globalCtx.prisma.liveQuizResponseAdmission.findMany({
+    where: {
+      eventId: { not: null },
+      failedAt: null,
+      OR: [
+        { lastReconciliationAttemptAt: null },
+        {
+          lastReconciliationAttemptAt: {
+            lte: reconciliationRetryBefore,
+          },
+        },
+      ],
+      publishedAt: {
+        lte: new Date(
+          Date.now() - COURSE_DELETION_PUBLISHED_ADMISSION_RECONCILE_MS
+        ),
+      },
+    },
+    orderBy: [
+      {
+        lastReconciliationAttemptAt: { nulls: 'first', sort: 'asc' },
+      },
+      { publishedAt: 'asc' },
+    ],
+    select: { eventId: true, token: true },
+    take: COURSE_DELETION_ADMISSION_RECONCILE_BATCH_SIZE,
+  })
+
+  let terminalizedAdmissions = 0
+  for (const admission of admissions) {
+    if (!admission.eventId) continue
+
+    const claimed = await globalCtx.prisma.liveQuizResponseAdmission.updateMany(
+      {
+        where: {
+          eventId: admission.eventId,
+          failedAt: null,
+          token: admission.token,
+          OR: [
+            { lastReconciliationAttemptAt: null },
+            {
+              lastReconciliationAttemptAt: {
+                lte: reconciliationRetryBefore,
+              },
+            },
+          ],
+        },
+        data: { lastReconciliationAttemptAt: reconciliationStartedAt },
+      }
+    )
+    if (claimed.count === 0) continue
+
+    try {
+      const event = await globalCtx.hatchet.api.eventGet(admission.eventId)
+      const summary = event.data.workflowRunSummary
+      if (!summary || !isTerminalHatchetEventSummary(summary)) continue
+
+      const terminalized =
+        await globalCtx.prisma.liveQuizResponseAdmission.updateMany({
+          where: {
+            eventId: admission.eventId,
+            failedAt: null,
+            token: admission.token,
+          },
+          data: { failedAt: new Date() },
+        })
+      terminalizedAdmissions += terminalized.count
+    } catch (error) {
+      warn(
+        `Could not reconcile live quiz response admission ${admission.token} from Hatchet event ${admission.eventId}: ${getErrorMessage(error)}`
+      )
+    }
+  }
+
+  return { inspectedAdmissions: admissions.length, terminalizedAdmissions }
+}
+
+function hasCourseDeletionLoginScope(scope: DB.UserLoginScope) {
+  return (
+    scope === DB.UserLoginScope.ACCOUNT_OWNER ||
+    scope === DB.UserLoginScope.FULL_ACCESS
+  )
+}
+
 function getGraphQLErrorCode(error: unknown): string | undefined {
   if (!error || typeof error !== 'object') return undefined
 
@@ -150,7 +349,10 @@ function getGraphQLErrorCode(error: unknown): string | undefined {
 }
 
 function getCourseDeletionErrorType(error: unknown): CourseDeletionErrorType {
-  return getGraphQLErrorCode(error) === 'FORBIDDEN' ? 'access' : 'generic'
+  const code = getGraphQLErrorCode(error)
+  if (code === 'FORBIDDEN') return 'access'
+  if (code === 'COURSE_DELETION_NOT_ALLOWED') return 'notAllowed'
+  return 'generic'
 }
 
 function parseCourseDeletionDate(value: unknown) {
@@ -283,6 +485,7 @@ async function updateCourseDeletionJob(
       | 'lastPublicationAttemptAt'
       | 'publicationRecoveryAttempts'
       | 'publicationRecoveryNeeded'
+      | 'retryProtectedUntil'
       | 'liveQuizIds'
       | 'scheduledTaskIds'
       | 'status'
@@ -418,6 +621,32 @@ async function updateCourseDeletionJobForProcess(
   return updatedJob
 }
 
+async function protectCourseDeletionRetry(
+  redis: Redis,
+  job: CourseDeletionJob
+) {
+  const protectedJob = {
+    ...job,
+    retryProtectedUntil: Date.now() + COURSE_DELETION_RETRY_PROTECTION_MS,
+    updatedAt: new Date(),
+  } satisfies CourseDeletionJob
+
+  const persisted = await redis.eval(
+    `if redis.call("get", KEYS[1]) == ARGV[1] then
+      redis.call("set", KEYS[1], ARGV[2], "EX", ARGV[3])
+      return 1
+    end
+    return 0`,
+    1,
+    getCourseDeletionStatusKey(job.id),
+    serializeCourseDeletionJob(job),
+    serializeCourseDeletionJob(protectedJob),
+    COURSE_DELETION_STATUS_TTL_SECONDS
+  )
+
+  return Number(persisted) === 1 ? protectedJob : null
+}
+
 async function recoverCourseDeletionPostCommit(
   job: CourseDeletionJob,
   ctx: Pick<ContextWithUser, 'emitter' | 'hatchet' | 'redisExec'>,
@@ -485,6 +714,33 @@ function getPublicCourseDeletionStatus(
   }
 }
 
+async function ensureCourseDeletionPending(
+  prisma: ContextWithUser['prisma'],
+  job: CourseDeletionJob
+) {
+  const marked = await markCourseDeletionPending(prisma, {
+    courseId: job.courseId,
+    deleteDraftActivities: job.deleteDraftActivities ?? false,
+    jobId: job.id,
+    requestedById: job.userId,
+  })
+  if (marked) return
+
+  // Hatchet can process a small course between event acknowledgement and this
+  // write. In that case the same job has already reached its durable success
+  // state, so the initiating request should still report an accepted job.
+  const course = await prisma.course.findUnique({
+    where: { id: job.courseId },
+    select: { deletionJobId: true, isDeleted: true, isDeletionPending: true },
+  })
+  if (course?.isDeleted) return
+  if (course?.isDeletionPending && course.deletionJobId === job.id) return
+
+  throw new GraphQLError('Course deletion target is no longer available', {
+    extensions: { code: 'COURSE_DELETION_TARGET_UNAVAILABLE' },
+  })
+}
+
 async function publishCourseDeletionEvent(
   hatchet: ContextWithUser['hatchet'],
   jobId: string
@@ -508,7 +764,7 @@ async function publishCourseDeletionEvent(
 }
 
 async function publishCourseDeletionEventKeepingPending(
-  ctx: Pick<ContextWithUser, 'hatchet' | 'redisExec'>,
+  ctx: Pick<ContextWithUser, 'hatchet' | 'prisma' | 'redisExec'>,
   job: CourseDeletionJob
 ) {
   try {
@@ -533,6 +789,8 @@ async function publishCourseDeletionEventKeepingPending(
       )) ?? job
     )
   }
+
+  await ensureCourseDeletionPending(ctx.prisma, job)
 
   if (job.publicationRecoveryNeeded) {
     return (
@@ -560,6 +818,8 @@ async function normalizeStaleCourseDeletionJob(
   if (
     isTerminalCourseDeletionStatus(job.status) ||
     Date.now() - job.createdAt.getTime() < COURSE_DELETION_STALE_AFTER_MS ||
+    (typeof job.retryProtectedUntil === 'number' &&
+      Date.now() < job.retryProtectedUntil) ||
     (await hasFreshCourseDeletionHeartbeat(redis, job.id))
   ) {
     return job
@@ -596,6 +856,10 @@ async function normalizeStaleCourseDeletionJob(
       job.liveQuizIds ?? [],
       job.id
     )
+    await clearCourseDeletionPending(ctx.prisma, {
+      courseId: job.courseId,
+      jobId: job.id,
+    })
     console.warn(
       `Course deletion job ${job.id} went stale without a heartbeat; marked FAILED.`
     )
@@ -605,6 +869,86 @@ async function normalizeStaleCourseDeletionJob(
   return (await getCourseDeletionJob(redis, job.id)) ?? job
 }
 
+async function hasCourseDeletionAdminAccess(
+  prisma: ContextWithUser['prisma'],
+  {
+    courseId,
+    deletionJobId,
+    userId,
+  }: { courseId: string; deletionJobId?: string; userId: string }
+) {
+  const permission = await prisma.derivedPermission.findUnique({
+    where: {
+      courseId_userId: { courseId, userId },
+      permissionLevel: {
+        in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+      },
+      course: {
+        isDeleted: false,
+        ...(deletionJobId ? { deletionJobId, isDeletionPending: true } : {}),
+      },
+    },
+    select: { id: true },
+  })
+  return Boolean(permission)
+}
+
+async function snapshotCourseDeletionScope(
+  ctx: Pick<ContextWithUser, 'prisma' | 'redisExec'>,
+  job: CourseDeletionJob
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: job.courseId,
+      isAssessmentEnabled: false,
+      isDeleted: false,
+    },
+    select: {
+      name: true,
+      liveQuizzes: {
+        select: { id: true, isDeleted: true, status: true },
+      },
+      practiceQuizzes: {
+        select: { id: true, isDeleted: true, status: true },
+      },
+      microLearnings: {
+        select: { id: true, isDeleted: true, status: true },
+      },
+      groupActivities: {
+        select: { id: true, isDeleted: true, status: true },
+      },
+    },
+  })
+  if (!course) return null
+
+  const getDraftIds = (
+    activities: Array<{
+      id: string
+      isDeleted: boolean
+      status: DB.PublicationStatus
+    }>
+  ) =>
+    activities
+      .filter(
+        (activity) =>
+          !activity.isDeleted && activity.status === DB.PublicationStatus.DRAFT
+      )
+      .map((activity) => activity.id)
+  const updatedJob: CourseDeletionJob = {
+    ...job,
+    courseName: course.name,
+    draftActivityIds: {
+      liveQuizIds: getDraftIds(course.liveQuizzes),
+      practiceQuizIds: getDraftIds(course.practiceQuizzes),
+      microLearningIds: getDraftIds(course.microLearnings),
+      groupActivityIds: getDraftIds(course.groupActivities),
+    },
+    liveQuizIds: course.liveQuizzes.map((liveQuiz) => liveQuiz.id),
+  }
+  await persistCourseDeletionJob(ctx.redisExec, updatedJob)
+  return updatedJob
+}
+
 export async function startCourseDeletion(
   {
     id,
@@ -612,24 +956,29 @@ export async function startCourseDeletion(
   }: { id: string; deleteDraftActivities?: boolean | null },
   ctx: ContextWithUser
 ) {
-  const hasDeletionAccess = await checkAccess(
-    [
-      {
-        courseId: id,
-        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-      },
-    ],
-    ctx
-  )
+  if (process.env.COURSE_DELETION_ENABLED === 'false') {
+    throw new GraphQLError(
+      'Course deletion is temporarily unavailable during rollout',
+      { extensions: { code: 'COURSE_DELETION_NOT_ENABLED' } }
+    )
+  }
+  if (!hasCourseDeletionLoginScope(ctx.user.scope)) {
+    throw new GraphQLError('Course deletion requires full account access', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+  const hasDeletionAccess = await hasCourseDeletionAdminAccess(ctx.prisma, {
+    courseId: id,
+    userId: ctx.user.sub,
+  })
   if (!hasDeletionAccess) return null
 
   const course = await ctx.prisma.course.findUnique({
     where: { id, isAssessmentEnabled: false, isDeleted: false },
     select: {
+      deletionJobId: true,
+      isDeletionPending: true,
       name: true,
-      liveQuizzes: {
-        select: { id: true },
-      },
     },
   })
   if (!course) return null
@@ -656,9 +1005,12 @@ export async function startCourseDeletion(
       }
 
       if (normalizedJob.status === 'PENDING') {
+        const preparedJob =
+          (await snapshotCourseDeletionScope(ctx, normalizedJob)) ??
+          normalizedJob
         const publishedJob = await publishCourseDeletionEventKeepingPending(
           ctx,
-          normalizedJob
+          preparedJob
         )
         return getPublicCourseDeletionStatus(publishedJob)
       }
@@ -667,8 +1019,15 @@ export async function startCourseDeletion(
     }
   }
 
+  if (course.isDeletionPending && course.deletionJobId) {
+    await clearCourseDeletionPending(ctx.prisma, {
+      courseId: id,
+      jobId: course.deletionJobId,
+    })
+  }
+
   const now = new Date()
-  const job: CourseDeletionJob = {
+  let job: CourseDeletionJob = {
     id: randomUUID(),
     status: 'PENDING',
     courseId: id,
@@ -683,7 +1042,13 @@ export async function startCourseDeletion(
     catalystInstitutional: ctx.user.catalystInstitutional,
     catalystIndividual: ctx.user.catalystIndividual,
     deleteDraftActivities: deleteDraftActivities ?? false,
-    liveQuizIds: course.liveQuizzes.map((liveQuiz) => liveQuiz.id),
+    draftActivityIds: {
+      liveQuizIds: [],
+      practiceQuizIds: [],
+      microLearningIds: [],
+      groupActivityIds: [],
+    },
+    liveQuizIds: [],
   }
 
   await persistCourseDeletionJob(ctx.redisExec, job)
@@ -711,9 +1076,11 @@ export async function startCourseDeletion(
       }
 
       if (lockedJob.status === 'PENDING') {
+        const preparedJob =
+          (await snapshotCourseDeletionScope(ctx, lockedJob)) ?? lockedJob
         const publishedJob = await publishCourseDeletionEventKeepingPending(
           ctx,
-          lockedJob
+          preparedJob
         )
         return getPublicCourseDeletionStatus(publishedJob)
       }
@@ -739,21 +1106,16 @@ export async function startCourseDeletion(
     }
   }
 
-  try {
-    await persistCourseDeletionResponseFences(
-      ctx.redisExec,
-      job.liveQuizIds ?? [],
-      job.id,
-      COURSE_DELETION_STATUS_TTL_SECONDS
-    )
-  } catch (error) {
+  // The Redis deletion lock excludes all request-scoped mutation leases. Read
+  // the destructive scope only after acquiring it so a mutation that completed
+  // during start-up is included, while later mutations are rejected.
+  const preparedJob = await snapshotCourseDeletionScope(ctx, job)
+  if (!preparedJob) {
     await releaseCourseDeletionLockValue(ctx.redisExec, lockKey, job.id)
     await deleteCourseDeletionJob(ctx.redisExec, job.id)
-    throw new GraphQLError('Course deletion could not be started', {
-      extensions: { code: 'COURSE_DELETION_START_FAILED' },
-      originalError: error instanceof Error ? error : undefined,
-    })
+    return null
   }
+  job = preparedJob
 
   const publishedJob = await publishCourseDeletionEventKeepingPending(ctx, job)
 
@@ -770,8 +1132,36 @@ export async function getCourseDeletionStatuses(
   )
   const statuses: CourseDeletionStatus[] = []
 
-  for (const job of jobs) {
-    if (!job || job.userId !== ctx.user.sub) continue
+  for (let index = 0; index < uniqueIds.length; index++) {
+    const jobId = uniqueIds[index]!
+    const job = jobs[index]
+    if (!job) {
+      const pendingCourse = await ctx.prisma.course.findFirst({
+        where: {
+          deletionJobId: jobId,
+          deletionRequestedById: ctx.user.sub,
+          isDeleted: false,
+          isDeletionPending: true,
+        },
+        select: { deletionPendingAt: true, id: true, name: true },
+      })
+      if (!pendingCourse) continue
+
+      const pendingAt = pendingCourse.deletionPendingAt ?? new Date()
+      statuses.push({
+        id: jobId,
+        status: 'PENDING',
+        isQueued: true,
+        courseId: pendingCourse.id,
+        courseName: pendingCourse.name,
+        errorType: null,
+        errorMessage: null,
+        createdAt: pendingAt,
+        updatedAt: pendingAt,
+      })
+      continue
+    }
+    if (job.userId !== ctx.user.sub) continue
 
     const normalizedJob = await normalizeStaleCourseDeletionJob(
       ctx.redisExec,
@@ -863,6 +1253,25 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
     let job = currentJob
 
     try {
+      if (!hasCourseDeletionLoginScope(job.userScope)) {
+        await clearCourseDeletionPending(globalCtx.prisma, {
+          courseId: job.courseId,
+          jobId: job.id,
+        })
+        await updateCourseDeletionJobForProcess(
+          redis,
+          job,
+          {
+            status: 'FAILED',
+            errorType: 'access',
+            errorMessage: 'Course deletion requires full account access.',
+          },
+          processLockKey,
+          processLockValue
+        )
+        return false
+      }
+
       const existingCourse = await globalCtx.prisma.course.findUnique({
         where: { id: job.courseId },
         select: {
@@ -920,12 +1329,18 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         return true
       }
 
+      await ensureCourseDeletionPending(globalCtx.prisma, job)
+
       if (existingCourse.isAssessmentEnabled) {
         await releaseCourseDeletionResponseFences(
           redis,
           job.liveQuizIds ?? [],
           job.id
         )
+        await clearCourseDeletionPending(globalCtx.prisma, {
+          courseId: job.courseId,
+          jobId: job.id,
+        })
         await updateCourseDeletionJobForProcess(
           redis,
           job,
@@ -956,36 +1371,13 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
           activity.scheduledCompletionTaskId,
         ]),
       ].filter((taskId): taskId is string => Boolean(taskId))
-      const getDraftIds = (
-        activities: Array<{
-          id: string
-          isDeleted: boolean
-          status: DB.PublicationStatus
-        }>
-      ) =>
-        job.deleteDraftActivities
-          ? activities
-              .filter(
-                (activity) =>
-                  !activity.isDeleted &&
-                  activity.status === DB.PublicationStatus.DRAFT
-              )
-              .map((activity) => activity.id)
-          : []
-      const draftActivityIds = {
-        liveQuizIds: getDraftIds(existingCourse.liveQuizzes),
-        practiceQuizIds: getDraftIds(existingCourse.practiceQuizzes),
-        microLearningIds: getDraftIds(existingCourse.microLearnings),
-        groupActivityIds: getDraftIds(existingCourse.groupActivities),
-      }
-
       job = await updateCourseDeletionJobForProcess(
         redis,
         job,
         {
           status: 'RUNNING',
+          retryProtectedUntil: undefined,
           scheduledTaskIds: [...new Set(scheduledTaskIds)],
-          draftActivityIds,
           liveQuizIds: existingCourse.liveQuizzes.map(
             (activity) => activity.id
           ),
@@ -1013,14 +1405,13 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
         },
       } satisfies ContextWithUser
 
-      const hasDeletionAccess = await checkAccess(
-        [
-          {
-            courseId: job.courseId,
-            minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-          },
-        ],
-        ctx
+      const hasDeletionAccess = await hasCourseDeletionAdminAccess(
+        globalCtx.prisma,
+        {
+          courseId: job.courseId,
+          deletionJobId: job.id,
+          userId: job.userId,
+        }
       )
       if (!hasDeletionAccess) {
         await releaseCourseDeletionResponseFences(
@@ -1048,10 +1439,23 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
       }
       await renewCourseDeletionHeartbeat(redis, jobId)
 
+      await waitForCourseDeletionResponseAdmissions(
+        globalCtx.prisma,
+        job.courseId
+      )
+      await waitForCourseDeletionResponseFences(
+        redis,
+        job.liveQuizIds ?? [],
+        job.id,
+        COURSE_DELETION_STATUS_TTL_SECONDS
+      )
+
       await deleteCourse(
         {
+          deletionJobId: job.id,
           id: job.courseId,
           deleteDraftActivities: job.deleteDraftActivities ?? false,
+          draftActivityIds: job.draftActivityIds,
         },
         ctx
       )
@@ -1087,7 +1491,38 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
       }
 
       const errorType = getCourseDeletionErrorType(error)
-      if (errorType === 'generic') throw error
+      if (errorType === 'generic') {
+        if (
+          error instanceof GraphQLError &&
+          error.extensions.code === 'COURSE_DELETION_RESPONSE_ADMISSION_PENDING'
+        ) {
+          // A response won the database race after the preflight check. Let its
+          // worker reacquire the Redis lease before Hatchet retries deletion.
+          await releaseCourseDeletionResponseFences(
+            redis,
+            job.liveQuizIds ?? [],
+            job.id
+          )
+        }
+        try {
+          job = (await protectCourseDeletionRetry(redis, job)) ?? job
+        } catch (protectionError) {
+          executionCtx.logger.warn(
+            `Failed to protect course deletion job ${jobId} for retry: ${getErrorMessage(protectionError)}`
+          )
+        }
+        throw error
+      }
+
+      await releaseCourseDeletionResponseFences(
+        redis,
+        job.liveQuizIds ?? [],
+        job.id
+      )
+      await clearCourseDeletionPending(globalCtx.prisma, {
+        courseId: job.courseId,
+        jobId: job.id,
+      })
 
       await updateCourseDeletionJobForProcess(
         redis,
@@ -1115,9 +1550,14 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
 export const handleSweepStaleCourseDeletions: HatchetHandlers['handleSweepStaleCourseDeletions'] =
   async (_, globalCtx, executionCtx) => {
     const redis = globalCtx.redisExec
+    const admissionReconciliation =
+      await reconcileTerminalLiveQuizResponseAdmissions(globalCtx, (message) =>
+        executionCtx.logger.warn(message)
+      )
     let cursor = '0'
     let scannedJobs = 0
     let normalizedJobs = 0
+    let restoredCourses = 0
 
     do {
       const [nextCursor, keys] = await redis.scan(
@@ -1162,6 +1602,7 @@ export const handleSweepStaleCourseDeletions: HatchetHandlers['handleSweepStaleC
             job = claimedJob
             try {
               await publishCourseDeletionEvent(globalCtx.hatchet, job.id)
+              await ensureCourseDeletionPending(globalCtx.prisma, job)
               job =
                 (await transitionPendingCourseDeletionPublicationRecovery(
                   redis,
@@ -1193,9 +1634,69 @@ export const handleSweepStaleCourseDeletions: HatchetHandlers['handleSweepStaleC
       }
     } while (cursor !== '0')
 
-    if (scannedJobs > 0) {
+    const stalePendingCourses = await globalCtx.prisma.course.findMany({
+      where: {
+        deletionJobId: { not: null },
+        deletionPendingAt: {
+          lte: new Date(Date.now() - COURSE_DELETION_STALE_AFTER_MS),
+        },
+        isDeleted: false,
+        isDeletionPending: true,
+      },
+      select: {
+        deletionJobId: true,
+        id: true,
+        liveQuizzes: { select: { id: true } },
+      },
+    })
+
+    for (const course of stalePendingCourses) {
+      const jobId = course.deletionJobId
+      if (!jobId) continue
+
+      const [rawJob, processLease, heartbeat] = await Promise.all([
+        redis.get(getCourseDeletionStatusKey(jobId)),
+        redis.get(getCourseDeletionProcessLockKey(jobId)),
+        redis.get(getCourseDeletionHeartbeatKey(jobId)),
+      ])
+      const job = parseCourseDeletionJob(rawJob)
+      if (
+        (job && !isTerminalCourseDeletionStatus(job.status)) ||
+        processLease ||
+        heartbeat
+      ) {
+        continue
+      }
+
+      await releaseCourseDeletionResponseFences(
+        redis,
+        course.liveQuizzes.map((liveQuiz) => liveQuiz.id),
+        jobId
+      )
+      const cleared = await clearCourseDeletionPending(globalCtx.prisma, {
+        courseId: course.id,
+        jobId,
+      })
+      if (!cleared) continue
+
+      await releaseCourseDeletionLockValue(
+        redis,
+        getCourseDeletionCourseLockKey(course.id),
+        jobId
+      )
+      restoredCourses += 1
+      executionCtx.logger.warn(
+        `Restored course ${course.id} after deletion job ${jobId} disappeared from Redis.`
+      )
+    }
+
+    if (
+      admissionReconciliation.inspectedAdmissions > 0 ||
+      scannedJobs > 0 ||
+      restoredCourses > 0
+    ) {
       executionCtx.logger.info(
-        `Course deletion sweep inspected ${scannedJobs} non-terminal jobs and normalized ${normalizedJobs}.`
+        `Course deletion sweep inspected ${scannedJobs} non-terminal jobs, normalized ${normalizedJobs}, restored ${restoredCourses} courses with missing jobs, and terminalized ${admissionReconciliation.terminalizedAdmissions} of ${admissionReconciliation.inspectedAdmissions} stale response admissions.`
       )
     }
 

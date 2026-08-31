@@ -1572,6 +1572,7 @@ export async function createLiveQuizFromTemplate(
         where: {
           id: cleanCourseId,
           isDeleted: false,
+          isDeletionPending: false,
           permissions: { some: { userId: ctx.user.sub } },
         },
       })

@@ -17,6 +17,11 @@ model Course {
   areAnalyticsValid Boolean  @default(false)
   isArchived        Boolean  @default(false)
   isDeleted         Boolean  @default(false)
+  isDeletionPending Boolean  @default(false)
+  deletionJobId     String?  @unique
+  deletionRequestedById String? @db.Uuid
+  deletionPendingAt DateTime?
+  deleteDraftActivitiesOnDeletion Boolean @default(false)
 
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique

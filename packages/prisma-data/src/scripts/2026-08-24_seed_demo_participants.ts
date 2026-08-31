@@ -112,6 +112,8 @@ async function resolveTargets(
         ownerId: owner.id,
         name: target.courseName,
         isArchived: false,
+        isDeleted: false,
+        isDeletionPending: false,
       },
       select: {
         id: true,

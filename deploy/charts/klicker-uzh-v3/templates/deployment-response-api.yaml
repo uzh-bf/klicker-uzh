@@ -52,6 +52,15 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Standard response admission checks the durable course deletion
+            # state in the same database as GraphQL. Reference the established
+            # backend Secret directly so rollout cannot depend on duplicating
+            # DATABASE_URL into the response-api Secret.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

@@ -1,21 +1,52 @@
 import {
   ConcurrencyLimitStrategy,
+  type JsonObject,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
-import { processResponseMessage } from './processors/processor.js'
+import {
+  type LiveQuizResponseMessage,
+  processResponseMessage,
+} from './processors/processor.js'
 
-export const processAnonymousResponseTask = hatchetClient.task({
+async function terminalizeFailedResponseAdmission(input: JsonObject) {
+  const responseLeaseToken = input.responseLeaseToken
+  const sessionId = input.sessionId
+  if (typeof responseLeaseToken !== 'string' || typeof sessionId !== 'string') {
+    return 0
+  }
+
+  const result = await prisma.liveQuizResponseAdmission.updateMany({
+    where: {
+      token: responseLeaseToken,
+      liveQuizId: sessionId,
+      failedAt: null,
+    },
+    data: { failedAt: new Date() },
+  })
+  return result.count
+}
+
+export const processAnonymousResponseWorkflow = hatchetClient.workflow({
   name: 'process-anonymous-response',
-  retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+})
+processAnonymousResponseWorkflow.task({
+  name: 'process-anonymous-response',
+  retries: 1,
+  fn: async (input, ctx) => {
+    await processResponseMessage(
+      input as unknown as LiveQuizResponseMessage,
+      ctx
+    )
+  },
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -24,13 +55,41 @@ export const processAnonymousResponseTask = hatchetClient.task({
   //   },
   // ],
 })
+processAnonymousResponseWorkflow.onFailure({
+  name: 'terminalize-anonymous-response-admission',
+  retries: 10,
+  fn: async (input, ctx) => {
+    const count = await terminalizeFailedResponseAdmission(input)
+    ctx.logger.error(
+      `Anonymous response processing retries exhausted; terminalized admissions: ${count}`
+    )
+  },
+})
 
-export const processAuthenticatedResponseTask = hatchetClient.durableTask({
+export const processAuthenticatedResponseWorkflow = hatchetClient.workflow({
   name: 'process-authenticated-response',
-  retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+})
+processAuthenticatedResponseWorkflow.durableTask({
+  name: 'process-authenticated-response',
+  retries: 3,
+  fn: async (input, ctx) => {
+    await processResponseMessage(
+      input as unknown as LiveQuizResponseMessage,
+      ctx
+    )
+  },
+})
+processAuthenticatedResponseWorkflow.onFailure({
+  name: 'terminalize-authenticated-response-admission',
+  retries: 10,
+  fn: async (input, ctx) => {
+    const count = await terminalizeFailedResponseAdmission(input)
+    ctx.logger.error(
+      `Authenticated response processing retries exhausted; terminalized admissions: ${count}`
+    )
+  },
 })
 
 export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
@@ -84,12 +143,18 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
 async function main() {
   console.log('Starting response processor worker...')
 
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required for response processing')
+  }
+  await prisma.$connect()
+  console.log('Database connection established')
+
   const mode =
     process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
   const workflows =
     process.env.ASSESSMENT_MODE === 'true'
       ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+      : [processAuthenticatedResponseWorkflow, processAnonymousResponseWorkflow]
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)

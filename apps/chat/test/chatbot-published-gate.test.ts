@@ -44,7 +44,7 @@ describe('getChatbotOr404 publication gate', () => {
       expect.objectContaining({
         where: {
           id: VALID_ID,
-          course: { isDeleted: false },
+          course: { isDeleted: false, isDeletionPending: false },
         },
         select: expect.objectContaining({ courseId: true, status: true }),
       })

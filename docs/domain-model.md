@@ -71,20 +71,49 @@ in `PublicationStatus.DRAFT`; activities in every other status are retained.
 
 The manage frontend uses `startCourseDeletion` exclusively. It closes the modal
 after Hatchet accepts the job; an ambiguous publication acknowledgement keeps
-the modal open and can be retried with the same job id. It persists the
-Redis-backed job id, course id, and optional draft-cleanup choice in
-`localStorage`, and polls `courseDeletionStatuses` without showing lifecycle
-notifications. While the job is active, the affected course is hidden across
-tabs and reloads; linked draft activities are hidden too when their deletion
-was selected. Terminal polling removes the local target and refetches the
-course list. The worker rechecks course-level `ADMIN` access and calls
+the modal open and can be retried with the same job id. Acceptance records a
+durable pending state on `Course`, including the job id and optional
+draft-cleanup choice, before returning success. Active-course filters hide the
+course for every client, and the `UserActivities` view hides linked draft
+activities when cleanup was selected. The initiating browser also persists the
+job id and polls `courseDeletionStatuses` invisibly so it can refetch on a
+terminal outcome; this local state is not the visibility or write-protection
+boundary. Terminal failure clears the durable pending state and makes retained
+data visible again. The worker rechecks course-level `ADMIN` access and calls
 `packages/graphql/src/services/courses.ts:deleteCourse`, which applies optional
 draft cleanup and the course soft-delete marker in one interactive transaction
 with a transaction-level advisory lock. `Course.isDeleted = true` is the
 durable success marker for retries and stale-job reconciliation; an absent row
 is also accepted for compatibility with deletion jobs committed by older code.
-The synchronous `deleteCourse` mutation remains temporarily available to
-rolling clients and invokes the same soft-delete transaction.
+The deprecated `deleteCourse` mutation remains as a rolling-client compatibility
+adapter, but it queues this same background workflow and never performs direct
+deletion. Database triggers reject hard deletion unless an explicit,
+transaction-local purge context is enabled and reject ordinary updates to
+pending/deleted course rows, so rolling old pods cannot destroy or reopen the
+retained graph.
+
+Production rollout is two-phase: the first deployment keeps
+`COURSE_DELETION_ENABLED=false` while all Response API and worker replicas roll
+and old tokenless events drain; a subsequent configuration rollout enables the
+mutation. This gate is part of the response-handoff compatibility boundary.
+
+Deletion snapshots the ids of linked draft activities when Hatchet accepts the
+job. Before returning HTTP 200, the response API persists a
+`LiveQuizResponseAdmission`, publishes the Hatchet event, and records that
+publication. Concurrent admission transactions share the course advisory lock;
+course deletion takes its exclusive form. Redis remains the fast processing
+fence, but the durable admission survives lease expiry and a long worker
+backlog. The deletion worker proceeds only after durable admissions and active
+Redis leases have drained; the response worker reacquires/renews a stable
+admission-token or legacy message-id identity under a unique attempt owner,
+atomically commits response effects with a completed marker only while that
+owner is current, and removes the admission after completion.
+If all processing retries fail, the workflow's failure handler marks the
+admission terminal and deletion cleans it up instead of waiting indefinitely.
+This keeps optional
+cleanup scope stable and prevents an accepted response from being lost across
+the deletion boundary. A scheduled sweep restores stale pending courses whose
+Redis job and worker leases have disappeared.
 
 ## Course duplication
 

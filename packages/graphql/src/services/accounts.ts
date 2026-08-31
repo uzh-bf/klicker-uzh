@@ -829,7 +829,7 @@ export async function createParticipantAccount(
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
     })
 
     if (!course || course.isAssessmentEnabled) {
@@ -991,7 +991,7 @@ export async function loginParticipantWithLti(
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, isDeleted: false },
+      where: { id: courseId, isDeleted: false, isDeletionPending: false },
     })
 
     if (!course || course.isAssessmentEnabled) {

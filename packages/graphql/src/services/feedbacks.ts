@@ -2,7 +2,10 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 const activeLiveQuizCourseFilter = {
-  OR: [{ courseId: null }, { course: { isDeleted: false } }],
+  OR: [
+    { courseId: null },
+    { course: { isDeleted: false, isDeletionPending: false } },
+  ],
 }
 
 export async function getFeedbacks(

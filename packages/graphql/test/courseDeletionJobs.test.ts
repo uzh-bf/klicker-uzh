@@ -5,20 +5,14 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { getLiveQuizCourseDeletedKey } from '@klicker-uzh/util'
 import type { Redis } from 'ioredis'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
 const serviceMocks = vi.hoisted(() => ({
-  checkAccess: vi.fn(),
   deleteCourse: vi.fn(),
 }))
-
-vi.mock('../src/services/sharing.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('../src/services/sharing.js')>()
-  return { ...original, checkAccess: serviceMocks.checkAccess }
-})
 
 vi.mock('../src/services/courses.js', async (importOriginal) => {
   const original =
@@ -74,6 +68,18 @@ class FakeRedis {
     _numKeys: number,
     ...args: Array<string | number>
   ) {
+    if (script.includes('ARGV[3] == ""')) {
+      const [deletedKey = '', processingKey = '', value = ''] = args.map(String)
+      const now = Number(args[3])
+      const processing = this.mutationFences.get(processingKey) ?? new Map()
+      for (const [token, expiry] of processing) {
+        if (expiry <= now) processing.delete(token)
+      }
+      if (processing.size > 0) return 0
+      this.values.set(deletedKey, value)
+      return 1
+    }
+
     if (script.includes('zremrangebyscore') && script.includes('zadd')) {
       const [deletionLockKey = '', mutationFenceKey = '', token = ''] =
         args.map(String)
@@ -129,6 +135,14 @@ class FakeRedis {
       return 1
     }
 
+    if (_numKeys === 1 && script.includes('redis.call("set"')) {
+      const [statusKey = '', expectedJob = '', updatedJob = ''] =
+        args.map(String)
+      if (this.values.get(statusKey) !== expectedJob) return 0
+      this.values.set(statusKey, updatedJob)
+      return 1
+    }
+
     if (script.includes('redis.call("set"')) {
       const [
         lockKey = '',
@@ -157,6 +171,8 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
   const redis = new FakeRedis()
   const findUnique = vi.fn().mockResolvedValue({
     id: 'course-id',
+    deletionJobId: null,
+    isDeletionPending: false,
     name: 'Large course',
     isDeleted: false,
     isAssessmentEnabled: false,
@@ -165,12 +181,22 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
     microLearnings: [],
     groupActivities: [],
   })
+  const findFirst = vi.fn().mockResolvedValue(null)
+  const updateMany = vi.fn().mockResolvedValue({ count: 1 })
+  const findMany = vi.fn().mockResolvedValue([])
+  const findPermission = vi.fn().mockResolvedValue({ id: 'permission-id' })
+  const findResponseAdmission = vi.fn().mockResolvedValue(null)
+  const findResponseAdmissions = vi.fn().mockResolvedValue([])
+  const deleteResponseAdmissions = vi.fn().mockResolvedValue({ count: 0 })
+  const updateResponseAdmissions = vi.fn().mockResolvedValue({ count: 1 })
   const push = vi.fn().mockResolvedValue(undefined)
+  const getEvent = vi.fn()
   const deleteScheduledTask = vi.fn().mockResolvedValue(undefined)
   const findActivity = vi.fn().mockResolvedValue({
     courseId: 'course-id',
-    course: { isDeleted: false },
+    course: { isDeleted: false, isDeletionPending: false },
   })
+  const courseClient = { findFirst, findMany, findUnique, updateMany }
   const ctx = {
     user: {
       sub: userId,
@@ -180,7 +206,22 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
       catalystIndividual: false,
     },
     prisma: {
-      course: { findUnique },
+      course: courseClient,
+      $transaction: vi.fn(
+        async (
+          callback: (tx: {
+            course: typeof courseClient
+            $executeRaw: ReturnType<typeof vi.fn>
+          }) => unknown
+        ) => callback({ course: courseClient, $executeRaw: vi.fn() })
+      ),
+      derivedPermission: { findUnique: findPermission },
+      liveQuizResponseAdmission: {
+        deleteMany: deleteResponseAdmissions,
+        findFirst: findResponseAdmission,
+        findMany: findResponseAdmissions,
+        updateMany: updateResponseAdmissions,
+      },
       liveQuiz: { findUnique: findActivity },
       practiceQuiz: { findUnique: findActivity },
       microLearning: { findUnique: findActivity },
@@ -191,6 +232,7 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
     pubSub: {},
     emitter: { emit: vi.fn() },
     hatchet: {
+      api: { eventGet: getEvent },
       events: { push },
       scheduled: { delete: deleteScheduledTask },
     },
@@ -199,7 +241,22 @@ function createContext(userId = 'user-1', response?: EventEmitter) {
     res: response as never,
   } as unknown as ContextWithUser
 
-  return { ctx, deleteScheduledTask, findUnique, push, redis }
+  return {
+    ctx,
+    deleteResponseAdmissions,
+    deleteScheduledTask,
+    findPermission,
+    findResponseAdmission,
+    findResponseAdmissions,
+    findMany,
+    findFirst,
+    findUnique,
+    getEvent,
+    push,
+    redis,
+    updateResponseAdmissions,
+    updateMany,
+  }
 }
 
 function createExecutionContext() {
@@ -227,7 +284,6 @@ function createGlobalContext(ctx: ContextWithUser) {
 describe('course deletion jobs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    serviceMocks.checkAccess.mockResolvedValue(true)
     serviceMocks.deleteCourse.mockResolvedValue({ id: 'course-id' })
   })
 
@@ -268,8 +324,40 @@ describe('course deletion jobs', () => {
     ).resolves.toEqual([])
   })
 
-  it('fences linked live quiz responses while deletion is pending', async () => {
-    const { ctx, findUnique, redis } = createContext()
+  it('rejects deletion from a delegated read-only login', async () => {
+    const { ctx, push, updateMany } = createContext()
+    ctx.user.scope = UserLoginScope.READ_ONLY
+
+    await expect(
+      startCourseDeletion({ id: 'course-id' }, ctx)
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    expect(push).not.toHaveBeenCalled()
+    expect(updateMany).not.toHaveBeenCalled()
+  })
+
+  it('keeps deletion disabled during the first production rollout', async () => {
+    const { ctx, push, updateMany } = createContext()
+    const previous = process.env.COURSE_DELETION_ENABLED
+    process.env.COURSE_DELETION_ENABLED = 'false'
+    try {
+      await expect(
+        startCourseDeletion({ id: 'course-id' }, ctx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'COURSE_DELETION_NOT_ENABLED' },
+      })
+      expect(push).not.toHaveBeenCalled()
+      expect(updateMany).not.toHaveBeenCalled()
+    } finally {
+      if (typeof previous === 'undefined') {
+        delete process.env.COURSE_DELETION_ENABLED
+      } else {
+        process.env.COURSE_DELETION_ENABLED = previous
+      }
+    }
+  })
+
+  it('marks the course pending only after Hatchet accepts the job', async () => {
+    const { ctx, findUnique, redis, updateMany } = createContext()
     findUnique.mockResolvedValue({
       id: 'course-id',
       name: 'Large course',
@@ -290,7 +378,53 @@ describe('course deletion jobs', () => {
 
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
 
-    expect(redis.values.get('lq:live-quiz-id:course-deleted')).toBe(job?.id)
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        deletionJobId: null,
+        id: 'course-id',
+        isDeleted: false,
+        isDeletionPending: false,
+      },
+      data: {
+        deletionJobId: job?.id,
+        deletionRequestedById: ctx.user.sub,
+        deletionPendingAt: expect.any(Date),
+        deleteDraftActivitiesOnDeletion: false,
+        isDeletionPending: true,
+      },
+    })
+    expect(redis.values.has('lq:live-quiz-id:course-deleted')).toBe(false)
+    expect(job).toMatchObject({ isQueued: true })
+  })
+
+  it('accepts a job that completes before the pending marker is written', async () => {
+    const { ctx, findUnique, updateMany } = createContext()
+    updateMany.mockResolvedValue({ count: 0 })
+    findUnique
+      .mockResolvedValueOnce({
+        id: 'course-id',
+        name: 'Large course',
+        isDeleted: false,
+        isDeletionPending: false,
+        isAssessmentEnabled: false,
+        deletionJobId: null,
+        liveQuizzes: [],
+        practiceQuizzes: [],
+        microLearnings: [],
+        groupActivities: [],
+      })
+      .mockResolvedValueOnce({
+        name: 'Large course',
+        liveQuizzes: [],
+        practiceQuizzes: [],
+        microLearnings: [],
+        groupActivities: [],
+      })
+      .mockResolvedValueOnce({ isDeleted: true })
+
+    await expect(
+      startCourseDeletion({ id: 'course-id' }, ctx)
+    ).resolves.toMatchObject({ isQueued: true })
   })
 
   it('does not expose another user active job through a repeated start', async () => {
@@ -446,6 +580,152 @@ describe('course deletion jobs', () => {
     })
   })
 
+  it('terminalizes stale admissions after Hatchet confirms all runs ended', async () => {
+    const { ctx, findResponseAdmissions, getEvent, updateResponseAdmissions } =
+      createContext()
+    findResponseAdmissions.mockResolvedValueOnce([
+      { eventId: 'hatchet-event-id', token: 'admission-token' },
+    ])
+    getEvent.mockResolvedValueOnce({
+      data: {
+        workflowRunSummary: {
+          cancelled: 0,
+          failed: 1,
+          pending: 0,
+          queued: 0,
+          running: 0,
+          succeeded: 0,
+        },
+      },
+    })
+
+    await expect(
+      handleSweepStaleCourseDeletions(
+        {},
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(true)
+
+    expect(getEvent).toHaveBeenCalledWith('hatchet-event-id')
+    expect(updateResponseAdmissions).toHaveBeenCalledWith({
+      where: {
+        eventId: 'hatchet-event-id',
+        failedAt: null,
+        token: 'admission-token',
+      },
+      data: { failedAt: expect.any(Date) },
+    })
+  })
+
+  it('keeps stale admissions when Hatchet still has active runs', async () => {
+    const { ctx, findResponseAdmissions, getEvent, updateResponseAdmissions } =
+      createContext()
+    findResponseAdmissions.mockResolvedValueOnce([
+      { eventId: 'hatchet-event-id', token: 'admission-token' },
+    ])
+    getEvent.mockResolvedValueOnce({
+      data: {
+        workflowRunSummary: {
+          failed: 1,
+          running: 1,
+        },
+      },
+    })
+
+    await expect(
+      handleSweepStaleCourseDeletions(
+        {},
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(true)
+
+    expect(
+      updateResponseAdmissions.mock.calls.some(
+        ([query]) => query.data.failedAt instanceof Date
+      )
+    ).toBe(false)
+  })
+
+  it('keeps stale admissions when Hatchet status cannot be proven', async () => {
+    const { ctx, findResponseAdmissions, getEvent, updateResponseAdmissions } =
+      createContext()
+    findResponseAdmissions.mockResolvedValueOnce([
+      { eventId: 'hatchet-event-id', token: 'admission-token' },
+    ])
+    getEvent.mockRejectedValueOnce(new Error('Hatchet unavailable'))
+
+    await expect(
+      handleSweepStaleCourseDeletions(
+        {},
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(true)
+
+    expect(
+      updateResponseAdmissions.mock.calls.some(
+        ([query]) => query.data.failedAt instanceof Date
+      )
+    ).toBe(false)
+  })
+
+  it('rotates past a full ambiguous admission batch on the next sweep', async () => {
+    const { ctx, findResponseAdmissions, getEvent, updateResponseAdmissions } =
+      createContext()
+    const admissions = Array.from({ length: 21 }, (_, index) => ({
+      eventId: `hatchet-event-${index + 1}`,
+      lastReconciliationAttemptAt: null as Date | null,
+      token: `admission-token-${index + 1}`,
+    }))
+    findResponseAdmissions.mockImplementation(async ({ take }) =>
+      admissions
+        .filter((admission) => !admission.lastReconciliationAttemptAt)
+        .slice(0, take)
+        .map(({ eventId, token }) => ({ eventId, token }))
+    )
+    updateResponseAdmissions.mockImplementation(async ({ data, where }) => {
+      const admission = admissions.find(
+        (candidate) => candidate.token === where.token
+      )
+      if (!admission) return { count: 0 }
+
+      if (data.lastReconciliationAttemptAt instanceof Date) {
+        if (admission.lastReconciliationAttemptAt) return { count: 0 }
+        admission.lastReconciliationAttemptAt = data.lastReconciliationAttemptAt
+      }
+      return { count: 1 }
+    })
+    getEvent.mockImplementation(async (eventId) => ({
+      data: {
+        workflowRunSummary:
+          eventId === 'hatchet-event-21' ? { failed: 1 } : { running: 1 },
+      },
+    }))
+
+    await handleSweepStaleCourseDeletions(
+      {},
+      createGlobalContext(ctx) as never,
+      createExecutionContext() as never
+    )
+    await handleSweepStaleCourseDeletions(
+      {},
+      createGlobalContext(ctx) as never,
+      createExecutionContext() as never
+    )
+
+    expect(getEvent).toHaveBeenCalledTimes(21)
+    expect(updateResponseAdmissions).toHaveBeenCalledWith({
+      where: {
+        eventId: 'hatchet-event-21',
+        failedAt: null,
+        token: 'admission-token-21',
+      },
+      data: { failedAt: expect.any(Date) },
+    })
+  })
+
   it('does not overwrite a pending job after a worker takes its lease', async () => {
     const { ctx, push, redis } = createContext()
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
@@ -516,8 +796,116 @@ describe('course deletion jobs', () => {
     })
   })
 
+  it('restores a stale pending course when its Redis job disappeared', async () => {
+    const { ctx, findMany, redis, updateMany } = createContext()
+    const jobId = 'missing-job'
+    findMany.mockResolvedValueOnce([
+      {
+        deletionJobId: jobId,
+        id: 'course-id',
+        liveQuizzes: [{ id: 'quiz-id' }],
+      },
+    ])
+    redis.values.set('course-deletion:course:course-id', jobId)
+    redis.values.set(getLiveQuizCourseDeletedKey('quiz-id'), jobId)
+
+    await expect(
+      handleSweepStaleCourseDeletions(
+        {},
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(true)
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        deletionJobId: { not: null },
+        deletionPendingAt: { lte: expect.any(Date) },
+        isDeleted: false,
+        isDeletionPending: true,
+      },
+      select: {
+        deletionJobId: true,
+        id: true,
+        liveQuizzes: { select: { id: true } },
+      },
+    })
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: {
+        deletionJobId: jobId,
+        id: 'course-id',
+        isDeleted: false,
+        isDeletionPending: true,
+      },
+      data: {
+        deletionJobId: null,
+        deletionRequestedById: null,
+        deletionPendingAt: null,
+        deleteDraftActivitiesOnDeletion: false,
+        isDeletionPending: false,
+      },
+    })
+    expect(redis.values.has('course-deletion:course:course-id')).toBe(false)
+    expect(redis.values.has(getLiveQuizCourseDeletedKey('quiz-id'))).toBe(false)
+  })
+
+  it('keeps polling a durable pending course when its Redis job disappeared', async () => {
+    const { ctx, findFirst } = createContext()
+    const pendingAt = new Date('2026-08-31T08:00:00.000Z')
+    findFirst.mockImplementation(async (query) =>
+      query.where.deletionRequestedById === ctx.user.sub
+        ? {
+            deletionPendingAt: pendingAt,
+            id: 'course-id',
+            name: 'Large course',
+          }
+        : null
+    )
+
+    await expect(
+      getCourseDeletionStatuses({ ids: ['missing-job'] }, ctx)
+    ).resolves.toEqual([
+      {
+        id: 'missing-job',
+        status: 'PENDING',
+        isQueued: true,
+        courseId: 'course-id',
+        courseName: 'Large course',
+        errorType: null,
+        errorMessage: null,
+        createdAt: pendingAt,
+        updatedAt: pendingAt,
+      },
+    ])
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        deletionJobId: 'missing-job',
+        deletionRequestedById: ctx.user.sub,
+        isDeleted: false,
+        isDeletionPending: true,
+      },
+      select: { deletionPendingAt: true, id: true, name: true },
+    })
+
+    const otherAdminCtx = {
+      ...ctx,
+      user: { ...ctx.user, sub: 'user-2' },
+    }
+    await expect(
+      getCourseDeletionStatuses(
+        { ids: ['missing-job'] },
+        otherAdminCtx as ContextWithUser
+      )
+    ).resolves.toEqual([])
+  })
+
   it('rechecks ADMIN access and completes through the existing service', async () => {
-    const { ctx } = createContext()
+    const {
+      ctx,
+      deleteResponseAdmissions,
+      findPermission,
+      findResponseAdmission,
+    } = createContext()
     const job = await startCourseDeletion(
       { id: 'course-id', deleteDraftActivities: true },
       ctx
@@ -531,17 +919,52 @@ describe('course deletion jobs', () => {
       )
     ).resolves.toBe(true)
 
-    expect(serviceMocks.checkAccess).toHaveBeenLastCalledWith(
-      [
-        {
+    expect(deleteResponseAdmissions).toHaveBeenCalledWith({
+      where: {
+        courseId: 'course-id',
+        OR: [
+          { failedAt: { not: null } },
+          {
+            publishedAt: null,
+            createdAt: { lte: expect.any(Date) },
+          },
+        ],
+      },
+    })
+    expect(findResponseAdmission).toHaveBeenCalledWith({
+      where: { courseId: 'course-id', failedAt: null },
+      select: { token: true },
+    })
+
+    expect(findPermission).toHaveBeenLastCalledWith({
+      where: {
+        courseId_userId: {
           courseId: 'course-id',
-          minimumPermissionLevel: PermissionLevel.ADMIN,
+          userId: ctx.user.sub,
         },
-      ],
-      expect.objectContaining({ user: ctx.user })
-    )
+        permissionLevel: {
+          in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+        },
+        course: {
+          deletionJobId: job!.id,
+          isDeleted: false,
+          isDeletionPending: true,
+        },
+      },
+      select: { id: true },
+    })
     expect(serviceMocks.deleteCourse).toHaveBeenCalledWith(
-      { id: 'course-id', deleteDraftActivities: true },
+      {
+        deletionJobId: job!.id,
+        id: 'course-id',
+        deleteDraftActivities: true,
+        draftActivityIds: {
+          liveQuizIds: [],
+          practiceQuizIds: [],
+          microLearningIds: [],
+          groupActivityIds: [],
+        },
+      },
       expect.objectContaining({ user: ctx.user })
     )
     await expect(
@@ -602,7 +1025,7 @@ describe('course deletion jobs', () => {
   })
 
   it('records revoked access as a terminal failure', async () => {
-    const { ctx, findUnique, redis } = createContext()
+    const { ctx, findPermission, findUnique, redis } = createContext()
     findUnique.mockResolvedValue({
       id: 'course-id',
       name: 'Large course',
@@ -621,7 +1044,7 @@ describe('course deletion jobs', () => {
       groupActivities: [],
     })
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
-    serviceMocks.checkAccess.mockResolvedValueOnce(false)
+    findPermission.mockResolvedValueOnce(null)
 
     await expect(
       handleProcessCourseDeletion(
@@ -678,7 +1101,7 @@ describe('course deletion jobs', () => {
     ])
   })
 
-  it('does not overwrite status after losing the process lease', async () => {
+  it('protects retry state after losing the process lease', async () => {
     const { ctx, redis } = createContext()
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
     serviceMocks.deleteCourse.mockImplementationOnce(async () => {
@@ -702,55 +1125,75 @@ describe('course deletion jobs', () => {
     ).resolves.toEqual([
       expect.objectContaining({ id: job!.id, status: 'RUNNING' }),
     ])
+
+    const statusKey = `course-deletion:job:${job!.id}`
+    const retryableJob = JSON.parse(redis.values.get(statusKey)!)
+    expect(retryableJob.retryProtectedUntil).toBeGreaterThan(Date.now())
+    retryableJob.createdAt = new Date(Date.now() - 76 * 60 * 1000).toISOString()
+    retryableJob.updatedAt = retryableJob.createdAt
+    redis.values.set(statusKey, JSON.stringify(retryableJob))
+    redis.values.delete(`${statusKey}:heartbeat`)
+
+    await expect(
+      getCourseDeletionStatuses({ ids: [job!.id] }, ctx)
+    ).resolves.toEqual([
+      expect.objectContaining({ id: job!.id, status: 'RUNNING' }),
+    ])
   })
 
   it('recovers post-commit scheduled cleanup before marking completion', async () => {
     const { ctx, deleteScheduledTask, findUnique, redis } = createContext()
+    const courseWithDrafts = {
+      id: 'course-id',
+      deletionJobId: null,
+      isDeletionPending: false,
+      name: 'Large course',
+      isDeleted: false,
+      isAssessmentEnabled: false,
+      liveQuizzes: [
+        {
+          id: 'draft-live-quiz',
+          isDeleted: false,
+          status: PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: 'live-publication',
+        },
+      ],
+      practiceQuizzes: [
+        {
+          id: 'draft-practice-quiz',
+          isDeleted: false,
+          status: PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: 'practice-publication',
+        },
+      ],
+      microLearnings: [
+        {
+          id: 'draft-micro-learning',
+          isDeleted: false,
+          status: PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: 'micro-publication',
+          scheduledCompletionTaskId: 'micro-completion',
+        },
+      ],
+      groupActivities: [
+        {
+          id: 'draft-group-activity',
+          isDeleted: false,
+          status: PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: 'group-publication',
+          scheduledCompletionTaskId: 'group-completion',
+        },
+      ],
+    }
+    findUnique
+      .mockResolvedValueOnce(courseWithDrafts)
+      .mockResolvedValueOnce(courseWithDrafts)
+      .mockResolvedValueOnce(courseWithDrafts)
+      .mockResolvedValueOnce({ id: 'course-id', isDeleted: true })
     const job = await startCourseDeletion(
       { id: 'course-id', deleteDraftActivities: true },
       ctx
     )
-    findUnique
-      .mockResolvedValueOnce({
-        id: 'course-id',
-        isDeleted: false,
-        isAssessmentEnabled: false,
-        liveQuizzes: [
-          {
-            id: 'draft-live-quiz',
-            isDeleted: false,
-            status: PublicationStatus.DRAFT,
-            scheduledPublicationTaskId: 'live-publication',
-          },
-        ],
-        practiceQuizzes: [
-          {
-            id: 'draft-practice-quiz',
-            isDeleted: false,
-            status: PublicationStatus.DRAFT,
-            scheduledPublicationTaskId: 'practice-publication',
-          },
-        ],
-        microLearnings: [
-          {
-            id: 'draft-micro-learning',
-            isDeleted: false,
-            status: PublicationStatus.DRAFT,
-            scheduledPublicationTaskId: 'micro-publication',
-            scheduledCompletionTaskId: 'micro-completion',
-          },
-        ],
-        groupActivities: [
-          {
-            id: 'draft-group-activity',
-            isDeleted: false,
-            status: PublicationStatus.DRAFT,
-            scheduledPublicationTaskId: 'group-publication',
-            scheduledCompletionTaskId: 'group-completion',
-          },
-        ],
-      })
-      .mockResolvedValueOnce({ id: 'course-id', isDeleted: true })
     serviceMocks.deleteCourse.mockRejectedValueOnce(
       new Error('worker stopped after commit')
     )
@@ -790,7 +1233,7 @@ describe('course deletion jobs', () => {
   })
 
   it('leaves generic failures retryable while the course still exists', async () => {
-    const { ctx } = createContext()
+    const { ctx, redis } = createContext()
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)
     serviceMocks.deleteCourse.mockRejectedValueOnce(new Error('database busy'))
 
@@ -801,6 +1244,20 @@ describe('course deletion jobs', () => {
         createExecutionContext() as never
       )
     ).rejects.toThrow('database busy')
+
+    await expect(
+      getCourseDeletionStatuses({ ids: [job!.id] }, ctx)
+    ).resolves.toEqual([
+      expect.objectContaining({ id: job!.id, status: 'RUNNING' }),
+    ])
+
+    const statusKey = `course-deletion:job:${job!.id}`
+    const retryableJob = JSON.parse(redis.values.get(statusKey)!)
+    expect(retryableJob.retryProtectedUntil).toBeGreaterThan(Date.now())
+    retryableJob.createdAt = new Date(Date.now() - 76 * 60 * 1000).toISOString()
+    retryableJob.updatedAt = retryableJob.createdAt
+    redis.values.set(statusKey, JSON.stringify(retryableJob))
+    redis.values.delete(`${statusKey}:heartbeat`)
 
     await expect(
       getCourseDeletionStatuses({ ids: [job!.id] }, ctx)

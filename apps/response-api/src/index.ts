@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { prisma } from '@klicker-uzh/prisma'
+import {
+  prisma,
+  tryAcquireCourseResponseAdmissionAdvisoryLock,
+} from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
-  getLiveQuizCourseDeletedKey,
+  acquireLiveQuizResponseProcessingLease,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_ADMISSION_LEASE_TTL_SECONDS,
+  releaseLiveQuizResponseProcessingLease,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
@@ -116,61 +121,155 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     )
   }
 
-  if (await redis.exists(getLiveQuizCourseDeletedKey(String(liveQuizId)))) {
+  const liveQuizIdString = String(liveQuizId)
+  const responseLeaseToken = randomUUID()
+  const responseLeaseAcquired = await acquireLiveQuizResponseProcessingLease(
+    redis,
+    liveQuizIdString,
+    responseLeaseToken,
+    LIVE_QUIZ_RESPONSE_ADMISSION_LEASE_TTL_SECONDS
+  )
+  if (!responseLeaseAcquired) {
     return sendJson(req, res, 410, { error: 'course_deleted' })
   }
 
-  const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: { id: String(liveQuizId) },
-    select: { course: { select: { isDeleted: true } } },
-  })
-  if (liveQuiz?.course?.isDeleted) {
-    return sendJson(req, res, 410, { error: 'course_deleted' })
-  }
+  let responseLeaseTransferred = false
+  let durableAdmissionCreated = false
+  try {
+    const admitted = await prisma.$transaction(async (tx) => {
+      const initialLiveQuiz = await tx.liveQuiz.findUnique({
+        where: { id: liveQuizIdString },
+        select: { courseId: true },
+      })
+      if (!initialLiveQuiz) return false
 
-  // Only forward participant-related cookies. If both exist, include both.
-  let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
-    const raw = req.headers['cookie']
-    const parts = raw.split(';').map((s) => s.trim())
-    const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
-    )
-    const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
-    )
-    const forwarded: string[] = []
-    if (participantPair) forwarded.push(participantPair)
-    if (temporaryPair) forwarded.push(temporaryPair)
-    if (forwarded.length > 0) {
-      cookie = forwarded.join('; ')
+      if (initialLiveQuiz.courseId) {
+        const lockAcquired =
+          await tryAcquireCourseResponseAdmissionAdvisoryLock(
+            tx,
+            initialLiveQuiz.courseId
+          )
+        if (!lockAcquired) return false
+      }
+
+      // Re-read after taking the same transaction lock as course deletion.
+      // Together with the Redis admission lease this closes both the normal
+      // handoff race and the Redis-loss race.
+      const liveQuiz = await tx.liveQuiz.findUnique({
+        where: { id: liveQuizIdString },
+        select: {
+          courseId: true,
+          course: { select: { isDeleted: true, isDeletionPending: true } },
+        },
+      })
+      if (
+        !liveQuiz ||
+        liveQuiz.course?.isDeleted ||
+        liveQuiz.course?.isDeletionPending
+      ) {
+        return false
+      }
+
+      await tx.liveQuizResponseAdmission.create({
+        data: {
+          token: responseLeaseToken,
+          liveQuizId: liveQuizIdString,
+          courseId: liveQuiz.courseId,
+        },
+      })
+      return true
+    })
+    if (!admitted) {
+      return sendJson(req, res, 410, { error: 'course_deleted' })
+    }
+    durableAdmissionCreated = true
+
+    // Only forward participant-related cookies. If both exist, include both.
+    let cookie: string | undefined
+    if (typeof req.headers['cookie'] === 'string') {
+      const raw = req.headers['cookie']
+      const parts = raw.split(';').map((s) => s.trim())
+      const participantPair = parts.find((p) =>
+        p.startsWith('participant_token=')
+      )
+      const temporaryPair = parts.find((p) =>
+        p.startsWith('temporary_participant_token=')
+      )
+      const forwarded: string[] = []
+      if (participantPair) forwarded.push(participantPair)
+      if (temporaryPair) forwarded.push(temporaryPair)
+      if (forwarded.length > 0) {
+        cookie = forwarded.join('; ')
+      }
+    }
+
+    const responseTimestamp = Date.now()
+    const message = {
+      messageId: randomUUID(),
+      sessionId: liveQuizIdString,
+      instanceId: String(instanceId),
+      response, // pass through as-is; worker validates
+      cookie,
+      responseTimestamp,
+      responseLeaseToken,
+    }
+
+    // determine if the participant is logged in with a valid student cookie (temporary or standard)
+    const isAuthenticatedParticipant =
+      cookie &&
+      (cookie.includes('participant_token=') ||
+        cookie.includes('temporary_participant_token='))
+
+    // depending on the authentication state, add the response to the correct hatchet event queue
+    const eventName = isAuthenticatedParticipant
+      ? 'response-received:authenticated'
+      : 'response-received:anonymous'
+    console.log(`Pushing event ${eventName}`, {
+      instanceId: message.instanceId,
+      messageId: message.messageId,
+      sessionId: message.sessionId,
+    })
+
+    const event = await hatchetClient.events.push(eventName, message)
+    // Mark publication before acknowledging the HTTP request. updateMany also
+    // treats a worker that already consumed and removed the admission as a
+    // successful handoff.
+    await prisma.liveQuizResponseAdmission.updateMany({
+      where: { token: responseLeaseToken },
+      data: { eventId: event.eventId, publishedAt: new Date() },
+    })
+    responseLeaseTransferred = true
+    return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
+  } finally {
+    if (!responseLeaseTransferred) {
+      if (durableAdmissionCreated) {
+        try {
+          await prisma.liveQuizResponseAdmission.deleteMany({
+            where: { token: responseLeaseToken },
+          })
+        } catch (error) {
+          console.error('Failed to remove live quiz response admission', {
+            liveQuizId: liveQuizIdString,
+            error,
+          })
+        }
+      }
+      try {
+        await releaseLiveQuizResponseProcessingLease(
+          redis,
+          liveQuizIdString,
+          responseLeaseToken
+        )
+      } catch (error) {
+        // The lease expires automatically. Preserve the response/publish
+        // outcome instead of replacing it with a best-effort cleanup error.
+        console.error('Failed to release live quiz response lease', {
+          liveQuizId: liveQuizIdString,
+          error,
+        })
+      }
     }
   }
-
-  const responseTimestamp = Date.now()
-  const message = {
-    messageId: randomUUID(),
-    sessionId: String(liveQuizId),
-    instanceId: String(instanceId),
-    response, // pass through as-is; worker validates
-    cookie,
-    responseTimestamp,
-  }
-
-  // determine if the participant is logged in with a valid student cookie (temporary or standard)
-  const isAuthenticatedParticipant =
-    cookie &&
-    (cookie.includes('participant_token=') ||
-      cookie.includes('temporary_participant_token='))
-
-  // depending on the authentication state, add the response to the correct hatchet event queue
-  const eventName = isAuthenticatedParticipant
-    ? 'response-received:authenticated'
-    : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
-
-  await hatchetClient.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
 async function handleAddAssessmentResponse(
@@ -404,6 +503,15 @@ async function initializeService() {
     `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
   )
   console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+
+  if (process.env.ASSESSMENT_MODE !== 'true') {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is required for standard responses')
+    }
+    console.log('Testing database connection...')
+    await prisma.$connect()
+    console.log('Database connection established')
+  }
 
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')

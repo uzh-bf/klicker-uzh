@@ -26,7 +26,11 @@ export async function getCourses(provider: string, providerAccountId: string) {
           objects: {
             where: {
               courseId: { not: null },
-              course: { isArchived: false, isDeleted: false },
+              course: {
+                isArchived: false,
+                isDeleted: false,
+                isDeletionPending: false,
+              },
             },
             select: { course: { select: { id: true, name: true } } },
           },
@@ -95,6 +99,7 @@ export async function getCourseActivityTypes(
     where: {
       id: courseID,
       isDeleted: false,
+      isDeletionPending: false,
       permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
     },
     select: {
@@ -218,6 +223,7 @@ export async function getActivities(
       where: {
         id: courseID,
         isDeleted: false,
+        isDeletionPending: false,
         permissions: {
           some: {
             userId: account.userId,
@@ -247,6 +253,7 @@ export async function getActivities(
     where: {
       id: courseID,
       isDeleted: false,
+      isDeletionPending: false,
       permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
     },
     select: {

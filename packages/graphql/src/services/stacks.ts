@@ -3175,7 +3175,7 @@ export async function respondToElementStack(
     where: {
       id: stackId,
       courseId,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     select: { id: true },
   })
@@ -4219,7 +4219,7 @@ export async function getPreviousStackEvaluation(
     where: {
       id: stackId,
       type: DB.ElementStackType.MICROLEARNING,
-      course: { isDeleted: false },
+      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       elements: {

@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { allowCoursePurgeInTransaction, prisma } from '@klicker-uzh/prisma'
 import {
   CourseAuthType,
   CredentialStatus,
@@ -128,8 +128,16 @@ async function createFixture() {
 }
 
 async function cleanupFixtures() {
-  await prisma.course.deleteMany({
-    where: { id: { in: fixtureIds.courseIds.splice(0) } },
+  const courseIds = fixtureIds.courseIds.splice(0)
+  await prisma.$transaction(async (tx) => {
+    await tx.course.updateMany({
+      where: { id: { in: courseIds } },
+      data: { isDeleted: true },
+    })
+    await allowCoursePurgeInTransaction(tx)
+    await tx.course.deleteMany({
+      where: { id: { in: courseIds }, isDeleted: true },
+    })
   })
   await prisma.participant.deleteMany({
     where: { id: { in: fixtureIds.participantIds.splice(0) } },
