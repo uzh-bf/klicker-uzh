@@ -23,6 +23,7 @@ import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
+import { featureTargetProps } from './onboarding/featureTargets'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -542,7 +543,7 @@ function SidebarMain({
           )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
-        <ModeSwitcher />
+        <ModeSwitcher targetProps={featureTargetProps('chat-mode-switcher')} />
         <Tooltip>
           <TooltipTrigger asChild>
             <button

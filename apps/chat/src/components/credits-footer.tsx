@@ -4,6 +4,7 @@ import { Progress } from '@uzh-bf/design-system'
 import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
+import { featureTargetProps } from './onboarding/featureTargets'
 import { formatCredits } from './thread-credits-format'
 
 function CreditBalance({ current, total }: { current: number; total: number }) {
@@ -75,6 +76,7 @@ export function CreditsFooter() {
 
   return (
     <div
+      {...featureTargetProps('chat-credits')}
       data-cy="chat-credits-section"
       className="space-y-1.5 border-t px-3 py-2.5"
     >

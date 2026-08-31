@@ -31,9 +31,17 @@ function ModeIcon({ mode, className }: { mode: string; className?: string }) {
 export function ModeSwitcher({
   modeOptions: modeOptionsOverride,
   testIdPrefix = 'chat-mode',
+  targetProps,
 }: {
   modeOptions?: Record<string, string>
   testIdPrefix?: string
+  /**
+   * Onboarding feature-target attributes for the trigger. The switcher is
+   * rendered twice — once in the header, once on the welcome card — and only
+   * the header instance carries them, because an overlay target has to be
+   * unique on the page.
+   */
+  targetProps?: Record<string, string>
 } = {}) {
   const t = useTranslations()
   const storeModeOptions = useSettingsStore((state) => state.modeOptions)
@@ -54,6 +62,7 @@ export function ModeSwitcher({
       onValueChange={setSelectedMode}
     >
       <SelectPrimitive.Trigger
+        {...targetProps}
         data-cy={`${testIdPrefix}-switcher`}
         aria-label={`${t('chat.modes.switcherLabel')}: ${selectedLabel}`}
         className="border-border bg-background hover:bg-accent focus-visible:ring-ring inline-flex min-h-11 max-w-40 min-w-0 touch-manipulation items-center gap-1.5 rounded-full border px-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 data-[state=open]:bg-accent fine-pointer:min-h-9"

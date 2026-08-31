@@ -80,6 +80,7 @@ import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
 import { ModeSwitcher } from './mode-switcher'
+import { featureTargetProps } from './onboarding/featureTargets'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
 import { actionBarButtonClassName } from './ui/action-bar-button'
@@ -717,6 +718,7 @@ const Composer: FC = () => {
           <ComposerAttachButton
             setError={setAttachmentError}
             dataCy="chat-composer"
+            targetProps={featureTargetProps('chat-composer-attach')}
           />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
@@ -981,7 +983,15 @@ const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
   dataCy?: string
-}> = ({ setError, currentCount, dataCy }) => {
+  /**
+   * Onboarding feature-target attributes for the visible button. Only the main
+   * composer passes them: the edit composer renders a second button, and an
+   * overlay target has to be unique on the page. They travel with the button
+   * rather than a wrapper, so they disappear together with it on a chatbot
+   * that takes no images.
+   */
+  targetProps?: Record<string, string>
+}> = ({ setError, currentCount, dataCy, targetProps }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const aui = useAui()
@@ -1047,6 +1057,7 @@ const ComposerAttachButton: FC<{
         }}
       />
       <button
+        {...targetProps}
         type="button"
         data-cy={dataCy ? `${dataCy}-attach-button` : 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
