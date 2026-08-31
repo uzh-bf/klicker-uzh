@@ -126,6 +126,53 @@ function evaluatorRequestedHumanReview(value: unknown): boolean {
   )
 }
 
+function canonicalizeEvaluatorResponse(
+  value: EvaluateFreeTextResponseV1
+): EvaluateFreeTextResponseV1 {
+  return {
+    contract_version: value.contract_version,
+    task_bundle_id: value.task_bundle_id,
+    evaluator_version: value.evaluator_version,
+    model_version: value.model_version,
+    rubric_assessments: value.rubric_assessments.map((assessment) => ({
+      task_bundle_id: assessment.task_bundle_id,
+      rubric_id: assessment.rubric_id,
+      rubric_name: assessment.rubric_name,
+      proposed_level: assessment.proposed_level,
+      normalized_score: assessment.normalized_score,
+      justification: assessment.justification,
+      evidence_ids: [...assessment.evidence_ids],
+      confidence: assessment.confidence,
+      needs_review: assessment.needs_review,
+      review_flags: [...assessment.review_flags],
+      used_evidence_ids: [...assessment.used_evidence_ids],
+      unsupported_claims: [...assessment.unsupported_claims],
+      ...(assessment.evidence_sufficiency !== undefined
+        ? { evidence_sufficiency: assessment.evidence_sufficiency }
+        : {}),
+      ...(assessment.uncertainty_reason !== undefined
+        ? { uncertainty_reason: assessment.uncertainty_reason }
+        : {}),
+      rationale: assessment.rationale,
+    })),
+    ...(value.feedback_proposals !== undefined
+      ? {
+          feedback_proposals: value.feedback_proposals.map((proposal) => ({
+            task_bundle_id: proposal.task_bundle_id,
+            rubric_id: proposal.rubric_id,
+            rubric_name: proposal.rubric_name,
+            feedback: proposal.feedback,
+            strengths: [...proposal.strengths],
+            improvements: [...proposal.improvements],
+            action_items: [...proposal.action_items],
+            evidence_ids: [...proposal.evidence_ids],
+            confidence: proposal.confidence,
+          })),
+        }
+      : {}),
+  }
+}
+
 export async function requestSemanticFreeTextEvaluation({
   request,
   rubricSchema,
@@ -248,5 +295,10 @@ export async function requestSemanticFreeTextEvaluation({
     }
   }
 
-  return { ok: true, response: value as EvaluateFreeTextResponseV1 }
+  return {
+    ok: true,
+    response: canonicalizeEvaluatorResponse(
+      value as EvaluateFreeTextResponseV1
+    ),
+  }
 }

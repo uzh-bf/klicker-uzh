@@ -201,7 +201,8 @@ export async function getSemanticInstance(
     !instance ||
     instance.type !== DB.ElementInstanceType.PRACTICE_QUIZ ||
     !practiceQuiz ||
-    practiceQuiz.status !== DB.PublicationStatus.PUBLISHED
+    practiceQuiz.status !== DB.PublicationStatus.PUBLISHED ||
+    practiceQuiz.isDeleted
   ) {
     throw freeTextEvaluationError(
       'Published practice quiz instance not found',

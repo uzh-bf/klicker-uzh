@@ -216,6 +216,34 @@ describe('semantic free-text practice state', () => {
     ).rejects.toThrow('Published practice quiz instance not found')
   })
 
+  it('rejects participant operations after a practice quiz is soft-deleted', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    await prisma.practiceQuiz.update({
+      where: { id: fixture.practiceQuiz.id },
+      data: { isDeleted: true },
+    })
+
+    await expect(
+      startFreeTextPracticeCycle({ instanceId: fixture.instance.id }, ctx)
+    ).rejects.toThrow('Published practice quiz instance not found')
+    await expect(
+      createFreeTextAttempt(
+        {
+          instanceId: fixture.instance.id,
+          answer: 'Diversification reduces idiosyncratic risk.',
+          answerTime: 3,
+          clientSubmissionId: randomUUID(),
+        },
+        ctx,
+        { disclosureVersion: '2026-08-18' }
+      )
+    ).rejects.toThrow('Published practice quiz instance not found')
+  })
+
   it('schedules an accepted exact answer for semantic rubric feedback', async () => {
     const schedule = vi.fn().mockResolvedValue(workflowRunRef())
     const clientSubmissionId = randomUUID()

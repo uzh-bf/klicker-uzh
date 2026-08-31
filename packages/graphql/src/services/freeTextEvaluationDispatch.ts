@@ -81,14 +81,6 @@ export async function authorizeFreeTextEvaluationDispatch({
       }
     }
 
-    // The durable claim is the dispatch linearization point. Consent changes
-    // serialize on the same participant row, so a decline that wins the lock
-    // prevents the external request while a previously authorized dispatch may
-    // finish its bounded retry window.
-    if (attempt.evaluationAuthorizedAt !== null) {
-      return { authorized: true }
-    }
-
     const consent = await tx.participantSemanticEvaluationConsent.findUnique({
       where: {
         participantId_disclosureVersion: {
@@ -105,6 +97,13 @@ export async function authorizeFreeTextEvaluationDispatch({
             ? 'CONSENT_DECLINED'
             : 'CONSENT_REQUIRED',
       }
+    }
+
+    // Re-check consent on every workflow delivery. A request that is already in
+    // flight may finish, but a later automatic retry must not resend an answer
+    // after the participant has declined.
+    if (attempt.evaluationAuthorizedAt !== null) {
+      return { authorized: true }
     }
 
     const claimed = await tx.freeTextAttempt.updateMany({

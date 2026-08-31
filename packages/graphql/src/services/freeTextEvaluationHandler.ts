@@ -100,6 +100,18 @@ export async function handleEvaluateFreeTextAttempt(
     if (authorization.reason === 'ATTEMPT_NOT_PENDING') {
       return { success: true, applied: false }
     }
+    if (authorization.reason === 'PARTICIPANT_ACCESS_UNAVAILABLE') {
+      await markFreeTextAttemptUnavailable(
+        {
+          attemptId,
+          evaluationRevision,
+          reason: authorization.reason,
+          retryable: false,
+        },
+        globalCtx.prisma
+      )
+      return { success: true, applied: true }
+    }
     await resolveFreeTextAttemptUnavailability(
       {
         attemptId,

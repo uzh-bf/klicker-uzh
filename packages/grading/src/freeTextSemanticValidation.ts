@@ -274,6 +274,18 @@ export function validateEvaluateFreeTextResponse({
     if (!isConfigText(assessment.rationale)) {
       errors.push(`${prefix} rationale is required`)
     }
+    for (const [field, fieldValue] of [
+      ['evidence_sufficiency', assessment.evidence_sufficiency],
+      ['uncertainty_reason', assessment.uncertainty_reason],
+    ] as const) {
+      if (
+        fieldValue !== undefined &&
+        fieldValue !== null &&
+        !isConfigText(fieldValue)
+      ) {
+        errors.push(`${prefix} ${field} must be a string or null`)
+      }
+    }
   })
 
   const containsEveryRubricExactlyOnce =

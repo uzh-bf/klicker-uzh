@@ -161,4 +161,118 @@ describe('semantic free-text evaluation dispatch authorization', () => {
       evaluationSource: 'SEMANTIC',
     })
   })
+
+  it('does not resend an answer after consent is declined between deliveries', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads investments across assets.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('network'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      handleEvaluateFreeTextAttempt(
+        {
+          attemptId: pending.currentAttempt!.id,
+          evaluationRevision: 0,
+        },
+        { prisma } as never,
+        {} as never
+      )
+    ).rejects.toThrow('Semantic evaluator request failed')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    fetchMock.mockClear()
+
+    await handleEvaluateFreeTextAttempt(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+      },
+      { prisma } as never,
+      {} as never
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    await expect(
+      prisma.freeTextAttempt.findUniqueOrThrow({
+        where: { id: pending.currentAttempt!.id },
+        select: {
+          evaluationAuthorizedAt: true,
+          evaluationStatus: true,
+          availabilityReason: true,
+        },
+      })
+    ).resolves.toEqual({
+      evaluationAuthorizedAt: expect.any(Date),
+      evaluationStatus: 'UNAVAILABLE',
+      availabilityReason: 'CONSENT_DECLINED',
+    })
+  })
+
+  it('does not apply exact fallback after participant access is lost', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'Diversification reduces idiosyncratic risk.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await prisma.practiceQuiz.update({
+      where: { id: fixture.practiceQuiz.id },
+      data: { isDeleted: true },
+    })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await handleEvaluateFreeTextAttempt(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+      },
+      { prisma } as never,
+      {} as never
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    await expect(
+      prisma.freeTextAttempt.findUniqueOrThrow({
+        where: { id: pending.currentAttempt!.id },
+        select: {
+          evaluationStatus: true,
+          evaluationSource: true,
+          availabilityReason: true,
+          questionResponseDetailId: true,
+        },
+      })
+    ).resolves.toEqual({
+      evaluationStatus: 'UNAVAILABLE',
+      evaluationSource: null,
+      availabilityReason: 'PARTICIPANT_ACCESS_UNAVAILABLE',
+      questionResponseDetailId: null,
+    })
+  })
 })
