@@ -189,9 +189,17 @@ export const DisclaimerModal = ({
           </Button>
           <Button
             ref={acceptButtonRef}
+            primary
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}
             disabled={isLoading}
+            // `primary` selects the design-system `default` variant, whose own
+            // `bg-primary-100` resolves to nothing because Chat's theme has no
+            // primary-100 token. The explicit classes below supply the colour.
+            // The prop is still required: without it the button falls back to
+            // the `outline` variant, whose `dark:bg-input/30` survives
+            // tailwind-merge (different modifier) and hides the button for
+            // anyone whose browser prefers a dark colour scheme.
             className={{
               root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
             }}
