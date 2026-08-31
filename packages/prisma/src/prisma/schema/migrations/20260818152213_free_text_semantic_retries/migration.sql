@@ -96,9 +96,6 @@ CREATE INDEX "FreeTextPracticeCycle_elementInstanceId_status_idx" ON "FreeTextPr
 CREATE UNIQUE INDEX "FreeTextPracticeCycle_participantId_elementInstanceId_ordin_key" ON "FreeTextPracticeCycle"("participantId", "elementInstanceId", "ordinal");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Participation_id_participantId_key" ON "Participation"("id", "participantId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "FreeTextAttempt_questionResponseDetailId_key" ON "FreeTextAttempt"("questionResponseDetailId");
 
 -- CreateIndex

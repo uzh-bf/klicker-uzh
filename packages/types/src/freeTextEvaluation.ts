@@ -70,6 +70,9 @@ export type SemanticFreeTextConfig = {
   attempt_limit: number
   solution_reveal_enabled: boolean
   accepted_exact_answers: string[]
+  // Persisted authoring data may use null when reveal is disabled. Evaluator
+  // requests must omit the field in that case; null is not part of the wire
+  // contract.
   reference_solution?: string | null
   outcome_bands?: FreeTextOutcomeBand[] | null
   rubric_schema: FreeTextRubricSchema
@@ -117,6 +120,8 @@ export type EvaluateFreeTextRequestV1 = {
     language: SemanticFreeTextConfig['question_language']
   }
   response: { text: string }
+  // Optional on the wire, but never nullable. Omit it when the persisted
+  // semantic configuration has no reference solution.
   reference_solution?: string
   rubric_schema: FreeTextRubricSchema
 }
