@@ -169,6 +169,7 @@ model Participation {
 
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]
+  freeTextPracticeCycles  FreeTextPracticeCycle[]
   subscriptions           PushSubscription[]
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]
@@ -177,6 +178,7 @@ model Participation {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+  @@unique([id, participantId])
 }
 
 model GroupAssignmentPoolEntry {

@@ -131,7 +131,11 @@ export async function proofDummyEnvironment(): Promise<Record<string, string>> {
     DOC_QUERY_SCOPE_KID: 'dummy-key',
     DOC_QUERY_SCOPE_ISSUER: 'https://chat.klicker.test',
     DOC_QUERY_SCOPE_AUDIENCE: 'klicker-doc-query-test',
-    DOC_QUERY_PROOF_MANIFEST_PATH: '/private/tmp/dummy-manifest.json',
+    // Validation-only absolute sentinel; proof tests never read or write it.
+    DOC_QUERY_PROOF_MANIFEST_PATH: join(
+      process.cwd(),
+      'dummy-manifest-never-read.json'
+    ),
   }
 }
 export function createProofReceiptSources({

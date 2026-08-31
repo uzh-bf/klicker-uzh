@@ -11,9 +11,11 @@ import type {
   PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
+import type { SemanticFreeTextConfig } from './freeTextEvaluation.js'
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './assessmentReport.js'
+export * from './freeTextEvaluation.js'
 export * from './hatchet.js'
 
 // ----- KNOWLEDGE GRAPH TYPES -----
@@ -165,6 +167,7 @@ export type OptionsFreeTextInput = {
   placeholder?: string | null
   restrictions?: FreeTextRestrictionsInput | null
   solutions?: string[] | null
+  semanticEvaluation?: SemanticFreeTextConfig | null
   feedback?: string | null
 }
 
@@ -543,6 +546,7 @@ export type FreeTextRestrictions = {
 export interface ElementOptionsFreeText extends BaseElementOptions {
   restrictions?: FreeTextRestrictions | null
   solutions?: string[] | null
+  semanticEvaluation?: SemanticFreeTextConfig | null
 }
 
 export type ElementOptionsAnswerCollectionEntry = {

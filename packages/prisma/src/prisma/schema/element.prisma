@@ -95,13 +95,14 @@ model ElementInstance {
 
   isVersionOutdated Boolean @default(false) // flag to indicate if the element version has changed since the instance was created
 
-  responses           QuestionResponse[]
-  detailResponses     QuestionResponseDetail[]
-  liveQuizResponses   LiveQuizResponse[]
-  feedbacks           ElementFeedback[]
-  instanceStatistics  InstanceStatistics?
-  instancePerformance InstancePerformance?
-  corrections         PointCorrection[]
+  responses              QuestionResponse[]
+  detailResponses        QuestionResponseDetail[]
+  freeTextPracticeCycles FreeTextPracticeCycle[]
+  liveQuizResponses      LiveQuizResponse[]
+  feedbacks              ElementFeedback[]
+  instanceStatistics     InstanceStatistics?
+  instancePerformance    InstancePerformance?
+  corrections            PointCorrection[]
 
   element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
