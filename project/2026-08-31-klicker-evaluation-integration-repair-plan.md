@@ -224,9 +224,14 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   `json_schema`, and no parse request. A synthetic 503 produces one request and
   zero retries.
 - Restricted profile authentication and values-free permissions checks pass.
-  The required alias visibility probe fails during DNS resolution with
-  `gaierror` errno 8 before an HTTP response. No paid judge completion was
-  attempted, and no connectivity repair was performed.
+  The direct private route still fails during DNS resolution with `gaierror`
+  errno 8. Through an explicitly approved localhost-only port-forward to the
+  STG LiteLLM Service, one authenticated model-list request returned HTTP 200
+  and exposed the required alias. One paid one-case, one-metric evaluation then
+  produced exactly one usage record for the required alias, scored `1.0`, and
+  completed without an evaluation error. The measured request used 321 prompt,
+  45 completion, and 366 total tokens at an estimated cost of USD 0.0001182.
+  The temporary tunnel was closed and its local listener verified absent.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
