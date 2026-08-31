@@ -77,8 +77,8 @@ function selectLevel(rubric, scenario) {
   if (scenario === 'incorrect') return levels[0]
 
   const partialTargetByRubric = {
-    'risk-reduction': 100,
-    'diversification-mechanism': 100,
+    'risk-reduction': 80,
+    'diversification-mechanism': 80,
     correlation: 60,
     'risk-scope': 0,
   }

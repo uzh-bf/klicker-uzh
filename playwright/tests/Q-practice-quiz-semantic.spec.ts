@@ -247,6 +247,12 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
       '4 of 4 criteria fully met'
     )
     await expect(
+      page.getByTestId('semantic-rubric-overview-risk-reduction')
+    ).toContainText('Criterion fully met')
+    await expect(
+      page.getByTestId('semantic-rubric-result-risk-reduction')
+    ).toContainText('Score: 80%')
+    await expect(
       page.getByTestId('semantic-rubric-ai-feedback-risk-reduction')
     ).toContainText('AI feedback')
   })

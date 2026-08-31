@@ -113,7 +113,7 @@
               {
                 "name": "erfüllt",
                 "description": "Unsystematisches Risiko und Korrelation werden erklärt.",
-                "normalized_score": 100
+                "normalized_score": 80
               }
             ],
             "anchors": {
@@ -139,7 +139,7 @@
               {
                 "name": "erfüllt",
                 "description": "Die Risikostreuung über mehrere Anlagen wird erklärt.",
-                "normalized_score": 100
+                "normalized_score": 80
               }
             ],
             "anchors": {
@@ -165,7 +165,7 @@
               {
                 "name": "erfüllt",
                 "description": "Nicht perfekte Korrelation wird korrekt erklärt.",
-                "normalized_score": 100
+                "normalized_score": 80
               }
             ],
             "anchors": {
@@ -191,7 +191,7 @@
               {
                 "name": "erfüllt",
                 "description": "Die Grenzen der Diversifikation werden korrekt eingeordnet.",
-                "normalized_score": 100
+                "normalized_score": 80
               }
             ],
             "anchors": {
