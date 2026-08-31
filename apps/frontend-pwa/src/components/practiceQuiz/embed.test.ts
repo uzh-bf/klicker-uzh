@@ -21,6 +21,13 @@ describe('embed protocol', () => {
       }),
       false
     )
+    assert.equal(
+      isEmbedInitMessage({
+        type: EMBED_INIT_MESSAGE_TYPE,
+        capabilities: { futureCapability: true },
+      }),
+      false
+    )
     assert.equal(isEmbedInitMessage({ type: 'other' }), false)
   })
 
