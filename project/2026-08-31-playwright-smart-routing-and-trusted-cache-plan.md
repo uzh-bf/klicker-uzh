@@ -979,6 +979,10 @@ native planner gate.
   `PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR=0`; the smart-draft and Playwright
   cache controls are not present. The new routing and cache paths therefore
   cannot be live until the branch is delivered and their controls are created.
+- [x] A read-only run lookup confirmed that `playwright-cache-seed.yml` is not
+  present on the remote default branch, so no trusted seed or new cache-hit
+  cohort exists yet. M4 therefore remains unarmed rather than merely
+  unmeasured.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact
