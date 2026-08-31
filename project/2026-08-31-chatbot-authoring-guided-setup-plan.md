@@ -353,13 +353,14 @@ Return to the user if:
       one-shot route allowance from leaking and restore the current URL when a
       dirty browser-history navigation is cancelled; the corrected history
       scenario passes on the host.
-- [ ] The root `check:all` attempt passed its JavaScript and TypeScript paths but
-      stopped in the unrelated Analytics lint task because uv selected Python
-      3.14 and the devcontainer has no C compiler for pandas 2.2.2. Resolve or
-      isolate that environment-only gap at the integrated finish gate.
-- [ ] Slice 2 implemented and focused checks pass: Biome, Prettier, Manage and
-      Playwright TypeScript, and all six authoring Playwright scenarios. The
-      browser suite exposed and now covers a save/refetch navigation race;
-      review and commit remain.
+- [x] The root `check:all` environment gap is resolved locally by installing the
+      Analytics package's declared Python 3.12 target and recreating only its
+      ignored virtual environment; all 7 lint tasks and all 25 check tasks pass.
+- [x] Slice 2 implemented, committed, and reviewed. Focused Biome, Prettier,
+      Manage and Playwright TypeScript, and all six authoring Playwright
+      scenarios pass. The browser suite exposed and now covers a save/refetch
+      navigation race. Review corrections add programmatic step state and
+      announcements, clear a stale deferred advance, and cover published
+      metadata saves.
 - [ ] Integrated browser proof and final review completed.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.

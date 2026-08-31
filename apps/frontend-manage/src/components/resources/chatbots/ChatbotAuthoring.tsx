@@ -139,45 +139,59 @@ function SetupProgress({ step }: { step: ChatbotSetupStep }) {
   const currentIndex = items.findIndex((item) => item.step === step)
 
   return (
-    <ol
-      aria-label={t('manage.resources.chatbotSetupProgress')}
-      className="grid gap-2 sm:grid-cols-3"
-      data-cy="chatbot-setup-progress"
-    >
-      {items.map((item, index) => {
-        const current = item.step === step
-        const complete = index < currentIndex
-        return (
-          <li
-            key={item.step}
-            aria-current={current ? 'step' : undefined}
-            className={
-              current
-                ? 'rounded-md border border-primary-300 bg-primary-50 p-3'
-                : 'rounded-md border border-gray-200 bg-gray-50 p-3'
-            }
-            data-cy={`chatbot-setup-step-${item.step}`}
-          >
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span
-                aria-hidden
-                className={
-                  current || complete
-                    ? 'flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs text-white'
-                    : 'flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 text-xs text-gray-600'
-                }
-              >
-                {complete ? '✓' : index + 1}
-              </span>
-              <span>{item.label}</span>
-            </div>
-            <p className="mt-1 pl-8 text-xs text-gray-600">
-              {item.description}
-            </p>
-          </li>
-        )
-      })}
-    </ol>
+    <>
+      <ol
+        aria-label={t('manage.resources.chatbotSetupProgress')}
+        className="grid gap-2 sm:grid-cols-3"
+        data-cy="chatbot-setup-progress"
+      >
+        {items.map((item, index) => {
+          const current = item.step === step
+          const complete = index < currentIndex
+          return (
+            <li
+              key={item.step}
+              aria-current={current ? 'step' : undefined}
+              className={
+                current
+                  ? 'rounded-md border border-primary-300 bg-primary-50 p-3'
+                  : 'rounded-md border border-gray-200 bg-gray-50 p-3'
+              }
+              data-cy={`chatbot-setup-step-${item.step}`}
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <span
+                  aria-hidden
+                  className={
+                    current || complete
+                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs text-white'
+                      : 'flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 text-xs text-gray-600'
+                  }
+                >
+                  {complete ? '✓' : index + 1}
+                </span>
+                <span>{item.label}</span>
+                <span className="sr-only">
+                  {complete
+                    ? t('manage.resources.chatbotSetupStepCompleted')
+                    : current
+                      ? t('manage.resources.chatbotSetupStepCurrent')
+                      : t('manage.resources.chatbotSetupStepNotCompleted')}
+                </span>
+              </div>
+              <p className="mt-1 pl-8 text-xs text-gray-600">
+                {item.description}
+              </p>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="sr-only" role="status" aria-live="polite">
+        {t('manage.resources.chatbotSetupStepAnnouncement', {
+          step: items[currentIndex]?.label ?? '',
+        })}
+      </p>
+    </>
   )
 }
 
@@ -336,6 +350,15 @@ function ChatbotAuthoring({
     setAdvanceToReview(false)
     onNavigate('setup', 'review', true)
   }, [advanceToReview, chatbot, onNavigate])
+
+  useEffect(() => {
+    if (
+      advanceToReview &&
+      (step !== 'disclaimer' || disclaimerNavigationState.dirty)
+    ) {
+      setAdvanceToReview(false)
+    }
+  }, [advanceToReview, disclaimerNavigationState.dirty, step])
 
   const navigateAfterSave = (nextStep: ChatbotSetupStep) => {
     onNavigate('setup', nextStep, true)

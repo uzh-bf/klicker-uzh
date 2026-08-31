@@ -3807,6 +3807,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupReview: 'Prüfen',
       chatbotSetupReviewDescription:
         'Angaben bestätigen und Veröffentlichung beantragen',
+      chatbotSetupStepCompleted: 'Abgeschlossen',
+      chatbotSetupStepCurrent: 'Aktueller Schritt',
+      chatbotSetupStepNotCompleted: 'Nicht abgeschlossen',
+      chatbotSetupStepAnnouncement: 'Sie bearbeiten jetzt {step}',
       chatbotSetupBasicsTitle: 'Grundangaben des Chatbots',
       chatbotSetupBasicsDescriptionLong:
         'Geben Sie dem Chatbot einen klaren Namen und eine Beschreibung. Der verknüpfte Kurs ist nach der Erstellung festgelegt.',

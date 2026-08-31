@@ -526,6 +526,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const chatbot = await prisma.chatbot.findFirst({
       where: { name: `${CHATBOT_PREFIX} Publication` },
       select: {
+        id: true,
         status: true,
         publicationUseCase: true,
         expectedStudentCount: true,
@@ -538,6 +539,23 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       expectedStudentCount: 40,
       creditInitialCredits: 25,
     })
+
+    if (!chatbot) throw new Error('Expected the publication chatbot to exist')
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { status: 'PUBLISHED' },
+    })
+    await page.reload()
+    await page.getByTestId('chatbot-view-setup').click()
+    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
+    await page
+      .getByTestId('chatbot-description')
+      .fill('Published chatbot metadata remains editable.')
+    await page.getByTestId('save-chatbot-metadata').click()
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
+    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
   })
 
   test('shows a rejection comment and allows correction and resubmission', async ({

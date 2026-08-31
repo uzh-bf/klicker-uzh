@@ -3744,6 +3744,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
       chatbotSetupReview: 'Review',
       chatbotSetupReviewDescription: 'Confirm details and request publication',
+      chatbotSetupStepCompleted: 'Completed',
+      chatbotSetupStepCurrent: 'Current step',
+      chatbotSetupStepNotCompleted: 'Not completed',
+      chatbotSetupStepAnnouncement: 'Now editing {step}',
       chatbotSetupBasicsTitle: 'Chatbot basics',
       chatbotSetupBasicsDescriptionLong:
         'Give the chatbot a clear name and description. The linked course is fixed after creation.',
