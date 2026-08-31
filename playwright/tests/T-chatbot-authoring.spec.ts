@@ -145,6 +145,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     page,
   }) => {
     const createMutationGate = createRequestGate()
+    let createOperationCount = 0
 
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
@@ -153,6 +154,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         return
       }
 
+      createOperationCount += 1
       const response = await route.fetch()
       await createMutationGate.wait
       await route.fulfill({ response })
@@ -173,6 +175,24 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
     createMutationGate.release()
     await expect(page.getByTestId(`chatbot-${FIRST_CHATBOT}`)).toBeVisible()
+    await expect.poll(() => createOperationCount).toBe(1)
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('view'))
+      .toBe('setup')
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('disclaimer')
+
+    const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=invalid&step=invalid`
+    )
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('view'))
+      .toBe('setup')
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('disclaimer')
   })
 
   test('creates, edits, previews, switches, and reloads draft chatbots', async ({
@@ -290,7 +310,35 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
     ).toBeVisible()
 
+    await page.getByTestId('chatbot-view-advanced').click()
+    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
     await page.getByTestId('chatbot-model-selection-switch').click()
+    const createDiscardDialogPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
+        return dialog.dismiss()
+      })
+    await page.getByTestId('create-chatbot').click()
+    await createDiscardDialogPromise
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    const discardDialogPromise = page.waitForEvent('dialog').then((dialog) => {
+      expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
+      return dialog.dismiss()
+    })
+    await page.getByTestId('chatbot-view-usage').click()
+    await discardDialogPromise
+    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
     await page.getByTestId('chatbot-model-settings-save').click()
     await expect(
       page.getByTestId('chatbot-model-selection-switch')
@@ -303,6 +351,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     }
     modelSettingsRequestGate.release()
     await expect(page.getByText('Model settings saved.')).toBeVisible()
+
+    await page.getByTestId('chatbot-view-usage').click()
+    await expect(page.getByText('Credits', { exact: true })).toBeVisible()
+    await expect(page.getByText('Usage Summary', { exact: true })).toBeVisible()
 
     await createChatbot(page, SECOND_CHATBOT)
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')

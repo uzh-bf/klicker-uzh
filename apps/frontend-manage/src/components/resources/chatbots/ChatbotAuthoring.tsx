@@ -16,12 +16,13 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik, useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import type { ChatbotNavigationState } from './chatbotWorkspace'
 
 const metadataEditableStatuses = [
   ChatbotStatus.Draft,
@@ -30,6 +31,20 @@ const metadataEditableStatuses = [
 ]
 
 const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
+
+function NavigationStateReporter({
+  dirty,
+  pending,
+  onChange,
+}: ChatbotNavigationState & {
+  onChange: (state: ChatbotNavigationState) => void
+}) {
+  useEffect(() => {
+    onChange({ dirty, pending })
+  }, [dirty, onChange, pending])
+
+  return null
+}
 
 function DisclaimerIntroField({
   disabled,
@@ -91,11 +106,13 @@ function ChatbotAuthoring({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  onNavigationStateChange,
 }: {
   chatbot: Chatbot
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  onNavigationStateChange: (state: ChatbotNavigationState) => void
 }) {
   const t = useTranslations()
   const [updateChatbot] = useMutation(UpdateChatbotDocument)
@@ -104,11 +121,44 @@ function ChatbotAuthoring({
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
   const [disclaimerSuccess, setDisclaimerSuccess] = useState(false)
+  const [metadataNavigationState, setMetadataNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [disclaimerNavigationState, setDisclaimerNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [publicationNavigationState, setPublicationNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
 
   const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
   const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
   const disclaimer = chatbot.disclaimerSummary
   const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
+
+  useEffect(() => {
+    onNavigationStateChange({
+      dirty:
+        metadataNavigationState.dirty ||
+        disclaimerNavigationState.dirty ||
+        publicationNavigationState.dirty,
+      pending:
+        metadataNavigationState.pending ||
+        disclaimerNavigationState.pending ||
+        publicationNavigationState.pending,
+    })
+  }, [
+    disclaimerNavigationState,
+    metadataNavigationState,
+    onNavigationStateChange,
+    publicationNavigationState,
+  ])
+
+  useEffect(() => {
+    if (!metadataEditable) {
+      setMetadataNavigationState({ dirty: false, pending: false })
+    }
+    if (!disclaimerEditable) {
+      setDisclaimerNavigationState({ dirty: false, pending: false })
+    }
+  }, [disclaimerEditable, metadataEditable])
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
@@ -162,8 +212,13 @@ function ChatbotAuthoring({
               }
             }}
           >
-            {({ isSubmitting, isValid }) => (
+            {({ dirty, isSubmitting, isValid }) => (
               <Form className="space-y-3">
+                <NavigationStateReporter
+                  dirty={dirty}
+                  pending={isSubmitting}
+                  onChange={setMetadataNavigationState}
+                />
                 <FormikTextField
                   required
                   disabled={isSubmitting}
@@ -270,8 +325,13 @@ function ChatbotAuthoring({
               }
             }}
           >
-            {({ isSubmitting, isValid, values }) => (
+            {({ dirty, isSubmitting, isValid, values }) => (
               <Form className="space-y-4">
+                <NavigationStateReporter
+                  dirty={dirty}
+                  pending={isSubmitting}
+                  onChange={setDisclaimerNavigationState}
+                />
                 <FormikTextField
                   required
                   disabled={isSubmitting}
@@ -349,6 +409,7 @@ function ChatbotAuthoring({
           publishingAuthorized={publishingAuthorized}
           publishingAuthorizationLoading={publishingAuthorizationLoading}
           publishingAuthorizationError={publishingAuthorizationError}
+          onNavigationStateChange={setPublicationNavigationState}
         />
       </section>
     </div>

@@ -491,15 +491,23 @@ remains a separate transition.
 Manage exposes draft preparation through
 `apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
 limited to the lecturer's owned, non-archived courses, and the newly created
-chatbot is selected immediately. The selected course is then read-only. Name,
-description, and model settings follow the metadata lifecycle matrix above;
-the disclaimer title and introduction are editable only for `DRAFT` and
-`REJECTED` chatbots. `ContentInput` keeps its full toolbar by default and uses
-the `basic` preset for disclaimer introductions, retaining simple formatting
-while omitting media, video, math, code, and quote controls. The lecturer
-preview renders the fixed `chat.disclaimer.*` sections without participant
-actions, and its Slate editor remounts when either the chatbot or current
-disclaimer ID changes so a selection change cannot retain stale text.
+chatbot is selected immediately. The workspace keeps chatbot selection in a
+persistent desktop rail and a compact mobile selector. Its URL identifies the
+selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
+setup view additionally uses the `basics`, `disclaimer`, or `review` step.
+Invalid or incomplete deep links fall back to the first valid lifecycle step.
+Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
+model-policy changes, and block while an affected mutation is pending.
+
+The selected course is read-only. Name, description, and model settings follow
+the metadata lifecycle matrix above; the disclaimer title and introduction are
+editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
+toolbar by default and uses the `basic` preset for disclaimer introductions,
+retaining simple formatting while omitting media, video, math, code, and quote
+controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
+without participant actions, and its Slate editor remounts when either the
+chatbot or current disclaimer ID changes so a selection change cannot retain
+stale text.
 
 The publication section keeps `DRAFT` and `REJECTED` request details editable
 for preparation, but enables submission only when a complete disclaimer and

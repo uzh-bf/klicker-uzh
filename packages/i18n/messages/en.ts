@@ -3722,8 +3722,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
       createChatbot: 'Create chatbot',
+      createChatbotShort: 'New',
       createChatbotDescription:
         'Create a course-bound draft chatbot and configure it before requesting publication.',
+      chatbotMobileSelector: 'Current chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot workspace',
+      chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceSetup: 'Setup',
+      chatbotWorkspaceAdvanced: 'Advanced',
+      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceOverviewDescription:
+        'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotDiscardChangesConfirmation:
+        'Discard your unsaved chatbot changes?',
+      chatbotNavigationPending:
+        'Please wait until the current chatbot change has finished saving.',
+      chatbotCreatedAt: 'Created',
+      chatbotUpdatedAt: 'Last updated',
       chatbotName: 'Name',
       chatbotDescription: 'Description',
       chatbotCourse: 'Course',

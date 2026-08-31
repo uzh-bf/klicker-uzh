@@ -3784,8 +3784,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
       createChatbot: 'Chatbot erstellen',
+      createChatbotShort: 'Neu',
       createChatbotDescription:
         'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
+      chatbotMobileSelector: 'Aktueller Chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
+      chatbotWorkspaceOverview: 'Übersicht',
+      chatbotWorkspaceSetup: 'Einrichtung',
+      chatbotWorkspaceAdvanced: 'Erweitert',
+      chatbotWorkspaceUsage: 'Nutzung & Integrationen',
+      chatbotWorkspaceOverviewDescription:
+        'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotDiscardChangesConfirmation:
+        'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
+      chatbotNavigationPending:
+        'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
+      chatbotCreatedAt: 'Erstellt',
+      chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
       chatbotDescription: 'Beschreibung',
       chatbotCourse: 'Kurs',
