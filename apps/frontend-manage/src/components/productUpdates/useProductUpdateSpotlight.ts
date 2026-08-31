@@ -95,7 +95,17 @@ export function useProductUpdateSpotlight({
           // nothing to go back to, so the previous slot carries the dismissal,
           // while the close icon means "not now" and leaves the entry alone.
           showButtons: ['next', 'previous', 'close'],
-          nextBtnText: escapeHtml(t('manage.productUpdates.spotlightConfirm')),
+          // The next slot doubles as the call to action, so its label has to
+          // follow the entry. An entry without a CTA has nothing left to do
+          // once the element is highlighted, and offering to show what is
+          // already on screen reads as a button that does nothing.
+          nextBtnText: escapeHtml(
+            t(
+              update.cta
+                ? 'manage.productUpdates.spotlightConfirm'
+                : 'shared.generic.ok'
+            )
+          ),
           prevBtnText: escapeHtml(t('manage.productUpdates.spotlightDismiss')),
           onNextClick: () => {
             instance.destroy()
