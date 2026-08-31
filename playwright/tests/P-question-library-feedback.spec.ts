@@ -1,13 +1,55 @@
 import type { Page, Route } from '@playwright/test'
 import { expect, test } from '../util/fixtures.js'
 
+type GraphQLRequest = {
+  operationName?: unknown
+  variables?: {
+    searchString?: unknown
+  }
+}
+
+function readGraphQLRequest(route: Route): GraphQLRequest {
+  const request = route.request()
+
+  if (request.method() === 'GET') {
+    const url = new URL(request.url())
+    const rawVariables = url.searchParams.get('variables')
+
+    let variables: GraphQLRequest['variables']
+    if (rawVariables) {
+      try {
+        const parsedVariables: unknown = JSON.parse(rawVariables)
+        if (typeof parsedVariables === 'object' && parsedVariables !== null) {
+          variables = parsedVariables as GraphQLRequest['variables']
+        }
+      } catch {
+        variables = undefined
+      }
+    }
+
+    return {
+      operationName: url.searchParams.get('operationName'),
+      variables,
+    }
+  }
+
+  const body: unknown = request.postDataJSON()
+  return typeof body === 'object' && body !== null
+    ? (body as GraphQLRequest)
+    : {}
+}
+
 async function interceptUserElements(
   page: Page,
   handler: (route: Route) => Promise<void>
 ) {
-  await page.route(/operationName=GetUserElements(?:&|$)/, (route) =>
-    handler(route)
-  )
+  await page.route('**/api/graphql**', (route) => {
+    if (readGraphQLRequest(route).operationName !== 'GetUserElements') {
+      return route.fallback()
+    }
+
+    return handler(route)
+  })
 }
 
 test.describe('Question library search feedback', () => {
@@ -16,9 +58,11 @@ test.describe('Question library search feedback', () => {
     loginLecturer,
   }) => {
     let requestCount = 0
+    const searchStrings: unknown[] = []
 
     await interceptUserElements(page, async (route) => {
       requestCount += 1
+      searchStrings.push(readGraphQLRequest(route).variables?.searchString)
       await route.fallback()
     })
     await loginLecturer()
@@ -34,6 +78,7 @@ test.describe('Question library search feedback', () => {
     await expect
       .poll(() => requestCount, { timeout: 5000 })
       .toBeGreaterThan(initialRequestCount)
+    await expect.poll(() => searchStrings).toContain('W1 debounced search term')
   })
 
   test('shows a localized error with Retry for a library query failure', async ({
