@@ -2,10 +2,13 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   EMBED_INIT_MESSAGE_TYPE,
-  EMBED_PROTOCOL_VERSION,
+  EMBED_RESIZE_VERSION,
+  isAllowedQuizAdvanceMessage,
   isEmbedInitMessage,
   isValidEmbedResizePayload,
   mergeEmbedCapabilities,
+  QUIZ_ADVANCE_MESSAGE_TYPE,
+  QUIZ_ADVANCE_VERSION,
 } from './embed'
 
 describe('embed protocol', () => {
@@ -41,7 +44,7 @@ describe('embed protocol', () => {
   it('validates resize payload version and bounds', () => {
     assert.equal(
       isValidEmbedResizePayload({
-        version: EMBED_PROTOCOL_VERSION,
+        version: EMBED_RESIZE_VERSION,
         height: 480,
       }),
       true
@@ -49,8 +52,37 @@ describe('embed protocol', () => {
     assert.equal(isValidEmbedResizePayload({ version: 2, height: 480 }), false)
     assert.equal(
       isValidEmbedResizePayload({
-        version: EMBED_PROTOCOL_VERSION,
+        version: EMBED_RESIZE_VERSION,
         height: Number.POSITIVE_INFINITY,
+      }),
+      false
+    )
+  })
+
+  it('accepts advance only when the current host action is available', () => {
+    const message = {
+      type: QUIZ_ADVANCE_MESSAGE_TYPE,
+      payload: { version: QUIZ_ADVANCE_VERSION },
+    }
+
+    assert.equal(
+      isAllowedQuizAdvanceMessage(message, {
+        phase: 'feedback',
+        canAdvance: true,
+      }),
+      true
+    )
+    assert.equal(
+      isAllowedQuizAdvanceMessage(message, {
+        phase: 'answering',
+        canAdvance: false,
+      }),
+      false
+    )
+    assert.equal(
+      isAllowedQuizAdvanceMessage(message, {
+        phase: 'completed',
+        canAdvance: true,
       }),
       false
     )

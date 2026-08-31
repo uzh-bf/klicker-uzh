@@ -15,6 +15,7 @@ import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
+import type { EmbedQuizNavigationState } from './embed'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -45,6 +46,9 @@ interface PracticeQuizProps {
   showResetLocalStorage?: boolean
   embedded?: boolean
   previewOnly?: boolean
+  hostNavigation?: boolean
+  hostAdvanceRequest?: number
+  onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
 }
 
 function PracticeQuiz({
@@ -56,9 +60,13 @@ function PracticeQuiz({
   showResetLocalStorage = false,
   embedded = false,
   previewOnly = false,
+  hostNavigation = false,
+  hostAdvanceRequest = 0,
+  onHostNavigationStateChange,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
+  const focusedEmbed = embedded && hostNavigation
   const currentStack = quiz.stacks?.[currentIx]
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
@@ -116,36 +124,38 @@ function PracticeQuiz({
           !embedded ? 'md:border' : ''
         )}
       >
-        <StepProgressWithScoring
-          items={
-            quiz.stacks?.map((stack) => {
-              return progressState?.[stack.id]
-                ? {
-                    status:
-                      FEEDBACK_STATUS_PROGRESS_MAP[
-                        progressState?.[stack.id].status ??
-                          StackFeedbackStatus.Unanswered
-                      ],
-                    score: progressState?.[stack.id].score ?? null,
+        {!focusedEmbed && (
+          <StepProgressWithScoring
+            items={
+              quiz.stacks?.map((stack) => {
+                return progressState?.[stack.id]
+                  ? {
+                      status:
+                        FEEDBACK_STATUS_PROGRESS_MAP[
+                          progressState?.[stack.id].status ??
+                            StackFeedbackStatus.Unanswered
+                        ],
+                      score: progressState?.[stack.id].score ?? null,
+                    }
+                  : {
+                      status: 'unanswered',
+                    }
+              }) || []
+            }
+            currentIx={currentIx}
+            setCurrentIx={setCurrentIx}
+            resetLocalStorage={
+              showResetLocalStorage
+                ? () => {
+                    resetPracticeQuizLocalStorage(quiz.id)
+                    window.location.reload()
                   }
-                : {
-                    status: 'unanswered',
-                  }
-            }) || []
-          }
-          currentIx={currentIx}
-          setCurrentIx={setCurrentIx}
-          resetLocalStorage={
-            showResetLocalStorage
-              ? () => {
-                  resetPracticeQuizLocalStorage(quiz.id)
-                  window.location.reload()
-                }
-              : undefined
-          }
-        />
+                : undefined
+            }
+          />
+        )}
 
-        {previewOnly && (
+        {previewOnly && !focusedEmbed && (
           <PreviewMessage
             activityType={t('shared.generic.practiceQuiz')}
             name={quiz.name}
@@ -153,7 +163,7 @@ function PracticeQuiz({
           />
         )}
 
-        {currentIx === -1 && (
+        {currentIx === -1 && !focusedEmbed && (
           <PracticeQuizOverview
             displayName={quiz.displayName}
             description={quiz.description ?? undefined}
@@ -192,6 +202,9 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            hostNavigation={hostNavigation}
+            hostAdvanceRequest={hostAdvanceRequest}
+            onHostNavigationStateChange={onHostNavigationStateChange}
           />
         )}
       </div>

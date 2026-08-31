@@ -24,6 +24,15 @@ import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
+import type { EmbedQuizNavigationState } from './embed'
+
+// Choices render their explanation inline. Other element types render their
+// solutions in the evaluation panel, so focused feedback must show that panel.
+const CHOICES_ELEMENT_TYPES = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+]
 
 interface ElementStackProps {
   parentId: string
@@ -48,6 +57,9 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  hostNavigation?: boolean
+  hostAdvanceRequest?: number
+  onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
 }
 
 function ElementStack({
@@ -67,15 +79,27 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  hostNavigation = false,
+  hostAdvanceRequest = 0,
+  onHostNavigationStateChange,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
+  const hostActionRef = useRef<HTMLDivElement>(null)
+  const lastHandledHostAdvanceRequest = useRef(hostAdvanceRequest)
   const wrapEmbedded = (node: ReactNode) =>
     embedded ? (
-      <div className="sticky bottom-4 z-50 flex justify-end">{node}</div>
+      <div
+        ref={hostActionRef}
+        className={
+          hostNavigation ? 'hidden' : 'sticky bottom-4 z-50 flex justify-end'
+        }
+      >
+        {node}
+      </div>
     ) : (
       node
     )
@@ -112,8 +136,56 @@ function ElementStack({
     } else {
       return false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentResponse])
+  }, [stackStorage, studentResponse])
+
+  const responseEntries = Object.values(studentResponse)
+  const responsesInitialized = responseEntries.length > 0
+  const responsesInvalid = responseEntries.some((response) => !response.valid)
+  const responsesValid = responsesInitialized && !responsesInvalid
+  const responseSubmissionDisabled =
+    (!previewOnly && activityExpired) || responsesInvalid
+  const hostNavigationState = useMemo<EmbedQuizNavigationState>(
+    () =>
+      typeof stackStorage !== 'undefined' && !showMarkAsRead
+        ? { phase: 'feedback', canAdvance: true }
+        : {
+            phase: 'answering',
+            canAdvance: showMarkAsRead
+              ? responsesValid
+              : responsesInitialized &&
+                !submittingResponse &&
+                !responseSubmissionDisabled,
+          },
+    [
+      responseSubmissionDisabled,
+      responsesInitialized,
+      responsesValid,
+      showMarkAsRead,
+      stackStorage,
+      submittingResponse,
+    ]
+  )
+
+  useEffect(() => {
+    if (!hostNavigation) return
+    onHostNavigationStateChange?.(hostNavigationState)
+  }, [hostNavigation, hostNavigationState, onHostNavigationStateChange])
+
+  useEffect(() => {
+    if (!hostNavigation) {
+      lastHandledHostAdvanceRequest.current = hostAdvanceRequest
+      return
+    }
+
+    if (lastHandledHostAdvanceRequest.current === hostAdvanceRequest) return
+    lastHandledHostAdvanceRequest.current = hostAdvanceRequest
+
+    if (!hostNavigationState.canAdvance) return
+
+    const actionButton = hostActionRef.current?.querySelector('button')
+    if (!actionButton || actionButton.disabled) return
+    actionButton.click()
+  }, [hostAdvanceRequest, hostNavigation, hostNavigationState.canAdvance])
 
   // initialize student responses
   useStudentResponse({
@@ -305,7 +377,7 @@ function ElementStack({
   ])
 
   return (
-    <div className="pb-12">
+    <div className={hostNavigation ? 'pb-0' : 'pb-12'}>
       <div className="w-full">
         {activityExpired && activityExpiredMessage && (
           <UserNotification
@@ -315,30 +387,40 @@ function ElementStack({
           />
         )}
 
-        {!previewOnly && !hideBookmark && !embedded ? (
-          <div className="flex flex-row items-center justify-between">
-            <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
-            <Bookmark
-              bookmarks={bookmarks}
-              quizId={parentId === 'bookmarks' ? undefined : parentId}
-              stackId={stack.id}
-            />
-          </div>
-        ) : (
-          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+        {!hostNavigation && (
+          <>
+            {!previewOnly && !hideBookmark && !embedded ? (
+              <div className="flex flex-row items-center justify-between">
+                <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+                <Bookmark
+                  bookmarks={bookmarks}
+                  quizId={parentId === 'bookmarks' ? undefined : parentId}
+                  stackId={stack.id}
+                />
+              </div>
+            ) : (
+              <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+            )}
+
+            {stack.description && (
+              <div className="mb-4">
+                <DynamicMarkdown
+                  content={stack.description}
+                  data={{ cy: 'element-stack-description' }}
+                  withProse
+                />
+              </div>
+            )}
+          </>
         )}
 
-        {stack.description && (
-          <div className="mb-4">
-            <DynamicMarkdown
-              content={stack.description}
-              data={{ cy: 'element-stack-description' }}
-              withProse
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-8 md:gap-12">
+        <div
+          className={
+            hostNavigation
+              ? 'flex flex-col gap-6'
+              : 'flex flex-col gap-8 md:gap-12'
+          }
+        >
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
@@ -381,7 +463,13 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
-                    preview={embedded && !openEvaluations.has(element.id)}
+                    preview={
+                      embedded &&
+                      (hostNavigation
+                        ? hostNavigationState.phase !== 'feedback' ||
+                          CHOICES_ELEMENT_TYPES.includes(element.elementType)
+                        : !openEvaluations.has(element.id))
+                    }
                   />
                 </div>
               )
@@ -417,16 +505,13 @@ function ElementStack({
         : null}
 
       {/* display mark all as read button, if only content elements have not been answered yet */}
-      {typeof stackStorage === 'undefined' &&
-        showMarkAsRead &&
+      {showMarkAsRead &&
         wrapEmbedded(
           <Button
             className={{
               root: embeddedButtonClass,
             }}
-            disabled={Object.values(studentResponse).some(
-              (response) => !response.valid
-            )}
+            disabled={responsesInvalid}
             onClick={() => {
               // update the read status of all content elements in studentResponse to true
               setStudentResponse((currentResponses) =>
@@ -462,10 +547,7 @@ function ElementStack({
           <Button
             primary
             loading={submittingResponse}
-            disabled={
-              (!previewOnly && activityExpired) ||
-              Object.values(studentResponse).some((response) => !response.valid)
-            }
+            disabled={!responsesInitialized || responseSubmissionDisabled}
             className={{
               root: embeddedButtonClass,
             }}

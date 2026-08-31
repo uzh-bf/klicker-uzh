@@ -1,7 +1,10 @@
 export const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
 export const EMBED_RESIZE_MESSAGE_TYPE = 'klicker:embed-resize'
+export const QUIZ_ADVANCE_MESSAGE_TYPE = 'klicker:quiz-advance'
 export const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
-export const EMBED_PROTOCOL_VERSION = 1
+export const EMBED_RESIZE_VERSION = 1
+export const QUIZ_ADVANCE_VERSION = 1
+export const QUIZ_STATE_VERSION = 1
 
 export type EmbedCapabilities = {
   resize?: boolean
@@ -14,8 +17,26 @@ export type EmbedInitMessage = {
 }
 
 export type EmbedResizePayload = {
-  version: typeof EMBED_PROTOCOL_VERSION
+  version: typeof EMBED_RESIZE_VERSION
   height: number
+}
+
+export type EmbedQuizStatus = 'overview' | 'in-progress' | 'completed'
+
+export type EmbedQuizPhase = 'overview' | 'answering' | 'feedback' | 'completed'
+
+export type EmbedQuizNavigationState = {
+  phase: EmbedQuizPhase
+  canAdvance: boolean
+}
+
+export type EmbedQuizStatePayload = {
+  version: typeof QUIZ_STATE_VERSION
+  status: EmbedQuizStatus
+  currentStep: number
+  totalSteps: number
+  phase?: EmbedQuizPhase
+  canAdvance?: boolean
 }
 
 /**
@@ -40,11 +61,10 @@ export function isEmbedInitMessage(data: unknown): data is EmbedInitMessage {
   if (typeof data.capabilities === 'undefined') return true
   if (!isRecord(data.capabilities)) return false
 
-  return Object.entries(data.capabilities).every(
-    ([key, value]) =>
-      (key === 'resize' || key === 'hostNavigation') &&
-      typeof value === 'boolean'
-  )
+  return Object.entries(data.capabilities).every(([key, value]) => {
+    if (key !== 'resize' && key !== 'hostNavigation') return true
+    return typeof value === 'boolean'
+  })
 }
 
 export function isValidEmbedResizePayload(
@@ -52,11 +72,25 @@ export function isValidEmbedResizePayload(
 ): data is EmbedResizePayload {
   return (
     isRecord(data) &&
-    data.version === EMBED_PROTOCOL_VERSION &&
+    data.version === EMBED_RESIZE_VERSION &&
     typeof data.height === 'number' &&
     Number.isFinite(data.height) &&
     data.height >= 200 &&
     data.height <= 50000
+  )
+}
+
+export function isAllowedQuizAdvanceMessage(
+  data: unknown,
+  navigationState: EmbedQuizNavigationState
+): boolean {
+  return (
+    navigationState.canAdvance &&
+    navigationState.phase !== 'completed' &&
+    isRecord(data) &&
+    data.type === QUIZ_ADVANCE_MESSAGE_TYPE &&
+    isRecord(data.payload) &&
+    data.payload.version === QUIZ_ADVANCE_VERSION
   )
 }
 
