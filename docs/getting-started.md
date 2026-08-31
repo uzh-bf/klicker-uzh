@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-29'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -219,11 +219,20 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The root-owned wrapper (`util/_run_klicker_eval.sh`) uses the restricted
+`klicker-uzh-stg` operator profile and maps only the approved LiteLLM key. Its
+defaults select `klickeruzh/azure/gpt-5.6-luna-high`, use the shared metrics,
+load Klicker's FineCo tool catalogue, and disable judge retries. Native
+environment overrides and forwarded framework arguments remain effective.
+`LITELLM_API_BASE` is required at runtime because this public repository does
+not store an internal proxy hostname.
+
+Eval mode consumes an existing QA artifact and therefore proves only the judge
+path. Query and query-eval need a verified OpenAI-compatible target endpoint;
+Klicker's authenticated AI-SDK UI stream is not currently supported by that
+target adapter. The wrapper fails before secret injection when the private
+submodule is absent, and it never starts or repairs LiteLLM connectivity.

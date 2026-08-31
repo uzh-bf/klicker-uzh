@@ -40,6 +40,16 @@ For OpenAI-compatible request-policy or prompt-cache changes, run
 see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
 for contract details and evidence boundaries.
 
+For the external synthetic evaluation wrapper, run
+`bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
+Then validate all FineCo Markdown cases against
+`evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
+restricted `klicker-uzh-stg` operator profile for live judge checks and stop
+unless `LITELLM_API_BASE` names an approved reachable route and the namespaced
+model is visible first. Eval mode judges an existing QA artifact; it does not
+query Klicker's authenticated AI-SDK chat route and is not live product-quality
+evidence.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic

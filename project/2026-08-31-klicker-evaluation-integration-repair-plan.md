@@ -191,4 +191,24 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
 
 - Plan hardened by the required planner through three review rounds.
 - Planner verdict: approved.
-- Implementation: not started.
+- Evaluation Slice A commits:
+  - `b5f687b` — explicit judge capability and retry contracts plus chat-mode
+    projection.
+  - `8df1115` — review correction for imported and blank chat modes.
+  - `421b135` — strict-schema and single-attempt corrections for every DeepEval
+    judge entry point, plus normalized conversation imports.
+- Evaluation verification: 345 tests pass; the formatted correction tree has
+  123 focused passing tests, and Ruff format and lint pass. The private-safe
+  generic-continuity simplifier's one reduction and the slice reviewer's
+  findings were applied. Correction review is running against the immutable
+  range ending at `421b135`.
+- Klicker Slice B implementation and verification are complete. The local
+  integration branch pins evaluator commit `421b135`; the wrapper contract and
+  shell syntax pass, and all 20 FineCo cases validate with zero tool warnings,
+  both supported modes, and matching expected tools.
+- Privacy correction: `LITELLM_API_BASE` is required at runtime. The public
+  repository does not persist the private proxy hostname.
+- Documentation formatting and the removed-wiki-artifact check pass. The OKF
+  validator still reports 25 pre-existing core conformance errors in unrelated
+  ADR, agent, screenshot, and solution files; the edited guide introduces no
+  new core error.
