@@ -118,4 +118,12 @@ Neither PR may merge under this plan.
   Prettier, staged secret scan, and diff check). Review-confirmed corrections
   fail closed when a child claims writes and exercise the real SQLite duplicate
   guard. The shared test-support API remains compatible with active STG branches.
+- [x] Integrated current-`v3` corrections completed at `cf06f1ac2`. The
+  activation runner now serializes the full lifecycle and protects receipt
+  transitions with fail-closed compare-and-swap checks. The sealed proof binds
+  the exact cohort and activation receipt to a trusted manifest fingerprint.
+  Focused verification passed (25 activation tests, 31 proof tests, both type
+  checks, focused ESLint, Prettier, staged secret scans, and diff checks). The
+  final security and data-integrity correction review passed, including shared
+  STG test-support compatibility.
 - [ ] Canonical and maintenance PRs published with terminal exact-head CI.
