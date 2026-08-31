@@ -13,7 +13,7 @@ import {
   type Tag,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Ellipsis } from '@klicker-uzh/markdown'
+import { Ellipsis, markdownToPlainText } from '@klicker-uzh/markdown'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -211,6 +211,7 @@ function Element({
                 <Ellipsis
                   maxLines={2}
                   withMarkdown={false}
+                  previewContent={markdownToPlainText(element.content)}
                   className={{ root: 'text-left' }}
                 >
                   {element.content}

@@ -18,6 +18,7 @@ import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
 } from '@components/common/Pagination'
+import { computeResultRange } from '@lib/resultRange'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -180,6 +181,11 @@ function Index() {
   // compute the number of total pagination pages
   const totalPages =
     pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
+  const resultRange = computeResultRange({
+    currentPage,
+    pageSize,
+    numOfElements,
+  })
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -403,6 +409,16 @@ function Index() {
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col">
+                <div
+                  data-cy="result-range-summary-top"
+                  className="text-muted-foreground flex-none pb-2 text-xs"
+                >
+                  {t('manage.general.showingResults', {
+                    start: resultRange.start,
+                    end: resultRange.end,
+                    total: resultRange.total,
+                  })}
+                </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}

@@ -24,6 +24,7 @@ The valid repository pattern for an icon-only action is one non-interactive rela
 3. The tooltip is a sibling `span` with `role="tooltip"`, `pointer-events-none`, and no `tabIndex`; it is revealed by the CSS classes `group-hover` and `group-focus-within` only.
 
 The element card uses this pattern for every visible icon action and for the overflow trigger, whose Dropdown trigger contains the ellipsis plus a localized `sr-only` label (`apps/frontend-manage/src/components/elements/IconActionTooltip.tsx:IconActionTooltip`, `apps/frontend-manage/src/components/elements/Element.tsx:Element`). The sort-order toggle applies the same wrapper with the label of the _next_ action, so an ascending list discloses "Sort descending" and flips on activation (`apps/frontend-manage/src/components/elements/ElementListSorting.tsx:ElementListSorting`).
+The element-card preview is the only place that projects Markdown to plain text: the visible two-line preview must go through `markdownToPlainText` and into `Ellipsis.previewContent` so it shows readable text without raw formatting controls, while the hover/focus tooltip must keep rendering the original stored Markdown via the `Markdown` component (`apps/frontend-manage/src/components/elements/Element.tsx:Element`, `packages/markdown/src/plainText.ts:markdownToPlainText`).
 
 Assessment participant administration follows that rule: managers reach the dedicated invitation page from the course overflow menu (`CourseOverviewHeader.tsx:courseActionMenuItems`). The page parses CSV files with a small dependency-free browser parser only after file selection, then sends typed rows through generated GraphQL operations (`apps/frontend-manage/src/components/courses/participantInvitations/ParticipantInvitationCsvUpload.tsx:handleFileSelection`). The canonical browser-generated template contains only `email,matriculationNumber`; uploaded files may use comma or semicolon delimiters and supported matriculation-header aliases, but required semantic headers must be unique and every non-empty record must match the header width. Reject malformed quoting locally while preserving server-side per-row email errors and partial success. The affiliation notice is advisory: only a verified Swiss Edu-ID affiliation can establish the identity match, so do not infer or enforce affiliation from a domain suffix. Keep per-row import failures visible, show `PENDING` and `ACCEPTED` as distinct table states, and expose deletion only on pending rows (`ParticipantInvitationsTable.tsx:ParticipantInvitationsTable`).
 
@@ -73,7 +74,7 @@ contract is unchanged.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
-- **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
+- **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). When the list itself scrolls, the same result-range summary the pager shows must also render above the scroll boundary, derived from the same calculation and values (`pages/index.tsx`, `apps/frontend-manage/src/lib/resultRange.ts:computeResultRange`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
 
 ### Domain-specific creation actions
 
@@ -86,6 +87,7 @@ contract is unchanged.
 
 - Element type choices must be explained before selection: render every option as the existing type label plus a concise authoring description derived from `apps/docs/docs/tutorials/supported_element_types.mdx`, keep the type label as the select's `shortLabel` so the selected trigger stays compact, and preserve the existing values, ordering, and `select-question-type-*` `data-cy` hooks. Normal library creation additionally shows one paired-language notice that the type cannot be changed after creation; edit, duplicate, and template creation keep their existing semantics (`apps/frontend-manage/src/components/elements/manipulation/useElementTypeOptions.ts:useElementTypeOptions`, `apps/frontend-manage/src/components/elements/manipulation/ElementInformationFields.tsx:ElementInformationFields`).
 - A Boolean that must be decided explicitly stays unset (`boolean | undefined`) until the user chooses: render it as a design-system `RadioGroup` with stable Yes and No `data-cy` hooks, convert the radio string to a real boolean at the UI boundary, and never let `undefined` reach the mutation — no `?? false` fallback, Save disabled while unset, and keyboard/form submission blocked independently (`apps/frontend-manage/src/components/user/SuspendedFirstLoginModal.tsx:SuspendedFirstLoginModal`).
+- Batch operations that propagate element changes into activities default to off. Keep selected-element column headings visible, put each propagation consequence beside and programmatically associate it with its switch, and keep template propagation disabled until the lecturer explicitly enables activity-instance propagation (`apps/frontend-manage/src/components/elements/manipulation/batchOperations/SelectedElementsList.tsx:SelectedElementsList`, `apps/frontend-manage/src/components/elements/manipulation/batchOperations/ElementInstanceUpdatesCard.tsx:ElementInstanceUpdatesCard`).
 
 ## Markdown and Video Embeds
 
@@ -119,7 +121,12 @@ keeps the active filters and sort, resets to page 1, omits `numEntries` and
 `offset`, and hides page navigation. It loads the current filtered result and
 does not select records; the existing list checkbox remains the explicit
 select-all action. Page-size preferences accept only those four values when
-read from local storage. The verification-record modal keeps the shared
+read from local storage. The Elements page renders the same start/end/total
+summary above its scrolling list and in the pager, both fed by the shared
+range calculation. The question library filter sidebar lets several groups
+remain open at once, marks each group whose values are applied with a localized label, and
+keeps Status open by default (or Used in activity when a course/activity
+filter selects it). The verification-record modal keeps the shared
 control's default opt-out because its backend fetch remains capped at 100
 records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
 `apps/frontend-manage/src/pages/index.tsx:Index`,

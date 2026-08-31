@@ -23,6 +23,8 @@
         "L-elements-case-study.spec.ts",
         "MB-instance-updates.spec.ts",
         "P-pagination-show-all.spec.ts",
+        "P-question-library-batch-operations.spec.ts",
+        "P-question-library-filters.spec.ts",
         "T-resources.spec.ts",
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",

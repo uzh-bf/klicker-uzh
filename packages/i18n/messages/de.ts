@@ -2047,6 +2047,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       moreActions: 'Weitere Aktionen für {name}',
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
+      filterApplied: 'Filter aktiv',
       tags: 'Tags',
       selectOrType: 'Auswählen oder Eingeben...',
       untagged: 'Ohne Tags',
@@ -2112,12 +2113,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperationsElements: 'Elemente - Batch-Operationen',
       batchOperationsApplying: 'Batch-Operationen werden angewendet…',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Prüfen Sie die ausgewählten Elemente unten. Wählen Sie anschliessend die anzuwendenden Aktionen.',
       batchElementName: 'Element',
-      batchElementPermission: 'Ihre Berechtigung',
-      batchUpdateStatus: 'Eignung für Elementänderungen',
+      batchElementPermission: 'Berechtigung',
+      batchUpdateStatus: 'Änderungen',
       batchUpdateStatusInactive: 'Keine Elementänderung konfiguriert',
-      batchSharingStatus: 'Eignung für Elementfreigaben',
+      batchSharingStatus: 'Freigabe',
       actionApplies: 'Aktion wird angewendet',
       batchSharingApplies: 'Freigabe wird angewendet',
       modifyStatus: 'Status ändern',
@@ -2179,8 +2180,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateActivitiesBatchInfo:
         'Wählen Sie hier, ob die Änderungen, die an den ausgewählten Elementen vorgenommen werden, auch auf alle Aktivitäten im Entwurf- und Planungsstatus angewendet werden sollen. Optional können Sie auch Aktivitätsvorlagen mit diesem Element in das Update einbeziehen.',
       activityUpdates: 'Aktivitäts-Updates',
-      draftScheduledActivities: 'Entwurfs- und geplante Aktivitäten',
-      templateUpdates: 'Aktivitätsvorlagen-Updates',
+      batchUpdateInstancesConsequence:
+        'Änderungen auch auf entworfene und geplante Aktivitäten anwenden',
+      batchUpdateTemplateInstancesConsequence:
+        'Aktivitätsvorlagen ebenfalls aktualisieren',
       batchOperationSuccess:
         'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
       batchOperationPartialSuccess:
