@@ -25,15 +25,16 @@ participant history.
 - No Catalyst entitlement or private-service dependency for the core sequence.
   Optional future AI debrief, semantic free-text clustering, or cross-session
   analytics remains a separate capability and contract.
-- No upstream integration, ready-for-review transition, merge, deployment,
-  production proof, live-data action, or worktree/branch cleanup.
+- No additional upstream integration beyond the approved one-time `origin/v3`
+  integration, ready-for-review transition, merge, deployment, production
+  proof, live-data action, or worktree/branch cleanup.
 
 Gate 1 approval authorizes the execution orchestrator to make the local edits,
-run repository-native checks, create conventional local commits, create the
-second stack branch, push exactly the two validated stack branches to `origin`,
-and open or update exactly two draft PRs through native GitHub stacks. Execution
-must pause at Gate 2 after the foundation validates and before teaching-UX work
-starts. Gate 2 does not expand the withheld actions above.
+run repository-native checks, create conventional local commits, push the
+validated foundation branch to `origin`, and open or update its draft PR.
+Execution pauses at this foundation checkpoint. Lifecycle, comparison, and
+teaching-UX work remain follow-up work that requires a separate approval.
+This approval does not expand the withheld actions above.
 
 ## Execution contract
 
@@ -46,19 +47,21 @@ starts. Gate 2 does not expand the withheld actions above.
 - **Working model:** substantial slices may use the plan's named native
   execution or review routes. The main session keeps architecture, privacy,
   data-integrity, scoring, and cross-system decisions.
-- **Terminal condition:** both stack layers are committed, verified, reviewed,
-  pushed, and published as draft PRs, with exact evidence recorded here. Merge,
-  deployment, production proof, and cleanup remain pending separate decisions.
+- **Terminal condition for this checkpoint:** the foundation branch is
+  committed, verified, pushed, and published as one draft PR, with exact
+  evidence recorded here. Merge, deployment, production proof, cleanup, and
+  the second UX layer remain pending separate decisions.
 
 ## Plan identity
 
-- Plan: `project/2026-08-30-peer-instruction-livequiz-plan.md`
+- Plan: `project/2026-08-31-pr-5697-peer-instruction-livequiz-plan.md`
 - Repository: `klicker-uzh`
 - Worktree: `trees/peer-instruction-livequiz`
 - Bottom branch: `rs/peer-instruction-livequiz` targeting `v3`
-- Top branch: `rs/peer-instruction-livequiz-ux` targeting the bottom branch
+- Top branch: not created; reserved for the later teaching-UX layer
 - Planning base: `origin/v3` at `cd7426e3c59dbd8a63208a0afb162427918d9367`
-- PRs: not yet opened
+- PRs: [#5697](https://github.com/uzh-bf/klicker-uzh/pull/5697) draft for the
+  foundation branch; no UX PR opened
 - Planning review:
   `project/_local/reviews/2026-08-30-peer-instruction-livequiz-planner.md`
 
@@ -409,10 +412,10 @@ Stop and return to the user if any of these becomes necessary or true:
 ## Progress
 
 - **Status:** Gate 1 and the public-ownership ruling are approved. S0, S1, and
-  the current S2 transient revision slice are committed. This delivery
-  checkpoint intentionally stops at a draft PR for the current foundation
-  slice; S3 lifecycle/aggregation/projection and the teaching-UX layer remain
-  follow-up work. Nothing has been merged into a protected branch.
+  the current S2 transient revision slice are committed, verified, pushed, and
+  published as draft PR #5697. This delivery checkpoint intentionally stops at
+  the foundation slice; S3 lifecycle/aggregation/projection and the teaching-UX
+  layer remain follow-up work. Nothing has been merged into a protected branch.
 - **Completed:** university-specific research; product grilling and rulings;
   codebase seam exploration; privacy-by-design pass; current-base worktree;
   CONTEXT definition; ADR 0045 and index; native Sol planning review; accepted
@@ -420,7 +423,8 @@ Stop and return to the user if any of these becomes necessary or true:
   with ADR 0006; product-contract commit `b1dc3d9c6`; reviewed plan commit
   `0b48f9404`; S1 foundation commit `b4721f835`; S1 review-correction commit
   `720321124`; S2 transient revision commit `e07992566`; first final-review
-  correction commit `9fc58c072`; and ingress hardening commit `ea2a2016e`.
+  correction commit `9fc58c072`; ingress hardening commit `ea2a2016e`; and
+  recovery evidence commit `095bb6ed9`.
 - **Base state:** The branch was integrated once from `origin/v3` at
   `8de87d731` in merge commit `78637beb0`. The target then advanced to
   `5a21988fb` through two commits affecting nine CI, deployment, and
@@ -451,11 +455,11 @@ Stop and return to the user if any of these becomes necessary or true:
   reduction. Full reports are retained under `project/_local/reviews/`.
 - **Runtime:** the earlier exact-worktree application readiness attempt failed
   because the initial GraphQL build was killed with exit 137 under the parallel
-  development stack, so auth never started. The current post-merge checks ran
+  development stack, so auth never started. The current checks ran
   without a DevPod or devcontainer. The disposable Redis used for the focused
   tests is stopped; no task runtime is running.
 - **Active children:** none after the planner is closed.
-- **Post-merge verification:** `CI=true pnpm run check:all` passed with 25/25
+- **Final verification:** `CI=true pnpm run check:all` passed with 25/25
   tasks, and the pre-commit hook passed the same checks plus gitleaks with no
   leaks. The full `pnpm run build` passed. Sequential Redis-backed focused
   tests passed: util 62/62, response-api 5/5, and response processor 5/5.
@@ -475,6 +479,6 @@ Stop and return to the user if any of these becomes necessary or true:
   result and the main-session verification remain distinct evidence. S3
   lifecycle, aggregation, projection, cleanup, and teaching UX findings remain
   intentionally deferred.
-- **Next action:** push the bottom branch, create the draft PR, rename/update
-  this plan after the PR number is known, and update the PR description. Do not
-  begin S3 or create the top UX branch in this delivery checkpoint.
+- **Next action:** review draft PR #5697. Starting S3 or creating the top UX
+  branch requires a separate approval; do not begin it in this delivery
+  checkpoint.
