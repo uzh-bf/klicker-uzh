@@ -170,7 +170,11 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
     link: createIsomorphLink(),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        FreeTextElementOptions: { merge: true },
+      },
+    }),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })
 }

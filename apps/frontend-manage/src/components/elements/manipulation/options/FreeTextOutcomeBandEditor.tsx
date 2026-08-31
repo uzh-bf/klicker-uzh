@@ -41,6 +41,7 @@ function FreeTextOutcomeBandEditor({
                 data-cy={`semantic-outcome-band-${index}`}
               >
                 <FormikTextField
+                  id={`semantic-outcome-id-${index}`}
                   required
                   disabled={disabled}
                   name={`options.semanticEvaluation.outcome_bands.${index}.id`}
@@ -48,6 +49,7 @@ function FreeTextOutcomeBandEditor({
                   data={{ cy: `semantic-outcome-id-${index}` }}
                 />
                 <FormikTextField
+                  id={`semantic-outcome-label-${index}`}
                   required
                   disabled={disabled}
                   name={`options.semanticEvaluation.outcome_bands.${index}.label`}
@@ -55,6 +57,7 @@ function FreeTextOutcomeBandEditor({
                   data={{ cy: `semantic-outcome-label-${index}` }}
                 />
                 <FormikNumberField
+                  id={`semantic-outcome-min-${index}`}
                   required
                   disabled={disabled}
                   name={`options.semanticEvaluation.outcome_bands.${index}.min_score`}
@@ -65,6 +68,7 @@ function FreeTextOutcomeBandEditor({
                   data={{ cy: `semantic-outcome-min-${index}` }}
                 />
                 <FormikNumberField
+                  id={`semantic-outcome-max-${index}`}
                   required
                   disabled={disabled}
                   name={`options.semanticEvaluation.outcome_bands.${index}.max_score`}
@@ -75,6 +79,7 @@ function FreeTextOutcomeBandEditor({
                   data={{ cy: `semantic-outcome-max-${index}` }}
                 />
                 <FormikSelectField
+                  id={`semantic-outcome-category-${index}`}
                   required
                   disabled={disabled}
                   name={`options.semanticEvaluation.outcome_bands.${index}.category`}
@@ -97,6 +102,7 @@ function FreeTextOutcomeBandEditor({
                 />
                 {!disabled && (
                   <Button
+                    type="button"
                     destructive
                     disabled={bands.length <= 1}
                     onClick={() => {
@@ -114,6 +120,7 @@ function FreeTextOutcomeBandEditor({
             ))}
             {!disabled && (
               <Button
+                type="button"
                 onClick={() => {
                   setBandKeys((keys) => [...keys, nanoid()])
                   push({

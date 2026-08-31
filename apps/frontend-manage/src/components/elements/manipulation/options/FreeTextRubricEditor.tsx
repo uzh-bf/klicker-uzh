@@ -46,6 +46,7 @@ function FreeTextRubricEditor({
               >
                 <div className="grid gap-3 md:grid-cols-2">
                   <FormikTextField
+                    id={`semantic-rubric-id-${rubricIndex}`}
                     required
                     disabled={disabled}
                     name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.id`}
@@ -53,6 +54,7 @@ function FreeTextRubricEditor({
                     data={{ cy: `semantic-rubric-id-${rubricIndex}` }}
                   />
                   <FormikTextField
+                    id={`semantic-rubric-name-${rubricIndex}`}
                     required
                     disabled={disabled}
                     name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.name`}
@@ -61,6 +63,7 @@ function FreeTextRubricEditor({
                   />
                   <div className="md:col-span-2">
                     <FormikTextField
+                      id={`semantic-rubric-description-${rubricIndex}`}
                       required
                       disabled={disabled}
                       name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.description`}
@@ -71,6 +74,7 @@ function FreeTextRubricEditor({
                     />
                   </div>
                   <FormikNumberField
+                    id={`semantic-rubric-weight-${rubricIndex}`}
                     required
                     disabled={disabled}
                     name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.weight`}
@@ -100,6 +104,7 @@ function FreeTextRubricEditor({
                           data-cy={`semantic-rubric-${rubricIndex}-level-${levelIndex}`}
                         >
                           <FormikTextField
+                            id={`semantic-rubric-${rubricIndex}-level-name-${levelIndex}`}
                             required
                             disabled={disabled}
                             name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.achievement_levels.${levelIndex}.name`}
@@ -109,6 +114,7 @@ function FreeTextRubricEditor({
                             }}
                           />
                           <FormikTextField
+                            id={`semantic-rubric-${rubricIndex}-level-description-${levelIndex}`}
                             required
                             disabled={disabled}
                             name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.achievement_levels.${levelIndex}.description`}
@@ -118,6 +124,7 @@ function FreeTextRubricEditor({
                             }}
                           />
                           <FormikNumberField
+                            id={`semantic-rubric-${rubricIndex}-level-score-${levelIndex}`}
                             required
                             disabled={disabled}
                             name={`options.semanticEvaluation.rubric_schema.rubrics.${rubricIndex}.achievement_levels.${levelIndex}.normalized_score`}
@@ -131,6 +138,7 @@ function FreeTextRubricEditor({
                           />
                           {!disabled && (
                             <Button
+                              type="button"
                               destructive
                               disabled={rubric.achievement_levels.length <= 1}
                               onClick={() => {
@@ -157,6 +165,7 @@ function FreeTextRubricEditor({
                       ))}
                       {!disabled && (
                         <Button
+                          type="button"
                           onClick={() => {
                             setLevelKeys((keys) =>
                               keys.map((rubricLevelKeys, index) =>
@@ -184,6 +193,7 @@ function FreeTextRubricEditor({
 
                 {!disabled && (
                   <Button
+                    type="button"
                     destructive
                     disabled={rubrics.length <= 1}
                     onClick={() => {
@@ -209,6 +219,7 @@ function FreeTextRubricEditor({
             ))}
             {!disabled && (
               <Button
+                type="button"
                 onClick={() => {
                   setRubricKeys((keys) => [...keys, nanoid()])
                   setLevelKeys((keys) => [...keys, [nanoid()]])

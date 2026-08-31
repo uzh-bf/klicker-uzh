@@ -26,6 +26,8 @@ const FT = {
   ],
   semanticExactAnswer: 'Semantic exact answer',
   semanticReferenceSolution: 'Semantic reference solution',
+  semanticUnsavedRubricName: 'Unsaved semantic rubric',
+  semanticUnsavedSolution: 'Unsaved semantic reference solution',
   semanticTitle: 'Semantic Free Text Question Title',
 }
 
@@ -133,6 +135,13 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       )
     ).toHaveCount(0)
 
+    await page
+      .getByTestId('semantic-reference-solution')
+      .fill(FT.semanticUnsavedSolution)
+    await page
+      .getByTestId('semantic-rubric-name-0')
+      .fill(FT.semanticUnsavedRubricName)
+
     await page.getByTestId('configure-semantic-free-text').click()
     await expect(
       page.getByTestId('configure-sample-solution')
@@ -140,6 +149,14 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await expect(
       page.getByTestId('configure-sample-solution')
     ).not.toBeDisabled()
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(page.getByTestId('semantic-reference-solution')).toHaveValue(
+      FT.semanticUnsavedSolution
+    )
+    await expect(page.getByTestId('semantic-rubric-name-0')).toHaveValue(
+      FT.semanticUnsavedRubricName
+    )
 
     await page.getByTestId('close-element-modal').click()
   })

@@ -2,11 +2,13 @@ import { useQuery } from '@apollo/client'
 import {
   createSemanticFreeTextConfig,
   getSemanticFreeTextAdvancedMetadata,
+  validateSemanticFreeTextConfig,
 } from '@klicker-uzh/grading'
 import {
   SemanticFreeTextCapabilityAvailability,
   SemanticFreeTextCapabilityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 import {
   Accordion,
   AccordionContent,
@@ -75,10 +77,15 @@ function SemanticFreeTextOptions({
 
     if (enabled) {
       const language = router.locale === 'de' ? 'de' : 'en'
-      const newConfig = createSemanticFreeTextConfig({
-        language,
-        legacySolutions: values.options.solutions ?? [],
-      })
+      const preservedConfig = values.options.preservedSemanticEvaluation
+      const newConfig =
+        preservedConfig != null &&
+        validateSemanticFreeTextConfig(preservedConfig).length === 0
+          ? (preservedConfig as SemanticFreeTextConfig)
+          : createSemanticFreeTextConfig({
+              language,
+              legacySolutions: values.options.solutions ?? [],
+            })
       setExactAnswerKeys(newConfig.accepted_exact_answers.map(() => nanoid()))
       setFieldValue('options.hasSampleSolution', true)
       setFieldValue('options.semanticEvaluation', newConfig)
@@ -92,9 +99,9 @@ function SemanticFreeTextOptions({
           (solution) => solution.trim().length > 0
         ) ?? false
       )
+      setFieldValue('options.preservedSemanticEvaluation', config)
       setFieldValue('options.semanticEvaluation', undefined)
       setFieldValue('options.semanticEvaluationLoadError', false)
-      setFieldValue('options.preservedSemanticEvaluation', undefined)
     }
   }
 
@@ -178,6 +185,7 @@ function SemanticFreeTextOptions({
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span>{t('manage.elements.semanticStoredConfigInvalid')}</span>
             <Button
+              type="button"
               destructive
               disabled={!canRemoveInvalidConfig}
               onClick={removeInvalidStoredConfig}
@@ -214,6 +222,7 @@ function SemanticFreeTextOptions({
         <div className="mt-4 flex flex-col gap-5" data-cy="semantic-editor">
           <div className="grid gap-3 md:grid-cols-3">
             <FormikSelectField
+              id="semantic-question-language"
               required
               disabled={!canEdit}
               name="options.semanticEvaluation.question_language"
@@ -225,6 +234,7 @@ function SemanticFreeTextOptions({
               data={{ cy: 'semantic-question-language' }}
             />
             <FormikNumberField
+              id="semantic-attempt-limit"
               required
               disabled={!canEdit}
               name="options.semanticEvaluation.attempt_limit"
@@ -235,6 +245,7 @@ function SemanticFreeTextOptions({
               data={{ cy: 'semantic-attempt-limit' }}
             />
             <FormikSwitchField
+              id="semantic-solution-reveal"
               disabled={!canEdit}
               name="options.semanticEvaluation.solution_reveal_enabled"
               label={t('manage.elements.semanticSolutionReveal')}
@@ -265,6 +276,7 @@ function SemanticFreeTextOptions({
                       className="flex flex-col gap-2 sm:flex-row sm:items-end"
                     >
                       <FormikTextField
+                        id={`semantic-exact-answer-${index}`}
                         disabled={!canEdit}
                         name={`options.semanticEvaluation.accepted_exact_answers.${index}`}
                         label={t('manage.elements.semanticExactAnswerN', {
@@ -274,6 +286,7 @@ function SemanticFreeTextOptions({
                       />
                       {canEdit && (
                         <Button
+                          type="button"
                           destructive
                           onClick={() => {
                             setExactAnswerKeys((keys) =>
@@ -292,6 +305,7 @@ function SemanticFreeTextOptions({
                   ))}
                   {canEdit && (
                     <Button
+                      type="button"
                       onClick={() => {
                         setExactAnswerKeys((keys) => [...keys, nanoid()])
                         push('')
@@ -307,6 +321,7 @@ function SemanticFreeTextOptions({
           </section>
 
           <FormikTextareaField
+            id="semantic-reference-solution"
             required={config.solution_reveal_enabled}
             disabled={!canEdit}
             name="options.semanticEvaluation.reference_solution"
@@ -317,6 +332,7 @@ function SemanticFreeTextOptions({
 
           <section className="grid gap-3 md:grid-cols-3">
             <FormikTextField
+              id="semantic-schema-version"
               required
               disabled={!canEdit}
               name="options.semanticEvaluation.rubric_schema.schema_version"
@@ -324,6 +340,7 @@ function SemanticFreeTextOptions({
               data={{ cy: 'semantic-schema-version' }}
             />
             <FormikTextField
+              id="semantic-schema-name"
               required
               disabled={!canEdit}
               name="options.semanticEvaluation.rubric_schema.name"
@@ -332,6 +349,7 @@ function SemanticFreeTextOptions({
             />
             <div className="md:col-span-3">
               <FormikTextField
+                id="semantic-schema-description"
                 required
                 disabled={!canEdit}
                 name="options.semanticEvaluation.rubric_schema.description"
