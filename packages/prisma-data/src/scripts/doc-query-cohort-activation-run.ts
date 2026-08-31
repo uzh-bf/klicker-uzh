@@ -7,8 +7,8 @@ import {
   unlink,
   writeFile,
 } from 'node:fs/promises'
-import { createConnection, createServer, type Server } from 'node:net'
 import { dirname, resolve } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { encrypt } from '@klicker-uzh/util'
@@ -81,82 +81,48 @@ async function readJsonFile<T>(path: string): Promise<T> {
   return JSON.parse(raw) as T
 }
 
-function closeServer(server: Server): Promise<void> {
-  if (!server.listening) return Promise.resolve()
-  return new Promise((resolve, reject) => {
-    server.close((error) => (error ? reject(error) : resolve()))
-  })
-}
-
-function listenOnSocket(path: string): Promise<Server> {
-  const server = createServer((socket) => socket.destroy())
-  return new Promise((resolve, reject) => {
-    const onListening = () => {
-      server.removeListener('error', onError)
-      resolve(server)
-    }
-    const onError = (error: Error & { code?: string }) => {
-      server.removeListener('listening', onListening)
-      reject(error)
-    }
-    server.once('listening', onListening)
-    server.once('error', onError)
-    server.listen(path)
-  })
-}
-
-function probeSocket(path: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const socket = createConnection(path)
-    socket.once('connect', () => {
-      socket.destroy()
-      resolve(true)
-    })
-    socket.once('error', (error: NodeJS.ErrnoException) => {
-      socket.destroy()
-      resolve(error.code !== 'ECONNREFUSED' && error.code !== 'ENOENT')
-    })
-  })
+function isDatabaseLockError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string' &&
+    error.message.includes('database is locked')
+  )
 }
 
 /**
- * Keep one process-wide lifecycle lock for a receipt path. A Unix socket is
- * released by the operating system when its owner exits; the pathname is
- * reclaimed only after probing that no listener remains.
+ * Keep one process-wide lifecycle lock for a receipt path. SQLite releases
+ * the exclusive transaction when its owner exits, so crash recovery does not
+ * require unlinking a stale path that another contender may already own.
  */
 export async function acquireCohortActivationSessionLock(
   receiptPath: string
 ): Promise<CohortActivationSessionLock> {
-  const lockPath = `${receiptPath}.lock`
+  const lockPath = `${receiptPath}.lock.sqlite`
   await mkdir(dirname(receiptPath), { recursive: true })
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const server = await listenOnSocket(lockPath)
-      return {
-        release: async () => {
-          // Keep the pathname until the next owner proves that the socket is
-          // stale. This avoids unlinking a socket acquired during close().
-          await closeServer(server)
-        },
-      }
-    } catch (error) {
-      if (
-        !error ||
-        typeof error !== 'object' ||
-        !('code' in error) ||
-        error.code !== 'EADDRINUSE'
-      ) {
-        throw error
-      }
-      if (await probeSocket(lockPath)) {
-        throw new Error('SESSION_LOCKED')
-      }
-      await unlink(lockPath).catch((unlinkError: NodeJS.ErrnoException) => {
-        if (unlinkError.code !== 'ENOENT') throw unlinkError
-      })
+  let database: DatabaseSync | undefined
+  try {
+    database = new DatabaseSync(lockPath, { timeout: 0 })
+    database.exec('BEGIN EXCLUSIVE')
+    return {
+      release: async () => {
+        try {
+          database?.exec('ROLLBACK')
+        } finally {
+          database?.close()
+        }
+      },
     }
+  } catch (error) {
+    try {
+      database?.close()
+    } catch {
+      // The connection may not have opened.
+    }
+    if (isDatabaseLockError(error)) throw new Error('SESSION_LOCKED')
+    throw error
   }
-  throw new Error('SESSION_LOCKED')
 }
 
 export async function writeReceipt(

@@ -2,8 +2,8 @@ import { stat, unlink, writeFile } from 'node:fs/promises'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, test } from 'vitest'
 import {
-  createMcpTransport,
   computeManifestFingerprint,
+  createMcpTransport,
   minimalChildEnvironment,
   runProofMatrix,
   superviseProof,
@@ -246,6 +246,26 @@ defineProofSupervisorSuite(
 )
 
 describe('PRD Doc Query proof supervisor', () => {
+  test('returns a fixed receipt when advisory lock setup fails', async () => {
+    const dummy = await writeDummy(receiptSources.passedReceiptSource())
+    const receipt = await superviseProof({
+      sourceEnvironment: await proofProcessEnvironment(),
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      acquireLockForProof: async () => {
+        throw new Error('synthetic lock setup failure')
+      },
+    })
+
+    expect(receipt).toMatchObject({
+      result: 'failed',
+      failureClass: 'child_failed',
+      exitCode: null,
+      signal: null,
+    })
+  })
+
   test('refuses a concurrent proof while the advisory lock is held', async () => {
     const dummy = await writeDummy(
       receiptSources.passedReceiptSource(

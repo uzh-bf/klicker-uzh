@@ -924,7 +924,19 @@ export async function superviseProof({
   acquireLockForProof = acquireLock,
 }) {
   const startedAt = Date.now()
-  const lock = await acquireLockForProof(lockPath)
+  let lock
+  try {
+    lock = await acquireLockForProof(lockPath)
+  } catch (error) {
+    const failureClass =
+      error instanceof ProofFailure ? error.failureClass : 'child_failed'
+    return {
+      ...fixedFailureReceipt(failureClass),
+      exitCode: null,
+      signal: null,
+      elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
+    }
+  }
   if (!lock) {
     return {
       ...fixedFailureReceipt('duplicate_refused'),

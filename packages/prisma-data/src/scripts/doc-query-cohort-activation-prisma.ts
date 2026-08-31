@@ -1,13 +1,13 @@
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
-import {
-  type JsonValue,
-  type CohortActivationConfigRecord,
-  type CohortActivationServerRecord,
-  type CohortActivationStore,
-  type CohortActivationTransactionStore,
-  type CohortActivationServerCreate,
-  type CohortActivationConfigCreate,
-  type CohortActivationConfigUpdate,
+import type {
+  CohortActivationConfigCreate,
+  CohortActivationConfigRecord,
+  CohortActivationConfigUpdate,
+  CohortActivationServerCreate,
+  CohortActivationServerRecord,
+  CohortActivationStore,
+  CohortActivationTransactionStore,
+  JsonValue,
 } from './doc-query-cohort-activation.js'
 
 type PrismaCohortActivationClient = Pick<
@@ -39,6 +39,17 @@ const configSelect = {
   parameters: true,
   updatedAt: true,
 } as const
+
+const SERIALIZABLE_TRANSACTION_RETRY_LIMIT = 3
+
+function isSerializationConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2034'
+  )
+}
 
 function mapServer(
   record: {
@@ -213,10 +224,30 @@ export function createPrismaCohortActivationStore(
 ): CohortActivationStore {
   return {
     async transaction(callback) {
-      return client.$transaction((tx) => callback(createTransactionStore(tx)), {
-        isolationLevel: 'Serializable',
-        timeout: 120_000,
-      })
+      for (
+        let attempt = 0;
+        attempt < SERIALIZABLE_TRANSACTION_RETRY_LIMIT;
+        attempt += 1
+      ) {
+        try {
+          return await client.$transaction(
+            (tx) => callback(createTransactionStore(tx)),
+            {
+              isolationLevel: 'Serializable',
+              timeout: 120_000,
+            }
+          )
+        } catch (error) {
+          if (
+            !isSerializationConflict(error) ||
+            attempt === SERIALIZABLE_TRANSACTION_RETRY_LIMIT - 1
+          ) {
+            throw error
+          }
+        }
+      }
+
+      throw new Error('Serializable transaction retry limit exceeded')
     },
   }
 }
