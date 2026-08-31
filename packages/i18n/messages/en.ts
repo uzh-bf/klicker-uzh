@@ -2007,6 +2007,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
       createGroupTaskDescription: 'Let groups collaborate on a shared task.',
+      createElementaryLabel: 'Elements',
+      createActivitiesLabel: 'Activities',
       createElement: 'Create Element',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
@@ -2370,6 +2372,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
+      confirmCancelTitle: 'Discard changes to this activity creation?',
+      confirmCancelBody:
+        'You have entered data that has not been saved yet. Discarding will permanently remove the data you entered in this wizard.',
+      confirmCancelEditTitle: 'Discard changes to this activity?',
+      confirmCancelEditBody:
+        'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
+      confirmCancelDiscard: 'Discard',
+      confirmCancelKeepEditing: 'Keep editing',
+      temporaryStorageCreation:
+        'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
+      temporaryStorageEditing:
+        'The activity editing process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       activityDisplayName:
         'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',

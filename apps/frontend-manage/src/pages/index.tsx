@@ -293,7 +293,18 @@ function Index() {
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
-          <SuspendedCreationButtons setCreationMode={setCreationMode} />
+          <SuspendedCreationButtons
+            setCreationMode={setCreationMode}
+            onCreateElement={() => {
+              const value = localStorage.getItem('autosave-element-creation')
+
+              if (value) {
+                setShowRecoveryPrompt(true)
+              } else {
+                setIsElementCreationModalOpen(true)
+              }
+            }}
+          />
         </Suspense>
       )}
 
@@ -302,6 +313,7 @@ function Index() {
           <ActivityCreation
             creationMode={creationMode}
             closeWizard={() => {
+              setSelectedElements({})
               router.push('/')
               setCreationMode(() => undefined)
             }}
@@ -311,6 +323,15 @@ function Index() {
             duplicationMode={router.query.duplicationMode as ActivityType}
             selection={selectedElements}
             resetSelection={() => setSelectedElements({})}
+            restoreSelection={(selection) =>
+              setSelectedElements(
+                Object.fromEntries(
+                  Object.entries(selection).filter(
+                    ([, element]) => element.isManager ?? false
+                  )
+                )
+              )
+            }
           />
         </>
       )}
@@ -374,24 +395,6 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
-                <Button
-                  primary
-                  onClick={() => {
-                    const value = localStorage.getItem(
-                      'autosave-element-creation'
-                    )
-
-                    if (value) {
-                      setShowRecoveryPrompt(true)
-                    } else {
-                      setIsElementCreationModalOpen(true)
-                    }
-                  }}
-                  data={{ cy: 'create-question' }}
-                  className={{ root: 'h-9 font-bold' }}
-                >
-                  {t('manage.questionPool.createElement')}
-                </Button>
               </div>
             </div>
 

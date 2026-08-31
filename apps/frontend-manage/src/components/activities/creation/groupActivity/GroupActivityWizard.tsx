@@ -10,9 +10,25 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
-import { findIndex } from 'lodash'
+import { findIndex, isEqual, omit } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import {
+  buildSnapshotKey,
+  clearLegacyUnscopedSnapshots,
+  clearWizardSnapshot,
+  hasWizardSnapshot,
+  loadWizardSnapshot,
+  saveWizardSnapshot,
+  useWizardUserKey,
+} from '@lib/activityWizardRecovery'
 import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ActivityCreation'
@@ -62,6 +78,7 @@ interface GroupActivityWizardProps {
   courses: ElementSelectCourse[]
   selection: Record<number, Element>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
   initialValues?: GroupActivity
   editMode: boolean
   duplicationMode: boolean
@@ -73,6 +90,7 @@ function GroupActivityWizard({
   courses,
   selection,
   resetSelection,
+  restoreSelection,
   initialValues,
   editMode,
   duplicationMode,
@@ -300,6 +318,173 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
+  const initialDataRef = useRef(formData)
+  const isWizardDirty = useCallback(() => {
+    // Derived course metadata is populated automatically from the selected
+    // course when the settings step mounts and is never user-authored, so
+    // it must not trip the dirty decision on a pristine edit-mode visit.
+    const derivedFields = [
+      'courseStartDate',
+      'courseEndDate',
+      'courseGroupDeadline',
+    ]
+    const merged = {
+      ...initialDataRef.current,
+      ...formData,
+      ...formRef.current?.values,
+    }
+    const hasSelection = Object.keys(selection).length > 0
+
+    return (
+      hasSelection ||
+      !isEqual(
+        omit(initialDataRef.current, derivedFields),
+        omit(merged, derivedFields)
+      )
+    )
+  }, [formData, selection])
+
+  const userKey = useWizardUserKey()
+  const recoveryOptions = {
+    userKey,
+    mode: editMode
+      ? ('edit' as const)
+      : duplicationMode
+        ? ('duplicate' as const)
+        : ('create' as const),
+    activityType: 'GROUP_ACTIVITY',
+    sourceId: initialValues?.id ? String(initialValues.id) : undefined,
+  }
+  const recoveryKey = buildSnapshotKey(recoveryOptions)
+  const isClosingRef = useRef(false)
+  const hasPersistedSnapshotRef = useRef(false)
+  const [recoveryAvailable, setRecoveryAvailable] = useState(() =>
+    hasWizardSnapshot(recoveryOptions)
+  )
+
+  // Snapshots written before user scoping cannot be attributed to an
+  // account, so drop them once on mount instead of offering them back.
+  useEffect(() => {
+    clearLegacyUnscopedSnapshots()
+  }, [])
+
+  // The user key resolves asynchronously from the profile query; re-check
+  // for a snapshot when it lands so a saved draft is still offered.
+  useEffect(() => {
+    setRecoveryAvailable(hasWizardSnapshot(recoveryOptions))
+  }, [recoveryKey])
+
+  // Persist merged wizard state so a reload mid-wizard can recover even
+  // though reload never passes through the cancel path.
+  // Steps commit their values to formData only on navigation, so sample
+  // the live Formik values on an interval to observe edits made on the
+  // currently mounted step and let the debounced save below pick them up.
+  useEffect(() => {
+    if (isWizardCompleted || editMode || recoveryAvailable) {
+      return
+    }
+
+    const sampler = setInterval(() => {
+      setFormData((prev) => {
+        const merged = { ...prev, ...formRef.current?.values }
+        return isEqual(prev, merged) ? prev : merged
+      })
+    }, 1000)
+
+    return () => clearInterval(sampler)
+  }, [isWizardCompleted, editMode, recoveryAvailable])
+
+  useEffect(() => {
+    if (isWizardCompleted || editMode || recoveryAvailable) {
+      return
+    }
+
+    const wizardDirty = isWizardDirty()
+    if (!wizardDirty) {
+      // Only clear a snapshot written by this mounted wizard. An existing
+      // recovery candidate must survive until the lecturer explicitly loads
+      // or discards it.
+      if (hasPersistedSnapshotRef.current) {
+        clearWizardSnapshot(recoveryOptions)
+        hasPersistedSnapshotRef.current = false
+        setRecoveryAvailable(false)
+      }
+      return
+    }
+
+    const timer = setTimeout(() => {
+      if (isClosingRef.current) {
+        return
+      }
+      const merged = { ...formData, ...formRef.current?.values }
+      if (
+        saveWizardSnapshot({
+          ...recoveryOptions,
+          values: merged,
+          selectedElements: selection,
+        })
+      ) {
+        hasPersistedSnapshotRef.current = true
+      }
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [
+    formData,
+    isWizardCompleted,
+    editMode,
+    recoveryAvailable,
+    recoveryKey,
+    selection,
+  ])
+
+  // Clear the snapshot once the wizard completes so a finished activity is
+  // never offered for recovery afterwards.
+  useEffect(() => {
+    if (isWizardCompleted) {
+      clearWizardSnapshot(recoveryOptions)
+      setRecoveryAvailable(false)
+    }
+  }, [isWizardCompleted, recoveryKey])
+
+  const handleRecover = () => {
+    const restored =
+      loadWizardSnapshot<GroupActivityFormValues>(recoveryOptions)
+
+    if (restored) {
+      setFormData((prev) => ({ ...prev, ...restored.values }))
+      // Steps mount their own Formik from formData only at mount time; also
+      // push the restored values into the live form so recovery is visible
+      // immediately on the step where the prompt was answered.
+      formRef.current?.setValues({
+        ...formRef.current?.values,
+        ...restored.values,
+      })
+      if (restored.selectedElements) {
+        restoreSelection(restored.selectedElements)
+      }
+    }
+
+    setRecoveryAvailable(false)
+  }
+
+  const handleDiscardRecovery = () => {
+    clearWizardSnapshot(recoveryOptions)
+    setRecoveryAvailable(false)
+  }
+
+  // Closing the wizard is an explicit decision: a clean cancel removes the
+  // snapshot the debounced autosave wrote for this wizard so the next entry
+  // starts fresh, and a confirmed dirty cancel means the user discarded the
+  // draft. The completion screen clears its own snapshot separately.
+  const closeWizardAndClearSnapshot = useCallback(() => {
+    // A debounce scheduled while dirty can come due after this handler;
+    // flag the close first so it cannot re-persist the discarded snapshot.
+    isClosingRef.current = true
+    clearWizardSnapshot(recoveryOptions)
+    closeWizard()
+  }, [closeWizard, recoveryKey])
+
   const [createGroupActivity, { data: creationData }] = useMutation(
     CreateGroupActivityDocument
   )
@@ -352,6 +537,10 @@ function GroupActivityWizard({
       disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
       workflowItems={workflowItems}
       isCompleted={isWizardCompleted}
+      isDirty={isWizardDirty}
+      recoveryAvailable={recoveryAvailable && !editMode}
+      onRecover={handleRecover}
+      onDiscardRecovery={handleDiscardRecovery}
       completionStep={
         <CompletionStep
           completionSuccessMessage={(elementName) => (
@@ -380,7 +569,7 @@ function GroupActivityWizard({
           }}
           resetForm={() => setFormData(formDefaultValues)}
           setStepNumber={setActiveStep}
-          onCloseWizard={closeWizard}
+          onCloseWizard={closeWizardAndClearSnapshot}
         />
       }
       steps={[
@@ -400,7 +589,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep + 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivityDescriptionStep
           key="group-activity-description-step"
@@ -420,7 +609,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivitySettingsStep
           key="group-activity-settings-step"
@@ -443,7 +632,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivityStackClues
           key="group-activity-stack-clues"
@@ -465,7 +654,7 @@ function GroupActivityWizard({
           onSubmit={(newValues: GroupActivityFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
       ]}
       saveFormData={() => {
