@@ -4,7 +4,9 @@ const path = require('node:path')
 const test = require('node:test')
 
 const {
+  EXPECTED_BUILD_ACTION,
   EXPECTED_CALL,
+  EXPECTED_SHARD_ACTION,
   validatePublicPlaywrightWorkflow,
 } = require('./validate-public-playwright-workflow.cjs')
 
@@ -13,9 +15,11 @@ test('the current public workflow satisfies the runner trust boundary', () => {
 
   assert.equal(result.ok, true, result.issues.join('\n'))
   assert.match(EXPECTED_CALL, /@refs\/heads\/v3$/)
+  assert.match(EXPECTED_BUILD_ACTION, /@refs\/heads\/v3$/)
+  assert.match(EXPECTED_SHARD_ACTION, /@refs\/heads\/v3$/)
 })
 
-test('selector shadow observes every pull request lifecycle transition', () => {
+test('the reusable envelope owns lifecycle routing and selector shadow planning', () => {
   const workflow = fs.readFileSync(
     path.join(
       path.join(__dirname, '../..'),
@@ -28,7 +32,11 @@ test('selector shadow observes every pull request lifecycle transition', () => {
     workflow,
     /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/
   )
-  assert.match(workflow, /playwright-selector-shadow:/)
-  assert.match(workflow, /path: \.ci-control[\s\S]*path: \.candidate/)
-  assert.match(workflow, /playwright-selector\.cjs/)
+  assert.match(workflow, /test-playwright-execution:/)
+  assert.match(
+    workflow,
+    /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@refs\/heads\/v3/
+  )
+  assert.doesNotMatch(workflow, /group: public-pr-arm64/)
+  assert.match(workflow, /test-playwright-status:/)
 })

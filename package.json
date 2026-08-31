@@ -51,7 +51,7 @@
     "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:removed-doc-artifacts check:prisma-sync check:playwright-ci check:playwright-host",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
-    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./util/playwright-profile-runtime.test.mjs",
+    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./.github/scripts/playwright-selector.test.cjs ./.github/scripts/playwright-route.test.cjs ./.github/scripts/playwright-plan-metadata.test.cjs ./.github/scripts/validate-public-playwright-workflow.test.cjs ./util/playwright-profile-runtime.test.mjs",
     "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:removed-doc-artifacts": "node ./util/check-removed-doc-artifacts.mjs",
