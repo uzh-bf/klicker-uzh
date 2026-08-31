@@ -12,9 +12,13 @@ import {
   type ElementResultsOpen,
   type ElementResultsSelection,
 } from '@klicker-uzh/types'
-import { Redis } from 'ioredis'
+import type { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
+import {
+  closeEscapeRoomResponseGate,
+  reopenEscapeRoomResponseGate,
+} from './escapeRoomResponseGate.js'
 
 export async function getCachedBlockResults({
   redisExec,
@@ -344,7 +348,12 @@ export async function updateLiveQuizBlockResultsFromCache({
     where: { id: quizId },
     include: {
       course: true,
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      activeBlock: {
+        include: {
+          elements: { orderBy: { order: 'asc' } },
+          escapeRoomConfig: { select: { id: true } },
+        },
+      },
       blocks: { orderBy: { id: 'asc' } },
     },
   })
@@ -354,13 +363,33 @@ export async function updateLiveQuizBlockResultsFromCache({
   // if the block is not the active one, return early
   if (quiz.activeBlockId !== blockId) return null
 
+  const gateEscapeRoomResponses =
+    !quiz.isAssessmentEnabled && quiz.activeBlock.escapeRoomConfig != null
+  let responseGateToken: string | null = null
+
   try {
+    if (gateEscapeRoomResponses) {
+      responseGateToken = await closeEscapeRoomResponseGate({
+        redis: redisExec,
+        blockId,
+      })
+    }
+
     const cachedResults = await getCachedBlockResults({
       redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
       activeBlock: quiz.activeBlock,
     })
 
-    if (!cachedResults) return null
+    if (!cachedResults) {
+      if (gateEscapeRoomResponses) {
+        await reopenEscapeRoomResponseGate({
+          redis: redisExec,
+          blockId,
+          token: responseGateToken,
+        })
+      }
+      return null
+    }
 
     const {
       instanceResults,
@@ -611,6 +640,13 @@ export async function updateLiveQuizBlockResultsFromCache({
 
     return { updatedQuiz, activeInstanceIds }
   } catch (e) {
+    if (gateEscapeRoomResponses) {
+      await reopenEscapeRoomResponseGate({
+        redis: redisExec,
+        blockId,
+        token: responseGateToken,
+      })
+    }
     throw e
   }
 }

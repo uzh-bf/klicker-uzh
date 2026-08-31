@@ -2,9 +2,12 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import type { IncomingMessage, ServerResponse } from 'http'
+import { createServer } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { getCorsAllowedOrigins, setCorsHeaders } from './cors.js'
+import { handleEscapeRoomValidation } from './escapeRoom.js'
 
 const redis = new Redis({
   family: 4,
@@ -23,23 +26,6 @@ const assessmentRedis = new Redis({
 })
 
 const PORT = Number(process.env.PORT ?? 7078)
-const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean)
-
-function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
-  const origin = req.headers.origin
-  // Only allow explicitly whitelisted origins, and never allow "null"
-  if (origin && origin !== 'null' && CORS_ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Vary', 'Origin')
-    res.setHeader('Access-Control-Allow-Credentials', 'true')
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
-}
-
 function sendJson(
   req: IncomingMessage,
   res: ServerResponse,
@@ -128,6 +114,21 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (forwarded.length > 0) {
       cookie = forwarded.join('; ')
     }
+  }
+
+  // Synchronous Escape Room Lockout & Correctness Check
+  const instanceKey = `lq:${liveQuizId}:i:${instanceId}`
+  const instanceInfo = await redis.hgetall(`${instanceKey}:info`)
+
+  if (instanceInfo) {
+    const isHandled = await handleEscapeRoomValidation(
+      res,
+      payload,
+      cookie,
+      instanceInfo,
+      redis
+    )
+    if (isHandled) return
   }
 
   const responseTimestamp = Date.now()
@@ -362,6 +363,9 @@ const server = createServer(async (req, res) => {
 
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
+      // Escape-room validation can respond early from a separate module, so
+      // establish CORS before dispatching to any response path.
+      setCorsHeaders(req, res)
       // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)
@@ -386,7 +390,7 @@ async function initializeService() {
   console.log(
     `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
   )
-  console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+  console.log(`CORS origins: ${getCorsAllowedOrigins().join(', ')}`)
 
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')

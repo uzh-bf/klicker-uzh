@@ -5,6 +5,8 @@ import {
   CreateLiveQuizDocument,
   EditLiveQuizDocument,
   Element,
+  ElementType,
+  GetSingleLiveQuizQuery,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
   PublicationStatus,
@@ -59,30 +61,36 @@ export interface LiveQuizWizardStepProps {
 interface LiveQuizWizardProps {
   title: string
   courses: ElementSelectCourse[]
-  initialValues?: Pick<
-    LiveQuiz,
-    | 'id'
-    | 'name'
-    | 'displayName'
-    | 'description'
-    | 'pointsMultiplier'
-    | 'defaultPoints'
-    | 'defaultCorrectPoints'
-    | 'maxBonusPoints'
-    | 'timeToZeroBonus'
-    | 'isConfusionFeedbackEnabled'
-    | 'isGamificationEnabled'
-    | 'isAssessmentEnabled'
-    | 'pinCode'
-    | 'isLiveQAEnabled'
-    | 'isModerationEnabled'
-    | 'blocks'
-  > & { course?: { id: string } | null }
+  initialValues?: Omit<
+    Pick<
+      LiveQuiz,
+      | 'id'
+      | 'name'
+      | 'displayName'
+      | 'description'
+      | 'pointsMultiplier'
+      | 'defaultPoints'
+      | 'defaultCorrectPoints'
+      | 'maxBonusPoints'
+      | 'timeToZeroBonus'
+      | 'isConfusionFeedbackEnabled'
+      | 'isGamificationEnabled'
+      | 'isAssessmentEnabled'
+      | 'pinCode'
+      | 'isLiveQAEnabled'
+      | 'isModerationEnabled'
+    >,
+    'blocks'
+  > & {
+    blocks?: NonNullable<GetSingleLiveQuizQuery['liveQuiz']>['blocks']
+    course?: { id: string } | null
+  }
   selection: Record<number, Element>
   resetSelection: () => void
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints?: Array<{ instanceId: number; hint: string }>
 }
 
 function LiveQuizWizard({
@@ -94,6 +102,7 @@ function LiveQuizWizard({
   closeWizard,
   editMode,
   duplicationMode,
+  escapeRoomHints = [],
 }: LiveQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -149,24 +158,74 @@ function LiveQuizWizard({
 
   const questionsValidationSchema = yup.object().shape({
     blocks: yup.array().of(
-      yup.object().shape({
-        elements: yup
-          .array()
-          .min(1, t('manage.activityWizard.minOneElementPerBlock'))
-          .of(
-            yup.object().shape({
-              id: yup.number(),
-              title: yup.string(),
-              type: yup
-                .string()
-                .oneOf(acceptedTypes, t('manage.activityWizard.liveQuizTypes')),
-              hasSampleSolution: yup.boolean().nullable(),
-            })
-          ),
-        timeLimit: yup
-          .number()
-          .min(1, t('manage.activityWizard.liveQuizTimeRestriction')),
-      })
+      yup
+        .object()
+        .shape({
+          elements: yup
+            .array()
+            .min(1, t('manage.activityWizard.minOneElementPerBlock'))
+            .of(
+              yup.object().shape({
+                id: yup.number(),
+                title: yup.string(),
+                type: yup
+                  .string()
+                  .oneOf(
+                    [...acceptedTypes, ElementType.QrScan],
+                    t('manage.activityWizard.liveQuizTypes')
+                  ),
+                hasSampleSolution: yup.boolean().nullable(),
+              })
+            )
+            .when('isEscapeRoom', {
+              is: true,
+              then: (schema) =>
+                schema.test(
+                  'escape-room-types',
+                  t('manage.activityWizard.liveQuizTypes'),
+                  (elements) =>
+                    !!elements?.length &&
+                    elements.every((element) =>
+                      element.type
+                        ? [
+                            ElementType.Sc,
+                            ElementType.Mc,
+                            ElementType.Kprim,
+                            ElementType.Numerical,
+                            ElementType.FreeText,
+                            ElementType.QrScan,
+                          ].includes(element.type)
+                        : false
+                    )
+                ),
+              otherwise: (schema) =>
+                schema.test(
+                  'no-qr-scan-outside-escape-room',
+                  t('manage.activityWizard.escapeRoomNoQrOutside'),
+                  (elements) =>
+                    !elements?.some(
+                      (element) => element.type === ElementType.QrScan
+                    )
+                ),
+            }),
+          timeLimit: yup
+            .number()
+            .min(1, t('manage.activityWizard.liveQuizTimeRestriction')),
+          escapeRoomTimeLimit: yup.number().when('isEscapeRoom', {
+            is: true,
+            then: (schema) => schema.required().min(1),
+          }),
+          escapeRoomHintPenalty: yup.number().when('isEscapeRoom', {
+            is: true,
+            then: (schema) => schema.required().min(0),
+          }),
+          isEscapeRoom: yup.boolean(),
+        })
+        .test(
+          'escape-room-assessment',
+          t('manage.activityWizard.escapeRoomAssessmentIncompatible'),
+          (block) => !formData.isAssessmentEnabled || !block.isEscapeRoom
+        )
     ),
   })
 
@@ -223,11 +282,17 @@ function LiveQuizWizard({
       ? initialValues.blocks.map((block) => ({
           timeLimit: block.timeLimit ?? undefined,
           randomSelection: block.randomSelection,
+          isEscapeRoom: !!block.escapeRoomConfig,
+          escapeRoomTimeLimit: block.escapeRoomConfig?.timeLimit
+            ? Math.round(block.escapeRoomConfig.timeLimit / 60)
+            : 5,
+          escapeRoomHintPenalty: block.escapeRoomConfig?.hintPenalty ?? 0,
+          escapeRoomIntroText: block.escapeRoomConfig?.introText ?? '',
           elements: block.elements!.map((instance) => {
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
@@ -236,6 +301,9 @@ function LiveQuizWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
+              escapeRoomHint:
+                escapeRoomHints.find((hint) => hint.instanceId === instance.id)
+                  ?.hint ?? null,
             }
           }),
         }))

@@ -62,7 +62,10 @@ function LiveQuizCreationBlock({
 
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: acceptedTypes,
+      // QR scan questions are only placeable in escape-room blocks
+      accept: block.isEscapeRoom
+        ? [...acceptedTypes, ElementType.QrScan]
+        : acceptedTypes,
       drop: (item: ElementDragDropTypes) => {
         replace(blockIx, {
           ...block,
@@ -196,6 +199,7 @@ function LiveQuizCreationBlock({
         }
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
+        isEscapeRoom={block.isEscapeRoom}
       />
 
       {selection &&

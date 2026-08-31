@@ -250,6 +250,7 @@ function ActivityCreation({
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.LiveQuiz}
             duplicationMode={duplicationMode === ActivityType.LiveQuiz}
+            escapeRoomHints={dataLiveQuiz?.escapeRoomHints ?? []}
           />
         )}
         {creationMode === ActivityType.MicroLearning && (

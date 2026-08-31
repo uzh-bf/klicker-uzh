@@ -21,6 +21,8 @@ tags:
 
 A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
+PWA server-side page queries have no browser `Origin` header for the backend to classify. They must therefore forward the selected participant cookie as `Bearer`, using the same order as the table above; the LiveQuiz session page does this before preloading participant-scoped attempt state (`apps/frontend-pwa/src/pages/session/[id].tsx:getServerSideProps`). Otherwise a reload can render public quiz data while silently losing the active participant attempt.
+
 ## Lecturer login (`apps/auth`)
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:

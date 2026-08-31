@@ -58,7 +58,7 @@ function createPlacementContext({
 
 function expectQrPlacementRejection(
   action: () => Promise<unknown>,
-  message = 'QR scan questions are not supported in activities yet'
+  message = 'QR scan questions are only supported in escape room activities'
 ) {
   return expect(action()).rejects.toMatchObject({
     message,
@@ -178,7 +178,7 @@ describe('QR scan activity placement guards', () => {
     expect(groupActivityUpdate).not.toHaveBeenCalled()
   })
 
-  it('rejects QR scans in live quizzes', async () => {
+  it('rejects QR scans in non-escape-room live quizzes', async () => {
     const { ctx } = createPlacementContext()
 
     await expectQrPlacementRejection(() =>
