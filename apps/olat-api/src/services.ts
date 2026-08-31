@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import type {
+import {
   LiveQuiz,
   MicroLearning,
   PracticeQuiz,
@@ -9,7 +9,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
-import type { ActivityOlatConfigurationKey, ActivityType } from './types.js'
+import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
 
 export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({

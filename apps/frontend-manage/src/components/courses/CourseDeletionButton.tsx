@@ -1,6 +1,6 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { Button } from '@uzh-bf/design-system'
-import type { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import { useCourseDeletionStatus } from './CourseDeletionStatusProvider'
 
 function CourseDeletionButton({

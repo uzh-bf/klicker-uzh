@@ -544,7 +544,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   })
 
   // if a participant group is empty after the participant leaves it, delete the group as well
-  const deletionPromises: any[] = []
+  let deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
     if (group.participants.length === 1) {
       deletionPromises.push(

@@ -13,7 +13,7 @@ import {
   verifyJWT,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 
 const redis = new Redis({

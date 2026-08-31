@@ -6,7 +6,7 @@
  */
 
 import * as DB from '@klicker-uzh/prisma/client'
-import type { PrismaTransactionClient } from '../types.js'
+import { type PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import { inversePermissionLevelMap } from './constants.js'
 import {
@@ -144,9 +144,9 @@ export async function recomputeCoursePermissionsUser(
   }
 
   // determine the maximum access level of the user
-  let maxAccessLevel: DB.PermissionLevel | undefined
-  let parentPermissionId: number | undefined
-  const derived = false
+  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
+  let parentPermissionId: number | undefined = undefined
+  let derived = false
 
   if (!course.isDeleted && course.ownerId === userId) {
     maxAccessLevel = DB.PermissionLevel.OWNER

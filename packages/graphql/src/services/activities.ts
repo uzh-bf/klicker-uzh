@@ -1,11 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
-  type PrismaTransactionClient,
+  PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
-import type { ContextWithUser } from '@/lib/context.js'
+import { ContextWithUser } from '@/lib/context.js'
 import { assertCourseDeletionNotInProgress } from './courseDeletionGuard.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -783,10 +783,10 @@ export async function applyActivityBatchOperations(
   }
 
   // apply activity updates
-  const updatedLiveQuizzes: string[] = []
-  const updatedPracticeQuizzes: string[] = []
-  const updatedMicroLearnings: string[] = []
-  const updatedGroupActivities: string[] = []
+  let updatedLiveQuizzes: string[] = []
+  let updatedPracticeQuizzes: string[] = []
+  let updatedMicroLearnings: string[] = []
+  let updatedGroupActivities: string[] = []
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
@@ -1782,7 +1782,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return liveQuiz ? reviewStatus : null
+      return !!liveQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
       const practiceQuiz = await ctx.prisma.practiceQuiz.update({
         where: {
@@ -1799,7 +1799,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return practiceQuiz ? reviewStatus : null
+      return !!practiceQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.MICRO_LEARNING) {
       const microLearning = await ctx.prisma.microLearning.update({
         where: {
@@ -1816,7 +1816,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return microLearning ? reviewStatus : null
+      return !!microLearning ? reviewStatus : null
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
       const groupActivity = await ctx.prisma.groupActivity.update({
         where: {
@@ -1833,7 +1833,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return groupActivity ? reviewStatus : null
+      return !!groupActivity ? reviewStatus : null
     }
   } catch (error) {
     console.error('Error setting activity review status:', error)

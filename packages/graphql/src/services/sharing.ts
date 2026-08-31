@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type ActivityLogModificationFieldType,
+  ActivityLogModificationFieldType,
   ActivityType,
-  type CatalogObject,
-  type ObjectSharingRequest,
+  CatalogObject,
+  ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
-  type PrismaTransactionClient,
+  PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -1052,7 +1052,7 @@ export async function requestCatalogObject(
         existingPermission: boolean
         existingRequest: boolean
       }
-    | undefined
+    | undefined = undefined
 
   if (typeof answerCollectionId !== 'undefined') {
     // fetch the answer collection including potential pending permission requests

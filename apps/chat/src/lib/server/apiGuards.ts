@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
-import { type NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 export async function getParticipantId(

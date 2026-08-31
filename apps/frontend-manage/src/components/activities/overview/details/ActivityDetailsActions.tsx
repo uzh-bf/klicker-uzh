@@ -1,12 +1,9 @@
 import { faList, faMessage } from '@fortawesome/free-solid-svg-icons'
-import type {
-  ActivityDetails,
-  ActivityType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ActivityDetails, ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import type { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsActions({

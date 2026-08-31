@@ -1,3 +1,4 @@
+import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -12,7 +13,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import type EventEmitter from 'events'
+import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import {
@@ -22,7 +23,6 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
-import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   splitGroupsFinal,
@@ -1344,7 +1344,7 @@ export async function getGroupActivityDetails(
   { activityId, groupId }: { activityId: string; groupId: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+  let groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: {
       id: activityId,
       status: {
@@ -2550,8 +2550,8 @@ export async function finalizeGroupActivityGrading(
       participantAchievementMap
     )) {
       // keep track of the total number of points and XP awarded (for student timeline update)
-      let pointsAwarded: number | undefined
-      let xpAwarded: number | undefined
+      let pointsAwarded: number | undefined = undefined
+      let xpAwarded: number | undefined = undefined
 
       for (const id of results.achievements) {
         // create the participant achievement instance

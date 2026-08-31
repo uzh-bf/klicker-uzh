@@ -1,12 +1,8 @@
 import { useQuery } from '@apollo/client'
-import Pagination, {
-  isPaginationPageSize,
-  type PaginationPageSize,
-} from '@components/common/Pagination'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
-  type ActivityInfo,
-  type ActivityType,
+  ActivityInfo,
+  ActivityType,
   GetUserActivitiesCoursesDocument,
   GetUserActivitiesDocument,
   PublicationStatus,
@@ -14,9 +10,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
-import type { GetStaticPropsContext } from 'next'
-import { useRouter } from 'next/router'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ActivityBatchOperationsModal from '../components/activities/overview/ActivityBatchOperationsModal'
 import ActivityList from '../components/activities/overview/ActivityList'
@@ -25,6 +21,10 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
 import ActivityOverviewFilters from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import { useCourseDeletionStatus } from '../components/courses/CourseDeletionStatusProvider'
 import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {

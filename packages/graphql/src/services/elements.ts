@@ -6,22 +6,22 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type ActivityLogModificationDetails,
+  ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
-  type ElementManipulationInput,
+  ElementManipulationInput,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  type PrismaTransactionClient,
+  PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import type EventEmitter from 'events'
+import EventEmitter from 'events'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type {
   ContextWithUser,

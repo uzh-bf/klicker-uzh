@@ -1,6 +1,6 @@
 import { faArchive, faInbox } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
-import type { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 
 function CourseArchiveButton({
   id,

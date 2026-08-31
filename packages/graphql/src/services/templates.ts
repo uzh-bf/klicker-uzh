@@ -1,16 +1,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  type CaseStudyElementData,
-  type ElementOptionsInput,
-  type SelectionElementData,
-  type TemplateBlockInput,
+  CaseStudyElementData,
+  ElementOptionsInput,
+  SelectionElementData,
+  TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
-  type PrismaTransactionClient,
+  PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -1781,7 +1781,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null
+            let options: ElementOptionsInput | undefined | null = undefined
             if (
               values.type === DB.ElementType.SC ||
               values.type === DB.ElementType.MC ||

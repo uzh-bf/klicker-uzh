@@ -1,18 +1,15 @@
-import {
-  faClock,
-  type IconDefinition,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  type Course,
+  Course,
   ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { type Dispatch, type SetStateAction, useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'

@@ -351,7 +351,7 @@ async function processResponseWithLease(
       return { status: 200 }
     }
 
-    let parsedSolutions
+    let parsedSolutions = undefined
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)

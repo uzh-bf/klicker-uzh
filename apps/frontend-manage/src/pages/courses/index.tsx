@@ -4,11 +4,12 @@ import {
   CreateCourseDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, Switch, UserNotification } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import dayjs from 'dayjs'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -17,7 +18,7 @@ import CourseListButton from '../../components/courses/CourseListButton'
 import CourseArchiveModal from '../../components/courses/modals/CourseArchiveModal'
 import CourseDeletionModal from '../../components/courses/modals/CourseDeletionModal'
 import CourseManipulationModal, {
-  type CourseManipulationFormData,
+  CourseManipulationFormData,
 } from '../../components/courses/modals/CourseManipulationModal'
 import CourseRemovalModal from '../../components/courses/modals/CourseRemovalModal'
 import Layout from '../../components/Layout'

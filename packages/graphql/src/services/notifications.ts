@@ -1,5 +1,5 @@
 // import webpush, { WebPushError } from 'web-push'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import { HatchetHandlers } from '@klicker-uzh/types'
 import axios from 'axios'
 import type { ContextWithUser } from '../lib/context.js'
 
