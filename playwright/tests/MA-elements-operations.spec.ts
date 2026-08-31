@@ -9,6 +9,7 @@ import {
   replaceControlledSearchValue,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
+import { getPrisma } from '../global-setup.js'
 import {
   LECTURER_ID,
   LECTURER_IND_SHORTNAME,
@@ -39,6 +40,7 @@ import { enMessages as messages } from '../util/messages.js'
 import {
   acceptGamifiedLiveQuizAccountPrompt,
   createQuestionNR,
+  env,
 } from '../util/workflow.js'
 
 type Choice = {
@@ -460,7 +462,9 @@ test.describe('Create different types of elements (with and without sample solut
         .click()
       await page.waitForTimeout(500)
       await expect(
-        page.getByText(messages.manage.elements.DUPLICATETitle)
+        page.getByRole('heading', {
+          name: messages.manage.elements.DUPLICATETitle,
+        })
       ).toBeVisible()
       await saveElementModal(page)
 
@@ -2550,6 +2554,181 @@ test.describe('Create different types of elements (with and without sample solut
         canEdit: true,
         canOpenActions: true,
       })
+    })
+  })
+
+  test.describe('Part 7: Element card actions and metadata clarity', () => {
+    const cleanedUpElementIds: number[] = []
+
+    test.afterAll(async () => {
+      const prisma = await getPrisma()
+      if (cleanedUpElementIds.length > 0) {
+        await prisma.element.deleteMany({
+          where: { id: { in: cleanedUpElementIds } },
+        })
+      }
+    })
+
+    test('Card actions and metadata', async ({ page, loginLecturer }) => {
+      await loginLecturer()
+      await expect(page.getByTestId('elements-search-input')).toBeVisible()
+
+      const runPrefix = `Card Clarity ${Date.now()}`
+      const createdElementName = `${runPrefix} New`
+      const editedElementName = `${runPrefix} Edited`
+      const prisma = await getPrisma()
+
+      try {
+        await createQuestionSC({
+          name: createdElementName,
+          content: 'Fresh content for the card clarity regression.',
+          choices: [
+            { value: 'Option A', correct: true },
+            { value: 'Option B' },
+          ],
+          userId: LECTURER_ID,
+        })
+
+        const createdElement = await prisma.element.findFirst({
+          where: { name: createdElementName },
+        })
+        if (!createdElement) {
+          throw new Error('Failed to create the new card clarity fixture')
+        }
+        cleanedUpElementIds.push(createdElement.id)
+
+        await createQuestionSC({
+          name: editedElementName,
+          content: 'Content before the versioned edit.',
+          choices: [
+            { value: 'Option A', correct: true },
+            { value: 'Option B' },
+          ],
+          userId: LECTURER_ID,
+        })
+
+        const editedElement = await prisma.element.findFirst({
+          where: { name: editedElementName },
+        })
+        if (!editedElement) {
+          throw new Error('Failed to create the edited card clarity fixture')
+        }
+        cleanedUpElementIds.push(editedElement.id)
+
+        await prisma.element.update({
+          where: { id: editedElement.id },
+          data: {
+            content: 'Content after the versioned edit.',
+            version: { increment: 1 },
+          },
+        })
+
+        await page.getByTestId('elements-search-input').fill(runPrefix)
+        await page.keyboard.press('Enter')
+
+        const createdCard = page.getByTestId(
+          `element-item-${createdElementName}`
+        )
+        const editedCard = page.getByTestId(`element-item-${editedElementName}`)
+        await expect(createdCard).toBeVisible()
+        await expect(editedCard).toBeVisible()
+
+        // Each card renders exactly one truthful timestamp.
+        await expect(createdCard).toContainText('Created at')
+        await expect(createdCard).not.toContainText('Edited at')
+        await expect(editedCard).toContainText('Edited at')
+        await expect(editedCard).not.toContainText('Created at')
+
+        // Icon-only actions expose their localized label as accessible name.
+        const editButton = createdCard.getByRole('button', {
+          name: 'Edit Element',
+        })
+        await expect(editButton).toBeVisible()
+        const createdOverflow = page.getByTestId(
+          `actions-element-${createdElementName}`
+        )
+        await expect(createdOverflow).toHaveAccessibleName(
+          `More actions for ${createdElementName}`
+        )
+
+        // The tooltip appears on hover and on focus-within.
+        await editButton.hover()
+        await expect(
+          createdCard.getByRole('tooltip', { name: 'Edit Element' })
+        ).toBeVisible()
+        await editButton.focus()
+        await expect(
+          createdCard.getByRole('tooltip', { name: 'Edit Element' })
+        ).toBeVisible()
+
+        // Keyboard activation of a visible action opens the edit modal.
+        await page.keyboard.press('Enter')
+        await expect(page.getByTestId('insert-question-title')).toBeVisible()
+        await page.getByTestId('close-element-modal').click()
+
+        // Keyboard activation of the overflow opens its menu.
+        await createdOverflow.focus()
+        await expect(
+          createdCard.getByRole('tooltip', {
+            name: `More actions for ${createdElementName}`,
+          })
+        ).toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(
+          page.getByTestId(`delete-element-${createdElementName}`)
+        ).toBeVisible()
+        await page.keyboard.press('Escape')
+
+        // The sort toggle describes the next action and flips after use.
+        const elementItems = page.locator('[data-cy^="element-item-"]')
+        await expect(elementItems.first()).toContainText(editedElementName)
+        const sortToggle = page.getByTestId('sort-order-question-pool-toggle')
+        await expect(sortToggle).toHaveAccessibleName('Sort ascending')
+        await sortToggle.focus()
+        await expect(
+          page.getByRole('tooltip', { name: 'Sort ascending' })
+        ).toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(sortToggle).toHaveAccessibleName('Sort descending')
+        await expect(elementItems.first()).toContainText(createdElementName)
+
+        // The German locale carries the paired labels. The sort toggle state is
+        // persisted to local storage, so the ascending order flipped above is
+        // restored on the reload and the toggle again describes the next action.
+        await page.waitForFunction(() => {
+          try {
+            const stored = JSON.parse(
+              localStorage.getItem('library-filtering-sorting') ?? ''
+            )
+            return stored?.sort?.asc === true
+          } catch {
+            return false
+          }
+        })
+        await page.goto(`${env('URL_MANAGE')}/de/`)
+        await expect(page.getByTestId('elements-search-input')).toBeVisible()
+        await page.getByTestId('elements-search-input').fill(runPrefix)
+        await page.keyboard.press('Enter')
+        const deEditedCard = page.getByTestId(
+          `element-item-${editedElementName}`
+        )
+        await expect(deEditedCard).toContainText('Editiert am')
+        await expect(deEditedCard).not.toContainText('Erstellt am')
+        await expect(
+          page.getByTestId(`actions-element-${editedElementName}`)
+        ).toHaveAccessibleName(`Weitere Aktionen für ${editedElementName}`)
+        const deSortToggle = page.getByTestId('sort-order-question-pool-toggle')
+        await expect(deSortToggle).toHaveAccessibleName('Absteigend sortieren')
+        await deSortToggle.focus()
+        await page.keyboard.press('Enter')
+        await expect(deSortToggle).toHaveAccessibleName('Aufsteigend sortieren')
+      } finally {
+        if (cleanedUpElementIds.length > 0) {
+          await prisma.element.deleteMany({
+            where: { id: { in: cleanedUpElementIds } },
+          })
+        }
+      }
     })
   })
 })

@@ -1542,6 +1542,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       status: 'Status',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
+      sortOrderAscending: 'Aufsteigend sortieren',
+      sortOrderDescending: 'Absteigend sortieren',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
@@ -2022,6 +2024,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
+      moreActions: 'Weitere Aktionen für {name}',
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
       tags: 'Tags',
