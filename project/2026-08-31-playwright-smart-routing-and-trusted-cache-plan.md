@@ -969,6 +969,11 @@ native planner gate.
   is `fed364a338104b4cdd12f97649d22edb5b124a8b`, two commits beyond this
   branch's base. The two commits overlap the workflow, helper, package, and
   documentation files in this plan, so no automatic integration was attempted.
+- [x] A current runner-group readback was attempted read-only but the available
+  GitHub token lacks the organization runner-group permission (`admin:org`).
+  The last confirmed policy remains the Klicker-only `public-pr-arm64` group
+  restricted to the exact `public-pr-playwright-shards.yml@refs/heads/v3`
+  workflow; fresh proof remains pending an authorized readback.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact
