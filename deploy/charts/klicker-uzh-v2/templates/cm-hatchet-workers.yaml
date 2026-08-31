@@ -6,6 +6,11 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  CODEAPI_BASE_URL: {{ .Values.codeApi.baseUrl | quote }}
+  CODEAPI_ALLOW_INSECURE_HTTP: {{ .Values.codeApi.allowInsecureHttp | quote }}
+  CODEAPI_JWT_ALGORITHM: {{ .Values.codeApi.jwtAlgorithm | quote }}
+  CODEAPI_JWT_TTL_SECONDS: {{ .Values.codeApi.jwtTtlSeconds | quote }}
+  CODEAPI_REQUEST_TIMEOUT_MS: {{ .Values.codeApi.requestTimeoutMs | quote }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   # Deprecated - kept for backward compatibility during transition
@@ -31,6 +36,11 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  CODEAPI_BASE_URL: {{ .Values.codeApi.baseUrl | quote }}
+  CODEAPI_ALLOW_INSECURE_HTTP: {{ .Values.codeApi.allowInsecureHttp | quote }}
+  CODEAPI_JWT_ALGORITHM: {{ .Values.codeApi.jwtAlgorithm | quote }}
+  CODEAPI_JWT_TTL_SECONDS: {{ .Values.codeApi.jwtTtlSeconds | quote }}
+  CODEAPI_REQUEST_TIMEOUT_MS: {{ .Values.codeApi.requestTimeoutMs | quote }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   # Deprecated - kept for backward compatibility during transition
@@ -56,6 +66,11 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  CODEAPI_BASE_URL: {{ .Values.codeApi.baseUrl | quote }}
+  CODEAPI_ALLOW_INSECURE_HTTP: {{ .Values.codeApi.allowInsecureHttp | quote }}
+  CODEAPI_JWT_ALGORITHM: {{ .Values.codeApi.jwtAlgorithm | quote }}
+  CODEAPI_JWT_TTL_SECONDS: {{ .Values.codeApi.jwtTtlSeconds | quote }}
+  CODEAPI_REQUEST_TIMEOUT_MS: {{ .Values.codeApi.requestTimeoutMs | quote }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   # Deprecated - kept for backward compatibility during transition

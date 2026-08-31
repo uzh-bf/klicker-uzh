@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-08-28'
+timestamp: '2026-08-31'
 tags:
   - testing
   - ci
@@ -35,6 +35,8 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
 ```
 
 These protect public-versus-hidden projection, option validation, the shared 128-character test-ID and finite-total-weight constraints, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, one shared public/hidden grading deadline, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
+
+The live staging smoke uses the existing `codeapi-api-klicker-test` Service through a temporary read-only `kubectl port-forward`; it must submit one authenticated public and one hidden batch and verify distinct session IDs plus the expected result envelope. Without the matching Klicker private key and CodeAPI verifier configuration, a `401` from `/v1/exec` proves only service reachability, not execution compatibility. Do not treat that probe as a passing live smoke.
 
 The CODE receipt and finalization integration suite needs the GraphQL test database but not a live CodeAPI because it injects the already-sanitized grading result at the server boundary:
 

@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-07-18'
+timestamp: '2026-08-31'
 tags:
   - ci
   - deployment
@@ -42,6 +42,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **stg** (`*.klicker.stg.df-app.ch`): workers ride the floating `v3` tag; releases tracked via a `rollout.klicker.uzh.ch/release` pod annotation.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names.
+- **CodeAPI integration**: the staging values target `http://codeapi-api-klicker-test.codeapi.svc.cluster.local:3112` and enable the narrowly scoped Kubernetes-service HTTP exception. The v2 chart emits the five `CODEAPI_JWT_*` signing settings into the backend and worker Secrets; the v3 chart keeps those keys in its existing externally managed backend/worker Secrets. Provision the same issuer, audience, tenant, private key, and key ID that correspond to the CodeAPI verifier JWKS. No CodeAPI or Klicker cluster resource is changed by this repository configuration alone.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 

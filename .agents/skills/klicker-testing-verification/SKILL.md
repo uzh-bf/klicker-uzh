@@ -41,7 +41,7 @@ uv run --no-project --python 3.12 -- \
   node node_modules/vitest/vitest.mjs run test/codeApi.test.ts
 ```
 
-The runner tests cover pass/error/timeout behavior plus direct file-descriptor flooding and descendant-process cleanup. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, require distinct public/hidden sessions and retain no hidden output or session identifiers.
+The runner tests cover pass/error/timeout behavior plus direct file-descriptor flooding and descendant-process cleanup. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, use a temporary read-only port-forward to the staging `codeapi-api-klicker-test` Service when testing from a local process, require distinct public/hidden sessions, and retain no hidden output or session identifiers. A `401` without a configured signing key is reachability evidence only, not a live smoke pass.
 
 For CODE receipt, worker, or finalization changes, run the serialized database-backed lifecycle tracer:
 

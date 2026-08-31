@@ -2,6 +2,7 @@
 
 ## 2026-08-31
 
+- **Update**: the CodeAPI deployment contract now targets the read-only-discovered staging `codeapi-api-klicker-test` Service, wires non-secret endpoint settings through both Helm chart generations, carries signing settings through the existing backend/worker secret paths, and restricts HTTP exceptions to explicitly enabled Kubernetes service DNS.
 - **Correction**: LiveQuiz CODE receipt creation now serializes with block
   closure, quiz end rejects active blocks and in-flight grading, and Redis
   projection rejects stale block executions before writing results,

@@ -11,6 +11,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   buildCodeApiExecutionRequest,
   createCodeApiClient,
+  loadCodeApiConfig,
   mintCodeApiJwt,
   type CodeApiClientConfig,
 } from '../src/codeApi.js'
@@ -32,6 +33,7 @@ function config(
 ): CodeApiClientConfig {
   return {
     baseUrl: 'https://codeapi.example.test',
+    allowInsecureHttp: false,
     issuer: 'klicker',
     audience: 'codeapi',
     tenantId: 'klicker-test',
@@ -172,6 +174,64 @@ describe('CodeAPI JWT', () => {
     ).rejects.toMatchObject({
       name: 'CodeApiClientError',
       kind: 'config',
+    })
+  })
+})
+
+describe('CodeAPI configuration', () => {
+  it('allows explicitly enabled HTTP only for Kubernetes service DNS', () => {
+    expect(
+      createCodeApiClient(
+        config({
+          baseUrl:
+            'http://codeapi-api-klicker-test.codeapi.svc.cluster.local:3112',
+          allowInsecureHttp: true,
+        })
+      )
+    ).toBeDefined()
+  })
+
+  it('rejects HTTP for Kubernetes service DNS unless explicitly enabled', () => {
+    expect(() =>
+      createCodeApiClient(
+        config({
+          baseUrl:
+            'http://codeapi-api-klicker-test.codeapi.svc.cluster.local:3112',
+        })
+      )
+    ).toThrow(
+      'CodeAPI base URL must use HTTPS outside localhost or an explicitly allowed Kubernetes service'
+    )
+  })
+
+  it('never permits the insecure HTTP flag for a public host', () => {
+    expect(() =>
+      createCodeApiClient(
+        config({
+          baseUrl: 'http://codeapi.example.test',
+          allowInsecureHttp: true,
+        })
+      )
+    ).toThrow(
+      'CodeAPI base URL must use HTTPS outside localhost or an explicitly allowed Kubernetes service'
+    )
+  })
+
+  it('parses the insecure HTTP setting from the environment', () => {
+    expect(
+      loadCodeApiConfig({
+        CODEAPI_BASE_URL:
+          'http://codeapi-api-klicker-test.codeapi.svc.cluster.local:3112',
+        CODEAPI_ALLOW_INSECURE_HTTP: 'true',
+        CODEAPI_JWT_ISSUER: 'klicker',
+        CODEAPI_JWT_AUDIENCE: 'codeapi',
+        CODEAPI_TENANT_ID: 'klicker-test',
+        CODEAPI_JWT_PRIVATE_KEY: privateKeyPem,
+        CODEAPI_JWT_KEY_ID: 'klicker-test-1',
+      })
+    ).toMatchObject({
+      allowInsecureHttp: true,
+      baseUrl: 'http://codeapi-api-klicker-test.codeapi.svc.cluster.local:3112',
     })
   })
 })

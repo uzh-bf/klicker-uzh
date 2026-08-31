@@ -48,6 +48,18 @@ global:
     assessmentApi: ''
     assessmentPwa: ''
 
+codeApi:
+  baseUrl: ''
+  allowInsecureHttp: false
+  jwtAlgorithm: EdDSA
+  jwtTtlSeconds: 60
+  requestTimeoutMs: 120000
+  jwtIssuer: ''
+  jwtAudience: ''
+  tenantId: ''
+  jwtPrivateKey: ''
+  jwtKeyId: ''
+
 hatchet:
   client:
     token: ""

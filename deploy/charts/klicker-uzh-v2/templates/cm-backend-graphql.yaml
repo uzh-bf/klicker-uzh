@@ -6,6 +6,11 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  CODEAPI_BASE_URL: {{ .Values.codeApi.baseUrl | quote }}
+  CODEAPI_ALLOW_INSECURE_HTTP: {{ .Values.codeApi.allowInsecureHttp | quote }}
+  CODEAPI_JWT_ALGORITHM: {{ .Values.codeApi.jwtAlgorithm | quote }}
+  CODEAPI_JWT_TTL_SECONDS: {{ .Values.codeApi.jwtTtlSeconds | quote }}
+  CODEAPI_REQUEST_TIMEOUT_MS: {{ .Values.codeApi.requestTimeoutMs | quote }}
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
   APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}

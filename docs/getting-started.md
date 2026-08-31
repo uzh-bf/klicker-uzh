@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-20'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -113,6 +113,15 @@ Two paths, depending on whether you have Infisical access:
 
 1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-cypress`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
+
+For a manual CODE test against the existing staging CodeAPI, use a temporary read-only tunnel and keep the Klicker process on the host or local container:
+
+```bash
+kubectl --context aks-stg-apps port-forward -n codeapi \
+  svc/codeapi-api-klicker-test 43112:3112
+```
+
+Set `CODEAPI_BASE_URL=http://127.0.0.1:43112` plus the five `CODEAPI_JWT_*` signing variables in the process that runs the GraphQL backend and grading worker. The local client permits HTTP on loopback; it never permits arbitrary remote HTTP. The staging service must trust the matching public key and include `klicker_jwt` in its principal-source allow-list. The tunnel is ephemeral and does not modify cluster resources.
 
 Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
 

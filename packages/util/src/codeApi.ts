@@ -101,6 +101,7 @@ sys.stdout.write(
 export type CodeApiJwtAlgorithm = 'EdDSA' | 'RS256'
 export interface CodeApiClientConfig {
   baseUrl: string
+  allowInsecureHttp: boolean
   issuer: string
   audience: string
   tenantId: string
@@ -204,7 +205,7 @@ function requireString(value: string, label: string, maxLength = 512): string {
   return normalized
 }
 
-function normalizeBaseUrl(value: string): string {
+function normalizeBaseUrl(value: string, allowInsecureHttp: boolean): string {
   const raw = requireString(value, 'CodeAPI base URL', 2_048)
   let url: URL
   try {
@@ -227,13 +228,16 @@ function normalizeBaseUrl(value: string): string {
       'CodeAPI base URL must not contain credentials, query, or fragment'
     )
   }
+  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+  const isKubernetesService = url.hostname.endsWith('.svc.cluster.local')
   if (
     url.protocol === 'http:' &&
-    !['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+    !isLocalhost &&
+    !(allowInsecureHttp && isKubernetesService)
   ) {
     throw new CodeApiClientError(
       'config',
-      'CodeAPI base URL must use HTTPS outside localhost'
+      'CodeAPI base URL must use HTTPS outside localhost or an explicitly allowed Kubernetes service'
     )
   }
 
@@ -279,7 +283,8 @@ function normalizeConfig(config: CodeApiClientConfig): CodeApiClientConfig {
   )
 
   return {
-    baseUrl: normalizeBaseUrl(config.baseUrl),
+    baseUrl: normalizeBaseUrl(config.baseUrl, config.allowInsecureHttp),
+    allowInsecureHttp: config.allowInsecureHttp,
     issuer: requireString(config.issuer, 'CodeAPI JWT issuer'),
     audience: requireString(config.audience, 'CodeAPI JWT audience'),
     tenantId: requireString(config.tenantId, 'CodeAPI tenant id', 256),
@@ -304,11 +309,28 @@ function readNumber(
   return parsed
 }
 
+function readBoolean(
+  value: string | undefined,
+  fallback: boolean,
+  label: string
+): boolean {
+  if (typeof value === 'undefined' || value.trim() === '') return fallback
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'true') return true
+  if (normalized === 'false') return false
+  throw new CodeApiClientError('config', `${label} is invalid`)
+}
+
 export function loadCodeApiConfig(
   env: NodeJS.ProcessEnv = process.env
 ): CodeApiClientConfig {
   return normalizeConfig({
     baseUrl: env.CODEAPI_BASE_URL ?? '',
+    allowInsecureHttp: readBoolean(
+      env.CODEAPI_ALLOW_INSECURE_HTTP,
+      false,
+      'CodeAPI insecure HTTP setting'
+    ),
     issuer: env.CODEAPI_JWT_ISSUER ?? '',
     audience: env.CODEAPI_JWT_AUDIENCE ?? '',
     tenantId: env.CODEAPI_TENANT_ID ?? '',

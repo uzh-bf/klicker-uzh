@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-07-29'
+timestamp: '2026-08-31'
 tags:
   - architecture
 ---
@@ -55,6 +55,8 @@ Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — ne
 ## CODE sandbox grading boundary
 
 The server-only `@klicker-uzh/util/code-api` entry (`packages/util/src/codeApi.ts`) owns the hostile boundary to CodeAPI; it is deliberately absent from the browser-used util root. It loads the `CODEAPI_*` endpoint and asymmetric JWT settings, mints short-lived `klicker_jwt` tokens, and sends only student code plus test invocation arguments. Expected values, weights, and pass/fail decisions remain in Klicker.
+
+The staging overlay targets the cluster-internal `codeapi-api-klicker-test.codeapi.svc.cluster.local:3112` service. Because that service is HTTP-only, `CODEAPI_ALLOW_INSECURE_HTTP=true` is required; the client accepts that exception only for an exact `.svc.cluster.local` hostname and continues to reject arbitrary remote HTTP endpoints. `CODEAPI_JWT_ISSUER`, `CODEAPI_JWT_AUDIENCE`, `CODEAPI_TENANT_ID`, `CODEAPI_JWT_PRIVATE_KEY`, and `CODEAPI_JWT_KEY_ID` remain deployment secrets and must be provisioned to the GraphQL backend and grading workers through their existing secret mechanism.
 
 Public and hidden tests are derived from the authored visibility and sent in separate `/v1/exec` requests that must return distinct session IDs. Each generated Python batch runner starts a fresh child process group per test, drains its pipes under a byte cap, and kills the full group on timeout or overflow. Authoring and execution share depth, node, and serialized-byte limits for JSON inputs and outputs. The client accepts only the verified flat CodeAPI response, rejects artifacts and unsupported fields, parses a versioned result envelope, compares exact JSON, and returns only the sanitized `CodeSubmissionResult`; raw sessions and hidden diagnostics cannot cross its public boundary.
 
