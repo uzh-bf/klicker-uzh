@@ -362,5 +362,12 @@ Return to the user if:
       navigation race. Review corrections add programmatic step state and
       announcements, clear a stale deferred advance, and cover published
       metadata saves.
-- [ ] Integrated browser proof and final review completed.
+- [x] Exact-head integrated verification completed. Root `check:all` passes,
+      the root production build completes with 23 of 23 tasks successful, and
+      the focused host Playwright suite passes all 6 authoring scenarios.
+      Agent-browser verifies the guided draft, review summary, mobile chatbot
+      selector, English and German routes, desktop and 390 x 844 layouts, and
+      the dirty browser-history guard using synthetic local data. Four ignored
+      screenshots record the EN/DE desktop/mobile states. Final package review
+      remains the only open verification gate.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.
