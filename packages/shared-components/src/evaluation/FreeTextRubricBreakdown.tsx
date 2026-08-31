@@ -10,11 +10,15 @@ import type { FreeTextEvaluationFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+type CriterionStatus =
+  FreeTextEvaluationFeedback['rubricAssessments'][number]['criterionStatus']
+
 type RubricAssessment = {
   rubricId: string
   rubricName: string
   proposedLevel: string
   normalizedScore: number
+  criterionStatus: CriterionStatus
   rationale: string
   feedback?: string
 }
@@ -87,6 +91,7 @@ function getRubricAssessments(
         rubricName: assessment.rubricName,
         proposedLevel: assessment.proposedLevel,
         normalizedScore: Math.min(100, Math.max(0, assessment.normalizedScore)),
+        criterionStatus: assessment.criterionStatus,
         rationale,
         feedback: feedbackByRubric.get(assessment.rubricId),
       },
@@ -94,9 +99,9 @@ function getRubricAssessments(
   })
 }
 
-function getRubricStatus(normalizedScore: number): RubricStatus {
-  if (normalizedScore >= 100) return 'MET'
-  if (normalizedScore > 0) return 'PARTIAL'
+function getRubricStatus(criterionStatus: CriterionStatus): RubricStatus {
+  if (criterionStatus === 'CORRECT') return 'MET'
+  if (criterionStatus === 'PARTIAL') return 'PARTIAL'
   return 'OPEN'
 }
 
@@ -123,7 +128,7 @@ function RubricDetail({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(index === 0)
-  const status = getRubricStatus(assessment.normalizedScore)
+  const status = getRubricStatus(assessment.criterionStatus)
   const style = STATUS_STYLES[status]
 
   return (
@@ -206,7 +211,7 @@ function FreeTextRubricBreakdown({
   if (assessments.length === 0) return null
 
   const fullyMet = assessments.filter(
-    (assessment) => getRubricStatus(assessment.normalizedScore) === 'MET'
+    (assessment) => getRubricStatus(assessment.criterionStatus) === 'MET'
   ).length
 
   return (
@@ -236,7 +241,7 @@ function FreeTextRubricBreakdown({
 
         <div className="mt-3 flex gap-1" aria-hidden="true">
           {assessments.map((assessment) => {
-            const status = getRubricStatus(assessment.normalizedScore)
+            const status = getRubricStatus(assessment.criterionStatus)
             return (
               <div
                 key={assessment.rubricId}
@@ -248,7 +253,7 @@ function FreeTextRubricBreakdown({
 
         <ul className="mt-3 flex flex-col gap-2">
           {assessments.map((assessment) => {
-            const status = getRubricStatus(assessment.normalizedScore)
+            const status = getRubricStatus(assessment.criterionStatus)
             const style = STATUS_STYLES[status]
 
             return (
