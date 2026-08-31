@@ -251,6 +251,24 @@ test('workflow shard startup steps explicitly select Bash', () => {
   }
 })
 
+test('workflow shard startup supports only complete profile or legacy runtimes', () => {
+  const workflowUrls = [
+    new URL('../.github/workflows/test-playwright.yml', import.meta.url),
+    new URL(
+      '../.github/workflows/public-pr-playwright-shards.yml',
+      import.meta.url
+    ),
+  ]
+
+  for (const workflowUrl of workflowUrls) {
+    const workflow = readFileSync(workflowUrl, 'utf8')
+    assert.match(workflow, /PROFILE_RUNTIME_FILES=/)
+    assert.match(workflow, /profile_file_count/)
+    assert.match(workflow, /legacy full-stack Playwright startup/)
+    assert.match(workflow, /partially present/)
+  }
+})
+
 test('local full-stack startup stays independent from the CI runtime plan', () => {
   const packageJson = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8')
