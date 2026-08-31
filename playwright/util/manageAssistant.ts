@@ -286,6 +286,7 @@ export async function mockManageChatStream(
     errorMode,
     errorText = 'The assistant is temporarily unavailable. Please try again.',
     capabilityState = 'draft-and-read',
+    onRequest,
   }: {
     mode?: 'text' | 'proposal'
     text?: string
@@ -293,6 +294,7 @@ export async function mockManageChatStream(
     errorMode?: ManageChatStreamErrorMode
     errorText?: string
     capabilityState?: ManageAssistantCapabilityState
+    onRequest?: (body: unknown) => void
   } = {}
 ) {
   let errorServed = false
@@ -302,6 +304,8 @@ export async function mockManageChatStream(
   // top-level manage page does not reliably intercept.
   await page.context().route('**/api/manage/chat', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
+
+    onRequest?.(route.request().postDataJSON())
 
     if (errorMode && !errorServed) {
       errorServed = true

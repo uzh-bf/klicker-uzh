@@ -216,6 +216,49 @@ test.describe('Manage Assistant — Messaging', () => {
       )
     ).toBeVisible()
 
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    await page.evaluate(
+      ({ chatOrigin }) => {
+        const frame = document.querySelector(
+          '[data-cy="manage-assistant-frame"]'
+        ) as HTMLIFrameElement | null
+        const source = frame?.contentWindow ?? null
+        const validOrigin = new URL(chatOrigin).origin
+        const request = {
+          payload: { id: 4242 },
+          type: 'klicker:manage-element-open-request',
+        }
+
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: request,
+            origin: 'https://assistant-attacker.example',
+            source,
+          })
+        )
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: request,
+            origin: validOrigin,
+            source: window,
+          })
+        )
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: {
+              payload: { id: '4242' },
+              type: request.type,
+            },
+            origin: validOrigin,
+            source,
+          })
+        )
+      },
+      { chatOrigin }
+    )
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeVisible()
+    await expect(page).not.toHaveURL(/editElementId=/)
+
     const openDraft = assistant.getByRole('button', { name: 'Open draft' })
     await expect(openDraft).toBeVisible()
     await openDraft.click()
@@ -226,8 +269,10 @@ test.describe('Manage Assistant — Messaging', () => {
   test('Manage context stays visible after a message and announces a changed context', async ({
     page,
   }) => {
+    const requestBodies: unknown[] = []
     await mockManageChatStream(page, {
       text: 'The current Manage context is available.',
+      onRequest: (body) => requestBodies.push(body),
     })
     const assistant = await openManageAssistantWidget(page)
 
@@ -275,6 +320,30 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(
       assistant.getByTestId('manage-assistant-context-announcement')
     ).toHaveText('Manage context changed to Course dashboard - Course 42')
+
+    await sendManageAssistantMessage(assistant, 'Summarize the current course')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content').last()
+    ).toContainText('The current Manage context is available.')
+    await expect(
+      assistant.getByText('The current Manage context is available.')
+    ).toBeVisible()
+    await expect(async () => {
+      const latestRequest = requestBodies.at(-1) as
+        | { manageContext?: unknown }
+        | undefined
+      expect(latestRequest?.manageContext).toEqual({
+        version: 1,
+        source: 'manage',
+        surface: 'course-dashboard',
+        locale: 'en',
+        route: {
+          asPath: '/courses/42',
+          pathname: '/courses/[id]',
+        },
+        ids: { courseId: '42' },
+      })
+    }).toPass()
   })
 
   test('German draft actions stay localized and open the confirmed draft in Manage', async ({
