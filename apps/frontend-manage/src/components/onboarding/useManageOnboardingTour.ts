@@ -9,7 +9,6 @@ import {
   type UseProductTourResult,
   useProductTour,
 } from '@klicker-uzh/product-tours/react'
-import 'driver.js/dist/driver.css'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useCallback, useMemo } from 'react'
