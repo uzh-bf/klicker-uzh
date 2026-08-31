@@ -224,7 +224,7 @@ export function updateNumericalResults({
   }
 
   // This persisted, non-security key must remain MD5 to preserve old buckets.
-  const MD5 = createHash('md5') // NOSONAR
+  const MD5 = createHash('md5')
   const results = previousResults
   const updatedResults = results
 
@@ -288,7 +288,7 @@ export function updateFreeTextResults({
   }
 
   // This persisted, non-security key must remain MD5 to preserve old buckets.
-  const MD5 = createHash('md5') // NOSONAR
+  const MD5 = createHash('md5')
   const results = previousResults
   const updatedResults = results
 
@@ -414,7 +414,7 @@ export function updateCaseStudyResults({
         const criterionId = criterionResponse.criterionId
         const responseValue = criterionResponse.response
         // This persisted, non-security key must remain MD5 for old buckets.
-        const MD5 = createHash('md5') // NOSONAR
+        const MD5 = createHash('md5')
         MD5.update(String(responseValue))
         const responseHash = MD5.digest('hex')
         const existingCombinedResponses =

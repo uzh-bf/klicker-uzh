@@ -137,7 +137,7 @@ function computeAggregatedResponsesOpen({
   const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
   // This persisted, non-security key must remain MD5 to preserve old buckets.
-  const MD5 = createHash('md5') // NOSONAR
+  const MD5 = createHash('md5')
   MD5.update(responseValue)
   const hashedValue = MD5.digest('hex')
 
