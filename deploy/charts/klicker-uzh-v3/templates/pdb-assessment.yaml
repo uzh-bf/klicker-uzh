@@ -13,7 +13,7 @@ spec:
       {{- include "chart.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: frontend-assessment
 ---
-# Assessment Backend GraphQL PDB
+# Assessment Worker PDB
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -22,13 +22,13 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor-assessment
 spec:
-  minAvailable: 2
+  minAvailable: {{ .Values.hatchet.workers.responseProcessorAssessment.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: hatchet-worker-response-processor-assessment
 ---
-# Assessment Worker
+# Assessment Backend GraphQL PDB
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

@@ -39,12 +39,33 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.hatchet.workers.general.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.hatchet.workers.general.terminationGracePeriodSeconds }}
       containers:
         - name: hatchet-worker-general
           securityContext:
             {{- toYaml .Values.hatchet.workers.general.securityContext | nindent 12 }}
           image: "{{ .Values.hatchet.workers.general.image.repository }}:{{ .Values.hatchet.workers.general.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.general.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.hatchet.workers.general.healthPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
           {{- if .Values.backendGraphql.elementGeneration.enabled }}
           env:
             - name: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
@@ -63,16 +84,6 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
           resources:
             {{- toYaml .Values.hatchet.workers.general.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.general.nodeSelector }}
@@ -127,13 +138,33 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.hatchet.workers.responseProcessor.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.hatchet.workers.responseProcessor.terminationGracePeriodSeconds }}
       containers:
         - name: hatchet-worker-response-processor
           securityContext:
             {{- toYaml .Values.hatchet.workers.responseProcessor.securityContext | nindent 12 }}
           image: "{{ .Values.hatchet.workers.responseProcessor.image.repository }}:{{ .Values.hatchet.workers.responseProcessor.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessor.image.pullPolicy }}
-
+          ports:
+            - name: http
+              containerPort: {{ .Values.hatchet.workers.responseProcessor.healthPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
@@ -144,16 +175,6 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
           resources:
             {{- toYaml .Values.hatchet.workers.responseProcessor.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.responseProcessor.nodeSelector }}
@@ -208,13 +229,33 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.hatchet.workers.responseProcessorAssessment.terminationGracePeriodSeconds }}
       containers:
         - name: hatchet-worker-response-processor-assessment
           securityContext:
             {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.securityContext | nindent 12 }}
           image: "{{ .Values.hatchet.workers.responseProcessorAssessment.image.repository }}:{{ .Values.hatchet.workers.responseProcessorAssessment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessorAssessment.image.pullPolicy }}
-
+          ports:
+            - name: http
+              containerPort: {{ .Values.hatchet.workers.responseProcessorAssessment.healthPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
@@ -225,16 +266,6 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
           resources:
             {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.responseProcessorAssessment.nodeSelector }}

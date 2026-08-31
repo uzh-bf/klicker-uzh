@@ -36,6 +36,7 @@ export * from './kbGraphIngestionApi.js'
 export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
+export * from './worker-runtime.js'
 
 type AuditLogMessage = Record<string, string | undefined> & {
   correlationId?: string

@@ -25,6 +25,8 @@ hatchet:
   workers:
     general:
       replicaCount: 2
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
@@ -64,6 +66,8 @@ hatchet:
 
     responseProcessor:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
@@ -103,6 +107,8 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm

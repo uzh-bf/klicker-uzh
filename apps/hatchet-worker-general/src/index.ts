@@ -3,9 +3,11 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
+  createHatchetWorkerRuntime,
   getKBGraphTerminalResult,
   hatchetClient,
   prepareHatchetTasks,
+  resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import EventEmitter from 'events'
@@ -17,13 +19,11 @@ import {
   validateKBWorkerConfiguration,
 } from './workflowSelection.js'
 
-const HATCHET_WORKER_NAME =
-  process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
-
 async function main() {
   const integrationState = validateKBWorkerConfiguration()
+  const runtimeConfig = resolveWorkerRuntimeConfig('general')
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, ...integrationState },
+    { workerName: runtimeConfig.name, ...integrationState },
     'Starting Hatchet worker'
   )
 
@@ -125,16 +125,18 @@ async function main() {
   logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    { workerName: runtimeConfig.name, workflowCount: workflows.length },
     'Creating Hatchet worker'
   )
 
-  const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
+  const runtime = createHatchetWorkerRuntime({
+    config: runtimeConfig,
     workflows,
+    workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
   logger.info('Starting worker to process jobs...')
-  await worker.start()
+  await runtime.start()
 
   logger.info('Worker started successfully and ready to process jobs')
 }
