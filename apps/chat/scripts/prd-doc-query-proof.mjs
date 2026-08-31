@@ -116,7 +116,7 @@ function requireString(value, pattern) {
 }
 
 function requireUuid(value) {
-  return requireString(value, UUID_PATTERN).toLocaleLowerCase('en')
+  return requireString(value, UUID_PATTERN).toLowerCase()
 }
 
 function requireMarkerList(value) {
@@ -330,26 +330,24 @@ function documentHaystack(documents) {
         : []),
     ])
     .join('\n')
-    .toLocaleLowerCase('en')
+    .toLowerCase()
 }
 
 function hasAnyDocumentMarker(documents, markers) {
   const haystack = documentHaystack(documents)
-  return markers.some((marker) =>
-    haystack.includes(marker.toLocaleLowerCase('en'))
-  )
+  return markers.some((marker) => haystack.includes(marker.toLowerCase()))
 }
 
 function hasAnyReferenceMarker(documents, markers) {
   const references = documents.sources
     .map((source) =>
       typeof source?.reference === 'string'
-        ? source.reference.toLocaleLowerCase('en')
+        ? source.reference.toLowerCase()
         : ''
     )
     .filter(Boolean)
   return markers.some((marker) => {
-    const normalized = marker.toLocaleLowerCase('en')
+    const normalized = marker.toLowerCase()
     return references.some((reference) => reference.includes(normalized))
   })
 }
