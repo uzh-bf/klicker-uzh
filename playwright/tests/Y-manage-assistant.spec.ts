@@ -877,6 +877,18 @@ test.describe('Manage Assistant — Messaging', () => {
     expect(
       await appContent.evaluate((element) => (element as HTMLElement).inert)
     ).toBe(true)
+
+    const chatInput = page
+      .frameLocator('[data-cy="manage-assistant-frame"]')
+      .getByTestId('chat-composer-input')
+    await chatInput.focus()
+    // Clicking blank compact-panel chrome must not turn the iframe blur into
+    // an escape and steal focus for the persistent close control.
+    await panel.click({
+      position: { x: (panelBox?.width ?? 0) / 2, y: 8 },
+    })
+    await expect(panel.getByRole('button', { name: 'Close' })).not.toBeFocused()
+
     await expect(page.locator('#__app')).not.toHaveAttribute(
       'aria-hidden',
       'true'
