@@ -269,3 +269,12 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   source secret is missing. The contract test also distinguishes an explicitly
   empty capability variable from an absent child variable. Default-value
   assertions remain intentional regression pins.
+- Exact-head OpenCodeReview then identified two missing failure-path checks.
+  The fake harness now proves that a non-zero operator failure bypasses `uv`
+  and that evaluator-runner status, stdout, and stderr pass through unchanged.
+  It also creates the product tool-profile fixture used by the wrapper.
+- Klicker source checks, all CodeQL languages, both build fallbacks, secret
+  scans, the hosted Playwright build, and OpenCodeReview pass on the corrected
+  branch. All eight Playwright shards still fail before tests while loading the
+  trusted `v3` composite action because it contains unsupported step-level
+  `timeout-minutes`; the branch does not modify that action.

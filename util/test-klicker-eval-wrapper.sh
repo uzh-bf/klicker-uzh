@@ -40,6 +40,11 @@ printf "%s\n" "$KLICKER_TEST_REPO_ROOT"'
 
 write_file "$FAKE_BIN/rs-infisical-operator" '#!/usr/bin/env bash
 printf "%s\n" "$@" >"$KLICKER_TEST_OPERATOR_LOG"
+if [ -n "${KLICKER_TEST_OPERATOR_STATUS:-}" ]; then
+  printf "%s\n" "synthetic operator stdout"
+  printf "%s\n" "synthetic operator stderr" >&2
+  exit "$KLICKER_TEST_OPERATOR_STATUS"
+fi
 while [ "$#" -gt 0 ]; do
   if [ "$1" = "--" ]; then
     shift
@@ -63,12 +68,18 @@ if [[ -v EVAL_MODEL_CAPABILITY_MODEL ]]; then
 else
   printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=unset\n" >>"$KLICKER_TEST_CHILD_LOG"
 fi
-printf "ARG=%s\n" "$@" >>"$KLICKER_TEST_CHILD_LOG"'
+printf "ARG=%s\n" "$@" >>"$KLICKER_TEST_CHILD_LOG"
+if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
+  exec "$4"
+fi'
 
 chmod +x "$FAKE_BIN/git" "$FAKE_BIN/rs-infisical-operator" "$FAKE_BIN/uv"
 write_file "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh" '#!/usr/bin/env bash
-exit 99'
+printf "%s\n" "synthetic eval stdout"
+printf "%s\n" "synthetic eval stderr" >&2
+exit "${KLICKER_TEST_RUNNER_STATUS:-99}"'
 chmod +x "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh"
+write_file "$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" 'tools: []'
 
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
@@ -147,6 +158,42 @@ env -i \
 
 [ "$status" -eq 1 ] || fail "empty mapped key returned $status instead of 1"
 assert_line 'Error: mapped LITELLM_API_KEY is missing or empty' "$TEST_ROOT/empty-key.out"
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  KLICKER_TEST_OPERATOR_STATUS='73' \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval \
+  >"$TEST_ROOT/operator-failure.stdout" \
+  2>"$TEST_ROOT/operator-failure.stderr" || status=$?
+
+[ "$status" -eq 73 ] || fail "operator failure returned $status instead of 73"
+assert_line 'synthetic operator stdout' "$TEST_ROOT/operator-failure.stdout"
+assert_line 'synthetic operator stderr' "$TEST_ROOT/operator-failure.stderr"
+[ ! -s "$CHILD_LOG" ] || fail 'operator failure must not invoke uv'
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  KLICKER_TEST_EXEC_RUNNER='true' \
+  KLICKER_TEST_RUNNER_STATUS='74' \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval \
+  >"$TEST_ROOT/runner-failure.stdout" \
+  2>"$TEST_ROOT/runner-failure.stderr" || status=$?
+
+[ "$status" -eq 74 ] || fail "eval runner failure returned $status instead of 74"
+assert_line 'synthetic eval stdout' "$TEST_ROOT/runner-failure.stdout"
+assert_line 'synthetic eval stderr' "$TEST_ROOT/runner-failure.stderr"
 
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"
