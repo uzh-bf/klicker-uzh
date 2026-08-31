@@ -8,12 +8,16 @@ export type ManageAssistantCapabilityState =
   | 'read-only'
   | 'unavailable'
 
+const CAPABILITY_TOOL_NAME = 'klicker_lecturer_capabilities'
+
 const LIVE_READ_TOOL_NAMES = [
   'klicker_lecturer_course_list',
   'klicker_lecturer_course_get',
   'klicker_lecturer_element_search',
   'klicker_lecturer_element_get',
 ] as const
+
+const READ_TOOL_NAMES = [CAPABILITY_TOOL_NAME, ...LIVE_READ_TOOL_NAMES] as const
 
 const DRAFT_PROPOSAL_TOOL_NAME =
   'klicker_lecturer_element_create_draft_proposal'
@@ -29,8 +33,8 @@ const TOOL_NAMES_BY_CAPABILITY: Record<
   ManageAssistantCapabilityState,
   readonly string[]
 > = {
-  'draft-and-read': [...LIVE_READ_TOOL_NAMES, ...DRAFT_TOOL_NAMES],
-  'read-only': LIVE_READ_TOOL_NAMES,
+  'draft-and-read': [...READ_TOOL_NAMES, ...DRAFT_TOOL_NAMES],
+  'read-only': READ_TOOL_NAMES,
   unavailable: [],
 }
 

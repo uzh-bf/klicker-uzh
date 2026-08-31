@@ -54,10 +54,15 @@ describe('Manage assistant capability state', () => {
     ).toEqual([])
     expect(
       Object.keys(selectManageAssistantTools(inventory, 'read-only'))
-    ).toEqual([readTool])
+    ).toEqual(['klicker_lecturer_capabilities', readTool])
     expect(
       Object.keys(selectManageAssistantTools(inventory, 'draft-and-read'))
-    ).toEqual([readTool, scaffoldTool, proposalTool])
+    ).toEqual([
+      'klicker_lecturer_capabilities',
+      readTool,
+      scaffoldTool,
+      proposalTool,
+    ])
   })
 
   test('accepts only the three public response states', () => {
