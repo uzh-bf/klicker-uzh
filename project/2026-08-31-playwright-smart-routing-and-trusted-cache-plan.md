@@ -936,6 +936,16 @@ native planner gate.
   (25 tasks), workflow policy validation, YAML parsing, and the cached build
   (23 tasks) passed. Node 26.8.1 emitted the existing warning because the repo
   pins Node 24.
+- [x] Read-only v3 baseline checked on 2026-08-31: [run
+  33368808077](https://github.com/uzh-bf/klicker-uzh/actions/runs/33368808077)
+  used hosted build and eight hosted shards; the build took 2m10s and the
+  shards started within one second and finished 11m14s–16m18s later. The run
+  was not a public-runner sample. The prior [public canary
+  33205237613](https://github.com/uzh-bf/klicker-uzh/actions/runs/33205237613)
+  used three ARM64 shards: preparation took 19s, build took 7m51s, and shards
+  took 35m30s–40m27s, with one failure. These samples are not comparable and
+  are far below the M4 threshold of 20 accepted ready/full cache-hit runs, so
+  no M4 package is armed.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact
