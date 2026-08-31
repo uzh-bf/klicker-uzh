@@ -405,20 +405,24 @@ Stop and return to the user if any of these becomes necessary or true:
 
 ## Progress
 
-- **Status:** Gate 1 and the public-ownership ruling are approved. S0 and S1 are
-  complete; S2 is next. Nothing has been pushed and no PR has been created.
+- **Status:** Gate 1 and the public-ownership ruling are approved. S0, S1, and
+  the current S2 transient revision slice are committed. This delivery
+  checkpoint intentionally stops at a draft PR for the current foundation
+  slice; S3 lifecycle/aggregation/projection and the teaching-UX layer remain
+  follow-up work. Nothing has been merged into a protected branch.
 - **Completed:** university-specific research; product grilling and rulings;
   codebase seam exploration; privacy-by-design pass; current-base worktree;
   CONTEXT definition; ADR 0045 and index; native Sol planning review; accepted
   two-layer topology and corrections; public, ungated ownership ruling aligned
   with ADR 0006; product-contract commit `b1dc3d9c6`; reviewed plan commit
-  `0b48f9404`; S1 foundation commit `b4721f835`; and S1 review-correction commit
-  `720321124`.
-- **Base state:** `rs/peer-instruction-livequiz` matched `origin/v3` at
-  `cd7426e3c59dbd8a63208a0afb162427918d9367` when the reviewed plan was written.
-  The remote target has since advanced by three commits. No upstream
-  integration is authorized or required before the branch passes on its
-  recorded base.
+  `0b48f9404`; S1 foundation commit `b4721f835`; S1 review-correction commit
+  `720321124`; and S2 transient revision commit `e07992566`.
+- **Base state:** The branch was integrated once from `origin/v3` at
+  `8de87d731` in merge commit `78637beb0`. The target then advanced to
+  `5a21988fb` through two commits affecting nine CI, deployment, and
+  Playwright-support paths. Those paths do not overlap the Peer Instruction
+  implementation paths, so no second integration is authorized or required
+  for this draft checkpoint.
 - **Planning review:** `DONE_WITH_CONCERNS — APPROVE_WITH_CHANGES`; all changes
   are incorporated, and no material product decision remains open.
 - **S1 schema:** one Prisma-generated migration,
@@ -441,13 +445,16 @@ Stop and return to the user if any of these becomes necessary or true:
   rejected because they would reintroduce compile failures, defer an approved
   typed lifecycle into a second migration, or add coupling without a material
   reduction. Full reports are retained under `project/_local/reviews/`.
-- **Runtime:** the exact worktree container started, but the full application
-  readiness check failed because the initial GraphQL build was killed with exit
-  137 under the parallel development stack, so auth never started. Bounded
-  repository commands remain available in the container, and its frozen
-  dependency restore completed successfully. The earlier `gamification-roadmap`
-  runtime is stopped and has zero devrouter routes.
+- **Runtime:** the earlier exact-worktree application readiness attempt failed
+  because the initial GraphQL build was killed with exit 137 under the parallel
+  development stack, so auth never started. The current post-merge checks ran
+  without a DevPod or devcontainer. The disposable Redis used for the focused
+  tests is stopped; no task runtime is running.
 - **Active children:** none after the planner is closed.
-- **Next action:** implement S2's isolated transient revision processor and
-  prove that revised responses cannot enter scoring, gamification, assessment,
-  or durable response history.
+- **Post-merge verification:** `CI=true pnpm run check:all` passed with 25/25
+  tasks. Sequential Redis-backed tests passed: util 62/62, response-api 3/3,
+  and response-processor 3/3. The host Node 26.8.1 versus the repository's
+  Node 24 pin remains a warning.
+- **Next action:** complete the integrated final review, push the bottom branch,
+  rename/update this plan after the PR number is known, and publish the draft
+  PR. Do not begin S3 or create the top UX branch in this delivery checkpoint.
