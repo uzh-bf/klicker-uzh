@@ -203,4 +203,4 @@ implementers.
 - 2026-08-30: Planned the bottom-up re-layering and final paired E2E.
 - 2026-08-31: Direct fetch reconciled the live stack as `v3` `8de87d731af4d0ffa341b6d3591d55db7b0f4b81`, #5442 `39e163c5e9072e82e9b895a996ef7439008314be`, #5456 `f59de4cfeb73693ed0ec4c486d7206ddf92e72e3`, and #5536 `269ef3d209fa6af8e479ff8cb7f6b835eb1df1ce`; the three live PR heads are contiguous.
 - 2026-08-31: Saved old visible and hidden local stack heads plus the reconciled live heads under `refs/stack-backup/2026-08-31/` in the isolated clone. The dirty primary checkout remains untouched.
-- 2026-08-31: Next action is to commit this plan as the first bottom-layer commit, then implement and verify the resize foundation before creating the revised middle layer.
+- 2026-08-31: The plan is the first commit on the rewritten bottom layer (`361e77446`). S1 is now active: retain only resize/handshake foundation behavior and remove focused-navigation, test-route, platform, and unrelated documentation churn from #5442.
