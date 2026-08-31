@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test'
+import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
+  LECTURER_EMAIL,
   LECTURER_PASSWORD,
   LECTURER_SHORTNAME,
   STUDENT_EMAIL,
@@ -10,6 +12,7 @@ import {
   URL_CHAT,
   URL_MANAGE,
   URL_STUDENT_LOGIN,
+  USER_ID_TEST,
   viewPorts,
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -30,6 +33,69 @@ async function signInStudentFromReturnTarget(page: Page, target: string) {
     .getByTestId('password-field')
     .fill(process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD)
   await page.getByTestId('submit-login').click()
+}
+
+// The first-login modal only appears while the synthetic seeded lecturer's
+// firstLogin flag is true. Each controlled case flips the flag, exercises
+// the decision UI, and restores the original value in a finally block so
+// later tests never inherit an unset decision.
+async function withSyntheticFirstLogin(run: () => Promise<void>) {
+  const prisma = await getPrisma()
+  const original = await prisma.user.findUniqueOrThrow({
+    where: { id: USER_ID_TEST },
+    select: { firstLogin: true },
+  })
+  await prisma.user.update({
+    where: { id: USER_ID_TEST },
+    data: { firstLogin: true },
+  })
+
+  try {
+    await run()
+  } finally {
+    await prisma.user.update({
+      where: { id: USER_ID_TEST },
+      data: { firstLogin: original.firstLogin },
+    })
+  }
+}
+
+async function interceptInitialSettings(
+  page: Page,
+  captureVariables: (variables: Record<string, unknown>) => void
+) {
+  await page.route('**/api/graphql', async (route) => {
+    const rawBody = route.request().postData()
+    const body = rawBody
+      ? (JSON.parse(rawBody) as {
+          operationName?: string
+          variables?: Record<string, unknown>
+        })
+      : undefined
+
+    if (body?.operationName !== 'ChangeInitialSettings') {
+      await route.continue()
+      return
+    }
+
+    captureVariables(body.variables ?? {})
+    await route.fulfill({
+      json: {
+        data: {
+          changeInitialSettings: {
+            id: USER_ID_TEST,
+            email: LECTURER_EMAIL,
+            shortname: LECTURER_SHORTNAME,
+            locale: 'en',
+            firstLogin: false,
+            catalyst: true,
+            catalystTier: null,
+            __typename: 'User',
+          },
+        },
+      },
+    })
+  })
 }
 
 test('CLEANUP', cleanupTest)
@@ -164,6 +230,79 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       password: LECTURER_PASSWORD,
     })
   })
+
+  // -------------------------------------------------------------------------
+  // Lecturer: explicit first-login demo-content decision
+  // -------------------------------------------------------------------------
+  test('First login requires an explicit demo-content choice before save', async ({
+    page,
+    loginLecturer,
+  }) => {
+    let mutationFired = false
+
+    await interceptInitialSettings(page, () => {
+      mutationFired = true
+    })
+
+    await withSyntheticFirstLogin(async () => {
+      await loginLecturer()
+
+      const saveButton = page.getByTestId('first-login-save-settings')
+      await expect(
+        page.getByTestId('first-login-seed-demo-elements-yes')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('first-login-seed-demo-elements-no')
+      ).toBeVisible()
+      await expect(saveButton).toBeDisabled()
+
+      // Keyboard submission (Enter) must not send the mutation while unset.
+      await page.getByTestId('first-login-shortname').press('Enter')
+      await page.keyboard.press('Enter')
+      await page.waitForTimeout(500)
+      expect(mutationFired).toBe(false)
+      await expect(saveButton).toBeDisabled()
+    })
+  })
+
+  for (const choice of [
+    {
+      label: 'true',
+      value: true,
+      testId: 'first-login-seed-demo-elements-yes',
+    },
+    {
+      label: 'false',
+      value: false,
+      testId: 'first-login-seed-demo-elements-no',
+    },
+  ] as const) {
+    test(`First login submits an exact ${choice.label} demo-content choice`, async ({
+      page,
+      loginLecturer,
+    }) => {
+      let capturedSeedDemoElements: unknown
+
+      await interceptInitialSettings(page, (variables) => {
+        capturedSeedDemoElements = variables.seedDemoElements
+      })
+
+      await withSyntheticFirstLogin(async () => {
+        await loginLecturer()
+        await page.getByTestId(choice.testId).click()
+        await expect(
+          page.getByTestId('first-login-save-settings')
+        ).toBeEnabled()
+        await page.getByTestId('first-login-save-settings').click()
+
+        await expect(
+          page.getByTestId('first-login-save-settings')
+        ).not.toBeVisible({ timeout: 15000 })
+        expect(capturedSeedDemoElements).toBe(choice.value)
+        expect(typeof capturedSeedDemoElements).toBe('boolean')
+      })
+    })
+  }
 
   test('Preserve requested manage page after expired session', async ({
     page,

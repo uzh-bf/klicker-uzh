@@ -36,7 +36,7 @@ import {
   validateElement,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
-import { enMessages as messages } from '../util/messages.js'
+import { deMessages, enMessages as messages } from '../util/messages.js'
 import {
   acceptGamifiedLiveQuizAccountPrompt,
   createQuestionNR,
@@ -173,6 +173,20 @@ async function enterSCQuestionContent(page: Page) {
     if (data.autoSave.choices[ix].correct) {
       await page.getByTestId(`set-correctness-${ix}`).click()
     }
+  }
+}
+
+async function expectRecoveredSCQuestionContent(page: Page, title: string) {
+  await page.getByTestId('load-recovered-element-data').click()
+  await expect(page.getByTestId('insert-question-title')).toHaveValue(title)
+  await expect(page.getByTestId('insert-question-text')).toContainText(
+    data.autoSave.content
+  )
+
+  for (let ix = 0; ix < data.autoSave.choices.length; ix++) {
+    await expect(page.getByTestId(`insert-answer-field-${ix}`)).toContainText(
+      data.autoSave.choices[ix].value
+    )
   }
 }
 
@@ -488,15 +502,17 @@ test.describe('Create different types of elements (with and without sample solut
   })
 
   test.describe('Part 2: Auto-Save functionality for Elements', () => {
-    test.beforeEach(async ({ loginLecturer }) => {
+    test.beforeEach(async ({ loginLecturer, page }) => {
       await loginLecturer()
+      await page.evaluate(() => {
+        localStorage.removeItem('autosave-element-creation')
+      })
     })
 
     test('Verify that empty questions are not stored in local storage (creation)', async ({
       page,
     }) => {
       await page.getByTestId('create-question').click()
-      await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
       await page.getByTestId('create-question').click()
@@ -510,27 +526,177 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue('')
     })
 
-    test('Verify that non-empty questions are stored and loaded correctly on demand (creation)', async ({
+    for (const dismissal of [
+      {
+        label: 'modal close button',
+        dismiss: (page: Page) =>
+          page.getByTestId('close-element-modal').click(),
+      },
+      {
+        label: 'footer close button',
+        dismiss: (page: Page) =>
+          page.getByTestId('close-element-modal-button').click(),
+      },
+      {
+        label: 'Escape',
+        dismiss: (page: Page) => page.keyboard.press('Escape'),
+      },
+    ]) {
+      test(`Immediately preserves the latest dirty creation values via ${dismissal.label}`, async ({
+        page,
+      }) => {
+        const latestTitle = `${data.autoSave.title} - ${dismissal.label}`
+
+        await page.getByTestId('create-question').click()
+        await enterSCQuestionContent(page)
+        await page.getByTestId('insert-question-title').fill(latestTitle)
+        await dismissal.dismiss(page)
+        await expectNotAttached(page.getByTestId('insert-question-title'))
+
+        await page.getByTestId('create-question').click()
+        await expectRecoveredSCQuestionContent(page, latestTitle)
+      })
+    }
+
+    test('Keeps the create form open after an outside pointer click', async ({
       page,
     }) => {
       await page.getByTestId('create-question').click()
-      await enterSCQuestionContent(page)
-      await page.waitForTimeout(3000)
-      await page.getByTestId('close-element-modal').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
 
-      await page.getByTestId('create-question').click()
-      await page.getByTestId('load-recovered-element-data').click()
+      await page.mouse.click(2, 2)
+
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
-      await page.getByTestId('insert-question-text').click()
-      await expect(page.getByTestId('insert-question-text')).toContainText(
-        data.autoSave.content
+    })
+
+    test('Lets the element type picker consume Escape before the create form', async ({
+      page,
+    }) => {
+      await page.getByTestId('create-question').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
+      await page.getByTestId('select-question-type').click()
+      await expect(page.getByRole('listbox')).toBeVisible()
+
+      await page.keyboard.press('Escape')
+
+      await expect(page.getByRole('listbox')).not.toBeVisible()
+      await expect(page.getByTestId('insert-question-title')).toHaveValue(
+        data.autoSave.title
       )
-      for (let ix = 0; ix < data.autoSave.choices.length; ix++) {
+    })
+
+    test('Keeps the create form open while a nested collection modal owns Escape', async ({
+      page,
+    }) => {
+      const collectionName = 'W5 nested Escape ownership collection'
+      const prisma = await getPrisma()
+      await prisma.answerCollection.deleteMany({
+        where: { name: collectionName, ownerId: LECTURER_ID },
+      })
+      await createAnswerCollection({
+        name: collectionName,
+        description: 'Synthetic collection for nested Escape ownership',
+        entries: ['First option', 'Second option'],
+        userId: LECTURER_ID,
+      })
+
+      try {
+        await page.getByTestId('create-question').click()
+        await page
+          .getByTestId('insert-question-title')
+          .fill(data.autoSave.title)
+        await page.getByTestId('select-question-type').click()
+        await page
+          .getByTestId(
+            `select-question-type-${messages.shared.SELECTION.typeLabel}`
+          )
+          .click()
+        await page.getByTestId('select-answer-collection').click()
+        await page
+          .getByTestId(`select-answer-collection-${collectionName}`)
+          .click()
+        await page.getByTestId('inline-edit-answer-collection').click()
         await expect(
-          page.getByTestId(`insert-answer-field-${ix}`)
-        ).toContainText(data.autoSave.choices[ix].value)
+          page.getByTestId('close-answer-collection-edit-modal')
+        ).toBeVisible()
+
+        await page.keyboard.press('Escape')
+
+        await expect(
+          page.getByTestId('close-answer-collection-edit-modal')
+        ).toBeVisible()
+        await expect(page.getByTestId('insert-question-title')).toHaveValue(
+          data.autoSave.title
+        )
+      } finally {
+        await prisma.answerCollection.deleteMany({
+          where: { name: collectionName, ownerId: LECTURER_ID },
+        })
+      }
+    })
+
+    test('Keeps dirty creation values open when recovery storage cannot be written', async ({
+      page,
+    }) => {
+      await page.getByTestId('create-question').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
+
+      await page.evaluate(() => {
+        const originalDescriptor = Object.getOwnPropertyDescriptor(
+          Storage.prototype,
+          'setItem'
+        )
+        Object.defineProperty(window, '__w5SetItemDescriptor', {
+          configurable: true,
+          value: originalDescriptor,
+        })
+        Object.defineProperty(Storage.prototype, 'setItem', {
+          configurable: true,
+          writable: true,
+          value(this: Storage, key: string, value: string) {
+            if (key === 'autosave-element-creation') {
+              throw new DOMException(
+                'Synthetic storage failure',
+                'QuotaExceededError'
+              )
+            }
+
+            return originalDescriptor?.value.call(this, key, value)
+          },
+        })
+      })
+
+      try {
+        await page.getByTestId('close-element-modal').click()
+        await expect(page.getByTestId('insert-question-title')).toHaveValue(
+          data.autoSave.title
+        )
+        await expect(
+          page.getByText(messages.shared.generic.systemError)
+        ).toBeVisible()
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem('autosave-element-creation')
+          )
+        ).toBeNull()
+      } finally {
+        await page.evaluate(() => {
+          const descriptor = (
+            window as typeof window & {
+              __w5SetItemDescriptor?: PropertyDescriptor
+            }
+          ).__w5SetItemDescriptor
+          if (descriptor) {
+            Object.defineProperty(Storage.prototype, 'setItem', descriptor)
+          }
+          delete (
+            window as typeof window & {
+              __w5SetItemDescriptor?: PropertyDescriptor
+            }
+          ).__w5SetItemDescriptor
+        })
       }
     })
 
@@ -567,6 +733,8 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId('insert-question-title')).toBeVisible()
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
@@ -689,6 +857,8 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-text')).toContainText(
         data.autoSave.contentEdited
       )
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId('insert-question-title')).toBeVisible()
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
@@ -726,6 +896,86 @@ test.describe('Create different types of elements (with and without sample solut
     test('Cleanup: Delete the auto-saved element', async ({ page }) => {
       await deleteElement(page, data.autoSave.titleEdited)
     })
+  })
+  test.describe('Part 2b: Element type picker explains every type', () => {
+    const typeKeys = [
+      'SC',
+      'MC',
+      'KPRIM',
+      'FREE_TEXT',
+      'NUMERICAL',
+      'CONTENT',
+      'FLASHCARD',
+      'SELECTION',
+      'CASE_STUDY',
+    ] as const
+
+    for (const locale of ['en', 'de'] as const) {
+      test(`Explains all nine element types and keeps selection compact (${locale})`, async ({
+        page,
+        loginLecturer,
+      }) => {
+        await loginLecturer()
+        const msgs = locale === 'en' ? messages : deMessages
+        const urlPrefix = locale === 'en' ? '' : '/de'
+
+        await page.goto(env('URL_MANAGE') + urlPrefix + '/')
+        await page.getByTestId('create-question').click()
+
+        // The create form explains every type before selection.
+        await expect(
+          page.getByTestId('element-type-immutable-notice')
+        ).toBeVisible()
+        await expect(
+          page.getByTestId('element-type-immutable-notice')
+        ).toContainText(msgs.manage.elements.elementTypeImmutableNotice)
+
+        await page.getByTestId('select-question-type').click()
+        for (const typeKey of typeKeys) {
+          const type = msgs.shared[typeKey]
+          const option = page.getByTestId(
+            'select-question-type-' + type.typeLabel
+          )
+          await expect(option).toContainText(type.typeLabel)
+          await expect(option).toContainText(type.description)
+        }
+
+        // Selecting an option keeps the trigger compact (label only, no description).
+        await page
+          .getByTestId('select-question-type-' + msgs.shared.SC.typeLabel)
+          .click()
+        await expect(page.getByTestId('select-question-type')).toContainText(
+          msgs.shared.SC.typeLabel
+        )
+        await expect(
+          page.getByTestId('select-question-type')
+        ).not.toContainText(msgs.shared.SC.description)
+        await page.getByTestId('close-element-modal').click()
+
+        // Edit mode keeps the type select disabled.
+        const probeTitle = `Element type picker probe ${locale}`
+        await createQuestionSC({
+          name: probeTitle,
+          content: data.update.content1,
+          choices: data.update.choices1,
+          userId: LECTURER_ID,
+        })
+        await page.reload()
+
+        await page.getByTestId('elements-search-input').fill(probeTitle)
+        await page.keyboard.press('Enter')
+        await page.getByTestId(`edit-element-${probeTitle}`).click()
+        const editTypeSelect = page.getByTestId('select-question-type')
+        await expect(editTypeSelect).toBeDisabled()
+        await expect(editTypeSelect).not.toContainText(
+          msgs.manage.elements.elementTypeImmutableNotice
+        )
+        await page.getByTestId('close-element-modal').click()
+
+        // Cleanup the probe element.
+        await deleteElement(page, probeTitle)
+      })
+    }
   })
 
   test.describe('Part 3: Element instance updates', () => {

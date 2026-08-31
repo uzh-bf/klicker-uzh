@@ -28,6 +28,9 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
      variables so production builds remain independent of external font
      services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
+   - Normal library Element creation is the only caller that opts into draft-preserving dismissal. Route its modal close button, footer Close, and Escape through one Formik-values flush/readback guard; keep edit, duplicate, and template creation on the Escape-disabled default. See [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
+   - Explain every Element type before selection: each picker option shows the existing type label plus a concise authoring description from `apps/docs/docs/tutorials/supported_element_types.mdx`, the type label stays the option's `shortLabel` so the selected trigger remains compact, and normal library creation shows one paired-language notice that the type cannot be changed after creation. Preserve existing values, ordering, and `select-question-type-*` `data-cy` hooks; keep edit, duplicate, and template semantics unchanged. See [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
+   - A Boolean the user must decide explicitly stays `boolean | undefined` until chosen: use a design-system `RadioGroup` with stable Yes and No `data-cy` hooks, convert the radio string to a real boolean at the UI boundary, keep Save disabled and block keyboard/form submission while unset, and never send `undefined` to the mutation (no `?? false` fallback). See [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
    - Assessment comparison charts use equal-width categorical bars and a
      labelled 0–100 percentile ruler; keep the exact range/count table and

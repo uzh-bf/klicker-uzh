@@ -336,44 +336,60 @@ export default {
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Studierende wählen genau eine der vorgegebenen Antwortmöglichkeiten.',
       text: 'Bitte eine einzige Option auswählen.',
       richtext: 'Bitte <b>eine einzige</b> Option auswählen.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Studierende wählen eine oder mehrere der vorgegebenen Antwortmöglichkeiten.',
       text: 'Bitte eine oder mehrere Optionen auswählen.',
       richtext: 'Bitte <b>eine oder mehrere</b> Optionen auswählen.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Studierende beurteilen genau vier Aussagen jeweils als richtig oder falsch.',
       text: 'Beurteile die Aussagen auf ihre Richtigkeit.',
       richtext: 'Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Freitext (FT)',
+      description:
+        'Studierende antworten in Freitext, optional begrenzt durch eine maximale Länge.',
       text: 'Bitte eine Antwort eingeben.',
       richtext: 'Bitte eine <b>Antwort</b> eingeben.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerisch (NR)',
+      description:
+        'Studierende antworten mit einer Zahl, optional begrenzt durch Bereich, Genauigkeit und Einheit.',
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Inhalt (CT)',
+      description:
+        'Stellt Studierenden zusätzliche Informationen bereit, ohne Frage.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Lernkarte (FC)',
+      description:
+        'Studierende üben Inhalte auswendig und bewerten selbst, ob sie diese erinnert haben.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Auswahl (SE)',
+      description:
+        'Studierende wählen eine bestimmte Anzahl von Elementen aus einer Antwort-Sammlung.',
       text: 'Bitte wählen Sie die richtigen Antworten aus der Liste.',
       richtext:
         'Bitte wählen Sie die <b>richtigen Antworten</b> aus der Liste.',
@@ -381,6 +397,8 @@ export default {
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Fallstudie (CS)',
+      description:
+        'Studierende bewerten Elemente anhand von Kriterien innerhalb einer oder mehrerer Fallszenarien.',
       text: 'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
       richtext:
         'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
@@ -2207,6 +2225,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyElement: 'Element bearbeiten',
       useElementInActivities: 'Element in Aktivitäten verwenden',
       elementType: 'Elementtyp',
+      elementTypeImmutableNotice:
+        'Der Elementtyp kann nach der Erstellung nicht mehr geändert werden. Sie können das Element duplizieren, um einen anderen Typ zu erstellen.',
       selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',

@@ -463,6 +463,7 @@ function Index() {
       {isElementCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsElementCreationModalOpen}
+          preserveDraftOnDismiss
           triggerSuccessToast={() =>
             toast({
               type: 'success',
