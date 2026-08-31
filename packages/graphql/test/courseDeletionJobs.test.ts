@@ -1070,6 +1070,40 @@ describe('course deletion jobs', () => {
     ])
   })
 
+  it('classifies access errors with cyclic GraphQL error wrappers', async () => {
+    const { ctx } = createContext()
+    const job = await startCourseDeletion({ id: 'course-id' }, ctx)
+    const cyclicError: {
+      errors: unknown[]
+      graphQLErrors: unknown[]
+      message: string
+    } = {
+      errors: [{ extensions: { code: 'FORBIDDEN' } }],
+      graphQLErrors: [],
+      message: 'Access was revoked',
+    }
+    cyclicError.graphQLErrors.push(cyclicError)
+    serviceMocks.deleteCourse.mockRejectedValueOnce(cyclicError)
+
+    await expect(
+      handleProcessCourseDeletion(
+        { jobId: job!.id },
+        createGlobalContext(ctx) as never,
+        createExecutionContext() as never
+      )
+    ).resolves.toBe(false)
+
+    await expect(
+      getCourseDeletionStatuses({ ids: [job!.id] }, ctx)
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: job!.id,
+        status: 'FAILED',
+        errorType: 'access',
+      }),
+    ])
+  })
+
   it('does not delete a course that became an assessment before processing', async () => {
     const { ctx, findUnique } = createContext()
     const job = await startCourseDeletion({ id: 'course-id' }, ctx)

@@ -311,21 +311,38 @@ async function reconcileTerminalLiveQuizResponseAdmissions(
 }
 
 function getGraphQLErrorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined
+  const pendingErrors = [error]
+  const visitedErrors = new WeakSet<object>()
 
-  const extensions = (error as { extensions?: { code?: unknown } }).extensions
-  if (typeof extensions?.code === 'string') return extensions.code
+  while (pendingErrors.length > 0) {
+    const currentError = pendingErrors.pop()
+    if (
+      !currentError ||
+      typeof currentError !== 'object' ||
+      visitedErrors.has(currentError)
+    ) {
+      continue
+    }
+    visitedErrors.add(currentError)
 
-  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
-  for (const graphQLError of graphQLErrors ?? []) {
-    const code = getGraphQLErrorCode(graphQLError)
-    if (code) return code
-  }
+    const extensions = (currentError as { extensions?: { code?: unknown } })
+      .extensions
+    if (typeof extensions?.code === 'string') return extensions.code
 
-  const errors = (error as { errors?: unknown[] }).errors
-  for (const nestedError of errors ?? []) {
-    const code = getGraphQLErrorCode(nestedError)
-    if (code) return code
+    const errors = (currentError as { errors?: unknown }).errors
+    if (Array.isArray(errors)) {
+      for (let index = errors.length - 1; index >= 0; index--) {
+        pendingErrors.push(errors[index])
+      }
+    }
+
+    const graphQLErrors = (currentError as { graphQLErrors?: unknown })
+      .graphQLErrors
+    if (Array.isArray(graphQLErrors)) {
+      for (let index = graphQLErrors.length - 1; index >= 0; index--) {
+        pendingErrors.push(graphQLErrors[index])
+      }
+    }
   }
 
   return undefined
