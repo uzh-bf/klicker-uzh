@@ -113,6 +113,7 @@ describe('semantic free-text evaluation worker', () => {
       task_bundle_id: attempt.id,
       question: { language: 'en' },
       response: { text: 'It spreads investments across assets.' },
+      reference_solution: semanticConfig.reference_solution,
     })
     expect(requestBody).not.toHaveProperty('participantId')
     expect(requestBody).not.toHaveProperty('courseId')
@@ -188,6 +189,68 @@ describe('semantic free-text evaluation worker', () => {
         where: { freeTextAttempt: { cycleId: completed!.cycleId } },
       })
     ).toBe(2)
+  })
+
+  it('omits a null reference solution from the evaluator request', async () => {
+    const elementData = fixture.instance.elementData
+    if (elementData.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text fixture')
+    }
+    await prisma.elementInstance.update({
+      where: { id: fixture.instance.id },
+      data: {
+        elementData: {
+          ...elementData,
+          options: {
+            ...elementData.options,
+            semanticEvaluation: {
+              ...semanticConfig,
+              solution_reveal_enabled: false,
+              reference_solution: null,
+            },
+          },
+        },
+      },
+    })
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads investments across assets.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    let requestBody: Record<string, unknown> | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (_url, init) => {
+        requestBody = JSON.parse(String(init?.body))
+        return new Response(
+          JSON.stringify(
+            evaluatorResponse(pending.currentAttempt!.id, 60, 'partial')
+          ),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      })
+    )
+
+    await handleEvaluateFreeTextAttempt(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+      },
+      { prisma } as never,
+      {} as never
+    )
+
+    expect(requestBody).not.toHaveProperty('reference_solution')
   })
 
   it('classifies the highest lecturer-defined rubric anchor as met', async () => {
