@@ -11,7 +11,7 @@ import {
 } from '@klicker-uzh/product-tours/react'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { resolveFeatureTarget } from './featureTargets'
 import { autoPresentSuppressed } from './suppressedRoutes'
 
@@ -24,6 +24,18 @@ const TOUR_IDS = [MANAGE_ONBOARDING_TOUR_ID]
 // `apps/docs/docs`.
 const DOCS_BASE_URL = 'https://www.klicker.uzh.ch'
 
+const TOUR_REPLAY_QUERY_PARAM = 'tour'
+
+/**
+ * Where an entry point sends a lecturer who asks to see the tour again.
+ *
+ * The steps about creating elements and activities only exist on the home
+ * page, so a replay started anywhere else would quietly show a shorter tour
+ * than the one that was promised. Navigating first and carrying the request in
+ * the URL keeps every replay complete, wherever it was triggered from.
+ */
+export const TOUR_REPLAY_HREF = '/?tour=1'
+
 /**
  * Runs the lecturer onboarding tour: a short walk through the manage
  * interface. Most steps point at the header, which is on every page; the two
@@ -33,9 +45,9 @@ const DOCS_BASE_URL = 'https://www.klicker.uzh.ch'
  * It starts on its own at most once per account — the account has no stored
  * completion — and at most once per browser tab across every overlay, which the
  * shared session slot in `@klicker-uzh/product-tours` enforces. Ending the tour
- * in any way counts as done, so nobody is walked through it twice; the replay
- * from the support modal ignores both caps and leaves the stored completion
- * untouched.
+ * in any way counts as done, so nobody is walked through it twice; a replay —
+ * from the account menu or from the support modal — ignores both caps and
+ * leaves the stored completion untouched.
  *
  * Exactly one mount may exist per page, because two would both claim the
  * session slot in the same render pass. The manage header owns it.
@@ -157,7 +169,7 @@ export function useManageOnboardingTour(): UseProductTourResult {
     [t]
   )
 
-  return useProductTour({
+  const tour = useProductTour({
     steps,
     labels,
     autoStart: statesLoaded ? !completed : error ? false : null,
@@ -166,4 +178,24 @@ export function useManageOnboardingTour(): UseProductTourResult {
     onSkip: recordCompletion,
     onDismiss: recordCompletion,
   })
+
+  const { startTour } = tour
+
+  // A replay asked for from another route arrives as a query parameter. It is
+  // spent the moment it is seen and stripped from the URL in the same step, so
+  // a reload or a bookmarked link does not reopen the tour later; that strip is
+  // also what lets the same entry point be used twice in one page view.
+  useEffect(() => {
+    if (!router.isReady) return
+    if (router.query[TOUR_REPLAY_QUERY_PARAM] !== '1') return
+
+    const { [TOUR_REPLAY_QUERY_PARAM]: _replayRequest, ...query } = router.query
+    void router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+    })
+
+    startTour()
+  }, [router, startTour])
+
+  return tour
 }

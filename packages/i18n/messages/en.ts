@@ -1839,10 +1839,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       progress: 'Step {current} of {total}',
       replayTitle: 'Take the tour',
       replayDesc: 'A short walk through the KlickerUZH interface',
+      replayMenu: 'Show intro',
       onboarding: {
         welcomeTitle: 'Welcome to KlickerUZH',
         welcomeBody:
-          'A short tour shows you where everything lives. You can leave it at any time and start it again from the support menu.',
+          'A short tour shows you where everything lives. You can leave it at any time and start it again from the account menu.',
         welcomeLink: 'Getting started',
         navigationTitle: 'Library, activities and courses',
         navigationBody:

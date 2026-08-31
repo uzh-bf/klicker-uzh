@@ -27,7 +27,10 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { featureTargetProps } from '../onboarding/featureTargets'
-import { useManageOnboardingTour } from '../onboarding/useManageOnboardingTour'
+import {
+  TOUR_REPLAY_HREF,
+  useManageOnboardingTour,
+} from '../onboarding/useManageOnboardingTour'
 import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
 import { useProductUpdateSpotlight } from '../productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../productUpdates/useProductUpdates'
@@ -311,6 +314,17 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             ]
           : []),
         {
+          // The same entry the chat sidebar offers, so the introduction is
+          // where a user looks for account-level actions on either surface.
+          // The design-system dropdown item carries no icon slot, so this one
+          // is label-only where the chat entry shows a compass.
+          key: 'onboarding-tour',
+          type: 'link',
+          label: t('manage.productTours.replayMenu'),
+          onClick: () => router.push(TOUR_REPLAY_HREF),
+          data: { cy: 'menu-start-tour' },
+        },
+        {
           key: 'separator-token-logout',
           type: 'separator',
         },
@@ -419,7 +433,9 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           onClose={() => setShowSupportModal(false)}
           onStartTour={() => {
             setShowSupportModal(false)
-            tour.startTour()
+            // Both replay entry points take the same route, so the tour a
+            // lecturer gets does not depend on which one they found.
+            router.push(TOUR_REPLAY_HREF)
           }}
           user={user}
         />
