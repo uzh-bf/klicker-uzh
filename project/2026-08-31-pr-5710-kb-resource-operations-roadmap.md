@@ -1,10 +1,12 @@
-# Knowledge Base resource operations roadmap
+# Knowledge Base resource operations roadmap — PR [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710)
 
 Date: 2026-08-31
 
-Status: execution in progress — W1 implementation
+Status: execution in progress — W1 acceptance and publication
 
 Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-operations-w1`, branch `rs/kb-resource-operations-w1`
+
+PR: [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710), targeting `feat/kb-element-generation-followups`
 
 Proposed delivery target: the current KB/KG feature stack, with the live PR base resolved again before implementation. The ultimate integration target remains `v3-ai` unless the user names another target. This roadmap does not include the `v3-ai` to `v3` promotion branch.
 
@@ -355,3 +357,11 @@ The package's final review must explicitly verify that source type and material 
 - The W1 branch was pushed to `origin/rs/kb-resource-operations-w1` at `930aa455593d0388e9afeae61b72a6b496006ac9` and opened as draft PR `#5710` against `feat/kb-element-generation-followups`.
 - The initial PR readback reports `MERGEABLE` and GitGuardian passing; the repository checks, gitleaks, trusted policy, and OpenCodeReview were pending at publication. Build-only jobs were skipped by the branch filters.
 - The PR description carries the complete branch accounting, verification evidence, deferred browser states, and W2 follow-up. The branch remains draft; no merge, deployment, live ingestion, graph generation, production action, secret access/write, cluster write, or cleanup action has occurred.
+
+### 2026-08-31 — W1 publication and current CI readback
+
+- The published branch now points to `ed676ad85c9a0695186610566b446d6157e13d79`, and PR [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710) targets `feat/kb-element-generation-followups` and reports `MERGEABLE`.
+- A `ready_for_review` event at `2026-08-31T20:00:19Z` was recorded for the account `rschlaefli`; this task did not issue that transition. The PR is currently non-draft, while the plan's intended state remains draft until the deferred acceptance evidence is resolved.
+- The current W1 check set is still running. The failed `test-mcp-lecturer-status` mirror belongs to run `33433254693`: its log shows the underlying `test-mcp-lecturer` job was cancelled and the mirror failed on `result: cancelled`. A replacement MCP run `33433638633` for the same head is in progress, so the earlier failure is a cancelled-predecessor artifact rather than source evidence.
+- Current readback also shows GitGuardian, gitleaks, trusted policy, filters, Docker image builds, and the GraphQL status mirror passing; GraphQL, unit, MCP, repository check, initialization, and the manual final-review route remain pending or in progress. The deferred browser evidence and healthy routed runtime remain required before merge.
+- W1 remains incomplete at the acceptance gate. W2, merge, deployment, live ingestion, graph generation, production actions, secret access/write, cluster writes, and cleanup remain out of scope.
