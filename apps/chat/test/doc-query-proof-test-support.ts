@@ -65,6 +65,11 @@ export function proofUuid(index: number): string {
   return `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`
 }
 
+function getChatbotCount(index: number, extraChatbotCases: number): number {
+  if (index > 0 && index <= extraChatbotCases) return 2
+  return 1
+}
+
 export function createTemporaryDirectoryRegistry() {
   const directories: string[] = []
   return {
@@ -95,7 +100,7 @@ export function createProofManifest({
     id: `corpus_${index + 1}`,
     kbId: proofUuid(index + 1),
     chatbotIds: Array.from(
-      { length: index === 0 ? 1 : index <= extraChatbotCases ? 2 : 1 },
+      { length: getChatbotCount(index, extraChatbotCases) },
       () => proofUuid(chatbotIndex++)
     ),
     positive: {
@@ -458,6 +463,7 @@ export function defineProofSupervisorSuite(
   config: {
     dummyEnvironment: () => Promise<Record<string, string>>
     writeDummy: (source: string) => Promise<{ path: string; lockPath: string }>
+    prepareDuplicateLock?: (lockPath: string) => Promise<() => Promise<void>>
     passedReceiptSource: (extra?: string, preservation?: string) => string
     failedReceiptSource: () => string
   }
@@ -657,16 +663,25 @@ export function defineProofSupervisorSuite(
 
     test('refuses a duplicate invocation before spawning', async () => {
       const dummy = await config.writeDummy(config.passedReceiptSource())
-      await writeFile(dummy.lockPath, '')
-      const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
-        childPath: dummy.path,
-        childArgs: [],
-        lockPath: dummy.lockPath,
-      })
-      expect(receipt.failureClass).toBe('duplicate_refused')
-      expect(receipt.exitCode).toBeNull()
+      let release = async () => {}
+      if (config.prepareDuplicateLock) {
+        release = await config.prepareDuplicateLock(dummy.lockPath)
+      } else {
+        await writeFile(dummy.lockPath, '')
+      }
+      try {
+        const receipt = await behaviors.superviseProof({
+          sourceEnvironment:
+            (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+          childPath: dummy.path,
+          childArgs: [],
+          lockPath: dummy.lockPath,
+        })
+        expect(receipt.failureClass).toBe('duplicate_refused')
+        expect(receipt.exitCode).toBeNull()
+      } finally {
+        await release()
+      }
     })
   })
 }

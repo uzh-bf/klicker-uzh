@@ -1,4 +1,5 @@
-import { open, stat, unlink, writeFile } from 'node:fs/promises'
+import { stat, unlink, writeFile } from 'node:fs/promises'
+import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, test } from 'vitest'
 import {
   createMcpTransport,
@@ -41,6 +42,18 @@ const receiptSources = createProofReceiptSources({
 const proofRegistry = createTemporaryDirectoryRegistry()
 const writeDummy = createProofChildWriter(proofRegistry)
 afterEach(() => proofRegistry.cleanup())
+
+async function prepareDuplicateLock(lockPath: string) {
+  const database = new DatabaseSync(`${lockPath}.guard.sqlite`, { timeout: 0 })
+  database.exec('BEGIN EXCLUSIVE')
+  return async () => {
+    try {
+      database.exec('ROLLBACK')
+    } finally {
+      database.close()
+    }
+  }
+}
 
 defineProofManifestSuite(
   'PRD',
@@ -186,12 +199,49 @@ defineProofSupervisorSuite(
   {
     dummyEnvironment: proofDummyEnvironment,
     writeDummy,
+    prepareDuplicateLock,
     passedReceiptSource: receiptSources.passedReceiptSource,
     failedReceiptSource: receiptSources.failedReceiptSource,
   }
 )
 
 describe('PRD Doc Query proof supervisor', () => {
+  test('refuses a concurrent proof while the advisory lock is held', async () => {
+    const dummy = await writeDummy(
+      receiptSources.passedReceiptSource(
+        'await new Promise((resolve) => setTimeout(resolve, 200))'
+      )
+    )
+    const first = superviseProof({
+      sourceEnvironment:
+        (await proofDummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try {
+        await stat(`${dummy.lockPath}.guard.sqlite`)
+        break
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      }
+    }
+
+    const second = await superviseProof({
+      sourceEnvironment:
+        (await proofDummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+
+    expect(second.failureClass).toBe('duplicate_refused')
+    expect((await first).result).toBe('passed')
+  })
+
   test('does not remove a replacement proof lock during cleanup', async () => {
     const dummy = await writeDummy(
       receiptSources.passedReceiptSource(
@@ -222,30 +272,24 @@ describe('PRD Doc Query proof supervisor', () => {
     expect((await stat(dummy.lockPath)).ino).toBe(replacement.ino)
   })
 
-  test('cleans up when reading the acquired proof lock identity fails', async () => {
+  test('closes the advisory proof lock when child setup fails', async () => {
     const dummy = await writeDummy(receiptSources.passedReceiptSource())
-    const handle = await open(dummy.lockPath, 'wx', 0o600)
     let closed = false
     const receipt = await superviseProof({
       sourceEnvironment:
         (await proofDummyEnvironment()) as unknown as NodeJS.ProcessEnv,
-      childPath: dummy.path,
+      childPath: `${dummy.path}.missing`,
       childArgs: [],
       lockPath: dummy.lockPath,
       acquireLockForProof: async () =>
         ({
-          stat: async () => {
-            throw new Error('synthetic stat failure')
-          },
           close: async () => {
             closed = true
-            await handle.close()
           },
-        }) as unknown as typeof handle,
+        }) as unknown as { close: () => Promise<void> },
     })
 
     expect(receipt.failureClass).toBe('child_failed')
     expect(closed).toBe(true)
-    await expect(stat(dummy.lockPath)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 })

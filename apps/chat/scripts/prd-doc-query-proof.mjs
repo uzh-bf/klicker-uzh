@@ -1,9 +1,11 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { open, readFile, stat, unlink } from 'node:fs/promises'
+import { constants } from 'node:fs'
+import { open, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
+import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -790,24 +792,52 @@ function killProcessGroup(child, signal) {
   }
 }
 
-async function acquireLock(path) {
-  try {
-    return await open(path, 'wx', 0o600)
-  } catch (error) {
-    if (error?.code === 'EEXIST') return null
-    throw error
-  }
+function isDatabaseLockError(error) {
+  return (
+    typeof error?.message === 'string' &&
+    error.message.includes('database is locked')
+  )
 }
 
-async function releaseOwnedLock(path, identity) {
-  // Removing and replacing this lock while its launcher is still running is
-  // unsupported. Stale-lock recovery starts only after the owner has stopped.
+function lockGuardPath(path) {
+  return `${path}.guard.sqlite`
+}
+
+async function acquireLock(path) {
+  let database
+  const marker = await open(
+    path,
+    constants.O_WRONLY |
+      constants.O_CREAT |
+      constants.O_APPEND |
+      constants.O_NOFOLLOW,
+    0o600
+  )
   try {
-    const current = await stat(path)
-    if (current.dev !== identity.dev || current.ino !== identity.ino) return
-    await unlink(path)
+    database = new DatabaseSync(lockGuardPath(path), { timeout: 0 })
+    database.exec('BEGIN EXCLUSIVE')
+    return {
+      // Keep the exclusive transaction open for the complete supervised
+      // proof. The guard database and marker are persistent and never unlinked
+      // during cleanup, so an old owner cannot remove a replacement marker.
+      close: async () => {
+        try {
+          database.exec('ROLLBACK')
+        } finally {
+          database.close()
+        }
+      },
+    }
   } catch (error) {
-    if (error?.code !== 'ENOENT') throw error
+    try {
+      database?.close()
+    } catch {
+      // The connection may not have opened.
+    }
+    if (isDatabaseLockError(error)) return null
+    throw error
+  } finally {
+    await marker.close()
   }
 }
 
@@ -830,7 +860,6 @@ export async function superviseProof({
       elapsedMs: 0,
     }
   }
-  let lockIdentity
   let child
   let interrupted = false
   let timedOut = false
@@ -839,7 +868,6 @@ export async function superviseProof({
   const signalHandlers = new Map()
 
   try {
-    lockIdentity = await lock.stat()
     const environment = minimalChildEnvironment(sourceEnvironment, process.pid)
     child = spawn(process.execPath, [resolve(childPath), ...childArgs], {
       detached: true,
@@ -930,11 +958,6 @@ export async function superviseProof({
     if (forceTimer) clearTimeout(forceTimer)
     for (const [signal, handler] of signalHandlers) {
       process.removeListener(signal, handler)
-    }
-    if (lockIdentity) {
-      await releaseOwnedLock(lockPath, lockIdentity).catch(() => undefined)
-    } else {
-      await unlink(lockPath).catch(() => undefined)
     }
     await lock.close().catch(() => undefined)
   }
