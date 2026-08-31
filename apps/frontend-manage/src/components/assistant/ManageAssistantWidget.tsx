@@ -319,7 +319,7 @@ export function ManageAssistantWidget() {
   }, [closeWidget, open])
 
   useEffect(() => {
-    if (!open || isDesktop) return
+    if (!open || isDesktop || !enabled || !assistantUrl) return
 
     const panel = panelRef.current
     if (!panel) return
@@ -367,10 +367,10 @@ export function ManageAssistantWidget() {
       panelElement.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('focusin', handleFocusIn)
     }
-  }, [isDesktop, open])
+  }, [assistantUrl, enabled, isDesktop, open])
 
   useEffect(() => {
-    if (!open || isDesktop) return
+    if (!open || isDesktop || !enabled || !assistantUrl) return
 
     const appContent = document.getElementById(MANAGE_ASSISTANT_APP_CONTENT_ID)
     if (!appContent) return
@@ -388,7 +388,7 @@ export function ManageAssistantWidget() {
         appContent.setAttribute('aria-hidden', previousAriaHidden)
       }
     }
-  }, [isDesktop, open])
+  }, [assistantUrl, enabled, isDesktop, open])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY)

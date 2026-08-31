@@ -1051,3 +1051,14 @@ follow_up_stacks:
 - Next: Run the required simplifier and A4 slice-risk review on the committed
   implementation, then publish the reviewed branch and require exact-head
   hosted browser evidence at the desktop, compact, and breakpoint viewports.
+- A4 slice review: The responsive and storage paths were clear, but the risk
+  review found that compact isolation could remain active if an auth-expiry
+  route changed the widget to `/login` while it was open. The widget returned
+  no panel without changing the isolation effect's previous dependency set,
+  which could leave the login form inert.
+- A4 review correction: Both compact-only effects now guard the actual enabled
+  assistant render state and assistant URL, and clean up when either changes.
+  The affected Manage typecheck and diff checks pass after the correction.
+- Next: Commit the route-exit correction, rerun the required local gate, then
+  publish the reviewed branch and require exact-head hosted browser evidence
+  at the desktop, compact, and breakpoint viewports.
