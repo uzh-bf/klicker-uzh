@@ -23,13 +23,15 @@ import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
 import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
+import { useEscapeRoom } from '../../../../components/hooks/useEscapeRoom'
+import EscapeRoomOverlay from '../../../../components/practiceQuiz/EscapeRoomOverlay'
 
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
 
-  const { data, loading, error, subscribeToMore } = useQuery(
+  const { data, loading, error, subscribeToMore, refetch } = useQuery(
     GroupActivityDetailsDocument,
     {
       variables: {
@@ -61,6 +63,24 @@ function GroupActivityDetails() {
     }
   )
 
+  const hookActivity = data?.groupActivityDetails
+  const isEscapeRoom = !!hookActivity?.escapeRoomConfig
+  const {
+    attempt,
+    isStarted,
+    isCompleted,
+    isExpired,
+    remainingSeconds,
+    startAttempt,
+    loading: attemptLoading,
+    refetch: refetchEscapeRoom,
+  } = useEscapeRoom({
+    activity: hookActivity,
+    activityType: 'groupActivity',
+    groupId: router.query.groupId as string,
+    refetch,
+  })
+
   if (!data || loading) {
     return (
       <Layout>
@@ -78,6 +98,8 @@ function GroupActivityDetails() {
   }
 
   const groupActivity = data.groupActivityDetails
+  const escapeRoomHintPenalty =
+    groupActivity.escapeRoomConfig?.hintPenalty ?? 120
   const instance = groupActivity.activityInstance
   const maxTotalPoints = instance?.results?.grading.reduce(
     (acc: number, grading: GroupActivityGrading) => {
@@ -100,6 +122,23 @@ function GroupActivityDetails() {
         setActivityEnded={setActivityEnded}
         subscribeToMore={subscribeToMore}
       />
+      {isEscapeRoom && !!instance && (
+        <EscapeRoomOverlay
+          isStarted={isStarted}
+          isCompleted={isCompleted}
+          isExpired={isExpired}
+          remainingSeconds={remainingSeconds}
+          timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
+          hintPenalty={escapeRoomHintPenalty}
+          onStart={async () => {
+            await startAttempt()
+            await refetch()
+          }}
+          loading={attemptLoading}
+          attempt={attempt}
+          introText={groupActivity.escapeRoomConfig?.introText}
+        />
+      )}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
@@ -258,6 +297,12 @@ function GroupActivityDetails() {
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
                   'DD.MM.YYYY HH:mm:ss'
                 )}
+                groupActivityId={isEscapeRoom ? groupActivity.id : undefined}
+                groupId={isEscapeRoom ? groupActivity.group.id : undefined}
+                hintPenalty={isEscapeRoom ? escapeRoomHintPenalty : undefined}
+                onEscapeRoomStateChanged={
+                  isEscapeRoom ? refetchEscapeRoom : undefined
+                }
               />
             </div>
           )}

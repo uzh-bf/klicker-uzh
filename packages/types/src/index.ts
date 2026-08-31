@@ -23,7 +23,10 @@ export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
 
 export const ESCAPE_ROOM_GRACE_SECONDS = 5
 
-export type EscapeRoomLifecycleTargetKind = 'practiceQuiz' | 'microLearning'
+export type EscapeRoomLifecycleTargetKind =
+  | 'practiceQuiz'
+  | 'microLearning'
+  | 'groupActivity'
 
 export function getEscapeRoomLifecycleClaimKey(
   targetKind: EscapeRoomLifecycleTargetKind,
@@ -806,6 +809,7 @@ export type GroupActivityDecision = {
   contentResponse?: SingleQuestionResponseContent['viewed'] | null
   selectionResponse?: SingleQuestionResponseSelection['selection'] | null
   caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
+  qrScanResponse?: string | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

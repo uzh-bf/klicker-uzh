@@ -3662,6 +3662,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       extendGroupActivityDescription:
         'Use this dialogue to modify the end date of the group activity. Please note that only future dates can be set as end dates.',
       gradeGroupActivity: 'Grade Group Activity',
+      monitorGroupActivity: 'Monitor Group Activity',
       courseElements: 'Course Elements',
       ltiLinks: 'LTI Links',
       enableGamification: 'Enable gamification',
