@@ -142,7 +142,7 @@ function ChatbotCreateModal({
                 data={{ cy: 'submit-create-chatbot' }}
               >
                 <Button.Label>
-                  {t('manage.resources.createChatbot')}
+                  {t('manage.resources.createChatbotAndContinue')}
                 </Button.Label>
               </Button>
             </div>

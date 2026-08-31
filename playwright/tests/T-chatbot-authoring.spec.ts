@@ -57,10 +57,23 @@ async function createChatbot(
   await selectOption(page, '[data-cy="create-chatbot-course"]', 'Testkurs')
   await page.getByTestId('submit-create-chatbot').click()
   await expect(page.getByTestId(`chatbot-${name}`)).toBeVisible()
-  await expect(page.getByTestId('chatbot-name')).toHaveValue(name)
-  await expect(page.getByTestId('chatbot-course-readonly')).toHaveText(
-    'Testkurs'
-  )
+  await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
+  await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
+
+  const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
+  expect(chatbotId).toBeTruthy()
+  return chatbotId as string
+}
+
+async function navigateToSetupStep(
+  page: Parameters<typeof fillEditorField>[0],
+  step: 'basics' | 'disclaimer' | 'review'
+) {
+  const url = new URL(page.url())
+  url.searchParams.set('view', 'setup')
+  url.searchParams.set('step', step)
+  await page.goto(url.toString())
+  await expect(page.getByTestId(`chatbot-setup-${step}`)).toBeVisible()
 }
 
 async function setPublishingAuthorization(enabled: boolean) {
@@ -228,6 +241,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
 
     await createChatbot(page, FIRST_CHATBOT)
+    await navigateToSetupStep(page, 'basics')
 
     await page
       .getByTestId('chatbot-description')
@@ -236,9 +250,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-name')).toBeDisabled()
     await expect(page.getByTestId('chatbot-description')).toBeDisabled()
     metadataRequestGate.release()
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
-    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('disclaimer')
 
     await expect(page.getByTestId('content-input-bold')).toBeVisible()
     await expect(page.getByTestId('content-input-italic')).toBeVisible()
@@ -305,10 +320,35 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'aria-pressed',
       'false'
     )
+    const disclaimerUrl = page.url()
+    const pendingDisclaimerNavigation = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.message()).toBe(
+          'Please wait until the current chatbot change has finished saving.'
+        )
+        return dialog.dismiss()
+      })
+    await page.getByTestId('chatbot-setup-back').click()
+    await pendingDisclaimerNavigation
+    await expect.poll(() => page.url()).toBe(disclaimerUrl)
     disclaimerRequestGate.release()
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
-    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('review')
+    await expect(page.getByTestId('chatbot-review-name')).toHaveText(
+      FIRST_CHATBOT
+    )
+
+    await page.getByTestId('chatbot-setup-edit-basics').click()
+    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
+    await page.getByTestId('chatbot-setup-back').click()
+    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    await page.getByTestId('chatbot-view-setup').click()
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await page.getByTestId('chatbot-setup-edit-disclaimer').click()
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await page.getByTestId('chatbot-view-advanced').click()
     await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
@@ -375,15 +415,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
     await createChatbot(page, SECOND_CHATBOT)
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
-    await expect(
-      page.getByTestId('chatbot-disclaimer-intro')
-    ).not.toContainText('Use this chatbot as a learning aid.')
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await page.getByTestId(`chatbot-${FIRST_CHATBOT}`).click()
+    await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(
       'Updated persisted description'
     )
+    await navigateToSetupStep(page, 'disclaimer')
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue(
       'Course chatbot conditions'
     )
@@ -395,10 +435,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toContainText('Verify important information.')
 
     await page.reload()
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
+    await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(
       'Updated persisted description'
     )
+    await navigateToSetupStep(page, 'disclaimer')
     await expect(page.getByTestId('chatbot-disclaimer-intro')).toContainText(
       'Use this chatbot as a learning aid.'
     )
@@ -423,9 +466,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Synthetic disclaimer content for publication.'
     )
     await page.getByTestId('save-chatbot-disclaimer').click()
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
-    ).toBeVisible()
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('review')
 
     await fillPublicationRequest(
       page,
@@ -508,6 +552,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     await page.reload()
 
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await expect(
       page.getByText('Clarify the intended student audience.')
     ).toBeVisible()
@@ -524,27 +569,23 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-publication-readonly')).toBeVisible()
   })
 
-  test('keeps an incomplete unauthorized draft available for preparation', async ({
+  test('keeps an unauthorized draft available for preparation', async ({
     page,
   }) => {
     await setPublishingAuthorization(false)
     await seedPublicationChatbot({
-      name: `${CHATBOT_PREFIX} Incomplete`,
+      name: `${CHATBOT_PREFIX} Unauthorized`,
       status: 'DRAFT',
-      withDisclaimer: false,
+      withDisclaimer: true,
     })
     await page.reload()
 
+    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await expect(page.getByTestId('chatbot-publication-use-case')).toBeVisible()
     await expect(page.getByTestId('request-chatbot-publication')).toBeDisabled()
     await expect(
       page.getByText(
         'This account is not approved to request chatbot publication.'
-      )
-    ).toBeVisible()
-    await expect(
-      page.getByText(
-        'Save a complete disclaimer before requesting publication.'
       )
     ).toBeVisible()
   })
@@ -562,13 +603,20 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.reload()
 
     // The linked disclaimer exists but its normalized content is empty, so
-    // submission must stay disabled exactly as if no disclaimer were linked.
-    await expect(page.getByTestId('chatbot-publication-use-case')).toBeVisible()
-    await expect(page.getByTestId('request-chatbot-publication')).toBeDisabled()
-    await expect(
-      page.getByText(
-        'Save a complete disclaimer before requesting publication.'
-      )
-    ).toBeVisible()
+    // the setup route must keep the lecturer on the incomplete step.
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
+    await expect(page.getByTestId('save-chatbot-disclaimer')).toBeDisabled()
+
+    const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=setup&step=review`
+    )
+    await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('step'))
+      .toBe('disclaimer')
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveCount(
+      0
+    )
   })
 })

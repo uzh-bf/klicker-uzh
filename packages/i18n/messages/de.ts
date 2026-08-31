@@ -3784,6 +3784,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
       createChatbot: 'Chatbot erstellen',
+      createChatbotAndContinue: 'Entwurf erstellen und fortfahren',
       createChatbotShort: 'Neu',
       createChatbotDescription:
         'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
@@ -3795,6 +3796,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceUsage: 'Nutzung & Integrationen',
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotSetupTitle: 'Chatbot einrichten',
+      chatbotSetupDescription:
+        'Schliessen Sie jeden Schritt ab, bevor Sie die Veröffentlichung beantragen. Sie können jederzeit zu einem vorherigen Schritt zurückkehren.',
+      chatbotSetupProgress: 'Fortschritt der Chatbot-Einrichtung',
+      chatbotSetupBasics: 'Grundangaben',
+      chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
+      chatbotSetupReview: 'Prüfen',
+      chatbotSetupReviewDescription:
+        'Angaben bestätigen und Veröffentlichung beantragen',
+      chatbotSetupBasicsTitle: 'Grundangaben des Chatbots',
+      chatbotSetupBasicsDescriptionLong:
+        'Geben Sie dem Chatbot einen klaren Namen und eine Beschreibung. Der verknüpfte Kurs ist nach der Erstellung festgelegt.',
+      chatbotSetupSaveAndContinue: 'Speichern und fortfahren',
+      chatbotSetupSaving: 'Wird gespeichert ...',
+      chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Die Vorschau enthält den festen Plattformtext.',
+      chatbotSetupReviewTitle: 'Prüfen und einreichen',
+      chatbotSetupReviewDescriptionLong:
+        'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an.',
+      chatbotSetupEdit: 'Bearbeiten',
+      chatbotSetupPublicationNote:
+        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und nicht separat gespeichert. Bis zum Einreichen können Sie sie bearbeiten.',
       chatbotDiscardChangesConfirmation:
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:

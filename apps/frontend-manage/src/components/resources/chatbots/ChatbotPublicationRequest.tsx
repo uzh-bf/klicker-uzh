@@ -385,6 +385,10 @@ function PublicationNavigationStateReporter({
     onChange({ dirty, pending })
   }, [dirty, onChange, pending])
 
+  useEffect(() => {
+    return () => onChange({ dirty: false, pending: false })
+  }, [onChange])
+
   return null
 }
 

@@ -162,7 +162,8 @@ function Chatbots() {
 
   const navigateWorkspace = (
     view: ChatbotWorkspaceView,
-    step?: ChatbotSetupStep
+    step?: ChatbotSetupStep,
+    internal = false
   ) => {
     if (!selectedChatbot) return
     if (
@@ -172,7 +173,7 @@ function Chatbots() {
       return
     }
     const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
-    runNavigation(() => {
+    const navigate = () => {
       setNavigationState(cleanNavigationState)
       return router.push(
         {
@@ -182,7 +183,12 @@ function Chatbots() {
         undefined,
         { shallow: true }
       )
-    })
+    }
+    if (internal) {
+      runInternalNavigation(navigate)
+    } else {
+      runNavigation(navigate)
+    }
   }
 
   const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)

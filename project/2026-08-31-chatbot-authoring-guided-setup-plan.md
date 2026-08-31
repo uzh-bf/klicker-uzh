@@ -357,6 +357,9 @@ Return to the user if:
       stopped in the unrelated Analytics lint task because uv selected Python
       3.14 and the devcontainer has no C compiler for pandas 2.2.2. Resolve or
       isolate that environment-only gap at the integrated finish gate.
-- [ ] Slice 2 implemented, verified, reviewed, and committed.
+- [ ] Slice 2 implemented and focused checks pass: Biome, Prettier, Manage and
+      Playwright TypeScript, and all six authoring Playwright scenarios. The
+      browser suite exposed and now covers a save/refetch navigation race;
+      review and commit remain.
 - [ ] Integrated browser proof and final review completed.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.

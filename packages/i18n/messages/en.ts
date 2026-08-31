@@ -3722,6 +3722,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
       createChatbot: 'Create chatbot',
+      createChatbotAndContinue: 'Create draft and continue',
       createChatbotShort: 'New',
       createChatbotDescription:
         'Create a course-bound draft chatbot and configure it before requesting publication.',
@@ -3733,6 +3734,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceUsage: 'Usage & integrations',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotSetupTitle: 'Set up your chatbot',
+      chatbotSetupDescription:
+        'Complete each step before requesting publication. You can return to a previous step at any time.',
+      chatbotSetupProgress: 'Chatbot setup progress',
+      chatbotSetupBasics: 'Basics',
+      chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
+      chatbotSetupReview: 'Review',
+      chatbotSetupReviewDescription: 'Confirm details and request publication',
+      chatbotSetupBasicsTitle: 'Chatbot basics',
+      chatbotSetupBasicsDescriptionLong:
+        'Give the chatbot a clear name and description. The linked course is fixed after creation.',
+      chatbotSetupSaveAndContinue: 'Save and continue',
+      chatbotSetupSaving: 'Saving…',
+      chatbotSetupDisclaimerTitle: 'Participant disclaimer',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Explain what participants should know before using this chatbot. The preview includes the fixed platform text.',
+      chatbotSetupReviewTitle: 'Review and submit',
+      chatbotSetupReviewDescriptionLong:
+        'Check the saved setup and provide the information the team needs to review your publication request.',
+      chatbotSetupEdit: 'Edit',
+      chatbotSetupPublicationNote:
+        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:

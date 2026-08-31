@@ -499,6 +499,16 @@ Invalid or incomplete deep links fall back to the first valid lifecycle step.
 Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
 model-policy changes, and block while an affected mutation is pending.
 
+Draft and rejected chatbots use the setup view as a focused three-step flow:
+Basics saves the name and description, Disclaimer saves the lecturer-written
+introduction while showing the fixed participant preview, and Review and submit
+summarizes the saved configuration before showing the publication request form.
+The course remains read-only after creation. Publication inputs are preparation
+fields in the final step and persist only when the lecturer submits the existing
+publication mutation. A successful Basics or Disclaimer save advances to the
+next step; Back and Edit actions use the workspace navigation guard so dirty or
+pending changes cannot be discarded silently.
+
 The selected course is read-only. Name, description, and model settings follow
 the metadata lifecycle matrix above; the disclaimer title and introduction are
 editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full

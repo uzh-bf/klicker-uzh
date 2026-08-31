@@ -89,7 +89,11 @@ function ChatbotDetails({
   loading: boolean
   view: ChatbotWorkspaceView
   step?: ChatbotSetupStep
-  onNavigate: (view: ChatbotWorkspaceView, step?: ChatbotSetupStep) => void
+  onNavigate: (
+    view: ChatbotWorkspaceView,
+    step?: ChatbotSetupStep,
+    internal?: boolean
+  ) => void
   onNavigationStateChange: (state: ChatbotNavigationState) => void
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
@@ -471,9 +475,11 @@ function ChatbotDetails({
           <ChatbotAuthoring
             key={chatbot.id}
             chatbot={chatbot}
+            step={step ?? 'basics'}
             publishingAuthorized={publishingAuthorized}
             publishingAuthorizationLoading={publishingAuthorizationLoading}
             publishingAuthorizationError={publishingAuthorizationError}
+            onNavigate={onNavigate}
             onNavigationStateChange={setAuthoringNavigationState}
           />
         ) : null}
