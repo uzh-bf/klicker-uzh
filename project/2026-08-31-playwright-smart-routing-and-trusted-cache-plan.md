@@ -936,6 +936,9 @@ native planner gate.
   (25 tasks), workflow policy validation, YAML parsing, and the cached build
   (23 tasks) passed. Node 26.8.1 emitted the existing warning because the repo
   pins Node 24.
+- [x] M3.2 rollback-control fixtures now cover false, malformed, and
+  non-matching smart-draft controls plus exact canary rollback to hosted
+  execution; the focused suite passes 41 tests.
 - [x] Read-only v3 baseline checked on 2026-08-31: [run
   33368808077](https://github.com/uzh-bf/klicker-uzh/actions/runs/33368808077)
   used hosted build and eight hosted shards; the build took 2m10s and the
