@@ -70,6 +70,12 @@ else
 fi
 printf "ARG=%s\n" "$@" >>"$KLICKER_TEST_CHILD_LOG"
 if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
+  expected_framework="$KLICKER_TEST_REPO_ROOT/evaluation/framework"
+  [ "${1:-}" = "run" ] || exit 2
+  [ "${2:-}" = "--project" ] || exit 2
+  [ "${3:-}" = "$expected_framework" ] || exit 2
+  [ "${4:-}" = "$expected_framework/scripts/_run_eval.sh" ] || exit 2
+  [ "${5:-}" = "--no-dotenv" ] || exit 2
   exec "$4"
 fi'
 
@@ -79,7 +85,9 @@ printf "%s\n" "synthetic eval stdout"
 printf "%s\n" "synthetic eval stderr" >&2
 exit "${KLICKER_TEST_RUNNER_STATUS:-99}"'
 chmod +x "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh"
+write_file "$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" 'metrics: []'
 write_file "$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" 'tools: []'
+mkdir -p "$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco"
 
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
@@ -115,6 +123,10 @@ env -i \
   EVAL_MODEL='caller/model' \
   EVAL_MODEL_CAPABILITY_MODEL='gpt-5.4-mini' \
   EVAL_JUDGE_SINGLE_ATTEMPT='false' \
+  EVAL_METRICS_PATH='evaluation/framework/data/input/metrics/metrics.yaml' \
+  EVAL_TOOLS_PATH='evaluation/data/tools/klicker_fineco.yaml' \
+  GT_ROOT_DIR='evaluation/data/ground_truth/klicker_fineco' \
+  DEFAULT_GT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   LITELLM_API_BASE='https://caller.example.test' \
   TOOL_PROFILE='caller-profile' \
   PATH="$FAKE_BIN:$PATH" \
@@ -126,6 +138,10 @@ env -i \
 assert_line 'EVAL_MODEL=caller/model' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-5.4-mini' "$CHILD_LOG"
 assert_line 'EVAL_JUDGE_SINGLE_ATTEMPT=false' "$CHILD_LOG"
+assert_line 'EVAL_METRICS_PATH=evaluation/framework/data/input/metrics/metrics.yaml' "$CHILD_LOG"
+assert_line 'EVAL_TOOLS_PATH=evaluation/data/tools/klicker_fineco.yaml' "$CHILD_LOG"
+assert_line 'GT_ROOT_DIR=evaluation/data/ground_truth/klicker_fineco' "$CHILD_LOG"
+assert_line 'DEFAULT_GT_DIR=evaluation/data/ground_truth/klicker_fineco' "$CHILD_LOG"
 assert_line 'LITELLM_API_BASE=https://caller.example.test' "$CHILD_LOG"
 assert_line 'TOOL_PROFILE=caller-profile' "$CHILD_LOG"
 assert_line 'ARG=--tool-profile' "$CHILD_LOG"
@@ -146,6 +162,7 @@ assert_line 'EVAL_MODEL=caller/model-with-own-metadata' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL_STATE=unset' "$CHILD_LOG"
 
+: >"$CHILD_LOG"
 status=0
 env -i \
   KLICKER_TEST_EMPTY_SECRET='true' \
@@ -158,6 +175,7 @@ env -i \
 
 [ "$status" -eq 1 ] || fail "empty mapped key returned $status instead of 1"
 assert_line 'Error: mapped LITELLM_API_KEY is missing or empty' "$TEST_ROOT/empty-key.out"
+[ ! -s "$CHILD_LOG" ] || fail 'empty mapped key must not invoke uv'
 
 : >"$CHILD_LOG"
 status=0
@@ -177,7 +195,23 @@ assert_line 'synthetic operator stdout' "$TEST_ROOT/operator-failure.stdout"
 assert_line 'synthetic operator stderr' "$TEST_ROOT/operator-failure.stderr"
 [ ! -s "$CHILD_LOG" ] || fail 'operator failure must not invoke uv'
 
-: >"$CHILD_LOG"
+status=0
+env -i \
+  KLICKER_TEST_EXEC_RUNNER='true' \
+  KLICKER_TEST_RUNNER_STATUS='0' \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval \
+  >"$TEST_ROOT/runner-success.stdout" \
+  2>"$TEST_ROOT/runner-success.stderr" || status=$?
+
+[ "$status" -eq 0 ] || fail "successful eval runner returned $status"
+assert_line 'synthetic eval stdout' "$TEST_ROOT/runner-success.stdout"
+assert_line 'synthetic eval stderr' "$TEST_ROOT/runner-success.stderr"
+
 status=0
 env -i \
   KLICKER_TEST_EXEC_RUNNER='true' \
@@ -194,6 +228,34 @@ env -i \
 [ "$status" -eq 74 ] || fail "eval runner failure returned $status instead of 74"
 assert_line 'synthetic eval stdout' "$TEST_ROOT/runner-failure.stdout"
 assert_line 'synthetic eval stderr' "$TEST_ROOT/runner-failure.stderr"
+
+assert_missing_input() {
+  local variable="$1"
+  local expected="$2"
+  local missing_path="$TEST_ROOT/missing-$variable"
+  local status=0
+
+  : >"$CHILD_LOG"
+  env -i \
+    "$variable=$missing_path" \
+    LITELLM_API_BASE='https://litellm.example.test' \
+    PATH="$FAKE_BIN:$PATH" \
+    KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+    KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+    KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+    "$WRAPPER" --mode eval >"$TEST_ROOT/missing-input.out" 2>&1 || status=$?
+
+  [ "$status" -eq 1 ] || fail "$variable preflight returned $status instead of 1"
+  assert_line \
+    "Error: $variable must point to a readable $expected: $missing_path" \
+    "$TEST_ROOT/missing-input.out"
+  [ ! -s "$CHILD_LOG" ] || fail "$variable preflight must not invoke uv"
+}
+
+assert_missing_input EVAL_METRICS_PATH file
+assert_missing_input EVAL_TOOLS_PATH file
+assert_missing_input GT_ROOT_DIR directory
+assert_missing_input DEFAULT_GT_DIR directory
 
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"

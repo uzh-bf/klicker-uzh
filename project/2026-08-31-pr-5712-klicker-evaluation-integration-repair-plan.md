@@ -278,3 +278,9 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   branch. All eight Playwright shards still fail before tests while loading the
   trusted `v3` composite action because it contains unsupported step-level
   `timeout-minutes`; the branch does not modify that action.
+- A later review's `--no-dotenv` finding was rejected after checking current uv
+  documentation and the pinned evaluator runner: uv's own switch is
+  `--no-env-file`, while `--no-dotenv` is intentionally a runner argument and
+  the wrapper test pins that position. Accepted follow-ups add readable-input
+  preflights, successful runner output propagation, explicit fake-uv argument
+  checks, and proof that the empty-key path never starts `uv`.

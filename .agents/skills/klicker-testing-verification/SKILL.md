@@ -47,9 +47,10 @@ Then validate all FineCo Markdown cases against
 restricted `klicker-uzh-stg` operator profile for live judge checks and stop
 unless `LITELLM_API_BASE` names an approved reachable route and the namespaced
 model is visible first. Require the wrapper to reject a missing or empty mapped
-`LITELLM_API_KEY` before starting the evaluator. Eval mode judges an existing QA
-artifact; it does not query Klicker's authenticated AI-SDK chat route and is not
-live product-quality evidence.
+`LITELLM_API_KEY` before starting the evaluator, and require its metrics, tools,
+and ground-truth preflights to fail before secret retrieval. Eval mode judges an
+existing QA artifact; it does not query Klicker's authenticated AI-SDK chat route
+and is not live product-quality evidence.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser

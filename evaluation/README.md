@@ -28,7 +28,8 @@ different deployment alias needs explicit capability metadata. Set
 `LITELLM_API_BASE` to an approved reachable proxy route; the public repository
 does not store an internal hostname. The operator fails when the mapped secret
 is missing, and the wrapper rejects an empty `LITELLM_API_KEY` before starting
-the evaluator.
+the evaluator. The wrapper also checks that the selected metrics and tool files
+and both ground-truth directories are readable before secret retrieval.
 
 Eval mode judges an existing synthetic QA artifact; it does not query Klicker:
 

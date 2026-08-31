@@ -33,6 +33,38 @@ else
   EFFECTIVE_CAPABILITY_MODEL="${EVAL_MODEL_CAPABILITY_MODEL:-}"
 fi
 
+cd "$REPO_ROOT"
+
+EFFECTIVE_METRICS_PATH="${EVAL_METRICS_PATH:-$FRAMEWORK_ROOT/data/input/metrics/metrics.yaml}"
+EFFECTIVE_TOOLS_PATH="${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicker_fineco.yaml}"
+EFFECTIVE_GT_ROOT_DIR="${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
+EFFECTIVE_DEFAULT_GT_DIR="${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
+
+require_readable_file() {
+  local variable="$1"
+  local path="$2"
+
+  if [ ! -f "$path" ] || [ ! -r "$path" ]; then
+    echo "Error: $variable must point to a readable file: $path" >&2
+    exit 1
+  fi
+}
+
+require_readable_directory() {
+  local variable="$1"
+  local path="$2"
+
+  if [ ! -d "$path" ] || [ ! -r "$path" ] || [ ! -x "$path" ]; then
+    echo "Error: $variable must point to a readable directory: $path" >&2
+    exit 1
+  fi
+}
+
+require_readable_file EVAL_METRICS_PATH "$EFFECTIVE_METRICS_PATH"
+require_readable_file EVAL_TOOLS_PATH "$EFFECTIVE_TOOLS_PATH"
+require_readable_directory GT_ROOT_DIR "$EFFECTIVE_GT_ROOT_DIR"
+require_readable_directory DEFAULT_GT_DIR "$EFFECTIVE_DEFAULT_GT_DIR"
+
 EVAL_ENV=(env -u VIRTUAL_ENV)
 if [ -z "$EFFECTIVE_CAPABILITY_MODEL" ]; then
   EVAL_ENV+=(-u EVAL_MODEL_CAPABILITY_MODEL)
@@ -42,17 +74,15 @@ EVAL_ENV+=(
   "EVAL_MODEL=$EFFECTIVE_EVAL_MODEL"
   "EVAL_REASONING_EFFORT=${EVAL_REASONING_EFFORT:-high}"
   "EVAL_JUDGE_SINGLE_ATTEMPT=${EVAL_JUDGE_SINGLE_ATTEMPT:-true}"
-  "EVAL_METRICS_PATH=${EVAL_METRICS_PATH:-$FRAMEWORK_ROOT/data/input/metrics/metrics.yaml}"
-  "EVAL_TOOLS_PATH=${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicker_fineco.yaml}"
-  "GT_ROOT_DIR=${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
-  "DEFAULT_GT_DIR=${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
+  "EVAL_METRICS_PATH=$EFFECTIVE_METRICS_PATH"
+  "EVAL_TOOLS_PATH=$EFFECTIVE_TOOLS_PATH"
+  "GT_ROOT_DIR=$EFFECTIVE_GT_ROOT_DIR"
+  "DEFAULT_GT_DIR=$EFFECTIVE_DEFAULT_GT_DIR"
   "TOOL_PROFILE=${TOOL_PROFILE:-catalog_expert_v1}"
 )
 if [ -n "$EFFECTIVE_CAPABILITY_MODEL" ]; then
   EVAL_ENV+=("EVAL_MODEL_CAPABILITY_MODEL=$EFFECTIVE_CAPABILITY_MODEL")
 fi
-
-cd "$REPO_ROOT"
 
 exec rs-infisical-operator --profile klicker-uzh-stg run \
   --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY -- \
