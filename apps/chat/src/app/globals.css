@@ -52,6 +52,12 @@
   --color-uzh-yellow-40: #fdf3a8;
   --color-uzh-yellow-20: #fef9d3;
 
+  /* The brand scale under the name the lecturer and student apps use for
+     it, so shared UI — the product tour popover — can name one token and
+     get the same colour in all three apps. */
+  --color-primary-100: var(--color-uzh-blue-100);
+  --color-primary-80: var(--color-uzh-blue-80);
+
   /* Chat-specific theme colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
