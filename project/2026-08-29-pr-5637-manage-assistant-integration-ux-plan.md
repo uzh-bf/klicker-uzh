@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a2_review`
+- Status: `active_a3_implementation`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1000,3 +1000,19 @@ follow_up_stacks:
 - Next: Refresh PR #5679 for `82e92c1c2`, wait for fresh exact-head hosted CI
   including all eight Playwright shards, accept A2 when it settles green with
   clear feedback, then start A3.
+- A2 acceptance: Exact-head hosted build, repository check, gitleaks,
+  GraphQL, MCP status, trusted policy, OCR review, and all eight Playwright
+  shards pass for `66d63923535a`. The expected stack-policy error remains
+  limited to the non-default `v3-ai` stack root, and the manual final-review
+  status remains pending by design. The final OCR finding about the general
+  suggestion literal union is already fixed in `5efb100a8` and now has a
+  disposition reply; all current review feedback has been checked.
+- A3 start: The approved A3 slice now begins from the accepted A2 head in the
+  existing stack worktree. It will keep the sanitized context payload,
+  localize visible EN/DE workflow copy, persist and announce genuine Manage
+  context changes, and add validated parent-owned navigation for confirmed
+  drafts. The A3 branch and draft PR remain to be created.
+- Next: Create `rs/manage-assistant-workflow-continuity` from
+  `66d63923535a`, implement the localized draft-revise-confirm-open journey,
+  and verify its message, context, route, proposal, toast, reset, and EN/DE
+  browser contracts before the A3 review fan-out.
