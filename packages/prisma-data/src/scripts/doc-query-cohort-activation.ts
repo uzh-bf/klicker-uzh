@@ -2086,11 +2086,12 @@ function recordReadbackItem(
   target: CohortActivationConfigRecord,
   state: 'prepared' | 'switched'
 ): void {
-  const priorState = actualChatbotStates.get(item.manifest.chatbotId)
+  const chatbotId = normalizeUuid(item.manifest.chatbotId, 'entry.chatbotId')
+  const priorState = actualChatbotStates.get(chatbotId)
   if (priorState && priorState !== state) {
     fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
   }
-  actualChatbotStates.set(item.manifest.chatbotId, state)
+  actualChatbotStates.set(chatbotId, state)
   if (source.isEnabled) result.sourceEnabled += 1
   else result.sourceDisabled += 1
   if (target.isEnabled) result.targetEnabled += 1

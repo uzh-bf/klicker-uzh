@@ -1,18 +1,10 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
-import {
-  acquireCohortActivationSessionLock,
-  writeReceipt,
-} from './doc-query-cohort-activation-run.js'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { describe, expect, it, vi } from 'vitest'
 import {
   assertReceiptMatchesManifest,
-  DOC_QUERY_ROUTE_PATH,
-  DOC_QUERY_TARGET_DESCRIPTION,
-  DOC_QUERY_TARGET_SCOPE,
-  DOC_QUERY_TARGET_SERVER_NAME,
-  DOC_QUERY_TARGET_URL,
   type CohortActivationConfigRecord,
   type CohortActivationConfigUpdate,
   type CohortActivationManifest,
@@ -20,18 +12,28 @@ import {
   type CohortActivationServerRecord,
   type CohortActivationStore,
   type CohortActivationTransactionStore,
+  DOC_QUERY_ROUTE_PATH,
+  DOC_QUERY_TARGET_DESCRIPTION,
+  DOC_QUERY_TARGET_SCOPE,
+  DOC_QUERY_TARGET_SERVER_NAME,
+  DOC_QUERY_TARGET_URL,
   dryRunCohortActivation,
   fingerprintManifest,
   makeCohortActivationReceiptIntent,
   prepareCohortActivation,
+  readCohortActivationState,
   receiptExpectation,
   recoverPreparedCohortActivation,
-  readCohortActivationState,
   rollbackCohortActivation,
   switchCohortActivation,
   validatePinnedManifest,
   validateReceipt,
 } from './doc-query-cohort-activation.js'
+import { createPrismaCohortActivationStore } from './doc-query-cohort-activation-prisma.js'
+import {
+  acquireCohortActivationSessionLock,
+  writeReceipt,
+} from './doc-query-cohort-activation-run.js'
 
 const sourceServer: CohortActivationServerRecord = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -386,6 +388,35 @@ describe('cohort activation contract', () => {
     }
   })
 
+  it('allows at most one simultaneous session-lock contender', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-lock-'))
+    const receiptPath = join(directory, 'receipt.json')
+    try {
+      const contenders = await Promise.allSettled([
+        acquireCohortActivationSessionLock(receiptPath),
+        acquireCohortActivationSessionLock(receiptPath),
+      ])
+      const acquired = contenders.filter(
+        (
+          result
+        ): result is PromiseFulfilledResult<
+          Awaited<ReturnType<typeof acquireCohortActivationSessionLock>>
+        > => result.status === 'fulfilled'
+      )
+      const refused = contenders.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected'
+      )
+
+      expect(acquired).toHaveLength(1)
+      expect(refused).toHaveLength(1)
+      expect(refused[0]!.reason).toMatchObject({ message: 'SESSION_LOCKED' })
+      await acquired[0]!.value.release()
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it('refuses stale and out-of-order receipt replacement', async () => {
     const directory = await mkdtemp(
       join(tmpdir(), 'cohort-activation-receipt-')
@@ -532,6 +563,38 @@ describe('cohort activation contract', () => {
     expect(fake.currentConfig(prepared.entries[0]!.target.id)?.isEnabled).toBe(
       true
     )
+  })
+
+  it('treats case-variant chatbot UUIDs as one readback group', async () => {
+    const chatbotId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    const firstMode = {
+      ...sourceConfig,
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
+      chatbotId,
+    }
+    const secondMode = {
+      ...secondModeConfig,
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+      chatbotId: chatbotId.toUpperCase(),
+    }
+    const fake = fakeStore([firstMode, secondMode])
+    const prepared = await prepareCohortActivation(
+      fake.store,
+      makeManifest([firstMode, secondMode]),
+      { encryptedBearer: 'encrypted-synthetic-bearer' }
+    )
+    fake.replaceConfig({
+      ...fake.currentConfig(firstMode.id)!,
+      isEnabled: false,
+    })
+    fake.replaceConfig({
+      ...fake.currentConfig(prepared.entries[0]!.target.id)!,
+      isEnabled: true,
+    })
+
+    await expect(
+      readCohortActivationState(fake.store, prepared)
+    ).rejects.toMatchObject({ code: 'READBACK_STATE_MISMATCH' })
   })
 
   it('checkpoints chatbot groups and rolls back a stale partial receipt', async () => {
@@ -873,5 +936,57 @@ describe('cohort activation contract', () => {
     expect(() => validateReceipt(changed)).toThrow(
       expect.objectContaining({ code: 'RECEIPT_INVALID' })
     )
+  })
+})
+
+describe('Prisma cohort activation transactions', () => {
+  it('retries a P2034 transaction until it succeeds', async () => {
+    const transaction = vi.fn()
+    let attempts = 0
+    transaction.mockImplementation(async (operation) => {
+      attempts += 1
+      const result = await operation({} as never)
+      if (attempts === 1) throw { code: 'P2034' }
+      return result
+    })
+    const store = createPrismaCohortActivationStore({
+      $transaction: transaction,
+    } as unknown as PrismaClient)
+    const callback = vi.fn(async () => 'committed')
+
+    await expect(store.transaction(callback)).resolves.toBe('committed')
+    expect(transaction).toHaveBeenCalledTimes(2)
+    expect(callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('bounds P2034 retries and rethrows the final conflict', async () => {
+    const transaction = vi.fn()
+    const conflict = { code: 'P2034' }
+    transaction.mockImplementation(async (operation) => {
+      await operation({} as never)
+      throw conflict
+    })
+    const store = createPrismaCohortActivationStore({
+      $transaction: transaction,
+    } as unknown as PrismaClient)
+
+    await expect(store.transaction(async () => 'unreachable')).rejects.toBe(
+      conflict
+    )
+    expect(transaction).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not retry non-P2034 transaction errors', async () => {
+    const transaction = vi.fn()
+    const error = new Error('transaction timeout')
+    transaction.mockRejectedValue(error)
+    const store = createPrismaCohortActivationStore({
+      $transaction: transaction,
+    } as unknown as PrismaClient)
+
+    await expect(store.transaction(async () => 'unreachable')).rejects.toBe(
+      error
+    )
+    expect(transaction).toHaveBeenCalledTimes(1)
   })
 })

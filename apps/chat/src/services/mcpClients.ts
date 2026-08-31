@@ -113,6 +113,71 @@ function toSafeToolName(
   return candidate
 }
 
+async function applyDocQueryAuthHeaders(
+  headers: Record<string, string>,
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions,
+  authType: string
+): Promise<boolean> {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+  if (!(options.kbId && options.sessionId)) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (authType !== 'bearer' || !server.authSecret) {
+    throw new Error('Doc Query transport authentication is invalid')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  const kbId = normalizeDocQueryKbId(options.kbId)
+  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  const token = await signDocQueryScopeToken({
+    kbId,
+    chatbotId,
+    sessionId: options.sessionId,
+    jti: randomUUID(),
+  })
+  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+  return true
+}
+
+function applyCustomAuthHeaders(
+  headers: Record<string, string>,
+  decryptedSecret: string
+): void {
+  const parsed: unknown = JSON.parse(decryptedSecret)
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    Array.isArray(parsed) ||
+    !('headers' in parsed) ||
+    !parsed.headers ||
+    typeof parsed.headers !== 'object' ||
+    Array.isArray(parsed.headers)
+  ) {
+    throw new Error('Invalid custom MCP headers')
+  }
+
+  for (const [name, value] of Object.entries(parsed.headers)) {
+    if (
+      !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+      name === '__proto__' ||
+      name === 'constructor' ||
+      name === 'prototype' ||
+      typeof value !== 'string' ||
+      /[\r\n]/.test(value)
+    ) {
+      throw new Error('Invalid custom MCP header value')
+    }
+    headers[name] = value
+  }
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
@@ -127,29 +192,15 @@ export async function createAuthHeaders(
 
   const authType = server.authType.toLowerCase()
 
-  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    if (!(options.kbId && options.sessionId)) {
-      throw new Error('Scoped knowledge retrieval is not available')
-    }
-    if (authType !== 'bearer' || !server.authSecret) {
-      throw new Error('Doc Query transport authentication is invalid')
-    }
-    if (
-      typeof options.sessionId !== 'string' ||
-      options.sessionId.trim().length === 0
-    ) {
-      throw new Error('Scoped knowledge retrieval is not available')
-    }
-
-    const kbId = normalizeDocQueryKbId(options.kbId)
-    baseHeaders.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
-    const token = await signDocQueryScopeToken({
-      kbId,
+  if (
+    await applyDocQueryAuthHeaders(
+      baseHeaders,
+      server,
       chatbotId,
-      sessionId: options.sessionId,
-      jti: randomUUID(),
-    })
-    baseHeaders[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+      options,
+      authType
+    )
+  ) {
     return baseHeaders
   }
 
@@ -169,34 +220,7 @@ export async function createAuthHeaders(
   switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
-      {
-        const parsed: unknown = JSON.parse(decryptedSecret)
-        if (
-          !parsed ||
-          typeof parsed !== 'object' ||
-          Array.isArray(parsed) ||
-          !('headers' in parsed) ||
-          !parsed.headers ||
-          typeof parsed.headers !== 'object' ||
-          Array.isArray(parsed.headers)
-        ) {
-          throw new Error('Invalid custom MCP headers')
-        }
-
-        for (const [name, value] of Object.entries(parsed.headers)) {
-          if (
-            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
-            name === '__proto__' ||
-            name === 'constructor' ||
-            name === 'prototype' ||
-            typeof value !== 'string' ||
-            /[\r\n]/.test(value)
-          ) {
-            throw new Error('Invalid custom MCP header value')
-          }
-          baseHeaders[name] = value
-        }
-      }
+      applyCustomAuthHeaders(baseHeaders, decryptedSecret)
       break
     case 'bearer':
       baseHeaders.Authorization = `Bearer ${decryptedSecret}`
