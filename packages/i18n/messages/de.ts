@@ -1855,9 +1855,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         welcomeTitle: 'Willkommen bei KlickerUZH',
         welcomeBody:
           'Eine kurze Tour zeigt Ihnen, wo Sie was finden. Sie können sie jederzeit beenden und im Support-Menü erneut starten.',
+        welcomeLink: 'Erste Schritte',
         navigationTitle: 'Bibliothek, Aktivitäten und Kurse',
         navigationBody:
           'Ihre Fragen liegen in der Bibliothek, Aktivitäten bearbeiten die Studierenden, und Kurse führen beides zusammen.',
+        elementCreationTitle: 'Erstellen Sie Ihr erstes Element',
+        elementCreationBody:
+          'Elemente sind die Fragen und Inhaltsblöcke, aus denen jede Aktivität besteht. Über diese Schaltfläche legen Sie ein neues an und speichern es in Ihrer Bibliothek.',
+        elementCreationLink: 'Elemente verwalten',
+        activityTypesTitle: 'Vier Arten von Aktivitäten',
+        activityTypesBody:
+          'Ein Live-Quiz läuft während der Vorlesung, ein Microlearning folgt kurz danach in einem begrenzten Zeitfenster, ein Practice Quiz bleibt zum Wiederholen offen, und eine Gruppenaktivität lösen die Studierenden gemeinsam.',
+        activityTypesLink: 'Grundkonzepte',
         analyticsTitle: 'Learning Analytics',
         analyticsBody:
           'Sobald ein Kurs läuft, zeigt dieses Menü, wie es Ihren Studierenden geht.',

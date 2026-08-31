@@ -9,9 +9,15 @@ import { createFeatureTargetRegistry } from '@klicker-uzh/product-tours/react'
 //
 // Adding a target means adding a key here AND spreading `featureTargetProps`
 // onto exactly one element in the manage UI. The value describes where that
-// element lives, so a later reader can find it without grepping. Tour steps
-// need targets that are on every page, because the tour starts wherever the
-// lecturer happens to land.
+// element lives, so a later reader can find it without grepping.
+//
+// Tour steps usually need targets that are on every page, because the tour
+// starts wherever the lecturer happens to land. The two `manage-home-*` targets
+// below are the deliberate exception: creating elements and choosing an
+// activity type are the two things a new lecturer actually has to find, and
+// they only exist on the home page. A step whose target is missing is dropped,
+// so the tour is simply shorter elsewhere — and the replay entry points send
+// the lecturer to the home page first, where the full tour runs.
 export const FEATURE_TARGETS = {
   'manage-header-analytics':
     'The learning analytics menu in the manage header, present on every page',
@@ -21,6 +27,10 @@ export const FEATURE_TARGETS = {
     'The product update bell in the manage header, present on every page',
   'manage-header-account':
     'The support, running-quiz and account controls at the right of the manage header',
+  'manage-home-create-element':
+    'The button that opens element creation, on the home page (`/`) only',
+  'manage-home-activity-types':
+    'The four activity creation buttons, on the home page (`/`) only',
 } as const
 
 export type FeatureTargetKey = keyof typeof FEATURE_TARGETS

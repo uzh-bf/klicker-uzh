@@ -19,9 +19,16 @@ const MANAGE_ONBOARDING_TOUR_ID: TourId = 'manage-onboarding-v1'
 
 const TOUR_IDS = [MANAGE_ONBOARDING_TOUR_ID]
 
+// The user-facing documentation site. Docusaurus serves it from the root with
+// trailing slashes, so every path below is the file path of a page under
+// `apps/docs/docs`.
+const DOCS_BASE_URL = 'https://www.klicker.uzh.ch'
+
 /**
- * Runs the lecturer onboarding tour: a short walk through the parts of the
- * manage interface that are on every page.
+ * Runs the lecturer onboarding tour: a short walk through the manage
+ * interface. Most steps point at the header, which is on every page; the two
+ * steps about creating things only resolve on the home page, and are dropped
+ * silently everywhere else.
  *
  * It starts on its own at most once per account — the account has no stored
  * completion — and at most once per browser tab across every overlay, which the
@@ -81,11 +88,36 @@ export function useManageOnboardingTour(): UseProductTourResult {
         // the tour opens with a welcome card instead of pointing somewhere.
         title: t('manage.productTours.onboarding.welcomeTitle'),
         description: t('manage.productTours.onboarding.welcomeBody'),
+        documentation: {
+          href: `${DOCS_BASE_URL}/getting_started/welcome/`,
+          label: t('manage.productTours.onboarding.welcomeLink'),
+        },
       },
       {
         element: () => resolveFeatureTarget('manage-header-main-nav'),
         title: t('manage.productTours.onboarding.navigationTitle'),
         description: t('manage.productTours.onboarding.navigationBody'),
+      },
+      {
+        element: () => resolveFeatureTarget('manage-home-create-element'),
+        title: t('manage.productTours.onboarding.elementCreationTitle'),
+        description: t('manage.productTours.onboarding.elementCreationBody'),
+        documentation: {
+          href: `${DOCS_BASE_URL}/tutorials/element_management/`,
+          label: t('manage.productTours.onboarding.elementCreationLink'),
+        },
+        // The button sits at the right edge of the element list header, where a
+        // popover anchored below its centre would hang off the window.
+        align: 'end',
+      },
+      {
+        element: () => resolveFeatureTarget('manage-home-activity-types'),
+        title: t('manage.productTours.onboarding.activityTypesTitle'),
+        description: t('manage.productTours.onboarding.activityTypesBody'),
+        documentation: {
+          href: `${DOCS_BASE_URL}/getting_started/core_concepts/`,
+          label: t('manage.productTours.onboarding.activityTypesLink'),
+        },
       },
       {
         element: () => resolveFeatureTarget('manage-header-analytics'),
