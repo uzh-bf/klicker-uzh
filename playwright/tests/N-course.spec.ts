@@ -2774,11 +2774,11 @@ test.describe('Part 4: Course deletion', () => {
       displayName: DELETION.mlName,
       courseName: DELETION.courseName,
       startDate: {
-        monthDelta: -2,
+        monthDelta: 1,
         day: 16,
         hour: 2,
         minute: 0,
-        validation: `${getDatetimeValidationString(-2, '16')}, 02:00`,
+        validation: `${getDatetimeValidationString(1, '16')}, 02:00`,
       },
       endDate: {
         monthDelta: 4,
@@ -2797,11 +2797,11 @@ test.describe('Part 4: Course deletion', () => {
       task: 'Course deletion group activity',
       courseName: DELETION.courseName,
       scheduledStartDate: {
-        monthDelta: -2,
+        monthDelta: 1,
         day: 16,
         hour: 2,
         minute: 0,
-        validation: `${getDatetimeValidationString(-2, '16')}, 02:00`,
+        validation: `${getDatetimeValidationString(1, '16')}, 02:00`,
       },
       scheduledEndDate: {
         monthDelta: 4,
