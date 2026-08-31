@@ -942,6 +942,10 @@ native planner gate.
 - [x] M3 route eligibility now fails closed when repository, head repository,
   author, or pull-request number identity is missing or malformed; regression
   coverage is committed in `c3f3fe753` and the focused suite passes 42 tests.
+- [x] Cache consumers now fail open when the contract is unavailable or the
+  Actions cache service misses/fails: they skip restoration and continue with
+  a normal install/build. The trusted seed keeps its strict contract check;
+  repository-wide checks remain green after this hardening.
 - [x] Read-only v3 baseline checked on 2026-08-31: [run
   33368808077](https://github.com/uzh-bf/klicker-uzh/actions/runs/33368808077)
   used hosted build and eight hosted shards; the build took 2m10s and the
