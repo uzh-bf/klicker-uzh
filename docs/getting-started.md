@@ -223,16 +223,7 @@ git submodule update --init --checkout evaluation/framework
 pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) uses the restricted
-`klicker-uzh-stg` operator profile and maps only the approved LiteLLM key. Its
-defaults select `klickeruzh/azure/gpt-5.6-luna-high`, use the shared metrics,
-load Klicker's FineCo tool catalogue, and disable judge retries. Native
-environment overrides and forwarded framework arguments remain effective.
-`LITELLM_API_BASE` is required at runtime because this public repository does
-not store an internal proxy hostname.
-
-Eval mode consumes an existing QA artifact and therefore proves only the judge
-path. Query and query-eval need a verified OpenAI-compatible target endpoint;
-Klicker's authenticated AI-SDK UI stream is not currently supported by that
-target adapter. The wrapper fails before secret injection when the private
-submodule is absent, and it never starts or repairs LiteLLM connectivity.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.

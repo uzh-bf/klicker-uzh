@@ -23,7 +23,7 @@ assert_line() {
   local expected="$1"
   local path="$2"
 
-  rg --fixed-strings --line-regexp -- "$expected" "$path" >/dev/null ||
+  grep -Fqx -- "$expected" "$path" ||
     fail "missing '$expected' in $path"
 }
 
@@ -60,15 +60,7 @@ write_file "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh" '#!/usr/bin/en
 exit 99'
 chmod +x "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh"
 
-env -u EVAL_MODEL \
-  -u EVAL_MODEL_CAPABILITY_MODEL \
-  -u EVAL_REASONING_EFFORT \
-  -u EVAL_JUDGE_SINGLE_ATTEMPT \
-  -u EVAL_METRICS_PATH \
-  -u EVAL_TOOLS_PATH \
-  -u GT_ROOT_DIR \
-  -u DEFAULT_GT_DIR \
-  -u TOOL_PROFILE \
+env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
   PATH="$FAKE_BIN:$PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
@@ -79,7 +71,7 @@ env -u EVAL_MODEL \
 assert_line '--profile' "$OPERATOR_LOG"
 assert_line 'klicker-uzh-stg' "$OPERATOR_LOG"
 assert_line 'PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY' "$OPERATOR_LOG"
-[ "$(rg --count --line-regexp -- '--map' "$OPERATOR_LOG")" -eq 1 ] ||
+[ "$(grep -cx -- '--map' "$OPERATOR_LOG")" -eq 1 ] ||
   fail 'operator must receive exactly one secret mapping'
 assert_line 'LITELLM_API_BASE=https://litellm.example.test' "$CHILD_LOG"
 assert_line 'EVAL_MODEL=klickeruzh/azure/gpt-5.6-luna-high' "$CHILD_LOG"
@@ -98,7 +90,8 @@ assert_line 'ARG=--qa-file' "$CHILD_LOG"
 assert_line 'ARG=synthetic-qa.json' "$CHILD_LOG"
 
 : >"$CHILD_LOG"
-EVAL_MODEL='caller/model' \
+env -i \
+  EVAL_MODEL='caller/model' \
   EVAL_MODEL_CAPABILITY_MODEL='gpt-5.4-mini' \
   EVAL_JUDGE_SINGLE_ATTEMPT='false' \
   LITELLM_API_BASE='https://caller.example.test' \
@@ -120,7 +113,8 @@ assert_line 'ARG=explicit-profile' "$CHILD_LOG"
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"
 status=0
-PATH="$FAKE_BIN:$PATH" \
+env -i \
+  PATH="$FAKE_BIN:$PATH" \
   KLICKER_TEST_REPO_ROOT="$MISSING_REPO" \
   KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
@@ -134,7 +128,8 @@ NO_OPERATOR_BIN="$TEST_ROOT/no-operator-bin"
 mkdir -p "$NO_OPERATOR_BIN"
 cp "$FAKE_BIN/git" "$NO_OPERATOR_BIN/git"
 status=0
-PATH="$NO_OPERATOR_BIN:/usr/bin:/bin" \
+env -i \
+  PATH="$NO_OPERATOR_BIN:/usr/bin:/bin" \
   LITELLM_API_BASE='https://litellm.example.test' \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   "$WRAPPER" --mode eval >"$TEST_ROOT/operator.out" 2>&1 || status=$?
@@ -143,7 +138,8 @@ PATH="$NO_OPERATOR_BIN:/usr/bin:/bin" \
 assert_line 'Error: rs-infisical-operator is required for the restricted Klicker evaluation profile' "$TEST_ROOT/operator.out"
 
 status=0
-PATH="$FAKE_BIN:$PATH" \
+env -i \
+  PATH="$FAKE_BIN:$PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   "$WRAPPER" --mode eval >"$TEST_ROOT/base-url.out" 2>&1 || status=$?
 

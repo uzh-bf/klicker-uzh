@@ -197,13 +197,14 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   - `8df1115` — review correction for imported and blank chat modes.
   - `421b135` — strict-schema and single-attempt corrections for every DeepEval
     judge entry point, plus normalized conversation imports.
-- Evaluation verification: 345 tests pass; the formatted correction tree has
-  123 focused passing tests, and Ruff format and lint pass. The private-safe
-  generic-continuity simplifier's one reduction and the slice reviewer's
-  findings were applied. Correction review is running against the immutable
-  range ending at `421b135`.
+  - `9f73aa6` — preserve inherited schema fallback and raw-response retry
+    behavior when single-attempt mode is disabled.
+- Evaluation verification: 349 tests pass; the final correction tree has 127
+  focused passing tests, and Ruff format and lint pass. The private-safe
+  generic-continuity simplifier's reduction and the slice reviewer's findings
+  were applied. Final correction review is approved at `9f73aa6`.
 - Klicker Slice B implementation and verification are complete. The local
-  integration branch pins evaluator commit `421b135`; the wrapper contract and
+  integration branch pins evaluator commit `9f73aa6`; the wrapper contract and
   shell syntax pass, and all 20 FineCo cases validate with zero tool warnings,
   both supported modes, and matching expected tools.
 - Privacy correction: `LITELLM_API_BASE` is required at runtime. The public
@@ -212,3 +213,16 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   validator still reports 25 pre-existing core conformance errors in unrelated
   ADR, agent, screenshot, and solution files; the edited guide introduces no
   new core error.
+- The Klicker slice reviewer is approved, and the simplifier's accepted
+  test-isolation, dependency, and documentation reductions are applied.
+- The exact pinned evaluator passes a no-cost one-case eval against a local fake
+  proxy with one `/v1/chat/completions` request, the exact Klicker alias, strict
+  `json_schema`, and no parse request. A synthetic 503 produces one request and
+  zero retries.
+- Restricted profile authentication and values-free permissions checks pass.
+  The required alias visibility probe fails during DNS resolution with
+  `gaierror` errno 8 before an HTTP response. No paid judge completion was
+  attempted, and no connectivity repair was performed.
+- Live Klicker target quality remains unproven because the authenticated AI-SDK
+  stream still lacks a verified evaluator endpoint, authentication, and mode
+  adapter.
