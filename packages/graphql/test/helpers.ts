@@ -400,8 +400,8 @@ export async function testCleanup(prisma: PrismaClient) {
   await prisma.microLearning.deleteMany()
   await prisma.groupActivity.deleteMany()
   await prisma.$transaction(async (tx) => {
-    await tx.course.updateMany({ data: { isDeleted: true } })
     await allowCoursePurgeInTransaction(tx)
+    await tx.course.updateMany({ data: { isDeleted: true } })
     await tx.course.deleteMany({ where: { isDeleted: true } })
   })
 
