@@ -677,8 +677,8 @@
           return false
         }
 
-        const hasPhase = Object.prototype.hasOwnProperty.call(payload, 'phase')
-        const hasCanAdvance = Object.prototype.hasOwnProperty.call(
+        const hasPhase = Object.hasOwn(payload, 'phase')
+        const hasCanAdvance = Object.hasOwn(
           payload,
           'canAdvance'
         )
@@ -695,6 +695,16 @@
         if (hasCanAdvance && typeof payload.canAdvance !== 'boolean') {
           return false
         }
+        if (
+          hasPhase &&
+          ((payload.status === 'overview' && payload.phase !== 'overview') ||
+            (payload.status === 'completed' &&
+              (payload.phase !== 'completed' || payload.canAdvance !== false)) ||
+            (payload.status === 'in-progress' &&
+              !['answering', 'feedback'].includes(payload.phase)))
+        ) {
+          return false
+        }
 
         return true
       }
@@ -706,6 +716,7 @@
             elements.quizFrame.contentWindow &&
             !state.advancePending &&
             latestQuizState?.phase &&
+            latestQuizState.status !== 'completed' &&
             latestQuizState.phase !== 'completed' &&
             latestQuizState.canAdvance === true
         )

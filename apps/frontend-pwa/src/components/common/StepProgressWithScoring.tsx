@@ -26,6 +26,7 @@ interface StepProgressWithScoringProps {
   currentIx: number
   setCurrentIx: (ix: number) => void
   resetLocalStorage?: () => void
+  readOnly?: boolean
 }
 
 function StepProgressWithScoring({
@@ -33,8 +34,13 @@ function StepProgressWithScoring({
   currentIx,
   setCurrentIx,
   resetLocalStorage,
+  readOnly = false,
 }: StepProgressWithScoringProps) {
   const t = useTranslations()
+  const isNavigable = () => !readOnly
+  const gatedItems = items.map((item) =>
+    isNavigable() ? item : { ...item, disabled: true }
+  )
 
   return (
     <div className="flex w-full flex-row gap-1 md:gap-2">
@@ -42,8 +48,10 @@ function StepProgressWithScoring({
         displayOffsetLeft={(items.length ?? 0) > 5 ? 3 : undefined}
         displayOffsetRight={(items.length ?? 0) > 5 ? 1 : undefined}
         value={currentIx === -1 ? undefined : currentIx}
-        items={items}
-        onItemClick={(ix: number) => setCurrentIx(ix)}
+        items={gatedItems}
+        onItemClick={(ix: number) => {
+          if (isNavigable()) setCurrentIx(ix)
+        }}
         data={{ cy: 'practice-quiz-progress' }}
         className={{ root: 'w-full' }}
         formatter={({ element, ix }) => (

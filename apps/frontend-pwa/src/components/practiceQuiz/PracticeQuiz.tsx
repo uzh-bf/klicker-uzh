@@ -45,6 +45,7 @@ interface PracticeQuizProps {
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
   embedded?: boolean
+  focusedPresentation?: boolean
   previewOnly?: boolean
   hostNavigation?: boolean
   hostAdvanceRequest?: number
@@ -59,6 +60,7 @@ function PracticeQuiz({
   onAllStacksCompletion,
   showResetLocalStorage = false,
   embedded = false,
+  focusedPresentation = false,
   previewOnly = false,
   hostNavigation = false,
   hostAdvanceRequest = 0,
@@ -66,7 +68,7 @@ function PracticeQuiz({
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
-  const focusedEmbed = embedded && hostNavigation
+  const focusedEmbed = embedded && focusedPresentation
   const currentStack = quiz.stacks?.[currentIx]
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
@@ -120,40 +122,41 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
-          !embedded ? 'md:border' : ''
+          focusedEmbed
+            ? 'w-full space-y-3 px-1 pt-2 pb-20 sm:px-2'
+            : 'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded && 'md:border'
         )}
       >
-        {!focusedEmbed && (
-          <StepProgressWithScoring
-            items={
-              quiz.stacks?.map((stack) => {
-                return progressState?.[stack.id]
-                  ? {
-                      status:
-                        FEEDBACK_STATUS_PROGRESS_MAP[
-                          progressState?.[stack.id].status ??
-                            StackFeedbackStatus.Unanswered
-                        ],
-                      score: progressState?.[stack.id].score ?? null,
-                    }
-                  : {
-                      status: 'unanswered',
-                    }
-              }) || []
-            }
-            currentIx={currentIx}
-            setCurrentIx={setCurrentIx}
-            resetLocalStorage={
-              showResetLocalStorage
-                ? () => {
-                    resetPracticeQuizLocalStorage(quiz.id)
-                    window.location.reload()
+        <StepProgressWithScoring
+          items={
+            quiz.stacks?.map((stack) => {
+              return progressState?.[stack.id]
+                ? {
+                    status:
+                      FEEDBACK_STATUS_PROGRESS_MAP[
+                        progressState?.[stack.id].status ??
+                          StackFeedbackStatus.Unanswered
+                      ],
+                    score: progressState?.[stack.id].score ?? null,
                   }
-                : undefined
-            }
-          />
-        )}
+                : {
+                    status: 'unanswered',
+                  }
+            }) || []
+          }
+          currentIx={currentIx}
+          setCurrentIx={setCurrentIx}
+          readOnly={focusedEmbed}
+          resetLocalStorage={
+            showResetLocalStorage && !focusedEmbed
+              ? () => {
+                  resetPracticeQuizLocalStorage(quiz.id)
+                  window.location.reload()
+                }
+              : undefined
+          }
+        />
 
         {previewOnly && !focusedEmbed && (
           <PreviewMessage
@@ -202,6 +205,7 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            focusedPresentation={focusedEmbed}
             hostNavigation={hostNavigation}
             hostAdvanceRequest={hostAdvanceRequest}
             onHostNavigationStateChange={onHostNavigationStateChange}

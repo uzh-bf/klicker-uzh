@@ -85,14 +85,7 @@ function PracticeQuizPage({
     parentOrigin !== null
 
   const handleHostNavigationStateChange = useCallback(
-    (nextState: EmbedQuizNavigationState) => {
-      setHostNavigationState((currentState) =>
-        currentState.phase === nextState.phase &&
-        currentState.canAdvance === nextState.canAdvance
-          ? currentState
-          : nextState
-      )
-    },
+    (nextState: EmbedQuizNavigationState) => setHostNavigationState(nextState),
     []
   )
 
@@ -365,7 +358,7 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      {hostNavigationActive && isCompleted ? (
+      {focusedEmbedRequested && isCompleted ? (
         <div
           role="status"
           className="rounded-lg bg-slate-50 px-4 py-5 text-center text-sm font-medium text-slate-700"
@@ -380,6 +373,7 @@ function PracticeQuizPage({
         <PracticeQuiz
           showResetLocalStorage
           embedded={embedded}
+          focusedPresentation={focusedEmbedRequested}
           hostNavigation={hostNavigationActive}
           hostAdvanceRequest={hostAdvanceRequest}
           onHostNavigationStateChange={handleHostNavigationStateChange}

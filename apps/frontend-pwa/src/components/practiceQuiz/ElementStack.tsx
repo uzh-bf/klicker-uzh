@@ -64,6 +64,7 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  focusedPresentation?: boolean
   hostNavigation?: boolean
   hostAdvanceRequest?: number
   onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
@@ -86,6 +87,7 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  focusedPresentation = false,
   hostNavigation = false,
   hostAdvanceRequest = 0,
   onHostNavigationStateChange,
@@ -597,7 +599,7 @@ function ElementStack({
   }, [hostAdvanceRequest, hostNavigation, hostNavigationState.canAdvance])
 
   return (
-    <div className={hostNavigation ? 'pb-0' : 'pb-12'}>
+    <div className={focusedPresentation ? 'pb-0' : 'pb-12'}>
       <div className="w-full">
         {activityExpired && activityExpiredMessage && (
           <UserNotification
@@ -607,7 +609,7 @@ function ElementStack({
           />
         )}
 
-        {!hostNavigation && (
+        {!focusedPresentation && (
           <>
             {!previewOnly && !hideBookmark && !embedded ? (
               <div className="flex flex-row items-center justify-between">
@@ -636,7 +638,7 @@ function ElementStack({
 
         <div
           className={
-            hostNavigation
+            focusedPresentation
               ? 'flex flex-col gap-6'
               : 'flex flex-col gap-8 md:gap-12'
           }
@@ -685,7 +687,7 @@ function ElementStack({
                     stackStorage={stackStorage}
                     preview={
                       embedded &&
-                      (hostNavigation
+                      (focusedPresentation
                         ? hostNavigationState.phase !== 'feedback' ||
                           CHOICES_ELEMENT_TYPES.includes(element.elementType)
                         : !openEvaluations.has(element.id))
