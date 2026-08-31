@@ -14,7 +14,10 @@
   only the reusable workflow at `refs/heads/v3`; an upper stack layer cannot
   receive representative self-hosted acceptance before its workflow dependency
   is merged to `v3`.
-- Current authority: research and this uncommitted plan only.
+- Current authority: M1 local implementation and verification are authorized;
+  pushing/opening the M1 PR, merging it, running the cache canary, changing
+  repository variables, and later runner or infrastructure changes remain
+  separately gated.
 
 ## Goal
 
@@ -907,8 +910,10 @@ native planner gate.
   incorporated every final-round finding without fabricating approval.
 - [x] User accepted the documented plan-hardening dissent and authorized
   execution through a goal.
-- [x] M1 cache correctness and observability implemented and locally verified;
-  post-merge cache creation and restore canary remain externally gated.
+- [x] M1 cache correctness and observability implemented and locally verified
+  in `fe9e02cab4edbbea7eb8a47a28d29202fe066cbc`; focused tests (12),
+  `check:playwright-ci` (16), full build (23 tasks), and `check:all` (25 tasks)
+  pass. Post-merge cache creation and restore canary remain externally gated.
 - [ ] M2 selector shadow mode.
 - [ ] M3 canary and global activation.
 - [ ] M4 read-only metric decision and any separately approved packages.
