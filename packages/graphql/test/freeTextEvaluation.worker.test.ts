@@ -37,7 +37,8 @@ type Fixture = Awaited<ReturnType<typeof createFixture>>
 let fixture: Fixture
 
 beforeEach(async () => {
-  process.env.CATALYST_FORMATIVE_EVALUATOR_URL = 'http://evaluator.test'
+  vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', 'http://127.0.0.1:7099')
+  vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL', 'true')
   fixture = await createFixture(TEST_PREFIX)
 })
 afterEach(() => {
@@ -582,7 +583,7 @@ describe('semantic free-text evaluation worker', () => {
         evaluationSource: null,
         correctness: null,
         availabilityReason: 'EVALUATOR_RESULT_UNAVAILABLE',
-        retryable: true,
+        retryable: false,
       },
     })
   })

@@ -134,6 +134,14 @@ The evaluator adapter is configured with:
 - `CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS` (optional; 30 seconds by default)
 - `SEMANTIC_EVALUATION_DISCLOSURE_VERSION`
 
+The evaluator and optional health-check URLs are single allowlisted
+destinations. They must use HTTPS and must not contain credentials or a
+fragment. Redirects are rejected so the bearer token cannot cross origins.
+Local HTTP is accepted only outside production for loopback or
+`host.docker.internal` when
+`CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL=true` (or under
+`NODE_ENV=test`).
+
 Absent configuration selects the deterministic unavailable/exact-match fallback;
 it is not interpreted as an incorrect answer.
 

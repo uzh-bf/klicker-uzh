@@ -7,6 +7,7 @@ import {
   getSemanticFreeTextConfig,
   getSemanticFreeTextConfigHash,
 } from './freeTextEvaluation.js'
+import { authorizeFreeTextEvaluationDispatch } from './freeTextEvaluationDispatch.js'
 import { resolveFreeTextAttemptUnavailability } from './freeTextEvaluationFallback.js'
 import { markFreeTextAttemptUnavailable } from './freeTextEvaluationTransitions.js'
 import {
@@ -18,13 +19,22 @@ import {
   requestSemanticFreeTextEvaluation,
 } from './semanticFreeTextEvaluator.js'
 
+const MAX_AUTOMATIC_EVALUATOR_RETRIES = 3
+
+function hasExhaustedEvaluatorRetries(executionCtx: Context<unknown>) {
+  return (
+    typeof executionCtx.retryCount === 'function' &&
+    executionCtx.retryCount() >= MAX_AUTOMATIC_EVALUATOR_RETRIES
+  )
+}
+
 export async function handleEvaluateFreeTextAttempt(
   {
     attemptId,
     evaluationRevision,
   }: { attemptId: string; evaluationRevision: number },
   globalCtx: HatchetHandlerGlobalContext,
-  _executionCtx: Context<unknown>
+  executionCtx: Context<unknown>
 ) {
   const attempt = await globalCtx.prisma.freeTextAttempt.findUnique({
     where: { id: attemptId },
@@ -79,67 +89,73 @@ export async function handleEvaluateFreeTextAttempt(
     return { success: true, applied: true }
   }
 
-  const latestConsentEvent =
-    await globalCtx.prisma.freeTextConsentEvent.findFirst({
-      where: {
-        participantId: attempt.cycle.participantId,
-        disclosureVersion: getSemanticEvaluationDisclosureVersion(),
-      },
-      orderBy: [{ decidedAt: 'desc' }, { id: 'desc' }],
-    })
-  if (
-    latestConsentEvent?.decision !==
-    DB.SemanticEvaluationConsentDecision.ACCEPTED
-  ) {
-    await resolveFreeTextAttemptUnavailability(
-      {
-        attemptId,
-        evaluationRevision,
-        reason:
-          latestConsentEvent?.decision ===
-          DB.SemanticEvaluationConsentDecision.DECLINED
-            ? 'CONSENT_DECLINED'
-            : 'CONSENT_REQUIRED',
-        retryable: true,
-      },
-      globalCtx.prisma
-    )
-    return { success: true, applied: true }
-  }
-
-  const ownerEntitled =
-    attempt.cycle.practiceQuiz.owner.catalystInstitutional ||
-    attempt.cycle.practiceQuiz.owner.catalystIndividual
-  if (!ownerEntitled) {
-    await resolveFreeTextAttemptUnavailability(
-      {
-        attemptId,
-        evaluationRevision,
-        reason: 'LECTURER_ENTITLEMENT_UNAVAILABLE',
-        retryable: true,
-      },
-      globalCtx.prisma
-    )
-    return { success: true, applied: true }
-  }
-
-  const evaluatorResult = await requestSemanticFreeTextEvaluation({
-    request: {
-      contract_version: '1',
-      task_bundle_id: attempt.id,
-      question: {
-        content: attempt.cycle.elementInstance.elementData.content,
-        language: config.question_language,
-      },
-      response: { text: attempt.answer },
-      ...(config.reference_solution
-        ? { reference_solution: config.reference_solution }
-        : {}),
-      rubric_schema: config.rubric_schema,
-    },
-    rubricSchema: config.rubric_schema,
+  const authorization = await authorizeFreeTextEvaluationDispatch({
+    attemptId,
+    evaluationRevision,
+    participantId: attempt.cycle.participantId,
+    disclosureVersion: getSemanticEvaluationDisclosureVersion(),
+    prisma: globalCtx.prisma,
   })
+  if (!authorization.authorized) {
+    if (authorization.reason === 'ATTEMPT_NOT_PENDING') {
+      return { success: true, applied: false }
+    }
+    await resolveFreeTextAttemptUnavailability(
+      {
+        attemptId,
+        evaluationRevision,
+        reason: authorization.reason,
+        retryable: true,
+      },
+      globalCtx.prisma
+    )
+    return { success: true, applied: true }
+  }
+
+  let evaluatorResult: Awaited<
+    ReturnType<typeof requestSemanticFreeTextEvaluation>
+  >
+  try {
+    evaluatorResult = await requestSemanticFreeTextEvaluation({
+      request: {
+        contract_version: '1',
+        task_bundle_id: attempt.id,
+        question: {
+          content: attempt.cycle.elementInstance.elementData.content,
+          language: config.question_language,
+        },
+        response: { text: attempt.answer },
+        ...(config.reference_solution
+          ? { reference_solution: config.reference_solution }
+          : {}),
+        rubric_schema: config.rubric_schema,
+      },
+      rubricSchema: config.rubric_schema,
+    })
+  } catch (error) {
+    if (
+      error instanceof RetryableSemanticEvaluatorError &&
+      hasExhaustedEvaluatorRetries(executionCtx)
+    ) {
+      return await handleEvaluateFreeTextAttemptFailure(
+        { attemptId, evaluationRevision },
+        globalCtx,
+        executionCtx
+      )
+    }
+    throw error
+  }
   if (!evaluatorResult.ok) {
+    if (evaluatorResult.retryable) {
+      if (hasExhaustedEvaluatorRetries(executionCtx)) {
+        return await handleEvaluateFreeTextAttemptFailure(
+          { attemptId, evaluationRevision },
+          globalCtx,
+          executionCtx
+        )
+      }
+      throw new RetryableSemanticEvaluatorError()
+    }
     await resolveFreeTextAttemptUnavailability(
       {
         attemptId,

@@ -39,6 +39,17 @@ export type QuestionResponseActor = {
   participation: DB.Participation & { participant: DB.Participant }
 }
 
+export type QuestionResponseEvaluationPolicy =
+  | { kind: 'DEFAULT' }
+  | {
+      kind: 'PRECOMPUTED'
+      correctness: number
+      award: {
+        pointsAwarded: number | null
+        xpAwarded: number
+      }
+    }
+
 export type ApplyQuestionResponseInput = {
   id: number
   courseId: string
@@ -46,11 +57,7 @@ export type ApplyQuestionResponseInput = {
   answerTime: number
   actor: QuestionResponseActor | null
   skipTracking?: boolean
-  correctnessOverride?: number
-  awardOverride?: {
-    pointsAwarded: number | null
-    xpAwarded: number
-  }
+  evaluationPolicy?: QuestionResponseEvaluationPolicy
 }
 
 type ComputedQuestionEvaluation = NonNullable<
@@ -480,8 +487,7 @@ export async function applyQuestionResponseInTransaction(
     answerTime,
     actor,
     skipTracking,
-    correctnessOverride,
-    awardOverride,
+    evaluationPolicy = { kind: 'DEFAULT' },
   }: ApplyQuestionResponseInput,
   prisma: PrismaTransactionClient
 ): Promise<AppliedQuestionResponse | null> {
@@ -515,7 +521,10 @@ export async function applyQuestionResponseInTransaction(
     participation,
     response,
     caseStudySolutions,
-    correctnessOverride,
+    correctnessOverride:
+      evaluationPolicy.kind === 'PRECOMPUTED'
+        ? evaluationPolicy.correctness
+        : undefined,
   })
 
   if (!modified || results === null) {
@@ -600,9 +609,9 @@ export async function applyQuestionResponseInTransaction(
     instance: updatedInstance,
   })
 
-  if (awardOverride) {
-    pointsAwarded = awardOverride.pointsAwarded
-    xpAwarded = awardOverride.xpAwarded
+  if (evaluationPolicy.kind === 'PRECOMPUTED') {
+    pointsAwarded = evaluationPolicy.award.pointsAwarded
+    xpAwarded = evaluationPolicy.award.xpAwarded
     const overrideDates = computeAwardOverrideDates({
       pointsAwarded,
       xpAwarded,

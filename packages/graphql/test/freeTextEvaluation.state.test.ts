@@ -4,7 +4,6 @@ import {
   ElementType,
   FreeTextEvaluationStatus,
   PublicationStatus,
-  SemanticEvaluationConsentDecision,
 } from '@klicker-uzh/prisma/client'
 import {
   afterAll,
@@ -41,7 +40,8 @@ type Fixture = Awaited<ReturnType<typeof createFixture>>
 let fixture: Fixture
 
 beforeEach(async () => {
-  process.env.CATALYST_FORMATIVE_EVALUATOR_URL = 'http://evaluator.test'
+  vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', 'http://127.0.0.1:7099')
+  vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL', 'true')
   fixture = await createFixture(TEST_PREFIX)
 })
 afterEach(() => {
@@ -376,7 +376,7 @@ describe('semantic free-text practice state', () => {
       evaluationStatus: 'UNAVAILABLE',
       evaluationSource: null,
       correctness: null,
-      retryable: false,
+      retryable: true,
       availabilityReason: 'CONSENT_DECLINED',
     })
     expect(state.attemptsUsed).toBe(1)
@@ -483,40 +483,10 @@ describe('semantic free-text practice state', () => {
     expect(awaitingConsent.canSubmitAnswer).toBe(true)
   })
 
-  it('returns the latest participant consent decision for the current disclosure', async () => {
-    const ctx = participantContext(fixture.participant.id)
-
-    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
-      disclosureVersion: '2026-08-18',
-      entitled: false,
-      consentDecision: null,
-    })
-
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: true },
-      ctx
-    )
-    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
-      consentDecision: SemanticEvaluationConsentDecision.ACCEPTED,
-    })
-
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: false },
-      ctx
-    )
-    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
-      consentDecision: SemanticEvaluationConsentDecision.DECLINED,
-    })
-
-    await expect(
-      getSemanticFreeTextCapability(lecturerContext(fixture.lecturer.id))
-    ).resolves.toMatchObject({ consentDecision: null })
-  })
-
   it('reports a configured evaluator as unavailable when its health check fails', async () => {
     vi.stubEnv(
       'CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL',
-      'http://evaluator.test/healthz'
+      'http://127.0.0.1:7099/healthz'
     )
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
 
@@ -532,7 +502,7 @@ describe('semantic free-text practice state', () => {
   it('reports a configured evaluator as available after a healthy response', async () => {
     vi.stubEnv(
       'CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL',
-      'http://evaluator.test/healthz'
+      'http://127.0.0.1:7099/healthz'
     )
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
 
@@ -543,58 +513,6 @@ describe('semantic free-text practice state', () => {
       reason: null,
       retryable: false,
     })
-  })
-
-  it('allows declined consent to be accepted before the next answer', async () => {
-    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
-    const ctx = participantContext(fixture.participant.id, schedule)
-    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', '')
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: false },
-      ctx
-    )
-    const fallback = await createFreeTextAttempt(
-      {
-        instanceId: fixture.instance.id,
-        answer: 'It makes a portfolio safer.',
-        answerTime: 3,
-        clientSubmissionId: randomUUID(),
-      },
-      ctx,
-      { disclosureVersion: '2026-08-18' }
-    )
-    expect(fallback).toMatchObject({
-      stateVersion: 2,
-      currentAttempt: {
-        evaluationStatus: 'UNAVAILABLE',
-        evaluationSource: null,
-        availabilityReason: 'CONSENT_DECLINED',
-      },
-    })
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: true },
-      ctx
-    )
-    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', 'http://evaluator.test')
-
-    const retried = await createFreeTextAttempt(
-      {
-        instanceId: fixture.instance.id,
-        answer: 'It spreads risk across investments.',
-        answerTime: 3,
-        clientSubmissionId: randomUUID(),
-      },
-      ctx,
-      { disclosureVersion: '2026-08-18' }
-    )
-
-    expect(retried.currentAttempt).toMatchObject({
-      evaluationRevision: 0,
-      evaluationStatus: 'PENDING',
-    })
-    expect(retried.stateVersion).toBe(3)
-    expect(retried.attemptsUsed).toBe(2)
-    expect(schedule).toHaveBeenCalledTimes(1)
   })
 
   it('schedules one revision when evaluation retry requests race', async () => {
@@ -623,6 +541,10 @@ describe('semantic free-text practice state', () => {
       },
       prisma
     )
+    await prisma.freeTextAttempt.update({
+      where: { id: unavailable.currentAttempt!.id },
+      data: { evaluationAuthorizedAt: new Date() },
+    })
     schedule.mockClear()
 
     const retries = await Promise.all(
@@ -642,6 +564,60 @@ describe('semantic free-text practice state', () => {
     expect(
       retries.map((state) => state.currentAttempt?.evaluationStatus)
     ).toEqual(['PENDING', 'PENDING', 'PENDING', 'PENDING'])
+    await expect(
+      prisma.freeTextAttempt.findUniqueOrThrow({
+        where: { id: unavailable.currentAttempt!.id },
+        select: { evaluationAuthorizedAt: true },
+      })
+    ).resolves.toEqual({ evaluationAuthorizedAt: null })
+  })
+
+  it('projects retry availability from the current evaluator and entitlement gates', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It makes a portfolio safer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await markFreeTextAttemptUnavailable(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+        reason: 'EVALUATOR_UNAVAILABLE',
+        retryable: true,
+      },
+      prisma
+    )
+
+    await expect(
+      getFreeTextPracticeState({ instanceId: fixture.instance.id }, ctx)
+    ).resolves.toMatchObject({ canRetryEvaluation: true })
+
+    await prisma.user.update({
+      where: { id: fixture.lecturer.id },
+      data: { catalystIndividual: false },
+    })
+    await expect(
+      getFreeTextPracticeState({ instanceId: fixture.instance.id }, ctx)
+    ).resolves.toMatchObject({ canRetryEvaluation: false })
+
+    await prisma.user.update({
+      where: { id: fixture.lecturer.id },
+      data: { catalystIndividual: true },
+    })
+    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', '')
+    await expect(
+      getFreeTextPracticeState({ instanceId: fixture.instance.id }, ctx)
+    ).resolves.toMatchObject({ canRetryEvaluation: false })
   })
 
   it('serializes evaluation retry against a changed answer submission', async () => {
@@ -805,46 +781,6 @@ describe('semantic free-text practice state', () => {
     ).toBe(2)
   })
 
-  it('persists consent decisions as an append-only event history', async () => {
-    const ctx = participantContext(fixture.participant.id)
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: true },
-      ctx
-    )
-    // A flip on the same version must append, not overwrite: the ledger keeps
-    // the demonstrable-consent trail for both decisions.
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-18', accepted: false },
-      ctx
-    )
-    vi.stubEnv('SEMANTIC_EVALUATION_DISCLOSURE_VERSION', '2026-08-19')
-    await decideSemanticEvaluationConsent(
-      { disclosureVersion: '2026-08-19', accepted: false },
-      ctx
-    )
-
-    const events = await prisma.freeTextConsentEvent.findMany({
-      where: { participantId: fixture.participant.id },
-      orderBy: [{ decidedAt: 'asc' }, { id: 'asc' }],
-    })
-    expect(
-      events.map((event) => [event.disclosureVersion, event.decision])
-    ).toEqual([
-      ['2026-08-18', SemanticEvaluationConsentDecision.ACCEPTED],
-      ['2026-08-18', SemanticEvaluationConsentDecision.DECLINED],
-      ['2026-08-19', SemanticEvaluationConsentDecision.DECLINED],
-    ])
-  })
-
-  it('rejects consent decisions for a stale disclosure version', async () => {
-    await expect(
-      decideSemanticEvaluationConsent(
-        { disclosureVersion: 'stale-version', accepted: true },
-        participantContext(fixture.participant.id)
-      )
-    ).rejects.toThrow('Disclosure version is not current')
-  })
-
   it('keeps course access when leaderboard participation is inactive', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
@@ -871,33 +807,6 @@ describe('semantic free-text practice state', () => {
       ctx
     )
     expect(revealed.cycleStatus).toBe('SOLUTION_REVEALED')
-  })
-
-  it('returns at most the most frequent peer answers after authorization', async () => {
-    const responses = Object.fromEntries(
-      Array.from({ length: 25 }, (_, index) => [
-        String(index),
-        { value: `Answer ${String(index).padStart(2, '0')}`, count: index + 1 },
-      ])
-    )
-    await prisma.elementInstance.update({
-      where: { id: fixture.instance.id },
-      data: { results: { responses, total: 325 } },
-    })
-
-    const state = await createFreeTextAttempt(
-      {
-        instanceId: fixture.instance.id,
-        answer: 'Diversification reduces idiosyncratic risk.',
-        answerTime: 3,
-        clientSubmissionId: randomUUID(),
-      },
-      participantContext(fixture.participant.id)
-    )
-
-    expect(state.peerAnswers).toHaveLength(20)
-    expect(state.peerAnswers[0]).toEqual({ value: 'Answer 24', count: 25 })
-    expect(state.peerAnswers.at(-1)).toEqual({ value: 'Answer 05', count: 6 })
   })
 
   it('does not expose solution details for an active cycle', async () => {

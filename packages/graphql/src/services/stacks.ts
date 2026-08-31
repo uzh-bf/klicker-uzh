@@ -922,11 +922,6 @@ type RespondToQuestionArgs = {
   answerTime: number
   participation: (DB.Participation & { participant: DB.Participant }) | null
   skipTracking?: boolean
-  correctnessOverride?: number
-  awardOverride?: {
-    pointsAwarded: number | null
-    xpAwarded: number
-  }
 }
 
 export async function respondToQuestion(
@@ -937,8 +932,6 @@ export async function respondToQuestion(
     answerTime,
     participation,
     skipTracking,
-    correctnessOverride,
-    awardOverride,
   }: RespondToQuestionArgs,
   ctx: Context
 ) {
@@ -956,8 +949,6 @@ export async function respondToQuestion(
         answerTime,
         actor,
         skipTracking,
-        correctnessOverride,
-        awardOverride,
       },
       prisma
     )
@@ -1159,7 +1150,8 @@ async function respondToElement({
         where: { id: response.instanceId },
       })
       const semanticConfig =
-        instance?.elementData.type === DB.ElementType.FREE_TEXT
+        instance?.type === DB.ElementInstanceType.PRACTICE_QUIZ &&
+        instance.elementData.type === DB.ElementType.FREE_TEXT
           ? instance.elementData.options.semanticEvaluation
           : null
       if (semanticConfig) {

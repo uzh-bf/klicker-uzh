@@ -7,6 +7,10 @@ import type {
 } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '@/lib/context.js'
+import {
+  isSemanticEvaluatorConfigured,
+  resolveSemanticEvaluatorEndpoint,
+} from './semanticFreeTextEvaluator.js'
 
 const DEFAULT_DISCLOSURE_VERSION = '2026-08-18'
 
@@ -85,18 +89,21 @@ export function getSemanticEvaluationDisclosureVersion() {
 }
 
 async function isSemanticEvaluatorAvailable() {
-  if (!process.env.CATALYST_FORMATIVE_EVALUATOR_URL) return false
+  if (!isSemanticEvaluatorConfigured()) return false
 
   const healthUrl = process.env.CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL
   if (!healthUrl) return true
+  const resolvedHealthUrl = resolveSemanticEvaluatorEndpoint(healthUrl)
+  if (!resolvedHealthUrl) return false
 
   try {
-    const response = await fetch(healthUrl, {
+    const response = await fetch(resolvedHealthUrl, {
       headers: process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN
         ? {
             authorization: `Bearer ${process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN}`,
           }
         : undefined,
+      redirect: 'error',
       signal: AbortSignal.timeout(1_000),
     })
     return response.ok
@@ -239,9 +246,10 @@ export async function getConsentDecision(
   disclosureVersion: string,
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.freeTextConsentEvent.findFirst({
-    where: { participantId, disclosureVersion },
-    orderBy: [{ decidedAt: 'desc' }, { id: 'desc' }],
+  return await ctx.prisma.participantSemanticEvaluationConsent.findUnique({
+    where: {
+      participantId_disclosureVersion: { participantId, disclosureVersion },
+    },
   })
 }
 
@@ -259,7 +267,7 @@ export function evaluationAvailabilityReason({
     return 'CONSENT_REQUIRED'
   }
   if (!ownerEntitled) return 'LECTURER_ENTITLEMENT_UNAVAILABLE'
-  if (!process.env.CATALYST_FORMATIVE_EVALUATOR_URL) {
+  if (!isSemanticEvaluatorConfigured()) {
     return 'EVALUATOR_UNAVAILABLE'
   }
   return null

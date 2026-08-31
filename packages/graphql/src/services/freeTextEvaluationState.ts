@@ -13,11 +13,13 @@ import {
   getConsentDecision,
   getDisclosureVersion,
   isUniqueConstraintError,
+  ownerHasCatalyst,
   parseSemanticConfig,
   type SemanticInstanceAccess,
 } from './freeTextEvaluationPolicy.js'
+import { loadFreeTextPeerAnswers } from './freeTextPeerAnswers.js'
+import { isSemanticEvaluatorConfigured } from './semanticFreeTextEvaluator.js'
 
-const MAX_PEER_ANSWERS = 20
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
@@ -28,6 +30,7 @@ type CycleWithAttempts = DB.FreeTextPracticeCycle & {
     }
   >
   elementInstance: DB.ElementInstance
+  practiceQuiz: DB.PracticeQuiz & { owner: DB.User }
 }
 
 export type FreeTextAttemptState = {
@@ -244,18 +247,17 @@ async function stateFromCycle(
     cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE &&
     current?.evaluationStatus === DB.FreeTextEvaluationStatus.UNAVAILABLE &&
     current.retryable &&
-    consent?.decision === DB.SemanticEvaluationConsentDecision.ACCEPTED
-  const peerAnswers =
-    solutionAuthorized && 'responses' in cycle.elementInstance.results
-      ? Object.values(cycle.elementInstance.results.responses)
-          .map(({ value, count }) => ({ value, count }))
-          .sort((left, right) => {
-            return (
-              right.count - left.count || left.value.localeCompare(right.value)
-            )
-          })
-          .slice(0, MAX_PEER_ANSWERS)
-      : []
+    consent?.decision === DB.SemanticEvaluationConsentDecision.ACCEPTED &&
+    cycle.practiceQuiz.status === DB.PublicationStatus.PUBLISHED &&
+    !cycle.practiceQuiz.isDeleted &&
+    ownerHasCatalyst(cycle.practiceQuiz) &&
+    isSemanticEvaluatorConfigured()
+  const peerAnswers = await loadFreeTextPeerAnswers({
+    elementInstance: cycle.elementInstance,
+    participantId: cycle.participantId,
+    solutionAuthorized,
+    ctx,
+  })
 
   return {
     instanceId: cycle.elementInstanceId,
@@ -306,6 +308,7 @@ export async function loadCycleState(
     include: {
       attempts: { include: { questionResponseDetail: true } },
       elementInstance: true,
+      practiceQuiz: { include: { owner: true } },
     },
   })
   if (!cycle) {

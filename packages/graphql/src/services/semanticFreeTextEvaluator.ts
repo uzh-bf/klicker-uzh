@@ -1,4 +1,7 @@
-import { validateEvaluateFreeTextResponse } from '@klicker-uzh/grading'
+import {
+  MAX_FREE_TEXT_EVALUATOR_RESPONSE_BYTES,
+  validateEvaluateFreeTextResponse,
+} from '@klicker-uzh/grading'
 import type {
   EvaluateFreeTextRequestV1,
   EvaluateFreeTextResponseV1,
@@ -7,6 +10,72 @@ import type {
 } from '@klicker-uzh/types'
 
 const DEFAULT_TIMEOUT_MS = 30_000
+const LOCAL_EVALUATOR_HOSTS = new Set([
+  '127.0.0.1',
+  '[::1]',
+  'localhost',
+  'host.docker.internal',
+])
+
+class EvaluatorResponseTooLargeError extends Error {}
+
+async function readEvaluatorResponse(response: Response): Promise<string> {
+  const declaredLength = Number(response.headers.get('content-length'))
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_FREE_TEXT_EVALUATOR_RESPONSE_BYTES
+  ) {
+    throw new EvaluatorResponseTooLargeError()
+  }
+  if (!response.body) return ''
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  const chunks: string[] = []
+  let bytesRead = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    bytesRead += value.byteLength
+    if (bytesRead > MAX_FREE_TEXT_EVALUATOR_RESPONSE_BYTES) {
+      await reader.cancel().catch(() => undefined)
+      throw new EvaluatorResponseTooLargeError()
+    }
+    chunks.push(decoder.decode(value, { stream: true }))
+  }
+  chunks.push(decoder.decode())
+  return chunks.join('')
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function resolveSemanticEvaluatorEndpoint(value: string): string | null {
+  let endpoint: URL
+  try {
+    endpoint = new URL(value)
+  } catch {
+    return null
+  }
+
+  if (endpoint.username || endpoint.password || endpoint.hash) return null
+  const localHttpAllowed =
+    process.env.NODE_ENV !== 'production' &&
+    (process.env.NODE_ENV === 'test' ||
+      process.env.CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL ===
+        'true') &&
+    endpoint.protocol === 'http:' &&
+    LOCAL_EVALUATOR_HOSTS.has(endpoint.hostname)
+  if (endpoint.protocol !== 'https:' && !localHttpAllowed) return null
+
+  return endpoint.toString()
+}
+
+export function isSemanticEvaluatorConfigured(): boolean {
+  const endpoint = process.env.CATALYST_FORMATIVE_EVALUATOR_URL
+  return !!endpoint && resolveSemanticEvaluatorEndpoint(endpoint) !== null
+}
 
 // Structured boundary logging: reason class and correlation ids only. Never
 // log answer text, rubric content, tokens, or full payloads.
@@ -47,6 +116,16 @@ export type SemanticEvaluatorResult =
       retryable: boolean
     }
 
+function evaluatorRequestedHumanReview(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.rubric_assessments)) {
+    return false
+  }
+
+  return value.rubric_assessments.some(
+    (assessment) => isRecord(assessment) && assessment.needs_review === true
+  )
+}
+
 export async function requestSemanticFreeTextEvaluation({
   request,
   rubricSchema,
@@ -62,6 +141,19 @@ export async function requestSemanticFreeTextEvaluation({
       retryable: true,
     }
   }
+  const resolvedEndpoint = resolveSemanticEvaluatorEndpoint(endpoint)
+  if (!resolvedEndpoint) {
+    logEvaluatorEvent(
+      'error',
+      request.task_bundle_id,
+      'INVALID_EVALUATOR_ENDPOINT'
+    )
+    return {
+      ok: false,
+      reason: 'EVALUATOR_RESULT_UNAVAILABLE',
+      retryable: false,
+    }
+  }
 
   const configuredTimeout = Number(
     process.env.CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS
@@ -72,7 +164,7 @@ export async function requestSemanticFreeTextEvaluation({
       : DEFAULT_TIMEOUT_MS
   let response: Response
   try {
-    response = await fetch(endpoint, {
+    response = await fetch(resolvedEndpoint, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -83,6 +175,7 @@ export async function requestSemanticFreeTextEvaluation({
           : {}),
       },
       body: JSON.stringify(request),
+      redirect: 'error',
       signal: AbortSignal.timeout(timeout),
     })
   } catch (error) {
@@ -118,8 +211,16 @@ export async function requestSemanticFreeTextEvaluation({
 
   let value: unknown
   try {
-    value = await response.json()
-  } catch {
+    value = JSON.parse(await readEvaluatorResponse(response))
+  } catch (error) {
+    if (error instanceof EvaluatorResponseTooLargeError) {
+      logEvaluatorEvent('error', request.task_bundle_id, 'RESPONSE_TOO_LARGE')
+      return {
+        ok: false,
+        reason: 'EVALUATOR_RESULT_UNAVAILABLE',
+        retryable: true,
+      }
+    }
     logEvaluatorEvent('error', request.task_bundle_id, 'INVALID_JSON_PAYLOAD')
     return {
       ok: false,
@@ -133,13 +234,17 @@ export async function requestSemanticFreeTextEvaluation({
     rubricSchema,
   })
   if (errors.length > 0) {
-    logEvaluatorEvent('error', request.task_bundle_id, 'INVALID_PAYLOAD', {
-      validationErrors: errors.length,
-    })
+    const requiresHumanReview = evaluatorRequestedHumanReview(value)
+    logEvaluatorEvent(
+      requiresHumanReview ? 'warn' : 'error',
+      request.task_bundle_id,
+      requiresHumanReview ? 'EVALUATOR_REQUIRES_REVIEW' : 'INVALID_PAYLOAD',
+      { validationErrors: errors.length }
+    )
     return {
       ok: false,
       reason: 'EVALUATOR_RESULT_UNAVAILABLE',
-      retryable: true,
+      retryable: !requiresHumanReview,
     }
   }
 

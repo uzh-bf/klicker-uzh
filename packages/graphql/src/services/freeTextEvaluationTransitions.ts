@@ -351,6 +351,7 @@ export async function retryFreeTextAttemptInTransaction(
       retryable: false,
       availabilityReason: null,
       completedAt: null,
+      evaluationAuthorizedAt: null,
       workflowRunId: null,
     },
   })

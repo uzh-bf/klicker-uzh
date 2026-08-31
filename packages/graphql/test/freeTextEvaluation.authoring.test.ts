@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  ElementBlockStatus,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -22,12 +23,14 @@ import {
   semanticEvaluationForViewer,
 } from '../src/schema/elementData.js'
 import { manipulateElement } from '../src/services/elements.js'
+import { getRunningLiveQuiz } from '../src/services/liveQuizzes.js'
 import { getMicroLearningData } from '../src/services/microLearning.js'
 import { getPracticeQuizData } from '../src/services/practiceQuizzes.js'
 import {
   cleanupFixtures,
   createFixture,
   lecturerContext,
+  participantContext,
   semanticConfig,
 } from './freeTextEvaluation.fixture.js'
 
@@ -326,8 +329,12 @@ describe('semantic free-text authoring', () => {
       throw new Error('Expected a free-text element instance')
     }
     expect(unauthorizedData.options.semanticEvaluation).toBeUndefined()
-    expect(unauthorizedData.options.solutions).toBeNull()
-    expect(unauthorizedData.explanation).toBeNull()
+    expect(unauthorizedData.options.solutions).toEqual([
+      'Diversification reduces idiosyncratic risk.',
+    ])
+    expect(unauthorizedData.explanation).toBe(
+      'Diversification reduces asset-specific risk.'
+    )
 
     const ownerView = await getMicroLearningData(
       { id: microLearning.id },
@@ -339,5 +346,49 @@ describe('semantic free-text authoring', () => {
       throw new Error('Expected a free-text element instance')
     }
     expect(ownerData.options.semanticEvaluation).toEqual(semanticConfig)
+  })
+
+  it('withholds semantic authoring and solution data from live quiz reads', async () => {
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: `${TEST_PREFIX}-live-quiz`,
+        displayName: 'Semantic live quiz',
+        status: PublicationStatus.PUBLISHED,
+        courseId: fixture.course.id,
+        ownerId: fixture.lecturer.id,
+        blocks: {
+          create: {
+            order: 0,
+            status: ElementBlockStatus.EXECUTED,
+            elements: {
+              create: {
+                order: 0,
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementType: ElementType.FREE_TEXT,
+                elementId: fixture.instance.elementId,
+                ownerId: fixture.lecturer.id,
+                options: fixture.instance.options,
+                elementData: fixture.instance.elementData,
+                results: fixture.instance.results,
+                anonymousResults: fixture.instance.anonymousResults,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    const participantView = await getRunningLiveQuiz(
+      { id: liveQuiz.id },
+      participantContext(fixture.participant.id)
+    )
+    const participantData = participantView?.blocks[0]?.elements[0]?.elementData
+    expect(participantData?.type).toBe(ElementType.FREE_TEXT)
+    if (participantData?.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text element instance')
+    }
+    expect(participantData.options.semanticEvaluation).toBeUndefined()
+    expect(participantData.options.solutions).toBeUndefined()
+    expect(participantData.explanation).toBeNull()
   })
 })

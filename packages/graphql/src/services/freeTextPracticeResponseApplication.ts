@@ -91,8 +91,11 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
       actor: {
         participation: attempt.cycle.participation,
       },
-      correctnessOverride: currentPercentage,
-      awardOverride: { pointsAwarded, xpAwarded },
+      evaluationPolicy: {
+        kind: 'PRECOMPUTED',
+        correctness: currentPercentage,
+        award: { pointsAwarded, xpAwarded },
+      },
     },
     prisma
   )

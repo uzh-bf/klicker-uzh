@@ -2,27 +2,56 @@ import type { FreeTextRubricSchema } from '@klicker-uzh/types'
 import {
   approximatelyEqual,
   hasDuplicates,
+  isBoundedNonEmptyString,
+  isBoundedStringArray,
   isFiniteNumber,
-  isNonEmptyString,
   isRecord,
-  isStringArray,
+  isWithinFreeTextPayloadBounds,
+  MAX_FREE_TEXT_ACHIEVEMENT_LEVELS,
+  MAX_FREE_TEXT_CONFIG_TEXT_LENGTH,
+  MAX_FREE_TEXT_IDENTIFIER_LENGTH,
+  MAX_FREE_TEXT_LIST_ITEM_LENGTH,
+  MAX_FREE_TEXT_LIST_ITEMS,
+  MAX_FREE_TEXT_RUBRICS,
   SCORE_MAX,
   SCORE_MIN,
 } from './freeTextSemanticPrimitives.js'
 
+function isIdentifier(value: unknown): value is string {
+  return isBoundedNonEmptyString(value, MAX_FREE_TEXT_IDENTIFIER_LENGTH)
+}
+
+function isConfigText(value: unknown): value is string {
+  return isBoundedNonEmptyString(value, MAX_FREE_TEXT_CONFIG_TEXT_LENGTH)
+}
+
+function isEvaluatorStringList(value: unknown): value is string[] {
+  return isBoundedStringArray(value, {
+    maxItems: MAX_FREE_TEXT_LIST_ITEMS,
+    maxItemLength: MAX_FREE_TEXT_LIST_ITEM_LENGTH,
+  })
+}
+
 export function validateFreeTextRubricSchema(value: unknown): string[] {
   if (!isRecord(value)) return ['rubric schema must be an object']
+  if (!isWithinFreeTextPayloadBounds(value)) {
+    return ['rubric schema exceeds payload limits']
+  }
 
   const errors: string[] = []
-  if (!isNonEmptyString(value.schema_version)) {
+  if (!isIdentifier(value.schema_version)) {
     errors.push('schema_version is required')
   }
-  if (!isNonEmptyString(value.name)) errors.push('schema name is required')
-  if (!isNonEmptyString(value.description)) {
+  if (!isConfigText(value.name)) errors.push('schema name is required')
+  if (!isConfigText(value.description)) {
     errors.push('schema description is required')
   }
   if (!Array.isArray(value.rubrics) || value.rubrics.length === 0) {
     errors.push('at least one rubric is required')
+    return errors
+  }
+  if (value.rubrics.length > MAX_FREE_TEXT_RUBRICS) {
+    errors.push(`rubrics must contain at most ${MAX_FREE_TEXT_RUBRICS} entries`)
     return errors
   }
 
@@ -36,13 +65,13 @@ export function validateFreeTextRubricSchema(value: unknown): string[] {
       return
     }
 
-    if (isNonEmptyString(rubric.id)) rubricIds.push(rubric.id)
+    if (isIdentifier(rubric.id)) rubricIds.push(rubric.id)
     else errors.push(`rubric ${rubricIndex + 1} id is required`)
 
-    if (isNonEmptyString(rubric.name)) rubricNames.push(rubric.name)
+    if (isConfigText(rubric.name)) rubricNames.push(rubric.name)
     else errors.push(`rubric ${rubricIndex + 1} name is required`)
 
-    if (!isNonEmptyString(rubric.description)) {
+    if (!isConfigText(rubric.description)) {
       errors.push(`rubric ${rubricIndex + 1} description is required`)
     }
 
@@ -65,6 +94,12 @@ export function validateFreeTextRubricSchema(value: unknown): string[] {
       )
       return
     }
+    if (rubric.achievement_levels.length > MAX_FREE_TEXT_ACHIEVEMENT_LEVELS) {
+      errors.push(
+        `rubric ${rubricIndex + 1} must have at most ${MAX_FREE_TEXT_ACHIEVEMENT_LEVELS} achievement levels`
+      )
+      return
+    }
 
     const levelNames: string[] = []
     rubric.achievement_levels.forEach((level, levelIndex) => {
@@ -75,14 +110,14 @@ export function validateFreeTextRubricSchema(value: unknown): string[] {
         return
       }
 
-      if (isNonEmptyString(level.name)) levelNames.push(level.name)
+      if (isConfigText(level.name)) levelNames.push(level.name)
       else {
         errors.push(
           `rubric ${rubricIndex + 1} achievement level ${levelIndex + 1} name is required`
         )
       }
 
-      if (!isNonEmptyString(level.description)) {
+      if (!isConfigText(level.description)) {
         errors.push(
           `rubric ${rubricIndex + 1} achievement level ${levelIndex + 1} description is required`
         )
@@ -123,6 +158,9 @@ export function validateEvaluateFreeTextResponse({
   rubricSchema: unknown
 }): string[] {
   if (!isRecord(value)) return ['evaluator response must be an object']
+  if (!isWithinFreeTextPayloadBounds(value)) {
+    return ['evaluator response exceeds payload limits']
+  }
   if (validateFreeTextRubricSchema(rubricSchema).length > 0) {
     return ['rubric schema is invalid']
   }
@@ -135,14 +173,20 @@ export function validateEvaluateFreeTextResponse({
   if (value.task_bundle_id !== taskBundleId) {
     errors.push('response task_bundle_id does not match the request')
   }
-  if (!isNonEmptyString(value.evaluator_version)) {
+  if (!isIdentifier(value.evaluator_version)) {
     errors.push('response evaluator_version is required')
   }
-  if (!isNonEmptyString(value.model_version)) {
+  if (!isIdentifier(value.model_version)) {
     errors.push('response model_version is required')
   }
   if (!Array.isArray(value.rubric_assessments)) {
     errors.push('rubric assessments are required')
+    return errors
+  }
+  if (value.rubric_assessments.length > MAX_FREE_TEXT_RUBRICS) {
+    errors.push(
+      `rubric assessments must contain at most ${MAX_FREE_TEXT_RUBRICS} entries`
+    )
     return errors
   }
 
@@ -162,7 +206,7 @@ export function validateEvaluateFreeTextResponse({
     }
 
     const rubricId = assessment.rubric_id
-    if (!isNonEmptyString(rubricId)) {
+    if (!isIdentifier(rubricId)) {
       errors.push(`${prefix} rubric_id is required`)
     } else {
       assessedRubricIds.push(rubricId)
@@ -173,7 +217,7 @@ export function validateEvaluateFreeTextResponse({
         if (assessment.rubric_name !== configuredRubric.name) {
           errors.push(`${prefix} rubric_name does not match the rubric`)
         }
-        const configuredLevel = isNonEmptyString(assessment.proposed_level)
+        const configuredLevel = isConfigText(assessment.proposed_level)
           ? configuredRubric.achievement_levels.find(
               (level) => level.name === assessment.proposed_level
             )
@@ -220,14 +264,14 @@ export function validateEvaluateFreeTextResponse({
       ['used_evidence_ids', assessment.used_evidence_ids],
       ['unsupported_claims', assessment.unsupported_claims],
     ] as const) {
-      if (!isStringArray(fieldValue)) {
+      if (!isEvaluatorStringList(fieldValue)) {
         errors.push(`${prefix} ${field} must be a string array`)
       }
     }
-    if (!isNonEmptyString(assessment.justification)) {
+    if (!isConfigText(assessment.justification)) {
       errors.push(`${prefix} justification is required`)
     }
-    if (!isNonEmptyString(assessment.rationale)) {
+    if (!isConfigText(assessment.rationale)) {
       errors.push(`${prefix} rationale is required`)
     }
   })
@@ -249,6 +293,12 @@ export function validateEvaluateFreeTextResponse({
   ) {
     errors.push('feedback proposals must be an array')
   } else if (Array.isArray(value.feedback_proposals)) {
+    if (value.feedback_proposals.length > MAX_FREE_TEXT_RUBRICS) {
+      errors.push(
+        `feedback proposals must contain at most ${MAX_FREE_TEXT_RUBRICS} entries`
+      )
+      return errors
+    }
     const proposedRubricIds: string[] = []
     value.feedback_proposals.forEach((proposal, index) => {
       const prefix = `feedback proposal ${index + 1}`
@@ -262,7 +312,7 @@ export function validateEvaluateFreeTextResponse({
       }
 
       const rubricId = proposal.rubric_id
-      if (!isNonEmptyString(rubricId)) {
+      if (!isIdentifier(rubricId)) {
         errors.push(`${prefix} rubric_id is required`)
       } else {
         proposedRubricIds.push(rubricId)
@@ -274,7 +324,7 @@ export function validateEvaluateFreeTextResponse({
         }
       }
 
-      if (!isNonEmptyString(proposal.feedback)) {
+      if (!isConfigText(proposal.feedback)) {
         errors.push(`${prefix} feedback is required`)
       }
       for (const [field, fieldValue] of [
@@ -283,7 +333,7 @@ export function validateEvaluateFreeTextResponse({
         ['action_items', proposal.action_items],
         ['evidence_ids', proposal.evidence_ids],
       ] as const) {
-        if (!isStringArray(fieldValue)) {
+        if (!isEvaluatorStringList(fieldValue)) {
           errors.push(`${prefix} ${field} must be a string array`)
         }
       }

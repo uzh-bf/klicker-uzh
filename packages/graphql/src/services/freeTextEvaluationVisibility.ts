@@ -16,7 +16,26 @@ export function hideSemanticFreeTextAuthoringData(
     explanation: null,
     options: {
       ...elementData.options,
+      semanticEvaluation: undefined,
       solutions: null,
+    },
+  }
+}
+
+export function hideSemanticFreeTextConfig(
+  elementData: ElementData
+): ElementData {
+  if (
+    elementData.type !== DB.ElementType.FREE_TEXT ||
+    !elementData.options.semanticEvaluation
+  ) {
+    return elementData
+  }
+
+  return {
+    ...elementData,
+    options: {
+      ...elementData.options,
       semanticEvaluation: undefined,
     },
   }

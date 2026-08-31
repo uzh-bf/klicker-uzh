@@ -1,26 +1,27 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,7 +29,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -37,6 +37,7 @@ import {
   getPermissionBooleans,
   persistActivityWithPermissions,
 } from './activities.js'
+import { hideSemanticFreeTextAuthoringData } from './freeTextEvaluationVisibility.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -2829,17 +2830,20 @@ function removeSolutionFromInstances({
           },
         }
 
-      case DB.ElementType.FREE_TEXT:
+      case DB.ElementType.FREE_TEXT: {
+        const sanitizedFreeText = hideSemanticFreeTextAuthoringData(elementData)
+        if (sanitizedFreeText.type !== DB.ElementType.FREE_TEXT) return instance
         return {
           ...instance,
           elementData: {
-            ...elementData,
+            ...sanitizedFreeText,
             options: {
-              ...elementData.options,
+              ...sanitizedFreeText.options,
               solutions: undefined,
             },
           },
         }
+      }
 
       case DB.ElementType.SELECTION:
         return {
@@ -2967,50 +2971,52 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     (block) => block.status === DB.ElementBlockStatus.SCHEDULED
   )
 
-  // extract solution from instances in active block
-  let quizWithoutSolutions: any
-  if (quiz && quiz.activeBlock) {
-    const activeBlockInstances = await Promise.all(
-      removeSolutionFromInstances({
-        instances: quiz.activeBlock.elements,
-      }).map(async (instance) => {
-        if (!quiz.isAssessmentEnabled) {
-          return instance
-        }
-
-        // for assessment quizzes, add a correlation key to verify a student's submission
-        const correlationKey = await signJWT(
-          {
-            instanceId: instance.id,
-            execution: quiz.activeBlock!.execution,
-            liveQuizId: quiz.id,
-            sub: '', // dummy sub, since this value is required
-          },
-          process.env.APP_SECRET as string,
-          {
-            issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-            issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
+  const activeBlockInstances = quiz?.activeBlock
+    ? await Promise.all(
+        removeSolutionFromInstances({
+          instances: quiz.activeBlock.elements,
+        }).map(async (instance) => {
+          if (!quiz.isAssessmentEnabled) {
+            return instance
           }
-        )
 
-        return { ...instance, correlationKey }
-      })
-    )
+          // for assessment quizzes, add a correlation key to verify a student's submission
+          const correlationKey = await signJWT(
+            {
+              instanceId: instance.id,
+              execution: quiz.activeBlock!.execution,
+              liveQuizId: quiz.id,
+              sub: '', // dummy sub, since this value is required
+            },
+            process.env.APP_SECRET as string,
+            {
+              issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+              issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
+            }
+          )
 
-    quizWithoutSolutions = {
-      ...quiz,
-      beforeFirstBlock,
-      activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
-      // for future blocks, do not return the elements
-      blocks: quiz.blocks.map((block) => ({
-        ...block,
-        elements:
-          block.status === DB.ElementBlockStatus.EXECUTED
-            ? removeSolutionFromInstances({ instances: block.elements })
-            : [],
-      })),
-    }
-  }
+          return { ...instance, correlationKey }
+        })
+      )
+    : null
+
+  const quizWithoutSolutions = quiz
+    ? {
+        ...quiz,
+        beforeFirstBlock,
+        activeBlock: quiz.activeBlock
+          ? { ...quiz.activeBlock, elements: activeBlockInstances ?? [] }
+          : null,
+        // for future blocks, do not return the elements
+        blocks: quiz.blocks.map((block) => ({
+          ...block,
+          elements:
+            block.status === DB.ElementBlockStatus.EXECUTED
+              ? removeSolutionFromInstances({ instances: block.elements })
+              : [],
+        })),
+      }
+    : null
 
   if (quiz?.status === DB.PublicationStatus.PUBLISHED) {
     return quizWithoutSolutions
@@ -3018,11 +3024,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
           ...quizWithoutSolutions,
           isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
         }
-      : {
-          ...quiz,
-          isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
-          beforeFirstBlock,
-        }
+      : null
   }
 
   return null

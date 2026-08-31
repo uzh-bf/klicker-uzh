@@ -306,7 +306,7 @@ export async function createFreeTextAttempt(
           retryable:
             !unavailableAtLimit &&
             !exactMatchFallback &&
-            unavailableReason === 'EVALUATOR_UNAVAILABLE',
+            unavailableReason !== null,
           availabilityReason: unavailableReason,
           completedAt: fallbackCompletedAt,
           aggregateScore: exactMatchFallback ? fallbackScore : null,
@@ -583,13 +583,31 @@ export async function decideSemanticEvaluationConsent(
     )
   }
   return await ctx.prisma.$transaction(async (prisma) => {
-    const consent = await prisma.freeTextConsentEvent.create({
-      data: {
+    await prisma.$queryRaw`
+      SELECT "id"
+      FROM "Participant"
+      WHERE "id" = CAST(${ctx.user.sub} AS UUID)
+      FOR UPDATE
+    `
+    const consent = await prisma.participantSemanticEvaluationConsent.upsert({
+      where: {
+        participantId_disclosureVersion: {
+          participantId: ctx.user.sub,
+          disclosureVersion,
+        },
+      },
+      create: {
         participantId: ctx.user.sub,
         disclosureVersion,
         decision: accepted
           ? DB.SemanticEvaluationConsentDecision.ACCEPTED
           : DB.SemanticEvaluationConsentDecision.DECLINED,
+      },
+      update: {
+        decision: accepted
+          ? DB.SemanticEvaluationConsentDecision.ACCEPTED
+          : DB.SemanticEvaluationConsentDecision.DECLINED,
+        decidedAt: new Date(),
       },
     })
 

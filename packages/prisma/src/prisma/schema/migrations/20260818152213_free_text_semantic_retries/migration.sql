@@ -51,6 +51,7 @@ CREATE TABLE "FreeTextAttempt" (
     "retryable" BOOLEAN NOT NULL DEFAULT false,
     "availabilityReason" TEXT,
     "completedAt" TIMESTAMP(3),
+    "evaluationAuthorizedAt" TIMESTAMP(3),
     "rubricSchemaVersion" TEXT NOT NULL,
     "rubricSchemaHash" TEXT NOT NULL,
     "evaluatorVersion" TEXT,
@@ -70,18 +71,18 @@ CREATE TABLE "FreeTextAttempt" (
 );
 
 -- CreateTable
-CREATE TABLE "FreeTextConsentEvent" (
+CREATE TABLE "ParticipantSemanticEvaluationConsent" (
     "id" SERIAL NOT NULL,
     "disclosureVersion" TEXT NOT NULL,
     "decision" "SemanticEvaluationConsentDecision" NOT NULL,
     "decidedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "participantId" UUID NOT NULL,
 
-    CONSTRAINT "FreeTextConsentEvent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ParticipantSemanticEvaluationConsent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "FreeTextConsentEvent_participantId_disclosu_idx" ON "FreeTextConsentEvent"("participantId", "disclosureVersion", "decidedAt");
+CREATE UNIQUE INDEX "ParticipantSemanticConsent_participant_version_key" ON "ParticipantSemanticEvaluationConsent"("participantId", "disclosureVersion");
 
 -- CreateIndex
 CREATE INDEX "FreeTextPracticeCycle_participantId_practiceQuizId_idx" ON "FreeTextPracticeCycle"("participantId", "practiceQuizId");
@@ -121,3 +122,6 @@ ALTER TABLE "FreeTextAttempt" ADD CONSTRAINT "FreeTextAttempt_cycleId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "FreeTextAttempt" ADD CONSTRAINT "FreeTextAttempt_questionResponseDetailId_fkey" FOREIGN KEY ("questionResponseDetailId") REFERENCES "QuestionResponseDetail"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ParticipantSemanticEvaluationConsent" ADD CONSTRAINT "ParticipantSemanticEvaluationConsent_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;

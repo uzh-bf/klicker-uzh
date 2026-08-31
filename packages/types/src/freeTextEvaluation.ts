@@ -10,6 +10,7 @@ export type FreeTextEvaluationAvailabilityReason =
   | 'EVALUATOR_RESULT_UNAVAILABLE'
   | 'EVALUATOR_UNAVAILABLE'
   | 'LECTURER_ENTITLEMENT_UNAVAILABLE'
+  | 'PARTICIPANT_ACCESS_UNAVAILABLE'
   | 'SCHEDULING_FAILED'
 
 export type FreeTextRubricAchievementLevel = {

@@ -6,9 +6,12 @@ import type {
 } from '@klicker-uzh/types'
 import {
   hasDuplicates,
+  isBoundedNonEmptyString,
   isFiniteNumber,
-  isNonEmptyString,
   isRecord,
+  MAX_FREE_TEXT_CONFIG_TEXT_LENGTH,
+  MAX_FREE_TEXT_IDENTIFIER_LENGTH,
+  MAX_FREE_TEXT_OUTCOME_BANDS,
   SCORE_MAX,
   SCORE_MIN,
 } from './freeTextSemanticPrimitives.js'
@@ -59,6 +62,11 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
   if (!Array.isArray(value) || value.length === 0) {
     return ['at least one outcome band is required']
   }
+  if (value.length > MAX_FREE_TEXT_OUTCOME_BANDS) {
+    return [
+      `outcome bands must contain at most ${MAX_FREE_TEXT_OUTCOME_BANDS} entries`,
+    ]
+  }
 
   const errors: string[] = []
   const bands: FreeTextOutcomeBand[] = []
@@ -70,10 +78,13 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
       return
     }
 
-    if (isNonEmptyString(band.id)) ids.push(band.id)
-    else errors.push(`outcome band ${index + 1} id is required`)
+    if (isBoundedNonEmptyString(band.id, MAX_FREE_TEXT_IDENTIFIER_LENGTH)) {
+      ids.push(band.id)
+    } else errors.push(`outcome band ${index + 1} id is required`)
 
-    if (!isNonEmptyString(band.label)) {
+    if (
+      !isBoundedNonEmptyString(band.label, MAX_FREE_TEXT_CONFIG_TEXT_LENGTH)
+    ) {
       errors.push(`outcome band ${index + 1} label is required`)
     }
 
@@ -102,8 +113,8 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
 
     if (
       validCategory &&
-      isNonEmptyString(band.id) &&
-      isNonEmptyString(band.label)
+      isBoundedNonEmptyString(band.id, MAX_FREE_TEXT_IDENTIFIER_LENGTH) &&
+      isBoundedNonEmptyString(band.label, MAX_FREE_TEXT_CONFIG_TEXT_LENGTH)
     ) {
       bands.push({
         id: band.id,

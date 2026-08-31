@@ -19,7 +19,7 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
-import { hideSemanticFreeTextAuthoringData } from './freeTextEvaluationVisibility.js'
+import { hideSemanticFreeTextConfig } from './freeTextEvaluationVisibility.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -80,9 +80,7 @@ export async function getMicroLearningData(
             ...stack,
             elements: stack.elements.map((element) => ({
               ...element,
-              elementData: hideSemanticFreeTextAuthoringData(
-                element.elementData
-              ),
+              elementData: hideSemanticFreeTextConfig(element.elementData),
             })),
           }))
         : microLearning.stacks,
