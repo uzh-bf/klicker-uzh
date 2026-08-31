@@ -519,10 +519,9 @@ export async function applyQuestionResponseInTransaction(
       evaluationPolicy.kind === 'PRECOMPUTED'
         ? evaluationPolicy.scorePercentage
         : undefined,
-    resultCorrectOverride:
+    responseCorrectnessOverride:
       evaluationPolicy.kind === 'PRECOMPUTED'
-        ? evaluationPolicy.responseCorrectness ===
-          DB.ResponseCorrectness.CORRECT
+        ? evaluationPolicy.responseCorrectness
         : undefined,
   })
 

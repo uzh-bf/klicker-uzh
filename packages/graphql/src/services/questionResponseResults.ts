@@ -460,14 +460,14 @@ export function updateQuestionResults({
   response,
   caseStudySolutions,
   correctnessOverride,
-  resultCorrectOverride,
+  responseCorrectnessOverride,
 }: {
   existingInstance: DB.ElementInstance
   participation: (DB.Participation & { participant: DB.Participant }) | null
   response: ResponseInput
   caseStudySolutions?: CaseStudySolutionsObject
   correctnessOverride?: number
-  resultCorrectOverride?: boolean
+  responseCorrectnessOverride?: DB.ResponseCorrectness
 }): {
   correctness: number | null
   results: ElementInstanceResults
@@ -522,7 +522,10 @@ export function updateQuestionResults({
         previousResults,
         elementData,
         response,
-        correct: resultCorrectOverride ?? correctness === 1,
+        correct:
+          responseCorrectnessOverride != null
+            ? responseCorrectnessOverride === DB.ResponseCorrectness.CORRECT
+            : correctness === 1,
       }),
       correctness,
     }
