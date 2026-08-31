@@ -8,6 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  PLAYWRIGHT_CACHE_ENABLED: ${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}
 
 jobs:
   # The hosted and public-PR predicates are intentional complements. Only the
@@ -31,11 +32,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
+          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/playwright-cache-seed\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/playwright-(cache-contract|telemetry|turbo-telemetry)\.(cjs|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
 
   build-and-compile-hosted:
     needs: filter-hosted
@@ -47,6 +50,16 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out trusted cache contract
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: refs/heads/v3
+          path: .ci-control
+          persist-credentials: false
 
       - name: Define node version
         uses: actions/setup-node@v4
@@ -58,35 +71,59 @@ jobs:
           version: 11.5.0
           run_install: false
 
+      - name: Compute cache contract
+        id: cache-contract
+        run: |
+          control_root=.ci-control
+          if [ ! -f "$control_root/.github/scripts/playwright-cache-contract.cjs" ]; then
+            control_root="$GITHUB_WORKSPACE"
+          fi
+          node "$control_root/.github/scripts/playwright-cache-contract.cjs" --root "$GITHUB_WORKSPACE"
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: pnpm-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Cache turbo build artifacts
-        uses: actions/cache@v4
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: turbo-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
-            ${{ runner.os }}-turbo-
+            playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+        id: build
+        shell: bash
+        run: |
+          started=$(date +%s)
+          set +e
+          {
+            pnpm run --filter @klicker-uzh/prisma build:test
+            pnpm run build:test
+          } 2>&1 | tee turbo-build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+          exit "$status"
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
@@ -150,6 +187,46 @@ jobs:
             packages/util/dist
           retention-days: 1
 
+      - name: Extract Turbo build telemetry
+        if: always()
+        run: |
+          control_root=.ci-control
+          if [ ! -f "$control_root/.github/scripts/turbo-telemetry.cjs" ]; then
+            control_root="$GITHUB_WORKSPACE"
+          fi
+          node "$control_root/.github/scripts/turbo-telemetry.cjs" --log turbo-build.log
+
+      - name: Write build telemetry
+        if: always()
+        shell: bash
+        env:
+          PLAYWRIGHT_TELEMETRY_PHASE: build
+          PLAYWRIGHT_ROUTE: hosted
+          PLAYWRIGHT_MODE: full
+          PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+          PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+          TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+          TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
+          TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
+          PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
+        run: |
+          control_root=.ci-control
+          if [ ! -f "$control_root/.github/scripts/playwright-telemetry.cjs" ]; then
+            control_root="$GITHUB_WORKSPACE"
+          fi
+          node "$control_root/.github/scripts/playwright-telemetry.cjs" --output playwright-build-telemetry.json
+
+      - name: Upload build telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-build-telemetry
+          path: playwright-build-telemetry.json
+          if-no-files-found: error
+          retention-days: 1
+
   test-playwright-hosted:
     needs: [filter-hosted, build-and-compile-hosted]
     if: >-
@@ -159,7 +236,7 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
       # Shares /config with the hatchet service so this job can read the worker
       # API token that hatchet-lite-dev mints on boot. Reading it via `docker
       # exec` (as the non-containerized workflows do) is impossible here: the
@@ -259,6 +336,16 @@ jobs:
 
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out trusted cache contract
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: refs/heads/v3
+          path: .ci-control
+          persist-credentials: false
 
       - name: Define node version
         uses: actions/setup-node@v4
@@ -268,18 +355,24 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Compute cache contract
+        id: cache-contract
+        run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: pnpm-cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Install dependencies
         run: pnpm install
@@ -327,6 +420,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "PLAYWRIGHT_STARTED_SECONDS=$(date +%s)" >> "$GITHUB_ENV"
           chmod +x .github/scripts/wait-for-services.sh
           PROFILE_RUNTIME_FILES=(
             playwright/profiles.json
@@ -435,6 +529,42 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
+      - name: Write shard telemetry
+        if: always()
+        shell: bash
+        env:
+          PLAYWRIGHT_TELEMETRY_PHASE: shard
+          PLAYWRIGHT_ROUTE: hosted
+          PLAYWRIGHT_MODE: full
+          PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+          PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+          TURBO_TASKS_SUCCESSFUL: ${{ env.TURBO_TASKS_SUCCESSFUL }}
+          TURBO_TASKS_TOTAL: ${{ env.TURBO_TASKS_TOTAL }}
+          TURBO_TASKS_CACHED: ${{ env.TURBO_TASKS_CACHED }}
+          TURBO_CACHED_TOTAL: ${{ env.TURBO_CACHED_TOTAL }}
+          PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shardIndex }}
+          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
+          PLAYWRIGHT_CONCLUSION: ${{ job.status }}
+        run: |
+          started="${PLAYWRIGHT_STARTED_SECONDS:-$(date +%s)}"
+          export PLAYWRIGHT_DURATION_SECONDS="$(( $(date +%s) - started ))"
+          control_root=.ci-control
+          if [ ! -f "$control_root/.github/scripts/playwright-telemetry.cjs" ]; then
+            control_root="$GITHUB_WORKSPACE"
+          fi
+          node "$control_root/.github/scripts/playwright-telemetry.cjs" --output "playwright-telemetry-${{ matrix.shardIndex }}.json"
+
+      - name: Upload shard telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-hosted-telemetry-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: playwright-telemetry-${{ matrix.shardIndex }}.json
+          if-no-files-found: error
+          retention-days: 1
+
   test-playwright-public-pr:
     if: >-
       github.event_name == 'pull_request' &&
@@ -447,7 +577,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
-    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3
 
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.
@@ -539,4 +669,135 @@ jobs:
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
+          retention-days: 1
+
+  # Queue inspection is deliberately hosted and checkout-free. It has only
+  # actions: read permission and never runs on the public self-hosted pool.
+  playwright-queue-telemetry:
+    needs:
+      [
+        filter-hosted,
+        build-and-compile-hosted,
+        test-playwright-hosted,
+        test-playwright-public-pr,
+        test-playwright-status,
+      ]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    steps:
+      - name: Collect current-run queue telemetry
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('node:fs')
+
+            const secondsBetween = (start, end) => {
+              if (!start || !end) return null
+              const seconds = (Date.parse(end) - Date.parse(start)) / 1000
+              return Number.isFinite(seconds) && seconds >= 0 ? seconds : null
+            }
+
+            const percentile = (values, fraction) => {
+              if (values.length === 0) return null
+              const sorted = [...values].sort((a, b) => a - b)
+              const index = Math.min(
+                sorted.length - 1,
+                Math.ceil(sorted.length * fraction) - 1
+              )
+              return sorted[index]
+            }
+
+            const jobClass = (name) => {
+              const value = name.toLowerCase()
+              if (value.includes('public-pr')) return 'public-pr'
+              if (value.includes('filter')) return 'filter'
+              if (value.includes('build')) return 'hosted-build'
+              if (value.includes('status')) return 'status'
+              if (value.includes('playwright')) return 'hosted-shard'
+              return 'other'
+            }
+
+            const runId = Number(process.env.GITHUB_RUN_ID)
+            let report
+
+            try {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              )
+              const records = jobs
+                .filter(
+                  (job) =>
+                    !job.name.toLowerCase().includes('queue-telemetry')
+                )
+                .map((job) => ({
+                  jobClass: jobClass(job.name),
+                  status: job.status ?? 'unknown',
+                  conclusion: job.conclusion ?? null,
+                  runner: job.runner_name ?? null,
+                  queueSeconds: secondsBetween(
+                    job.created_at,
+                    job.started_at
+                  ),
+                  durationSeconds: secondsBetween(
+                    job.started_at,
+                    job.completed_at
+                  ),
+                }))
+              const queueSeconds = records
+                .map((record) => record.queueSeconds)
+                .filter((value) => value !== null)
+
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'mixed',
+                runId,
+                jobCount: records.length,
+                queueObservedCount: queueSeconds.length,
+                queueP50Seconds: percentile(queueSeconds, 0.5),
+                queueP95Seconds: percentile(queueSeconds, 0.95),
+                jobs: records,
+              }
+            } catch {
+              core.warning('Current-run queue telemetry is unavailable')
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'mixed',
+                runId,
+                collection: 'unavailable',
+                errorClass: 'actions-api',
+              }
+            }
+
+            fs.writeFileSync(
+              'playwright-queue-telemetry.json',
+              `${JSON.stringify(report, null, 2)}\n`
+            )
+            await core.summary
+              .addHeading('Playwright queue telemetry')
+              .addRaw(
+                report.collection === 'unavailable'
+                  ? 'Collection unavailable; execution was not affected.'
+                  : `Observed ${report.queueObservedCount} of ${report.jobCount} jobs; queue p50=${report.queueP50Seconds ?? 'n/a'}s, p95=${report.queueP95Seconds ?? 'n/a'}s.`
+              )
+              .write()
+
+      - name: Upload queue telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-queue-telemetry
+          path: playwright-queue-telemetry.json
+          if-no-files-found: error
           retention-days: 1

@@ -905,10 +905,10 @@ native planner gate.
 - [x] Completed one native planner challenge round and incorporated its findings.
 - [x] Reached the three-round plan-hardening cap; recorded `review_deadlock` and
   incorporated every final-round finding without fabricating approval.
-- [ ] User decision: accept documented dissent, authorize another review round,
-  revise scope, or abandon.
-- [ ] User approval for implementation.
-- [ ] M1 cache correctness and observability.
+- [x] User accepted the documented plan-hardening dissent and authorized
+  execution through a goal.
+- [x] M1 cache correctness and observability implemented and locally verified;
+  post-merge cache creation and restore canary remain externally gated.
 - [ ] M2 selector shadow mode.
 - [ ] M3 canary and global activation.
 - [ ] M4 read-only metric decision and any separately approved packages.

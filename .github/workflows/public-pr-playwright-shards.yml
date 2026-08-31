@@ -10,13 +10,16 @@ on:
 permissions:
   contents: read
 
+env:
+  PLAYWRIGHT_CACHE_ENABLED: ${{ vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}
+
 jobs:
   prepare:
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
     steps:
@@ -80,7 +83,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
+          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/playwright-cache-seed\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/playwright-(cache-contract|telemetry|turbo-telemetry)\.(cjs|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
 
   build-and-compile:
     needs: prepare
@@ -89,7 +92,7 @@ jobs:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Report build runner
         shell: bash
@@ -106,6 +109,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check out trusted cache contract
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: refs/heads/v3
+          path: .ci-control
+          persist-credentials: false
+
       - name: Trust mounted workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
@@ -119,35 +130,54 @@ jobs:
           version: 11.5.0
           run_install: false
 
+      - name: Compute cache contract
+        id: cache-contract
+        run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Restore pnpm cache
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: pnpm-cache
         uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Restore turbo build artifacts
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: turbo-cache
         uses: actions/cache/restore@v4
         with:
           path: |
             .turbo
-          key: ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
-            ${{ runner.os }}-${{ runner.arch }}-turbo-
+            playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=4
+        id: build
+        shell: bash
+        run: |
+          started=$(date +%s)
+          set +e
+          {
+            pnpm run --filter @klicker-uzh/prisma build:test
+            pnpm run build:test --concurrency=4
+          } 2>&1 | tee turbo-build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+          exit "$status"
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
@@ -211,6 +241,36 @@ jobs:
             packages/util/dist
           retention-days: 1
 
+      - name: Extract Turbo build telemetry
+        if: always()
+        run: node .ci-control/.github/scripts/turbo-telemetry.cjs --log turbo-build.log
+
+      - name: Write build telemetry
+        if: always()
+        shell: bash
+        env:
+          PLAYWRIGHT_TELEMETRY_PHASE: build
+          PLAYWRIGHT_ROUTE: public-pr
+          PLAYWRIGHT_MODE: full
+          PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+          PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+          TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+          TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
+          TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
+          PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
+        run: node .ci-control/.github/scripts/playwright-telemetry.cjs --output playwright-build-telemetry.json
+
+      - name: Upload build telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-build-telemetry
+          path: playwright-build-telemetry.json
+          if-no-files-found: error
+          retention-days: 1
+
   test-playwright:
     needs: [prepare, build-and-compile]
     if: needs.prepare.outputs.should_run == 'true'
@@ -218,7 +278,7 @@ jobs:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
       # Shares /config with the hatchet service so this job can read the worker
       # API token that hatchet-lite-dev mints on boot. Reading it via `docker
       # exec` (as the non-containerized workflows do) is impossible here: the
@@ -321,6 +381,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check out trusted cache contract
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: refs/heads/v3
+          path: .ci-control
+          persist-credentials: false
+
       - name: Trust mounted workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
@@ -332,18 +400,24 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Compute cache contract
+        id: cache-contract
+        run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Restore pnpm cache
+        if: env.PLAYWRIGHT_CACHE_ENABLED == 'true'
+        id: pnpm-cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Install dependencies
         run: pnpm install
@@ -390,6 +464,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "PLAYWRIGHT_STARTED_SECONDS=$(date +%s)" >> "$GITHUB_ENV"
           chmod +x .github/scripts/wait-for-services.sh
           PROFILE_RUNTIME_FILES=(
             playwright/profiles.json
@@ -496,4 +571,32 @@ jobs:
             playwright/test-results
             service.log
           if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Write shard telemetry
+        if: always()
+        shell: bash
+        env:
+          PLAYWRIGHT_TELEMETRY_PHASE: shard
+          PLAYWRIGHT_ROUTE: public-pr
+          PLAYWRIGHT_MODE: full
+          PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+          PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+          PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shardIndex }}
+          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
+          PLAYWRIGHT_CONCLUSION: ${{ job.status }}
+        run: |
+          started="${PLAYWRIGHT_STARTED_SECONDS:-$(date +%s)}"
+          export PLAYWRIGHT_DURATION_SECONDS="$(( $(date +%s) - started ))"
+          node .ci-control/.github/scripts/playwright-telemetry.cjs --output "playwright-telemetry-${{ matrix.shardIndex }}.json"
+
+      - name: Upload shard telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-telemetry-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: playwright-telemetry-${{ matrix.shardIndex }}.json
+          if-no-files-found: error
           retention-days: 1
