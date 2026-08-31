@@ -27,7 +27,7 @@ const semanticConfig: SemanticFreeTextConfig = {
   question_language: 'en',
   attempt_limit: 2,
   solution_reveal_enabled: true,
-  accepted_exact_answers: [],
+  accepted_exact_answers: ['Diversification reduces asset-specific risk.'],
   reference_solution: 'Diversification reduces asset-specific risk.',
   rubric_schema: {
     schema_version: '1.0',
@@ -75,6 +75,23 @@ function participantContext(participantId: string): ContextWithUser {
   } as unknown as ContextWithUser
 }
 
+function lecturerContext(lecturerId: string): ContextWithUser {
+  return {
+    prisma,
+    emitter: { emit: vi.fn() },
+    user: {
+      sub: lecturerId,
+      role: UserRole.USER,
+      scope: UserLoginScope.FULL_ACCESS,
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    },
+    tasks: {
+      evaluateFreeTextAttempt: { runNoWait: vi.fn() },
+    },
+  } as unknown as ContextWithUser
+}
+
 async function executeRetry(context: ContextWithUser, attemptId: string) {
   const yoga = createYoga({
     schema,
@@ -97,6 +114,153 @@ async function executeRetry(context: ContextWithUser, attemptId: string) {
   })
   return (await response.json()) as {
     data?: Record<string, unknown>
+    errors?: { message: string; extensions?: { code?: string } }[]
+  }
+}
+
+async function executeLegacyStackResponse(
+  context: ContextWithUser,
+  variables: {
+    stackId: number
+    courseId: string
+    instanceId: number
+    answer: string
+    isOwner?: boolean
+  }
+) {
+  const yoga = createYoga({
+    schema,
+    context: () => context,
+    graphqlEndpoint: '/graphql',
+  })
+  const response = await yoga.fetch('http://localhost/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      query: `
+        mutation RespondToElementStack(
+          $stackId: Int!
+          $courseId: String!
+          $responses: [StackResponseInput!]!
+          $isOwner: Boolean!
+        ) {
+          respondToElementStack(
+            isOwner: $isOwner
+            stackId: $stackId
+            courseId: $courseId
+            responses: $responses
+            stackAnswerTime: 3
+          ) {
+            status
+            evaluations {
+              ... on FreeTextInstanceEvaluation {
+                explanation
+                solutions
+                semanticState {
+                  solutionAuthorized
+                  referenceSolution
+                  explanation
+                  currentAttempt {
+                    structuredResult {
+                      rubricAssessments {
+                        rationale
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      variables: {
+        stackId: variables.stackId,
+        courseId: variables.courseId,
+        isOwner: variables.isOwner ?? false,
+        responses: [
+          {
+            instanceId: variables.instanceId,
+            type: 'FREE_TEXT',
+            freeTextResponse: variables.answer,
+          },
+        ],
+      },
+    }),
+  })
+  return (await response.json()) as {
+    data?: {
+      respondToElementStack?: {
+        status: string
+        evaluations: {
+          explanation: string | null
+          solutions: string[]
+          semanticState: {
+            solutionAuthorized: boolean
+            referenceSolution: string | null
+            explanation: string | null
+            currentAttempt: {
+              structuredResult: {
+                rubricAssessments: { rationale: string }[]
+              } | null
+            } | null
+          } | null
+        }[]
+      } | null
+    } | null
+    errors?: { message: string; extensions?: { code?: string } }[]
+  }
+}
+
+async function executePracticeState(
+  context: ContextWithUser,
+  instanceId: number
+) {
+  const yoga = createYoga({
+    schema,
+    context: () => context,
+    graphqlEndpoint: '/graphql',
+  })
+  const response = await yoga.fetch('http://localhost/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      query: `
+        query FreeTextPracticeState($instanceId: Int!) {
+          freeTextPracticeState(instanceId: $instanceId) {
+            solutionAuthorized
+            referenceSolution
+            explanation
+            peerAnswers {
+              value
+              count
+            }
+            currentAttempt {
+              structuredResult {
+                rubricAssessments {
+                  rationale
+                }
+              }
+            }
+          }
+        }
+      `,
+      variables: { instanceId },
+    }),
+  })
+  return (await response.json()) as {
+    data?: {
+      freeTextPracticeState?: {
+        solutionAuthorized: boolean
+        referenceSolution: string | null
+        explanation: string | null
+        peerAnswers: { value: string; count: number }[]
+        currentAttempt: {
+          structuredResult: {
+            rubricAssessments: { rationale: string }[]
+          } | null
+        } | null
+      } | null
+    } | null
     errors?: { message: string; extensions?: { code?: string } }[]
   }
 }
@@ -140,6 +304,7 @@ async function createFixture() {
     data: {
       name: 'Why diversify?',
       content: 'What is the principal benefit of diversification?',
+      explanation: 'Diversification reduces idiosyncratic risk exposure.',
       type: ElementType.FREE_TEXT,
       options: {
         hasSampleSolution: true,
@@ -208,7 +373,7 @@ async function createFixture() {
     },
   })
 
-  return { lecturer, course, participants, attempt }
+  return { lecturer, course, participants, practiceQuiz, attempt }
 }
 
 beforeAll(async () => {
@@ -229,6 +394,162 @@ afterAll(async () => {
 })
 
 describe('semantic free-text GraphQL boundary', () => {
+  it('ignores participant preview claims and keeps compatibility local', async () => {
+    const participant = fixture.participants[1]!
+    const instance = fixture.practiceQuiz.stacks[0]!.elements[0]!
+    const result = await executeLegacyStackResponse(
+      participantContext(participant.id),
+      {
+        stackId: fixture.practiceQuiz.stacks[0]!.id,
+        courseId: fixture.course.id,
+        instanceId: instance.id,
+        answer: 'Diversification reduces asset-specific risk.',
+        isOwner: true,
+      }
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.respondToElementStack).toMatchObject({
+      status: 'correct',
+      evaluations: [
+        {
+          explanation: null,
+          solutions: [],
+          semanticState: {
+            solutionAuthorized: false,
+            referenceSolution: null,
+            explanation: null,
+          },
+        },
+      ],
+    })
+    const attempt = await prisma.freeTextAttempt.findFirstOrThrow({
+      where: {
+        cycle: {
+          participantId: participant.id,
+          elementInstanceId: instance.id,
+        },
+      },
+    })
+    expect(attempt.evaluationSource).toBe(FreeTextEvaluationSource.EXACT_MATCH)
+    expect(attempt.availabilityReason).toBe('CLIENT_SUBMISSION_ID_UNAVAILABLE')
+
+    await prisma.freeTextAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        structuredResult: {
+          rubric_assessments: [
+            {
+              task_bundle_id: 'synthetic-test-bundle',
+              rubric_id: 'risk',
+              rubric_name: 'Risk reduction',
+              proposed_level: 'complete',
+              normalized_score: 100,
+              justification: 'Sensitive rubric justification',
+              evidence_ids: [],
+              confidence: 1,
+              needs_review: false,
+              review_flags: [],
+              used_evidence_ids: [],
+              unsupported_claims: [],
+              rationale: 'Sensitive rubric rationale',
+            },
+          ],
+        },
+      },
+    })
+    const replay = await executeLegacyStackResponse(
+      participantContext(participant.id),
+      {
+        stackId: fixture.practiceQuiz.stacks[0]!.id,
+        courseId: fixture.course.id,
+        instanceId: instance.id,
+        answer: 'Diversification reduces asset-specific risk.',
+        isOwner: true,
+      }
+    )
+    expect(replay.data?.respondToElementStack?.evaluations[0]).toMatchObject({
+      semanticState: {
+        currentAttempt: { structuredResult: null },
+      },
+    })
+
+    await prisma.elementInstance.update({
+      where: { id: instance.id },
+      data: {
+        results: {
+          responses: {
+            peer: { value: 'Peer answer', count: 4 },
+          },
+          total: 4,
+        },
+      },
+    })
+    const state = await executePracticeState(
+      participantContext(participant.id),
+      instance.id
+    )
+    expect(state.errors).toBeUndefined()
+    expect(state.data?.freeTextPracticeState).toMatchObject({
+      solutionAuthorized: false,
+      referenceSolution: null,
+      explanation: null,
+      peerAnswers: [],
+      currentAttempt: { structuredResult: null },
+    })
+  })
+
+  it('returns a stable code for invalid retained stack input', async () => {
+    const participant = fixture.participants[1]!
+    const instance = fixture.practiceQuiz.stacks[0]!.elements[0]!
+    const result = await executeLegacyStackResponse(
+      participantContext(participant.id),
+      {
+        stackId: fixture.practiceQuiz.stacks[0]!.id,
+        courseId: fixture.course.id,
+        instanceId: instance.id,
+        answer: '',
+      }
+    )
+
+    expect(result.data?.respondToElementStack).toBeNull()
+    expect(result.errors?.[0]).toMatchObject({
+      message: 'Semantic free-text responses require an answer',
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  })
+
+  it('derives owner preview access from the authenticated activity owner', async () => {
+    const instance = fixture.practiceQuiz.stacks[0]!.elements[0]!
+    const attemptsBefore = await prisma.freeTextAttempt.count({
+      where: { cycle: { participantId: fixture.participants[0]!.id } },
+    })
+    const result = await executeLegacyStackResponse(
+      lecturerContext(fixture.lecturer.id),
+      {
+        stackId: fixture.practiceQuiz.stacks[0]!.id,
+        courseId: fixture.course.id,
+        instanceId: instance.id,
+        answer: 'Diversification reduces asset-specific risk.',
+        isOwner: false,
+      }
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.respondToElementStack).toMatchObject({
+      evaluations: [
+        {
+          explanation: 'Diversification reduces idiosyncratic risk exposure.',
+        },
+      ],
+    })
+    expect(
+      await prisma.freeTextAttempt.count({
+        where: { cycle: { participantId: fixture.participants[0]!.id } },
+      })
+    ).toBe(attemptsBefore)
+  })
+
   it('exposes a stable code for an owned non-retryable attempt', async () => {
     const result = await executeRetry(
       participantContext(fixture.participants[0]!.id),

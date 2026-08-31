@@ -33,7 +33,12 @@ import dayjs from 'dayjs'
 import { round } from 'mathjs'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import type { ResponseInput } from '../ops.js'
-import { submitSemanticFreeTextPracticeResponse } from './freeTextPracticeSubmission.js'
+import {
+  prepareSemanticStackResponses,
+  type SemanticStackResponse,
+  submitSemanticFreeTextPracticeResponse,
+} from './freeTextPracticeSubmission.js'
+import { freeTextEvaluationError } from './freeTextEvaluationPolicy.js'
 import {
   combineCaseStudyResults,
   combineChoicesResults,
@@ -959,10 +964,7 @@ export async function respondToQuestion(
 
 // ! Element & Stack Response & Combination Logic
 // #region
-interface ElementResponseInput {
-  instanceId: number
-  type: DB.ElementType
-  clientSubmissionId?: string | null
+interface ElementResponseInput extends SemanticStackResponse {
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
   choicesResponse?: ChoicesResponse[] | null
@@ -1155,17 +1157,14 @@ async function respondToElement({
           ? instance.elementData.options.semanticEvaluation
           : null
       if (semanticConfig) {
-        if (!response.freeTextResponse || !response.clientSubmissionId) {
-          throw new Error(
-            'Semantic free-text responses require an answer and client submission ID'
-          )
-        }
         if (!instance) return { grading: null, score: null, evaluation: null }
         return await submitSemanticFreeTextPracticeResponse({
           ctx: ctx as ContextWithUser,
           response,
           answerTime,
           instance,
+          localExactOnly:
+            response.semanticEvaluationMode === 'LOCAL_EXACT_ONLY',
         })
       }
     }
@@ -1275,39 +1274,59 @@ export interface RespondToElementStackInput {
   courseId: string
   responses: ElementResponseInput[]
   stackAnswerTime: number
+  /** Retained for old clients; preview authority is derived server-side. */
   isOwner?: boolean
 }
 
 export async function respondToElementStack(
-  {
-    stackId,
-    courseId,
-    responses,
-    stackAnswerTime,
-    isOwner,
-  }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
-  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
-    const stack = await ctx.prisma.elementStack.findUnique({
-      where: { id: stackId },
-      include: {
-        microLearning: true,
-        elements: {
-          include: {
-            responses: {
-              where: {
-                participantId: ctx.user.sub,
-              },
-            },
+  const stack = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId },
+    include: {
+      practiceQuiz: { select: { ownerId: true, courseId: true } },
+      microLearning: {
+        select: { ownerId: true, scheduledEndAt: true, courseId: true },
+      },
+      groupActivity: { select: { ownerId: true, courseId: true } },
+      elements: {
+        include: {
+          responses: {
+            where:
+              ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
+                ? { participantId: ctx.user.sub }
+                : { id: { lt: 0 } },
+            select: { id: true },
           },
         },
       },
-    })
+    },
+  })
+  const persistedCourseId =
+    stack?.practiceQuiz?.courseId ??
+    stack?.microLearning?.courseId ??
+    stack?.groupActivity?.courseId ??
+    stack?.courseId
+  if (!stack || persistedCourseId !== courseId) {
+    throw freeTextEvaluationError(
+      'Stack response does not match the requested course',
+      'BAD_USER_INPUT'
+    )
+  }
+  const skipTracking =
+    !!ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER ||
+      ctx.user.role === DB.UserRole.ADMIN) &&
+    [
+      stack?.practiceQuiz?.ownerId,
+      stack?.microLearning?.ownerId,
+      stack?.groupActivity?.ownerId,
+    ].includes(ctx.user.sub)
 
+  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
+  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     if (
-      !isOwner &&
       stack?.microLearning &&
       (stack.elements.some((element) => element.responses.length > 0) ||
         dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
@@ -1324,14 +1343,33 @@ export async function respondToElementStack(
   // answer time for the entire stack through the number of responses
   const elementAnswerTime = round(stackAnswerTime / responses.length)
 
-  for (const response of responses) {
-    const { grading, score, evaluation } = await respondToElement({
-      ctx,
-      response,
-      courseId,
-      answerTime: elementAnswerTime,
-      skipTracking: isOwner,
-    })
+  const prepared = await prepareSemanticStackResponses({
+    ctx,
+    stackId,
+    responses,
+    answerTime: elementAnswerTime,
+    skipTracking,
+  })
+  const responseResults = new Map<
+    number,
+    Awaited<ReturnType<typeof respondToElement>>
+  >()
+
+  for (const index of prepared.order) {
+    responseResults.set(
+      index,
+      await respondToElement({
+        ctx,
+        response: prepared.responses[index]!,
+        courseId,
+        answerTime: elementAnswerTime,
+        skipTracking,
+      })
+    )
+  }
+
+  for (const [index] of responses.entries()) {
+    const { grading, score, evaluation } = responseResults.get(index)!
 
     // update stack status
     if (grading) {

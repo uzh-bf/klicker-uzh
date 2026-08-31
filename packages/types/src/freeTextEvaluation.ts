@@ -1,6 +1,7 @@
 export type FreeTextCorrectnessCategory = 'CORRECT' | 'PARTIAL' | 'INCORRECT'
 
 export type FreeTextEvaluationAvailabilityReason =
+  | 'CLIENT_SUBMISSION_ID_UNAVAILABLE'
   | 'CONFIGURATION_CHANGED'
   | 'CONSENT_DECLINED'
   | 'CONSENT_REQUIRED'

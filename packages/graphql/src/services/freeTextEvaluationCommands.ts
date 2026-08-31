@@ -3,10 +3,12 @@ import {
   getDefaultFreeTextOutcomeBands,
   mapFreeTextOutcome,
   matchesAcceptedExactAnswer,
+  normalizeFreeTextAnswer,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ElementOptionsFreeText } from '@klicker-uzh/types'
 import type { ContextWithUser } from '@/lib/context.js'
+import { v5 as uuidv5 } from 'uuid'
 import { resolveFreeTextAttemptUnavailability } from './freeTextEvaluationFallback.js'
 import {
   assertParticipant,
@@ -38,6 +40,74 @@ import { applyEvaluatedFreeTextAttemptInTransaction } from './freeTextPracticeRe
 const MAX_SEMANTIC_ANSWER_LENGTH = 10_000
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export function assertValidFreeTextAttemptInput({
+  answer,
+  answerTime,
+  clientSubmissionId,
+}: Pick<
+  CreateFreeTextAttemptInput,
+  'answer' | 'answerTime' | 'clientSubmissionId'
+>) {
+  assertValidFreeTextAnswerInput({ answer, answerTime })
+  if (!UUID_PATTERN.test(clientSubmissionId)) {
+    throw freeTextEvaluationError(
+      'Client submission ID must be a UUID',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+export function assertValidFreeTextAnswerInput({
+  answer,
+  answerTime,
+}: Pick<CreateFreeTextAttemptInput, 'answer' | 'answerTime'>) {
+  if (!answer.trim()) {
+    throw freeTextEvaluationError('Answer must not be empty', 'BAD_USER_INPUT')
+  }
+  if (!Number.isFinite(answerTime) || answerTime < 0) {
+    throw freeTextEvaluationError(
+      'Answer time must be a non-negative finite number',
+      'BAD_USER_INPUT'
+    )
+  }
+  if (answer.length > MAX_SEMANTIC_ANSWER_LENGTH) {
+    throw freeTextEvaluationError(
+      'Answer exceeds the maximum allowed length',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+export function assertConfiguredFreeTextAnswerLength({
+  answer,
+  maxLength,
+}: {
+  answer: string
+  maxLength?: number | null
+}) {
+  if (typeof maxLength === 'number' && answer.length > maxLength) {
+    throw freeTextEvaluationError(
+      'Answer exceeds the configured maximum length',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+export function getLocalExactFreeTextSubmissionId({
+  cycleId,
+  answer,
+}: {
+  cycleId: string
+  answer: string
+}) {
+  return uuidv5(
+    ['klicker-semantic-legacy', cycleId, normalizeFreeTextAnswer(answer)].join(
+      ':'
+    ),
+    uuidv5.URL
+  )
+}
 
 async function scheduleAttempt(
   attempt: DB.FreeTextAttempt,
@@ -134,69 +204,121 @@ export type CreateFreeTextAttemptInput = {
   clientSubmissionId: string
 }
 
+export type CreateLocalExactFreeTextAttemptInput = Omit<
+  CreateFreeTextAttemptInput,
+  'clientSubmissionId'
+>
+
+type InternalCreateFreeTextAttemptInput =
+  CreateLocalExactFreeTextAttemptInput & {
+    clientSubmissionId?: string
+  }
+
+type InternalCreateFreeTextAttemptOptions = FreeTextEvaluationServiceOptions & {
+  localExactOnly?: boolean
+}
+
 export async function createFreeTextAttempt(
+  input: CreateFreeTextAttemptInput,
+  ctx: ContextWithUser,
+  options?: FreeTextEvaluationServiceOptions
+) {
+  assertValidFreeTextAttemptInput(input)
+  return await createFreeTextAttemptInternal(input, ctx, options)
+}
+
+export async function createLocalExactFreeTextAttempt(
+  input: CreateLocalExactFreeTextAttemptInput,
+  ctx: ContextWithUser,
+  options?: FreeTextEvaluationServiceOptions
+) {
+  assertValidFreeTextAnswerInput(input)
+  return await createFreeTextAttemptInternal(input, ctx, {
+    ...options,
+    localExactOnly: true,
+  })
+}
+
+async function createFreeTextAttemptInternal(
   {
     instanceId,
     answer,
     answerTime,
-    clientSubmissionId,
-  }: CreateFreeTextAttemptInput,
+    clientSubmissionId: suppliedClientSubmissionId,
+  }: InternalCreateFreeTextAttemptInput,
   ctx: ContextWithUser,
-  options?: FreeTextEvaluationServiceOptions
+  options?: InternalCreateFreeTextAttemptOptions
 ) {
-  if (!answer.trim()) {
-    throw freeTextEvaluationError('Answer must not be empty', 'BAD_USER_INPUT')
-  }
-  if (!Number.isFinite(answerTime) || answerTime < 0) {
-    throw freeTextEvaluationError(
-      'Answer time must be a non-negative finite number',
-      'BAD_USER_INPUT'
-    )
-  }
-  if (!UUID_PATTERN.test(clientSubmissionId)) {
-    throw freeTextEvaluationError(
-      'Client submission ID must be a UUID',
-      'BAD_USER_INPUT'
-    )
-  }
   const semanticInstance = await getSemanticInstance(instanceId, ctx)
   const freeTextOptions = semanticInstance.instance.elementData
     .options as ElementOptionsFreeText
   const maxLength = freeTextOptions.restrictions?.maxLength
-  if (typeof maxLength === 'number' && answer.length > maxLength) {
-    throw freeTextEvaluationError(
-      'Answer exceeds the configured maximum length',
-      'BAD_USER_INPUT'
-    )
-  }
-  if (answer.length > MAX_SEMANTIC_ANSWER_LENGTH) {
-    throw freeTextEvaluationError(
-      'Answer exceeds the maximum allowed length',
-      'BAD_USER_INPUT'
-    )
-  }
-  const priorDuplicate = await ctx.prisma.freeTextAttempt.findFirst({
-    where: {
-      clientSubmissionId,
-      cycle: {
+  assertConfiguredFreeTextAnswerLength({ answer, maxLength })
+  let cycle: Awaited<ReturnType<typeof getActiveOrCreateCycle>>
+  let clientSubmissionId: string
+  if (options?.localExactOnly) {
+    const activeCycle = await ctx.prisma.freeTextPracticeCycle.findFirst({
+      where: {
         participantId: ctx.user.sub,
         elementInstanceId: instanceId,
+        status: DB.FreeTextPracticeCycleStatus.ACTIVE,
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-  if (priorDuplicate) {
-    await resumeAttemptIfNeeded(priorDuplicate, ctx)
-    return await loadCycleState(priorDuplicate.cycleId, ctx, options)
+      orderBy: { ordinal: 'desc' },
+    })
+    if (!activeCycle) {
+      const priorCompatibilityAttempts =
+        await ctx.prisma.freeTextAttempt.findMany({
+          where: {
+            availabilityReason: 'CLIENT_SUBMISSION_ID_UNAVAILABLE',
+            cycle: {
+              participantId: ctx.user.sub,
+              elementInstanceId: instanceId,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        })
+      const priorReplay = priorCompatibilityAttempts.find(
+        (attempt) =>
+          normalizeFreeTextAnswer(attempt.answer) ===
+          normalizeFreeTextAnswer(answer)
+      )
+      if (priorReplay) {
+        return await loadCycleState(priorReplay.cycleId, ctx, options)
+      }
+    }
+    cycle = activeCycle ?? (await getActiveOrCreateCycle(semanticInstance, ctx))
+    clientSubmissionId = getLocalExactFreeTextSubmissionId({
+      cycleId: cycle.id,
+      answer,
+    })
+  } else {
+    clientSubmissionId = suppliedClientSubmissionId!
+    const priorDuplicate = await ctx.prisma.freeTextAttempt.findFirst({
+      where: {
+        clientSubmissionId,
+        cycle: {
+          participantId: ctx.user.sub,
+          elementInstanceId: instanceId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (priorDuplicate) {
+      await resumeAttemptIfNeeded(priorDuplicate, ctx)
+      return await loadCycleState(priorDuplicate.cycleId, ctx, options)
+    }
+    cycle = await getActiveOrCreateCycle(semanticInstance, ctx)
   }
-  const cycle = await getActiveOrCreateCycle(semanticInstance, ctx)
   const duplicate = await ctx.prisma.freeTextAttempt.findUnique({
     where: {
       cycleId_clientSubmissionId: { cycleId: cycle.id, clientSubmissionId },
     },
   })
   if (duplicate) {
-    await resumeAttemptIfNeeded(duplicate, ctx)
+    if (!options?.localExactOnly) {
+      await resumeAttemptIfNeeded(duplicate, ctx)
+    }
     return await loadCycleState(cycle.id, ctx, options)
   }
 
@@ -207,11 +329,15 @@ export async function createFreeTextAttempt(
     acceptedExactAnswers: config.accepted_exact_answers,
   })
   const disclosureVersion = getDisclosureVersion(options)
-  const consent = await getConsentDecision(ctx.user.sub, disclosureVersion, ctx)
-  const unavailableReason = evaluationAvailabilityReason({
-    ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
-    consent: consent?.decision ?? null,
-  })
+  const consent = options?.localExactOnly
+    ? null
+    : await getConsentDecision(ctx.user.sub, disclosureVersion, ctx)
+  const unavailableReason = options?.localExactOnly
+    ? 'CLIENT_SUBMISSION_ID_UNAVAILABLE'
+    : evaluationAvailabilityReason({
+        ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
+        consent: consent?.decision ?? null,
+      })
   const exactMatchFallback = unavailableReason !== null && exactMatch
   const fallbackScore = 100
   const bands =
@@ -373,7 +499,7 @@ export async function createFreeTextAttempt(
     throw error
   }
 
-  if (!createdAttempt) {
+  if (!createdAttempt && !options?.localExactOnly) {
     await resumeAttemptIfNeeded(attempt, ctx)
   } else if (!unavailableReason) {
     await schedulePendingAttempt(attempt, ctx)

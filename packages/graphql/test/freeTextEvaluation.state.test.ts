@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import {
-  ElementType,
   FreeTextEvaluationStatus,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
@@ -25,7 +24,6 @@ import {
   revealFreeTextSolution,
   startFreeTextPracticeCycle,
 } from '../src/services/freeTextEvaluation.js'
-import { respondToElementStack } from '../src/services/stacks.js'
 import {
   cleanupFixtures,
   createFixture,
@@ -296,38 +294,6 @@ describe('semantic free-text practice state', () => {
     expect(
       await prisma.questionResponseDetail.count({
         where: { freeTextAttempt: { id: state.currentAttempt!.id } },
-      })
-    ).toBe(0)
-  })
-
-  it('rejects semantic stack submissions without a client submission ID', async () => {
-    await expect(
-      respondToElementStack(
-        {
-          stackId: fixture.practiceQuiz.stacks[0]!.id,
-          courseId: fixture.course.id,
-          responses: [
-            {
-              instanceId: fixture.instance.id,
-              type: ElementType.FREE_TEXT,
-              freeTextResponse: 'Diversification reduces idiosyncratic risk.',
-            },
-          ],
-          stackAnswerTime: 3,
-        },
-        participantContext(fixture.participant.id)
-      )
-    ).rejects.toThrow(
-      'Semantic free-text responses require an answer and client submission ID'
-    )
-    expect(
-      await prisma.freeTextAttempt.count({
-        where: {
-          cycle: {
-            participantId: fixture.participant.id,
-            elementInstanceId: fixture.instance.id,
-          },
-        },
       })
     ).toBe(0)
   })

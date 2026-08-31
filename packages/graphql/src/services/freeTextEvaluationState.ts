@@ -268,7 +268,12 @@ async function stateFromCycle(
   const attempts = [...cycle.attempts].sort((a, b) => a.ordinal - b.ordinal)
   const attemptsUsed = attempts.length
   const current = attempts.at(-1) ?? null
-  const solutionAuthorized = isSolutionAuthorized(cycle.status, config)
+  const compatibilityExactMatch =
+    current?.availabilityReason === 'CLIENT_SUBMISSION_ID_UNAVAILABLE' &&
+    current.evaluationSource === DB.FreeTextEvaluationSource.EXACT_MATCH &&
+    cycle.status === DB.FreeTextPracticeCycleStatus.CORRECT
+  const solutionAuthorized =
+    !compatibilityExactMatch && isSolutionAuthorized(cycle.status, config)
   const consent = await getConsentDecision(
     cycle.participantId,
     getDisclosureVersion(options),
