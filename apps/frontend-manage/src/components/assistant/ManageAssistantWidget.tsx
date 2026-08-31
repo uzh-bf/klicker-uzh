@@ -379,6 +379,8 @@ export function ManageAssistantWidget() {
     }
 
     function handleIframeBlur() {
+      if (pointerDownInsidePanelRef.current) return
+
       window.requestAnimationFrame(() => {
         if (!open || isDesktop) return
         const activeElement = document.activeElement

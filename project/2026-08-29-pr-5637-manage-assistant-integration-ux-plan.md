@@ -1100,5 +1100,5 @@ follow_up_stacks:
   clicks as escapes, and viewport or breakpoint changes could leave a named
   preset displayed for a clamped custom size. Each finding is valid and is
   corrected by an iframe blur boundary that follows frame generations,
-  pointer-aware body-focus handling, and resetting the preset on viewport
-  changes.
+  pointer-aware body-focus handling (including iframe blur ordering), and
+  resetting the preset on viewport changes.
