@@ -949,6 +949,9 @@ native planner gate.
 - [x] The cache fingerprint now includes both trusted composite action
   definitions, so changes to build or shard setup cannot reuse stale cached
   artifacts; the cache-contract fixtures cover the added inputs.
+- [x] `check:playwright-ci` now runs the cache-contract, Playwright telemetry,
+  and Turbo telemetry tests alongside selector and workflow checks; the
+  complete focused gate passes 48 tests.
 - [x] Read-only v3 baseline checked on 2026-08-31: [run
   33368808077](https://github.com/uzh-bf/klicker-uzh/actions/runs/33368808077)
   used hosted build and eight hosted shards; the build took 2m10s and the
