@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useEffect, useRef } from 'react'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -14,9 +15,13 @@ interface WizardNavigationProps {
   activeStep: number
   lastStep: boolean
   continueDisabled: boolean
+  disabledReason?: string
+  onDisabledReasonChange?: (reason?: string) => void
   onPrevStep?: () => void
   onCloseWizard: () => void
 }
+
+const disabledReasonId = 'activity-creation-disabled-reason'
 
 function WizardNavigation({
   editMode,
@@ -25,10 +30,28 @@ function WizardNavigation({
   activeStep,
   lastStep,
   continueDisabled,
+  disabledReason,
+  onDisabledReasonChange,
   onPrevStep,
   onCloseWizard,
 }: WizardNavigationProps) {
   const t = useTranslations()
+  const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
+
+  useEffect(() => {
+    onDisabledReasonChangeRef.current = onDisabledReasonChange
+  }, [onDisabledReasonChange])
+
+  useEffect(() => {
+    onDisabledReasonChangeRef.current?.(lastStep ? disabledReason : undefined)
+  }, [disabledReason, lastStep])
+
+  useEffect(
+    () => () => {
+      onDisabledReasonChangeRef.current?.(undefined)
+    },
+    []
+  )
 
   return (
     <div className="flex flex-row justify-between pt-2">
@@ -58,26 +81,44 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
-      <Button
-        primary={lastStep}
-        disabled={!stepValidity[activeStep] || continueDisabled}
-        loading={isSubmitting}
-        type="submit"
-        data={{ cy: 'next-or-submit' }}
-        className={{ root: 'h-8 w-max' }}
+      <div
+        className={`flex flex-col items-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
-        <Button.Icon
-          icon={lastStep ? faSave : faArrowRight}
+        {lastStep && (
+          <div
+            id={disabledReasonId}
+            className={
+              disabledReason ? 'text-sm text-red-600' : 'h-0 overflow-hidden'
+            }
+            data-cy={disabledReasonId}
+          >
+            {disabledReason}
+          </div>
+        )}
+        <Button
+          primary={lastStep}
+          disabled={!stepValidity[activeStep] || continueDisabled}
           loading={isSubmitting}
-        />
-        <Button.Label>
-          {lastStep
-            ? editMode
-              ? t('shared.generic.save')
-              : t('shared.generic.create')
-            : t('shared.generic.continue')}
-        </Button.Label>
-      </Button>
+          type="submit"
+          data={{ cy: 'next-or-submit' }}
+          className={{ root: 'h-8 w-max' }}
+          aria-describedby={
+            lastStep && disabledReason ? disabledReasonId : undefined
+          }
+        >
+          <Button.Icon
+            icon={lastStep ? faSave : faArrowRight}
+            loading={isSubmitting}
+          />
+          <Button.Label>
+            {lastStep
+              ? editMode
+                ? t('shared.generic.save')
+                : t('shared.generic.create')
+              : t('shared.generic.continue')}
+          </Button.Label>
+        </Button>
+      </div>
     </div>
   )
 }
