@@ -1069,5 +1069,16 @@ follow_up_stacks:
   on top of `rs/manage-assistant-workflow-continuity` at `72826a259`. Its body
   records the responsive dock, compact isolation, viewport clamp, desktop-only
   persistence, route-exit cleanup, and required hosted browser acceptance.
-- Next: Check PR #5704 feedback before CI disposition, then require exact-head
-  hosted browser evidence at the desktop, compact, and breakpoint viewports.
+- A4 OCR correction: OpenCodeReview's low-severity readability observation was
+  verified in the pure preset helper and fixed in `745c78376` by replacing the
+  nested ternary with explicit branches. The focused Manage tests, typecheck,
+  complete commit hook, and pre-push build pass, and the correction is pushed
+  to PR #5704.
+- A4 final review: The integrated review found no source, accessibility,
+  responsive, persistence, or data-isolation defect. It found one low-severity
+  upkeep gap: the frontend UI skill still described the dock as always
+  non-modal and therefore contradicted the compact modal contract.
+- A4 skill correction: Update `.agents/skills/klicker-frontend-ui/SKILL.md`
+  to document the desktop complementary dock and compact full-viewport dialog,
+  scoped app-content isolation, cleanup transitions, and desktop-only sizing
+  persistence. Then rerun exact-head checks and the final review.
