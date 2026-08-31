@@ -19,6 +19,7 @@ const FIXED_FILES = [
   '.github/workflows/playwright-cache-seed.yml',
   '.github/workflows/public-pr-playwright-shards.yml',
   '.github/workflows/test-playwright.yml',
+  '.npmrc',
   'playwright/profiles.json',
   'playwright/runtime-contract.yml',
   'pnpm-lock.yaml',
@@ -53,7 +54,11 @@ function relevantFiles(files) {
   return [...selected].sort(compareNames)
 }
 
-function buildFingerprint({ root, files = trackedFiles(root) }) {
+function buildFingerprint({
+  root,
+  files = trackedFiles(root),
+  buildImageDigest = BUILD_IMAGE_DIGEST,
+}) {
   const hash = crypto.createHash('sha256')
   hash.update(
     JSON.stringify({
@@ -61,20 +66,25 @@ function buildFingerprint({ root, files = trackedFiles(root) }) {
       buildEnvironmentSchema: BUILD_ENVIRONMENT_SCHEMA,
       nodeVersion: NODE_VERSION,
       pnpmVersion: PNPM_VERSION,
-      buildImageDigest: BUILD_IMAGE_DIGEST,
+      buildImageDigest,
     })
   )
 
   for (const file of relevantFiles(files)) {
     const filePath = path.join(root, file)
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`cache contract file is missing: ${file}`)
+    let contents
+    try {
+      contents = fs.readFileSync(filePath)
+    } catch (error) {
+      throw new Error(
+        `could not read cache contract file ${file}: ${error.message}`
+      )
     }
 
     hash.update('\0')
     hash.update(file)
     hash.update('\0')
-    hash.update(fs.readFileSync(filePath))
+    hash.update(contents)
   }
 
   return `v${CACHE_SCHEMA}-${hash.digest('hex').slice(0, 32)}`

@@ -31,11 +31,13 @@ test('the cache contract includes package manifests and fixed compatibility file
       '.github/actions/playwright-shard/action.yml',
       'pnpm-lock.yaml',
       'turbo.json',
+      '.npmrc',
       'README.md',
     ]),
     [
       '.github/actions/playwright-build/action.yml',
       '.github/actions/playwright-shard/action.yml',
+      '.npmrc',
       'apps/auth/package.json',
       'packages/util/package.json',
       'pnpm-lock.yaml',
@@ -44,7 +46,7 @@ test('the cache contract includes package manifests and fixed compatibility file
   )
 })
 
-test('the fingerprint is deterministic and includes the image digest', () => {
+test('the fingerprint is deterministic and includes the image digest', (t) => {
   const root = fixtureRoot({
     'package.json': '{"engines":{"node":"24"}}',
     'pnpm-lock.yaml': 'lockfileVersion: 9.0',
@@ -56,10 +58,12 @@ test('the fingerprint is deterministic and includes the image digest', () => {
     '.github/workflows/playwright-cache-seed.yml': 'seed',
     '.github/workflows/public-pr-playwright-shards.yml': 'public',
     '.github/workflows/test-playwright.yml': 'hosted',
+    '.npmrc': 'public-hoist-pattern[]=*',
     'playwright/profiles.json': '{}',
     'playwright/runtime-contract.yml': 'version: 1',
     'pnpm-workspace.yaml': 'packages:',
   })
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const files = Object.keys({
     'package.json': true,
     'pnpm-lock.yaml': true,
@@ -71,23 +75,24 @@ test('the fingerprint is deterministic and includes the image digest', () => {
     '.github/workflows/playwright-cache-seed.yml': true,
     '.github/workflows/public-pr-playwright-shards.yml': true,
     '.github/workflows/test-playwright.yml': true,
+    '.npmrc': true,
     'playwright/profiles.json': true,
     'playwright/runtime-contract.yml': true,
     'pnpm-workspace.yaml': true,
   })
 
-  assert.equal(
-    buildFingerprint({ root, files }),
-    buildFingerprint({ root, files })
-  )
+  const fingerprint = buildFingerprint({ root, files })
+  assert.equal(fingerprint, buildFingerprint({ root, files }))
   assert.match(BUILD_IMAGE_DIGEST, /^sha256:[0-9a-f]{64}$/)
-
-  fs.writeFileSync(path.join(root, 'turbo.json'), '{"tasks":{"build":{}}}')
   assert.notEqual(
-    buildFingerprint({ root, files }),
+    fingerprint,
     buildFingerprint({
       root,
-      files: files.filter((file) => file !== 'turbo.json'),
+      files,
+      buildImageDigest: `sha256:${'0'.repeat(64)}`,
     })
   )
+
+  fs.writeFileSync(path.join(root, 'turbo.json'), '{"tasks":{"build":{}}}')
+  assert.notEqual(fingerprint, buildFingerprint({ root, files }))
 })

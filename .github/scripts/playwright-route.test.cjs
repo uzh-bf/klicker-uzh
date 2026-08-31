@@ -37,6 +37,16 @@ test('ready same-repository public PRs use the public route when enabled', () =>
   assert.ok(route.reasonCodes.includes('public-pr-rollout'))
 })
 
+test('ready same-repository public PRs fall back to hosted when rollout is off', () => {
+  const route = choosePlaywrightRoute(pullRequest({ publicRolloutEnabled: '' }))
+  assert.deepEqual(route, {
+    schemaVersion: 1,
+    route: 'hosted',
+    selectorPrState: 'ready',
+    reasonCodes: ['hosted-fallback'],
+  })
+})
+
 test('smart draft canary enables selection without changing the full default', () => {
   const disabled = choosePlaywrightRoute(
     pullRequest({ prDraft: 'true', publicRolloutEnabled: 'true' })
@@ -96,6 +106,20 @@ test('forks, bots, and private repositories remain hosted and full', () => {
   }
 })
 
+test('ineligible smart-draft requests report the eligibility reason, not disabled smart drafts', () => {
+  const route = choosePlaywrightRoute(
+    pullRequest({
+      headRepository: 'external/example',
+      smartDraftEnabled: 'true',
+      prDraft: 'true',
+    })
+  )
+  assert.equal(route.route, 'hosted')
+  assert.equal(route.selectorPrState, 'ready')
+  assert.ok(route.reasonCodes.includes('fork'))
+  assert.ok(!route.reasonCodes.includes('smart-draft-disabled'))
+})
+
 test('missing identity fields fail closed to hosted full execution', () => {
   for (const overrides of [
     { repository: undefined },
@@ -118,6 +142,15 @@ test('the exact force-hosted canary overrides public execution', () => {
   assert.ok(route.reasonCodes.includes('force-hosted-canary'))
 })
 
+test('a non-matching force-hosted canary does not override public execution', () => {
+  const route = choosePlaywrightRoute(
+    pullRequest({ forceHostedCanaryPr: '9999' })
+  )
+  assert.equal(route.route, 'public-pr')
+  assert.equal(route.selectorPrState, 'ready')
+  assert.ok(!route.reasonCodes.includes('force-hosted-canary'))
+})
+
 test('the force-hosted canary rolls a selected draft back to hosted execution', () => {
   const route = choosePlaywrightRoute(
     pullRequest({
@@ -137,4 +170,11 @@ test('inconsistent caller route hints are rejected', () => {
     () => choosePlaywrightRoute(pullRequest({ requestedRoute: 'public-pr' })),
     /unsupported requested route/
   )
+})
+
+test('empty route hints use the automatic route', () => {
+  for (const requestedRoute of ['', '   ']) {
+    const route = choosePlaywrightRoute(pullRequest({ requestedRoute }))
+    assert.equal(route.route, 'public-pr')
+  }
 })

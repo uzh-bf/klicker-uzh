@@ -46,8 +46,8 @@ runs:
     - name: Check out trusted cache contract
       uses: actions/checkout@v4
       with:
-        repository: uzh-bf/klicker-uzh
-        ref: refs/heads/v3
+        repository: ${{ job.workflow_repository }}
+        ref: ${{ job.workflow_sha }}
         path: .ci-control
         persist-credentials: false
 
@@ -108,11 +108,18 @@ runs:
       run: |
         started=$(date +%s)
         set +e
-        {
-          pnpm run --filter @klicker-uzh/prisma build:test
-          pnpm run build:test --concurrency=4
-        } 2>&1 | tee turbo-build.log
-        status=${PIPESTATUS[0]}
+        set -o pipefail
+        pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+        prisma_status=("${PIPESTATUS[@]}")
+        pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+        build_status=("${PIPESTATUS[@]}")
+        status=0
+        if [ "${prisma_status[0]}" -ne 0 ] ||
+          [ "${prisma_status[1]}" -ne 0 ] ||
+          [ "${build_status[0]}" -ne 0 ] ||
+          [ "${build_status[1]}" -ne 0 ]; then
+          status=1
+        fi
         set -e
         echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
         exit "$status"
@@ -182,11 +189,13 @@ runs:
 
     - name: Extract Turbo build telemetry
       if: always()
+      continue-on-error: true
       shell: bash
       run: node .ci-control/.github/scripts/turbo-telemetry.cjs --log turbo-build.log
 
     - name: Write build telemetry
       if: always()
+      continue-on-error: true
       shell: bash
       env:
         PLAYWRIGHT_TELEMETRY_PHASE: build
@@ -204,9 +213,10 @@ runs:
 
     - name: Upload build telemetry
       if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-telemetry
         path: playwright-build-telemetry.json
-        if-no-files-found: error
+        if-no-files-found: ignore
         retention-days: 1

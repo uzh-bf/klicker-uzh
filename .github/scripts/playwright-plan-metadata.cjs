@@ -21,6 +21,15 @@ function buildPlanMetadata(plan, routeDecision) {
   if (!['skip', 'selected', 'full'].includes(plan.mode)) {
     fail(`unsupported Playwright plan mode ${plan.mode}`)
   }
+  if (!Number.isInteger(plan.shardCount) || plan.shardCount < 0) {
+    fail('Playwright plan shard count must be a non-negative integer')
+  }
+  if (plan.mode === 'skip' && plan.shardCount !== 0) {
+    fail('skip Playwright plans must not contain shards')
+  }
+  if (plan.mode !== 'skip' && plan.shardCount === 0) {
+    fail('non-skip Playwright plans must contain at least one shard')
+  }
   if (!['hosted', 'public-pr'].includes(routeDecision?.route)) {
     fail(`unsupported Playwright route ${routeDecision?.route}`)
   }
@@ -60,13 +69,35 @@ function buildPlanMetadata(plan, routeDecision) {
     }
   })
 
+  const shardIndices = include.map((shard) => shard.shardIndex)
+  if (new Set(shardIndices).size !== shardIndices.length) {
+    fail('Playwright plan contains duplicate shard indices')
+  }
+  for (let index = 1; index <= plan.shardCount; index++) {
+    if (!shardIndices.includes(index)) {
+      fail(`Playwright plan is missing shard ${index}`)
+    }
+  }
+
+  const reasonCodes = Array.isArray(plan.reasonCodes) ? plan.reasonCodes : []
+  if (
+    !reasonCodes.every(
+      (code) =>
+        typeof code === 'string' &&
+        code.trim().length > 0 &&
+        !/[\r\n]/.test(code)
+    )
+  ) {
+    fail('Playwright plan reason codes must be non-empty single-line strings')
+  }
+
   return {
     route: routeDecision.route,
     mode: plan.mode,
     selectorPrState: routeDecision.selectorPrState,
     shouldRun: plan.mode !== 'skip',
     shardMatrix: { include },
-    reasonCodes: Array.isArray(plan.reasonCodes) ? plan.reasonCodes : [],
+    reasonCodes,
   }
 }
 
@@ -86,7 +117,7 @@ function parseArgs(argv) {
   const args = {}
   for (let index = 0; index < argv.length; index++) {
     const option = argv[index]
-    if (!option.startsWith('--') || !argv[index + 1]) {
+    if (!option.startsWith('--') || index + 1 >= argv.length) {
       fail(`expected option value, got ${option}`)
     }
     args[option.slice(2)] = argv[++index]

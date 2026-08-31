@@ -11,9 +11,14 @@ permissions:
 env:
   PLAYWRIGHT_CACHE_ENABLED: 'true'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-source:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Verify trusted source ref
         shell: bash
@@ -34,30 +39,24 @@ jobs:
   seed:
     needs: validate-source
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out exact trusted source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'push' && github.sha || 'refs/heads/v3' }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Verify checked-out source
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
           EVENT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           actual_sha=$(git rev-parse HEAD)
-          if [ "$EVENT_NAME" = 'push' ]; then
-            test "$actual_sha" = "$EVENT_SHA"
-          else
-            v3_sha=$(git ls-remote origin refs/heads/v3 | awk 'NR == 1 {print $1}')
-            test -n "$v3_sha"
-            test "$actual_sha" = "$v3_sha"
-          fi
+          test "$actual_sha" = "$EVENT_SHA"
 
       - name: Define node version
         uses: actions/setup-node@v4
@@ -107,11 +106,18 @@ jobs:
         run: |
           started=$(date +%s)
           set +e
-          {
-            pnpm run --filter @klicker-uzh/prisma build:test
-            pnpm run build:test --concurrency=4
-          } 2>&1 | tee turbo-build.log
-          status=${PIPESTATUS[0]}
+          set -o pipefail
+          pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+          prisma_status=("${PIPESTATUS[@]}")
+          pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+          build_status=("${PIPESTATUS[@]}")
+          status=0
+          if [ "${prisma_status[0]}" -ne 0 ] ||
+            [ "${prisma_status[1]}" -ne 0 ] ||
+            [ "${build_status[0]}" -ne 0 ] ||
+            [ "${build_status[1]}" -ne 0 ]; then
+            status=1
+          fi
           set -e
           echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
           exit "$status"
@@ -138,17 +144,20 @@ jobs:
 
       - name: Extract Turbo build telemetry
         if: always()
+        continue-on-error: true
         run: node .github/scripts/turbo-telemetry.cjs --log turbo-build.log
 
       - name: Save pnpm cache
-        if: success() && steps.pnpm-cache.outputs.cache-hit != 'true'
+        if: steps.build.outcome == 'success' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: ${{ env.STORE_PATH }}
           key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
 
       - name: Save Turbo cache
-        if: success() && steps.turbo-cache.outputs.cache-hit != 'true'
+        if: steps.build.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: .turbo
@@ -156,6 +165,7 @@ jobs:
 
       - name: Write seed telemetry
         if: always()
+        continue-on-error: true
         env:
           PLAYWRIGHT_TELEMETRY_PHASE: cache-seed
           PLAYWRIGHT_ROUTE: trusted-hosted-arm64
@@ -172,9 +182,10 @@ jobs:
 
       - name: Upload seed telemetry
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-cache-seed-telemetry
           path: playwright-cache-seed-telemetry.json
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 1

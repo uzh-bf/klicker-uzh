@@ -8,15 +8,28 @@ const EXPECTED_BUILD_ACTION =
 const EXPECTED_SHARD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
 
-function readWorkflow(root, name) {
-  return fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8')
+function readWorkflow(root, name, issues) {
+  const relativePath = `.github/workflows/${name}`
+  try {
+    return fs.readFileSync(path.join(root, relativePath), 'utf8')
+  } catch (error) {
+    issues.push(
+      `could not read required workflow ${relativePath}: ${error.message}`
+    )
+    return ''
+  }
 }
 
-function readAction(root, name) {
-  return fs.readFileSync(
-    path.join(root, '.github/actions', name, 'action.yml'),
-    'utf8'
-  )
+function readAction(root, name, issues) {
+  const relativePath = `.github/actions/${name}/action.yml`
+  try {
+    return fs.readFileSync(path.join(root, relativePath), 'utf8')
+  } catch (error) {
+    issues.push(
+      `could not read required action ${relativePath}: ${error.message}`
+    )
+    return ''
+  }
 }
 
 function namedSteps(text) {
@@ -24,12 +37,17 @@ function namedSteps(text) {
 }
 
 function validatePublicPlaywrightWorkflow(root) {
-  const caller = readWorkflow(root, 'test-playwright.yml')
-  const publicWorkflow = readWorkflow(root, 'public-pr-playwright-shards.yml')
-  const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml')
+  const issues = []
+  const caller = readWorkflow(root, 'test-playwright.yml', issues)
+  const publicWorkflow = readWorkflow(
+    root,
+    'public-pr-playwright-shards.yml',
+    issues
+  )
+  const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
   const publicActions = [
-    readAction(root, 'playwright-build'),
-    readAction(root, 'playwright-shard'),
+    readAction(root, 'playwright-build', issues),
+    readAction(root, 'playwright-shard', issues),
   ].join('\n')
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
     step.includes('uses: actions/cache/restore@v4')
@@ -37,8 +55,6 @@ function validatePublicPlaywrightWorkflow(root) {
   const publicCacheContractSteps = namedSteps(publicActions).filter((step) =>
     step.includes('id: cache-contract')
   )
-  const issues = []
-
   if (!caller.includes(EXPECTED_CALL)) {
     issues.push(
       `caller must use the canonical reusable workflow ref: ${EXPECTED_CALL}`
@@ -75,6 +91,21 @@ function validatePublicPlaywrightWorkflow(root) {
   ).length
   if (checkoutCount !== nonPersistedCheckoutCount) {
     issues.push('every public checkout must set persist-credentials: false')
+  }
+
+  const trustedControl = `${publicWorkflow}\n${publicActions}`
+  // The fixed shape has one preparation checkout and one checkout in each trusted action.
+  const trustedRepositoryCount = (
+    trustedControl.match(/repository: \$\{\{ job\.workflow_repository \}\}/g) ??
+    []
+  ).length
+  const trustedRefCount = (
+    trustedControl.match(/ref: \$\{\{ job\.workflow_sha \}\}/g) ?? []
+  ).length
+  if (trustedRepositoryCount !== 3 || trustedRefCount !== 3) {
+    issues.push(
+      'every trusted control checkout must use the called workflow repository and commit'
+    )
   }
 
   const publicRunnerCount = (
@@ -146,18 +177,23 @@ function validatePublicPlaywrightWorkflow(root) {
     )
   }
 
-  const queueJob = caller.slice(caller.indexOf('  playwright-queue-telemetry:'))
-  if (!queueJob.includes('runs-on: ubuntu-latest')) {
-    issues.push('queue telemetry must run on GitHub-hosted Ubuntu')
-  }
-  if (!queueJob.includes('permissions:\n      actions: read')) {
-    issues.push('queue telemetry must have only actions: read permission')
-  }
-  if (queueJob.includes('actions/checkout@')) {
-    issues.push('queue telemetry must not check out repository code')
-  }
-  if (queueJob.includes('public-pr-arm64')) {
-    issues.push('queue telemetry must not target the public runner pool')
+  const queueJobStart = caller.indexOf('  playwright-queue-telemetry:')
+  if (queueJobStart === -1) {
+    issues.push('caller must define the playwright-queue-telemetry job')
+  } else {
+    const queueJob = caller.slice(queueJobStart)
+    if (!queueJob.includes('runs-on: ubuntu-latest')) {
+      issues.push('queue telemetry must run on GitHub-hosted Ubuntu')
+    }
+    if (!queueJob.includes('permissions:\n      actions: read')) {
+      issues.push('queue telemetry must have only actions: read permission')
+    }
+    if (queueJob.includes('actions/checkout@')) {
+      issues.push('queue telemetry must not check out repository code')
+    }
+    if (queueJob.includes('public-pr-arm64')) {
+      issues.push('queue telemetry must not target the public runner pool')
+    }
   }
 
   if (

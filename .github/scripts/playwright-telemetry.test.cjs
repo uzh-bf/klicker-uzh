@@ -3,8 +3,15 @@ const test = require('node:test')
 
 const { buildTelemetry, numberOrNull } = require('./playwright-telemetry.cjs')
 
-test('telemetry is values-free and preserves measurable fields', () => {
+test('telemetry is values-free and preserves measurable fields', (t) => {
   const old = { ...process.env }
+  t.after(() => {
+    for (const key of Object.keys(process.env)) {
+      if (!Object.hasOwn(old, key)) delete process.env[key]
+    }
+    Object.assign(process.env, old)
+  })
+
   Object.assign(process.env, {
     PLAYWRIGHT_TELEMETRY_PHASE: 'build',
     PLAYWRIGHT_ROUTE: 'public-pr',
@@ -49,15 +56,14 @@ test('telemetry is values-free and preserves measurable fields', () => {
     selectedFileCount: null,
     conclusion: 'success',
   })
-
-  for (const key of Object.keys(process.env)) {
-    if (!(key in old)) delete process.env[key]
-  }
-  Object.assign(process.env, old)
 })
 
 test('invalid numeric telemetry becomes null', () => {
   assert.equal(numberOrNull('not-a-number'), null)
   assert.equal(numberOrNull(''), null)
   assert.equal(numberOrNull('4'), 4)
+  assert.equal(numberOrNull(' 4 '), 4)
+  assert.equal(numberOrNull('-3.5'), -3.5)
+  assert.equal(numberOrNull('Infinity'), null)
+  assert.equal(numberOrNull('NaN'), null)
 })

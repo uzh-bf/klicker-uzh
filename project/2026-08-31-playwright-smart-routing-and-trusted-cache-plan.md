@@ -983,6 +983,13 @@ native planner gate.
   present on the remote default branch, so no trusted seed or new cache-hit
   cohort exists yet. M4 therefore remains unarmed rather than merely
   unmeasured.
+- [x] PR review remediation now captures both build pipeline exit statuses,
+  pins trusted control checkouts to the called workflow commit, keeps telemetry
+  and cache-save failures from masking build outcomes, validates complete shard
+  coverage and safe reason codes, hardens route fallbacks, and adds direct
+  duration/profile-median/cache-fingerprint coverage. The focused CI contract
+  suite passes 57 tests locally; updated PR delivery and exact-head CI remain
+  pending.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact

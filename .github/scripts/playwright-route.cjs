@@ -31,7 +31,11 @@ function choosePlaywrightRoute(input) {
     requestedRoute = 'auto',
   } = input
 
-  if (requestedRoute !== 'auto') {
+  const normalizedRequestedRoute =
+    typeof requestedRoute === 'string'
+      ? requestedRoute.trim() || 'auto'
+      : requestedRoute
+  if (normalizedRequestedRoute !== 'auto') {
     fail(`unsupported requested route ${JSON.stringify(requestedRoute)}`)
   }
   if (eventName !== 'pull_request' && eventName !== 'push') {
@@ -97,13 +101,19 @@ function choosePlaywrightRoute(input) {
       route: publicRollout && !forceHosted ? 'public-pr' : 'hosted',
       selectorPrState: 'draft',
       reasonCodes: [
-        ...reasons,
-        publicRollout && !forceHosted ? 'public-pr-rollout' : 'hosted-fallback',
+        ...new Set([
+          ...reasons,
+          publicRollout && !forceHosted
+            ? 'public-pr-rollout'
+            : 'hosted-fallback',
+        ]),
       ].sort(),
     }
   }
 
-  if (prDraft === 'true') reasons.push('smart-draft-disabled')
+  if (prDraft === 'true' && !smartDraft) {
+    reasons.push('smart-draft-disabled')
+  }
   const publicReady =
     prDraft === 'false' && publicEligible && publicRollout && !forceHosted
   if (publicReady) reasons.push('public-pr-rollout')

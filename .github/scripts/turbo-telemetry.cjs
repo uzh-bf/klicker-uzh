@@ -25,8 +25,12 @@ function main(argv = process.argv.slice(2)) {
     throw new Error('expected --log <path>')
   }
 
+  const logExists = fs.existsSync(logPath)
+  if (!logExists) {
+    console.warn(`Turbo telemetry log is missing: ${logPath}`)
+  }
   const parsed = parseTurboOutput(
-    fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : ''
+    logExists ? fs.readFileSync(logPath, 'utf8') : ''
   )
   // biome-ignore lint/suspicious/noUndeclaredEnvVars: GitHub Actions output contract
   const output = process.env.GITHUB_OUTPUT
@@ -41,7 +45,7 @@ function main(argv = process.argv.slice(2)) {
 
   if (output) {
     for (const [name, value] of Object.entries(values)) {
-      fs.appendFileSync(output, `${name.toLowerCase()}=${value ?? ''}\n`)
+      fs.appendFileSync(output, `${name}=${value ?? ''}\n`)
     }
   }
   if (environment) {
@@ -62,4 +66,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { numberOrNull, parseTurboOutput }
+module.exports = { main, numberOrNull, parseTurboOutput }

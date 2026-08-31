@@ -134,6 +134,16 @@ test('maps known feature paths, skips documentation, and fails unknown paths clo
   })
   assert.equal(unknown.mode, 'full')
   assert.deepEqual(unknown.selectedSpecs, base.candidateSpecs)
+  assert.ok(unknown.reasonCodes.includes('unknown-path'))
+
+  const empty = selectFromChanges({
+    ...base,
+    changes: [],
+    prState: 'draft',
+  })
+  assert.equal(empty.mode, 'full')
+  assert.deepEqual(empty.selectedSpecs, base.candidateSpecs)
+  assert.ok(empty.reasonCodes.includes('empty-diff'))
 })
 
 test('ready state overrides a documentation-only diff with the full candidate suite', () => {
@@ -199,6 +209,16 @@ test('spec deletion and malformed diff records fail closed to full mode', () => 
 test('uses the exact merge-base and diff range, with history failures falling back to full', () => {
   const { root, baseSha } = createCandidate()
   try {
+    const empty = selectPlaywrightPlan({
+      controlRoot: repositoryRoot,
+      candidateRoot: root,
+      baseSha,
+      headSha: baseSha,
+      prState: 'draft',
+    })
+    assert.equal(empty.mode, 'full')
+    assert.deepEqual(empty.reasonCodes, ['empty-diff'])
+
     fs.writeFileSync(
       path.join(root, 'playwright/tests/A-login.spec.ts'),
       'test head\n'

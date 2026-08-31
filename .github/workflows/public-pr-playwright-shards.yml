@@ -31,6 +31,7 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
@@ -42,8 +43,8 @@ jobs:
       - name: Check out trusted CI control
         uses: actions/checkout@v4
         with:
-          repository: uzh-bf/klicker-uzh
-          ref: refs/heads/v3
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: .ci-control
           persist-credentials: false
 
@@ -183,6 +184,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
@@ -204,6 +206,7 @@ jobs:
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
+    timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:

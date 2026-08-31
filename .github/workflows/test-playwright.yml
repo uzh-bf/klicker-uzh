@@ -28,6 +28,8 @@ jobs:
     needs: test-playwright-execution
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
     steps:
       - name: Check result
         shell: bash

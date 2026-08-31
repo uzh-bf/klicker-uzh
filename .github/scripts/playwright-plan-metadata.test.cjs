@@ -60,6 +60,23 @@ test('ready execution fails closed unless the full plan has eight shards', () =>
   )
 })
 
+test('valid full ready execution exposes all eight matrix entries', () => {
+  const metadata = buildPlanMetadata(plan('full', 8), {
+    route: 'public-pr',
+    selectorPrState: 'ready',
+  })
+
+  assert.equal(metadata.shouldRun, true)
+  assert.equal(metadata.shardMatrix.include.length, 8)
+  assert.deepEqual(
+    metadata.shardMatrix.include,
+    Array.from({ length: 8 }, (_, index) => ({
+      shardIndex: index + 1,
+      shardTotal: 8,
+    }))
+  )
+})
+
 test('invalid shard metadata fails closed', () => {
   const invalid = plan('full', 8)
   invalid.shards[0].files = []
@@ -70,5 +87,29 @@ test('invalid shard metadata fails closed', () => {
         selectorPrState: 'ready',
       }),
     /invalid shard/
+  )
+})
+
+test('duplicate shard indices and unsafe reason codes fail closed', () => {
+  const duplicate = plan('full', 8)
+  duplicate.shards[1].shardIndex = 1
+  assert.throws(
+    () =>
+      buildPlanMetadata(duplicate, {
+        route: 'hosted',
+        selectorPrState: 'ready',
+      }),
+    /duplicate shard indices/
+  )
+
+  const unsafeReason = plan('selected', 1)
+  unsafeReason.reasonCodes = ['ok\nforged=value']
+  assert.throws(
+    () =>
+      buildPlanMetadata(unsafeReason, {
+        route: 'hosted',
+        selectorPrState: 'draft',
+      }),
+    /reason codes/
   )
 })

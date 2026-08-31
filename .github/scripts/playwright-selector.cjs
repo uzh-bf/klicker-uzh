@@ -266,6 +266,8 @@ function isSafeRepoPath(value) {
 }
 
 function parseNameStatusZ(raw) {
+  if (raw === '') return []
+
   const fields = raw.split('\0')
   if (fields.at(-1) === '') fields.pop()
 
@@ -288,10 +290,6 @@ function parseNameStatusZ(raw) {
     }
 
     changes.push({ status, kind, paths })
-  }
-
-  if (changes.length === 0) {
-    fail('diff contains no change records')
   }
 
   return changes

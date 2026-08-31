@@ -4,6 +4,7 @@ const path = require('node:path')
 const DEFAULT_DURATION_SECONDS = 30
 const SELECTED_FALLBACK_DURATION_SECONDS = 120
 const SELECTED_TARGET_SHARD_SECONDS = 600
+const SELECTED_MAX_SHARDS = 4
 const SUPPORTED_TIMING_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 
@@ -183,9 +184,16 @@ function positiveMedian(values) {
 }
 
 function selectedDurationMap(selectedFiles, durationMap, profiles) {
-  const knownDurations = [...durationMap.entries()]
-    .filter(([file]) => profiles.has(file))
-    .map(([, duration]) => duration)
+  const durationsByProfile = new Map()
+  const knownDurations = []
+  for (const [file, duration] of durationMap.entries()) {
+    if (!profiles.has(file)) continue
+    knownDurations.push(duration)
+    const profile = profiles.get(file)
+    const profileDurations = durationsByProfile.get(profile) ?? []
+    profileDurations.push(duration)
+    durationsByProfile.set(profile, profileDurations)
+  }
   const globalMedian = positiveMedian(knownDurations)
   const selectedDurations = new Map()
 
@@ -201,17 +209,7 @@ function selectedDurationMap(selectedFiles, durationMap, profiles) {
     }
 
     const profile = profiles.get(file)
-    const profileMedian = positiveMedian(
-      [...durationMap.entries()]
-        .filter(
-          ([candidateFile, duration]) =>
-            profiles.get(candidateFile) === profile &&
-            typeof duration === 'number' &&
-            Number.isFinite(duration) &&
-            duration > 0
-        )
-        .map(([, duration]) => duration)
-    )
+    const profileMedian = positiveMedian(durationsByProfile.get(profile) ?? [])
     selectedDurations.set(
       file,
       profileMedian ?? globalMedian ?? SELECTED_FALLBACK_DURATION_SECONDS
@@ -227,7 +225,7 @@ function selectedShardCount(selectedFiles, durationMap) {
     0
   )
   return Math.min(
-    4,
+    SELECTED_MAX_SHARDS,
     selectedFiles.length,
     Math.max(1, Math.ceil(totalDuration / SELECTED_TARGET_SHARD_SECONDS))
   )
@@ -325,6 +323,7 @@ if (require.main === module) {
 module.exports = {
   DEFAULT_DURATION_SECONDS,
   SELECTED_FALLBACK_DURATION_SECONDS,
+  SELECTED_MAX_SHARDS,
   SELECTED_TARGET_SHARD_SECONDS,
   buildShardPlans,
   buildSelectedShardPlans,
