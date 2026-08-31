@@ -970,6 +970,15 @@ follow_up_stacks:
   browser acceptance remains an exact-head hosted Playwright gate. The prior
   shard-three failure was an unrelated live-quiz deletion timeout and will be
   re-executed on the corrected head.
-- Next: Pass the complete commit and pre-push gates, commit and push the A2
-  correction, disposition all round-five feedback, refresh PR #5679, and
-  require all eight exact-head hosted Playwright shards before starting A3.
+- A2 locale correction: Exact-head Playwright shard one found the German
+  degraded suggestions rendered in English. Manage already passed `locale=de`
+  in the iframe URL, but Chat only read `NEXT_LOCALE` from cookies. Commit
+  `b1c6d4a19` validates the shared locale set, forwards the valid locale to the
+  `/manage` request, and sets a path-scoped response cookie. The focused
+  locale tests cover valid German and English values plus invalid and missing
+  values. Chat typecheck, Biome, commit hooks, and the 26-task pre-push build
+  pass; the prior full Chat run also passed the new locale suite but hit its
+  known local loopback restriction in the unrelated MCP canary.
+- Next: Refresh PR #5679 for `b1c6d4a19`, check feedback before its fresh CI,
+  and require all eight exact-head hosted Playwright shards before accepting
+  A2 and starting A3.
