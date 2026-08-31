@@ -65,7 +65,7 @@ export default {
     // The key structure is settled and mirrored in de.ts; the wording is not.
     onboarding: {
       title: 'Welcome to KlickerUZH Chat',
-      replay: 'Show intro',
+      replay: 'Take the tour',
       progress: 'Step {current} of {total}',
       previous: 'Back',
       next: 'Next',

@@ -68,7 +68,7 @@ export default {
     // noch nicht.
     onboarding: {
       title: 'Willkommen im KlickerUZH-Chat',
-      replay: 'Einführung anzeigen',
+      replay: 'Tour starten',
       progress: 'Schritt {current} von {total}',
       previous: 'Zurück',
       next: 'Weiter',
