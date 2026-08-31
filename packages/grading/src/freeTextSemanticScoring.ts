@@ -5,7 +5,6 @@ import type {
   SemanticFreeTextConfig,
 } from '@klicker-uzh/types'
 import {
-  approximatelyEqual,
   hasDuplicates,
   isFiniteNumber,
   isNonEmptyString,
@@ -126,14 +125,14 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
   if (
     !firstBand ||
     !lastBand ||
-    !approximatelyEqual(firstBand.min_score, SCORE_MIN) ||
-    !approximatelyEqual(lastBand.max_score, SCORE_MAX)
+    firstBand.min_score !== SCORE_MIN ||
+    lastBand.max_score !== SCORE_MAX
   ) {
     errors.push('outcome bands must cover scores from 0 through 100')
   }
   if (
     lastBand &&
-    approximatelyEqual(lastBand.max_score, SCORE_MAX) &&
+    lastBand.max_score === SCORE_MAX &&
     lastBand.category !== 'CORRECT'
   ) {
     errors.push('the outcome band covering score 100 must be correct')
@@ -141,9 +140,7 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
 
   const hasGapOrOverlap = orderedBands.some((band, index) => {
     const nextBand = orderedBands[index + 1]
-    return nextBand
-      ? !approximatelyEqual(band.max_score, nextBand.min_score)
-      : false
+    return nextBand ? band.max_score !== nextBand.min_score : false
   })
   if (hasGapOrOverlap) {
     errors.push('outcome bands must not overlap or leave gaps')
@@ -209,8 +206,7 @@ export function mapFreeTextOutcome({
   return (
     bands.find((band) => {
       const includesUpperBound =
-        approximatelyEqual(score, SCORE_MAX) &&
-        approximatelyEqual(band.max_score, SCORE_MAX)
+        score === SCORE_MAX && band.max_score === SCORE_MAX
       return (
         score >= band.min_score &&
         (score < band.max_score || includesUpperBound)
@@ -231,7 +227,12 @@ export function matchesAcceptedExactAnswer({
   acceptedExactAnswers: ReadonlyArray<string>
 }): boolean {
   const normalizedResponse = normalizeFreeTextAnswer(response)
+  if (normalizedResponse.length === 0) return false
+
   return acceptedExactAnswers.some((answer) => {
-    return normalizeFreeTextAnswer(answer) === normalizedResponse
+    const normalizedAnswer = normalizeFreeTextAnswer(answer)
+    return (
+      normalizedAnswer.length > 0 && normalizedAnswer === normalizedResponse
+    )
   })
 }

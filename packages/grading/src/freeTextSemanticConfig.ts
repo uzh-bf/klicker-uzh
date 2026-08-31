@@ -4,7 +4,10 @@ import {
   isRecord,
   isStringArray,
 } from './freeTextSemanticPrimitives.js'
-import { validateFreeTextOutcomeBands } from './freeTextSemanticScoring.js'
+import {
+  normalizeFreeTextAnswer,
+  validateFreeTextOutcomeBands,
+} from './freeTextSemanticScoring.js'
 import { validateFreeTextRubricSchema } from './freeTextSemanticValidation.js'
 
 export function validateSemanticFreeTextConfig(value: unknown): string[] {
@@ -30,6 +33,12 @@ export function validateSemanticFreeTextConfig(value: unknown): string[] {
   }
   if (!isStringArray(value.accepted_exact_answers)) {
     errors.push('accepted_exact_answers must be a string array')
+  } else if (
+    value.accepted_exact_answers.some(
+      (answer) => normalizeFreeTextAnswer(answer).length === 0
+    )
+  ) {
+    errors.push('accepted_exact_answers must not contain empty answers')
   }
   if (
     value.solution_reveal_enabled === true &&

@@ -196,6 +196,25 @@ describe('semantic free-text evaluation', () => {
         },
       ])
     ).toContain('the outcome band covering score 100 must be correct')
+
+    expect(
+      validateFreeTextOutcomeBands([
+        {
+          id: 'low',
+          label: 'Low',
+          min_score: 0,
+          max_score: 50 - 1e-10,
+          category: 'INCORRECT',
+        },
+        {
+          id: 'high',
+          label: 'High',
+          min_score: 50,
+          max_score: 100,
+          category: 'CORRECT',
+        },
+      ])
+    ).toContain('outcome bands must not overlap or leave gaps')
   })
 
   it('validates the lecturer-configurable semantic evaluation settings', () => {
@@ -242,6 +261,18 @@ describe('semantic free-text evaluation', () => {
         'reference_solution is required when solution reveal is enabled',
       ])
     )
+
+    expect(
+      validateSemanticFreeTextConfig({
+        contract_version: '1',
+        question_language: 'en',
+        attempt_limit: 2,
+        solution_reveal_enabled: false,
+        accepted_exact_answers: ['   '],
+        reference_solution: null,
+        rubric_schema: validSchema,
+      })
+    ).toContain('accepted_exact_answers must not contain empty answers')
   })
 
   it('computes the weighted aggregate from one assessment per rubric', () => {
@@ -387,6 +418,12 @@ describe('semantic free-text evaluation', () => {
       matchesAcceptedExactAnswer({
         response: 'anything',
         acceptedExactAnswers: [],
+      })
+    ).toBe(false)
+    expect(
+      matchesAcceptedExactAnswer({
+        response: '   ',
+        acceptedExactAnswers: [''],
       })
     ).toBe(false)
   })
