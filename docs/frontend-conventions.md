@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-29'
+timestamp: '2026-08-31'
 tags:
   - frontend
 ---
@@ -110,9 +110,9 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
     - `privatePreview` (User-profile level): Gates advanced beta features such as element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`).
     - `publicPreview` (User-profile level): Retained in Prisma and the public GraphQL schema, but no longer selected by Manage's user-profile query or used for learning analytics.
   - `@klicker-uzh/feature-flags` is the shared GrowthBook integration. Manage's `learning-analytics` flag defaults to false and leaves analytics controls visible but disabled. Use stable internal actor IDs for targeting, and never treat a flag as authorization. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
-- **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
+- **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`) with environment-specific parent origins in `deploy/env-uzh-{stg,prd}/values.yaml`; local: Traefik `customResponseHeaders` (`util/traefik/rules_{docker,wsl}.yaml`). Use exact HTTPS origins for external LMS instances and reserve the PWA-only `*.localhost` wildcard for local development parents.
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.
-- **Local embed testing**: `util/embed-harness/` must target the branch-local PWA (`http://127.0.0.1:3101/...`), not the production PWA — production CSP blocks localhost embedding.
+- **Local embed testing**: deployed PWA CSP allows HTTPS parents under `*.localhost`; the `util/embed-harness/` origin is plain HTTP on `127.0.0.1`, so it must still target the branch-local PWA (`http://127.0.0.1:3101/...`) rather than production.
 
 ## Verification
 

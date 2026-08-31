@@ -331,7 +331,7 @@ chat:
       memory: 768Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: staging-workload
   podAnnotations:
     rollout.klicker.uzh.ch/release: '66b27d0d521e'
