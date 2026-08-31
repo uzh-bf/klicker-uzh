@@ -2,6 +2,13 @@
 
 @import "tw-animate-css";
 
+/* Driver.js ships the product-tour overlay stylesheet. It is imported here
+   rather than from JavaScript so that it lands in a cascade layer: unlayered
+   CSS beats every layered Tailwind utility regardless of specificity, and the
+   shared TOUR_POPOVER_CLASS from @klicker-uzh/product-tours would never take
+   effect. */
+@import "driver.js/dist/driver.css" layer(components);
+
 @plugin "tailwindcss-animate";
 @plugin "@tailwindcss/typography";
 @plugin "@tailwindcss/forms";
@@ -10,6 +17,9 @@
 @source "../node_modules/@uzh-bf/design-system/src";
 @source "../../../packages/shared-components/src";
 @source "../../../packages/markdown/src";
+/* The product-tour package is deliberately not transpiled by this app, so
+   Tailwind only finds the popover utilities by scanning its source. */
+@source "../../../packages/product-tours/src";
 
 /* make sure dark mode is applied only with the dark top level class */
 @custom-variant dark (&:where(.dark, .dark *));
