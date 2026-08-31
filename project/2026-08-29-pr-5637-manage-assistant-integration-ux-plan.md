@@ -1018,3 +1018,26 @@ follow_up_stacks:
 - Next: Implement the localized draft-revise-confirm-open journey and verify
   its message, context, route, proposal, toast, reset, and EN/DE browser
   contracts before the A3 review fan-out.
+- A3 workflow-continuity review round two: OpenCodeReview run `33384524247`
+  raised one medium and three low observations. The medium request to log raw
+  confirmation errors in the browser was rejected because the confirmation
+  route already logs the internal exception server-side and the client/runtime
+  contract intentionally redacts provider details. The initial-cleared wording
+  observation was rejected because `hasReceivedContextRef` already suppresses
+  the initial null state. The context-presence and store-selector observations
+  were accepted and corrected in `a34f58b99`; the three implementation threads
+  are replied to and resolved, and the summary disposition is posted.
+- A3 exact-head acceptance: Head `a34f58b99` passes the focused context and
+  proposal-card tests (18/18), Chat and frontend-manage typechecks, complete
+  commit hooks, the 26-task pre-push build, repository `check`, gitleaks,
+  GraphQL, lecturer-MCP, GitGuardian, trusted policy, and OpenCodeReview.
+  The draft PR's build and hosted browser jobs are filtered out at this stack
+  layer; final-ai-review remains the expected manual review status. No
+  branch-scoped feedback remains unresolved.
+- A4 start: The next approved slice will branch `rs/manage-assistant-responsive-control`
+  from exact A3 head `a34f58b99` and improve the embedded panel's responsive
+  sizing, resize affordance, viewport clamping, mobile sheet interaction, and
+  desktop-only size persistence without changing chat-history scope.
+- Next: Create the A4 branch from the accepted A3 head, inspect the existing
+  panel-size and Manage shell contracts, then implement and verify the
+  responsive control slice before its review fan-out.
