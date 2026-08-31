@@ -61,10 +61,11 @@ export function isEmbedInitMessage(data: unknown): data is EmbedInitMessage {
   if (typeof data.capabilities === 'undefined') return true
   if (!isRecord(data.capabilities)) return false
 
-  return Object.entries(data.capabilities).every(([key, value]) => {
-    if (key !== 'resize' && key !== 'hostNavigation') return true
-    return typeof value === 'boolean'
-  })
+  return Object.entries(data.capabilities).every(
+    ([key, value]) =>
+      (key === 'resize' || key === 'hostNavigation') &&
+      typeof value === 'boolean'
+  )
 }
 
 export function isValidEmbedResizePayload(
