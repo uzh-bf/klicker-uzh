@@ -8,6 +8,7 @@ import {
 import {
   MISSING_CATALOG_COLLECTION_ID,
   PrismaTransactionClient,
+  generateQrScanCode,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -5293,6 +5294,10 @@ export async function copyElementToAccount(
         pointsMultiplier: element.pointsMultiplier,
         type: element.type,
         options: element.options,
+        qrScanCode:
+          element.type === DB.ElementType.QR_SCAN
+            ? generateQrScanCode()
+            : undefined,
         answerCollection:
           element.answerCollectionId !== null
             ? {

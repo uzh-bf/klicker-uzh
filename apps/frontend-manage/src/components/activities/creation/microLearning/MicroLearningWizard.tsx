@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
+  ActivityType,
   CreateMicroLearningDocument,
   EditMicroLearningDocument,
   Element,
@@ -15,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
+import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { MicroLearningFormValues } from '../WizardLayout'
@@ -41,17 +43,9 @@ export interface MicroLearningWizardStepProps {
   closeWizard: () => void
 }
 
-const acceptedTypes = [
-  ElementType.Sc,
-  ElementType.Mc,
-  ElementType.Kprim,
-  ElementType.Numerical,
-  ElementType.FreeText,
-  ElementType.Flashcard,
-  ElementType.Content,
-  ElementType.Selection,
-  ElementType.CaseStudy,
-]
+const acceptedTypes = getActivityAcceptedElementTypes(
+  ActivityType.MicroLearning
+)
 
 interface MicroLearningWizardProps {
   title: string
