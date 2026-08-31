@@ -39,6 +39,7 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
         rubricName
         proposedLevel
         normalizedScore
+        criterionStatus
         rationale
       }
       feedbackProposals {
@@ -73,6 +74,7 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
         rubricName
         proposedLevel
         normalizedScore
+        criterionStatus
         rationale
       }
       feedbackProposals {

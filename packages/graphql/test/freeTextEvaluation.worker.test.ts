@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import {
   afterAll,
   afterEach,
@@ -177,6 +178,7 @@ describe('semantic free-text evaluation worker', () => {
             rubricName: 'Risk reduction',
             proposedLevel: 'partial',
             normalizedScore: 60,
+            criterionStatus: 'PARTIAL',
             rationale: 'The answer identifies diversification of risk.',
           },
         ],
@@ -193,6 +195,97 @@ describe('semantic free-text evaluation worker', () => {
         where: { freeTextAttempt: { cycleId: completed!.cycleId } },
       })
     ).toBe(2)
+  })
+
+  it('classifies the highest lecturer-defined rubric anchor as met', async () => {
+    const elementData = fixture.instance.elementData
+    if (elementData.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text fixture')
+    }
+    const topLevelConfig = {
+      ...semanticConfig,
+      rubric_schema: {
+        ...semanticConfig.rubric_schema,
+        rubrics: [
+          {
+            ...semanticConfig.rubric_schema.rubrics[0]!,
+            achievement_levels: [
+              {
+                name: 'excellent',
+                description: 'Meets the configured criterion.',
+                normalized_score: 80,
+              },
+              {
+                name: 'open',
+                description: 'Does not yet meet the criterion.',
+                normalized_score: 0,
+              },
+            ],
+          },
+        ],
+      },
+    }
+    await prisma.elementInstance.update({
+      where: { id: fixture.instance.id },
+      data: {
+        elementData: {
+          ...elementData,
+          options: {
+            ...elementData.options,
+            semanticEvaluation: topLevelConfig,
+          },
+        },
+      },
+    })
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It reduces asset-specific risk.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify(
+              evaluatorResponse(pending.currentAttempt!.id, 80, 'excellent')
+            ),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        )
+    )
+
+    await handleEvaluateFreeTextAttempt(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+      },
+      { prisma } as never,
+      {} as never
+    )
+    const state = await getFreeTextPracticeState(
+      { instanceId: fixture.instance.id },
+      ctx
+    )
+
+    expect(state?.currentAttempt?.structuredResult?.rubricAssessments).toEqual([
+      expect.objectContaining({
+        proposedLevel: 'excellent',
+        normalizedScore: 80,
+        criterionStatus: 'CORRECT',
+      }),
+    ])
   })
 
   it('applies a recovered evaluated attempt exactly once under concurrency', async () => {

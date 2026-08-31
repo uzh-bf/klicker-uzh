@@ -1941,6 +1941,7 @@ type FreeTextRetryCategoryCounts {
 }
 
 type FreeTextRubricFeedback {
+  criterionStatus: FreeTextCorrectnessCategory!
   normalizedScore: Float!
   proposedLevel: String!
   rationale: String!

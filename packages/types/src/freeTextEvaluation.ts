@@ -146,6 +146,7 @@ export type FreeTextRubricFeedback = {
   rubricName: string
   proposedLevel: string
   normalizedScore: number
+  criterionStatus: FreeTextCorrectnessCategory
   rationale: string
 }
 

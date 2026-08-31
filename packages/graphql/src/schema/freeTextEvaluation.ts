@@ -49,6 +49,9 @@ const FreeTextRubricFeedbackType = builder
       rubricName: t.exposeString('rubricName'),
       proposedLevel: t.exposeString('proposedLevel'),
       normalizedScore: t.exposeFloat('normalizedScore'),
+      criterionStatus: t.expose('criterionStatus', {
+        type: FreeTextCorrectnessCategory,
+      }),
       rationale: t.exposeString('rationale'),
     }),
   })

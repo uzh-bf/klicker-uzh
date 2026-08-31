@@ -3,6 +3,7 @@ import type {
   FreeTextEvaluationAvailabilityReason,
   FreeTextEvaluationFeedback,
   FreeTextEvaluationResult,
+  FreeTextRubricAssessment,
   SemanticFreeTextConfig,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
@@ -181,9 +182,38 @@ function isSolutionAuthorized(
   )
 }
 
+function getCriterionStatus(
+  config: SemanticFreeTextConfig,
+  assessment: FreeTextRubricAssessment
+): DB.FreeTextCorrectnessCategory {
+  const rubric = config.rubric_schema.rubrics.find(
+    (candidate) => candidate.id === assessment.rubric_id
+  )
+  const selectedLevel = rubric?.achievement_levels.find(
+    (level) => level.name === assessment.proposed_level
+  )
+  if (!rubric || !selectedLevel) {
+    throw new Error('Validated rubric assessment no longer matches its schema')
+  }
+
+  const scores = rubric.achievement_levels.map(
+    (level) => level.normalized_score
+  )
+  const highestScore = Math.max(...scores)
+  const lowestScore = Math.min(...scores)
+  if (selectedLevel.normalized_score === highestScore) {
+    return DB.FreeTextCorrectnessCategory.CORRECT
+  }
+  if (selectedLevel.normalized_score === lowestScore) {
+    return DB.FreeTextCorrectnessCategory.INCORRECT
+  }
+  return DB.FreeTextCorrectnessCategory.PARTIAL
+}
+
 function toAttemptState(
   attempt: CycleWithAttempts['attempts'][number],
-  solutionAuthorized: boolean
+  solutionAuthorized: boolean,
+  config: SemanticFreeTextConfig
 ): FreeTextAttemptState {
   const result = attempt.structuredResult as FreeTextEvaluationResult | null
   return {
@@ -210,6 +240,7 @@ function toAttemptState(
               rubricName: assessment.rubric_name,
               proposedLevel: assessment.proposed_level,
               normalizedScore: assessment.normalized_score,
+              criterionStatus: getCriterionStatus(config, assessment),
               rationale: assessment.rationale,
             })),
             feedbackProposals: (result.feedback_proposals ?? []).map(
@@ -269,10 +300,10 @@ async function stateFromCycle(
     attemptsUsed,
     attemptsRemaining: Math.max(0, cycle.attemptLimit - attemptsUsed),
     attempts: attempts.map((attempt) =>
-      toAttemptState(attempt, solutionAuthorized)
+      toAttemptState(attempt, solutionAuthorized, config)
     ),
     currentAttempt: current
-      ? toAttemptState(current, solutionAuthorized)
+      ? toAttemptState(current, solutionAuthorized, config)
       : null,
     canSubmitAnswer:
       cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE &&
