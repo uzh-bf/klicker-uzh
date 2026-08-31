@@ -15,7 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   ObjectType,
   PublicationStatus,
@@ -25,6 +25,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useCourseDeletionStatus } from '../../courses/CourseDeletionStatusProvider'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import SharingTypeBadge from '../../sharing/SharingTypeBadge'
@@ -59,10 +60,15 @@ function ActivityListEntry({
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
   const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
+  const { isCourseDeletionActive } = useCourseDeletionStatus()
+  const activityMutationBlocked = activity.courseId
+    ? isCourseDeletionActive(activity.courseId)
+    : false
 
   const disabled =
-    activity.status !== PublicationStatus.Draft &&
-    activity.status !== PublicationStatus.Scheduled
+    activityMutationBlocked ||
+    (activity.status !== PublicationStatus.Draft &&
+      activity.status !== PublicationStatus.Scheduled)
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
       <FontAwesomeIcon
@@ -111,7 +117,15 @@ function ActivityListEntry({
     <>
       <div className="flex w-full flex-row items-center gap-1.5">
         {onCheck ? (
-          disabled ? (
+          activityMutationBlocked ? (
+            <Checkbox
+              disabled
+              checked={false}
+              onCheck={() => {}}
+              className={{ root: 'border-unset disabled:bg-uzh-grey-20' }}
+              data={{ cy: `activity-checkbox-${activity.name}` }}
+            />
+          ) : disabled ? (
             <Tooltip
               tooltip={t('manage.activities.batchOperationsOnlyDraftScheduled')}
             >
@@ -141,6 +155,7 @@ function ActivityListEntry({
           )}
           data-cy={`activity-${activity.type}-${activity.name}`}
           data-cy-row={`activity-item-${activity.id}`}
+          data-cy-read-only={activityMutationBlocked || undefined}
         >
           <div className="flex-1">
             <div className="flex flex-row items-center gap-2.5">
@@ -158,6 +173,7 @@ function ActivityListEntry({
               {activity.status !== PublicationStatus.Template &&
                 activity.status !== PublicationStatus.Ended &&
                 activity.status !== PublicationStatus.Graded &&
+                !activityMutationBlocked &&
                 activity.isEditor && (
                   <FontAwesomeIcon
                     icon={faPencil}
@@ -251,7 +267,9 @@ function ActivityListEntry({
             <div className="-mt-1 flex flex-row items-center">
               <ActivityReviewStatus reviewStatus={activity.reviewStatus} />
 
-              {activity.numSharedUsers && activity.isManager ? (
+              {!activityMutationBlocked &&
+              activity.numSharedUsers &&
+              activity.isManager ? (
                 <div
                   className="hover:text-primary-100 ml-2 mr-3 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
                   onClick={(e) => {
@@ -265,7 +283,8 @@ function ActivityListEntry({
                 </div>
               ) : null}
 
-              {activity.type === ActivityType.LiveQuiz ? (
+              {!activityMutationBlocked &&
+              activity.type === ActivityType.LiveQuiz ? (
                 <LiveQuizActions
                   liveQuiz={activity}
                   isTemplate={!!activity.templateId}
@@ -275,7 +294,8 @@ function ActivityListEntry({
                   refetchActivities={refetchActivities}
                 />
               ) : null}
-              {activity.type === ActivityType.PracticeQuiz ? (
+              {!activityMutationBlocked &&
+              activity.type === ActivityType.PracticeQuiz ? (
                 <PracticeQuizActions
                   practiceQuiz={activity}
                   isTemplate={!!activity.templateId}
@@ -285,7 +305,8 @@ function ActivityListEntry({
                   refetchActivities={refetchActivities}
                 />
               ) : null}
-              {activity.type === ActivityType.MicroLearning ? (
+              {!activityMutationBlocked &&
+              activity.type === ActivityType.MicroLearning ? (
                 <MicrolearningActions
                   microLearning={activity}
                   isTemplate={!!activity.templateId}
@@ -295,7 +316,8 @@ function ActivityListEntry({
                   refetchActivities={refetchActivities}
                 />
               ) : null}
-              {activity.type === ActivityType.GroupActivity ? (
+              {!activityMutationBlocked &&
+              activity.type === ActivityType.GroupActivity ? (
                 <GroupActivityActions
                   groupActivity={activity}
                   isTemplate={!!activity.templateId}
@@ -345,12 +367,13 @@ function ActivityListEntry({
         <ActivityDetailsModal
           activityId={activity.id}
           activityType={activity.type}
+          readOnly={activityMutationBlocked}
           onClose={() => setShowDetails(false)}
           refetchActivities={refetchActivities}
         />
       )}
 
-      {changeName && (
+      {changeName && !activityMutationBlocked && (
         <ActivityNameChangeModal
           id={activity.id}
           name={activity.name}

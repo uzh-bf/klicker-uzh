@@ -1514,6 +1514,12 @@ export async function getTemplatePreviewAnswerCollectionEntries(
   }))
 }
 
+export function normalizeTemplateCourseId(courseId?: string | null) {
+  return typeof courseId === 'string' && uuidValidate(courseId)
+    ? courseId
+    : undefined
+}
+
 export async function createLiveQuizFromTemplate(
   {
     templateId,
@@ -1563,10 +1569,7 @@ export async function createLiveQuizFromTemplate(
   }
 
   // check if the calling user has sufficient permissions on the course and the course exists
-  const cleanCourseId =
-    typeof courseId === 'string' && courseId !== null && uuidValidate(courseId)
-      ? courseId
-      : undefined
+  const cleanCourseId = normalizeTemplateCourseId(courseId)
   const course = cleanCourseId
     ? await ctx.prisma.course.findUnique({
         where: {

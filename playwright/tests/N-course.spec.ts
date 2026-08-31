@@ -2616,6 +2616,8 @@ test.describe('Part 4: Course deletion', () => {
     for (const activity of draftActivities) {
       await expect(activity).toBeVisible()
     }
+    await page.getByTestId('activity-checkbox-Seed Live Quiz').click()
+    await expect(page.getByTestId('activity-batch-operations')).toBeVisible()
 
     await setCourseDeletionTracking({
       active: true,
@@ -2638,6 +2640,8 @@ test.describe('Part 4: Course deletion', () => {
     for (const activity of draftActivities) {
       await expect(activity).toBeVisible()
     }
+    await page.getByTestId('activity-checkbox-Seed Live Quiz').click()
+    await expect(page.getByTestId('activity-batch-operations')).toBeVisible()
 
     await setCourseDeletionTracking({
       active: true,
@@ -2646,9 +2650,36 @@ test.describe('Part 4: Course deletion', () => {
       jobId,
       page,
     })
-    for (const activity of draftActivities) {
+    const activityTypes = [
+      'LIVE_QUIZ',
+      'PRACTICE_QUIZ',
+      'MICRO_LEARNING',
+      'GROUP_ACTIVITY',
+    ]
+    const activityNames = [
+      'Seed Live Quiz',
+      'Seed Practice Quiz',
+      'Seed Microlearning',
+      'Seed Group Activity',
+    ]
+    for (const [index, activity] of draftActivities.entries()) {
       await expect(activity).toBeVisible()
+      await expect(activity).toHaveAttribute('data-cy-read-only', 'true')
+      await expect(
+        page.getByTestId(`activity-checkbox-${activityNames[index]}`)
+      ).toBeDisabled()
+      await expect(
+        page.getByTestId(
+          `actions-${activityTypes[index]}-${activityNames[index]}`
+        )
+      ).not.toBeAttached()
+      await expect(
+        page.getByTestId(`change-activity-name-${activityNames[index]}`)
+      ).not.toBeAttached()
     }
+    await expect(
+      page.getByTestId('activity-batch-operations')
+    ).not.toBeAttached()
 
     await setCourseDeletionTracking({
       active: false,
@@ -2657,6 +2688,14 @@ test.describe('Part 4: Course deletion', () => {
       jobId,
       page,
     })
+    for (const [index, activity] of draftActivities.entries()) {
+      await expect(activity).not.toHaveAttribute('data-cy-read-only', 'true')
+      await expect(
+        page.getByTestId(
+          `actions-${activityTypes[index]}-${activityNames[index]}`
+        )
+      ).toBeVisible()
+    }
   })
 
   test('Create a course with live quiz, practice quiz, and microlearning, and delete it again', async ({

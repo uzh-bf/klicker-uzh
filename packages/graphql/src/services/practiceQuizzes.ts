@@ -20,6 +20,11 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  acquireCourseMutationLease,
+  releaseCourseMutationLease,
+  tryAcquireCourseMutationAdvisoryLock,
+} from './courseDeletionGuard.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -835,46 +840,82 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
         )
       }
 
-      // publish the practice quiz
-      const updatedPracticeQuiz = await globalCtx.prisma.practiceQuiz.update({
-        where: {
-          id: practiceQuizId,
-          isDeleted: false,
-          course: { isDeleted: false, isDeletionPending: false },
-        },
-        data: { status: DB.PublicationStatus.PUBLISHED },
-        include: { stacks: true },
-      })
+      const mutationLease = await acquireCourseMutationLease(
+        globalCtx.redisExec,
+        practiceQuiz.courseId
+      )
+      if (!mutationLease) return true
 
-      // send a teams notification
-      await sendTeamsNotification({
-        scope: 'graphql/publishScheduledPracticeQuizs',
-        text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
-      })
+      try {
+        const updatedPracticeQuiz = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              !(await tryAcquireCourseMutationAdvisoryLock(
+                prisma,
+                practiceQuiz.courseId
+              ))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for scheduled practice quiz ${practiceQuizId}`
+              )
+            }
 
-      // link stacks of practice quiz to course
-      await globalCtx.prisma.course.update({
-        where: {
-          id: updatedPracticeQuiz.courseId,
-          isDeleted: false,
-          isDeletionPending: false,
-        },
-        data: {
-          elementStacks: {
-            connect: updatedPracticeQuiz.stacks.map((stack) => ({
-              id: stack.id,
-            })),
-          },
-        },
-      })
+            const published = await prisma.practiceQuiz.updateMany({
+              where: {
+                id: practiceQuizId,
+                isDeleted: false,
+                status: DB.PublicationStatus.SCHEDULED,
+                availableFrom: { lte: new Date() },
+                course: { isDeleted: false, isDeletionPending: false },
+              },
+              data: { status: DB.PublicationStatus.PUBLISHED },
+            })
+            if (published.count === 0) return null
 
-      // invalidate the cache for the microlearning
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'PracticeQuiz',
-        id: updatedPracticeQuiz.id,
-      })
+            const updatedPracticeQuiz = await prisma.practiceQuiz.findUnique({
+              where: { id: practiceQuizId },
+              include: { stacks: true },
+            })
+            if (!updatedPracticeQuiz) return null
 
-      return true
+            await prisma.course.update({
+              where: {
+                id: updatedPracticeQuiz.courseId,
+                isDeleted: false,
+                isDeletionPending: false,
+              },
+              data: {
+                elementStacks: {
+                  connect: updatedPracticeQuiz.stacks.map((stack) => ({
+                    id: stack.id,
+                  })),
+                },
+              },
+            })
+
+            return updatedPracticeQuiz
+          }
+        )
+        if (!updatedPracticeQuiz) return true
+
+        await sendTeamsNotification({
+          scope: 'graphql/publishScheduledPracticeQuizs',
+          text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
+        })
+
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'PracticeQuiz',
+          id: updatedPracticeQuiz.id,
+        })
+
+        return true
+      } finally {
+        await releaseCourseMutationLease(
+          globalCtx.redisExec,
+          practiceQuiz.courseId,
+          mutationLease
+        )
+      }
     } catch (error) {
       console.error('Error publishing scheduled practice quiz:', error)
       await sendTeamsNotification({

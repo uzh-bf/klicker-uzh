@@ -1,20 +1,25 @@
 import { faList, faMessage } from '@fortawesome/free-solid-svg-icons'
-import { ActivityDetails, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import type {
+  ActivityDetails,
+  ActivityType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction } from 'react'
+import { useTranslations } from 'next-intl'
+import type { Dispatch, SetStateAction } from 'react'
 import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsActions({
   details,
   activityType,
   isReviewed,
+  readOnly,
   setSelectedInstanceId,
 }: {
   details: ActivityDetails
   activityType: ActivityType
   isReviewed: boolean
+  readOnly: boolean
   setSelectedInstanceId: Dispatch<SetStateAction<number | null>>
 }) {
   const t = useTranslations()
@@ -31,7 +36,7 @@ function ActivityDetailsActions({
       </Button>
 
       {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
-      {details.isActivityReviewer && (
+      {details.isActivityReviewer && !readOnly && (
         <ActivityReviewButton
           activityId={details.id}
           activityType={activityType}

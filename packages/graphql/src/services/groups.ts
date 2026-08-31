@@ -31,15 +31,16 @@ import {
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
-  acquireCourseMutationLease,
-  getCourseDeletionAdvisoryLockKey,
-  releaseCourseMutationLease,
-} from './courseDeletionGuard.js'
-import {
   deleteWithPublicationStatusGuard,
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  acquireCourseMutationLease,
+  getCourseDeletionAdvisoryLockKey,
+  releaseCourseMutationLease,
+  tryAcquireCourseMutationAdvisoryLock,
+} from './courseDeletionGuard.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -2744,30 +2745,68 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
         )
       }
 
-      // end the group activity
-      const updatedGroupActivity = await globalCtx.prisma.groupActivity.update({
-        where: {
-          id: groupActivityId,
-          isDeleted: false,
-          course: { isDeleted: false, isDeletionPending: false },
-        },
-        data: { status: DB.PublicationStatus.ENDED },
-      })
+      const mutationLease = await acquireCourseMutationLease(
+        globalCtx.redisExec,
+        groupActivity.courseId
+      )
+      if (!mutationLease) return true
 
-      await sendTeamsNotification({
-        scope: 'hatchet/group-activity-end',
-        text: `Successfully ended expired group activity ${updatedGroupActivity.id}`,
-      })
+      try {
+        const updatedGroupActivity = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              !(await tryAcquireCourseMutationAdvisoryLock(
+                prisma,
+                groupActivity.courseId
+              ))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for expiring group activity ${groupActivityId}`
+              )
+            }
 
-      // publish the event to subscribers
-      globalCtx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
-      globalCtx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'GroupActivity',
-        id: updatedGroupActivity.id,
-      })
+            const ended = await prisma.groupActivity.updateMany({
+              where: {
+                id: groupActivityId,
+                isDeleted: false,
+                status: DB.PublicationStatus.PUBLISHED,
+                scheduledEndAt: { lte: new Date() },
+                course: { isDeleted: false, isDeletionPending: false },
+              },
+              data: { status: DB.PublicationStatus.ENDED },
+            })
+            if (ended.count === 0) return null
 
-      return true
+            return await prisma.groupActivity.findUnique({
+              where: { id: groupActivityId },
+            })
+          }
+        )
+        if (!updatedGroupActivity) return true
+
+        await sendTeamsNotification({
+          scope: 'hatchet/group-activity-end',
+          text: `Successfully ended expired group activity ${updatedGroupActivity.id}`,
+        })
+
+        globalCtx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
+        globalCtx.pubSub.publish(
+          'singleGroupActivityEnded',
+          updatedGroupActivity
+        )
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'GroupActivity',
+          id: updatedGroupActivity.id,
+        })
+
+        return true
+      } finally {
+        await releaseCourseMutationLease(
+          globalCtx.redisExec,
+          groupActivity.courseId,
+          mutationLease
+        )
+      }
     } catch (error) {
       console.error('Error ending expired group activity:', error)
       await sendTeamsNotification({
@@ -2819,29 +2858,63 @@ export const handlePublishScheduledGroupActivity: HatchetHandlers['handlePublish
         )
       }
 
-      // publish the group activity
-      await globalCtx.prisma.groupActivity.update({
-        where: {
-          id: groupActivityId,
-          isDeleted: false,
-          course: { isDeleted: false, isDeletionPending: false },
-        },
-        data: { status: DB.PublicationStatus.PUBLISHED },
-      })
+      const mutationLease = await acquireCourseMutationLease(
+        globalCtx.redisExec,
+        groupActivity.courseId
+      )
+      if (!mutationLease) return true
 
-      // send a teams notification
-      await sendTeamsNotification({
-        scope: 'graphql/publishScheduledGroupActivitys',
-        text: `Successfully published scheduled group activity ${groupActivity.id}`,
-      })
+      try {
+        const published = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              !(await tryAcquireCourseMutationAdvisoryLock(
+                prisma,
+                groupActivity.courseId
+              ))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for scheduled group activity ${groupActivityId}`
+              )
+            }
 
-      // invalidate the cache for the group activity
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'GroupActivity',
-        id: groupActivity.id,
-      })
+            const updated = await prisma.groupActivity.updateMany({
+              where: {
+                id: groupActivityId,
+                isDeleted: false,
+                status: DB.PublicationStatus.SCHEDULED,
+                scheduledStartAt: { lte: new Date() },
+                course: { isDeleted: false, isDeletionPending: false },
+              },
+              data: { status: DB.PublicationStatus.PUBLISHED },
+            })
+            if (updated.count === 0) return null
 
-      return true
+            return await prisma.groupActivity.findUnique({
+              where: { id: groupActivityId },
+            })
+          }
+        )
+        if (!published) return true
+
+        await sendTeamsNotification({
+          scope: 'graphql/publishScheduledGroupActivitys',
+          text: `Successfully published scheduled group activity ${published.id}`,
+        })
+
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'GroupActivity',
+          id: published.id,
+        })
+
+        return true
+      } finally {
+        await releaseCourseMutationLease(
+          globalCtx.redisExec,
+          groupActivity.courseId,
+          mutationLease
+        )
+      }
     } catch (error) {
       console.error('Error publishing scheduled group activity:', error)
       await sendTeamsNotification({

@@ -310,13 +310,6 @@ async function reconcileTerminalLiveQuizResponseAdmissions(
   return { inspectedAdmissions: admissions.length, terminalizedAdmissions }
 }
 
-function hasCourseDeletionLoginScope(scope: DB.UserLoginScope) {
-  return (
-    scope === DB.UserLoginScope.ACCOUNT_OWNER ||
-    scope === DB.UserLoginScope.FULL_ACCESS
-  )
-}
-
 function getGraphQLErrorCode(error: unknown): string | undefined {
   if (!error || typeof error !== 'object') return undefined
 
@@ -952,11 +945,6 @@ export async function startCourseDeletion(
       { extensions: { code: 'COURSE_DELETION_NOT_ENABLED' } }
     )
   }
-  if (!hasCourseDeletionLoginScope(ctx.user.scope)) {
-    throw new GraphQLError('Course deletion requires full account access', {
-      extensions: { code: 'FORBIDDEN' },
-    })
-  }
   const hasDeletionAccess = await hasCourseDeletionAdminAccess(ctx.prisma, {
     courseId: id,
     userId: ctx.user.sub,
@@ -1243,25 +1231,6 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
     let job = currentJob
 
     try {
-      if (!hasCourseDeletionLoginScope(job.userScope)) {
-        await clearCourseDeletionPending(globalCtx.prisma, {
-          courseId: job.courseId,
-          jobId: job.id,
-        })
-        await updateCourseDeletionJobForProcess(
-          redis,
-          job,
-          {
-            status: 'FAILED',
-            errorType: 'access',
-            errorMessage: 'Course deletion requires full account access.',
-          },
-          processLockKey,
-          processLockValue
-        )
-        return false
-      }
-
       const existingCourse = await globalCtx.prisma.course.findUnique({
         where: { id: job.courseId },
         select: {

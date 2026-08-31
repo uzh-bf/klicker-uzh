@@ -13,6 +13,24 @@ const COURSE_MUTATION_FENCE_RENEWAL_MS = 60 * 1000
 
 type CourseDeletionObjectSelector = ReturnType<ObjectSelectorFunction>
 
+export function getActiveCourseElementStackWhere(courseId?: string): {
+  OR: DB.Prisma.ElementStackWhereInput[]
+} {
+  const course = {
+    ...(courseId ? { id: courseId } : {}),
+    isDeleted: false,
+    isDeletionPending: false,
+  }
+
+  return {
+    OR: [
+      { practiceQuiz: { course } },
+      { microLearning: { course } },
+      { groupActivity: { course } },
+    ],
+  }
+}
+
 interface CourseMutationFenceState {
   cleanupRegistered: boolean
   leases: Map<string, string>
@@ -38,6 +56,17 @@ export function getCourseMutationFenceKey(courseId: string) {
 
 export function getCourseDeletionAdvisoryLockKey(courseId: string) {
   return `course-deletion:${courseId}`
+}
+
+export async function tryAcquireCourseMutationAdvisoryLock(
+  prisma: DB.Prisma.TransactionClient,
+  courseId: string
+) {
+  const advisoryLockKey = getCourseDeletionAdvisoryLockKey(courseId)
+  const [lock] = await prisma.$queryRaw<Array<{ acquired: boolean }>>`
+    SELECT pg_try_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0)) AS "acquired"
+  `
+  return lock?.acquired === true
 }
 
 export function isTerminalCourseDeletionStatus(status: unknown) {
@@ -411,15 +440,26 @@ export async function assertElementInstanceMutationAllowed(
   const instance = await ctx.prisma.elementInstance.findUnique({
     where: { id: instanceId },
     select: {
-      elementStack: { select: { courseId: true } },
+      elementStack: {
+        select: {
+          courseId: true,
+          practiceQuiz: { select: { courseId: true } },
+          microLearning: { select: { courseId: true } },
+          groupActivity: { select: { courseId: true } },
+        },
+      },
       elementBlock: {
         select: { liveQuiz: { select: { courseId: true } } },
       },
     },
   })
+  const elementStackCourseId =
+    instance?.elementStack?.practiceQuiz?.courseId ??
+    instance?.elementStack?.microLearning?.courseId ??
+    instance?.elementStack?.groupActivity?.courseId ??
+    instance?.elementStack?.courseId
   await assertCourseMutationAllowed(
-    instance?.elementStack?.courseId ??
-      instance?.elementBlock?.liveQuiz.courseId,
+    elementStackCourseId ?? instance?.elementBlock?.liveQuiz.courseId,
     ctx
   )
 }

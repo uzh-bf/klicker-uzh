@@ -191,6 +191,7 @@ function Activities() {
           !activities.some(
             (act) =>
               act.id === id &&
+              (!act.courseId || !isCourseDeletionActive(act.courseId)) &&
               (act.status === PublicationStatus.Draft ||
                 act.status === PublicationStatus.Scheduled)
           )
@@ -203,7 +204,7 @@ function Activities() {
       // only update state if something actually changed to avoid render loop
       return changed ? updatedSelection : prev
     })
-  }, [activities])
+  }, [activities, isCourseDeletionActive])
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {

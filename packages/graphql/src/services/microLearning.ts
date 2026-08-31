@@ -19,6 +19,11 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  acquireCourseMutationLease,
+  releaseCourseMutationLease,
+  tryAcquireCourseMutationAdvisoryLock,
+} from './courseDeletionGuard.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -972,29 +977,64 @@ export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMic
         )
       }
 
-      // end the microlearning
-      const updatedMicroLearning = await globalCtx.prisma.microLearning.update({
-        where: {
-          id: microLearningId,
-          isDeleted: false,
-          course: { isDeleted: false, isDeletionPending: false },
-        },
-        data: { status: DB.PublicationStatus.ENDED },
-      })
+      const mutationLease = await acquireCourseMutationLease(
+        globalCtx.redisExec,
+        microLearning.courseId
+      )
+      if (!mutationLease) return true
 
-      await sendTeamsNotification({
-        scope: 'hatchet/microlearning-end',
-        text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
-      })
+      try {
+        const updatedMicroLearning = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              !(await tryAcquireCourseMutationAdvisoryLock(
+                prisma,
+                microLearning.courseId
+              ))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for expiring microlearning ${microLearningId}`
+              )
+            }
 
-      // publish the event to subscribers
-      globalCtx.pubSub.publish('microLearningEnded', updatedMicroLearning)
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'MicroLearning',
-        id: updatedMicroLearning.id,
-      })
+            const ended = await prisma.microLearning.updateMany({
+              where: {
+                id: microLearningId,
+                isDeleted: false,
+                status: DB.PublicationStatus.PUBLISHED,
+                scheduledEndAt: { lte: new Date() },
+                course: { isDeleted: false, isDeletionPending: false },
+              },
+              data: { status: DB.PublicationStatus.ENDED },
+            })
+            if (ended.count === 0) return null
 
-      return true
+            return await prisma.microLearning.findUnique({
+              where: { id: microLearningId },
+            })
+          }
+        )
+        if (!updatedMicroLearning) return true
+
+        await sendTeamsNotification({
+          scope: 'hatchet/microlearning-end',
+          text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
+        })
+
+        globalCtx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'MicroLearning',
+          id: updatedMicroLearning.id,
+        })
+
+        return true
+      } finally {
+        await releaseCourseMutationLease(
+          globalCtx.redisExec,
+          microLearning.courseId,
+          mutationLease
+        )
+      }
     } catch (error) {
       console.error('Error ending expired microlearning:', error)
       await sendTeamsNotification({
@@ -1046,29 +1086,63 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         )
       }
 
-      // publish the microlearning
-      await globalCtx.prisma.microLearning.update({
-        where: {
-          id: microLearningId,
-          isDeleted: false,
-          course: { isDeleted: false, isDeletionPending: false },
-        },
-        data: { status: DB.PublicationStatus.PUBLISHED },
-      })
+      const mutationLease = await acquireCourseMutationLease(
+        globalCtx.redisExec,
+        microLearning.courseId
+      )
+      if (!mutationLease) return true
 
-      // send a teams notification
-      await sendTeamsNotification({
-        scope: 'graphql/publishScheduledMicroLearnings',
-        text: `Successfully published scheduled microlearning ${microLearning.id}`,
-      })
+      try {
+        const published = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              !(await tryAcquireCourseMutationAdvisoryLock(
+                prisma,
+                microLearning.courseId
+              ))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for scheduled microlearning ${microLearningId}`
+              )
+            }
 
-      // invalidate the cache for the microlearning
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'MicroLearning',
-        id: microLearning.id,
-      })
+            const updated = await prisma.microLearning.updateMany({
+              where: {
+                id: microLearningId,
+                isDeleted: false,
+                status: DB.PublicationStatus.SCHEDULED,
+                scheduledStartAt: { lte: new Date() },
+                course: { isDeleted: false, isDeletionPending: false },
+              },
+              data: { status: DB.PublicationStatus.PUBLISHED },
+            })
+            if (updated.count === 0) return null
 
-      return true
+            return await prisma.microLearning.findUnique({
+              where: { id: microLearningId },
+            })
+          }
+        )
+        if (!published) return true
+
+        await sendTeamsNotification({
+          scope: 'graphql/publishScheduledMicroLearnings',
+          text: `Successfully published scheduled microlearning ${published.id}`,
+        })
+
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'MicroLearning',
+          id: published.id,
+        })
+
+        return true
+      } finally {
+        await releaseCourseMutationLease(
+          globalCtx.redisExec,
+          microLearning.courseId,
+          mutationLease
+        )
+      }
     } catch (error) {
       console.error('Error publishing scheduled microlearning:', error)
       await sendTeamsNotification({

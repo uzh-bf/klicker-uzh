@@ -1,5 +1,9 @@
 import { StackFeedbackStatus } from '@klicker-uzh/types'
-import { combineStackStatus } from '../src/services/stacks.js'
+import type { Context } from '../src/lib/context.js'
+import {
+  combineStackStatus,
+  respondToElementStack,
+} from '../src/services/stacks.js'
 
 describe('Test the response logic for element stacks', () => {
   it('Test the combination of different element responses', () => {
@@ -51,5 +55,49 @@ describe('Test the response logic for element stacks', () => {
       newStatus: wrong,
     })
     expect(res8).toBe(wrong)
+  })
+
+  it('accepts activity-owned stacks without a direct course link', async () => {
+    const findUnique = vi.fn().mockResolvedValue({ id: 1 })
+    const ctx = {
+      prisma: { elementStack: { findUnique } },
+      user: undefined,
+    } as unknown as Context
+
+    const result = await respondToElementStack(
+      {
+        stackId: 1,
+        courseId: 'course-id',
+        responses: [],
+        stackAnswerTime: 0,
+        isOwner: true,
+      },
+      ctx
+    )
+
+    expect(result).toEqual({
+      id: 1,
+      status: StackFeedbackStatus.UNANSWERED,
+      score: undefined,
+      evaluations: [],
+    })
+    expect(findUnique).toHaveBeenCalledWith({
+      where: {
+        OR: expect.arrayContaining([
+          {
+            microLearning: {
+              course: {
+                id: 'course-id',
+                isDeleted: false,
+                isDeletionPending: false,
+              },
+            },
+          },
+        ]),
+        id: 1,
+      },
+      select: { id: true },
+    })
+    expect(findUnique.mock.calls[0]?.[0].where.OR).toHaveLength(3)
   })
 })

@@ -775,7 +775,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      startCourseDeletion: t.withAuth(asUserFullAccess).field({
+      startCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
         type: CourseDeletionStatus,
         args: {
@@ -787,7 +787,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteCourse: t.withAuth(asUserFullAccess).field({
+      deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         deprecationReason: 'Use startCourseDeletion.',
@@ -2758,7 +2758,7 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           await CourseDeletionGuard.assertCourseMutationAllowed(
-            args.courseId,
+            TemplateService.normalizeTemplateCourseId(args.courseId),
             ctx
           )
           return await TemplateService.createLiveQuizFromTemplate(args, ctx)

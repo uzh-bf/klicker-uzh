@@ -378,11 +378,12 @@ export function CourseDeletionProvider({
           const result = await fetchStatuses({
             variables: { ids: batchJobIds },
           })
-          if (result.errors) {
+          const pollingError = result.error ?? result.errors?.[0]
+          if (pollingError) {
             if (!cancelled) {
               console.error(
                 'Failed to poll course deletion status',
-                result.errors
+                pollingError
               )
             }
             continue

@@ -66,6 +66,7 @@ import type {
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
+import { getActiveCourseElementStackWhere } from './courseDeletionGuard.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -3173,9 +3174,8 @@ export async function respondToElementStack(
 ) {
   const activeStack = await ctx.prisma.elementStack.findUnique({
     where: {
+      ...getActiveCourseElementStackWhere(courseId),
       id: stackId,
-      courseId,
-      course: { isDeleted: false, isDeletionPending: false },
     },
     select: { id: true },
   })
@@ -4217,9 +4217,9 @@ export async function getPreviousStackEvaluation(
 
   const stack = await ctx.prisma.elementStack.findUnique({
     where: {
+      ...getActiveCourseElementStackWhere(),
       id: stackId,
       type: DB.ElementStackType.MICROLEARNING,
-      course: { isDeleted: false, isDeletionPending: false },
     },
     include: {
       elements: {

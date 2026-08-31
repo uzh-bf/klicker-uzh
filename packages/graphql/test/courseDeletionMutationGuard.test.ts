@@ -8,6 +8,7 @@ import { ActivityType } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { assertElementInstanceMutationAllowed } from '../src/services/courseDeletionGuard.js'
 
 function createContext() {
   const liveQuizUpdate = vi.fn()
@@ -56,6 +57,17 @@ function createContext() {
       feedbackResponse: {
         findUnique: vi.fn().mockResolvedValue({
           feedback: { liveQuizId: 'live-quiz-id' },
+        }),
+      },
+      elementInstance: {
+        findUnique: vi.fn().mockResolvedValue({
+          elementStack: {
+            courseId: null,
+            practiceQuiz: null,
+            microLearning: { courseId: 'course-id' },
+            groupActivity: null,
+          },
+          elementBlock: null,
         }),
       },
       liveQuiz: {
@@ -206,5 +218,11 @@ describe('course deletion mutation guard', () => {
         ctx
       )
     )
+  })
+
+  it('resolves deletion guards through activity-owned element stacks', async () => {
+    const { ctx } = createContext()
+
+    await expectDeletionInProgress(assertElementInstanceMutationAllowed(1, ctx))
   })
 })

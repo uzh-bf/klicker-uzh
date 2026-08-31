@@ -324,15 +324,18 @@ describe('course deletion jobs', () => {
     ).resolves.toEqual([])
   })
 
-  it('rejects deletion from a delegated read-only login', async () => {
+  it('allows a delegated course admin to queue deletion', async () => {
     const { ctx, push, updateMany } = createContext()
     ctx.user.scope = UserLoginScope.READ_ONLY
 
     await expect(
       startCourseDeletion({ id: 'course-id' }, ctx)
-    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
-    expect(push).not.toHaveBeenCalled()
-    expect(updateMany).not.toHaveBeenCalled()
+    ).resolves.toMatchObject({
+      courseId: 'course-id',
+      status: 'PENDING',
+    })
+    expect(push).toHaveBeenCalledOnce()
+    expect(updateMany).toHaveBeenCalledOnce()
   })
 
   it('keeps deletion disabled during the first production rollout', async () => {

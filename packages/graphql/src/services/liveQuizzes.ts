@@ -37,6 +37,11 @@ import {
   getPermissionBooleans,
   persistActivityWithPermissions,
 } from './activities.js'
+import {
+  acquireCourseMutationLease,
+  releaseCourseMutationLease,
+  tryAcquireCourseMutationAdvisoryLock,
+} from './courseDeletionGuard.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -3297,47 +3302,80 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         )
       }
 
-      // depending on the quiz assessment setting, select the corresponding redis instance
-      const redis = liveQuiz.isAssessmentEnabled
-        ? globalCtx.redisAssessmentExec
-        : globalCtx.redisExec
+      const courseId = liveQuiz.courseId
+      const mutationLease = courseId
+        ? await acquireCourseMutationLease(globalCtx.redisExec, courseId)
+        : undefined
+      if (courseId && !mutationLease) return true
 
-      // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
+      try {
+        const startedLiveQuiz = await globalCtx.prisma.$transaction(
+          async (prisma) => {
+            if (
+              courseId &&
+              !(await tryAcquireCourseMutationAdvisoryLock(prisma, courseId))
+            ) {
+              throw new Error(
+                `Course mutation lock unavailable for scheduled live quiz ${liveQuizId}`
+              )
+            }
+
+            const published = await prisma.liveQuiz.updateMany({
+              where: {
+                id: liveQuizId,
+                isDeleted: false,
+                status: DB.PublicationStatus.SCHEDULED,
+                availableFrom: { lte: new Date() },
+                OR: [
+                  { courseId: null },
+                  { course: { isDeleted: false, isDeletionPending: false } },
+                ],
+              },
+              data: {
+                status: DB.PublicationStatus.PUBLISHED,
+                startedAt: new Date(),
+              },
+            })
+            if (published.count === 0) return null
+
+            return await prisma.liveQuiz.findUnique({
+              where: { id: liveQuizId },
+            })
+          }
+        )
+        if (!startedLiveQuiz) return true
+
+        const redis = startedLiveQuiz.isAssessmentEnabled
+          ? globalCtx.redisAssessmentExec
+          : globalCtx.redisExec
+        await redis
+          .pipeline()
+          .hmset(`lq:${startedLiveQuiz.id}:meta`, {
+            namespace: startedLiveQuiz.namespace,
+            startedAt: Number(new Date()),
+          })
+          .exec()
+
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
         })
-        .exec()
 
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: {
-          id: liveQuizId,
-          isDeleted: false,
-          OR: [
-            { courseId: null },
-            { course: { isDeleted: false, isDeletionPending: false } },
-          ],
-        },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: startedLiveQuiz.id,
+        })
 
-      await sendTeamsNotification({
-        scope: 'hatchet/live-quiz-start',
-        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
-      })
-
-      // invalidate the cache for the live quiz
-      globalCtx.emitter.emit('invalidate', {
-        typename: 'LiveQuiz',
-        id: startedLiveQuiz.id,
-      })
-
-      return true
+        return true
+      } finally {
+        if (courseId && mutationLease) {
+          await releaseCourseMutationLease(
+            globalCtx.redisExec,
+            courseId,
+            mutationLease
+          )
+        }
+      }
     } catch (error) {
       console.error('Error publishing scheduled live quiz:', error)
       await sendTeamsNotification({

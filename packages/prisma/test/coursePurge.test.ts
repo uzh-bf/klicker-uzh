@@ -18,6 +18,41 @@ after(async () => {
 })
 
 describe('course deletion PostgreSQL fence', () => {
+  it('does not serialize mutations for different courses', async () => {
+    const firstCourseLock = getCourseDeletionAdvisoryLockKey(
+      `advisory-lock-course-a-${randomUUID()}`
+    )
+    const secondCourseLock = getCourseDeletionAdvisoryLockKey(
+      `advisory-lock-course-b-${randomUUID()}`
+    )
+    const first = await pool.connect()
+    const second = await pool.connect()
+
+    try {
+      await first.query('BEGIN')
+      const firstMutation = await first.query<{ acquired: boolean }>(
+        'SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS acquired',
+        [firstCourseLock]
+      )
+
+      await second.query('BEGIN')
+      const secondMutation = await second.query<{ acquired: boolean }>(
+        'SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS acquired',
+        [secondCourseLock]
+      )
+
+      assert.equal(firstMutation.rows[0]?.acquired, true)
+      assert.equal(secondMutation.rows[0]?.acquired, true)
+      await first.query('COMMIT')
+      await second.query('COMMIT')
+    } finally {
+      await first.query('ROLLBACK').catch(() => undefined)
+      await second.query('ROLLBACK').catch(() => undefined)
+      first.release()
+      second.release()
+    }
+  })
+
   it('allows concurrent response admissions while excluding deletion', async () => {
     const advisoryLockKey = getCourseDeletionAdvisoryLockKey(
       `advisory-lock-test-${randomUUID()}`

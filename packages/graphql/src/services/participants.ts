@@ -8,6 +8,7 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { getActiveCourseElementStackWhere } from './courseDeletionGuard.js'
 
 dayjs.extend(isoWeek)
 
@@ -572,7 +573,7 @@ export async function flagElement(
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id: elementInstanceId,
-      elementStack: { course: { isDeleted: false, isDeletionPending: false } },
+      elementStack: getActiveCourseElementStackWhere(),
     },
     include: {
       elementStack: {
@@ -675,7 +676,7 @@ export async function rateElement(
   const activeElementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id: elementInstanceId,
-      elementStack: { course: { isDeleted: false, isDeletionPending: false } },
+      elementStack: getActiveCourseElementStackWhere(),
     },
     select: { id: true },
   })

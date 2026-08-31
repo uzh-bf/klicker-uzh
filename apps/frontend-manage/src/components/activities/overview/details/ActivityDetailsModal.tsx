@@ -3,7 +3,7 @@ import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
-  ElementInstance,
+  type ElementInstance,
   GetActivityDetailsDocument,
   GetOutdatedElementInstancesDocument,
   ObjectType,
@@ -11,11 +11,12 @@ import {
   ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
+import { useCourseDeletionStatus } from '../../../courses/CourseDeletionStatusProvider'
 import ActivityDetailsActions from './ActivityDetailsActions'
 import ActivityInformation from './ActivityInformation'
 import ActivityOverviewTable from './ActivityOverviewTable'
@@ -23,15 +24,18 @@ import ActivityOverviewTable from './ActivityOverviewTable'
 function ActivityDetailsModal({
   activityId,
   activityType,
+  readOnly = false,
   onClose,
   refetchActivities,
 }: {
   activityId: string
   activityType: ActivityType
+  readOnly?: boolean
   onClose: () => void
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const { isCourseDeletionActive } = useCourseDeletionStatus()
 
   // fetch activity details
   const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
@@ -40,6 +44,9 @@ function ActivityDetailsModal({
   })
 
   const details = detailsData?.activityDetails
+  const activityMutationBlocked =
+    readOnly ||
+    (!!details?.courseId && isCourseDeletionActive(details.courseId))
   const stacks = detailsData?.activityDetails?.stacks ?? []
   const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
 
@@ -99,13 +106,14 @@ function ActivityDetailsModal({
       data={{ cy: 'activity-details-modal' }}
       dataCloseButton={{ cy: 'close-activity-details-modal' }}
     >
-      {!!details ? (
+      {details ? (
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
           <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
             <ActivityDetailsActions
               details={details}
               activityType={activityType}
               isReviewed={isReviewed}
+              readOnly={activityMutationBlocked}
               setSelectedInstanceId={setSelectedInstanceId}
             />
             <ActivityInformation

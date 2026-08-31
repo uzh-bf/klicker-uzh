@@ -462,10 +462,10 @@ async function processResponseWithLease(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
-              responseTimestamp
+              String(responseTimestamp)
             )
           }
 
@@ -539,10 +539,10 @@ async function processResponseWithLease(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
-              responseTimestamp
+              String(responseTimestamp)
             )
           }
 
@@ -617,10 +617,10 @@ async function processResponseWithLease(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
-              responseTimestamp
+              String(responseTimestamp)
             )
           }
 
@@ -700,10 +700,10 @@ async function processResponseWithLease(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
-              responseTimestamp
+              String(responseTimestamp)
             )
           }
 
@@ -801,10 +801,10 @@ async function processResponseWithLease(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
-              responseTimestamp
+              String(responseTimestamp)
             )
           }
 
