@@ -26,6 +26,7 @@ import './schema/element.js'
 import './schema/elementData.js'
 import './schema/elementGeneration.js'
 import './schema/evaluation.js'
+import './schema/freeTextEvaluation.js'
 import './schema/groupActivity.js'
 import './schema/kbKnowledgeGraph.js'
 import './schema/knowledge.js'
@@ -61,6 +62,11 @@ import {
   handleSweepStaleCourseDuplications,
 } from './services/courseDuplication.js'
 import {
+  handleEvaluateFreeTextAttempt,
+  handleEvaluateFreeTextAttemptFailure,
+  handleReapStalledFreeTextAttempts,
+} from './services/freeTextEvaluationHandler.js'
+import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
   handlePublishScheduledGroupActivity,
@@ -90,6 +96,9 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleEvaluateFreeTextAttempt,
+  handleEvaluateFreeTextAttemptFailure,
+  handleReapStalledFreeTextAttempts,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

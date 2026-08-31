@@ -102,6 +102,56 @@ export function prepareHatchetTasks({
     },
   }
 
+  // ! SEMANTIC FREE-TEXT EVALUATION
+  // #region
+  const reapStalledFreeTextAttempts = hatchet.task({
+    name: 'reap-stalled-free-text-attempts',
+    retries: 3,
+    onCrons: [
+      '*/5 * * * *', // runs every 5 minutes (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleReapStalledFreeTextAttempts(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const evaluateFreeTextAttempt = hatchet.workflow<{
+    attemptId: string
+    evaluationRevision: number
+  }>({
+    name: 'evaluate-free-text-attempt-workflow',
+  })
+  evaluateFreeTextAttempt.durableTask({
+    name: 'evaluate-free-text-attempt',
+    retries: 3,
+    concurrency: {
+      expression: 'input.attemptId',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
+    fn: (input, executionContext) =>
+      handlers.handleEvaluateFreeTextAttempt(
+        input,
+        globalContext,
+        executionContext
+      ),
+  })
+  evaluateFreeTextAttempt.onFailure({
+    name: 'mark-free-text-attempt-unavailable',
+    fn: (input, executionContext) =>
+      handlers.handleEvaluateFreeTextAttemptFailure(
+        input,
+        globalContext,
+        executionContext
+      ),
+  })
+  // #endregion
+
   // ! AUDIT LOGGING
   // #region
   const createAuditLogEntry = hatchet.task({
@@ -528,6 +578,8 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    evaluateFreeTextAttempt,
+    reapStalledFreeTextAttempts,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

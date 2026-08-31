@@ -1,0 +1,10 @@
+fragment ElementDataWithoutSolutionsV2 on ElementInstance {
+  ...ElementDataWithoutSolutions
+  elementData {
+    ... on FreeTextElementData {
+      options {
+        hasSemanticEvaluation
+      }
+    }
+  }
+}

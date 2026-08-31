@@ -1,6 +1,7 @@
 export type FreeTextCorrectnessCategory = 'CORRECT' | 'PARTIAL' | 'INCORRECT'
 
 export type FreeTextEvaluationAvailabilityReason =
+  | 'CLIENT_SUBMISSION_ID_UNAVAILABLE'
   | 'CONFIGURATION_CHANGED'
   | 'CONSENT_DECLINED'
   | 'CONSENT_REQUIRED'
@@ -10,6 +11,7 @@ export type FreeTextEvaluationAvailabilityReason =
   | 'EVALUATOR_RESULT_UNAVAILABLE'
   | 'EVALUATOR_UNAVAILABLE'
   | 'LECTURER_ENTITLEMENT_UNAVAILABLE'
+  | 'PARTICIPANT_ACCESS_UNAVAILABLE'
   | 'SCHEDULING_FAILED'
 
 export type FreeTextRubricAchievementLevel = {
@@ -138,4 +140,24 @@ export type EvaluateFreeTextResponseV1 = {
 export type FreeTextEvaluationResult = {
   rubric_assessments: FreeTextRubricAssessment[]
   feedback_proposals?: FreeTextFeedbackProposal[]
+}
+
+export type FreeTextRubricFeedback = {
+  rubricId: string
+  rubricName: string
+  proposedLevel: string
+  normalizedScore: number
+  criterionStatus: FreeTextCorrectnessCategory
+  rationale: string
+}
+
+export type FreeTextFeedback = {
+  rubricId: string
+  rubricName: string
+  feedback: string
+}
+
+export type FreeTextEvaluationFeedback = {
+  rubricAssessments: FreeTextRubricFeedback[]
+  feedbackProposals: FreeTextFeedback[]
 }

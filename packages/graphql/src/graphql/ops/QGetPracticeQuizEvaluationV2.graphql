@@ -1,0 +1,11 @@
+query GetPracticeQuizEvaluationV2($id: String!) {
+  getPracticeQuizEvaluation(id: $id) {
+    id
+    name
+    displayName
+    description
+    courseId
+
+    ...EvaluationResultsV2
+  }
+}

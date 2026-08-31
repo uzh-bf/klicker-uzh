@@ -1,8 +1,13 @@
 import {
+  isBoundedNonEmptyString,
+  isBoundedStringArray,
   isFiniteNumber,
   isNonEmptyString,
   isRecord,
   isStringArray,
+  isWithinFreeTextPayloadBounds,
+  MAX_FREE_TEXT_CONFIG_TEXT_LENGTH,
+  MAX_FREE_TEXT_EXACT_ANSWERS,
 } from './freeTextSemanticPrimitives.js'
 import {
   normalizeFreeTextAnswer,
@@ -12,6 +17,9 @@ import { validateFreeTextRubricSchema } from './freeTextSemanticValidation.js'
 
 export function validateSemanticFreeTextConfig(value: unknown): string[] {
   if (!isRecord(value)) return ['semantic evaluation config must be an object']
+  if (!isWithinFreeTextPayloadBounds(value)) {
+    return ['semantic evaluation config exceeds payload limits']
+  }
 
   const errors: string[] = []
   if (value.contract_version !== '1') {
@@ -34,6 +42,15 @@ export function validateSemanticFreeTextConfig(value: unknown): string[] {
   if (!isStringArray(value.accepted_exact_answers)) {
     errors.push('accepted_exact_answers must be a string array')
   } else if (
+    !isBoundedStringArray(value.accepted_exact_answers, {
+      maxItems: MAX_FREE_TEXT_EXACT_ANSWERS,
+      maxItemLength: MAX_FREE_TEXT_CONFIG_TEXT_LENGTH,
+    })
+  ) {
+    errors.push(
+      `accepted_exact_answers must contain at most ${MAX_FREE_TEXT_EXACT_ANSWERS} answers of at most ${MAX_FREE_TEXT_CONFIG_TEXT_LENGTH} characters`
+    )
+  } else if (
     value.accepted_exact_answers.some(
       (answer) => normalizeFreeTextAnswer(answer).length === 0
     )
@@ -52,6 +69,16 @@ export function validateSemanticFreeTextConfig(value: unknown): string[] {
     typeof value.reference_solution !== 'string'
   ) {
     errors.push('reference_solution must be a string')
+  } else if (
+    value.reference_solution != null &&
+    !isBoundedNonEmptyString(
+      value.reference_solution,
+      MAX_FREE_TEXT_CONFIG_TEXT_LENGTH
+    )
+  ) {
+    errors.push(
+      `reference_solution must contain at most ${MAX_FREE_TEXT_CONFIG_TEXT_LENGTH} characters`
+    )
   }
 
   errors.push(

@@ -9,10 +9,10 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
+import * as FreeTextEvaluationService from '../services/freeTextEvaluation.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -21,6 +21,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
@@ -42,6 +43,7 @@ import {
   Tag,
   TemplateBlockInput,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildInputRef,
   ElementGenerationBuildRef,
@@ -54,7 +56,7 @@ import {
   StartElementGenerationInputRef,
   UpdateGeneratedElementDraftInputRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
+import { FreeTextPracticeStateType } from './freeTextEvaluation.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -169,6 +171,68 @@ export const Mutation = builder.mutationType({
     }
 
     return {
+      submitFreeTextAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          answer: t.arg.string({ required: true }),
+          answerTime: t.arg.float({ required: true }),
+          clientSubmissionId: t.arg.string({ required: true }),
+        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.createFreeTextAttempt(args, ctx),
+      }),
+
+      retryFreeTextEvaluation: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: {
+          attemptId: t.arg.string({
+            required: true,
+            validate: { uuid: true },
+          }),
+        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.retryFreeTextEvaluation(args, ctx),
+      }),
+
+      revealFreeTextSolution: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: {
+          cycleId: t.arg.string({
+            required: true,
+            validate: { uuid: true },
+          }),
+        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.revealFreeTextSolution(args, ctx),
+      }),
+
+      startFreeTextPracticeCycle: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: { instanceId: t.arg.int({ required: true }) },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.startFreeTextPracticeCycle(args, ctx),
+      }),
+
+      decideSemanticEvaluationConsent: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          disclosureVersion: t.arg.string({ required: true }),
+          accepted: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          await FreeTextEvaluationService.decideSemanticEvaluationConsent(
+            args,
+            ctx
+          )
+          return true
+        },
+      }),
+
       // ----- ANONYMOUS OPERATIONS -----
       // #region
       addConfusionTimestep: t.field({

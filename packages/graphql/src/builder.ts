@@ -14,6 +14,8 @@ import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import type { Context, ContextWithUser } from './lib/context.js'
 import './types/app.js'
 
+type JsonOutput = object | string | number | boolean
+
 const builder = new SchemaBuilder<{
   DefaultFieldNullability: false
   Directives: {
@@ -43,7 +45,7 @@ const builder = new SchemaBuilder<{
     }
     Json: {
       Input: any
-      Output: any
+      Output: JsonOutput
     }
   }
 }>({

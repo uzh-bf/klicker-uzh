@@ -1,4 +1,11 @@
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import { validateSemanticFreeTextConfig } from '@klicker-uzh/grading'
+import type { ElementOptionsInput } from '@klicker-uzh/types'
+import { z } from 'zod'
+
+const semanticFreeTextConfigSchema = z.custom(
+  (value) => validateSemanticFreeTextConfig(value).length === 0,
+  'Invalid semantic free-text configuration'
+)
 
 function validateFreeTextOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
@@ -13,9 +20,18 @@ function validateFreeTextOptions(options?: ElementOptionsInput | null) {
     return false
   }
 
+  if (
+    options.semanticEvaluation != null &&
+    !semanticFreeTextConfigSchema.safeParse(options.semanticEvaluation).success
+  ) {
+    console.error('Semantic free-text configuration is invalid')
+    return false
+  }
+
   // if sample solution is enabled, at least one valid solution is required
   if (
     options.hasSampleSolution &&
+    options.semanticEvaluation == null &&
     (!options.solutions ||
       options.solutions.length === 0 ||
       options.solutions[0] === '')

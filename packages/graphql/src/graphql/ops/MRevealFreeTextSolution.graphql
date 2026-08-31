@@ -1,0 +1,5 @@
+mutation RevealFreeTextSolution($cycleId: String!) {
+  revealFreeTextSolution(cycleId: $cycleId) {
+    ...FreeTextPracticeStateData
+  }
+}

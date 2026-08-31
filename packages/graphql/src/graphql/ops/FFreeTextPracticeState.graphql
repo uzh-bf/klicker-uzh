@@ -1,0 +1,91 @@
+fragment FreeTextPracticeStateData on FreeTextPracticeState {
+  instanceId
+  cycleId
+  cycleOrdinal
+  cycleStatus
+  stateVersion
+  attemptLimit
+  attemptsUsed
+  attemptsRemaining
+  canSubmitAnswer
+  canRetryEvaluation
+  canRevealSolution
+  canPracticeAgain
+  solutionAuthorized
+  referenceSolution
+  explanation
+  peerAnswers {
+    value
+    count
+  }
+  currentAttempt {
+    id
+    ordinal
+    answer
+    evaluationRevision
+    evaluationStatus
+    evaluationSource
+    retryable
+    availabilityReason
+    aggregateScore
+    outcomeBandId
+    outcomeBandLabel
+    correctness
+    evaluatorVersion
+    modelVersion
+    structuredResult {
+      rubricAssessments {
+        rubricId
+        rubricName
+        proposedLevel
+        normalizedScore
+        criterionStatus
+        rationale
+      }
+      feedbackProposals {
+        rubricId
+        rubricName
+        feedback
+      }
+    }
+    pointsAwarded
+    xpAwarded
+    createdAt
+    completedAt
+  }
+  attempts {
+    id
+    ordinal
+    answer
+    evaluationRevision
+    evaluationStatus
+    evaluationSource
+    retryable
+    availabilityReason
+    aggregateScore
+    outcomeBandId
+    outcomeBandLabel
+    correctness
+    evaluatorVersion
+    modelVersion
+    structuredResult {
+      rubricAssessments {
+        rubricId
+        rubricName
+        proposedLevel
+        normalizedScore
+        criterionStatus
+        rationale
+      }
+      feedbackProposals {
+        rubricId
+        rubricName
+        feedback
+      }
+    }
+    pointsAwarded
+    xpAwarded
+    createdAt
+    completedAt
+  }
+}

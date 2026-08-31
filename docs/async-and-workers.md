@@ -89,6 +89,13 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
 
+The semantic evaluator uses `CATALYST_FORMATIVE_EVALUATOR_URL` and the optional
+`CATALYST_FORMATIVE_EVALUATOR_TOKEN`. The public `FreeTextAttempt` row is the
+client-visible source of truth; Hatchet workflow IDs remain internal. A completed
+attempt is also a recovery checkpoint: if aggregate response/reward side effects
+did not finish, a repeated worker delivery applies them exactly once through the
+attempt's unique `QuestionResponseDetail` relation.
+
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. In the managed devcontainer, `devrouter ensure . --profile live-quiz` starts Response API and both workers, then proves `/healthz` and one live runtime process per worker before reporting ready. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).

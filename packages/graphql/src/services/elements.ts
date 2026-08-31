@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -6,26 +7,27 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationDetails,
+  type ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
   DisplayMode,
-  ElementManipulationInput,
-  GeneratedFlashcard,
-  GeneratedQuestionEditable,
+  type ElementManipulationInput,
+  type ElementOptionsFreeText,
+  type GeneratedFlashcard,
+  type GeneratedQuestionEditable,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
 import {
   getBlobStorageAccountUrl,
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import EventEmitter from 'events'
+import type EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type {
@@ -566,7 +568,36 @@ export async function manipulateElement(
     })
   }
 
+  if (
+    type === DB.ElementType.FREE_TEXT &&
+    options &&
+    Object.hasOwn(options, 'semanticEvaluation')
+  ) {
+    const previousSemantic = (
+      elementPrev?.options as ElementOptionsFreeText | undefined
+    )?.semanticEvaluation
+    const semanticChanged = !isDeepStrictEqual(
+      previousSemantic ?? null,
+      options.semanticEvaluation ?? null
+    )
+    const catalystEntitled =
+      ctx.user.catalystInstitutional || ctx.user.catalystIndividual
+    if (semanticChanged && !catalystEntitled) return null
+  }
+
   validateElementDifficultyLevel(difficultyLevel, elementPrev?.type ?? type)
+
+  const optionsForPersistence =
+    type === DB.ElementType.FREE_TEXT &&
+    options &&
+    !Object.hasOwn(options, 'semanticEvaluation') &&
+    elementPrev
+      ? {
+          ...processedOptions,
+          semanticEvaluation: (elementPrev.options as ElementOptionsFreeText)
+            .semanticEvaluation,
+        }
+      : processedOptions
 
   // determine which tags have been deconnected
   if (elementPrev?.tags) {
@@ -652,7 +683,7 @@ export async function manipulateElement(
           : basePoints!,
       pointsMultiplier: pointsMultiplier!,
       difficultyLevel: difficultyLevel ?? null,
-      options: processedOptions,
+      options: optionsForPersistence,
       owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {
@@ -689,7 +720,7 @@ export async function manipulateElement(
       difficultyLevel:
         typeof difficultyLevel === 'undefined' ? undefined : difficultyLevel,
       version: { increment: 1 },
-      options: options ? processedOptions : undefined,
+      options: options ? optionsForPersistence : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags

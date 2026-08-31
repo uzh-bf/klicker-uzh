@@ -354,6 +354,7 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
 - Create: `packages/graphql/src/graphql/ops/MRevealFreeTextSolution.graphql`
 - Create: `packages/graphql/src/graphql/ops/MStartFreeTextPracticeCycle.graphql`
 - Create: `packages/graphql/src/graphql/ops/MDecideSemanticEvaluationConsent.graphql`
+- Create: `packages/graphql/src/graphql/ops/MSubmitFreeTextAttempt.graphql`
 - Create: `packages/graphql/src/graphql/ops/QSemanticFreeTextCapability.graphql`
 - Modify: `packages/graphql/src/graphql/ops/FStackFeedbackEvaluations.graphql`
 - Create: `packages/graphql/test/freeTextEvaluation.test.ts`
@@ -375,38 +376,39 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
 - `getFreeTextPracticeState` derives all action booleans server-side and withholds
   detailed solution data before authorization.
 
-- [ ] Write GraphQL integration tests first for legacy behavior, semantic opt-in,
+- [x] Write GraphQL integration tests first for legacy behavior, semantic opt-in,
       custom/default bands, duplicate submission IDs, attempt exhaustion, evaluation
       retry, solution reveal, terminal practice-again, consent accept/decline/version
       renewal, entitlement loss, exact match/non-match, uncertain results, and positive
       reward deltas without farming across cycles.
-- [ ] Add Zod validation for `SemanticFreeTextConfig` on element manipulation.
+- [x] Add validation for `SemanticFreeTextConfig` on element manipulation.
       Require Catalyst only when semantic configuration changes; unrelated edits may
       preserve a read-only configuration after entitlement loss.
 - [ ] Split legacy `solutions` from new `accepted_exact_answers` and
       `reference_solution`. On explicit upgrade seed accepted answers from legacy
       solutions, leave the reference solution empty, and require it when reveal is
       enabled.
-- [ ] Implement participant authorization and the disclosure record. The current
+- [x] Implement participant authorization and the disclosure record. The current
       version comes from `SEMANTIC_EVALUATION_DISCLOSURE_VERSION`; expose provider-aware
       metadata without storing translated copy in the database.
-- [ ] Implement the HTTP adapter using native `fetch` with
+- [x] Implement the HTTP adapter using native `fetch` with
       `CATALYST_FORMATIVE_EVALUATOR_URL` and
       `CATALYST_FORMATIVE_EVALUATOR_TOKEN`. Return typed availability failures; redact
       endpoint payloads and raw errors from persisted/user-visible state.
-- [ ] Add `evaluateFreeTextAttempt` as a three-retry Hatchet workflow with
+- [x] Add `evaluateFreeTextAttempt` as a three-retry Hatchet workflow with
       concurrency keyed by `attemptId`, and an on-failure handler that conditionally
       changes a still-pending matching revision to retryable `UNAVAILABLE`.
-- [ ] Refactor the existing response update into a transaction-safe helper reused by
+- [x] Refactor the existing response update into a transaction-safe helper reused by
       semantic completion. Guard all response-detail, aggregate, leaderboard, XP, and
       timeline writes with the attempt's unique response-detail relation.
-- [ ] Implement the GraphQL types, queries, mutations, StackResponseInput extension,
+- [x] Implement the GraphQL types, queries, mutations, StackResponseInput extension,
       and semantic state on `FreeTextInstanceEvaluation`.
-- [ ] Run `pnpm --filter @klicker-uzh/graphql generate`; inspect and commit all five
+- [x] Run `pnpm --filter @klicker-uzh/graphql generate`; inspect and commit all five
       generated artifacts.
-- [ ] Run `pnpm --filter @klicker-uzh/graphql test:local -- freeTextEvaluation`;
-      expect all new integration tests to pass against real Postgres/Redis/Hatchet.
-- [ ] Run checks for types, grading, Prisma, GraphQL, Hatchet, and the general worker;
+- [x] Run the focused `freeTextEvaluation.test.ts` integration suite directly inside
+      the DevPod; all 16 cases pass against real Postgres. (`test:local` is the
+      host-owned Docker wrapper and is not used from inside the DevPod.)
+- [x] Run checks for types, grading, Prisma, GraphQL, Hatchet, and the general worker;
       expect exit 0.
 - [ ] Commit the layer with `feat(graphql): orchestrate semantic free-text attempts`.
 
@@ -566,3 +568,9 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
   persistence, the additive migration, analytics schema sync, and isolated-database
   application/reseed verification. Committed the contract as `e74f25273` and
   persistence as `5248ccf46`; stack-boundary review remains pending.
+- **2026-08-19:** Completed Layer 2's public state machine, Catalyst adapter, durable
+  Hatchet workflow, consent and entitlement gates, participant-safe GraphQL surface,
+  legacy side-effect integration, and 16-case focused integration suite. All affected
+  package checks, 19 grading tests, formatting, and Opengrep pass. The full GraphQL
+  suite reached 555/558; three unrelated catalog/assessment fixtures fail against the
+  already-used local database and also fail when rerun without file parallelism.

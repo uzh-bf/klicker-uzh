@@ -12,7 +12,8 @@ tags:
 
 # Formative Free-Text Evaluation
 
-> **Approved target design — not implemented yet.** Implementation is tracked in
+> **Backend contract and orchestration implemented; authoring and participant UI
+> follow in later stack layers.** Implementation is tracked in
 > [`PLAN-free-text-semantic-retries.md`](../project/plans_wip/PLAN-free-text-semantic-retries.md).
 
 Semantic retry is an opt-in capability for `FREE_TEXT` elements in formative
@@ -118,6 +119,31 @@ returns per-rubric `RubricAssessment` values and optional `FeedbackProposal` val
 including evaluator/model versions. Public code validates the result and computes
 the weighted aggregate and outcome. Prompts, chain-of-thought, provider traces, and
 raw internal errors are not persisted.
+
+The public GraphQL surface consists of `freeTextPracticeState`,
+`submitFreeTextAttempt`, `retryFreeTextEvaluation`,
+`revealFreeTextSolution`, `startFreeTextPracticeCycle`, and
+`decideSemanticEvaluationConsent`. Initial stack submission accepts a stable
+`clientSubmissionId` per semantic free-text response. `semanticFreeTextCapability`
+reports lecturer entitlement separately from evaluator availability.
+
+The evaluator adapter is configured with:
+
+- `CATALYST_FORMATIVE_EVALUATOR_URL`
+- `CATALYST_FORMATIVE_EVALUATOR_TOKEN` (optional bearer token)
+- `CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS` (optional; 30 seconds by default)
+- `SEMANTIC_EVALUATION_DISCLOSURE_VERSION`
+
+The evaluator and optional health-check URLs are single allowlisted
+destinations. They must use HTTPS and must not contain credentials or a
+fragment. Redirects are rejected so the bearer token cannot cross origins.
+Local HTTP is accepted only outside production for loopback or
+`host.docker.internal` when
+`CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL=true` (or under
+`NODE_ENV=test`).
+
+Absent configuration selects the deterministic unavailable/exact-match fallback;
+it is not interpreted as an incorrect answer.
 
 ## Feedback and solution boundary
 

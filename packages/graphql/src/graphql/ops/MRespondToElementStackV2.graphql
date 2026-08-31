@@ -1,0 +1,20 @@
+mutation RespondToElementStackV2(
+  $isOwner: Boolean!
+  $stackId: Int!
+  $courseId: String!
+  $responses: [StackResponseInput!]!
+  $stackAnswerTime: Int!
+) {
+  respondToElementStack(
+    isOwner: $isOwner
+    stackId: $stackId
+    courseId: $courseId
+    responses: $responses
+    stackAnswerTime: $stackAnswerTime
+  ) {
+    id
+    status
+    score
+    ...StackFeedbackEvaluationsV2
+  }
+}

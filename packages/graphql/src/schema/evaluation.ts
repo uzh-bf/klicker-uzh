@@ -133,6 +133,24 @@ export interface IFreeElementEvaluationResults {
 export interface IFreeTextActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: IFreeElementEvaluationResults
+  retryAnalytics?: IFreeTextRetryAnalytics | null
+}
+
+export interface IFreeTextRetryCategoryCounts {
+  correct: number
+  partial: number
+  incorrect: number
+}
+
+export interface IFreeTextRetryAnalytics {
+  cycleCount: number
+  totalAttempts: number
+  averageAttempts: number
+  successRate: number
+  revealRate: number
+  unavailableCount: number
+  first: IFreeTextRetryCategoryCounts
+  best: IFreeTextRetryCategoryCounts
 }
 
 export interface ISelectionElementEvaluationResults {
@@ -432,11 +450,41 @@ export const FreeTextActivityEvaluationData =
   FreeTextActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
+      retryAnalytics: t.expose('retryAnalytics', {
+        type: FreeTextRetryAnalytics,
+        nullable: true,
+      }),
       results: t.expose('results', {
         type: FreeElementResults,
       }),
     }),
   })
+
+export const FreeTextRetryCategoryCountsRef =
+  builder.objectRef<IFreeTextRetryCategoryCounts>('FreeTextRetryCategoryCounts')
+export const FreeTextRetryCategoryCounts =
+  FreeTextRetryCategoryCountsRef.implement({
+    fields: (t) => ({
+      correct: t.exposeInt('correct'),
+      partial: t.exposeInt('partial'),
+      incorrect: t.exposeInt('incorrect'),
+    }),
+  })
+
+export const FreeTextRetryAnalyticsRef =
+  builder.objectRef<IFreeTextRetryAnalytics>('FreeTextRetryAnalytics')
+export const FreeTextRetryAnalytics = FreeTextRetryAnalyticsRef.implement({
+  fields: (t) => ({
+    cycleCount: t.exposeInt('cycleCount'),
+    totalAttempts: t.exposeInt('totalAttempts'),
+    averageAttempts: t.exposeFloat('averageAttempts'),
+    successRate: t.exposeFloat('successRate'),
+    revealRate: t.exposeFloat('revealRate'),
+    unavailableCount: t.exposeInt('unavailableCount'),
+    first: t.expose('first', { type: FreeTextRetryCategoryCounts }),
+    best: t.expose('best', { type: FreeTextRetryCategoryCounts }),
+  }),
+})
 
 export const FreeElementResultsRef =
   builder.objectRef<IFreeElementEvaluationResults>('FreeElementResults')

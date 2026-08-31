@@ -10,10 +10,10 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
+import * as FreeTextEvaluationService from '../services/freeTextEvaluation.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -21,6 +21,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
@@ -70,13 +71,17 @@ import {
   Tag,
   UserElementList,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildRef,
   ElementGenerationCapabilitiesRef,
   ElementGenerationSourceRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
+import {
+  FreeTextPracticeStateType,
+  SemanticFreeTextCapability,
+} from './freeTextEvaluation.js'
 import {
   GroupActivity,
   GroupActivityDetails,
@@ -166,6 +171,21 @@ export const Query = builder.queryType({
     const asUserWithCatalyst = { ...asUser, catalyst: true }
 
     return {
+      freeTextPracticeState: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: FreeTextPracticeStateType,
+        args: { instanceId: t.arg.int({ required: true }) },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.getFreeTextPracticeState(args, ctx),
+      }),
+
+      semanticFreeTextCapability: t.withAuth({ authenticated: true }).field({
+        nullable: false,
+        type: SemanticFreeTextCapability,
+        resolve: (_, __, ctx) =>
+          FreeTextEvaluationService.getSemanticFreeTextCapability(ctx),
+      }),
+
       self: t.field({
         nullable: true,
         type: Participant,

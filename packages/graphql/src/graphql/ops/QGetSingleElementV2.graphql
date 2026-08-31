@@ -1,0 +1,240 @@
+query GetSingleElementV2($id: Int!) {
+  element(id: $id) {
+    __typename
+
+    ... on ChoicesElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        __typename
+        hasSampleSolution
+        hasAnswerFeedbacks
+        displayMode
+        choices {
+          ix
+          correct
+          feedback
+          value
+        }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on NumericalElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        hasSampleSolution
+        accuracy
+        placeholder
+        unit
+        restrictions {
+          min
+          max
+        }
+        solutionRanges {
+          min
+          max
+        }
+        exactSolutions
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on FreeTextElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
+        }
+        solutions
+        semanticEvaluation
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on SelectionElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollection {
+          id
+        }
+        answerCollectionSolutionIds
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on CaseStudyElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        hasSampleSolution
+        answerCollectionId
+        collectionItemIds
+        criteria {
+          id
+          name
+          order
+          min
+          max
+          step
+          unit
+          labels {
+            min
+            mid
+            max
+          }
+        }
+        cases {
+          id
+          title
+          description
+          order
+          solutions {
+            itemId
+            criteriaSolutions {
+              criterionId
+              min
+              max
+            }
+          }
+        }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on FlashcardElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on ContentElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+  }
+}

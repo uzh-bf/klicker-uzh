@@ -329,6 +329,54 @@ describe('semantic free-text evaluation', () => {
     )
   })
 
+  it('validates one feedback proposal for every configured rubric', () => {
+    const feedbackProposals = validSchema.rubrics.map((rubric) => ({
+      task_bundle_id: 'attempt-1',
+      rubric_id: rubric.id,
+      rubric_name: rubric.name,
+      feedback: 'The response addresses this criterion.',
+      strengths: ['Uses the relevant concept.'],
+      improvements: [],
+      action_items: ['Add a concrete example.'],
+      evidence_ids: [],
+      confidence: 0.9,
+    }))
+
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: { ...validResponse, feedback_proposals: feedbackProposals },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual([])
+
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: {
+          ...validResponse,
+          feedback_proposals: [
+            {
+              ...feedbackProposals[0],
+              task_bundle_id: 'another-attempt',
+              rubric_name: 'Wrong rubric name',
+              confidence: 2,
+            },
+            feedbackProposals[0],
+          ],
+        },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual(
+      expect.arrayContaining([
+        'feedback proposal 1 task_bundle_id does not match the request',
+        'feedback proposal 1 rubric_name does not match the rubric',
+        'feedback proposal 1 confidence must be between 0 and 1',
+        'feedback proposals must contain every configured rubric exactly once',
+      ])
+    )
+  })
+
   it('rejects mismatched, uncertain, and out-of-range evaluator output', () => {
     const invalidResponse = {
       ...validResponse,
@@ -426,5 +474,66 @@ describe('semantic free-text evaluation', () => {
         acceptedExactAnswers: [''],
       })
     ).toBe(false)
+  })
+
+  it('rejects oversized semantic configuration collections and text', () => {
+    expect(
+      validateSemanticFreeTextConfig({
+        contract_version: '1',
+        question_language: 'en',
+        attempt_limit: 2,
+        solution_reveal_enabled: false,
+        accepted_exact_answers: Array.from(
+          { length: 51 },
+          (_, index) => `Answer ${index}`
+        ),
+        rubric_schema: validSchema,
+      })
+    ).toContain(
+      'accepted_exact_answers must contain at most 50 answers of at most 10000 characters'
+    )
+
+    expect(
+      validateFreeTextRubricSchema({
+        ...validSchema,
+        rubrics: Array.from({ length: 21 }, () => validSchema.rubrics[0]),
+      })
+    ).toContain('rubrics must contain at most 20 entries')
+
+    expect(
+      validateFreeTextRubricSchema({
+        ...validSchema,
+        scoring_policy: { note: 'x'.repeat(10_001) },
+      })
+    ).toEqual(['rubric schema exceeds payload limits'])
+  })
+
+  it('rejects oversized evaluator arrays and nested extension values', () => {
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: {
+          ...validResponse,
+          rubric_assessments: validResponse.rubric_assessments.map(
+            (assessment) => ({
+              ...assessment,
+              evidence_ids: Array.from({ length: 101 }, () => 'evidence'),
+            })
+          ),
+        },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual(['evaluator response exceeds payload limits'])
+
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: {
+          ...validResponse,
+          metadata: { note: 'x'.repeat(10_001) },
+        },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual(['evaluator response exceeds payload limits'])
   })
 })
