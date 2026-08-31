@@ -375,6 +375,22 @@ export async function verifyNumericalFields(
 
 // helper functions
 
+export async function deleteElementsByName({
+  names,
+  ownerId,
+}: {
+  names: string[]
+  ownerId?: string
+}) {
+  const prisma = await getPrisma()
+  await prisma.element.deleteMany({
+    where: {
+      name: { in: names },
+      ownerId,
+    },
+  })
+}
+
 export async function createQuestionSC({
   name,
   content,

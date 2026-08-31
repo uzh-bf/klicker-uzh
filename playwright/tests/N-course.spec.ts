@@ -9,6 +9,7 @@
 import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page, type Response } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { seedActivities } from '../global-setup.js'
 import {
   chooseActivityAction,
   chooseCourseAction,
@@ -85,6 +86,7 @@ import {
   createQuestionSC,
   createQuestionSE as createQuestionSEDirect,
   deleteElement,
+  deleteElementsByName,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -2560,10 +2562,10 @@ test.describe('Part 4: Course deletion', () => {
     await expect
       .poll(
         async () =>
-          await page.evaluate((id) =>
-            window.localStorage.getItem(`course-deletion-job:${id}`)
-          ),
-        jobId
+          await page.evaluate(
+            (id) => window.localStorage.getItem(`course-deletion-job:${id}`),
+            jobId
+          )
       )
       .not.toBeNull()
 
@@ -2577,10 +2579,10 @@ test.describe('Part 4: Course deletion', () => {
     await expect
       .poll(
         async () =>
-          await page.evaluate((id) =>
-            window.localStorage.getItem(`course-deletion-job:${id}`)
-          ),
-        jobId
+          await page.evaluate(
+            (id) => window.localStorage.getItem(`course-deletion-job:${id}`),
+            jobId
+          )
       )
       .toBeNull()
     await page.evaluate(() => {
@@ -2591,6 +2593,7 @@ test.describe('Part 4: Course deletion', () => {
   test('Hides linked drafts only when draft deletion is selected', async ({
     page,
   }) => {
+    expect(await seedActivities()).toBe(true)
     const jobId = '99999999-9999-4999-8999-999999999999'
     await openCourseInManage(page, RUNNING_COURSE.name)
     const courseId = new URL(page.url()).pathname.split('/').at(-1)
@@ -2698,9 +2701,20 @@ test.describe('Part 4: Course deletion', () => {
     }
   })
 
-  test('Create a course with live quiz, practice quiz, and microlearning, and delete it again', async ({
+  test('Create a course with all draft activity types and delete it again', async ({
     page,
   }) => {
+    // A Playwright retry runs against the same database. Remove any partial
+    // setup from the first attempt before recreating this scenario.
+    await deleteCourseWithActivitiesByName({
+      courseName: DELETION.courseName,
+      ownerId: LECTURER_ID,
+    })
+    await deleteElementsByName({
+      names: [DELETION.qTitle],
+      ownerId: LECTURER_ID,
+    })
+
     // --- Create course ---
     await page.getByTestId('courses').click()
     await page.getByTestId('course-list-button-new-course').click()
@@ -2710,11 +2724,13 @@ test.describe('Part 4: Course deletion', () => {
     await page
       .getByTestId('course-notification-email')
       .fill(DELETION.notificationEmail)
-    // Disable gamification for simplicity
-    await page.getByTestId('course-gamification').click()
+    // Keep gamification and groups enabled so the course supports all four
+    // activity types, including group activities.
     await page.getByTestId('manipulate-course-submit').click()
     await page.getByTestId('courses').click()
-    await expect(page.getByText(DELETION.courseName)).toBeVisible()
+    await expect(
+      page.getByTestId(`course-list-button-${DELETION.courseName}`)
+    ).toBeVisible()
     await page.reload()
 
     // --- Create question ---
