@@ -365,8 +365,6 @@ export async function buildAssessmentReportSnapshotV1({
   const course = await prisma.course.findFirst({
     where: {
       id: courseId,
-      isDeleted: false,
-      isDeletionPending: false,
       isAssessmentEnabled: true,
       participations: {
         some: {

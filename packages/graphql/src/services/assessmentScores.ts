@@ -68,12 +68,7 @@ export async function calculateAssessmentCourseScores(
   ctx: { prisma: PrismaTransactionClient }
 ): Promise<CourseScoreAggregate | null> {
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-      isAssessmentEnabled: true,
-      isDeleted: false,
-      isDeletionPending: false,
-    },
+    where: { id: courseId, isAssessmentEnabled: true },
     select: {
       name: true,
       liveQuizzes: {

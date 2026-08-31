@@ -12,7 +12,6 @@ import {
   StartCourseDuplicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { getGraphQLErrorCode } from '@lib/utils/graphqlErrors'
 import {
   Popover,
   PopoverContent,
@@ -96,6 +95,27 @@ function getCourseDuplicationGroupSize(
   const parsedValue = Number(value)
 
   return Number.isFinite(parsedValue) ? parsedValue : fallback
+}
+
+function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+
+  const extensions = (error as { extensions?: { code?: unknown } }).extensions
+  if (typeof extensions?.code === 'string') return extensions.code
+
+  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
+  for (const graphQLError of graphQLErrors ?? []) {
+    const code = getGraphQLErrorCode(graphQLError)
+    if (code) return code
+  }
+
+  const errors = (error as { errors?: unknown[] }).errors
+  for (const nestedError of errors ?? []) {
+    const code = getGraphQLErrorCode(nestedError)
+    if (code) return code
+  }
+
+  return undefined
 }
 
 function getErrorMessage(error: unknown): string {
