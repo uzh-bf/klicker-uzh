@@ -5,6 +5,7 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     expiresAt
     timeLimit
     randomSelection
+    isPeerInstructionEnabled
     execution
     elements {
       id
@@ -20,6 +21,7 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     expiresAt
     timeLimit
     randomSelection
+    isPeerInstructionEnabled
     execution
     elements {
       id

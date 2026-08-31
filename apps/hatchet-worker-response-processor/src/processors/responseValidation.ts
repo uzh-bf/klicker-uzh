@@ -67,11 +67,13 @@ export function validateStudentResponse({
   }
 
   if (type === 'NUMERICAL') {
-    // response should be a string and be parseable as a number
+    // response should be a string containing one finite number
+    const parsedResponse =
+      typeof response.value === 'string' ? Number(response.value.trim()) : NaN
     if (
       typeof response.value !== 'string' ||
-      !response.value ||
-      Number.isNaN(parseFloat(response.value))
+      !response.value.trim() ||
+      !Number.isFinite(parsedResponse)
     ) {
       return {
         valid: false,
@@ -80,7 +82,6 @@ export function validateStudentResponse({
     }
 
     // if restrictions are defined, check that the parsed number is within the defined bounds
-    const parsedResponse = parseFloat(response.value)
     if (
       restrictions &&
       (('min' in restrictions &&

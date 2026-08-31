@@ -5,11 +5,11 @@ import type {
   PeerInstructionScope,
 } from '@klicker-uzh/types'
 import {
-  completePeerInstructionRevisionMessage,
   createPeerInstructionParticipantIdentity,
   getPeerInstructionAnonymousIdentity,
   type PeerInstructionRevisionRegistration,
   registerPeerInstructionRevisionMessage,
+  releasePeerInstructionRevisionMessage,
   verifyJWT,
 } from '@klicker-uzh/util'
 import type { Redis } from 'ioredis'
@@ -204,11 +204,15 @@ export async function submitPeerInstructionRevision({
   try {
     await pushEvent('peer-instruction-revision-received', event)
   } catch {
-    await completePeerInstructionRevisionMessage({
-      redis,
-      event,
-      errorCode: 'publication-failed',
-    })
+    try {
+      await releasePeerInstructionRevisionMessage({ redis, event })
+    } catch (error) {
+      // Keep the queue failure response stable if claim cleanup is unavailable.
+      console.error('Failed to release Peer Instruction revision claim', {
+        messageId: event.messageId,
+        error,
+      })
+    }
     return { status: 503, body: { error: 'revision_queue_unavailable' } }
   }
 

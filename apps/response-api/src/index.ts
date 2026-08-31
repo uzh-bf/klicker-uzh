@@ -152,11 +152,22 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     : 'response-received:anonymous'
   let pairingToken: string | undefined
   if (!isAuthenticatedParticipant) {
-    pairingToken = await issuePendingPeerInstructionAnonymousToken({
-      redis,
-      liveQuizId: String(liveQuizId),
-      messageId,
-    })
+    try {
+      pairingToken = await issuePendingPeerInstructionAnonymousToken({
+        redis,
+        liveQuizId: String(liveQuizId),
+        messageId,
+      })
+    } catch (error) {
+      console.error(
+        'Failed to prepare optional Peer Instruction pairing token',
+        {
+          liveQuizId: String(liveQuizId),
+          instanceId: String(instanceId),
+          error,
+        }
+      )
+    }
   }
   console.log(`Pushing event ${eventName}`, {
     messageId,

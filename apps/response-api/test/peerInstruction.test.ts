@@ -100,7 +100,7 @@ describeRedis('Peer Instruction response API', () => {
     expect(valid.status).toBe(200)
   })
 
-  it('accounts for publication failure and requires a replacement attempt', async () => {
+  it('releases the claim after publication failure so the response can be retried', async () => {
     const token = await signJWT(
       { sub: 'participant-1', role: 'PARTICIPANT' },
       'secret'
@@ -117,9 +117,9 @@ describeRedis('Peer Instruction response API', () => {
     expect(failed.status).toBe(503)
     expect(await readPeerInstructionAttemptStatus({ redis, scope })).toEqual({
       ingress: 'open',
-      accepted: 1,
-      terminal: 1,
-      failed: 1,
+      accepted: 0,
+      terminal: 0,
+      failed: 0,
     })
 
     const retry = await submitPeerInstructionRevision({
@@ -130,8 +130,14 @@ describeRedis('Peer Instruction response API', () => {
       pushEvent: vi.fn(async () => undefined),
     })
     expect(retry).toMatchObject({
-      status: 409,
-      body: { error: 'peer_instruction_attempt_failed' },
+      status: 200,
+      body: { status: 'ok' },
+    })
+    expect(await readPeerInstructionAttemptStatus({ redis, scope })).toEqual({
+      ingress: 'open',
+      accepted: 1,
+      terminal: 0,
+      failed: 0,
     })
   })
 })

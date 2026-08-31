@@ -184,6 +184,25 @@ redis.call('EXPIREAT', KEYS[3], deadline)
 return 1
 `
 
+const RELEASE_REVISION_SCRIPT = `
+local encoded = redis.call('HGET', KEYS[1], ARGV[1])
+if not encoded then
+  return 0
+end
+local message = cjson.decode(encoded)
+if message.status ~= 'accepted' then
+  return 0
+end
+
+redis.call('HDEL', KEYS[1], ARGV[1])
+redis.call('HDEL', KEYS[2], message.identity)
+local accepted = redis.call('HINCRBY', KEYS[3], 'accepted', -1)
+if accepted < 0 then
+  redis.call('HSET', KEYS[3], 'accepted', 0)
+end
+return 1
+`
+
 function assertScope(scope: PeerInstructionScope) {
   if (!/^[A-Za-z0-9-]+$/.test(scope.liveQuizId)) {
     throw new Error('Invalid Peer Instruction live quiz id')
@@ -537,6 +556,27 @@ export async function completePeerInstructionRevisionMessage({
     response ? 'succeeded' : 'failed',
     response ? JSON.stringify(response) : '',
     errorCode ?? ''
+  )
+  return Number(result) === 1
+}
+
+export async function releasePeerInstructionRevisionMessage({
+  redis,
+  event,
+}: {
+  redis: Redis
+  event: PeerInstructionRevisionEvent
+}) {
+  const keys = attemptKeys(event)
+  const stored = await readPeerInstructionRevisionMessage({ redis, event })
+  if (!stored) return false
+  const result = await redis.eval(
+    RELEASE_REVISION_SCRIPT,
+    3,
+    keys.messages,
+    claimsKey(event, stored.instanceId),
+    keys.attemptMeta,
+    event.messageId
   )
   return Number(result) === 1
 }
