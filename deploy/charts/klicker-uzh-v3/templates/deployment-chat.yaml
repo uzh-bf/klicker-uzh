@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.chat.autoscaling.enabled }}
+  {{- if hasKey .Values.chat "replicaCount" }}
   replicas: {{ .Values.chat.replicaCount }}
   {{- end }}
   selector:
