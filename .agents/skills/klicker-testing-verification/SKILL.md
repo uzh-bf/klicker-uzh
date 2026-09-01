@@ -52,6 +52,33 @@ and ground-truth preflights to fail before secret retrieval. Eval mode judges an
 existing QA artifact; it does not query Klicker's authenticated AI-SDK chat route
 and is not live product-quality evidence.
 
+For local Klicker target evaluation, start the exact worktree through the
+restricted developer profile only after the VPN is active:
+
+    rs-infisical-operator --profile klicker-dev run \
+      --map AZURE_OPENAI_API_KEY=UPSTREAM_OPENAI_API_KEY \
+      --map AZURE_OPENAI_BASE_URL=UPSTREAM_OPENAI_BASE_URL -- \
+      devrouter ensure /absolute/path/to/klicker-uzh/trees/WORKSPACE \
+      --profile chat,ai,mcp --json
+
+If the LiteLLM container already exists with different upstream values, stop
+the exact checkout and rerun this command. Run the wrapper fake-runtime test
+before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
+KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
+shell; the wrapper keeps them out of the evaluator child and creates an
+ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+one in-flight request.
+
+The KB_doc_query canary is only synthetic transport evidence. It proves the
+local authentication, disclaimer, thread/message persistence, mode, and
+expected-tool gates, but it does not prove FineCo quality. Do not run the
+20-case FineCo phase unless EXPERT_df_fineco_expert is already reachable through
+an authorized synthetic binding with a finite response bound; otherwise record
+delivery_pending and do not establish a tunnel or substitute the canary. Keep
+LITELLM_API_BASE for the existing restricted judge path separate from the
+developer-Foundry values injected into the local Chat container. Stop and
+verify the exact devrouter checkout after the run.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic

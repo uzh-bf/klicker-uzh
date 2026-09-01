@@ -262,12 +262,19 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 
 ## Progress
 
-- Status: `review_deadlock` at the three-round limit; awaiting human approval.
-  No application source edited.
-- Completed: merged source/forge reconciliation, exact evaluator gitlink
-  verification, auth/stream/persistence mapping, direct Foundry boundary map,
-  three planner rounds, and optional rival-route attempt.
-- Remaining: human approval, plan-first commit, Slices A-C, reviews, local proof.
+- Status: `execution_active`; the three-round planning review deadlock remains
+  disclosed and is not represented as an approved planner verdict.
+- Completed: the plan-first commit `67f0a3b16`; the authenticated adapter and
+  canary fixture commit `9ca296884`; the boundary correction
+  `33f132da4`; the stream-lifecycle correction `a01409a14`; ten focused
+  adapter tests; staged Gitleaks; and the required fallback simplifier and
+  slice-reviewer passes. The fallback reviewers confirmed the first correction
+  and the final lifecycle fix has direct test evidence.
+- Remaining: Slice B wrapper, metric seam, LiteLLM retry guard, documentation,
+  and review; then the developer-Foundry runtime canary, the FineCo retrieval
+  gate, final verification, final review, and runtime cleanup.
 - Delivery layer required: reviewed local commits and bounded local runtime
-  evidence. Achieved: plan draft only.
-- Next: present the hardened plan and its disclosed review gap for approval.
+  evidence. Achieved: plan and adapter source commits; wrapper and runtime
+  evidence remain.
+- Next: implement Slice B and run its focused wrapper, formatting, and
+  documentation checks.

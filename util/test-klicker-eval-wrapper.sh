@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WRAPPER="$REPO_ROOT/util/_run_klicker_eval.sh"
+SOURCE_WRAPPER="$REPO_ROOT/util/_run_klicker_eval.sh"
 TEST_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
@@ -33,11 +33,6 @@ OPERATOR_LOG="$TEST_ROOT/operator.log"
 CHILD_LOG="$TEST_ROOT/child.log"
 mkdir -p "$FAKE_BIN"
 
-write_file "$FAKE_BIN/git" '#!/usr/bin/env bash
-[ "${1:-}" = "rev-parse" ] || exit 2
-[ "${2:-}" = "--show-toplevel" ] || exit 2
-printf "%s\n" "$KLICKER_TEST_REPO_ROOT"'
-
 write_file "$FAKE_BIN/rs-infisical-operator" '#!/usr/bin/env bash
 printf "%s\n" "$@" >"$KLICKER_TEST_OPERATOR_LOG"
 if [ -n "${KLICKER_TEST_OPERATOR_STATUS:-}" ]; then
@@ -59,10 +54,25 @@ while [ "$#" -gt 0 ]; do
 done
 exit 2'
 
+write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
+if [ "${1:-}" = "-e" ]; then
+  printf "%s" "synthetic-target-key"
+  exit 0
+fi
+if [ "${1:-}" = "$KLICKER_TEST_ADAPTER_SCRIPT" ]; then
+  trap "printf \"%s\\n\" stopped >\"$KLICKER_TEST_ADAPTER_STOP_MARKER\"; exit 0" TERM INT
+  printf "%s\\n" "KLICKER_EVAL_TARGET_PORT=41234"
+  while :; do sleep 1; done
+fi
+exit 2'
+
 write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
-for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE; do
+for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
+printf "EVAL_API_KEY_PRESENT=%s\n" "${EVAL_API_KEY:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
+printf "PARTICIPANT_USERNAME_PRESENT=%s\n" "${KLICKER_EVAL_PARTICIPANT_USERNAME:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
+printf "PARTICIPANT_PASSWORD_PRESENT=%s\n" "${KLICKER_EVAL_PARTICIPANT_PASSWORD:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 if [[ -v EVAL_MODEL_CAPABILITY_MODEL ]]; then
   printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=set\n" >>"$KLICKER_TEST_CHILD_LOG"
 else
@@ -79,15 +89,21 @@ if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
   exec "$4"
 fi'
 
-chmod +x "$FAKE_BIN/git" "$FAKE_BIN/rs-infisical-operator" "$FAKE_BIN/uv"
+chmod +x "$FAKE_BIN/node" "$FAKE_BIN/rs-infisical-operator" "$FAKE_BIN/uv"
 write_file "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh" '#!/usr/bin/env bash
 printf "%s\n" "synthetic eval stdout"
 printf "%s\n" "synthetic eval stderr" >&2
 exit "${KLICKER_TEST_RUNNER_STATUS:-99}"'
 chmod +x "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh"
 write_file "$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" 'metrics: []'
+write_file "$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" 'metrics: []'
 write_file "$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" 'tools: []'
+write_file "$FAKE_REPO/evaluation/data/canaries/klicker_local_mcp.json" '{}'
 mkdir -p "$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco"
+mkdir -p "$FAKE_REPO/util" "$FAKE_REPO/apps/chat/scripts"
+cp "$SOURCE_WRAPPER" "$FAKE_REPO/util/_run_klicker_eval.sh"
+chmod +x "$FAKE_REPO/util/_run_klicker_eval.sh"
+WRAPPER="$FAKE_REPO/util/_run_klicker_eval.sh"
 
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
@@ -259,13 +275,15 @@ assert_missing_input DEFAULT_GT_DIR directory
 
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"
+mkdir -p "$MISSING_REPO/util"
+cp "$SOURCE_WRAPPER" "$MISSING_REPO/util/_run_klicker_eval.sh"
+chmod +x "$MISSING_REPO/util/_run_klicker_eval.sh"
 status=0
 env -i \
   PATH="$FAKE_BIN:$PATH" \
-  KLICKER_TEST_REPO_ROOT="$MISSING_REPO" \
   KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
-  "$WRAPPER" --mode eval >"$TEST_ROOT/missing.out" 2>&1 || status=$?
+  "$MISSING_REPO/util/_run_klicker_eval.sh" --mode eval >"$TEST_ROOT/missing.out" 2>&1 || status=$?
 
 [ "$status" -eq 1 ] || fail "missing submodule returned $status instead of 1"
 assert_line "Error: evaluation framework is not initialized at $MISSING_REPO/evaluation/framework" "$TEST_ROOT/missing.out"
@@ -273,7 +291,6 @@ assert_line 'Run: git submodule update --init --checkout evaluation/framework' "
 
 NO_OPERATOR_BIN="$TEST_ROOT/no-operator-bin"
 mkdir -p "$NO_OPERATOR_BIN"
-cp "$FAKE_BIN/git" "$NO_OPERATOR_BIN/git"
 status=0
 env -i \
   PATH="$NO_OPERATOR_BIN:/usr/bin:/bin" \
@@ -292,5 +309,64 @@ env -i \
 
 [ "$status" -eq 1 ] || fail "missing base URL returned $status instead of 1"
 assert_line 'Error: LITELLM_API_BASE must point to the approved LiteLLM proxy' "$TEST_ROOT/base-url.out"
+
+LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
+git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
+: >"$CHILD_LOG"
+env -i \
+  GIT_DIR="$TEST_ROOT/bare.git" \
+  GIT_WORK_TREE="$TEST_ROOT/not-a-worktree" \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  KLICKER_EVAL_API_ORIGIN='https://api.klicker.localhost' \
+  KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
+  KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
+  KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_TEST_ADAPTER_SCRIPT="$FAKE_REPO/apps/chat/scripts/klicker-evaluation-target.mjs" \
+  KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
+  KLICKER_TEST_EXEC_RUNNER='true' \
+  KLICKER_TEST_RUNNER_STATUS='0' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --local-target --mode query --limit 1
+
+assert_line 'EVAL_API_MODE=chat-completions' "$CHILD_LOG"
+assert_line 'EVAL_ENDPOINT_URL=http://127.0.0.1:41234/v1/chat/completions' "$CHILD_LOG"
+assert_line 'EVAL_MODELS_URL=http://127.0.0.1:41234/v1/models' "$CHILD_LOG"
+assert_line 'EVAL_STREAM=false' "$CHILD_LOG"
+assert_line 'AGENT_ID=gpt-5.6-luna' "$CHILD_LOG"
+assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
+assert_line 'EVAL_API_KEY_PRESENT=yes' "$CHILD_LOG"
+assert_line 'PARTICIPANT_USERNAME_PRESENT=' "$CHILD_LOG"
+assert_line 'PARTICIPANT_PASSWORD_PRESENT=' "$CHILD_LOG"
+[ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a successful child run'
+if grep -Fq -- 'synthetic-target-key' "$OPERATOR_LOG" "$CHILD_LOG"; then
+  fail 'ephemeral target key must not be written to logs'
+fi
+
+rm -f "$LOCAL_STOP_MARKER"
+: >"$CHILD_LOG"
+status=0
+env -i \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  KLICKER_EVAL_API_ORIGIN='https://api.klicker.localhost' \
+  KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
+  KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
+  KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_TEST_ADAPTER_SCRIPT="$FAKE_REPO/apps/chat/scripts/klicker-evaluation-target.mjs" \
+  KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
+  KLICKER_TEST_EXEC_RUNNER='true' \
+  KLICKER_TEST_RUNNER_STATUS='74' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --local-target --mode query --limit 1 \
+  >"$TEST_ROOT/local-failure.stdout" \
+  2>"$TEST_ROOT/local-failure.stderr" || status=$?
+
+[ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
+[ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
 echo '[test-klicker-eval-wrapper] PASS'

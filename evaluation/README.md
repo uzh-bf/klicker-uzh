@@ -37,8 +37,43 @@ Eval mode judges an existing synthetic QA artifact; it does not query Klicker:
 pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-Query and query-eval modes require a separately verified OpenAI Responses or
-Chat Completions target. Klicker's current authenticated AI-SDK UI stream is not
-that target contract, so the wrapper does not claim a live Klicker target run.
-Use only synthetic inputs and do not add local QA or evaluation outputs to the
-repository.
+## Local Klicker target
+
+The explicit --local-target mode starts a short-lived loopback adapter that
+drives the authenticated Klicker Chat route and presents its completed
+persisted answer as an OpenAI Chat Completions target. The adapter resolves only
+the exact question and mode from FineCo frontmatter; expected answers remain
+inside the evaluator. Participant credentials are read from the invoking
+environment and are removed from the evaluator child. The adapter accepts only
+namespaced *.localhost origins, and the wrapper removes its listener on success
+or failure.
+
+Start the exact worktree runtime with the developer Foundry values injected
+only through the restricted operator. The VPN must be active, and an existing
+runtime must be stopped and restarted when it was started without this
+injection:
+
+    rs-infisical-operator --profile klicker-dev run \
+      --map AZURE_OPENAI_API_KEY=UPSTREAM_OPENAI_API_KEY \
+      --map AZURE_OPENAI_BASE_URL=UPSTREAM_OPENAI_BASE_URL -- \
+      devrouter ensure /absolute/path/to/klicker-uzh/trees/WORKSPACE \
+      --profile chat,ai,mcp --json
+
+Set the namespaced API and Chat origins plus local seeded participant
+credentials in the shell, and set LITELLM_API_BASE to the separately approved
+judge proxy route. Then run the target query:
+
+    pnpm run eval:klicker -- --local-target --mode query --limit 20
+
+The committed klicker_local_mcp.json canary is transport evidence only. It
+proves the seeded KB_doc_query path, authentication, persistence, and mode
+handling; it is not FineCo quality evidence. The FineCo run stays parked unless
+the expected EXPERT_df_fineco_expert binding is already reachable through an
+authorized synthetic environment with a finite response bound. Do not replace
+that gate with the local canary or establish a tunnel from this workflow.
+
+After any target or judge run, stop the exact worktree with
+devrouter stop /absolute/path/to/klicker-uzh/trees/WORKSPACE and verify the
+provider is stopped and no route remains. Keep generated QA, receipts, and
+evaluation output outside the repository. Query and query-eval modes require a
+separately verified target; the existing judge-only mode remains unchanged.
