@@ -2579,6 +2579,18 @@ function validateReviewSummary(summary, commentCount) {
   }
 }
 
+function validateOCRBudgetFlag(summary, label) {
+  if (
+    summary &&
+    typeof summary === 'object' &&
+    Object.hasOwn(summary, 'budget_exceeded') &&
+    typeof summary.budget_exceeded !== 'boolean'
+  ) {
+    throw new Error(`${label} has an invalid budget flag`)
+  }
+  return summary?.budget_exceeded === true
+}
+
 function validateOCRResult(result) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
     throw new Error('OCR result envelope is not an object')
@@ -2608,14 +2620,8 @@ function validateOCRResult(result) {
   if (!result.summary || typeof result.summary !== 'object') {
     throw new Error('OCR result has no review summary')
   }
-  if (result.summary.budget_exceeded === true) {
+  if (validateOCRBudgetFlag(result.summary, 'OCR result')) {
     throw new Error('OCR exhausted its review budget')
-  }
-  if (
-    Object.hasOwn(result.summary, 'budget_exceeded') &&
-    typeof result.summary.budget_exceeded !== 'boolean'
-  ) {
-    throw new Error('OCR result has an invalid budget flag')
   }
   if (!Array.isArray(result.comments)) {
     throw new Error('OCR result has no comments array')
@@ -2636,8 +2642,8 @@ function validateOCRResult(result) {
     'complete',
     'Complete OCR result'
   )
-  if (coverage.failed.length > 0) {
-    throw new Error('Complete OCR result retained failed coverage')
+  if (coverage.failed.length > 0 || coverage.waived.length > 0) {
+    throw new Error('Complete OCR result retained failed or waived coverage')
   }
   if (result.resume != null) {
     if (
@@ -2749,7 +2755,13 @@ function validateOCRSessionEnvelope(result, expectedStatus, label) {
     !manifest.input ||
     typeof manifest.input !== 'object' ||
     !manifest.execution ||
-    typeof manifest.execution !== 'object'
+    typeof manifest.execution !== 'object' ||
+    Array.isArray(manifest.execution) ||
+    !result.llm ||
+    typeof result.llm !== 'object' ||
+    Array.isArray(result.llm) ||
+    result.llm.model !== FINAL_REVIEW_MODEL ||
+    manifest.execution.model !== FINAL_REVIEW_MODEL
   ) {
     throw new Error(`${label} has inconsistent session or manifest identity`)
   }
@@ -2771,6 +2783,8 @@ function planOCRResume(result, maxTokensBudget) {
     throw new Error('OCR resume ceiling must be a positive safe integer')
   }
   if (result?.status !== 'partial') return null
+
+  validateOCRBudgetFlag(result.summary, 'Partial OCR result')
 
   const { coverage, manifest, sessionId } = validateOCRSessionEnvelope(
     result,
@@ -2862,6 +2876,44 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
     )
   ) {
     throw new Error('Resumed OCR result changed its selected coverage')
+  }
+  const resume = resumedResult.resume
+  if (
+    !resume ||
+    typeof resume !== 'object' ||
+    Array.isArray(resume) ||
+    typeof resume.resumed_from !== 'string' ||
+    !resume.resumed_from ||
+    !Number.isSafeInteger(resume.reused_files) ||
+    resume.reused_files < 0 ||
+    !Number.isSafeInteger(resume.rerun_files) ||
+    resume.rerun_files < 0
+  ) {
+    throw new Error('Resumed OCR result has an invalid resume envelope')
+  }
+  const itemIds = (items) => new Set(items.map((item) => item.item_id))
+  const sameItemIds = (left, right) =>
+    left.size === right.size && [...left].every((itemId) => right.has(itemId))
+  const parentCoverage = initialResult.manifest.coverage
+  if (
+    !sameItemIds(
+      itemIds(parentCoverage.completed),
+      itemIds(resumed.coverage.reused)
+    ) ||
+    !sameItemIds(
+      itemIds(parentCoverage.failed),
+      itemIds(resumed.coverage.completed)
+    )
+  ) {
+    throw new Error('Resumed OCR result changed its coverage partition')
+  }
+  if (
+    resume.reused_files !== resumed.coverage.reused.length ||
+    resume.rerun_files !== resumed.coverage.completed.length ||
+    resume.reused_files !== parentCoverage.completed.length ||
+    resume.rerun_files !== parentCoverage.failed.length
+  ) {
+    throw new Error('Resumed OCR result has inconsistent resume counts')
   }
   if (
     resumedResult.warnings != null &&

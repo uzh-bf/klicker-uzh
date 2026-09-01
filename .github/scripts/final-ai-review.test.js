@@ -920,6 +920,53 @@ test('rejects malformed or already-resumed partial OCR sessions', () => {
   )
 })
 
+test('requires the configured OCR model in every producer receipt', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, llm: { ...parent.llm, model: 'wrong-model' } },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            execution: { ...parent.manifest.execution, model: 'wrong-model' },
+          },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+
+  const complete = completeReviewResult()
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        llm: { ...complete.llm, model: 'wrong-model' },
+      }),
+    /unexpected model identity/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        manifest: {
+          ...complete.manifest,
+          execution: { ...complete.manifest.execution, model: 'wrong-model' },
+        },
+      }),
+    /session or manifest identity/
+  )
+})
+
 test('rejects every OCR budget-exhaustion signal before resuming', () => {
   const parent = partialResumeResult()
   const cases = [
@@ -959,6 +1006,30 @@ test('rejects every OCR budget-exhaustion signal before resuming', () => {
   assert.throws(
     () => planOCRResume(parent, parent.summary.total_tokens),
     /no token budget left/
+  )
+})
+
+test('rejects non-boolean OCR budget flags before planning a resume', () => {
+  const parent = partialResumeResult()
+  for (const budget_exceeded of ['false', 0, 1, null]) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          { ...parent, summary: { ...parent.summary, budget_exceeded } },
+          750_000
+        ),
+      /invalid budget flag/
+    )
+  }
+  assert.deepEqual(
+    planOCRResume(
+      { ...parent, summary: { ...parent.summary, budget_exceeded: false } },
+      750_000
+    ),
+    {
+      sessionId: parent.session_id,
+      remainingTokens: 749_700,
+    }
   )
 })
 
@@ -1061,6 +1132,58 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
         750_000
       ),
     /changed its selected coverage/
+  )
+})
+
+test('requires exact resume coverage mappings, counts, and terminal outcomes', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+
+  const swappedCoverage = {
+    ...resumed.manifest.coverage,
+    completed: [resumed.manifest.coverage.reused[0]],
+    reused: [resumed.manifest.coverage.completed[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: swappedCoverage },
+        },
+        750_000
+      ),
+    /coverage partition/
+  )
+
+  for (const resume of [
+    { ...resumed.resume, reused_files: 0 },
+    { ...resumed.resume, rerun_files: 0 },
+    { ...resumed.resume, reused_files: '1' },
+  ]) {
+    assert.throws(
+      () => mergeOCRResumeResults(parent, { ...resumed, resume }, 750_000),
+      /(?:inconsistent resume counts|invalid resume envelope)/
+    )
+  }
+
+  const waivedCoverage = {
+    ...resumed.manifest.coverage,
+    reused: [],
+    waived: [resumed.manifest.coverage.reused[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: waivedCoverage },
+        },
+        750_000
+      ),
+    /failed or waived coverage/
   )
 })
 
