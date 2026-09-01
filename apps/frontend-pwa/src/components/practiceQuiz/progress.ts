@@ -1,4 +1,8 @@
-import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
+import type { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
+
+type StackFeedbackStatusValue = `${StackFeedbackStatus}`
+
+const UNANSWERED_STATUS: StackFeedbackStatusValue = 'unanswered'
 
 export type PracticeQuizStackProgress = {
   status: StackFeedbackStatus
@@ -16,7 +20,7 @@ export function findFirstUnansweredStack(
 ): number {
   const firstUnanswered = stackIds.findIndex((stackId) => {
     const status = progressState?.[String(stackId)]?.status
-    return !status || status === StackFeedbackStatus.Unanswered
+    return !status || status === UNANSWERED_STATUS
   })
 
   return firstUnanswered === -1 ? stackIds.length : firstUnanswered
@@ -45,10 +49,7 @@ export function summarizePracticeQuizCompletion(
       score = (score ?? 0) + stackProgress.score
     }
 
-    if (
-      stackProgress.status &&
-      stackProgress.status !== StackFeedbackStatus.Unanswered
-    ) {
+    if (stackProgress.status && stackProgress.status !== UNANSWERED_STATUS) {
       answeredCount += 1
     }
   }
