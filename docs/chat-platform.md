@@ -660,6 +660,9 @@ configs without the reserved keys retain the existing optional/fail-open behavio
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.
+- Citation numbering is local to one assistant message and resets to `[1]` for every new message;
+  it is not a conversation-wide counter. Within one message, numbering spans all `doc_query` calls
+  in first-appearance order after normalization.
 - A source returned again by a later search keeps its original number; no second index is ever
   minted. `src/lib/server/citationInstructions.ts` therefore tells the model to **reuse** a repeat
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
