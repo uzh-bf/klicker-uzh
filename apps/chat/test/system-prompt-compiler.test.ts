@@ -212,6 +212,8 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain('Make the session feel like a mock exam')
     expect(prompt).toContain('without a provenance label')
     expect(prompt).toContain('After every completed practice attempt')
+    expect(prompt).toContain('When the visible attempt supports it')
+    expect(prompt).toContain('instead of inventing a strength')
     expect(prompt).toContain('one actionable next step')
     expect(prompt).toContain('student explicitly asks how they are doing')
     expect(prompt).toContain('too little evidence for a reliable pattern')
@@ -226,6 +228,8 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain('practice checkpoint')
     expect(prompt).toContain('Based on the questions practised in this chat')
     expect(prompt).toContain('snapshot of this short practice round')
+    expect(prompt).toContain('up to two evidence-supported strengths')
+    expect(prompt).toContain('if none is supported yet, say that neutrally')
     expect(prompt).toContain(
       'Do not use grades, percentages, proficiency labels, mastery, completion'
     )
