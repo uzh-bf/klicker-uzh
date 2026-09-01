@@ -87,7 +87,13 @@ function PracticeQuizPage({
     parentOrigin !== null
 
   const handleHostNavigationStateChange = useCallback(
-    (nextState: EmbedQuizNavigationState) => setHostNavigationState(nextState),
+    (nextState: EmbedQuizNavigationState) =>
+      setHostNavigationState((currentState) =>
+        currentState.phase === nextState.phase &&
+        currentState.canAdvance === nextState.canAdvance
+          ? currentState
+          : nextState
+      ),
     []
   )
 
