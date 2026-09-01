@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   type PrismaTransactionClient,
@@ -21,6 +22,11 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  isEscapeRoomStackCleared,
+  restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
+} from './escapeRooms.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -43,6 +49,7 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: {
           elements: {
@@ -76,12 +83,42 @@ export async function getPracticeQuizData(
         ? orderStacks(quiz.stacks)
         : quiz.stacks
 
+    let filteredStacks = orderedStacks
+    let attempt: DB.EscapeRoomAttempt | null = null
+    if (quiz.escapeRoomConfig) {
+      attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_practiceQuizId: {
+            participantId: ctx.user.sub,
+            practiceQuizId: quiz.id,
+          },
+        },
+      })
+      if (!attempt || attempt.status === DB.EscapeRoomStatus.EXPIRED) {
+        filteredStacks = []
+      } else if (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS) {
+        const firstUnclearedIx = orderedStacks.findIndex(
+          (stack) => !isEscapeRoomStackCleared(stack.elements)
+        )
+        if (firstUnclearedIx !== -1) {
+          filteredStacks = orderedStacks.slice(0, firstUnclearedIx + 1)
+        }
+      }
+    }
+
     return {
       ...quiz,
       isOwner,
-      stacks: orderedStacks,
+      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
       numOfStacks: orderedStacks.length,
     }
+  }
+
+  // Escape room content must never reach a non-participant, non-owner caller
+  // (the participant path above masks locked stacks; this covers anonymous /
+  // temporary callers that fall through without an attempt).
+  if (quiz.escapeRoomConfig && !isOwner) {
+    return { ...quiz, isOwner, stacks: [] }
   }
 
   return { ...quiz, isOwner }
@@ -126,6 +163,7 @@ export async function getSinglePracticeQuiz(
     where: { id, isDeleted: false },
     include: {
       course: true,
+      escapeRoomConfig: true,
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -171,6 +209,10 @@ interface ManipulatePracticeQuizArgs {
   multiplier: number
   order: DB.ElementOrderType
   resetTimeDays: number
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
 }
 
 export async function manipulatePracticeQuiz(
@@ -184,11 +226,25 @@ export async function manipulatePracticeQuiz(
     multiplier,
     order,
     resetTimeDays,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
+    escapeRoomIntroText,
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
 ) {
   const prisma = transactionPrisma ?? ctx.prisma
+
+  if (isEscapeRoom && order !== DB.ElementOrderType.SEQUENTIAL) {
+    throw new GraphQLError('Escape room quizzes must have sequential order')
+  }
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
+  }
 
   // in EDIT mode - validate that the practice quiz exists and is not published
   let existingActivity: DB.PracticeQuiz | null = null
@@ -226,6 +282,7 @@ export async function manipulatePracticeQuiz(
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx, prisma)
 
   if (
+    !isEscapeRoom &&
     activityInputContainsElementType({
       stacksOrBlocks: stacks,
       persistentInstances,
@@ -235,7 +292,7 @@ export async function manipulatePracticeQuiz(
     })
   ) {
     throw new GraphQLError(
-      'QR scan questions are not supported in activities yet',
+      'QR scan questions are only supported in escape room activities',
       { extensions: { code: 'BAD_USER_INPUT' } }
     )
   }
@@ -261,13 +318,13 @@ export async function manipulatePracticeQuiz(
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     name: name.trim(),
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
     orderType: order,
-    resetTimeDays: resetTimeDays,
+    resetTimeDays,
     areInstancesOutdated: anyInstanceOutdated,
     isGamificationEnabled: course.isGamificationEnabled,
     isAssessmentEnabled: course.isAssessmentEnabled,
@@ -302,7 +359,37 @@ export async function manipulatePracticeQuiz(
     course: { connect: { id: courseId } },
   }
 
+  // nested upsert is only valid on the update branch of the activity upsert;
+  // the create branch needs a plain nested create
+  const escapeRoomConfigData = isEscapeRoom
+    ? {
+        timeLimit: escapeRoomTimeLimit ?? 3600,
+        hintPenalty: escapeRoomHintPenalty ?? 120,
+        lockoutSeconds: 5,
+        introText: escapeRoomIntroText?.trim() || null,
+      }
+    : null
+
+  if (escapeRoomConfigData) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: escapeRoomConfigData,
+        update: {
+          timeLimit: escapeRoomConfigData.timeLimit,
+          hintPenalty: escapeRoomConfigData.hintPenalty,
+          introText: escapeRoomConfigData.introText,
+        },
+      },
+    }
+  }
+
   const persistPracticeQuiz = async (prisma: PrismaTransactionClient) => {
+    const persistentInputs = new Map(
+      stacks
+        .flatMap((stack) => stack.elements)
+        .filter((instance) => !instance.duplicateInstance)
+        .map((instance) => [instance.existingInstanceId, instance])
+    )
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
       where: { id: { in: instancesToDelete } },
@@ -322,6 +409,9 @@ export async function manipulatePracticeQuiz(
           order: persistentInstanceOrderMap[instance.id],
           options: {
             ...instance.options,
+            ...getEscapeRoomHintUpdate(
+              persistentInputs.get(instance.id)?.escapeRoomHint
+            ),
             resetTimeDays,
             pointsMultiplier: multiplier * elementMultiplier,
           },
@@ -334,10 +424,21 @@ export async function manipulatePracticeQuiz(
       where: { id: { in: stacksToDelete } },
     })
 
+    if (!isEscapeRoom && id) {
+      await prisma.escapeRoomConfig
+        .delete({
+          where: { practiceQuizId: id },
+        })
+        .catch(() => {})
+    }
+
     const upsertedQuiz = await prisma.practiceQuiz.upsert({
       where: { id: id ?? uuidv4() },
       create: {
         ...createOrUpdateJSON,
+        ...(escapeRoomConfigData
+          ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+          : {}),
         owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
       },
       update: createOrUpdateJSON,

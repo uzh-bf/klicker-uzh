@@ -11,6 +11,7 @@ import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
+import QrScanQuestion from './QrScanQuestion'
 import SelectionQuestion from './SelectionQuestion'
 
 export type ElementChoicesType =
@@ -437,16 +438,34 @@ function StudentElement({
       />
     )
   } else if (element.elementData.__typename === 'QrScanElementData') {
-    // Slice 8 authoring preview; the interactive scanner is added with the
-    // participant answering contract in Slice 9.
     return (
-      <ContentElement
+      <QrScanQuestion
         key={element.id}
-        element={element}
-        read={false}
-        onRead={() => undefined}
-        elementIx={elementIx}
-        hideReadButton
+        content={element.elementData.content}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as string)
+            : (singleStudentResponse.response as string)
+        }
+        setResponse={(value, valid) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => ({
+                ...response,
+                [element.id]: {
+                  ...response[element.id],
+                  type: ElementType.QrScan,
+                  response: value,
+                  valid,
+                },
+              }))
+            : setSingleStudentResponse((response) => ({
+                ...response,
+                type: ElementType.QrScan,
+                response: value,
+                valid,
+              }))
+        }}
+        disabled={disabledInput || preview}
       />
     )
   } else if (element.elementData.__typename === 'ContentElementData') {

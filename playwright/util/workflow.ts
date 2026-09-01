@@ -45,6 +45,7 @@ import {
   STUDENT_USERNAME7,
   STUDENT_USERNAME8,
   STUDENT_USERNAME9,
+  URL_API,
   URL_AUTH,
   URL_CONTROL,
   URL_MANAGE,
@@ -66,6 +67,7 @@ import {
   createAnswerCollection as createAnswerCollectionBase,
   createQuestionKPRIM as createQuestionKPRIMBase,
   createQuestionMC as createQuestionMCBase,
+  createQuestionQrScan as createQuestionQrScanBase,
   createQuestionSC as createQuestionSCBase,
   createQuestionSE as createQuestionSEBase,
   deleteElement as deleteElementBase,
@@ -111,6 +113,7 @@ const envDefaults: Record<string, string> = {
   STUDENT_USERNAME11,
   STUDENT_USERNAME12,
   STUDENT_USERNAME15,
+  URL_API,
   URL_AUTH,
   URL_CONTROL,
   URL_MANAGE,
@@ -373,7 +376,12 @@ export async function loginStudentPassword(
   await page.getByTestId('username-field').fill(username)
   await page.getByTestId('password-field').fill(env('STUDENT_PASSWORD'))
   await page.getByTestId('submit-login').click()
-  await expect(page.getByTestId('homepage')).toBeVisible()
+  await expect(
+    page
+      .getByTestId('homepage')
+      .or(page.getByRole('heading', { name: 'KlickerUZH' }))
+      .first()
+  ).toBeVisible()
 }
 
 export async function acceptGamifiedLiveQuizAccountPrompt(
@@ -525,7 +533,7 @@ export async function logoutUser(page: Page) {
 
 async function reloadAndValidate(page: Page, elementName?: string) {
   if (elementName) {
-    await page.goto(env('URL_MANAGE'), { waitUntil: 'domcontentloaded' })
+    await gotoCommit(page, env('URL_MANAGE'))
     const searchInput = page.getByTestId('elements-search-input')
     if (!(await searchInput.isVisible().catch(() => false))) {
       const libraryNav = page.getByTestId('library')
@@ -605,6 +613,11 @@ export async function deleteAnswerCollection(
 
 export async function createQuestionSC(page: Page, args: any) {
   await createQuestionSCBase(args)
+  await reloadAndValidate(page, args.name)
+}
+
+export async function createQuestionQrScan(page: Page, args: any) {
+  await createQuestionQrScanBase(args)
   await reloadAndValidate(page, args.name)
 }
 
@@ -1181,6 +1194,28 @@ export async function runTask(name: string, args: any = {}) {
       where: { name: args.quizName },
     })
     return quiz ? { id: quiz.id, courseId: quiz.courseId } : null
+  }
+  if (name === 'getEscapeRoomQuizStacks') {
+    const quiz = await prisma.practiceQuiz.findFirst({
+      where: { name: args.quizName },
+      include: {
+        stacks: {
+          orderBy: { order: 'asc' },
+          include: { elements: { orderBy: { order: 'asc' } } },
+        },
+      },
+    })
+    return quiz
+      ? {
+          id: quiz.id,
+          courseId: quiz.courseId,
+          stacks: quiz.stacks.map((stack) => ({
+            id: stack.id,
+            order: stack.order,
+            instanceIds: stack.elements.map((element) => element.id),
+          })),
+        }
+      : null
   }
   if (name === 'getMicroLearningInfo') {
     const ml = await prisma.microLearning.findFirst({

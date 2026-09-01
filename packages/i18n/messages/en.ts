@@ -374,6 +374,11 @@ export default {
       typeLabel: 'QR Scan (QR)',
       text: 'Please scan or enter the hidden code.',
       richtext: 'Please <b>scan or enter</b> the hidden code.',
+      startCamera: 'Scan QR code',
+      stopCamera: 'Stop camera',
+      cameraFallback:
+        'Camera scanning is unavailable. Enter the code below instead.',
+      manualLabel: 'Enter code manually',
     },
     login: {
       installButton: 'Install Now',
@@ -1135,6 +1140,44 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       correctAnswerOptions: 'Correct answer options',
       topNAnswers: 'Top {number} answers',
+      escapeRoomStartTitle: 'Escape Room Mode',
+      escapeRoomStartDesc:
+        'Unlock questions sequentially by answering correctly before the timer runs out!',
+      escapeRoomTimeLimitLabel: 'Time Limit',
+      escapeRoomPenaltyLabel: 'Hint Penalty',
+      escapeRoomStartButton: 'Start Attempt',
+      escapeRoomExpiredTitle: "Time's Up!",
+      escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
+      escapeRoomCompletedTitle: 'Escaped successfully!',
+      escapeRoomCompletedDesc:
+        'Congratulations! You answered all questions correctly and completed the escape room.',
+      escapeRoomTitle: 'Escape Room',
+      escapeRoomTimeRemaining: 'Time remaining',
+      escapeRoomContactLecturer:
+        'Contact your lecturer if you need this attempt reset.',
+      escapeRoomLockoutToast:
+        'Incorrect — you are locked out for a short time before retrying.',
+      escapeRoomLockoutCountdown:
+        'Locked out. You can try again in {seconds}s.',
+      escapeRoomIncorrectToast: 'Incorrect answer! Please try again.',
+      escapeRoomExpiredToast:
+        'Time is up — this escape room attempt has expired.',
+      escapeRoomGatedToast:
+        'Answer the preceding questions correctly before this step.',
+      escapeRoomForbiddenToast:
+        'This escape room can only be answered with an active attempt.',
+      escapeRoomRequestHint: 'Reveal hint (−{penalty}s)',
+      escapeRoomHintRevealedToast:
+        'Hint revealed — {penalty}s added to your time.',
+      escapeRoomStagesLabel: 'Stages',
+      escapeRoomStagesCleared: 'Stages cleared',
+      escapeRoomClearedProgress:
+        'You cleared {cleared} of {total} stages before time ran out.',
+      escapeRoomStatsTime: 'Escape time',
+      escapeRoomStatsHints: 'Hints used',
+      escapeRoomStatsPenalty: 'Time penalty',
+      escapeRoomOverviewInfo:
+        'Escape room: one timed attempt, solve all stages in order',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
@@ -2612,6 +2655,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Practice quizzes can contain all available element types.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
+      escapeRoomMode: 'Escape Room Mode',
+      escapeRoomTimeLimit: 'Time Limit (minutes)',
+      escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomAssessmentIncompatible:
+        'Escape room mode cannot be combined with assessment (graded) mode.',
+      escapeRoomNoQrOutside:
+        'QR scan questions can only be used in escape room blocks.',
+      escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
+      escapeRoomTimeLimitRequired: 'Time limit is required',
+      escapeRoomInteger: 'Must be an integer',
+      escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',
+      escapeRoomTimeLimitMax: 'Time limit may not exceed 1440 minutes (24h)',
+      escapeRoomHintPenaltyRequired: 'Hint penalty is required',
+      escapeRoomHintPenaltyMin: 'Must be a non-negative number of seconds',
+      escapeRoomHintPenaltyMax: 'Hint penalty may not exceed 3600 seconds (1h)',
+      escapeRoomIntroText: 'Intro Story (optional)',
+      escapeRoomIntroTextPlaceholder:
+        'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
+      escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:
@@ -3178,6 +3240,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Because of missing answers, no statistics are available yet.',
       practiceQuizEvaluation: 'Practice Quiz Evaluation',
       microLearningEvaluation: 'Microlearning Evaluation',
+      escapeRoomTab: 'Escape Room',
+      escapeRoomProgressDescription:
+        'Live progress of every participant attempting this escape room. Updates automatically while this tab is open.',
+      escapeRoomNoAttempts:
+        'No participants have started this escape room yet.',
+      escapeRoomColParticipant: 'Participant',
+      escapeRoomColStatus: 'Status',
+      escapeRoomColProgress: 'Progress',
+      escapeRoomColHints: 'Hints',
+      escapeRoomColPenalty: 'Penalty',
+      escapeRoomColTime: 'Time',
+      escapeRoomColActions: 'Actions',
+      escapeRoomStatusInProgress: 'In progress',
+      escapeRoomStatusNotStarted: 'Not started',
+      escapeRoomStatusCompleted: 'Completed',
+      escapeRoomStatusExpired: 'Expired',
+      escapeRoomLockedOut: 'Locked out',
+      escapeRoomReset: 'Reset',
+      escapeRoomResetConfirm: 'Confirm reset',
+      escapeRoomResetError: 'Could not reset the attempt. Please try again.',
       chartTypeNotSupported:
         'At the moment, the selected chart type is not supported for this element type.',
       histogramNotSupported:

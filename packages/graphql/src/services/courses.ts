@@ -4096,6 +4096,8 @@ export async function getCoursePracticeQuiz(
     resetTimeDays: 6,
     orderType: DB.ElementOrderType.SPACED_REPETITION,
     status: DB.PublicationStatus.PUBLISHED,
+    escapeRoomConfig: null,
+    escapeRoomAttempts: [],
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,
     availableFrom: null,
