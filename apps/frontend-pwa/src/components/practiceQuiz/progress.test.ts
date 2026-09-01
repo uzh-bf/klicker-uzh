@@ -2,12 +2,13 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 
-const feedbackStatus = (value: string) => value as StackFeedbackStatus
 import {
   findFirstUnansweredStack,
   type PracticeQuizProgressState,
   summarizePracticeQuizCompletion,
 } from './progress'
+
+const feedbackStatus = (value: string) => value as StackFeedbackStatus
 
 describe('practice quiz progress', () => {
   it('derives the first unanswered stack for resume and navigation', () => {

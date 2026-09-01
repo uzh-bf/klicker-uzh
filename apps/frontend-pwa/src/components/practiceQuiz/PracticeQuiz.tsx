@@ -154,9 +154,9 @@ function PracticeQuiz({
           currentIx={currentIx}
           setCurrentIx={setCurrentIx}
           navigableUntilIx={navigableUntilIx}
-          readOnly={focusedEmbed}
+          readOnly={hostNavigation}
           resetLocalStorage={
-            showResetLocalStorage && !focusedEmbed
+            showResetLocalStorage && !hostNavigation
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
