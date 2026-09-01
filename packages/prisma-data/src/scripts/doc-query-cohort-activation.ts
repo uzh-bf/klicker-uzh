@@ -1290,6 +1290,15 @@ function assertIntentMatchesManifest(
       'cohortActivation intent holds do not match manifest'
     )
   }
+  if (
+    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
+    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
+  ) {
+    fail(
+      'RECEIPT_INVALID',
+      'cohortActivation intent does not cover the manifest'
+    )
+  }
 }
 
 function assertReceiptShape(receipt: CohortActivationReceipt): void {
@@ -1632,18 +1641,6 @@ export async function prepareCohortActivation(
   const intent = options.intent ?? makeCohortActivationReceiptIntent(manifest)
   validateCohortActivationReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
-  const manifestConfigIds = new Set(
-    manifest.entries.map((entry) => entry.configId.toLowerCase())
-  )
-  if (
-    Object.keys(intent.targetConfigIds).length !== manifestConfigIds.size ||
-    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
-  ) {
-    fail(
-      'RECEIPT_INVALID',
-      'cohortActivation intent does not cover the manifest'
-    )
-  }
   const prepared = await store.transaction(async (tx) => {
     const sourceEntries = await readSourceEntries(tx, manifest)
     const targetServer = await findTargetServer(
@@ -1698,15 +1695,6 @@ export async function assertCohortActivationNotPrepared(
   validateManifest(manifest)
   validateCohortActivationReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
-  if (
-    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
-    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
-  ) {
-    fail(
-      'RECEIPT_INVALID',
-      'cohortActivation intent does not cover the manifest'
-    )
-  }
 
   await store.transaction(async (tx) => {
     await readSourceEntries(tx, manifest)
@@ -1768,15 +1756,6 @@ export async function recoverPreparedCohortActivation(
   validateManifest(manifest)
   validateCohortActivationReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
-  if (
-    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
-    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
-  ) {
-    fail(
-      'RECEIPT_INVALID',
-      'cohortActivation intent does not cover the manifest'
-    )
-  }
   const recovered = await store.transaction(async (tx) => {
     const targetServer = await tx.findServerByName(manifest.target.serverName)
     if (!targetServer) {
