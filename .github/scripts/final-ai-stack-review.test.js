@@ -964,10 +964,9 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
     workflowRunId: 700,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
   })
-  assert.deepEqual(
-    parseStackReviewMetadata(report).findings[0].layer_numbers,
-    [1]
-  )
+  assert.deepEqual(parseStackReviewMetadata(report).findings[0].layer_numbers, [
+    1,
+  ])
   assert.equal(
     parseStackReviewMetadata(report).reviewed_path_aliases.includes(
       'src/rename-old.ts'
@@ -1181,18 +1180,18 @@ test('retains only the rejected stack publisher inputs for one day', () => {
   )
   assert.match(
     stageStep,
-    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+    /failure\(\)[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
   )
   assert.match(stageStep, /test -f "\$\{code_result\}"/)
-  assert.match(stageStep, /test -f "\$\{topology_result\}"/)
+  assert.match(stageStep, /cp -- "\$\{code_result\}" "\$\{staging_dir\}\/"/)
   assert.match(
     stageStep,
-    /cp -- "\$\{code_result\}" "\$\{topology_result\}" "\$\{staging_dir\}\/"/
+    /if \[\[ -f "\$\{topology_result\}" \]\]; then[\s\S]*cp -- "\$\{topology_result\}" "\$\{staging_dir\}\/"/
   )
   assert.match(stageStep, /mv -- "\$\{staging_dir\}" "\$\{artifact_dir\}"/)
   assert.match(
     uploadStep,
-    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+    /failure\(\)[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
   )
   assert.match(
     uploadStep,

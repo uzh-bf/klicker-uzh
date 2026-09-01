@@ -734,9 +734,12 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
   const completed = parent.manifest.coverage.selected[1]
   const reused = parent.manifest.coverage.selected[0]
   return {
+    schema_version: OCR_RUN_MANIFEST_SCHEMA,
     status: 'complete',
     llm: { ...parent.llm },
+    finish_reason: 'stop',
     summary: {
+      coverage: 'complete',
       files_reviewed: 2,
       comments: 0,
       total_tokens: 200,
@@ -809,6 +812,25 @@ test('rejects malformed or already-resumed partial OCR sessions', () => {
       ),
     /already a resumed run/
   )
+  assert.throws(
+    () =>
+      planOCRResume(
+        partialResumeResult({
+          comments: [
+            {
+              path: 'src/complete.ts',
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+              content: 'This partial finding omits the required evidence.',
+            },
+          ],
+        }),
+        750_000
+      ),
+    /confidence score/
+  )
 })
 
 test('rejects every OCR budget-exhaustion signal before resuming', () => {
@@ -866,6 +888,7 @@ test('merges only validated complete resume usage within the original ceiling', 
   assert.equal(merged.summary.input_tokens, 390)
   assert.equal(merged.summary.output_tokens, 110)
   assert.equal(merged.summary.total_tokens, 500)
+  assert.equal(validateOCRResult(merged), merged)
 })
 
 test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
@@ -1244,6 +1267,14 @@ test('validates complete OCR results and retains malformed artifacts', () => {
     () => validateOCRResult(malformedResult),
     /invalid confidence score/
   )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...validResult,
+        summary: { ...validResult.summary, total_tokens: 101 },
+      }),
+    /usage counters/
+  )
 })
 
 test('runs OCR validation after resume and gates individual publication', () => {
@@ -1258,8 +1289,16 @@ test('runs OCR validation after resume and gates individual publication', () => 
   const publishIndex = workflow.indexOf(
     '      - name: Publish consolidated final review'
   )
+  const rejectedSummaryIndex = workflow.indexOf(
+    '      - name: Summarize rejected final review result'
+  )
+  const cleanupIndex = workflow.indexOf(
+    '      - name: Remove ephemeral OpenRouter access'
+  )
   assert.ok(runIndex >= 0)
   assert.ok(validateIndex > runIndex)
+  assert.ok(rejectedSummaryIndex > validateIndex)
+  assert.ok(cleanupIndex > rejectedSummaryIndex)
   assert.ok(publishIndex > validateIndex)
 
   const validationStep = workflow.slice(validateIndex, publishIndex)
@@ -1268,6 +1307,17 @@ test('runs OCR validation after resume and gates individual publication', () => 
   assert.match(
     validationStep,
     /node \.github\/scripts\/final-ai-review\.js validate-ocr-result "\$\{RESULT_PATH\}"/
+  )
+
+  const rejectedSummaryStep = workflow.slice(rejectedSummaryIndex, cleanupIndex)
+  assert.match(
+    rejectedSummaryStep,
+    /if: failure\(\) && steps\.validate_result\.outcome == 'failure'/
+  )
+  assert.match(rejectedSummaryStep, /rejected input is retained/)
+  assert.doesNotMatch(
+    rejectedSummaryStep,
+    /RESULT_PATH|STDERR_PATH|cat |tail |```json/
   )
 
   const publishStep = workflow.slice(publishIndex)

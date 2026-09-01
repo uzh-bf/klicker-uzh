@@ -461,10 +461,7 @@ jobs:
           node .github/scripts/final-ai-review.js validate-ocr-result "${RESULT_PATH}"
 
       - name: Summarize final review failure output
-        if: >-
-          failure() &&
-          (steps.run_review.outcome == 'failure' ||
-          steps.validate_result.outcome == 'failure')
+        if: failure() && steps.run_review.outcome == 'failure'
         env:
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -496,6 +493,17 @@ jobs:
               echo
               echo '```'
             fi
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Summarize rejected final review result
+        if: failure() && steps.validate_result.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          echo 'Final review result validation failed; the rejected input is retained as a restricted artifact.'
+          {
+            echo '### Final review result validation failed'
+            echo
+            echo 'The rejected input is retained as a restricted one-day artifact.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Remove ephemeral OpenRouter access
@@ -1135,7 +1143,10 @@ jobs:
             )
 
       - name: Stage rejected stack publisher inputs
-        if: failure() && steps.publish.outcome == 'failure'
+        if: >-
+          failure() &&
+          (steps.topology_review.outcome == 'failure' ||
+          steps.publish.outcome == 'failure')
         shell: bash
         run: |
           set -euo pipefail
@@ -1144,13 +1155,18 @@ jobs:
           staging_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure-staging"
           artifact_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure"
           test -f "${code_result}"
-          test -f "${topology_result}"
           mkdir "${staging_dir}"
-          cp -- "${code_result}" "${topology_result}" "${staging_dir}/"
+          cp -- "${code_result}" "${staging_dir}/"
+          if [[ -f "${topology_result}" ]]; then
+            cp -- "${topology_result}" "${staging_dir}/"
+          fi
           mv -- "${staging_dir}" "${artifact_dir}"
 
       - name: Upload rejected stack publisher inputs
-        if: failure() && steps.publish.outcome == 'failure'
+        if: >-
+          failure() &&
+          (steps.topology_review.outcome == 'failure' ||
+          steps.publish.outcome == 'failure')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}

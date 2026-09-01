@@ -2561,7 +2561,8 @@ function validateReviewSummary(summary, commentCount) {
     counters.some(
       (key) => !Number.isSafeInteger(summary[key]) || summary[key] < 0
     ) ||
-    summary.comments !== commentCount
+    summary.comments !== commentCount ||
+    summary.total_tokens !== summary.input_tokens + summary.output_tokens
   ) {
     throw new Error('OCR result has incomplete review usage counters')
   }
@@ -2755,6 +2756,13 @@ function planOCRResume(result, maxTokensBudget) {
   if (result.warnings != null && !Array.isArray(result.warnings)) {
     throw new Error('Partial OCR result has an invalid warnings array')
   }
+  if (!Array.isArray(result.comments)) {
+    throw new Error('Partial OCR result has no comments array')
+  }
+  if (result.comments.length > 100) {
+    throw new Error('Partial OCR result has too many comments')
+  }
+  result.comments.forEach((comment, index) => validateFinding(comment, index))
   const usage = validateOCRTokenCounters(result.summary, 'Partial OCR result')
   if (hasOCRBudgetExhaustion(result, coverage)) {
     throw new Error('Partial OCR result exhausted its token budget')
