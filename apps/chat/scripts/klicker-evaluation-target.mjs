@@ -267,6 +267,7 @@ async function drainResponse(response, maxBytes) {
     const streamState = { done: false, events: 0, finished: false }
     let bytes = 0
     let buffer = ''
+    let completed = false
 
     const inspectLine = (line) => {
       const normalized = line.endsWith('\r') ? line.slice(0, -1) : line
@@ -305,6 +306,7 @@ async function drainResponse(response, maxBytes) {
           if (!streamState.done || !streamState.finished || streamState.events === 0) {
             throw evaluationError('chat_stream_incomplete')
           }
+          completed = true
           return bytes
         }
         bytes += value?.byteLength || 0
@@ -321,6 +323,7 @@ async function drainResponse(response, maxBytes) {
       if (error?.name === 'AbortError') throw evaluationError('request_timeout')
       throw error
     } finally {
+      if (!completed) await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   } finally {

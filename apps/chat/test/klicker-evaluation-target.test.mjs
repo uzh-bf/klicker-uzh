@@ -338,6 +338,53 @@ test('target rejects malformed and incomplete UI streams', async () => {
   }
 })
 
+test('target cancels an open stream after an SSE error', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  target.cookie = 'participant_token=participant-jwt'
+  const originalFetch = globalThis.fetch
+  let cancelled = false
+  globalThis.fetch = async () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode('data: {"type":"error"}\n\n')
+          )
+        },
+        cancel() {
+          cancelled = true
+        },
+      }),
+      { headers: { 'Content-Type': 'text/event-stream' } }
+    )
+
+  try {
+    await assert.rejects(
+      target.submitTurn({
+        question: 'Synthetic question',
+        mode: 'tutor',
+        threadId: 'thread-1',
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        maxStreamBytes: 1000,
+      }),
+      { code: 'chat_stream_error' }
+    )
+    assert.equal(cancelled, true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('canary requires its configured tool', async () => {
   const target = new KlickerEvaluationTarget({
     apiOrigin: 'https://api.klicker.localhost',
