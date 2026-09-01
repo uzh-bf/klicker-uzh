@@ -6,6 +6,7 @@ import {
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
+  QGetStudyStreakParticipationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -22,6 +23,7 @@ import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
+import StudyStreakProgress from '../participant/StudyStreakProgress'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 
@@ -82,6 +84,13 @@ function ElementStack({
 
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
+  )
+  const { data: studyStreakData, refetch: refetchStudyStreak } = useQuery(
+    QGetStudyStreakParticipationDocument,
+    {
+      variables: { courseId },
+      skip: previewOnly || !withParticipant,
+    }
   )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -304,6 +313,8 @@ function ElementStack({
     previewOnly,
   ])
 
+  const studyStreakParticipation = studyStreakData?.getParticipation
+
   return (
     <div className="pb-12">
       <div className="w-full">
@@ -314,6 +325,22 @@ function ElementStack({
             className={{ root: 'mb-2' }}
           />
         )}
+
+        {studyStreakParticipation?.isActive &&
+          typeof studyStreakParticipation.studyStreakResponsesRemainingToday ===
+            'number' && (
+            <div className="mb-4">
+              <StudyStreakProgress
+                current={studyStreakParticipation.studyStreakCurrent ?? 0}
+                remaining={
+                  studyStreakParticipation.studyStreakResponsesRemainingToday
+                }
+                qualifiedToday={
+                  studyStreakParticipation.studyStreakQualifiedToday ?? false
+                }
+              />
+            </div>
+          )}
 
         {!previewOnly && !hideBookmark && !embedded ? (
           <div className="flex flex-row items-center justify-between">
@@ -600,6 +627,16 @@ function ElementStack({
               if (!result.data || !result.data?.respondToElementStack) {
                 console.error('Error submitting response')
                 return
+              }
+
+              if (!previewOnly && withParticipant) {
+                try {
+                  await refetchStudyStreak()
+                } catch (error) {
+                  console.error('Study streak progress refresh failed', {
+                    error,
+                  })
+                }
               }
 
               setStackStorage(

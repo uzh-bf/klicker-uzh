@@ -126,6 +126,8 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         jitter: true,
       },
       attempts: {
+        retryIf: (error, operation) =>
+          operation.getContext().skipRetry !== true && !!error,
         max: 3,
       },
     })

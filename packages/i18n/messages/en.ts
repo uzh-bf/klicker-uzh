@@ -828,8 +828,28 @@ export default {
 
 You are currently **not** participating in the course leaderboard, meaning that you can participate in all activities but will not collect any points, will not be listed on the leaderboard, and will not be eligible for achievements and awards. If you would like to participate in the gamified activities throughout this course, **click the button** below to join. You can leave the course leaderboard at any time, upon which all of your collected points will be **deleted**.
 
+Joining the leaderboard also opts you into a private study streak for this course. It tracks whether you answer five eligible questions in PracticeQuizzes or MicroLearnings on weekdays. If you leave, your current streak and today's progress are reset; your longest streak and available freezes are kept if you rejoin.
+
 Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
 `,
+      studyStreakCard: 'Study streak',
+      studyStreakDays: '{current, plural, one {# day} other {# days}}',
+      studyStreakLongest: 'Longest streak: {longest} days',
+      studyStreakFreezeBalance: 'Freezes available: {balance}',
+      studyStreakDoneToday: 'Nice work — your streak is secured for today.',
+      studyStreakNoDailyGoal:
+        'No practice goal today — your streak is not at risk.',
+      studyStreakKeepGoing:
+        'Keep it going — {remaining, plural, one {# question} other {# questions}} left today.',
+      studyStreakNoFreezes:
+        'Your streak is at risk — {remaining, plural, one {# question} other {# questions}} left today and no freezes available.',
+      studyStreakStart:
+        'Start your streak today — answer {remaining, plural, one {# question} other {# questions}}.',
+      studyStreakProgress:
+        'Streak: {current, plural, one {# day} other {# days}} · {remaining, plural, one {# response left today} other {# responses left today}}',
+      studyStreakGoalReached:
+        'Daily goal reached · Streak: {current, plural, one {# day} other {# days}}',
+      newAchievementReceipt: 'New achievement unlocked!',
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
@@ -1047,7 +1067,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       leaveLeaderboardConfirmation:
         'Are you sure you want to leave the course leaderboard?',
       leaveLeaderboardInformation:
-        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+        "If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. Your current study streak and today's progress will also be reset, while your longest streak and available freezes are kept. You can join again at any time, but will have to start from scratch.",
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
       groupActivityEndedToast:

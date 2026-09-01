@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-08-29'
 tags:
   - backend
   - prisma
@@ -26,6 +26,12 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Private Study streaks
+
+Each active `Participation` also carries a **private Study streak**, visible only to its student (`studyStreakCurrent`, `studyStreakLongest`, `studyStreakFreezeBalance`, daily progress, plus bookkeeping columns; see ADR 0009). Every streak field resolves to null for lecturers and other participants, including when a `Participation` is reached through a leaderboard entry. A qualified day means five or more eligible responses (PracticeQuiz or MicroLearning) on one Europe/Zurich weekday within course bounds. Content views do not count. Weekends are neutral; holidays follow the ordinary weekday rule. The first missed active weekday in a gap may consume one available freeze; a second consecutive missed weekday resets the current streak without consuming another freeze. The balance starts at two, is capped at three, and one freeze is earned after each seven qualified days. Reaching seven days while already capped resets the earning cycle without banking a later refill. Reconciliation runs fail-open after each response batch commits in a serializable Prisma transaction and groups existing `QuestionResponseDetail` rows by Zurich date, so a streak failure never affects grading or XP. Joining the leaderboard starts tracking; the background rollout and repair migrations initialize already-active leaderboard participations in enabled, non-assessment courses without backfilling earlier responses. The development `Testkurs` seed applies the same timestamp to new and existing active seeded participations. Course overview and participation reads reconcile the private state before returning it. Leaving resets current/progress but preserves longest and balance; rejoining restarts from zero with no backfill.
+
+On the PWA home screen, the fire/current-streak indicator and contextual status are shown only for gamified participations with `isActive`; this presentation reuses the existing read-side fields and adds no streak state.
 
 ### Assessment participant invitations
 
@@ -87,4 +93,6 @@ removes linked draft live quizzes
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.
 - Leaderboards: `LeaderboardEntry` with `LeaderboardType` `SESSION | COURSE`, updated via `stacks.ts:updateLeaderboardOnQuestionResponse`.
 - `Achievement` (`gamification.prisma`) has `type` PARTICIPANT/GROUP/CLASS and `scope` GLOBAL/COURSE, with per-subject instance models; `Level` defines XP thresholds as a linked list; `Title` and `AwardEntry` complete the set.
-- **Unmapped (verify in code before relying on it):** the exact trigger points for achievement awards, and the LiveQuiz bonus-point formula (time-decay multipliers).
+  The current seeded achievement IDs are explicitly allowlisted as discoverable because staff has manually distributed every entry at least once. Coded award paths exist for live quiz podium places (Champion, Vice-Champion, Vice-Vice-Champion in `liveQuizzes.ts`) and group activity awards (Dream Team and Team Spirit in `groups.ts`); the rest are granted manually by staff. The database default and seed fallback remain `isDiscoverable=false`, so adding a new seed entry does not publish it accidentally.
+- When a student receives a discoverable achievement, the instance starts with `receiptAcknowledgedAt=null`. The receipt-boundary migration backfills that field for existing instances, so only awards created after rollout can appear as new receipts. The student sees a "New achievement unlocked!" badge until the PWA makes a non-blocking call to `acknowledgeAchievementReceipt`, which sets the timestamp idempotently; a failed call leaves the badge visible for a later retry. The receipt field is available only on the authenticated participant's own achievement data and is omitted from public participant profiles.
+- **Unmapped (verify in code before relying on it):** the LiveQuiz bonus-point formula (time-decay multipliers).

@@ -378,6 +378,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      acknowledgeAchievementReceipt: t.withAuth(asParticipant).boolean({
+        args: {
+          achievementInstanceId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.acknowledgeAchievementReceipt(
+            args,
+            ctx
+          )
+        },
+      }),
+
       startGroupActivity: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityDetails,

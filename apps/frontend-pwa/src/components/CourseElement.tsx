@@ -1,7 +1,12 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBolt,
+  faCheck,
+  faFire,
+  faSnowflake,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
@@ -14,21 +19,48 @@ interface CourseElementProps {
     endDate: string
     isSubscribed: boolean
     displayName: string
+    isGamificationEnabled: boolean
+    isLeaderboardParticipant: boolean
+    studyStreakCurrent: number
+    studyStreakQualifiedToday: boolean
+    studyStreakResponsesRemainingToday?: number | null
+    studyStreakFreezeBalance: number
   }
   pushDisabled?: boolean
   onSubscribeClick?: (subscribed: boolean, courseId: string) => void
 }
 
-function CourseElement({
-  disabled,
-  course,
-  pushDisabled,
-  onSubscribeClick,
-}: CourseElementProps) {
-  dayjs.extend(utc)
+function getStudyStreakStatus(
+  course: CourseElementProps['course'],
+  isStreakVisible: boolean
+): 'secured' | 'atRisk' | 'keepGoing' | 'start' | null {
+  const remaining = course.studyStreakResponsesRemainingToday
+  if (!isStreakVisible || remaining === null || remaining === undefined) {
+    return null
+  }
+  if (course.studyStreakQualifiedToday || remaining === 0) return 'secured'
+  if (course.studyStreakCurrent === 0) return 'start'
+  if (course.studyStreakFreezeBalance === 0) return 'atRisk'
+  if (remaining <= 2) return 'keepGoing'
+  return null
+}
+
+function CourseElement({ disabled, course }: CourseElementProps) {
   const t = useTranslations()
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
+  const isStreakVisible =
+    course.isGamificationEnabled && course.isLeaderboardParticipant
+  const remaining = course.studyStreakResponsesRemainingToday
+  const remainingValue = remaining ?? 0
+  const streakStatus = getStudyStreakStatus(course, isStreakVisible)
+  const formatDate = (date: string) =>
+    new Intl.DateTimeFormat('de-CH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'Europe/Zurich',
+    }).format(new Date(date))
 
   return (
     <div key={course.id} className="flex w-full flex-row items-stretch">
@@ -46,21 +78,58 @@ function CourseElement({
         href={disabled ? '' : `/course/${course.id}`}
         data={{ cy: `course-button-${course.displayName}` }}
       >
-        <div>
-          <div>{course.displayName}</div>
-          <div className="flex flex-row items-end justify-between">
-            <div className="text-xs">
-              {isFuture &&
-                t('shared.generic.startAt', {
-                  time: dayjs(course.startDate).local().format('DD.MM.YYYY'),
-                })}
-              {isPast &&
-                t('shared.generic.finishedAt', {
-                  time: dayjs(course.endDate).local().format('DD.MM.YYYY'),
-                })}
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div>{course.displayName}</div>
+            <div className="whitespace-nowrap text-xs text-slate-500">
+              {formatDate(course.startDate)} - {formatDate(course.endDate)}
             </div>
           </div>
+          {isStreakVisible && (
+            <div
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap font-medium text-orange-700"
+              data-cy={`course-study-streak-${course.id}`}
+            >
+              <FontAwesomeIcon icon={faFire} aria-hidden="true" />
+              <span>
+                {t('pwa.general.studyStreakDays', {
+                  current: course.studyStreakCurrent,
+                })}
+              </span>
+            </div>
+          )}
         </div>
+        {streakStatus && (
+          <div
+            className={twMerge(
+              'mt-1 flex items-center gap-1 text-left text-xs',
+              streakStatus === 'atRisk'
+                ? 'font-medium text-orange-700'
+                : 'text-slate-600'
+            )}
+            data-cy={`course-study-streak-status-${course.id}`}
+          >
+            {streakStatus === 'atRisk' && (
+              <FontAwesomeIcon icon={faSnowflake} aria-hidden="true" />
+            )}
+            <span>
+              {streakStatus === 'secured' &&
+                t('pwa.general.studyStreakDoneToday')}
+              {streakStatus === 'atRisk' &&
+                t('pwa.general.studyStreakNoFreezes', {
+                  remaining: remainingValue,
+                })}
+              {streakStatus === 'keepGoing' &&
+                t('pwa.general.studyStreakKeepGoing', {
+                  remaining: remainingValue,
+                })}
+              {streakStatus === 'start' &&
+                t('pwa.general.studyStreakStart', {
+                  remaining: remainingValue,
+                })}
+            </span>
+          </div>
+        )}
       </LinkButton>
       {/* // TODO: re-introduce icon for push notifications once they have been fixed */}
       {/* {onSubscribeClick && (

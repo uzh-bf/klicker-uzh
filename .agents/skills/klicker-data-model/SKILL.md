@@ -43,6 +43,9 @@ A fixture needed by tests must be added to EACH consumer:
 
 Prisma 7 reset/migrate commands do not seed automatically. The legacy host uses `pnpm run prisma:setup`; the self-contained DevPod uses the raw reset/push/Prisma Data seed sequence in `.devcontainer/post-create.sh`. Both are explicit and **destructive** — apply `klicker-environment-doctor` check 8 first.
 
-## Boot-time data migrations (rare)
+## Runtime data migrations (rare)
 
-One-off production data fixes go into the homegrown runner `apps/backend-docker/src/migration.ts` (own `Migration` table), NOT into Prisma migrations. Currently empty — read its `migrate()` before adding an entry.
+One-off production data fixes go into the homegrown runner `apps/backend-docker/src/migration.ts` (own `Migration` table), NOT into Prisma migrations. Read `migrate()` before adding an entry. The backend starts listening before `startRuntimeMigrations()` launches the runner, and failures stay fail-open. Mark an entry `isIdempotent: true` only when rerunning the complete data change is safe. Other entries claim their `Migration` primary-key row inside the same Prisma transaction as the data change; do not add raw-SQL advisory locks or another startup-blocking wait.
+Keep transient connection retries code-first (`P1001`, `P1002`, `P1017`, and
+`P2024`) with message matching only for adapter errors that have no Prisma code.
+Retry attempts stay bounded and must never delay the HTTP server from listening.

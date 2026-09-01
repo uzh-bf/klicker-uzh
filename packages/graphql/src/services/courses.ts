@@ -29,6 +29,7 @@ import {
 } from './assessmentScores.js'
 import { hardDeleteLiveQuiz } from './liveQuizzes.js'
 import { checkAccess } from './sharing.js'
+import { reconcileStudyStreak } from './studyStreak.js'
 
 const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
 export async function getBasicCourseInformation(
@@ -99,6 +100,19 @@ export async function joinCourseLeaderboard(
   ctx: ContextWithUser
 ) {
   // upsert or activate participation in the course
+  const existingParticipation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    select: { isActive: true, studyStreakTrackingStartedAt: true },
+  })
+  const wasInactive = !existingParticipation?.isActive
+  const shouldStartTracking =
+    wasInactive || !existingParticipation?.studyStreakTrackingStartedAt
+
   const participation = await ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
@@ -110,8 +124,15 @@ export async function joinCourseLeaderboard(
       isActive: true,
       course: { connect: { id: courseId } },
       participant: { connect: { id: ctx.user.sub } },
+      studyStreakTrackingStartedAt: new Date(),
     },
-    update: { isActive: true },
+    update: {
+      isActive: true,
+      // rejoin after leave: restart streak tracking (no backfill)
+      ...(shouldStartTracking
+        ? { studyStreakTrackingStartedAt: new Date() }
+        : {}),
+    },
   })
 
   if (!participation) return null
@@ -203,6 +224,13 @@ export async function leaveCourseLeaderboard(
     },
     data: {
       isActive: false,
+      // leave resets the current streak and today/progress state,
+      // but preserves longest streak and freeze balance (roadmap contract)
+      studyStreakCurrent: 0,
+      studyStreakQualifiedDaysSinceFreeze: 0,
+      studyStreakLastQualifiedDate: null,
+      studyStreakLastProcessedDate: null,
+      studyStreakTrackingStartedAt: null,
     },
   })
 
@@ -251,6 +279,11 @@ export async function getCourseOverviewData(
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+    await reconcileStudyStreak(
+      { prisma: ctx.prisma },
+      { courseId, participantId: ctx.user.sub }
+    )
+
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -2439,6 +2472,31 @@ async function computeRollingLeaderboardEntries(
   return { leaderboardEntries, count, sum }
 }
 
+/**
+ * Selects the Top 10 plus up to three ranked rows immediately before and
+ * after the requesting participant so participants outside the Top 10 keep
+ * their positional context. Entries are expected in final ranked order; the
+ * union is expressed over positions, so overlaps collapse naturally.
+ */
+export function selectLeaderboardNearbyContext<
+  T extends { participantId?: string | null },
+>(entries: T[], selfParticipantId: string | undefined): T[] {
+  const selfIndex = entries.findIndex(
+    (entry) => entry.participantId === selfParticipantId
+  )
+
+  if (selfIndex === -1) {
+    return entries.slice(0, 10)
+  }
+
+  const nearbyLower = Math.max(0, selfIndex - 3)
+  const nearbyUpper = Math.min(entries.length - 1, selfIndex + 3)
+
+  return entries.filter(
+    (_entry, ix) => ix < 10 || (ix >= nearbyLower && ix <= nearbyUpper)
+  )
+}
+
 export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: Context
@@ -2525,9 +2583,10 @@ export async function getStudentCourseLeaderboard(
         )
       )
 
-      // keep the top 10 entries, plus the requesting participant's own entry
-      const filteredEntries = sortedEntries.filter(
-        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      // keep the Top 10 and the requesting participant's nearby context
+      const filteredEntries = selectLeaderboardNearbyContext(
+        sortedEntries,
+        ctx.user?.sub
       )
 
       return {
@@ -2550,8 +2609,13 @@ export async function getStudentCourseLeaderboard(
         ctx as ContextWithUser // user id and role have been validated in if statement
       )
 
+    const filteredRollingEntries = selectLeaderboardNearbyContext(
+      leaderboardEntries,
+      ctx.user?.sub
+    )
+
     return {
-      leaderboard: leaderboardEntries,
+      leaderboard: filteredRollingEntries,
       leaderboardStatistics: {
         participantCount: count,
         averageScore: count > 0 ? sum / count : 0,
@@ -4113,12 +4177,25 @@ export async function enableGamification(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.update({
-    where: { id: courseId },
-    data: { isGamificationEnabled: true },
-  })
+  const trackingStartedAt = new Date()
+  return ctx.prisma.$transaction(async (tx) => {
+    const course = await tx.course.update({
+      where: { id: courseId },
+      data: { isGamificationEnabled: true },
+    })
 
-  return course
+    await tx.participation.updateMany({
+      where: {
+        courseId,
+        isActive: true,
+        studyStreakTrackingStartedAt: null,
+        course: { isAssessmentEnabled: false },
+      },
+      data: { studyStreakTrackingStartedAt: trackingStartedAt },
+    })
+
+    return course
+  })
 }
 
 export async function getCourseActivities(

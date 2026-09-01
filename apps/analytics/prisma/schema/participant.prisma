@@ -173,6 +173,16 @@ model Participation {
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]
 
+  // private study streak state (Europe/Zurich weekdays; PracticeQuiz and
+  // MicroLearning only; see gamification roadmap / ADR)
+  studyStreakTrackingStartedAt        DateTime?
+  studyStreakCurrent                  Int       @default(0)
+  studyStreakLongest                  Int       @default(0)
+  studyStreakFreezeBalance            Int       @default(2)
+  studyStreakQualifiedDaysSinceFreeze Int       @default(0)
+  studyStreakLastQualifiedDate        DateTime? @db.Date
+  studyStreakLastProcessedDate        DateTime? @db.Date
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

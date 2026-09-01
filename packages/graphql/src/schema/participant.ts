@@ -8,6 +8,11 @@ import {
 import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import {
+  getStudyStreakResponsesToday,
+  QUALIFIED_RESPONSES_PER_DAY,
+  zurichDate,
+} from '../services/studyStreak.js'
+import {
   type IAchievement,
   type IParticipantAchievementInstance,
   AchievementRef,
@@ -261,7 +266,19 @@ export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
   participant?: IParticipant
+  studyStreakResponsesRemainingToday?: number | null
 }
+
+function canViewStudyStreak(
+  participation: IParticipation,
+  user?: { role: DB.UserRole; sub: string }
+): boolean {
+  return (
+    user?.role === DB.UserRole.PARTICIPANT &&
+    user.sub === participation.participantId
+  )
+}
+
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
 export const Participation = ParticipationRef.implement({
@@ -269,6 +286,59 @@ export const Participation = ParticipationRef.implement({
     id: t.exposeInt('id'),
 
     isActive: t.exposeBoolean('isActive'),
+
+    // self-only private Study streak status (Europe/Zurich weekdays,
+    // PracticeQuiz and MicroLearning; see gamification ADR)
+    studyStreakCurrent: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user) ? parent.studyStreakCurrent : null,
+    }),
+    studyStreakLongest: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user) ? parent.studyStreakLongest : null,
+    }),
+    studyStreakFreezeBalance: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user)
+          ? parent.studyStreakFreezeBalance
+          : null,
+    }),
+    studyStreakResponsesRemainingToday: t.int({
+      nullable: true,
+      resolve: async (parent, _, ctx) => {
+        if (!canViewStudyStreak(parent, ctx.user)) return null
+
+        if (parent.studyStreakResponsesRemainingToday !== undefined) {
+          return parent.studyStreakResponsesRemainingToday
+        }
+
+        const responsesToday = await getStudyStreakResponsesToday(
+          { prisma: ctx.prisma },
+          {
+            courseId: parent.courseId,
+            participantId: parent.participantId,
+          }
+        )
+
+        return responsesToday === null
+          ? null
+          : Math.max(0, QUALIFIED_RESPONSES_PER_DAY - responsesToday)
+      },
+    }),
+    studyStreakQualifiedToday: t.boolean({
+      nullable: true,
+      resolve: (parent, _, ctx) => {
+        if (!canViewStudyStreak(parent, ctx.user)) return null
+        if (!parent.studyStreakLastQualifiedDate) return false
+        return (
+          zurichDate(parent.studyStreakLastQualifiedDate) ===
+          zurichDate(new Date())
+        )
+      },
+    }),
 
     subscriptions: t.expose('subscriptions', {
       type: [PushSubscriptionRef],

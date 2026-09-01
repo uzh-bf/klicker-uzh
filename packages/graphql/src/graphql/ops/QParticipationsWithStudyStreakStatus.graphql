@@ -1,8 +1,14 @@
-query Participations($endpoint: String, $assessmentOnly: Boolean) {
+query QParticipationsWithStudyStreakStatus(
+  $endpoint: String
+  $assessmentOnly: Boolean
+) {
   participations(endpoint: $endpoint, assessmentOnly: $assessmentOnly) {
     id
     isActive
     studyStreakCurrent
+    studyStreakQualifiedToday
+    studyStreakResponsesRemainingToday
+    studyStreakFreezeBalance
     completedMicroLearnings
     subscriptions {
       id

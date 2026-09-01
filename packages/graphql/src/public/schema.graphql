@@ -10,6 +10,7 @@ type Achievement {
   icon: String!
   iconColor: String
   id: Int!
+  isDiscoverable: Boolean!
   nameDE: String
   nameEN: String
 }
@@ -1975,6 +1976,7 @@ type MicroLearning {
 }
 
 type Mutation {
+  acknowledgeAchievementReceipt(achievementInstanceId: Int!): Boolean!
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
@@ -2370,6 +2372,7 @@ type ParticipantAchievementInstance {
   achievedCount: Int!
   achievement: Achievement!
   id: Int!
+  receiptAcknowledgedAt: Date
 }
 
 type ParticipantActivityPerformance {
@@ -2447,6 +2450,11 @@ type Participation {
   id: Int!
   isActive: Boolean!
   participant: Participant
+  studyStreakCurrent: Int
+  studyStreakFreezeBalance: Int
+  studyStreakLongest: Int
+  studyStreakQualifiedToday: Boolean
+  studyStreakResponsesRemainingToday: Int
   subscriptions: [PushSubscription!]
 }
 

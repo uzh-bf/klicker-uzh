@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-08-29'
 tags:
   - backend
   - graphql
@@ -26,11 +26,38 @@ omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
+### Private Participation fields
+
+The `Participation` object can be reached from both student course queries and
+lecturer leaderboard entries. Private Study streak fields therefore enforce
+ownership in each field resolver, not only at the root query. Current streak,
+longest streak, freeze balance, qualified-today status, and remaining daily
+responses all resolve to null unless the caller is the participant who owns
+the row (`packages/graphql/src/schema/participant.ts:canViewStudyStreak`).
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
 - `services/*.ts` — all business logic, Prisma access, Redis, pubSub publishes. Import style: `import * as XService from '../services/x.js'`.
 - Context (`packages/graphql/src/lib/context.ts`): `Context` has optional `user`; `t.withAuth` narrows to `ContextWithUser` (`user.sub`, `role`, `scope`, catalyst flags) — services take `ctx` and rely on that narrowing.
+
+### Private achievement receipts
+
+`ParticipantAchievementInstance.receiptAcknowledgedAt` is a self-only field.
+The shared field resolver in `packages/graphql/src/schema/achievement.ts`
+returns the timestamp only when the instance belongs to `ctx.user.sub`; it
+returns `null` for another participant. The public participant-profile
+operation omits the field entirely, while `SelfWithAchievements` retains it
+for the authenticated participant.
+
+`acknowledgeAchievementReceipt` is exposed through the participant-authenticated
+mutation and delegates to `packages/graphql/src/services/participants.ts`.
+The service checks ownership, conditionally writes the timestamp only when it
+is still null, and rereads the instance so first and repeated acknowledgements
+return the same successful result without replacing the first timestamp.
+Missing or foreign instances return `false` without a write. Historical
+instances are acknowledged by the Prisma rollout migration; new achievement
+instances remain nullable until the student sees them.
 
 ## Validation and errors
 

@@ -8,6 +8,12 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  getStudyStreakResponsesRemainingTodayForParticipations,
+  reconcileStudyStreak,
+  type StudyStreakStatusParticipation,
+  zurichDate,
+} from './studyStreak.js'
 
 dayjs.extend(isoWeek)
 
@@ -188,6 +194,60 @@ export async function getParticipations(
   }: { endpoint?: string | null; assessmentOnly?: boolean | null },
   ctx: ContextWithUser
 ) {
+  const today = zurichDate(new Date())
+  const streakParticipations = assessmentOnly
+    ? []
+    : await ctx.prisma.participation.findMany({
+        where: {
+          participantId: ctx.user.sub,
+          isActive: true,
+          course: {
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+          },
+        },
+        select: {
+          courseId: true,
+          studyStreakLastProcessedDate: true,
+          studyStreakTrackingStartedAt: true,
+          course: {
+            select: {
+              startDate: true,
+              endDate: true,
+            },
+          },
+        },
+      })
+
+  await Promise.all(
+    streakParticipations
+      .filter(
+        ({
+          course,
+          studyStreakLastProcessedDate,
+          studyStreakTrackingStartedAt,
+        }) => {
+          const courseStart = zurichDate(course.startDate)
+          const courseEnd = zurichDate(course.endDate)
+          const lastProcessed = studyStreakLastProcessedDate
+            ? zurichDate(studyStreakLastProcessedDate)
+            : null
+
+          if (today < courseStart) return false
+          if (today > courseEnd && !studyStreakTrackingStartedAt) return false
+          return (
+            today <= courseEnd || !lastProcessed || lastProcessed < courseEnd
+          )
+        }
+      )
+      .map(({ courseId }) =>
+        reconcileStudyStreak(
+          { prisma: ctx.prisma },
+          { courseId, participantId: ctx.user.sub }
+        )
+      )
+  )
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -223,7 +283,17 @@ export async function getParticipations(
 
   if (!participant) return []
 
-  return participant.participations
+  const remainingByParticipation =
+    await getStudyStreakResponsesRemainingTodayForParticipations(
+      { prisma: ctx.prisma },
+      participant.participations as StudyStreakStatusParticipation[]
+    )
+
+  return participant.participations.map((participation) => ({
+    ...participation,
+    studyStreakResponsesRemainingToday:
+      remainingByParticipation.get(participation.id) ?? null,
+  }))
 }
 
 export async function getParticipation(
@@ -233,6 +303,11 @@ export async function getParticipation(
   if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
+
+  await reconcileStudyStreak(
+    { prisma: ctx.prisma },
+    { courseId, participantId: ctx.user.sub }
+  )
 
   const participation = await ctx.prisma.participation.findUnique({
     where: {
@@ -777,6 +852,47 @@ export async function getPublicParticipantProfile(
   }
 }
 
+export async function acknowledgeAchievementReceipt(
+  { achievementInstanceId }: { achievementInstanceId: number },
+  ctx: ContextWithUser
+) {
+  const instance = await ctx.prisma.participantAchievementInstance.findUnique({
+    where: { id: achievementInstanceId },
+    select: {
+      participantId: true,
+      receiptAcknowledgedAt: true,
+    },
+  })
+
+  if (!instance || instance.participantId !== ctx.user.sub) return false
+  if (instance.receiptAcknowledgedAt !== null) return true
+
+  const updated = await ctx.prisma.participantAchievementInstance.updateMany({
+    where: {
+      id: achievementInstanceId,
+      participantId: ctx.user.sub,
+      receiptAcknowledgedAt: null,
+    },
+    data: { receiptAcknowledgedAt: new Date() },
+  })
+
+  if (updated.count > 0) return true
+
+  const acknowledgedInstance =
+    await ctx.prisma.participantAchievementInstance.findUnique({
+      where: { id: achievementInstanceId },
+      select: {
+        participantId: true,
+        receiptAcknowledgedAt: true,
+      },
+    })
+
+  return (
+    acknowledgedInstance?.participantId === ctx.user.sub &&
+    acknowledgedInstance.receiptAcknowledgedAt !== null
+  )
+}
+
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
@@ -790,7 +906,14 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   })
   if (!participant) return null
 
-  const achievements = await ctx.prisma.achievement.findMany()
+  // only show achievements the student can still earn (discoverable and
+  // not yet received); received ones come from participant.achievements
+  const achievements = await ctx.prisma.achievement.findMany({
+    where: {
+      isDiscoverable: true,
+      participantInstances: { none: { participantId: ctx.user.sub } },
+    },
+  })
 
   return {
     participant: { ...participant, isSelf: true },
