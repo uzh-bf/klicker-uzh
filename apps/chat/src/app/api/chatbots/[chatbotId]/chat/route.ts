@@ -726,6 +726,9 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        course: {
+          select: { displayName: true },
+        },
         mcpConfigurations: {
           include: {
             mcpServer: true,
@@ -1037,17 +1040,18 @@ export async function POST(
       )
     }
 
-    // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (attachment context, course
-    // policy, conditional citations, then unconditional language policy — see
-    // compileSystemPrompt).
+    // Compile the full system prompt only after course metadata and effective
+    // tool names are known. The compiler owns the fixed authority order.
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      toolNames
+      {
+        courseDisplayName: chatbot.course.displayName,
+        toolNames,
+      }
     )
 
     // track partial content for cancelled streams

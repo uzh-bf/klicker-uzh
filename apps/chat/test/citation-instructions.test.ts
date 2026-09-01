@@ -55,4 +55,14 @@ describe('withCitationContract', () => {
     const result = withCitationContract('Base prompt.', ['doc_query'])
     expect(result.toLowerCase()).toContain('reuse the number')
   })
+
+  test('the appended block resets numbering for each assistant message', () => {
+    const result = withCitationContract('Base prompt.', ['doc_query'])
+    expect(result.toLowerCase()).toContain(
+      'start at [1] in every new assistant message'
+    )
+    expect(result.toLowerCase()).toContain(
+      'never continue numbering from an earlier message'
+    )
+  })
 })

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageAvailable: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
+  compileSystemPrompt: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -70,6 +71,10 @@ vi.mock('@/src/services/accountUsage', () => ({
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
+vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+  compileSystemPrompt: mocks.compileSystemPrompt,
+}))
+
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -122,6 +127,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
@@ -151,6 +157,7 @@ describe('required MCP chat preflight', () => {
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.compileSystemPrompt.mockReturnValue('COMPILED-SYSTEM-PROMPT')
     mocks.findUnique.mockResolvedValue(createChatbot())
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
@@ -255,6 +262,39 @@ describe('required MCP chat preflight', () => {
 
     expect(response.status).toBe(503)
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+  })
+
+  test('selects and passes the course display name to prompt compilation', async () => {
+    const displayName = 'Informatik und Wirtschaft'
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({ course: { displayName } })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.findUnique).toHaveBeenCalledWith({
+      where: { id: 'chatbot-1' },
+      include: {
+        course: { select: { displayName: true } },
+        mcpConfigurations: {
+          include: { mcpServer: true },
+          orderBy: { priority: 'asc' },
+        },
+      },
+    })
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      { tutor: { prompt: 'Use course material.' } },
+      'tutor',
+      { courseDisplayName: displayName, toolNames: [] }
+    )
   })
 
   test('hides a mode without its required MCP binding', async () => {
