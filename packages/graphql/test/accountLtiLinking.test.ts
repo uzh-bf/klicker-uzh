@@ -41,7 +41,10 @@ function createCtx(): Context {
       requestId: 'account-lti-test-request',
       correlationId: 'account-lti-test-request',
     },
-    log: createLogger({ service: 'graphql-account-lti-test', environment: 'test' }),
+    log: createLogger({
+      service: 'graphql-account-lti-test',
+      environment: 'test',
+    }),
   } as Context
 }
 

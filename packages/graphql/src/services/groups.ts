@@ -2051,14 +2051,14 @@ export async function deleteGroupActivity(
           await ctx.hatchet.scheduled.delete(
             groupActivityForSoftDelete.scheduledCompletionTaskId
           )
-          } catch {
-            ctx.log.warn(
-              {
-                event: 'hatchet.schedule.delete_failed',
-                task: 'group-activity-end',
-              },
-              'Hatchet scheduled task deletion failed'
-            )
+        } catch {
+          ctx.log.warn(
+            {
+              event: 'hatchet.schedule.delete_failed',
+              task: 'group-activity-end',
+            },
+            'Hatchet scheduled task deletion failed'
+          )
         }
       }
 

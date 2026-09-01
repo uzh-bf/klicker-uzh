@@ -115,123 +115,123 @@ getChatModelRegistry()
 
 migrate(prisma)
   .then(() => {
-  // initialize tasks to be able to call / schedule them inside service functions
-  const tasks = prepareHatchetTasks({
-    hatchet: hatchetClient,
-    pubSub,
-    emitter,
-    redisCache,
-    redisExec,
-    redisAssessmentExec,
-    handlers,
-    logger,
-  })
-
-  logger.info(
-    {
-      event: 'hatchet.tasks.initialized',
-      taskCount: Object.keys(tasks).length,
-    },
-    'Hatchet tasks initialized'
-  )
-  // #endregion
-
-  const { app, yogaApp } = prepareApp({
-    prisma,
-    redisCache,
-    redisExec,
-    redisAssessmentExec,
-    pubSub,
-    cache,
-    emitter,
-    hatchet: hatchetClient,
-    tasks,
-  })
-
-  // Validate required environment variables at startup
-  if (!process.env.APP_ORIGIN_API) {
-    logger.fatal(
-      { event: 'configuration.invalid', variable: 'APP_ORIGIN_API' },
-      'Required configuration is missing'
-    )
-    process.exit(1)
-  }
-
-  const server = app.listen(3000, () => {
-    logger.info(
-      {
-        event: 'service.started',
-        http: { port: 3000, route: yogaApp.graphqlEndpoint },
-      },
-      'GraphQL API started'
-    )
-
-    const wsServer = new WebSocket.WebSocketServer({
-      server,
-      path: yogaApp.graphqlEndpoint,
+    // initialize tasks to be able to call / schedule them inside service functions
+    const tasks = prepareHatchetTasks({
+      hatchet: hatchetClient,
+      pubSub,
+      emitter,
+      redisCache,
+      redisExec,
+      redisAssessmentExec,
+      handlers,
+      logger,
     })
 
-    useServer(
+    logger.info(
       {
-        schema,
-        context: enhanceContext({
-          prisma,
-          redisExec,
-          redisAssessmentExec,
-          pubSub,
-          emitter,
-          tasks,
-        }),
-        execute: (args: any) => args.rootValue.execute(args),
-        subscribe: (args: any) => args.rootValue.subscribe(args),
-        onSubscribe: async (ctx, msg) => {
-          const request = ctx.extra.request as typeof ctx.extra.request & {
-            locals?: Record<string, unknown>
-          }
-          const requestContext = resolveRequestContext({
-            requestId: request.headers['x-request-id'],
-            correlationId: request.headers['x-correlation-id'],
-          })
-          request.locals = {
-            ...request.locals,
-            requestContext,
-            log: logger.child(requestContext),
-          }
+        event: 'hatchet.tasks.initialized',
+        taskCount: Object.keys(tasks).length,
+      },
+      'Hatchet tasks initialized'
+    )
+    // #endregion
 
-          const {
-            schema,
-            execute,
-            subscribe,
-            contextFactory,
-            parse,
-            validate,
-          } = yogaApp.getEnveloped({
-            ...ctx,
-            req: request,
-            socket: ctx.extra.socket,
-            params: msg.payload,
-          })
+    const { app, yogaApp } = prepareApp({
+      prisma,
+      redisCache,
+      redisExec,
+      redisAssessmentExec,
+      pubSub,
+      cache,
+      emitter,
+      hatchet: hatchetClient,
+      tasks,
+    })
 
-          const args = {
-            schema,
-            operationName: msg.payload.operationName,
-            document: parse(msg.payload.query),
-            variableValues: msg.payload.variables,
-            contextValue: await contextFactory(),
-            rootValue: {
+    // Validate required environment variables at startup
+    if (!process.env.APP_ORIGIN_API) {
+      logger.fatal(
+        { event: 'configuration.invalid', variable: 'APP_ORIGIN_API' },
+        'Required configuration is missing'
+      )
+      process.exit(1)
+    }
+
+    const server = app.listen(3000, () => {
+      logger.info(
+        {
+          event: 'service.started',
+          http: { port: 3000, route: yogaApp.graphqlEndpoint },
+        },
+        'GraphQL API started'
+      )
+
+      const wsServer = new WebSocket.WebSocketServer({
+        server,
+        path: yogaApp.graphqlEndpoint,
+      })
+
+      useServer(
+        {
+          schema,
+          context: enhanceContext({
+            prisma,
+            redisExec,
+            redisAssessmentExec,
+            pubSub,
+            emitter,
+            tasks,
+          }),
+          execute: (args: any) => args.rootValue.execute(args),
+          subscribe: (args: any) => args.rootValue.subscribe(args),
+          onSubscribe: async (ctx, msg) => {
+            const request = ctx.extra.request as typeof ctx.extra.request & {
+              locals?: Record<string, unknown>
+            }
+            const requestContext = resolveRequestContext({
+              requestId: request.headers['x-request-id'],
+              correlationId: request.headers['x-correlation-id'],
+            })
+            request.locals = {
+              ...request.locals,
+              requestContext,
+              log: logger.child(requestContext),
+            }
+
+            const {
+              schema,
               execute,
               subscribe,
-            },
-          }
+              contextFactory,
+              parse,
+              validate,
+            } = yogaApp.getEnveloped({
+              ...ctx,
+              req: request,
+              socket: ctx.extra.socket,
+              params: msg.payload,
+            })
 
-          const errors = validate(args.schema, args.document)
-          if (errors.length) return errors
-          return args
+            const args = {
+              schema,
+              operationName: msg.payload.operationName,
+              document: parse(msg.payload.query),
+              variableValues: msg.payload.variables,
+              contextValue: await contextFactory(),
+              rootValue: {
+                execute,
+                subscribe,
+              },
+            }
+
+            const errors = validate(args.schema, args.document)
+            if (errors.length) return errors
+            return args
+          },
         },
-      },
-      wsServer as Parameters<typeof useServer>[1]
-    )
-  })
+        wsServer as Parameters<typeof useServer>[1]
+      )
+    })
   })
   .catch(() => {
     logger.fatal(
