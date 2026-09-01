@@ -244,6 +244,294 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 - Use synthetic-only scenarios for mode separation, language switches, opposite-language retrieved material, no relevant evidence, an attached-image description, Tutor hint escalation, Explainer direct answers, and Quizzer ask-wait-feedback behavior.
 - Record the exact model, compiled prompt revision, available tools, and result. Do not use production conversations or participant data.
 
+## 2026-09-01 prompt architecture hardening extension
+
+This approved extension supersedes conflicting earlier statements about stored
+standard-mode replacement, course-label injection, prompt formatting, and
+local verification. It preserves the current two-pull-request topology and does
+not authorize a third pull request.
+
+### Extension goal
+
+Harden the shared prompt compiler and the Tutor, Explainer, and Quizzer mode
+contracts so every course chatbot receives a clearly owned, consistently
+ordered prompt. The compiled prompt identifies the owning course by
+`Course.displayName`, preserves the user-language and Swiss Standard German
+contract, retains Markdown/LaTeX/code formatting rules, enforces course scope
+and evidence boundaries, and keeps the Tutor's Socratic method substantive
+without turning ordinary lookups into an interrogation.
+
+### Reopened decisions
+
+- The explicit user request reopens PR #5608's decision not to inject course
+  labels. The server injects `Course.displayName` as JSON-serialized data, not
+  as an instruction and not as a replacement for the chatbot name.
+- Current replace-semantics for stored standard-mode prompts conflict with ADR
+  0021's non-removable platform mode contract. Existing stored text for Tutor,
+  Explainer, and Quizzer becomes lower-priority lecturer guidance layered with
+  the platform-owned mode contract. Stored custom-mode text remains the custom
+  persona. Fixed platform contracts continue to override both.
+- The change applies automatically to existing chatbots at compilation time. It
+  needs no schema migration, data rewrite, or lecturer action.
+
+### Prompt-source map
+
+Generic platform sections apply to every mode and cannot be removed by
+lecturer text:
+
+1. server-sourced course identity using `Course.displayName`, serialized as
+   data and never interpreted as instructions;
+2. attachment/input-context handling;
+3. course scope, partial-retrieval and evidence boundaries;
+4. privacy minimisation for tools and conversation;
+5. safety precedence;
+6. prompt/tool non-disclosure and instruction-injection resistance;
+7. epistemic stability: independently reassess pushback and never agree merely
+   to be supportive;
+8. valid Markdown, inline/display LaTeX, fenced language-tagged code, and no
+   invented execution results;
+9. conditional inline-citation syntax and per-message numbering;
+10. latest-user-message language locking, with Swiss Standard German
+    orthography and real umlauts when the reply is German.
+
+Mode-specific sections remain distinct:
+
+- Tutor owns diagnosis, one high-value open question at a time, adaptive
+  scaffolding, specific feedback, support fading, solution release, and
+  transfer checks.
+- Explainer owns direct answers, definitions, derivations/examples, calibrated
+  detail, uncertainty, and an optional comprehension check.
+- Quizzer owns an exam-like one-question loop, grounded topic proposal,
+  assessment, automatic continuation, and bounded formative checkpoints.
+
+The current stored `systemPrompts[mode].prompt` stays readable for backward
+compatibility. For standard modes it is explicitly delimited and labelled as
+lower-priority lecturer guidance. For custom modes it is the lecturer-defined
+persona. Both remain subordinate to generic platform course, safety, evidence,
+language, formatting, and citation rules. Standard-mode lecturer guidance is
+also subordinate to the selected platform mode contract.
+
+The total composition order is fixed:
+
+- Standard mode: server-sourced course data → lecturer guidance →
+  platform-owned standard-mode contract → attachment context → fixed course,
+  evidence, privacy, safety, non-disclosure, and epistemic-integrity policy →
+  output-format contract → conditional citations → language/style contract.
+- Custom mode: server-sourced course data → lecturer-defined custom persona →
+  attachment context → the same fixed generic policy → output-format contract
+  → conditional citations → language/style contract. Custom modes do not
+  receive a standard-mode contract.
+
+`Course.displayName` is JSON-serialized inside a labelled data section. The
+section explicitly says its contents are data, not instructions. A display name
+containing quotes, newlines, or section-like instruction text must remain one
+quoted value and must not alter section order or authority.
+
+The compiler API uses a typed context object so future constrained lecturer
+fields can be added without concatenating anonymous strings. This extension
+does not add lecturer UI, schema fields, publication workflow, or migration
+logic.
+
+### Source-prompt analysis and incorporation
+
+The attached extended R prompt contributes lookup-versus-learning-task
+classification, direct help for simple requests, adaptive scaffolding, concise
+feedback, and non-disclosure. Markdown, LaTeX, fenced-code, course grounding,
+and source-format requirements come from the explicit user ruling and existing
+Klicker platform behavior, not from that attachment. R-specific package,
+plotting, execution, and code conventions remain outside the shared prompt and
+belong in future structured course or tool guidance.
+
+The attached Socratic megaprompt contributes the Tutor's diagnosis-first loop,
+open conceptual questions, adaptive hint ladder, support fading, misconception
+checks, explanation release after a real attempt, transfer prompts, and
+specific formative feedback. The implementation rejects absolute answer
+withholding, mandatory multi-turn onboarding, prompt-only persistent state,
+permission before course retrieval, one-question-mark mechanics,
+chain-of-thought requests, and universal coding or formatting assumptions.
+
+### Extension primitive impact
+
+| Product primitive | Disposition | Contract delta | Consumers | Evidence |
+| --- | --- | --- | --- | --- |
+| Compiled course-chat prompt | Extend | Ordered, owned composition with server-sourced course data and non-removable platform sections | Chat route, prompt-cache identity, every mode | Current compiler and ADR 0021 |
+| Standard mode contract | Extend | Platform Tutor, Explainer, and Quizzer behavior survives stored lecturer guidance | Existing and new standard-mode chatbots | `DEFAULT_PROMPT`, stored JSON prompts |
+| Lecturer prompt guidance | Clarify | Existing standard-mode text is lower-priority guidance; custom-mode text remains a persona | Existing stored prompts, future lecturer controls | ADR 0021 and current replace-semantics |
+| Formative learning loop | Compose | Tutor supports adaptive feedback and checkpoints; Quizzer retains automatic attempt feedback and topic checkpoints | Tutor and Quizzer turns | Current mode prompts and attached Socratic prompt |
+| Course identity | Reuse | `Course.displayName` is JSON-serialized as server-sourced data in the prompt | Chat route and compiler | Required `Chatbot.course` relation |
+
+### Stack and branch ownership
+
+- Target: `v3`.
+- Lower pull request #5656 on `rs/chat-quizzer-mode` owns compiler
+  composition, fixed platform contracts, Tutor and Explainer mode contracts,
+  focused tests, ADR/wiki/skill updates, and the platform-level citation reset.
+- Upper pull request #5707 on `rs/quizzer-formative-feedback` retains only the
+  Quizzer mock-exam and formative-checkpoint delta after an upstack-only rebase.
+- Preserve the current parent/child relationship. Do not create, reorder,
+  unstack, merge, or delete pull requests.
+- Do not integrate `origin/v3` in this extension. After both heads are otherwise
+  ready, report the current three-commit target drift and request the separately
+  gated one-time integration pass only if it remains relevant or blocks merge.
+
+### Extension execution contract
+
+- Execution owner: current main session.
+- Human gate: the user's instruction to make and execute this full plan is the
+  one approval for the extension.
+- Authorized: make the source, focused test, ADR, `docs/chat-platform.md`,
+  active-plan, and testing-skill changes below; create conventional local
+  commits; run source-only checks; run required read-only reviews; apply
+  verified corrections; rebase only the existing upper stack branch onto the
+  updated lower branch without integrating the target; push exactly
+  `origin/rs/chat-quizzer-mode` and
+  `origin/rs/quizzer-formative-feedback`; and update both existing pull-request
+  descriptions and review-comment state.
+- Withheld: target-branch integration, runtime or browser startup, live-model or
+  DeepEval execution, dependencies, schemas or migrations, database access,
+  secrets, deployment, ready-state changes, merge, and branch/worktree cleanup.
+- Terminal: both existing pull requests contain the intended ownership split;
+  source-only verification and required reviews pass at their exact heads;
+  remote heads and pull-request descriptions are current; hosted check state
+  and the target-drift boundary are reported honestly.
+- Pause only for a material conflict with parallel work, a required topology
+  change, unclear foreign worktree changes, reviewer deadlock, or a withheld
+  action becoming necessary.
+
+### Extension delegation map
+
+| Workstream | Slice | Owner | Dependency | Acceptance boundary |
+| --- | --- | --- | --- | --- |
+| Typed compiler and fixed contracts | S3 | `main` | Hardened plan and exact remote lower-PR head | Named total order, quoted course data, standard/custom compatibility, and focused tests |
+| Mode depth, documentation, and propagation | S4 | `main` | Passing immutable S3 | Tutor/Explainer contracts, durable docs, and clean upper-only Quizzer delta |
+| Lecturer-facing constrained prompt controls | Future package | `separate task (proposed)` | Product and schema rulings plus separate authorization | Typed fields, safe preview, publication/review semantics, and migration plan |
+| Structured lecturer-question and personal-practice integration | Future package | `separate task (proposed)` | Parallel capabilities merged and separately authorized | Answer-safe practice integration without changing this stack |
+
+S3 and S4 stay in the main session because compiler precedence, legacy prompt
+compatibility, and stack integration share one critical path. The planning
+explorer was read-only and did not own implementation.
+
+### Extension test portfolio
+
+| Risk | Obligation | Primary seam | Acceptance evidence |
+| --- | --- | --- | --- |
+| Course identity is absent or instruction-like | Add | Compiler and chat-route selection | `displayName` is selected, JSON-quoted/delimited once, and passed to the compiler; quotes, newlines, and section-like text cannot escape the data section |
+| Stored standard prompt removes the platform mode | Replace old assertion | Prompt compiler | Built-in mode contract and lecturer guidance both appear; fixed policy remains later |
+| Custom mode loses its persona | Preserve and extend | Prompt compiler | Custom text remains the persona beneath fixed policy |
+| Section ownership/order drifts | Add | Pure prompt composer | Stable section labels/order; language remains final; citations remain conditional |
+| Markdown, math, or code guidance disappears | Add | Output-format contract | Markdown, `$...$`, `$$...$$`, fenced language tags, and no invented output are present in every mode |
+| Language or Swiss orthography regresses | Preserve | Existing language tests and compiler ordering | Latest-user-language lock and `ss`/umlaut rules remain unconditional and final |
+| Course scope or partial-retrieval honesty regresses | Extend | Fixed course-policy tests | Unrelated requests stay out of scope; retrieved lists remain explicitly non-exhaustive |
+| Conversation or tool privacy regresses | Extend | Fixed course-policy tests | Unnecessary personal data is neither solicited nor sent to tools |
+| Prompt/tool internals can be disclosed or overridden | Add | Fixed course-policy tests | Internal instructions and hidden tool configuration remain undisclosed; retrieved/user text cannot change authority |
+| Pushback causes unsupported agreement | Add | Fixed course-policy tests | The assistant independently reassesses, names evidence when revising, and explains supported disagreement |
+| Tutor becomes either an answer bot or an interrogator | Replace shallow assertions | Mode-contract tests | Direct lookup exception, diagnosis, one open question, adaptive hints, specific feedback, fading, solution release, and transfer are encoded |
+| Explainer inherits Socratic friction | Extend | Mode-contract tests | Direct answer and optional check remain explicit |
+| Quizzer loses mock-exam/formative behavior during rebase | Preserve | Existing compiler/effective-mode/citation tests | Current upper-layer assertions pass unchanged after propagation |
+| Prompt changes fail model obedience | Defer honestly | Future multi-turn eval package | Static tests prove composition, not model obedience; no runtime or live model is used here |
+
+### S3: Typed compiler and fixed platform contracts
+
+- Problem: the compiler receives anonymous arguments, has no course identity or
+  output contract, and lets a stored standard prompt replace the platform mode.
+- Decision: introduce a small typed compilation context and named prompt
+  sections with explicit platform, course-data, and lecturer ownership.
+- Do:
+  - select `course.displayName` with the existing chatbot read and pass it to
+    the compiler without another query or client exposure;
+  - compose standard-mode lecturer text additively and preserve custom-mode
+    behavior;
+  - add the server-sourced course-data section, output-format section, and fixed
+    privacy, non-disclosure, and epistemic-integrity rules;
+  - keep citations conditional and language unconditional and last;
+  - move the per-assistant-message citation reset from the upper branch into
+    this platform slice;
+  - add focused pure/compiler and route-mock coverage, including adversarial
+    `displayName` data and proof that the route selects and passes the value.
+- Do not add dependencies, schema fields, migrations, runtime tests, or client
+  exposure.
+- Acceptance: every compiler section has one owner, standard modes cannot lose
+  their platform contract, `displayName` reaches the prompt as inert data,
+  custom modes remain compatible, and all S3 portfolio assertions pass.
+- Commit boundary: one S3 implementation commit after this plan-extension
+  commit.
+- Review: run a `simplifier` and risk-selected `slice-reviewer` in parallel on
+  the immutable S3 commit. Lenses are architecture, backward compatibility,
+  prompt-injection precedence, privacy, and test sufficiency.
+
+### S4: Mode depth, documentation, and stack propagation
+
+- Problem: Tutor's prompt captures only a shallow hint pattern, the
+  generic/mode boundary is not documented in full, and the upper branch must
+  retain only its Quizzer-specific delta.
+- Do:
+  - deepen Tutor with request classification, direct handling of simple
+    lookups, diagnosis of the learner's current attempt, one high-value open
+    question, adaptive hints, misconception checks, support fading, concrete
+    feedback, solution release, and transfer checks;
+  - keep Explainer direct, grounded, uncertainty-aware, and free of mandatory
+    Socratic friction;
+  - retain Quizzer's current exam-like loop and formative checkpoint contract;
+  - update ADR 0021, `docs/chat-platform.md`, this plan, and
+    `klicker-testing-verification`. Do not create `docs/log.md` or `docs/log/`;
+    the current wiki skill reserves those paths and keeps change history in
+    Git;
+  - rebase `rs/quizzer-formative-feedback` onto the updated lower branch with an
+    upstack-only operation and resolve only semantically owned overlaps.
+- Acceptance: Tutor and Explainer match their roles; the generic/mode-specific
+  map is documented; and the final
+  `rs/chat-quizzer-mode..rs/quizzer-formative-feedback` diff contains only
+  Quizzer mock-exam/formative source, matching tests, and matching durable
+  documentation. It contains no generic compiler, fixed-policy, or
+  citation-reset change.
+- Commit boundary: one S4 implementation/documentation commit, followed only by
+  verified review corrections when necessary.
+- Review: run a `simplifier` and architecture/public-contract `slice-reviewer`
+  in parallel on immutable S4. After propagation and source-only verification,
+  run one integrated `final-reviewer` across both exact PR heads.
+
+### Verification and delivery
+
+- Local verification is Git-only: `git diff --check`, exact path/range
+  inspection, staged secret/personal-data review, and deterministic text/source
+  assertions that require no package toolchain. Do not start or inspect
+  DevPod/devrouter, a development container, or a browser.
+- Hosted CI owns focused Chat tests, package check/typecheck, formatting, lint,
+  build, and wider test gates after push. Stop and correct any feature-relevant
+  failure in prompt compilation, Chat tests, typechecking, formatting, lint,
+  build, or the affected route. Report unrelated or infrastructure failures
+  separately; do not call the package ready while a feature-relevant required
+  check is failing.
+- Inspect staged content before every commit for secrets and personal data.
+- Update the two PR descriptions with exact-head scope and verification after
+  reviews. Do not mark ready, merge, deploy, or clean up branches/worktrees.
+
+### Extension non-goals
+
+- No lecturer-facing prompt editor, structured configuration schema, prompt
+  preview UI, approval workflow, or data migration.
+- No R-specific or Python-specific global coding policy.
+- No grading, mastery label, hidden chain-of-thought, long onboarding script,
+  permission-before-retrieval rule, or prompt-only persistent session state.
+- No runtime/browser/live-model/DeepEval evaluation in this package.
+- No changes to AI Buddy or the parallel student-question/personal-practice
+  branches.
+
+### Extension planning-stage review
+
+- Required native planner: three rounds on the frozen extension draft.
+- Round 1: `REVISE`; accepted total ordering, inert course-data serialization,
+  corrected source attribution, explicit delegation/ownership, and executable
+  verification. The requested no-wiki-log outcome was accepted because the
+  current wiki skill reserves those paths.
+- Round 2: `REVISE`; accepted precise custom-mode precedence wording, deferred
+  workstream ownership, and exact documentation scope.
+- Round 3: `APPROVED` with no remaining blocking findings.
+- Opposing-provider rival pass: unavailable before review because the local
+  Claude OAuth token had expired (HTTP 401). This fail-open limitation is
+  recorded in the gitignored planning transcript and does not replace the
+  approved native planner loop.
+
 ## Progress
 
 - Status: Stage 1 source, local review, and browser presentation work are complete; integrated final review is pending on the final pushed head.
@@ -256,3 +544,4 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 - 2026-08-30 CI correction complete: hosted Playwright run `33296033863` at `7ed5fcf37` passed 164 tests but exposed three stale English-copy assertions across two tests in `Y-chat.spec.ts`. Commit `bdac0df7b` aligned them with the approved selected-mode card and platform-owned Tutor and Explainer descriptions. Exact-source-head run `33307444516` at `02a50db50` then passed its build, all eight Playwright shards, including the corrected shard 4, and aggregate status. Exact-head codebase, GraphQL, secret, CodeQL, AMD/ARM fallback-build, GitGuardian, and OpenCodeReview checks also passed; the final policy check remained queued when this documentation-only receipt was recorded. `git diff --check` and staged Gitleaks passed locally. No local runtime was started.
 - 2026-08-30 pull-request review iteration: the branch was fast-forwarded to the contributor's `v3` merge at `05c9ceb76`. Accepted review findings now use one runtime-wide effective-mode source, preserve legacy casing for standard modes while retaining exact custom keys, reject blank custom mode keys, consolidate settings fallback logic, replace the nested edit-tooltip conditional, narrow inherited MCP typing, and deduplicate the required-MCP route fixtures that caused Sonar's new-code duplication finding. Platform-owned standard-mode descriptions, static `400` capability rejection, required raw-tool aliasing, and disabled exact Quizzer shadowing remain unchanged because they are explicit ADR and test contracts.
 - 2026-08-30 expanded verification boundary: at the user's request, the `ai,chat,mcp` workspace was started after source review. The focused mode and MCP portfolio passed 36 tests across five files, the full Chat suite passed 444 tests with 13 intentional skips, and the Chat type check passed. Repository-wide `check:all` was blocked only by the unrelated Analytics lint task attempting to build pandas with no C compiler under Python 3.14 in the slim container. Browser verification selected Quizzer, completed a synthetic Auto Mode `doc_query` turn, returned `KLICKER_LOCAL_MCP_OK` with its source card, and preserved the mode, answer, and source after reload. The runtime is intentionally retained for user verification.
+- 2026-09-01 prompt-hardening extension: the user reopened course-name injection and standard-mode replacement semantics, approved execution of the full extension, and retained the source-only verification boundary. The frozen plan passed the required native planner after two revision rounds and a final approval round. The opposing-provider rival could not authenticate and is recorded as fail-open. S3 implementation is next on the exact remote head of PR #5656; no target integration, runtime, browser, live model, schema, database, deployment, merge, or cleanup is authorized.
