@@ -22,6 +22,7 @@ export interface EdgeLogFields {
   correlationId?: string
   traceId?: string
   spanId?: string
+  audience?: string
   http?: EdgeHttpFields
   err?: Error
   outcome?: string
