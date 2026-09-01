@@ -124,6 +124,17 @@ runs:
       with:
         name: playwright-build-artifact
 
+    - name: Restore logging runtime output
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -s playwright-logging-dist.tar
+        mkdir -p packages/logging
+        tar -xf playwright-logging-dist.tar -C packages/logging
+        test -s packages/logging/dist/node.js
+        test -s packages/logging/dist/edge.js
+        test -s packages/logging/dist/request.js
+
     - name: Restore generated GraphQL client
       shell: bash
       run: |
