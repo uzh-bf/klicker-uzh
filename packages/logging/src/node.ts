@@ -24,7 +24,8 @@ export function createLogger(
   options: CreateLoggerOptions,
   destination?: DestinationStream
 ): AppLogger {
-  const environment = options.environment ?? process.env.NODE_ENV ?? 'production'
+  const environment =
+    options.environment ?? process.env.NODE_ENV ?? 'production'
   const level =
     options.level ??
     process.env.LOG_LEVEL ??
