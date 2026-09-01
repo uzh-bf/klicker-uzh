@@ -1028,8 +1028,12 @@ export async function POST(
     }
 
     const toolNames = Object.keys(mcpTools || {})
+    const quizzerDocQueryToolName =
+      selectedMode === 'quizzer'
+        ? toolNames.find(isDocQueryToolName)
+        : undefined
 
-    if (selectedMode === 'quizzer' && !toolNames.some(isDocQueryToolName)) {
+    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await failOrDiscardUnstartedClaim('mcp.quizzer')
       return NextResponse.json(
         {
@@ -1514,6 +1518,17 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
+        prepareStep: quizzerDocQueryToolName
+          ? ({ stepNumber }) =>
+              stepNumber === 0
+                ? {
+                    toolChoice: {
+                      type: 'tool' as const,
+                      toolName: quizzerDocQueryToolName,
+                    },
+                  }
+                : {}
+          : undefined,
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 

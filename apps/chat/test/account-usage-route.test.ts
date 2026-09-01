@@ -195,11 +195,13 @@ function chatbot(overrides: Record<string, unknown> = {}) {
 
 function createRequest({
   selectedModel = 'gpt-4.1',
+  selectedMode = 'tutor',
   assistantMessageId = 'assistant-1',
   images = [],
   threadId = 'thread-1',
 }: {
   selectedModel?: string
+  selectedMode?: string
   assistantMessageId?: string
   images?: string[]
   threadId?: string | null
@@ -211,7 +213,7 @@ function createRequest({
       messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
       threadId,
       selectedModel,
-      selectedMode: 'tutor',
+      selectedMode,
       assistantMessageId,
       images,
     }),
@@ -416,6 +418,41 @@ describe('account usage chat route', () => {
       mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
     )
     expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('forces Quizzer course retrieval only on the first model step', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
+        },
+        mcpConfigurations: [
+          {
+            chatMode: 'quizzer',
+            isEnabled: true,
+            priority: 0,
+            allowedTools: ['doc_query'],
+            parameters: null,
+            mcpServer: { id: 'server-1' },
+          },
+        ],
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+
+    const response = await POST(createRequest({ selectedMode: 'quizzer' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+    }) => unknown
+    expect(prepareStep({ stepNumber: 0 })).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+    })
+    expect(prepareStep({ stepNumber: 1 })).toEqual({})
   })
 
   test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {

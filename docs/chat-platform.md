@@ -358,8 +358,10 @@ whether to change topics or explore the topic in more depth and proposes grounde
 not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
 retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
 request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
-an ungrounded question; optional retrieval outages can still degrade gracefully in Tutor and
-Explainer. No stored prompt or database migration is required.
+an ungrounded question. Once discovered, the route requires that document-query tool on Quizzer's
+first model step, then restores automatic tool selection for later steps. Optional retrieval outages
+can still degrade gracefully in Tutor and Explainer. No stored prompt or database migration is
+required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
