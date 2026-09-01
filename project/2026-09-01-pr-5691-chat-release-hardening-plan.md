@@ -4,9 +4,9 @@
 
 Prepare one focused release-hardening PR against current `v3` that closes the
 participant Chat exposure, makes GPT-5.6 Luna the unconditional zero-credit
-fallback, and makes the first rollout compatible with older Chat readers. The
-PR ends as a reviewed, verified draft PR. It does not deploy or migrate any
-environment.
+fallback, and makes the first rollout compatible with the supported
+complete-only Chat readers. The PR ends as a reviewed, verified open PR. It
+does not deploy or migrate any environment.
 
 ## Settled contracts
 
@@ -24,8 +24,10 @@ environment.
 - GPT-4.1 Mini is retired from active registries, deployment values, and local
   router configuration. Persisted allow-lists containing only retired models
   resolve to the narrow GPT-5.6 Luna base fallback until they are repaired.
-- Lifecycle writers are off by default in the first rollout. New readers and
-  complete-only writes must coexist safely with older readers.
+- Lifecycle writers are off by default in the first rollout. R1 creates only a
+  hidden `IN_PROGRESS` marker, and complete-only reads keep it away from older
+  readers. Normal requests are claimed once per thread and user-message parent;
+  explicit regeneration remains the opt-in path for a sibling answer.
 
 ## Non-goals
 
@@ -33,31 +35,31 @@ environment.
 - Do not add a GraphQL chatbot-bootstrap query.
 - Do not rewrite historical usage-analysis snapshots or prior rollout records
   that mention GPT-4.1 Mini.
-- Do not enable lifecycle claims, account-usage enforcement, or any feature
-  flag in an environment.
+- Do not enable lifecycle attempt tracking, account-usage enforcement, or any
+  feature flag in an environment.
 - Do not add or edit a Prisma migration.
 - Do not deploy, synchronize ArgoCD, establish cluster connectivity, run a
   production smoke test, or mutate GrowthBook, GitHub protection, or df-cloud.
 
 ## Plan identity and authority
 
-- Plan path: `project/2026-08-30-chat-release-hardening-plan.md`
+- Plan path: `project/2026-09-01-pr-5691-chat-release-hardening-plan.md`
 - Branch: `rs/chat-release-hardening`
 - Target branch: `v3`
-- Base: `origin/v3` at
-  `acf56b5331a24d4f53729046d9784d4aed006f65`
+- Base: `origin/v3` at `72096fafe50827c3ea3f50465f0a76d492e0a4c2`
 - Worktree: `trees/rs/chat-release-hardening`
-- Delivery: one independent draft PR targeting `v3`
-- Current authority: planning and reversible local preparation only
+- Delivery: PR #5691, one independent PR targeting `v3`
+- Current authority: execution through review, local commits, and push/update
+  of PR #5691
 - Approval terminal: in-scope edits, repository checks, required reviews,
-  conventional commits, push of this branch, and creation of the draft PR
+  conventional commits, push of this branch, and update of PR #5691
 - Withheld actions: upstream integration, merge, deployment, migration
   execution, runtime flag activation, cluster writes, and production proof
 
 ## Current findings
 
 - The published-chatbot metadata route validates publication but not the
-  participant cookie or course `Participation), and returns raw system
+  participant cookie or course `Participation`, and returns raw system
   prompts.
 - The Chat page layout reads the published chatbot directly and has the same
   missing participation boundary.
@@ -66,8 +68,11 @@ environment.
 - GPT-5.6 Luna is the sole registry fallback and base model, but the current
   selector filters fallback candidates by chatbot allow-list and usage class.
 - The lifecycle migration is additive. The rollout risk is application-level:
-  current writers insert an empty `IN_PROGRESS` assistant row that older
-  readers do not filter.
+  the first R1 implementation had no durable claim marker, so distinct client
+  assistant IDs could both reach provider work and charge. Current Chat history
+  readers already filter lifecycle status, so a hidden marker is safe for the
+  supported R1 pod set without a new migration. Pre-lifecycle unfiltered
+  readers must not be mixed into that rollout.
 - The exact current `v3` migration set has 182 migrations. Production history
   previously ended at 179, leaving the three reviewed Chat migrations as the
   release delta.
@@ -75,7 +80,7 @@ environment.
 ## Product and architecture decisions
 
 - The affected primitive is participant access to one published chatbot. Its
-  authority source remains `Participation(courseId, participantId)).
+  authority source remains `Participation(courseId, participantId)`.
 - `Participation.isActive` remains a leaderboard preference, not enrollment
   or authorization.
 - The same-origin Chat backend for frontend route owns participant-cookie
@@ -93,9 +98,9 @@ environment.
 - Reviewer: Sol planner `Hypatia`, read-only, on the exact current base.
 - Verdict: `DONE_WITH_CONCERNS`.
 - Accepted findings:
-  - Writer-off R1 may duplicate provider work under a concurrent retry, but
-    exactly one non-empty answer may persist and charge. The concession ends
-    when R2 enables claims.
+  - The initial writer-off R1 design could duplicate provider work under a
+    concurrent retry. The later final review reproduced that path, and the
+    correction now serializes normal claims with a hidden marker.
   - Both the route and layout need the same authorization because API paths do
     not inherit the page proxy's JWT checks.
   - A zero-content completion persists no assistant message and charges
@@ -106,6 +111,13 @@ environment.
     tests.
 - Full disposition:
   `project/_local/reviews/2026-08-30-v3-release-hardening-planner.md`.
+- The final review of PR #5691 at the prior head found a high-severity
+  distinct-assistant-ID duplicate-charge path. The finding is accepted. Slice 4
+  now adds a hidden marker, a thread-plus-parent advisory lock, and an explicit
+  regeneration flag so normal retries are serialized while intentional reloads
+  remain sibling branches. No new migration is needed because the existing
+  lifecycle columns support the marker and current history reads are
+  complete-only.
 
 ## Execution slices
 
@@ -182,28 +194,34 @@ Do:
   `chat.lifecycleWritersEnabled: false` in chart defaults. Omit the Chat
   ConfigMap environment key while false; an explicit true override must render
   it for the later R2 change.
-- In writer-off mode, preserve the production-compatible behavior: validate the
-  thread without creating an assistant row before provider work.
-- Finalize with an atomic complete-message insert-or-duplicate transaction and
-  charge both account and participant credits at most once. Failure before
-  finalization leaves no assistant row.
-- Persist no row and charge nothing for a successful zero-content completion.
+- In writer-off mode, create a hidden `IN_PROGRESS` assistant marker with a
+  `null` lifecycle attempt ID before provider work. Existing complete-only
+  readers do not expose it.
+- Serialize normal claims by thread and user-message parent with a PostgreSQL
+  transaction advisory lock. Explicit regeneration opts into a sibling claim.
+- Finalize by atomically completing the claimed marker and charge both account
+  and participant credits at most once. Failure or a successful zero-content
+  completion removes the writer-off marker and charges nothing.
 - Validate any unique-key collision against the expected role, thread, chatbot,
   and owner before treating it as a duplicate.
-- Keep the current claim, reclaim, and failed-turn behavior unchanged when the
-  switch is on.
+- Preserve same-key claim, reclaim, and failed-turn behavior when the switch is
+  on, while invalidating stale sibling attempt tokens during a normal retry.
 - Document the two-phase rollout and rollback floor.
 
 Check:
 
-- Integration tests observe no assistant row between a writer-off claim and
-  finalization, then one non-empty `COMPLETED` row.
-- Concurrent writer-off finalizations create one message and one charge.
-- Zero-content completion and pre-terminal failure create no row and no charge.
+- Integration tests observe no completed assistant row between a writer-off
+  claim and finalization, then one non-empty `COMPLETED` row.
+- Concurrent writer-off claims with distinct assistant IDs produce one marker,
+  one provider-eligible claim, one completed message, and one charge; explicit
+  regeneration still creates a sibling and its separate charge.
+- Zero-content completion and pre-terminal failure remove the hidden marker and
+  create no completed row or charge.
 - Writer-on claim, retry, stale callback, failure, and duplicate tests remain
   green.
-- A mixed-version contract test or equivalent database assertion proves an
-  older unfiltered reader cannot observe an empty row from writer-off code.
+- A database assertion proves the supported complete-only history reader does
+  not expose the writer-off marker. Pre-lifecycle unfiltered readers are not a
+  compatible R1 rollout target and must be excluded by the pod-revision gate.
 - Helm checks prove false omits the key and an explicit true override renders
   it.
 
@@ -211,7 +229,7 @@ Commit:
 
 - `fix(chat): gate lifecycle claims for mixed-version rollout`
 
-### Slice 5: Verify, review, and open the draft PR
+### Slice 5: Verify, review, and update the PR
 
 Do:
 
@@ -224,7 +242,7 @@ Do:
 - Complete one integrated final review on the exact final commit range.
 - Inspect staged and published diffs for secrets, personal data, generated
   churn, and unrelated changes.
-- Push this branch and open one draft PR targeting `v3`.
+- Push this branch and update PR #5691 targeting `v3`.
 - Update the affected wiki pages, ADRs,
   `.agents/skills/klicker-feature-design/SKILL.md`.
 
@@ -232,7 +250,7 @@ Check:
 
 - Every review finding has a recorded disposition and accepted corrections are
   reverified.
-- The draft PR describes source evidence only and makes no staging or
+- The PR describes source evidence only and makes no staging or
   production-runtime claim.
 
 ## Test portfolio
@@ -253,12 +271,12 @@ Check:
 
 | Gate | Current state | Required action and authority boundary |
 | --- | --- | --- |
-| Release-hardening source | Not implemented | Land this PR after review; merge is separately approved |
+| Release-hardening source | PR #5691 open; duplicate-charge correction committed | Complete fresh review and update this PR; merge is separately approved |
 | Account-usage visibility | Ungated on `v3` | Land the sibling default-off flag PR |
 | Production spread rules | Values do not render | Fully prequalify the sibling chart PR; its merge itself needs production-change authority because Argo auto-syncs `v3` |
 | Authoring PR stack | Open and mergeable, review contexts unsettled | Resolve its own GitGuardian/final-review contexts, then integrate updated `v3` once with separate approval |
 | Database delta | Three additive Chat migrations after production migration 179 | Rehearse 179 to 182, prove schema equivalence and lock behavior, then obtain backup and maintenance approval |
-| Lifecycle rollout R1 | New readers, writer gate absent | Deploy exact candidate with writers off and prove every Chat pod runs R1 |
+| Lifecycle rollout R1 | Hidden-marker claims, attempt tracking off | Deploy exact candidate with attempt tracking off and prove every Chat pod runs a complete-only reader |
 | Lifecycle rollout R2 | Not prepared | Separate configuration PR and approval after R1 proof; R1 is the rollback floor |
 | Assessment drift | Argo previously Healthy but OutOfSync | Reconcile only after chart merge and explicit deployment approval |
 | LiteLLM cost audit | Latest job failed because its cost source was unreachable | Diagnose endpoint ownership in df-cloud; no retry or write from this package |
@@ -281,9 +299,10 @@ Check:
    exact-candidate test.
 5. Confirm backup or point-in-time recovery ownership, maintenance timing,
    migration observer, abort conditions, and rollback floor.
-6. Deploy R1 with the lifecycle writer key absent or false. Prove desired
+6. Deploy R1 with the lifecycle attempt key absent or false. Prove desired
    revision, image digest, migration completion, every Chat pod revision, and
-   participant acceptance.
+   participant acceptance. Do not mix in pre-lifecycle unfiltered readers,
+   because the hidden marker is visible to those readers.
 7. Enable R2 only through a separate reviewed configuration change after R1 is
    stable. Roll back application code no further than R1 while lifecycle rows
    may exist.
@@ -315,8 +334,15 @@ Check:
 - [x] Settled the product and rollout contracts with the user.
 - [x] Disposition the independent planning review.
 - [x] Receive one-time approval for this execution plan.
-- [x] Commit the plan and complete Slices 2 through 4.
-- [x] Run required checks and reviews. The integrated final review used the
+- [x] Commit the plan and complete the initial Slices 2 through 4.
+- [x] Run the initial checks and reviews. The integrated final review used the
       documented main-session fallback after every child-reviewer provider
-      route failed terminally; the draft PR remains subject to human review.
-- [ ] Push and open the draft PR.
+      route failed terminally; it found one accepted high-severity correction.
+- [x] Implement and verify the distinct-assistant-ID claim correction with
+      Chat unit, PostgreSQL integration, typecheck, and lint evidence.
+- [x] Record the duplicate-charge root cause and prevention contract in
+      `docs/solutions/data/chat-turn-duplicate-charging.md`.
+- [ ] Run fresh simplifier, slice-risk, and integrated final reviews on the
+      corrected exact head.
+- [ ] Update PR #5691 and push the corrected branch. Merge, deployment, and
+      runtime activation remain withheld.
