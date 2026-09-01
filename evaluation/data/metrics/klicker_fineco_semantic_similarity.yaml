@@ -3,11 +3,11 @@
   threshold: 0.5
   criteria: "Determine how well the assistant's answer matches the expected answer in meaning (not wording)."
   evaluation_steps:
-    - "Identify the essential points in the expected answer (the information that must be present for an answer to be considered correct)."
+    - 'Identify the essential points in the expected answer (the information that must be present for an answer to be considered correct).'
     - "Check whether each essential point is present in the assistant's answer."
     - "Penalize missing essential points, contradictions between the assistant's answer and the expected answer."
-    - "Extra information is acceptable if it is consistent with the expected answer and does not change the core meaning."
-    - "Ignore stylistic differences, formatting, citations, and disclaimers unless they affect meaning."
+    - 'Extra information is acceptable if it is consistent with the expected answer and does not change the core meaning.'
+    - 'Ignore stylistic differences, formatting, citations, and disclaimers unless they affect meaning.'
   evaluation_params:
     - INPUT
     - ACTUAL_OUTPUT

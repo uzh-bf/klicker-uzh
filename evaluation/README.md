@@ -45,7 +45,7 @@ persisted answer as an OpenAI Chat Completions target. The adapter resolves only
 the exact question and mode from FineCo frontmatter; expected answers remain
 inside the evaluator. Participant credentials are read from the invoking
 environment and are removed from the evaluator child. The adapter accepts only
-namespaced *.localhost origins, and the wrapper removes its listener on success
+namespaced \*.localhost origins, and the wrapper removes its listener on success
 or failure.
 
 Start the exact worktree runtime with the developer Foundry values injected

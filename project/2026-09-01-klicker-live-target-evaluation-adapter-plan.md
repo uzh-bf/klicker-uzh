@@ -262,23 +262,38 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 
 ## Progress
 
-- Status: `execution_active`; the three-round planning review deadlock remains
+- Status: `delivery_pending`; the three-round planning review deadlock remains
   disclosed and is not represented as an approved planner verdict.
-- Completed: the plan-first commit `67f0a3b16`; the authenticated adapter and
-  canary fixture commit `9ca296884`; the boundary correction
-  `33f132da4`; the stream-lifecycle correction `a01409a14`; ten focused
-  adapter tests; staged Gitleaks; and the required fallback simplifier and
-  slice-reviewer passes. The fallback reviewers confirmed the first correction
-  and the final lifecycle fix has direct test evidence.
-- Completed: Slice B wrapper, metric seam, LiteLLM retry guard, documentation,
-  focused wrapper checks, and fallback review. The reviewer-suggested shared
-  evaluator-launch simplification and relative ground-truth path correction
-  are applied and locally verified; repeated runbook excerpts remain
-  intentionally available in the wiki and agent skill.
-- Remaining: developer-Foundry runtime canary, FineCo retrieval gate, final
-  verification, final review, and runtime cleanup.
+- Completed: plan commit `67f0a3b16`; authenticated adapter and canary fixture
+  commit `9ca296884`; boundary correction `33f132da4`; stream-lifecycle
+  correction `a01409a14`; Slice B commit `32ef5182a9`; evaluator-launch and
+  credential/path corrections `7086d8532` and `5aff8b44e`; ten focused
+  adapter tests; wrapper fake-runtime checks; staged Gitleaks; and the
+  required generic-continuity fallback simplifier and slice-reviewer passes.
+- Runtime evidence: the exact worktree
+  `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/klicker-live-target-evaluation`
+  ran as workspace `rs-klicker-live-target-evaluatio` with profile
+  `ai,chat,mcp`. Startup used only the restricted `klicker-dev` mappings
+  `AZURE_OPENAI_API_KEY -> UPSTREAM_OPENAI_API_KEY` and
+  `AZURE_OPENAI_BASE_URL -> UPSTREAM_OPENAI_BASE_URL`. LiteLLM and the local
+  MCP fixture were healthy. The values-free canary receipt is
+  `/private/tmp/klicker-live-target-canary-receipt.json`: HTTP 200, source
+  `canary`, model `gpt-5.6-luna`, non-empty answer, marker present, and
+  `KB_doc_query` observed; its adapter exited with code 0.
+- The developer profile's test-participant values were present but did not
+  identify a participant in this local database. The canary used the
+  repository-local seeded test fixture without recording credential values.
+- FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
+  `Context7_resolve-library-id`, but not `EXPERT_df_fineco_expert`. No
+  20-case query, semantic judge, or external FineCo binding was run. The
+  finite expert response bound is therefore unverified, so the quality phase
+  is parked at `delivery_pending`; the deterministic MCP canary is transport
+  evidence only.
+- Cleanup evidence: `devrouter stop` completed for the exact worktree; the
+  provider, LiteLLM, databases, managed processes, and adapter are stopped;
+  and the exact route count is zero.
 - Delivery layer required: reviewed local commits and bounded local runtime
-  evidence. Achieved: plan, adapter, and Slice B source commits; runtime
-  evidence remains.
-- Next: verify the Slice B correction, then run the developer-Foundry canary
-  and park or proceed at the FineCo binding gate.
+  evidence. Push, MR/PR publication, merge, deployment, and remote FineCo
+  tunnel remain outside this package.
+- Next: run final repository-native checks and the integrated final review,
+  then close the goal with the parked FineCo outcome.
