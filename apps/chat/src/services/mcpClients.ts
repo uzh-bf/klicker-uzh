@@ -1,10 +1,11 @@
 'use server'
 
+import { createHash } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
@@ -172,7 +173,6 @@ function createAuthHeaders(
       baseHeaders.Authorization = `Basic ${encoded}`
       break
     }
-    case 'none':
     default:
       // No additional auth headers
       break
@@ -187,7 +187,8 @@ function createAuthHeaders(
 export async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
-  options: MCPRequestOptions = {}
+  options: MCPRequestOptions = {},
+  log: AppLogger = getRouteLogger()
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
@@ -213,13 +214,13 @@ export async function createMCPClient(
       transport: httpTransport,
     })
 
-    getRouteLogger().info(
+    log.info(
       { event: 'chat.mcp.client.initialized', outcome: 'success' },
       'Initialized MCP client'
     )
     return client
-  } catch {
-    getRouteLogger().warn(
+  } catch (error) {
+    log.warn(
       {
         event: 'chat.mcp.connection.failed',
         outcome: 'client_initialization_failed',
@@ -257,7 +258,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
   chatbotId: string,
-  options: MCPRequestOptions = {}
+  options: MCPRequestOptions = {},
+  log: AppLogger = getRouteLogger()
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -285,7 +287,7 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(server, chatbotId, options)
+    const client = await createMCPClient(server, chatbotId, options, log)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -323,7 +325,7 @@ async function loadServerTools(
       }
     })
 
-    getRouteLogger().info(
+    log.info(
       {
         event: 'chat.mcp.tools.loaded',
         outcome: 'success',
@@ -337,7 +339,7 @@ async function loadServerTools(
       error instanceof RequiredMCPUnavailableError ||
       runtimePolicy.required
     ) {
-      getRouteLogger().error(
+      log.error(
         {
           event: 'chat.mcp.tools.load_failed',
           outcome: 'required_unavailable',
@@ -348,7 +350,7 @@ async function loadServerTools(
       throw new RequiredMCPUnavailableError()
     }
 
-    getRouteLogger().warn(
+    log.warn(
       {
         event: 'chat.mcp.tools.load_failed',
         outcome: 'optional_unavailable',
@@ -367,9 +369,9 @@ async function loadServerTools(
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
   chatbotId: string,
-  options: MCPRequestOptions = {}
+  options: MCPRequestOptions = {},
+  log: AppLogger = getRouteLogger()
 ): Promise<Record<string, any>> {
-  const log = getRouteLogger()
   log.info(
     { event: 'chat.mcp.load.started', serverCount: serversWithConfigs.length },
     'Loading MCP tools'
@@ -400,7 +402,8 @@ export async function getAggregatedMCPTools(
       const serverTools = await loadServerTools(
         serverWithConfig,
         chatbotId,
-        options
+        options,
+        log
       )
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
@@ -440,8 +443,10 @@ export async function getAggregatedMCPTools(
  * Legacy function for backward compatibility with environment variables
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
-export async function getMCPTools(chatbotId: string) {
-  const log = getRouteLogger()
+export async function getMCPTools(
+  chatbotId: string,
+  log: AppLogger = getRouteLogger()
+) {
   log.info(
     { event: 'chat.mcp.configuration.selected', outcome: 'legacy_environment' },
     'Selected legacy MCP configuration'
@@ -475,7 +480,9 @@ export async function getMCPTools(chatbotId: string) {
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      chatbotId
+      chatbotId,
+      {},
+      log
     )
     return serverTools
   } catch {

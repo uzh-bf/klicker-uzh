@@ -251,3 +251,26 @@ checkout's unrelated untracked files.
   `/Users/paldov/Documents/df-cloud-klickeruzh/trees/klicker-structured-logging`.
   The cloud parent contains only the expected helper gitlink change, while the
   source checkout's unrelated `util/storage/` files remain untouched.
+- 2026-09-01: Replayed the five native layers onto current `origin/v3` and
+  resolved the conflicts against the current reusable Playwright workflow,
+  Chat AI SDK, GraphQL group behavior, and documentation policy. Because stale
+  worktree metadata still claims the historical branch names, the verified
+  local branches use the `-ready` suffix: `feat/logging-foundation-ready`,
+  `feat/logging-hatchet-correlation-ready`,
+  `feat/logging-core-apis-ready`, `feat/logging-auth-integrations-ready`, and
+  `feat/logging-server-apps-ready`.
+- 2026-09-01: The stack-tip hardening pass adds runtime logging-package copies
+  and explicit production `NODE_ENV` to every non-Next Node image, propagates
+  Hatchet correlation into course-duplication tasks, supplies logging fields in
+  GraphQL test contexts, adopts the Chat Edge proxy, sanitizes model/MCP/provider
+  diagnostics to counts and categorical outcomes, and extends the active server
+  console guard to template interpolation and Chat proxy code. Focused logging,
+  Hatchet, GraphQL, backend, response API, auth, Chat, PWA, manage, control,
+  formatting, and server-console checks pass. Full repository build, browser
+  smoke, database-backed suites, and staging/Loki acceptance remain required
+  before publication or production rollout.
+- 2026-09-01: The final contract cleanup makes OLAT emit one request-completion
+  record (with `error` severity for 5xx responses), adds a focused 500-path
+  adapter test, and uses the PWA `@lib` alias for its SSR logger import. The
+  OLAT adapter tests and OLAT/PWA typechecks pass; Docker-based OLAT tests and
+  browser/database/staging acceptance remain environment-gated.

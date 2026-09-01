@@ -1,3 +1,4 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
@@ -13,10 +14,11 @@ async function handleGET(
       threadId: string
       messageId: string
     }>
-  }
+  },
+  log: AppLogger
 ) {
   const { chatbotId, threadId, messageId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -92,6 +94,6 @@ export function GET(req: NextRequest, context: RouteContext) {
   return withRouteLogging(
     req,
     '/api/chatbots/:chatbotId/threads/:threadId/messages/:messageId/attachments',
-    () => handleGET(req, context)
+    (log) => handleGET(req, context, log)
   )
 }

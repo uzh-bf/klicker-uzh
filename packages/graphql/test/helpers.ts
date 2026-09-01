@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { createLogger } from '@klicker-uzh/logging/node'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   type AnswerCollection,
@@ -339,6 +340,11 @@ export async function testInitialization(
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
     } as ContextWithUser['pubSub'],
+    requestContext: resolveRequestContext({
+      requestId: 'graphql-test-request',
+      correlationId: 'graphql-test-correlation',
+    }),
+    log: createLogger({ service: 'graphql-test', environment: 'test' }),
     req: {} as any,
     res: {} as any,
     requestContext: {

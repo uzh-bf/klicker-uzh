@@ -103,6 +103,9 @@ function approvedFields(
       : {}),
     ...(typeof fields.traceId === 'string' ? { traceId: fields.traceId } : {}),
     ...(typeof fields.spanId === 'string' ? { spanId: fields.spanId } : {}),
+    ...(typeof fields.audience === 'string'
+      ? { audience: fields.audience }
+      : {}),
     ...(fields.http ? { http: approvedHttpFields(fields.http) } : {}),
     ...(fields.err instanceof Error
       ? {

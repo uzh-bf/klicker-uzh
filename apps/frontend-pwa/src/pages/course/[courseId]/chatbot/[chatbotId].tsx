@@ -1,9 +1,9 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
@@ -14,9 +14,7 @@ type ChatbotPageProps = {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const { createSsrRequestLogging } = await import(
-    '../../../../lib/server/logger'
-  )
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
   const { logFailure, requestContext } = createSsrRequestLogging(
     ctx.req.headers,
     '/course/:courseId/chatbot/:chatbotId'

@@ -1,13 +1,30 @@
+import { createHash } from 'node:crypto'
+import { createOpenAI } from '@ai-sdk/openai'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -15,31 +32,31 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { logger } from '@/src/lib/server/logger'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   getRouteLogger,
   withRouteLogging,
 } from '@/src/lib/server/requestLogging'
-import { logger } from '@/src/lib/server/logger'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
@@ -49,23 +66,6 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -149,7 +149,11 @@ function getOpenAIModel(
     : provider.chat(modelConfig.deploymentId)
 }
 
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
+function getModel(
+  chatbot: Chatbot,
+  modelConfig: ChatModelConfig,
+  log: AppLogger = logger
+) {
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -164,7 +168,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
       try {
         apiKey = safeDecrypt(chatbot.openaiApiKey!)
       } catch {
-        getRouteLogger().error(
+        getRouteLogger(log).error(
           {
             event: 'chat.configuration.failed',
             configuration: 'custom_api_key',
@@ -317,19 +321,19 @@ function getDefaultReasoningEffort(
 function logChatDev(
   event: string,
   context: Record<string, unknown>,
-  level: 'info' | 'error' = 'info'
+  level: 'info' | 'error' = 'info',
+  log?: AppLogger
 ) {
-  const log = getRouteLogger()
+  const requestLog = getRouteLogger(log)
   const fields = { event: `chat.${event}`, ...context }
   if (level === 'error') {
-    log.error(fields, 'Chat request event')
+    requestLog.error(fields, 'Chat request event')
   } else {
-    log.info(fields, 'Chat request event')
+    requestLog.info(fields, 'Chat request event')
   }
 }
 
 type ToolDiagnostic = {
-  toolName: string
   inputBytes: number | null
   outputBytes: number | null
   inputHash: string | null
@@ -362,8 +366,6 @@ function collectStepToolDiagnostics(
       continue
     }
 
-    const toolName =
-      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
     const inputValue = typedPart.input ?? typedPart.args ?? null
     const outputValue = typedPart.output ?? typedPart.result ?? null
 
@@ -371,7 +373,6 @@ function collectStepToolDiagnostics(
     const outputSerialized = safeSerialize(outputValue)
 
     diagnostics.push({
-      toolName,
       inputBytes: safeSize(inputValue),
       outputBytes: safeSize(outputValue),
       inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
@@ -625,7 +626,7 @@ async function handlePOST(
 ) {
   const { chatbotId } = await params
   const requestStartedAtMs = Date.now()
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -734,16 +735,16 @@ async function handlePOST(
     .map((message) => message.content)
     .join('\n')
 
-  logChatDev('request.received', {
-    requestId,
-    chatbotId,
-    participantId,
-    threadId,
-    assistantMessageId,
-    selectedModel: parsed.selectedModel,
-    selectedMode,
-    messageCount: messages.length,
-  })
+  logChatDev(
+    'request.received',
+    {
+      requestId,
+      selectedMode,
+      messageCount: messages.length,
+    },
+    'info',
+    log
+  )
 
   let selectedModel = parsed.selectedModel
 
@@ -985,7 +986,7 @@ async function handlePOST(
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null = null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -1012,7 +1013,7 @@ async function handlePOST(
     userMessageId = lastMessage.id
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
@@ -1071,7 +1072,12 @@ async function handlePOST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpTools = await getAggregatedMCPTools(
+        mcpServersWithConfigs,
+        chatbotId,
+        {},
+        log
+      )
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1131,7 +1137,7 @@ async function handlePOST(
         ? appliedReasoningEffort
         : undefined
 
-    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const { model, routing } = getModel(chatbot, selectedModelConfig, log)
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({
@@ -1239,23 +1245,16 @@ async function handlePOST(
       event: string,
       context: Record<string, unknown>,
       level: 'info' | 'error' = 'info'
-    ) => logChatDev(event, { requestId, ...context }, level)
+    ) => logChatDev(event, { requestId, ...context }, level, log)
 
     logEvent('request.context', {
-      chatbotId,
-      participantId,
-      threadId: currentThreadId,
-      assistantMessageId,
-      selectedModel,
-      resolvedModelId: selectedModelConfig.id,
-      deploymentId: selectedModelConfig.deploymentId,
-      routing,
+      providerRoute: routing.source,
+      customProvider: routing.source === 'custom',
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
-      toolNames,
       systemPromptLength: systemPrompt.length,
       systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
       userPromptLengthTotal: userPrompt.length,
@@ -1770,9 +1769,6 @@ async function handlePOST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const toolCallNames = Array.from(
-            new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-          )
           const toolCallsCount = diagnostics.length
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
@@ -1795,7 +1791,6 @@ async function handlePOST(
                 ? stepOutputTokens >= providerReasoningTokens
                 : null,
             toolCallsCount,
-            toolCallNames,
             toolDiagnostics: diagnostics,
           })
         },
@@ -1809,7 +1804,6 @@ async function handlePOST(
             'stream.error',
             {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-              ...serializedError,
               classification: classification.classification,
               retryable: classification.retryable,
               suggestedAction: classification.suggestedAction,
@@ -1911,8 +1905,11 @@ export function POST(
   req: NextRequest,
   context: { params: Promise<{ chatbotId: string }> }
 ) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/chat', (log, requestContext) =>
-    handlePOST(req, context, log, requestContext.requestId)
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/chat',
+    (log, requestContext) =>
+      handlePOST(req, context, log, requestContext.requestId)
   )
 }
 

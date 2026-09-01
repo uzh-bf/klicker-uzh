@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { createLogger } from '@klicker-uzh/logging/node'
+import {
+  type AppLogger,
+  createLogger,
+  toSafeError,
+} from '@klicker-uzh/logging/node'
 import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -211,7 +215,8 @@ function parseCourseDuplicationDate(value: unknown) {
 }
 
 function parseCourseDuplicationJob(
-  rawJob: string | null
+  rawJob: string | null,
+  log?: AppLogger
 ): CourseDuplicationJob | null {
   if (!rawJob) return null
 
@@ -233,15 +238,26 @@ function parseCourseDuplicationJob(
           }
         : undefined,
     } satisfies CourseDuplicationJob
-  } catch (error) {
-    console.error('Failed to parse course duplication job status:', error)
+  } catch {
+    log?.warn(
+      {
+        event: 'course_duplication.status.parse_failed',
+        err: toSafeError('Failed to parse course duplication job status'),
+      },
+      'Failed to parse course duplication job status'
+    )
     return null
   }
 }
 
-async function getCourseDuplicationJob(redis: Redis, jobId: string) {
+async function getCourseDuplicationJob(
+  redis: Redis,
+  jobId: string,
+  log?: AppLogger
+) {
   return parseCourseDuplicationJob(
-    await redis.get(getCourseDuplicationStatusKey(jobId))
+    await redis.get(getCourseDuplicationStatusKey(jobId)),
+    log
   )
 }
 
@@ -292,20 +308,15 @@ async function publishCourseDuplicationEvent(
   jobId: string,
   loggingContext?: HatchetLoggingContext
 ) {
+  const input = { jobId, ...(loggingContext ? { loggingContext } : {}) }
   try {
-    await hatchet.events.push('process-course-duplication', {
-      jobId,
-      ...(loggingContext ? { loggingContext } : {}),
-    })
+    await hatchet.events.push('process-course-duplication', input)
   } catch (error) {
     // Hatchet may have accepted the event before the client observed an
     // acknowledgement. Retry the same job id so a lost acknowledgement cannot
     // create a second course.
     try {
-      await hatchet.events.push('process-course-duplication', {
-        jobId,
-        ...(loggingContext ? { loggingContext } : {}),
-      })
+      await hatchet.events.push('process-course-duplication', input)
     } catch (retryError) {
       const publishError = new Error(
         `Initial publish failed: ${getErrorMessage(error)}; retry failed: ${getErrorMessage(retryError)}`,
@@ -413,7 +424,8 @@ function getPublicCourseDuplicationStatus(
 async function normalizeStaleCourseDuplicationJob(
   redis: Redis,
   prisma: PrismaClient,
-  job: CourseDuplicationJob
+  job: CourseDuplicationJob,
+  log?: AppLogger
 ) {
   if (
     isTerminalCourseDuplicationStatus(job.status) ||
@@ -429,8 +441,12 @@ async function normalizeStaleCourseDuplicationJob(
   })
 
   if (committedCourse) {
-    console.warn(
-      `Course duplication job ${job.id} went stale but its course is committed; marking COMPLETED.`
+    log?.warn(
+      {
+        event: 'course_duplication.status.reconciled',
+        outcome: 'committed_course',
+      },
+      'Course duplication job went stale but its course is committed; marking completed'
     )
     return await updateCourseDuplicationJob(redis, job, {
       status: 'COMPLETED',
@@ -438,8 +454,12 @@ async function normalizeStaleCourseDuplicationJob(
     })
   }
 
-  console.warn(
-    `Course duplication job ${job.id} went stale without a heartbeat; marking FAILED.`
+  log?.warn(
+    {
+      event: 'course_duplication.status.reconciled',
+      outcome: 'expired_heartbeat',
+    },
+    'Course duplication job went stale without a heartbeat; marking failed'
   )
   return await updateCourseDuplicationJob(redis, job, {
     status: 'FAILED',
@@ -462,8 +482,12 @@ export async function startCourseDuplication(
     ctx
   )
   if (!hasDuplicationAccess) {
-    console.warn(
-      `Course duplication denied: user ${ctx.user.sub} lacks ADMIN access to course ${args.sourceCourseId}.`
+    ctx.log.warn(
+      {
+        event: 'course_duplication.authorization.rejected',
+        outcome: 'missing_permission',
+      },
+      'Course duplication denied due to insufficient permission'
     )
     return null
   }
@@ -473,8 +497,12 @@ export async function startCourseDuplication(
     select: { name: true },
   })
   if (!sourceCourse) {
-    console.warn(
-      `Course duplication denied: source course ${args.sourceCourseId} no longer exists.`
+    ctx.log.warn(
+      {
+        event: 'course_duplication.authorization.rejected',
+        outcome: 'source_course_missing',
+      },
+      'Course duplication denied because the source course is missing'
     )
     return null
   }
@@ -485,14 +513,15 @@ export async function startCourseDuplication(
   })
   const existingJobId = await ctx.redisExec.get(lockKey)
   const existingJob = existingJobId
-    ? await getCourseDuplicationJob(ctx.redisExec, existingJobId)
+    ? await getCourseDuplicationJob(ctx.redisExec, existingJobId, ctx.log)
     : null
 
   if (existingJob && !isTerminalCourseDuplicationStatus(existingJob.status)) {
     const normalizedExistingJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
       ctx.prisma,
-      existingJob
+      existingJob,
+      ctx.log
     )
 
     if (!isTerminalCourseDuplicationStatus(normalizedExistingJob.status)) {
@@ -541,7 +570,7 @@ export async function startCourseDuplication(
   if (lockAcquired !== 'OK') {
     const lockedJobId = await ctx.redisExec.get(lockKey)
     const lockedJob = lockedJobId
-      ? await getCourseDuplicationJob(ctx.redisExec, lockedJobId)
+      ? await getCourseDuplicationJob(ctx.redisExec, lockedJobId, ctx.log)
       : null
 
     if (lockedJob && !isTerminalCourseDuplicationStatus(lockedJob.status)) {
@@ -589,15 +618,27 @@ export async function startCourseDuplication(
         errorType: 'generic',
         errorMessage: 'Course duplication could not be started.',
       })
-    } catch (cleanupError) {
-      console.error(
-        `Failed to clean up course duplication job ${job.id} after publish failure: ${getErrorMessage(cleanupError)}`
+    } catch {
+      ctx.log.error(
+        {
+          event: 'course_duplication.cleanup_failed',
+          phase: 'job_status',
+          err: toSafeError('Failed to clean up course duplication job'),
+        },
+        'Failed to clean up course duplication job after publish failure'
       )
       try {
         await releaseCourseDuplicationSourceLock(ctx.redisExec, job)
-      } catch (releaseError) {
-        console.error(
-          `Failed to release course duplication source lock for job ${job.id}: ${getErrorMessage(releaseError)}`
+      } catch {
+        ctx.log.error(
+          {
+            event: 'course_duplication.cleanup_failed',
+            phase: 'source_lock',
+            err: toSafeError(
+              'Failed to release course duplication source lock'
+            ),
+          },
+          'Failed to release course duplication source lock'
         )
       }
     }
@@ -614,7 +655,9 @@ export async function getCourseDuplicationStatuses(
 ) {
   const uniqueIds = [...new Set(ids)].slice(0, 50)
   const jobs = await Promise.all(
-    uniqueIds.map((jobId) => getCourseDuplicationJob(ctx.redisExec, jobId))
+    uniqueIds.map((jobId) =>
+      getCourseDuplicationJob(ctx.redisExec, jobId, ctx.log)
+    )
   )
 
   const statuses: CourseDuplicationStatus[] = []
@@ -625,7 +668,8 @@ export async function getCourseDuplicationStatuses(
     const normalizedJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
       ctx.prisma,
-      job
+      job,
+      ctx.log
     )
     statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
   }
@@ -639,11 +683,11 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       requestId: loggingContext?.requestId,
       correlationId: loggingContext?.correlationId,
     })
-    const log = (
-      globalCtx.logger ?? createLogger({ service: 'graphql' })
-    ).child(requestContext)
+    const log = (globalCtx.log ?? createLogger({ service: 'graphql' })).child(
+      requestContext
+    )
     const redis = globalCtx.redisExec
-    const pendingJob = await getCourseDuplicationJob(redis, jobId)
+    const pendingJob = await getCourseDuplicationJob(redis, jobId, log)
 
     if (!pendingJob) {
       executionCtx.logger.warn(
@@ -857,14 +901,18 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
           continue
         }
 
-        const job = parseCourseDuplicationJob(await redis.get(key))
+        const job = parseCourseDuplicationJob(
+          await redis.get(key),
+          globalCtx.log
+        )
         if (!job || isTerminalCourseDuplicationStatus(job.status)) continue
 
         scannedJobs += 1
         const normalizedJob = await normalizeStaleCourseDuplicationJob(
           redis,
           globalCtx.prisma,
-          job
+          job,
+          globalCtx.log
         )
 
         if (isTerminalCourseDuplicationStatus(normalizedJob.status)) {

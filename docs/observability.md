@@ -122,11 +122,13 @@ are excluded. Local configuration-file reads have separate
 `dependency.read_failed` events while the HTTP boundary owns
 `http.request.failed`.
 
-Chat wraps every Node API route with a hard-coded parameterized template. It
-owns one immediate HTTP completion record and separate once-only stream outcome
-events. Prompts, messages, model output, model/deployment identifiers, MCP server
-and tool names, upstream URLs, API keys, and provider errors never become log
-fields. MCP milestones use counts and categorical outcomes only.
+Chat's Edge proxy propagates validated diagnostic IDs and records categorical
+invalid-token outcomes; every Node API route uses a hard-coded parameterized
+template. It owns one immediate HTTP completion record and separate once-only
+stream outcome events. Prompts, messages, model output, model/deployment
+identifiers, MCP server and tool names, upstream URLs, API keys, and provider
+errors never become log fields. MCP and model milestones use counts and
+categorical outcomes only.
 
 Manage, PWA, assessment PWA, and control emit Node startup records. PWA
 `getServerSideProps` failures use a request child with a parameterized page

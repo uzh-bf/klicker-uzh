@@ -10,7 +10,8 @@ const serverRoots = [
   'apps/hatchet-worker-response-processor/src',
   'apps/auth/src/lib/server',
   'apps/auth/src/pages/api/auth',
-  'apps/auth/src/middleware.ts',
+  'apps/auth/src/proxy.ts',
+  'apps/chat/src/proxy.ts',
   'apps/lti/src',
   'apps/olat-api/src',
   'apps/chat/src/app/api',
@@ -120,8 +121,90 @@ function maskStrings(source) {
   return result
 }
 
+function skipQuoted(source, start, quote) {
+  let escaped = false
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index]
+    if (escaped) {
+      escaped = false
+    } else if (character === '\\') {
+      escaped = true
+    } else if (character === quote) {
+      return index + 1
+    }
+  }
+  return source.length
+}
+
+function skipTemplate(source, start) {
+  for (let index = start + 1; index < source.length; index += 1) {
+    const character = source[index]
+    if (character === '\\') {
+      index += 1
+    } else if (character === '`') {
+      return index + 1
+    } else if (character === '$' && source[index + 1] === '{') {
+      const end = findBraceEnd(source, index + 2)
+      index = end
+    }
+  }
+  return source.length
+}
+
+function findBraceEnd(source, start) {
+  let depth = 1
+  for (let index = start; index < source.length; index += 1) {
+    const character = source[index]
+    const next = source[index + 1]
+    if (character === "'" || character === '"') {
+      index = skipQuoted(source, index, character) - 1
+    } else if (character === '`') {
+      index = skipTemplate(source, index) - 1
+    } else if (character === '/' && next === '/') {
+      const newline = source.indexOf('\n', index + 2)
+      index = newline === -1 ? source.length : newline
+    } else if (character === '/' && next === '*') {
+      const end = source.indexOf('*/', index + 2)
+      index = end === -1 ? source.length : end + 1
+    } else if (character === '{') {
+      depth += 1
+    } else if (character === '}' && --depth === 0) {
+      return index
+    }
+  }
+  return source.length
+}
+
+function extractTemplateExpressions(source) {
+  const expressions = []
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index]
+    if (character === "'" || character === '"') {
+      index = skipQuoted(source, index, character) - 1
+    } else if (character === '`') {
+      for (let cursor = index + 1; cursor < source.length; cursor += 1) {
+        if (source[cursor] === '\\') {
+          cursor += 1
+        } else if (source[cursor] === '`') {
+          index = cursor
+          break
+        } else if (source[cursor] === '$' && source[cursor + 1] === '{') {
+          const end = findBraceEnd(source, cursor + 2)
+          expressions.push({
+            source: source.slice(cursor + 2, end),
+            start: cursor + 2,
+          })
+          cursor = end
+        }
+      }
+    }
+  }
+  return expressions
+}
+
 export function findActiveConsoleCalls(source) {
-  const searchable = maskStrings(stripComments(source))
+  const commentFree = stripComments(source)
+  const searchable = maskStrings(commentFree)
   const findings = []
 
   for (const [lineIndex, line] of searchable.split('\n').entries()) {
@@ -131,7 +214,18 @@ export function findActiveConsoleCalls(source) {
     }
   }
 
-  return findings
+  // Template literals are strings except for their `${...}` expressions.
+  // Scan those expressions recursively so interpolation calls cannot hide
+  // behind the string masker.
+  for (const expression of extractTemplateExpressions(commentFree)) {
+    const lineOffset =
+      commentFree.slice(0, expression.start).split('\n').length - 1
+    for (const finding of findActiveConsoleCalls(expression.source)) {
+      findings.push({ ...finding, line: finding.line + lineOffset })
+    }
+  }
+
+  return findings.sort((a, b) => a.line - b.line)
 }
 
 function toRepoPath(path) {

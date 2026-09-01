@@ -204,17 +204,16 @@ export function getChatModelRegistry(): ChatModelConfig[] {
     cachedRegistry = parseRegistryValue(JSON.parse(raw))
     return cachedRegistry
   } catch {
-    logger.warn(
+    logger.error(
       {
         event: 'chat.configuration.failed',
         configuration: 'model_registry',
-        outcome: 'using_defaults',
+        outcome: 'startup_rejected',
         err: toSafeError('Invalid chat model registry'),
       },
-      'Invalid chat configuration; using defaults'
+      'Invalid chat configuration; refusing to start'
     )
-    cachedRegistry = DEFAULT_MODEL_REGISTRY
-    return cachedRegistry
+    throw new Error('Invalid chat model registry configuration')
   }
 }
 

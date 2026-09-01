@@ -1,3 +1,4 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
@@ -9,10 +10,11 @@ import { ThreadService } from '@/src/services/threads'
  */
 async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -35,10 +37,11 @@ async function handleGET(
  */
 async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -63,13 +66,13 @@ async function handlePOST(
 type RouteContext = { params: Promise<{ chatbotId: string }> }
 
 export function GET(req: NextRequest, context: RouteContext) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', () =>
-    handleGET(req, context)
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', (log) =>
+    handleGET(req, context, log)
   )
 }
 
 export function POST(req: NextRequest, context: RouteContext) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', () =>
-    handlePOST(req, context)
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', (log) =>
+    handlePOST(req, context, log)
   )
 }

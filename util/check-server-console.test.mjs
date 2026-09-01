@@ -33,4 +33,15 @@ test('reports active console calls with their source lines', () => {
     { line: 1, method: 'error' },
     { line: 4, method: 'warn' },
   ])
+
+  test('reports console calls inside template interpolations', () => {
+    const source = [
+      'const message = `result: ${console.error("active")}`',
+      'const safe = `text ${/* comment */ 1 + 1}`',
+    ].join('\n')
+
+    assert.deepEqual(findActiveConsoleCalls(source), [
+      { line: 1, method: 'error' },
+    ])
+  })
 })

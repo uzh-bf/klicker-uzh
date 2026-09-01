@@ -1,3 +1,4 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
@@ -9,10 +10,11 @@ import { ThreadService } from '@/src/services/threads'
  */
 async function handleDELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
+  { params }: { params: Promise<{ chatbotId: string; threadId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId, threadId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -46,6 +48,6 @@ export function DELETE(
   return withRouteLogging(
     req,
     '/api/chatbots/:chatbotId/threads/:threadId',
-    () => handleDELETE(req, context)
+    (log) => handleDELETE(req, context, log)
   )
 }

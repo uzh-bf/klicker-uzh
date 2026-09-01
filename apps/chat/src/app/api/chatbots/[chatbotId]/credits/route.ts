@@ -1,3 +1,4 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
@@ -13,10 +14,11 @@ import { getNextResetTime } from '@/src/utils/creditPeriods'
  */
 async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -86,7 +88,7 @@ export function GET(
   req: NextRequest,
   context: { params: Promise<{ chatbotId: string }> }
 ) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/credits', () =>
-    handleGET(req, context)
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/credits', (log) =>
+    handleGET(req, context, log)
   )
 }

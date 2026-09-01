@@ -1,4 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import {
@@ -6,8 +5,6 @@ import {
   resolveRequestContext,
 } from '@klicker-uzh/logging/request'
 import { logger } from './logger'
-
-const routeLoggerStorage = new AsyncLocalStorage<AppLogger>()
 
 type RouteHandler<T extends Response> = (
   log: AppLogger,
@@ -29,10 +26,9 @@ export async function withRouteLogging<T extends Response>(
   const suppressCompletion = route === '/api/health'
 
   try {
-    const response = await routeLoggerStorage.run(log, () =>
-      handler(log, requestContext)
-    )
+    const response = await handler(log, requestContext)
     response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
 
     if (!suppressCompletion) {
       const outcome =
@@ -84,6 +80,6 @@ export async function withRouteLogging<T extends Response>(
   }
 }
 
-export function getRouteLogger(): AppLogger {
-  return routeLoggerStorage.getStore() ?? logger
+export function getRouteLogger(log: AppLogger = logger): AppLogger {
+  return log
 }

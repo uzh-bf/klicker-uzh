@@ -1,6 +1,13 @@
+import { createEdgeLogger } from '@klicker-uzh/logging/edge'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+
+const edgeLogger = createEdgeLogger({
+  service: 'chat',
+  level: process.env.LOG_LEVEL,
+})
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -15,6 +22,16 @@ function applyFrameAncestorsCSP(response: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const requestContext = resolveRequestContext({
+    requestId: request.headers.get('x-request-id'),
+    correlationId: request.headers.get('x-correlation-id'),
+  })
+  const log = edgeLogger.child(requestContext)
+  const respond = (response: NextResponse) => {
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return applyFrameAncestorsCSP(response)
+  }
 
   if (
     pathname === '/noLogin' ||
@@ -24,12 +41,12 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon')
   ) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(NextResponse.next())
   }
 
   const pathSegments = pathname.split('/').filter(Boolean)
   if (pathSegments.length === 0) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(NextResponse.next())
   }
 
   const participantToken = request.cookies.get('participant_token')?.value
@@ -42,7 +59,7 @@ export async function proxy(request: NextRequest) {
       'redirectTo',
       `${request.nextUrl.pathname}${request.nextUrl.search}`
     )
-    return applyFrameAncestorsCSP(NextResponse.redirect(noLoginUrl))
+    return respond(NextResponse.redirect(noLoginUrl))
   }
 
   // verify with jose that the token is valid
@@ -52,8 +69,11 @@ export async function proxy(request: NextRequest) {
       participantToken || '',
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
-  } catch (error) {
-    console.error('Invalid participant token:', error)
+  } catch {
+    log.warn(
+      { event: 'participant_token.invalid', outcome: 'redirect' },
+      'Invalid participant token'
+    )
     const noLoginUrl = request.nextUrl.clone()
     noLoginUrl.pathname = '/noLogin'
     noLoginUrl.search = ''
@@ -61,10 +81,10 @@ export async function proxy(request: NextRequest) {
       'redirectTo',
       `${request.nextUrl.pathname}${request.nextUrl.search}`
     )
-    return applyFrameAncestorsCSP(NextResponse.redirect(noLoginUrl))
+    return respond(NextResponse.redirect(noLoginUrl))
   }
 
-  return applyFrameAncestorsCSP(NextResponse.next())
+  return respond(NextResponse.next())
 }
 
 // Paths that should be protected by this proxy

@@ -1,10 +1,10 @@
-import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
 // null clears a previous vote, so a participant can take their rating back.
 const FeedbackSchema = z.object({
@@ -25,7 +25,7 @@ async function handlePOST(
   log: AppLogger
 ) {
   const { chatbotId, threadId, messageId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
