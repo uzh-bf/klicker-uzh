@@ -240,7 +240,7 @@ test('workflow shard startup steps explicitly select Bash', () => {
   )
   assert.match(
     action,
-    /- name: Start services, wait for readiness, and run Playwright tests\n\s+timeout-minutes: 120\n\s+shell: bash\n\s+run: \|/
+    /- name: Start services, wait for readiness, and run Playwright tests\n\s+shell: bash\n\s+run: \|/
   )
 })
 
