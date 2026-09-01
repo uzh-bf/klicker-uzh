@@ -1848,9 +1848,6 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../hatchet
-      '@klicker-uzh/logging':
-        specifier: workspace:*
-        version: link:../logging
       '@parcel/watcher':
         specifier: ~2.4.1
         version: 2.4.1

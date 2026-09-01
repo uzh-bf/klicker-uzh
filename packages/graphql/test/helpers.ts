@@ -347,11 +347,6 @@ export async function testInitialization(
     log: createLogger({ service: 'graphql-test', environment: 'test' }),
     req: {} as any,
     res: {} as any,
-    requestContext: {
-      requestId: 'graphql-test-request',
-      correlationId: 'graphql-test-correlation',
-    },
-    log: createLogger({ service: 'graphql-test', environment: 'test' }),
   }
 
   // mock remaining contexts
