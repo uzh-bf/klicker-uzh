@@ -2,6 +2,10 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from './client.js'
 
 export * from './chatAccountUsage.js'
+export * from './chatbotPromptCatalog.js'
+export { DEFAULT_TUTOR_PROMPT } from './chatbotPromptDefaults.js'
+export type { ChatbotPromptProjection } from './chatbotPromptProjection.js'
+export { projectLegacySystemPrompts } from './chatbotPromptProjection.js'
 
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'

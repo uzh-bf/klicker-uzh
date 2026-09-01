@@ -1,3 +1,7 @@
+import {
+  DEFAULT_TUTOR_PROMPT,
+  ensureChatbotPromptCatalog,
+} from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import {
@@ -623,28 +627,33 @@ export async function createChatbot(
     )
   }
 
-  const created = await ctx.prisma.chatbot.create({
-    data: {
-      name: args.name,
-      description: args.description ?? null,
-      avatar: args.avatar ?? null,
-      status: DB.ChatbotStatus.DRAFT,
-      modelSelection: false,
-      allowedModelIds: [CHAT_BASE_MODEL_ID],
-      allowedReasoningEffortsByModel: {
-        [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
+  const created = await ctx.prisma.$transaction(async (tx) => {
+    const bot = await tx.chatbot.create({
+      data: {
+        name: args.name,
+        description: args.description ?? null,
+        avatar: args.avatar ?? null,
+        status: DB.ChatbotStatus.DRAFT,
+        modelSelection: false,
+        allowedModelIds: [CHAT_BASE_MODEL_ID],
+        allowedReasoningEffortsByModel: {
+          [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
+        },
+        owner: { connect: { id: ctx.user.sub } },
+        course: { connect: { id: args.courseId } },
+        // systemPrompts stays null: the P1 runtime derives the same tutor
+        // fallback from this compatibility source. The matching catalog mode
+        // is initialized below for the later provenance cutover.
       },
-      owner: { connect: { id: ctx.user.sub } },
-      course: { connect: { id: args.courseId } },
-      // systemPrompts intentionally left unset (null): when no modes are
-      // configured, the chat runtime derives a tutor-only default from
-      // DEFAULT_PROMPT (getSupportedChatModes). Custom modes are added and
-      // reviewed post-approval — see docs/adr/0021.
-    },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
+    await ensureChatbotPromptCatalog(tx, bot.id, [
+      { key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT },
+    ])
+    return bot
   })
 
   return shapeChatbotResponse(created)

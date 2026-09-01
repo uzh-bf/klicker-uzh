@@ -29,6 +29,7 @@ vi.mock('@/src/services/disclaimers', () => ({
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({
+  DEFAULT_TUTOR_PROMPT: 'Test tutor prompt',
   prisma: {
     chatbot: {
       findUnique: mocks.findUnique,

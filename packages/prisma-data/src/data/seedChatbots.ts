@@ -1,5 +1,6 @@
-import * as Prisma from '@klicker-uzh/prisma/client'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'node:fs'
+import { ensureChatbotPromptCatalog } from '@klicker-uzh/prisma'
+import type * as Prisma from '@klicker-uzh/prisma/client'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -46,41 +47,62 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     update: {},
   })
 
-  const testChatbot = await prisma.chatbot.upsert({
-    where: { id: CHATBOT_ID_TEST },
-    update: {
-      modelSelection: true,
-      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
-      // Repair status on reseed of an existing DB so the bot stays reachable.
-      status: 'PUBLISHED',
-    },
-    create: {
-      id: CHATBOT_ID_TEST,
-      name: 'Benibot',
-      description:
-        'A helpful chatbot for answering questions about KlickerUZH and educational content.',
-      avatar: CHATBOT_AVATAR_HASH,
-      ownerId: USER_ID_TEST,
-      courseId: COURSE_ID_TEST,
-      systemPrompts: {
-        tutor: {
-          prompt: tutorPrompt,
-          description: 'Acts as a patient and knowledgeable tutor.',
-        },
-        explainer: {
-          prompt: explainerPrompt,
-          description: 'Act as an expert explainer.',
-        },
+  const { testChatbot } = await prisma.$transaction(async (tx) => {
+    const chatbot = await tx.chatbot.upsert({
+      where: { id: CHATBOT_ID_TEST },
+      update: {
+        modelSelection: true,
+        allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
+        // Repair status on reseed of an existing DB so the bot stays
+        // reachable.
+        status: 'PUBLISHED',
       },
-      creditInitialCredits: 100, // Generous amount for testing
-      creditResetPeriod: 'WEEKLY', // Weekly reset for testing
-      creditResetAmount: 50, // Add 50 credits on reset
-      creditMaxCredits: 100, // Max 100 credits
-      modelSelection: true, // Allow model selection for testing
-      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
-      disclaimerId: testDisclaimer.id,
-      status: 'PUBLISHED', // seeded bot is live for participants
-    },
+      create: {
+        id: CHATBOT_ID_TEST,
+        name: 'Benibot',
+        description:
+          'A helpful chatbot for answering questions about KlickerUZH and educational content.',
+        avatar: CHATBOT_AVATAR_HASH,
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+        systemPrompts: {
+          tutor: {
+            prompt: tutorPrompt,
+            description: 'Acts as a patient and knowledgeable tutor.',
+          },
+          explainer: {
+            prompt: explainerPrompt,
+            description: 'Act as an expert explainer.',
+          },
+        },
+        creditInitialCredits: 100, // Generous amount for testing
+        creditResetPeriod: 'WEEKLY', // Weekly reset for testing
+        creditResetAmount: 50, // Add 50 credits on reset
+        creditMaxCredits: 100, // Max 100 credits
+        modelSelection: true, // Allow model selection for testing
+        allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
+        disclaimerId: testDisclaimer.id,
+        status: 'PUBLISHED', // seeded bot is live for participants
+      },
+    })
+
+    // Catalog rows in the same transaction (ADR 0043): the seed text is the
+    // same authored content the JSON projection carries, so initialization is
+    // an idempotent no-op on reseed and fails loudly if the texts ever drift.
+    await ensureChatbotPromptCatalog(tx, CHATBOT_ID_TEST, [
+      {
+        key: 'tutor',
+        prompt: tutorPrompt,
+        description: 'Acts as a patient and knowledgeable tutor.',
+      },
+      {
+        key: 'explainer',
+        prompt: explainerPrompt,
+        description: 'Act as an expert explainer.',
+      },
+    ])
+
+    return { testChatbot: chatbot }
   })
 
   return {

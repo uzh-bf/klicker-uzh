@@ -1,5 +1,12 @@
 {
-  "include": ["src/index.ts", "src/client.ts", "src/prisma/client/**/*.ts"],
+  "include": [
+    "src/index.ts",
+    "src/client.ts",
+    "src/chatbotPromptCatalog.ts",
+    "src/chatbotPromptDefaults.ts",
+    "src/chatbotPromptProjection.ts",
+    "src/prisma/client/**/*.ts"
+  ],
   "compilerOptions": {
     "rootDir": ".",
     /* Base Options: */

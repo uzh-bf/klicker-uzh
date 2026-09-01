@@ -125,43 +125,145 @@ function runFailingScript(args: Array<string>): string {
       expect(count).toBe(0)
     })
 
-    it('apply creates the chatbot once and replays as no-op', async () => {
-      const first = runScript([
-        '--config',
-        configPath,
-        '--course-id',
-        courseId,
-        '--owner-id',
-        userId,
-        '--apply',
-      ])
-      expect(first).toContain('APPLIED')
-      const bots = await prisma.chatbot.findMany({ where: { courseId } })
-      expect(bots).toHaveLength(1)
-      expect(bots[0]!.modelSelection).toBe(false)
-      expect(Object.keys(bots[0]!.systemPrompts as object)).toEqual(['manager'])
+    it('creates catalog history and applies prompt changes atomically', async () => {
+      try {
+        const first = runScript([
+          '--config',
+          configPath,
+          '--course-id',
+          courseId,
+          '--owner-id',
+          userId,
+          '--apply',
+        ])
+        expect(first).toContain('APPLIED')
+        const bot = await prisma.chatbot.findFirstOrThrow({
+          where: { courseId },
+          include: {
+            modes: {
+              include: {
+                activePromptVersion: true,
+                versions: { orderBy: { version: 'asc' } },
+              },
+            },
+          },
+        })
+        expect(bot.modelSelection).toBe(false)
+        expect(Object.keys(bot.systemPrompts as object)).toEqual(['manager'])
+        expect(bot.modes).toHaveLength(1)
+        expect(bot.modes[0]!.key).toBe('manager')
+        expect(bot.modes[0]!.description).toBe(
+          FIXTURE_CONFIG.systemPrompts.manager.description
+        )
+        expect(bot.modes[0]!.activePromptVersion?.version).toBe(1)
+        expect(bot.modes[0]!.versions).toHaveLength(1)
 
-      // replay must not create a second bot or disclaimer
-      const disclaimersBefore = await prisma.chatbotDisclaimer.count({
-        where: { ownerId: userId },
-      })
-      const second = runScript([
-        '--config',
-        configPath,
-        '--course-id',
-        courseId,
-        '--owner-id',
-        userId,
-        '--apply',
-      ])
-      expect(second).toContain('APPLIED')
-      const botsAfter = await prisma.chatbot.findMany({ where: { courseId } })
-      expect(botsAfter).toHaveLength(1)
-      expect(botsAfter[0]!.id).toBe(bots[0]!.id)
-      const disclaimersAfter = await prisma.chatbotDisclaimer.count({
-        where: { ownerId: userId },
-      })
-      expect(disclaimersAfter).toBe(disclaimersBefore) // replays reuse the linked disclaimer
+        // Replays reuse the linked disclaimer and do not invent prompt history.
+        const disclaimersBefore = await prisma.chatbotDisclaimer.count({
+          where: { ownerId: userId },
+        })
+        expect(
+          runScript([
+            '--config',
+            configPath,
+            '--course-id',
+            courseId,
+            '--owner-id',
+            userId,
+            '--apply',
+          ])
+        ).toContain('APPLIED')
+        expect(
+          await prisma.chatbotModePromptVersion.count({
+            where: { mode: { chatbotId: bot.id } },
+          })
+        ).toBe(1)
+        expect(
+          await prisma.chatbotDisclaimer.count({ where: { ownerId: userId } })
+        ).toBe(disclaimersBefore)
+
+        const updatedPrompt = 'Synthetic manager prompt version two.'
+        const promptConfig = {
+          ...FIXTURE_CONFIG,
+          systemPrompts: {
+            manager: {
+              ...FIXTURE_CONFIG.systemPrompts.manager,
+              prompt: updatedPrompt,
+            },
+          },
+        }
+        writeFileSync(configPath, JSON.stringify(promptConfig))
+        runScript([
+          '--config',
+          configPath,
+          '--course-id',
+          courseId,
+          '--owner-id',
+          userId,
+          '--apply',
+        ])
+
+        const afterPrompt = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          include: {
+            modes: {
+              include: {
+                activePromptVersion: true,
+                versions: { orderBy: { version: 'asc' } },
+              },
+            },
+          },
+        })
+        expect(
+          afterPrompt.modes[0]!.versions.map((item) => item.version)
+        ).toEqual([1, 2])
+        expect(afterPrompt.modes[0]!.activePromptVersion?.authoredPrompt).toBe(
+          updatedPrompt
+        )
+        expect(
+          (afterPrompt.systemPrompts as { manager: { prompt: string } }).manager
+            .prompt
+        ).toBe(updatedPrompt)
+
+        const updatedDescription = 'Updated synthetic presentation only.'
+        writeFileSync(
+          configPath,
+          JSON.stringify({
+            ...promptConfig,
+            systemPrompts: {
+              manager: {
+                ...promptConfig.systemPrompts.manager,
+                description: updatedDescription,
+              },
+            },
+          })
+        )
+        runScript([
+          '--config',
+          configPath,
+          '--course-id',
+          courseId,
+          '--owner-id',
+          userId,
+          '--apply',
+        ])
+
+        const afterDescription = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          include: { modes: { include: { versions: true } } },
+        })
+        expect(afterDescription.modes[0]!.versions).toHaveLength(2)
+        expect(afterDescription.modes[0]!.description).toBe(updatedDescription)
+        expect(
+          (
+            afterDescription.systemPrompts as {
+              manager: { description: string }
+            }
+          ).manager.description
+        ).toBe(updatedDescription)
+      } finally {
+        writeFileSync(configPath, JSON.stringify(FIXTURE_CONFIG))
+      }
     })
 
     it('fails closed when the course lacks the marker', async () => {

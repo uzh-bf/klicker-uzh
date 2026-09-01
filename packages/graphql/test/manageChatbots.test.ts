@@ -1,6 +1,7 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import { DEFAULT_TUTOR_PROMPT } from '@klicker-uzh/prisma'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createChatbot, updateChatbot } from '../src/services/chatbots.js'
 import {
@@ -89,6 +90,27 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         allowedModelIds: ['gpt-5.6-luna'],
         allowedReasoningEffortsByModel: {
           'gpt-5.6-luna': ['low', 'medium'],
+        },
+      })
+
+      const tutorMode = await prisma.chatbotMode.findUniqueOrThrow({
+        where: {
+          chatbotId_key: { chatbotId: chatbot.id, key: 'tutor' },
+        },
+        select: {
+          description: true,
+          status: true,
+          activePromptVersion: {
+            select: { version: true, authoredPrompt: true },
+          },
+        },
+      })
+      expect(tutorMode).toEqual({
+        description: null,
+        status: 'ENABLED',
+        activePromptVersion: {
+          version: 1,
+          authoredPrompt: DEFAULT_TUTOR_PROMPT,
         },
       })
     })

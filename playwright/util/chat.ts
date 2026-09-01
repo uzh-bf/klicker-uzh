@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test'
+import { ensureChatbotPromptCatalog } from '@klicker-uzh/prisma'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
 import { getPrisma } from '../global-setup.js'
@@ -65,38 +66,55 @@ export async function ensureChatbotSeeded() {
     },
     update: {},
   })
-  await prisma.chatbot.upsert({
-    where: { id: CHATBOT_ID },
-    create: {
-      id: CHATBOT_ID,
-      name: 'E2E Chatbot',
-      description: 'Chatbot used by the Playwright E2E suite.',
-      ownerId: USER_ID_TEST,
-      courseId: COURSE_ID_TEST,
-      systemPrompts: {
-        tutor: {
-          prompt: 'You are a helpful tutor.',
-          description: 'Tutor mode.',
+  await prisma.$transaction(async (tx) => {
+    await tx.chatbot.upsert({
+      where: { id: CHATBOT_ID },
+      create: {
+        id: CHATBOT_ID,
+        name: 'E2E Chatbot',
+        description: 'Chatbot used by the Playwright E2E suite.',
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+        systemPrompts: {
+          tutor: {
+            prompt: 'You are a helpful tutor.',
+            description: 'Tutor mode.',
+          },
+          explainer: {
+            prompt: 'You are an expert explainer.',
+            description: 'Explainer mode.',
+          },
         },
-        explainer: {
-          prompt: 'You are an expert explainer.',
-          description: 'Explainer mode.',
-        },
+        creditInitialCredits: 100,
+        creditResetPeriod: 'WEEKLY',
+        creditResetAmount: 50,
+        creditMaxCredits: 100,
+        modelSelection: true,
+        disclaimerId: DISCLAIMER_ID,
+        // Participants can only reach a PUBLISHED bot
+        // (apiGuards.getChatbotOr404).
+        status: 'PUBLISHED',
       },
-      creditInitialCredits: 100,
-      creditResetPeriod: 'WEEKLY',
-      creditResetAmount: 50,
-      creditMaxCredits: 100,
-      modelSelection: true,
-      disclaimerId: DISCLAIMER_ID,
-      // Participants can only reach a PUBLISHED bot (apiGuards.getChatbotOr404).
-      status: 'PUBLISHED',
-    },
-    update: {
-      modelSelection: true,
-      disclaimerId: DISCLAIMER_ID,
-      status: 'PUBLISHED',
-    },
+      update: {
+        modelSelection: true,
+        disclaimerId: DISCLAIMER_ID,
+        status: 'PUBLISHED',
+      },
+    })
+
+    // Catalog rows in the same transaction (ADR 0043); idempotent on reseed.
+    await ensureChatbotPromptCatalog(tx, CHATBOT_ID, [
+      {
+        key: 'tutor',
+        prompt: 'You are a helpful tutor.',
+        description: 'Tutor mode.',
+      },
+      {
+        key: 'explainer',
+        prompt: 'You are an expert explainer.',
+        description: 'Explainer mode.',
+      },
+    ])
   })
 }
 
