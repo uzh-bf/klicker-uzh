@@ -23,9 +23,12 @@ route without weakening secret, retry, or evidence boundaries.
   the dependent Klicker branch, create both review requests, verify exact heads,
   descriptions, mergeability, and CI, and mark them ready for review when their
   gates pass.
-- Withheld: upstream integration, merge, deployment, secret or permission
-  mutation, tunnel or cluster-connectivity repair, real course data, and a live
-  Klicker target write.
+- Additional authority: on 2026-09-01 the user approved merging
+  [Klicker pull request #5712](https://github.com/uzh-bf/klicker-uzh/pull/5712)
+  after its exact-head delivery gates pass.
+- Withheld: upstream integration, deployment, secret or permission mutation,
+  tunnel or cluster-connectivity repair, real course data, and a live Klicker
+  target write.
 
 The dirty primary Klicker checkout, the stale `trees/eval-submodule` worktree,
 and the dirty evaluation primary checkout are outside this plan. They will not
@@ -256,14 +259,12 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
-- The evaluator branch was published first and its private merge request is open
-  as a draft. The dependent Klicker branch was then published and pull request
-  #5712 is open as a draft. Exact-head CI and mergeability readback remain before
-  either review request can be marked ready.
-- Pull request review confirmed that the private evaluator feature branch
-  advertises the pinned commit, but the public gitlink must move to the merged
-  evaluator commit before merge because the private merge request squashes and
-  removes its source branch.
+- [Evaluator merge request !50](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/50)
+  merged through passing pipeline `654930` as squash commit `2a75632`. Its tree
+  is identical to reviewed feature head `e191248`.
+- The dependent [Klicker pull request #5712](https://github.com/uzh-bf/klicker-uzh/pull/5712)
+  is ready for review and mergeable. Its public gitlink now targets the merged
+  evaluator squash commit so the pin survives source-branch removal.
 - Review correction: the wrapper now rejects an empty mapped
   `LITELLM_API_KEY` before starting `uv`; the operator already fails when the
   source secret is missing. The contract test also distinguishes an explicitly
