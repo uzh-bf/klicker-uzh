@@ -441,6 +441,10 @@ function ChatbotDetails({
         <ChatbotWorkspaceNavigation
           view={view}
           step={step}
+          setupAvailable={
+            chatbot.status !== ChatbotStatus.PendingApproval &&
+            chatbot.status !== ChatbotStatus.Paused
+          }
           onNavigate={onNavigate}
         />
 

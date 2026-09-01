@@ -381,6 +381,16 @@ Return to the user if:
       the paused read-only overview plus first-error focus with synthetic data.
       The corrected tree also passes root `check:all` and the root production
       build with 23 of 23 tasks successful.
+- [x] The corrected final review found one remaining dead destination: Pending
+      Approval and Paused exposed Setup even though lifecycle normalization
+      always retained Overview. Setup is now omitted for those locked states
+      while Draft, Rejected, and Published retain their existing setup access.
+      Node 24 Manage and Playwright TypeScript checks pass, the focused host
+      Chromium suite passes all 7 scenarios, and agent-browser confirms the
+      Paused navigation contains Overview, Advanced, and Usage only. The
+      ignored screenshot
+      `project/_local/screenshots/chatbot-guided-setup-paused-no-setup-2026-09-01.png`
+      records the exact local state.
 - [ ] Corrected immutable commit reviewed by the integrated final reviewer and
       all verified findings dispositioned.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.

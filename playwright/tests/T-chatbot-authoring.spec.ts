@@ -527,6 +527,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('awaiting publication review')
+    await expect(page.getByTestId('chatbot-view-setup')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
     await expect(page.getByTestId('chatbot-disclaimer-preview')).toContainText(
       'Synthetic publication disclaimer'
     )
@@ -621,6 +626,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('Initial synthetic use case')
+    await expect(page.getByTestId('chatbot-view-setup')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
   })
 
   test('shows a rejection comment and allows correction and resubmission', async ({
