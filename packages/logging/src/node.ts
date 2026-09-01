@@ -13,24 +13,25 @@ export interface CreateLoggerOptions {
   pretty?: boolean
 }
 
-export function toSafeError(message: string): Error {
+export function createSafeError(message: string): Error {
   return new Error(message)
 }
+
+/** @deprecated Use createSafeError for synthetic, privacy-safe errors. */
+export const toSafeError = createSafeError
 
 export function createLogger(
   options: CreateLoggerOptions,
   destination?: DestinationStream
 ): AppLogger {
-  const environment =
-    options.environment ?? process.env.NODE_ENV ?? 'development'
+  const environment = options.environment ?? process.env.NODE_ENV ?? 'production'
   const level =
     options.level ??
     process.env.LOG_LEVEL ??
     (environment === 'test' ? 'silent' : 'info')
   const pretty =
     options.pretty ??
-    (environment !== 'production' &&
-      environment !== 'test' &&
+    (environment.toLowerCase() === 'development' &&
       process.env.PINO_PRETTY !== 'false')
   const loggerOptions: LoggerOptions = {
     level: level.toLowerCase(),

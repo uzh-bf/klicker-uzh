@@ -65,7 +65,14 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, X-Request-ID, X-Correlation-ID'
+  )
+  res.setHeader(
+    'Access-Control-Expose-Headers',
+    'X-Request-ID, X-Correlation-ID'
+  )
 }
 
 function sendJson(
@@ -80,7 +87,6 @@ function sendJson(
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Content-Length', Buffer.byteLength(json))
   res.end(json)
-  requests.get(res)?.complete(status)
 }
 
 function badRequest(

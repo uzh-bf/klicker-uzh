@@ -1,5 +1,6 @@
 import { createLogger } from '@klicker-uzh/logging/node'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { EventEmitter } from 'node:events'
 import { describe, expect, it } from 'vitest'
 import { responseApiServiceName } from '../src/logger.js'
 import { beginNodeRequest } from '../src/requestLogging.js'
@@ -20,12 +21,12 @@ function harness(headers: IncomingMessage['headers'] = {}) {
     headers,
     url: '/AddResponse?token=private',
   } as IncomingMessage
-  const res = {
+  const res = Object.assign(new EventEmitter(), {
     setHeader(name: string, value: string) {
       responseHeaders.set(name.toLowerCase(), value)
       return this
     },
-  } as unknown as ServerResponse
+  }) as unknown as ServerResponse
 
   return { records, responseHeaders, root, req, res }
 }

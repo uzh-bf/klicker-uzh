@@ -28,27 +28,31 @@ export function beginNodeRequest(
   let completed = false
 
   res.setHeader('x-request-id', context.requestId)
+  res.setHeader('x-correlation-id', context.correlationId)
 
-  return {
-    context,
-    log,
-    complete(statusCode) {
-      if (completed || route === '/healthz' || route === '/') return
-      completed = true
-      const level = statusCode >= 500 ? 'error' : 'info'
+  const complete = (statusCode: number) => {
+    if (completed || route === '/healthz' || route === '/') return
+    completed = true
+    const level = statusCode >= 500 ? 'error' : 'info'
 
-      log[level](
-        {
-          event: 'http.request.completed',
-          http: {
-            method: req.method,
-            route,
-            statusCode,
-            durationMs: Math.round(performance.now() - startedAt),
-          },
+    log[level](
+      {
+        event: 'http.request.completed',
+        http: {
+          method: req.method,
+          route,
+          statusCode,
+          durationMs: Math.round(performance.now() - startedAt),
         },
-        'HTTP request completed'
-      )
-    },
+      },
+      'HTTP request completed'
+    )
   }
+
+  // The completion event is emitted by Node after the response has been
+  // flushed. Keeping this on `finish` avoids recording a request as complete
+  // while a response body is still being written.
+  res.once('finish', () => complete(res.statusCode))
+
+  return { context, log, complete }
 }
