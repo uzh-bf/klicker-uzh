@@ -494,20 +494,28 @@ limited to the lecturer's owned, non-archived courses, and the newly created
 chatbot is selected immediately. The workspace keeps chatbot selection in a
 persistent desktop rail and a compact mobile selector. Its URL identifies the
 selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
-setup view additionally uses the `basics`, `disclaimer`, or `review` step.
-Invalid or incomplete deep links fall back to the first valid lifecycle step.
+setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
+as the initial accordion section hint. Invalid deep links fall back to the
+first valid lifecycle view or section. Published chatbots preserve any valid
+setup-section hint while keeping their read-only Disclaimer and Review
+contracts.
 Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
 model-policy changes, and block while an affected mutation is pending.
 
-Draft and rejected chatbots use the setup view as a focused three-step flow:
-Basics saves the name and description, Disclaimer saves the lecturer-written
-introduction while showing the fixed participant preview, and Review and submit
-summarizes the saved configuration before showing the publication request form.
+Draft and rejected chatbots use the setup view as one page with a multiple-open
+accordion containing Basics, Disclaimer, and Review and submit. Each section
+keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
+available while lecturers inspect another section. Basics saves the name and
+description, Disclaimer saves the lecturer-written introduction while showing
+the fixed participant preview, and Review and submit summarizes the saved
+configuration before showing the publication request form.
 The course remains read-only after creation. Publication inputs are preparation
-fields in the final step and persist only when the lecturer submits the existing
-publication mutation. A successful Basics or Disclaimer save advances to the
-next step; Back and Edit actions use the workspace navigation guard so dirty or
-pending changes cannot be discarded silently.
+fields in the Review and submit section and persist only when the lecturer submits the existing
+publication mutation. A successful Basics or Disclaimer save opens the next
+accordion section after the refetched chatbot is complete. Edit actions in the
+review section open the relevant accordion section, while the workspace
+navigation guard still prevents dirty or pending changes from being discarded
+silently.
 
 The selected course is read-only. Name, description, and model settings follow
 the metadata lifecycle matrix above; the disclaimer title and introduction are
@@ -520,10 +528,13 @@ chatbot or current disclaimer ID changes so a selection change cannot retain
 stale text.
 
 The publication section keeps `DRAFT` and `REJECTED` request details editable
-for preparation, but enables submission only when a complete disclaimer and
-the live account publication capability are present. `PENDING_APPROVAL`,
-`PAUSED`, and `PUBLISHED` chatbots show read-only publication details, while a
-rejected request retains its review comment for correction and resubmission.
+for preparation, but enables submission only when a complete disclaimer, the
+live account publication capability, and clean, settled Basics and Disclaimer
+forms are present. While publication is pending, those sibling forms are
+locked so late edits cannot be lost during the lifecycle transition.
+`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
+publication details, while a rejected request retains its review comment for
+correction and resubmission.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,

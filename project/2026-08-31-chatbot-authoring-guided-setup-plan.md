@@ -17,9 +17,9 @@ Historical context:
 ## Goal
 
 Replace the dense lecturer chatbot detail page with a guided setup and editor
-workspace. Lecturers should see one task at a time while retaining every
-existing creation, disclaimer, publication, model-policy, usage, and lifecycle
-behavior.
+workspace. Lecturers should see a scannable Setup surface with focused,
+collapsible sections while retaining every existing creation, disclaimer,
+publication, model-policy, usage, and lifecycle behavior.
 
 The first release optimizes the path from a new draft to a publication request.
 It does not expand the chatbot product contract.
@@ -64,7 +64,8 @@ The workspace uses these URL states after the router and chatbot query are
 ready:
 
 - `view=overview|setup|advanced|usage`
-- `step=basics|disclaimer|review` when `view=setup`
+- optional `step=basics|disclaimer|review` when `view=setup`, used only to open
+  the matching Setup section and preserve existing deep links
 
 Invalid or lifecycle-incompatible values shallow-replace to a deterministic
 fallback. The URL contains navigation state only, never unsaved form content.
@@ -76,24 +77,26 @@ name, description, and owned-course inputs. `Create draft and continue` invokes
 the existing create mutation exactly once, selects the returned chatbot, and
 opens Disclaimer. Cancelling before creation has no side effect.
 
-Persisted chatbots then use three focused steps:
+Persisted chatbots use one Setup page with three design-system accordion
+sections. All section headers remain visible, more than one section may be open,
+and the misleading non-interactive progress strip is removed:
 
 1. **Basics** edits the existing name and optional description. Course remains
    read-only after creation.
 2. **Disclaimer** edits the existing title and basic Slate introduction and
    shows the existing participant disclaimer preview.
 3. **Review and submit** shows a compact Basics and Disclaimer summary, the
-   existing publication inputs, capability notice, rejection feedback, edit
-   links, and the existing submit or resubmit action.
+  existing publication inputs, capability notice, rejection feedback, section
+  links, and the existing submit or resubmit action.
 
 Publication inputs are not described as saved before submission. The existing
 mutation persists them only when it also requests publication.
 
 ### Deterministic entry and lifecycle
 
-- Draft and Rejected open the first incomplete persisted prerequisite. Once
+- Draft and Rejected expand the first incomplete persisted prerequisite. Once
   trimmed name, linked course, disclaimer title, and disclaimer introduction
-  are complete, both open Review.
+  are complete, both expand Review.
 - Rejected Review pre-fills persisted request values when present and displays
   the review comment. It does not infer a step from free-text feedback.
 - Pending Approval, Published, and Paused default to Overview.
@@ -113,10 +116,12 @@ One shell-level coordinator receives dirty and mutation-pending state from the
 mounted Basics Formik form, Disclaimer Slate/Formik surface, Review Formik
 form, and Advanced model-setting state.
 
-- `Save and continue` uses the existing mutation before advancing.
+- Each section saves through its existing mutation before opening the next
+  section.
 - Navigation is blocked while the relevant mutation is pending.
-- Dirty chatbot selection, view or step changes, browser history, reload, and
-  page exit require an explicit discard confirmation.
+- Dirty chatbot selection, workspace-view changes, browser history, reload, and
+  page exit require an explicit discard confirmation. Accordion expansion is
+  local presentation state and does not discard mounted form state.
 - Editing after a successful save clears the saved state.
 - The final step states that publication inputs persist only on submission.
 
@@ -236,9 +241,47 @@ The slice-review risk is publication lifecycle or authorization regression.
 
 ### Integrated finish gate
 
-The main session integrates and verifies both slices, runs the final reviewer,
+The main session integrates and verifies all three slices, runs the final reviewer,
 dispositions findings, and updates this plan's Progress section. No test-only
 slice is created.
+
+### Slice 3: One-page Setup correction
+
+Owner: One configured native executor, integrated and verified by the main
+session. The executor owns the Setup composition, mobile selector, focused
+Playwright changes, English/German copy, and the existing wiki page. It must not
+touch the locally modified historical plan or change any GraphQL, lifecycle,
+authorization, publication, or persistence contract.
+
+Scope:
+
+- Replace the non-interactive custom progress strip and step-routed content
+  with design-system accordion sections for Basics, Disclaimer, and Review.
+- Keep all three section headers visible and allow multiple sections to be
+  expanded. Existing `step` query values open the matching section for deep-link
+  compatibility but no longer hide the other parts.
+- Replace the raw mobile chatbot dropdown with the design-system Select.
+- Preserve aggregate dirty and pending state across the simultaneously mounted
+  forms, existing mutations, save locks, participant preview, lifecycle gates,
+  and publication submission behavior.
+- Adapt the focused Playwright journey and wiki description to the corrected
+  interaction model.
+
+Acceptance:
+
+- A lecturer can open any Setup section without a fake stepper or route switch,
+  and more than one section may remain open.
+- Saving Basics or Disclaimer opens the next section without unmounting or
+  losing other unsaved section state.
+- Existing `step` deep links remain deterministic and the mobile selector uses
+  the design system without changing chatbot selection behavior.
+- Focused TypeScript, formatting, Playwright, English/German desktop and mobile
+  browser checks pass against the retained local runtime.
+
+Review gates: one simplifier over the committed correction and one integrated
+final reviewer over the full corrected package. A separate slice reviewer is
+not required because the change only recomposes already reviewed client-side
+surfaces and does not alter a risk boundary.
 
 ## Feature-wide test portfolio
 
@@ -404,3 +447,31 @@ Return to the user if:
       as the fourth PR in existing stack #5621. Lower PR heads and targets
       remain unchanged. Merge, ready-for-review conversion, deployment,
       upstream integration, and runtime teardown remain withheld.
+- [x] Slice 3 implementation, correction, local verification, and final rereview
+      are complete and the corrected candidate is ready for its authorized
+      delivery. User validation found that the custom Setup
+      progress strip looked interactive but had no navigation handlers. The
+      correction now composes Basics, Disclaimer, and Review on one page with
+      design-system accordions, retains `step` only for deep-link expansion,
+      and replaces the raw mobile chatbot dropdown with the design-system
+      Select. All 7 focused host Playwright scenarios pass, including mounted
+      dirty-state preservation and the responsive selector. Agent-browser
+      confirms semantic accordion expansion, multiple open sections, and no
+      overflow within the changed main content at 390 x 844. The pre-existing
+      global header still sets the page-wide minimum width. Root `check:all`
+      passes and the production build completes with 23 of 23 tasks successful.
+      The simplification review removed three redundant implementation details.
+      The first corrected final review then found that publication could discard
+      unsaved sibling forms, published deep links lost their section hint, and
+      validation focus could target a mounted collapsed sibling. Publication
+      now waits for clean, settled Basics and Disclaimer forms and locks them
+      during submission; published deep links preserve valid section hints; and
+      validation focus stays within the submitting form. The focused host suite
+      passes all 7 scenarios with these regressions, and final browser proof
+      shows the new unsaved-setup publication warning. Existing GraphQL,
+      persistence, authorization, publication, and lifecycle contracts remain
+      unchanged. The trusted Sol xhigh fallback reviewer approved exact
+      implementation head `9509f0d276c003b374c99675a2346f5e109c1452`
+      with no actionable findings after verifying all three corrections. The
+      final production build completes with 23 of 23 tasks successful. This
+      plan-only completion receipt does not change the reviewed implementation.

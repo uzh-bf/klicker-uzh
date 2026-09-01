@@ -3736,29 +3736,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
-        'Complete each step before requesting publication. You can return to a previous step at any time.',
-      chatbotSetupProgress: 'Chatbot setup progress',
+        'Use the sections below to complete and save your chatbot setup before requesting publication.',
       chatbotSetupBasics: 'Basics',
       chatbotSetupBasicsDescription: 'Name, course, and description',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
-      chatbotSetupReview: 'Review',
-      chatbotSetupReviewDescription: 'Confirm details and request publication',
-      chatbotSetupStepCompleted: 'Completed',
-      chatbotSetupStepCurrent: 'Current step',
-      chatbotSetupStepNotCompleted: 'Not completed',
-      chatbotSetupStepAnnouncement: 'Now editing {step}',
+      chatbotSetupReview: 'Review and submit',
+      chatbotSetupReviewDescription:
+        'Confirm saved details and request publication',
       chatbotSetupBasicsTitle: 'Chatbot basics',
       chatbotSetupBasicsDescriptionLong:
-        'Give the chatbot a clear name and description. The linked course is fixed after creation.',
-      chatbotSetupSaveAndContinue: 'Save and continue',
+        'Give the chatbot a clear name and description. Save this section when you are ready. The linked course is fixed after creation.',
+      chatbotSetupSave: 'Save changes',
       chatbotSetupSaving: 'Saving…',
       chatbotSetupDisclaimerTitle: 'Participant disclaimer',
       chatbotSetupDisclaimerDescriptionLong:
-        'Explain what participants should know before using this chatbot. The preview includes the fixed platform text.',
+        'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
       chatbotSetupReviewTitle: 'Review and submit',
       chatbotSetupReviewDescriptionLong:
-        'Check the saved setup and provide the information the team needs to review your publication request.',
+        'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
         'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
@@ -3809,6 +3805,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Could not submit the publication request. Please try again.',
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
+      chatbotPublicationUnsavedSetup:
+        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:

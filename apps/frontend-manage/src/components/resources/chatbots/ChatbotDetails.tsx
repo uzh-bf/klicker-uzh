@@ -510,7 +510,6 @@ function ChatbotDetails({
             publishingAuthorized={publishingAuthorized}
             publishingAuthorizationLoading={publishingAuthorizationLoading}
             publishingAuthorizationError={publishingAuthorizationError}
-            onNavigate={onNavigate}
             onNavigationStateChange={setAuthoringNavigationState}
           />
         ) : null}

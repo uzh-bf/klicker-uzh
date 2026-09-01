@@ -77,20 +77,15 @@ function normalizeWorkspaceState(
   }
 
   if (chatbot.status === ChatbotStatus.Published) {
-    return { view: 'setup', step: 'basics' }
+    return {
+      view: 'setup',
+      step: includesValue(setupSteps, requestedStep) ? requestedStep : 'basics',
+    }
   }
 
   const defaultStep = getDefaultSetupStep(chatbot)
   if (!includesValue(setupSteps, requestedStep)) {
     return { view: 'setup', step: defaultStep }
-  }
-
-  if (!hasCompleteBasics(chatbot) && requestedStep !== 'basics') {
-    return { view: 'setup', step: 'basics' }
-  }
-
-  if (!hasCompleteDisclaimer(chatbot) && requestedStep === 'review') {
-    return { view: 'setup', step: 'disclaimer' }
   }
 
   return { view: 'setup', step: requestedStep }

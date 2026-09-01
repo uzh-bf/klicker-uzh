@@ -8,7 +8,7 @@ import {
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2 } from '@uzh-bf/design-system'
+import { Button, H2, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -221,23 +221,28 @@ function Chatbots() {
       <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white lg:flex lg:min-h-[42rem]">
         <div className="border-b border-gray-200 p-4 lg:hidden">
           <div className="flex items-end gap-2">
-            <label className="min-w-0 flex-1 text-sm font-medium text-gray-700">
+            <label
+              htmlFor="chatbot-mobile-selector"
+              className="min-w-0 flex-1 text-sm font-medium text-gray-700"
+            >
               <span className="mb-1 block">
                 {t('manage.resources.chatbotMobileSelector')}
               </span>
-              <select
-                className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900"
-                data-cy="chatbot-mobile-selector"
+              <Select
+                id="chatbot-mobile-selector"
+                items={chatbots.map((chatbot) => ({
+                  value: chatbot.id,
+                  label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,
+                  data: { cy: `chatbot-mobile-selector-option-${chatbot.id}` },
+                }))}
                 value={selectedChatbot?.id ?? ''}
-                onChange={(event) => selectChatbot(event.target.value)}
-              >
-                {chatbots.map((chatbot) => (
-                  <option key={chatbot.id} value={chatbot.id}>
-                    {chatbot.name} ·{' '}
-                    {t(getChatbotStatusTranslationKey(chatbot.status))}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => selectChatbot(value)}
+                className={{
+                  root: 'w-full',
+                  trigger: 'h-10 w-full text-sm text-gray-900',
+                }}
+                data={{ cy: 'chatbot-mobile-selector' }}
+              />
             </label>
             <Button
               primary

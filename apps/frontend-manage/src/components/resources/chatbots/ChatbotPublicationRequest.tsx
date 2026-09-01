@@ -25,6 +25,8 @@ type ChatbotPublicationRequestProps = {
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  setupDirty?: boolean
+  setupPending?: boolean
   onNavigationStateChange?: (state: ChatbotNavigationState) => void
 }
 
@@ -167,6 +169,8 @@ function ChatbotPublicationRequest({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  setupDirty = false,
+  setupPending = false,
   onNavigationStateChange,
 }: ChatbotPublicationRequestProps) {
   const t = useTranslations()
@@ -190,7 +194,9 @@ function ChatbotPublicationRequest({
     hasDisclaimer &&
     publishingAuthorized &&
     !publishingAuthorizationLoading &&
-    !publishingAuthorizationError
+    !publishingAuthorizationError &&
+    !setupDirty &&
+    !setupPending
 
   useEffect(() => {
     if (!editable) {
@@ -302,6 +308,12 @@ function ChatbotPublicationRequest({
           {!hasDisclaimer ? (
             <UserNotification type="warning">
               {t('manage.resources.chatbotPublicationDisclaimerRequired')}
+            </UserNotification>
+          ) : null}
+
+          {setupDirty || setupPending ? (
+            <UserNotification type="warning">
+              {t('manage.resources.chatbotPublicationUnsavedSetup')}
             </UserNotification>
           ) : null}
 
