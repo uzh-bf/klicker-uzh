@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 
-Status: Final review passed; draft PR publication pending
+Status: Draft stacked PR published; local validation preview active
 
 Execution owner: This session is the package execution orchestrator.
 
@@ -398,4 +398,9 @@ Return to the user if:
       a trusted native Sol xhigh fallback. All verified findings are corrected
       and dispositioned; the full report is retained under ignored
       `project/_local/reviews/`.
-- [ ] Fourth branch pushed and draft stacked PR opened or updated.
+- [x] Only `rs/chatbot-authoring-wizard` was pushed. Draft PR
+      [#5723](https://github.com/uzh-bf/klicker-uzh/pull/5723) targets exact
+      lower Layer 3 branch `rs/chatbot-publication-ui` and is additively linked
+      as the fourth PR in existing stack #5621. Lower PR heads and targets
+      remain unchanged. Merge, ready-for-review conversion, deployment,
+      upstream integration, and runtime teardown remain withheld.
