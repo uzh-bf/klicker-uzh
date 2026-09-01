@@ -2,6 +2,7 @@ import type {
   DurableContext,
   UnknownInputType,
 } from '@hatchet-dev/typescript-sdk'
+import { NonRetryableError } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   dispatchAssessmentAuditOutbox,
   PrismaAuditOutboxRepository,
@@ -541,6 +542,38 @@ describe.runIf(runDatabaseTests)(
       ).toBe(1)
     })
 
+    it('rejects reuse of a submission ID in a different instance scope', async () => {
+      const first = harness(HATCHET_EVENT_ID)
+      await processAssessmentResponse(
+        command(),
+        first.context,
+        first.dependencies
+      )
+
+      const changedScope = harness('hatchet-assessment-event-2')
+      await expect(
+        processAssessmentResponse(
+          command({ instanceId: '999999999' }),
+          changedScope.context,
+          changedScope.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_ID_SCOPE_MISMATCH')
+
+      expect(
+        await prisma.liveQuizResponse.count({
+          where: { submissionId: SUBMISSION_ID },
+        })
+      ).toBe(1)
+      expect(
+        await prisma.assessmentAuditOutboxEvent.count({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'SUBMISSION_REJECTED',
+          },
+        })
+      ).toBe(1)
+    })
+
     it('rolls back persistence and records a retryable processing failure', async () => {
       const testHarness = harness()
 
@@ -629,6 +662,34 @@ describe.runIf(runDatabaseTests)(
           },
         })
       ).toBe(1)
+    })
+
+    it('quarantines metadata when Hatchet provenance is permanently invalid', async () => {
+      const testHarness = harness()
+      testHarness.dependencies.resolveHatchetEventId.mockRejectedValueOnce(
+        new NonRetryableError('SUBMISSION_METADATA_MISMATCH')
+      )
+
+      await expect(
+        processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_METADATA_MISMATCH')
+
+      const quarantine =
+        await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'AUDIT_DELIVERY_QUARANTINED',
+          },
+          select: { canonicalEnvelope: true, participantId: true },
+        })
+      expect(quarantine.participantId).toBeNull()
+      expect(quarantine.canonicalEnvelope).toContain(
+        'SUBMISSION_METADATA_MISMATCH'
+      )
     })
 
     it('records recovery when a retry succeeds after transient processing failure', async () => {

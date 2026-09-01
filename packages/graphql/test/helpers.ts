@@ -233,9 +233,15 @@ export async function testInitialization(
     }),
     publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
-      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+      fn: async (
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: { liveQuizId: string; initiatedByUserId?: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledLiveQuiz(
-          { liveQuizId },
+          { liveQuizId, initiatedByUserId },
           hatchetCtx,
           executionCtx
         )
