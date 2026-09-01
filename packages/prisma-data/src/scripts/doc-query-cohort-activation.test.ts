@@ -338,6 +338,44 @@ describe('cohort activation contract', () => {
     ).toThrow(expect.objectContaining({ code: 'RECEIPT_MANIFEST_MISMATCH' }))
   })
 
+  it('persists receipts from canonical exclusion aliases', async () => {
+    const base = makeManifest()
+    const unsigned = {
+      target: base.target,
+      entries: base.entries,
+      heldConfigIds: base.heldConfigIds,
+      excludedCorpora: [' bf1 ', 'DF_CF2', 'VORKURS2'],
+      excludedConfigIds: ['AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'],
+    }
+    const manifest = {
+      ...unsigned,
+      fingerprint: fingerprintManifest(unsigned),
+    }
+    const intent = makeCohortActivationReceiptIntent(manifest)
+    const prepared = await prepareCohortActivation(
+      fakeStore().store,
+      manifest,
+      { encryptedBearer: 'encrypted-synthetic-bearer', intent }
+    )
+    const directory = await mkdtemp(
+      join(tmpdir(), 'cohort-activation-alias-receipt-')
+    )
+    const receiptPath = join(directory, 'receipt.json')
+
+    try {
+      await writeReceipt(receiptPath, intent, null)
+      await writeReceipt(receiptPath, prepared, receiptExpectation(intent))
+      const persisted = JSON.parse(await readFile(receiptPath, 'utf8'))
+      expect(() => validateReceipt(persisted)).not.toThrow()
+      expect(persisted.excludedCorpora).toEqual(['BF1', 'DF CF2', 'Vorkurs2'])
+      expect(persisted.excludedConfigIds).toEqual([
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      ])
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it('reconstructs a prepared receipt after the intent survives a write failure', async () => {
     const fake = fakeStore()
     const manifest = makeManifest()

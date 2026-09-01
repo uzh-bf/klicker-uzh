@@ -521,14 +521,6 @@ function canonicalExclusion(value: string): string {
   return value.trim().replaceAll('_', ' ').replaceAll(/\s+/g, ' ').toLowerCase()
 }
 
-function canonicalExcludedCorpora(
-  manifest: Pick<CohortActivationManifest, 'excludedCorpora' | 'exclusions'>
-): string[] {
-  return exclusionValues(manifest)
-    .map((value) => value.trim())
-    .sort(compareStrings)
-}
-
 function excludedConfigValues(
   manifest: Pick<CohortActivationManifest, 'excludedConfigIds'>
 ): string[] {
@@ -595,8 +587,8 @@ function canonicalManifest(
         corpusOwner: entry.corpusOwner ?? entry.corpusOwnerId,
       })),
     heldConfigIds: [...manifest.heldConfigIds].sort(compareStrings),
-    excludedCorpora: canonicalExcludedCorpora(manifest),
-    excludedConfigIds: excludedConfigValues(manifest).sort(compareStrings),
+    excludedCorpora: canonicalExclusionValues(manifest),
+    excludedConfigIds: canonicalExcludedConfigIds(manifest),
   }
 }
 
