@@ -370,9 +370,11 @@ chain-of-thought requests, and universal coding or formatting assumptions.
   Quizzer mock-exam and formative-checkpoint delta after an upstack-only rebase.
 - Preserve the current parent/child relationship. Do not create, reorder,
   unstack, merge, or delete pull requests.
-- Do not integrate `origin/v3` in this extension. After both heads are otherwise
-  ready, report the current three-commit target drift and request the separately
-  gated one-time integration pass only if it remains relevant or blocks merge.
+- The user separately authorized one target-integration pass on 2026-09-01.
+  Rebase the lower branch once onto the then-current `origin/v3`, preserve
+  upstream FineCo testing guidance alongside the course-chat guidance, and
+  propagate the result through the existing upper branch. Any further target
+  integration remains separately gated.
 
 ### Extension execution contract
 
@@ -383,13 +385,15 @@ chain-of-thought requests, and universal coding or formatting assumptions.
   active-plan, and testing-skill changes below; create conventional local
   commits; run source-only checks; run required read-only reviews; apply
   verified corrections; rebase only the existing upper stack branch onto the
-  updated lower branch without integrating the target; push exactly
+  updated lower branch; push exactly
   `origin/rs/chat-quizzer-mode` and
   `origin/rs/quizzer-formative-feedback`; and update both existing pull-request
-  descriptions and review-comment state.
-- Withheld: target-branch integration, runtime or browser startup, live-model or
-  DeepEval execution, dependencies, schemas or migrations, database access,
-  secrets, deployment, ready-state changes, merge, and branch/worktree cleanup.
+  descriptions and review-comment state. The separately approved one-time
+  target integration and resulting upper-stack propagation are also authorized.
+- Withheld: any further target-branch integration, runtime or browser startup,
+  live-model or DeepEval execution, dependencies, schemas or migrations,
+  database access, secrets, deployment, ready-state changes, merge, and
+  branch/worktree cleanup.
 - Terminal: both existing pull requests contain the intended ownership split;
   source-only verification and required reviews pass at their exact heads;
   remote heads and pull-request descriptions are current; hosted check state
@@ -534,7 +538,7 @@ explorer was read-only and did not own implementation.
 
 ## Progress
 
-- Status: Stage 1 source, local review, and browser presentation work are complete; integrated final review is pending on the final pushed head.
+- Status: the approved one-time `v3` integration and stack propagation are complete locally; source verification, final review, publication, and exact-head hosted checks remain.
 - Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, Chat wiki update, parallel S2 simplifier and risk review, request-time Quizzer retrieval enforcement, legacy citation precedence, compact citation-range rendering, compact reasoning/tool trace rows, integrated generic-continuity final review, required-alias correction, unavailable-mode gating across every generation action, and two bounded correction reviews.
 - Review receipt: the correction-rerun limit is exhausted after the second review found the edit composer's default Enter submission path. The final keyboard-only guard uses assistant-ui's documented `submitMode="none"` contract and closes through main-session static verification rather than another reviewer loop.
 - Delivery receipt: the approved terminal is a source-complete draft pull request against `v3`; its exact head and CI status are recorded on the forge after publication.
@@ -545,3 +549,4 @@ explorer was read-only and did not own implementation.
 - 2026-08-30 pull-request review iteration: the branch was fast-forwarded to the contributor's `v3` merge at `05c9ceb76`. Accepted review findings now use one runtime-wide effective-mode source, preserve legacy casing for standard modes while retaining exact custom keys, reject blank custom mode keys, consolidate settings fallback logic, replace the nested edit-tooltip conditional, narrow inherited MCP typing, and deduplicate the required-MCP route fixtures that caused Sonar's new-code duplication finding. Platform-owned standard-mode descriptions, static `400` capability rejection, required raw-tool aliasing, and disabled exact Quizzer shadowing remain unchanged because they are explicit ADR and test contracts.
 - 2026-08-30 expanded verification boundary: at the user's request, the `ai,chat,mcp` workspace was started after source review. The focused mode and MCP portfolio passed 36 tests across five files, the full Chat suite passed 444 tests with 13 intentional skips, and the Chat type check passed. Repository-wide `check:all` was blocked only by the unrelated Analytics lint task attempting to build pandas with no C compiler under Python 3.14 in the slim container. Browser verification selected Quizzer, completed a synthetic Auto Mode `doc_query` turn, returned `KLICKER_LOCAL_MCP_OK` with its source card, and preserved the mode, answer, and source after reload. The runtime is intentionally retained for user verification.
 - 2026-09-01 prompt-hardening extension: the user reopened course-name injection and standard-mode replacement semantics, approved execution of the full extension, and retained the source-only verification boundary. The frozen plan passed the required native planner after two revision rounds and a final approval round. The opposing-provider rival could not authenticate and is recorded as fail-open. S3 compiler and fixed-policy implementation passed its simplifier and corrected slice review. S4 Tutor/Explainer depth and durable documentation passed slice review; its simplifier removed one duplicate assertion. The upper branch was rebased without target integration, and its diff contains only Quizzer mock-exam/formative source, tests, i18n, and durable documentation. The integrated Sol review accepted the evidence-conditional Quizzer feedback correction and marked the stack ready for publication. Merge readiness remains blocked only by the separately gated target integration conflict in the testing skill. No target integration, runtime, browser, live model, schema, database, deployment, merge, or cleanup is authorized.
+- 2026-09-01 target integration: after explicit user approval, the lower branch was rebased once onto `origin/v3` at `72096fafe50827c3ea3f50465f0a76d492e0a4c2`. The sole lower conflict retained upstream FineCo evaluation-wrapper guidance and the course-chat prompt-testing guidance once each. Propagation removed one duplicate lower-owned replay commit from the upper branch, leaving exactly the three Quizzer formative-feedback commits and eight owned files above the lower head. Further target integration, runtime, browser, live model, schema, database, deployment, merge, and cleanup remain withheld.

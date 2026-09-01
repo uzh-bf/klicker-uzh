@@ -43,8 +43,15 @@ function change(kind, ...paths) {
 }
 
 function gitAt(root, ...args) {
+  // Git exports repository-local variables to hooks. Fixture repositories must
+  // not inherit them, or `git -C` can still mutate the parent repository.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+
   return childProcess.execFileSync('git', ['-C', root, ...args], {
     encoding: 'utf8',
+    env,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 }
