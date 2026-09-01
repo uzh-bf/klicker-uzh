@@ -2,12 +2,13 @@ import {
   faArrowLeft,
   faArrowRight,
   faCancel,
+  faPlus,
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
-import { useWizardCloseGuard } from './WizardLayout'
+import { useWizardActions, useWizardCloseGuard } from './WizardLayout'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -39,6 +40,7 @@ function WizardNavigation({
   const t = useTranslations()
   const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
   const closeGuard = useWizardCloseGuard()
+  const { onCreateElement } = useWizardActions()
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
 
   useEffect(() => {
@@ -66,8 +68,11 @@ function WizardNavigation({
   }
 
   return (
-    <div className="flex flex-row justify-between pt-2">
-      <div className="flex flex-row items-center gap-2">
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-2"
+      data-cy="activity-wizard-navigation"
+    >
+      <div className="flex flex-row items-center gap-2 justify-self-start">
         {typeof onPrevStep !== 'undefined' && (
           <Button
             type="button"
@@ -93,8 +98,21 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
+      {onCreateElement ? (
+        <Button
+          className={{ root: 'h-8 justify-self-center font-bold' }}
+          onClick={onCreateElement}
+          data={{ cy: 'create-question' }}
+          type="button"
+        >
+          <Button.Icon icon={faPlus} />
+          <Button.Label>{t('manage.questionPool.createElement')}</Button.Label>
+        </Button>
+      ) : (
+        <span />
+      )}
       <div
-        className={`flex flex-col items-end${lastStep && disabledReason ? ' gap-1' : ''}`}
+        className={`flex flex-col items-end justify-self-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
         {lastStep && (
           <div

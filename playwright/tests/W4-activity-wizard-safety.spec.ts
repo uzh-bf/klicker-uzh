@@ -232,7 +232,24 @@ test.describe('W4 activity wizard safety', () => {
     await openLibrary(page, 'en')
     await openWizard(page, wizardTypes[0])
 
-    await page.getByTestId('create-question').click()
+    await expect(page.getByTestId('activity-creation-choices')).toHaveCount(0)
+    const navigation = page.getByTestId('activity-wizard-navigation')
+    const createElement = navigation.getByTestId('create-question')
+    await expect(createElement).toBeVisible()
+
+    const navigationBox = await navigation.boundingBox()
+    const createElementBox = await createElement.boundingBox()
+    expect(navigationBox).not.toBeNull()
+    expect(createElementBox).not.toBeNull()
+    expect(
+      Math.abs(
+        createElementBox!.x +
+          createElementBox!.width / 2 -
+          (navigationBox!.x + navigationBox!.width / 2)
+      )
+    ).toBeLessThan(2)
+
+    await createElement.click()
     await expect(page.getByTestId('select-question-type')).toBeVisible()
     await page.getByTestId('close-element-modal').click()
     await expect(page.getByTestId(wizardTypes[0].nameField)).toBeVisible()

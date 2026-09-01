@@ -14,6 +14,7 @@ import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
+import { WizardActionsProvider } from '../components/activities/creation/WizardLayout'
 import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
@@ -320,16 +321,17 @@ function Index() {
       data={{ cy: 'homepage' }}
       className={{ children: 'pb-2' }}
     >
-      <Suspense fallback={<div />}>
-        <SuspendedCreationButtons
-          setCreationMode={setCreationMode}
-          showActivityChoices={typeof creationMode === 'undefined'}
-          onCreateElement={handleCreateElement}
-        />
-      </Suspense>
+      {typeof creationMode === 'undefined' && (
+        <Suspense fallback={<div />}>
+          <SuspendedCreationButtons
+            setCreationMode={setCreationMode}
+            onCreateElement={handleCreateElement}
+          />
+        </Suspense>
+      )}
 
       {creationMode && (
-        <>
+        <WizardActionsProvider onCreateElement={handleCreateElement}>
           <ActivityCreation
             creationMode={creationMode}
             closeWizard={() => {
@@ -353,7 +355,7 @@ function Index() {
               )
             }
           />
-        </>
+        </WizardActionsProvider>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
