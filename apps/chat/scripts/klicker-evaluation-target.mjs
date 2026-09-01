@@ -196,7 +196,11 @@ async function fetchWithTimeout(url, options, timeoutMs) {
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   let response
   try {
-    response = await fetch(url, { ...options, signal: controller.signal })
+    response = await fetch(url, {
+      ...options,
+      redirect: 'error',
+      signal: controller.signal,
+    })
     response[RESPONSE_TIMEOUT_CLEANUP] = () => clearTimeout(timeout)
     return response
   } catch (error) {
@@ -259,16 +263,59 @@ async function drainResponse(response, maxBytes) {
   try {
     if (!response.body) throw evaluationError('chat_stream_missing')
     const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    const streamState = { done: false, events: 0, finished: false }
     let bytes = 0
+    let buffer = ''
+
+    const inspectLine = (line) => {
+      const normalized = line.endsWith('\r') ? line.slice(0, -1) : line
+      if (!normalized) return
+      if (normalized.startsWith(':')) return
+      if (streamState.done) throw evaluationError('chat_stream_invalid')
+      if (normalized === 'data: [DONE]') {
+        streamState.done = true
+        return
+      }
+      if (!normalized.startsWith('data: ')) {
+        throw evaluationError('chat_stream_invalid')
+      }
+      let event
+      try {
+        event = JSON.parse(normalized.slice('data: '.length))
+      } catch {
+        throw evaluationError('chat_stream_invalid')
+      }
+      if (!event || typeof event !== 'object' || typeof event.type !== 'string') {
+        throw evaluationError('chat_stream_invalid')
+      }
+      if (event.type === 'finish') streamState.finished = true
+      if (['abort', 'error', 'tool-output-error'].includes(event.type)) {
+        throw evaluationError('chat_stream_error')
+      }
+      streamState.events += 1
+    }
+
     try {
       while (true) {
         const { done, value } = await reader.read()
-        if (done) return bytes
+        if (done) {
+          buffer += decoder.decode()
+          if (buffer) inspectLine(buffer)
+          if (!streamState.done || !streamState.finished || streamState.events === 0) {
+            throw evaluationError('chat_stream_incomplete')
+          }
+          return bytes
+        }
         bytes += value?.byteLength || 0
         if (bytes > maxBytes) {
           await reader.cancel()
           throw evaluationError('chat_stream_too_large')
         }
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) inspectLine(line)
       }
     } catch (error) {
       if (error?.name === 'AbortError') throw evaluationError('request_timeout')
@@ -357,7 +404,6 @@ export class KlickerEvaluationTarget {
     }
     this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin')
     this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin')
-    this.apiKey = apiKey
     this.participantUsername = participantUsername
     this.participantPassword = participantPassword
     this.chatbotId = chatbotId
@@ -429,11 +475,11 @@ export class KlickerEvaluationTarget {
     if (!loginBody?.data?.loginParticipant) {
       throw evaluationError('participant_login_rejected')
     }
-    this.cookie = participantCookie(loginResponse.headers)
+    const cookie = participantCookie(loginResponse.headers)
 
     const disclaimerResponse = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/disclaimer`),
-      { headers: requestHeaders(this.cookie) },
+      { headers: requestHeaders(cookie) },
       this.requestTimeoutMs
     )
     const disclaimerBody = await readJsonResponse(
@@ -441,6 +487,12 @@ export class KlickerEvaluationTarget {
       'disclaimer_read'
     )
     const status = disclaimerBody?.status
+    if (
+      typeof status?.required !== 'boolean' ||
+      typeof status.accepted !== 'boolean'
+    ) {
+      throw evaluationError('disclaimer_status_invalid')
+    }
     if (status?.required && !status.accepted) {
       const disclaimerId = status.disclaimerId || disclaimerBody?.disclaimer?.id
       if (!disclaimerId) throw evaluationError('disclaimer_id_missing')
@@ -448,13 +500,20 @@ export class KlickerEvaluationTarget {
         urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/disclaimer`),
         {
           method: 'POST',
-          headers: requestHeaders(this.cookie),
+          headers: requestHeaders(cookie),
           body: JSON.stringify({ action: 'accept', disclaimerId }),
         },
         this.requestTimeoutMs
       )
-      await readJsonResponse(acceptResponse, 'disclaimer_accept')
+      const acceptBody = await readJsonResponse(
+        acceptResponse,
+        'disclaimer_accept'
+      )
+      if (acceptBody?.success !== true) {
+        throw evaluationError('disclaimer_accept_rejected')
+      }
     }
+    this.cookie = cookie
   }
 
   async createThread() {
@@ -555,7 +614,14 @@ export class KlickerEvaluationTarget {
       assistantMessageId,
       metadata.mode
     )
-    return { metadata, ...extractAssistantMessage(message) }
+    const result = extractAssistantMessage(message)
+    if (
+      metadata.source === 'canary' &&
+      !result.toolCalls.some((call) => call.name === metadata.expectedTool)
+    ) {
+      throw evaluationError('canary_tool_missing')
+    }
+    return { metadata, ...result }
   }
 
   async complete(body) {

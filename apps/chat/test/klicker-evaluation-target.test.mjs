@@ -121,6 +121,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
     const requestUrl = String(url)
     const method = options.method || 'GET'
     const body = typeof options.body === 'string' ? options.body : ''
+    assert.equal(options.redirect, 'error')
     requests.push({ requestUrl, method, body, headers: options.headers || {} })
 
     if (requestUrl.endsWith('/api/graphql')) {
@@ -145,7 +146,7 @@ test('target uses participant gates and reads back one persisted turn', async ()
         action: 'accept',
         disclaimerId: 'disclaimer-1',
       })
-      return Response.json({ accepted: true })
+      return Response.json({ success: true })
     }
     if (requestUrl.endsWith('/threads') && method === 'POST') {
       assert.deepEqual(JSON.parse(body), { title: null })
@@ -161,7 +162,13 @@ test('target uses participant gates and reads back one persisted turn', async ()
       return new Response(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode('data: complete\\n\\n'))
+            controller.enqueue(
+              new TextEncoder().encode(
+                'data: {"type":"start"}\n\n' +
+                  'data: {"type":"finish"}\n\n' +
+                  'data: [DONE]\n\n'
+              )
+            )
             controller.close()
           },
         }),
@@ -237,6 +244,148 @@ test('target uses participant gates and reads back one persisted turn', async ()
     globalThis.fetch = originalFetch
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+test('failed disclaimer setup does not poison a later session retry', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  const originalFetch = globalThis.fetch
+  let loginCalls = 0
+  let disclaimerReads = 0
+  globalThis.fetch = async (url, options = {}) => {
+    assert.equal(options.redirect, 'error')
+    const requestUrl = String(url)
+    const method = options.method || 'GET'
+    if (requestUrl.endsWith('/api/graphql')) {
+      loginCalls += 1
+      return new Response(
+        JSON.stringify({ data: { loginParticipant: 'participant-jwt' } }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': 'participant_token=participant-jwt; Path=/; HttpOnly',
+          },
+        }
+      )
+    }
+    if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
+      disclaimerReads += 1
+      if (disclaimerReads === 1) return new Response('{}', { status: 500 })
+      return Response.json({
+        status: { required: false, accepted: true },
+      })
+    }
+    throw new Error('Unexpected mock request: ' + method + ' ' + requestUrl)
+  }
+
+  try {
+    await assert.rejects(target.ensureSession(), {
+      code: 'disclaimer_read_http_500',
+    })
+    await target.ensureSession()
+    assert.equal(loginCalls, 2)
+    assert.equal(target.cookie, 'participant_token=participant-jwt')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('target rejects malformed and incomplete UI streams', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  target.cookie = 'participant_token=participant-jwt'
+  const originalFetch = globalThis.fetch
+
+  try {
+    for (const [stream, code] of [
+      ['not-an-sse-stream', 'chat_stream_invalid'],
+      ['data: {"type":"start"}\n\n', 'chat_stream_incomplete'],
+    ]) {
+      globalThis.fetch = async () =>
+        new Response(stream, {
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      await assert.rejects(
+        target.submitTurn({
+          question: 'Synthetic question',
+          mode: 'tutor',
+          threadId: 'thread-1',
+          userMessageId: 'user-1',
+          assistantMessageId: 'assistant-1',
+          maxStreamBytes: 1000,
+        }),
+        { code }
+      )
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('canary requires its configured tool', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+  })
+  target.groundTruthIndex = new Map()
+  target.canary = {
+    question: 'Synthetic canary',
+    mode: 'tutor',
+    source: 'canary',
+    expectedTool: 'KB_doc_query',
+    maxStreamBytes: 1000,
+  }
+  target.ensureSession = async () => {}
+  target.createThread = async () => 'thread-1'
+  target.submitTurn = async () => {}
+  target.readCompletedMessage = async () => ({
+    id: 'assistant-1',
+    role: 'assistant',
+    chatMode: 'tutor',
+    modelId: 'gpt-5.6-luna',
+    content: [
+      { type: 'tool-call', toolName: 'KB_doc_query' },
+      { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
+    ],
+  })
+
+  const success = await target.runQuestion('Synthetic canary')
+  assert.equal(success.toolCalls[0].name, 'KB_doc_query')
+
+  target.readCompletedMessage = async () => ({
+    id: 'assistant-2',
+    role: 'assistant',
+    chatMode: 'tutor',
+    modelId: 'gpt-5.6-luna',
+    content: [
+      { type: 'tool-call', toolName: 'wrong_tool' },
+      { type: 'text', text: 'KLICKER_LOCAL_MCP_OK' },
+    ],
+  })
+  await assert.rejects(target.runQuestion('Synthetic canary'), {
+    code: 'canary_tool_missing',
+  })
 })
 
 test('adapter requires bearer auth and exposes only the configured model', async () => {
