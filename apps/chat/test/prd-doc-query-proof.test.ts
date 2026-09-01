@@ -201,6 +201,50 @@ describe('PRD Doc Query proof matrix', () => {
     expect(receipt.failedRejectionClass).toBe('missing')
     expect(call).toBe(3)
   })
+
+  test('classifies signer setup failures without serializing their value', async () => {
+    const validated = validateTestManifest(manifest())
+    const environment = await proofDummyEnvironmentWithPin()
+    environment.DOC_QUERY_SCOPE_PRIVATE_KEY = 'dummy-sensitive-setup-value'
+    const receipt = await runProofMatrix({
+      manifest: validated,
+      environment,
+      invoke: async () => rejected(),
+    })
+    expect(receipt).toMatchObject({
+      result: 'failed',
+      failureClass: 'credential_missing',
+      diagnosticClass: 'signer_setup',
+    })
+    expect(JSON.stringify(receipt)).not.toContain('dummy-sensitive-setup-value')
+  })
+
+  test.each([
+    ['scope_signing', 'dummy-sensitive-signing-value'],
+    ['mcp_invocation', 'dummy-sensitive-mcp-value'],
+  ])('classifies %s failures without serializing error details', async (expectedDiagnostic, sensitiveValue) => {
+    const validated = validateTestManifest(manifest())
+    const environment = await proofDummyEnvironmentWithPin()
+    const receipt = await runProofMatrix({
+      manifest: validated,
+      environment,
+      createSigner: async () => async () => {
+        if (expectedDiagnostic === 'scope_signing') {
+          throw new Error(sensitiveValue)
+        }
+        return 'synthetic-scope-token'
+      },
+      invoke: async () => {
+        throw new Error(sensitiveValue)
+      },
+    })
+    expect(receipt).toMatchObject({
+      result: 'failed',
+      failureClass: 'protocol_failed',
+      diagnosticClass: expectedDiagnostic,
+    })
+    expect(JSON.stringify(receipt)).not.toContain(sensitiveValue)
+  })
 })
 
 defineProofMatrixSuite(

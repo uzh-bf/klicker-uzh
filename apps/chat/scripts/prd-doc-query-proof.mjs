@@ -102,13 +102,48 @@ const FAILURE_CLASSES = new Set([
   'interrupted',
 ])
 
+const DIAGNOSTIC_CLASSES = new Set([
+  'none',
+  'signer_setup',
+  'scope_signing',
+  'mcp_invocation',
+  'worker_protocol',
+  'unknown',
+])
+
 class ProofFailure extends Error {
-  constructor(failureClass, caseId = null, rejectionClass = null) {
+  constructor(
+    failureClass,
+    caseId = null,
+    rejectionClass = null,
+    diagnosticClass = 'none'
+  ) {
     super(failureClass)
     this.name = 'ProofFailure'
     this.failureClass = failureClass
     this.caseId = caseId
     this.rejectionClass = rejectionClass
+    this.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
+      ? diagnosticClass
+      : 'unknown'
+  }
+}
+
+async function withDiagnostic(operation, diagnosticClass) {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof ProofFailure) {
+      throw new ProofFailure(
+        error.failureClass,
+        error.caseId,
+        error.rejectionClass,
+        error.diagnosticClass === 'none'
+          ? diagnosticClass
+          : error.diagnosticClass
+      )
+    }
+    throw new ProofFailure('protocol_failed', null, null, diagnosticClass)
   }
 }
 
@@ -317,6 +352,7 @@ function emptyReceipt() {
     phase: 'preflight',
     result: 'failed',
     failureClass: 'none',
+    diagnosticClass: 'none',
     failedCaseId: null,
     failedRejectionClass: null,
     counts: {
@@ -341,7 +377,8 @@ function emptyReceipt() {
 function fixedFailureReceipt(
   failureClass,
   caseId = null,
-  rejectionClass = null
+  rejectionClass = null,
+  diagnosticClass = 'none'
 ) {
   const receipt = emptyReceipt()
   receipt.failureClass = FAILURE_CLASSES.has(failureClass)
@@ -351,7 +388,14 @@ function fixedFailureReceipt(
   receipt.failedRejectionClass = REJECTION_CLASSES.includes(rejectionClass)
     ? rejectionClass
     : null
+  receipt.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
+    ? diagnosticClass
+    : 'unknown'
   return receipt
+}
+
+function workerProtocolFailureReceipt(failureClass = 'protocol_failed') {
+  return fixedFailureReceipt(failureClass, null, null, 'worker_protocol')
 }
 
 function extractDocuments(result) {
@@ -697,6 +741,7 @@ export async function runProofMatrix({
   manifest,
   environment,
   invoke = invokeMcp,
+  createSigner = createScopeSigner,
 }) {
   const receipt = emptyReceipt()
   try {
@@ -705,23 +750,30 @@ export async function runProofMatrix({
       if (receipt.counts.directCallsAttempted > EXPECTED_DIRECT_CALL_COUNT) {
         throw new ProofFailure('protocol_failed')
       }
-      return invoke(request)
+      return withDiagnostic(() => invoke(request), 'mcp_invocation')
     }
-    const signer = await createScopeSigner(environment)
+    const rawSigner = await withDiagnostic(
+      () => createSigner(environment),
+      'signer_setup'
+    )
+    const signer = (request) =>
+      withDiagnostic(() => rawSigner(request), 'scope_signing')
     await runCanaryProof(invokeWithCap, signer, environment, manifest, receipt)
     await runSerialProof(invokeWithCap, signer, environment, manifest, receipt)
 
     receipt.phase = 'complete'
     receipt.result = 'passed'
     receipt.failureClass = 'none'
+    receipt.diagnosticClass = 'none'
     return receipt
   } catch (error) {
     const failure =
       error instanceof ProofFailure
         ? error
-        : new ProofFailure('protocol_failed')
+        : new ProofFailure('protocol_failed', null, null, 'unknown')
     receipt.result = 'failed'
     receipt.failureClass = failure.failureClass
+    receipt.diagnosticClass = failure.diagnosticClass
     receipt.failedCaseId = failure.caseId
     receipt.failedRejectionClass = failure.rejectionClass
     if (failure.rejectionClass) {
@@ -792,20 +844,22 @@ function sanitizeReceipt(value) {
       value.phase
     ) ||
     !['passed', 'failed'].includes(value.result) ||
-    !FAILURE_CLASSES.has(value.failureClass)
+    !FAILURE_CLASSES.has(value.failureClass) ||
+    !DIAGNOSTIC_CLASSES.has(value.diagnosticClass)
   ) {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   if (!hasExactZeroPreservation(value.preservation)) {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   if (value.result === 'failed' && value.failureClass === 'none') {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   if (
     value.result === 'passed' &&
     (value.phase !== 'complete' ||
       value.failureClass !== 'none' ||
+      value.diagnosticClass !== 'none' ||
       value.failedCaseId !== null ||
       value.failedRejectionClass !== null ||
       value.counts?.kbExpected !== EXPECTED_KB_COUNT ||
@@ -822,12 +876,13 @@ function sanitizeReceipt(value) {
       value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
       REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
   ) {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   const receipt = emptyReceipt()
   receipt.phase = value.phase
   receipt.result = value.result
   receipt.failureClass = value.failureClass
+  receipt.diagnosticClass = value.diagnosticClass
   receipt.failedCaseId = ID_PATTERN.test(value.failedCaseId ?? '')
     ? value.failedCaseId
     : null
@@ -1003,19 +1058,16 @@ export async function superviseProof({
     })
     clearTimeout(deadlineTimer)
 
-    let receipt = message ?? fixedFailureReceipt('protocol_failed')
+    let receipt = message ?? workerProtocolFailureReceipt()
     if (timedOut) receipt = fixedFailureReceipt('timeout')
     else if (interrupted) receipt = fixedFailureReceipt('interrupted')
     else if (close.signal) receipt = fixedFailureReceipt('child_signaled')
     else if (close.code === 0) {
-      if (
-        message?.result !== 'passed' &&
-        message?.failureClass !== 'protocol_failed'
-      ) {
-        receipt = fixedFailureReceipt('child_failed')
+      if (message?.result !== 'passed') {
+        receipt = workerProtocolFailureReceipt('child_failed')
       }
     } else if (message === null || message.result === 'passed') {
-      receipt = fixedFailureReceipt('child_failed')
+      receipt = workerProtocolFailureReceipt('child_failed')
     }
 
     return {

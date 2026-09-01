@@ -1,9 +1,10 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  assertCohortActivationNotPrepared,
   assertReceiptMatchesManifest,
   type CohortActivationConfigRecord,
   type CohortActivationConfigUpdate,
@@ -32,6 +33,7 @@ import {
 import { createPrismaCohortActivationStore } from './doc-query-cohort-activation-prisma.js'
 import {
   acquireCohortActivationSessionLock,
+  clearPreparingReceipt,
   writeReceipt,
 } from './doc-query-cohort-activation-run.js'
 
@@ -71,6 +73,20 @@ const secondChatbotConfig: CohortActivationConfigRecord = {
   ...sourceConfig,
   id: '00000000-0000-4000-8000-000000000005',
   chatbotId: '00000000-0000-4000-8000-000000000006',
+}
+
+const targetServer: CohortActivationServerRecord = {
+  id: '00000000-0000-4000-8000-000000000010',
+  name: DOC_QUERY_TARGET_SERVER_NAME,
+  description: DOC_QUERY_TARGET_DESCRIPTION,
+  url: DOC_QUERY_TARGET_URL,
+  authType: 'bearer',
+  passChatbotId: true,
+  chatbotIdHeader: 'Chatbot-ID',
+  parameters: {},
+  hasAuthSecret: true,
+  isActive: true,
+  updatedAt: new Date('2026-08-24T10:00:00.001Z'),
 }
 
 function makeManifest(
@@ -372,6 +388,66 @@ describe('cohort activation contract', () => {
     ).rejects.toMatchObject({ code: 'RECOVERY_AMBIGUOUS' })
   })
 
+  it('proves a preparing intent was not committed before clearing it', async () => {
+    const manifest = makeManifest()
+    const fake = fakeStore()
+    await expect(
+      assertCohortActivationNotPrepared(
+        fake.store,
+        manifest,
+        makeCohortActivationReceiptIntent(manifest)
+      )
+    ).resolves.toBeUndefined()
+    expect(fake.writes()).toBe(0)
+  })
+
+  it('accepts an unchanged pre-existing target with no prepared slots', async () => {
+    const manifest = makeManifest()
+    const fake = fakeStore([sourceConfig], targetServer)
+    await expect(
+      assertCohortActivationNotPrepared(
+        fake.store,
+        manifest,
+        makeCohortActivationReceiptIntent(manifest, targetServer.id)
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  it('refuses to clear when a target server appeared after the intent', async () => {
+    const manifest = makeManifest()
+    const fake = fakeStore([sourceConfig], targetServer)
+    await expect(
+      assertCohortActivationNotPrepared(
+        fake.store,
+        manifest,
+        makeCohortActivationReceiptIntent(manifest)
+      )
+    ).rejects.toMatchObject({ code: 'CLEAR_AMBIGUOUS' })
+  })
+
+  it('refuses to clear when any deterministic target config was prepared', async () => {
+    const manifest = makeManifest()
+    const intent = makeCohortActivationReceiptIntent(manifest, targetServer.id)
+    const fake = fakeStore([sourceConfig], targetServer)
+    await prepareCohortActivation(fake.store, manifest, { intent })
+    await expect(
+      assertCohortActivationNotPrepared(fake.store, manifest, intent)
+    ).rejects.toMatchObject({ code: 'CLEAR_AMBIGUOUS' })
+  })
+
+  it('refuses to clear when the frozen source state drifted', async () => {
+    const manifest = makeManifest()
+    const fake = fakeStore()
+    fake.replaceConfig({ ...sourceConfig, isEnabled: false })
+    await expect(
+      assertCohortActivationNotPrepared(
+        fake.store,
+        manifest,
+        makeCohortActivationReceiptIntent(manifest)
+      )
+    ).rejects.toMatchObject({ code: 'SOURCE_MISMATCH' })
+  })
+
   it('refuses a concurrent session for the same receipt path', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-lock-'))
     const receiptPath = join(directory, 'receipt.json')
@@ -440,6 +516,27 @@ describe('cohort activation contract', () => {
       await expect(
         writeReceipt(receiptPath, switched, receiptExpectation(intent))
       ).rejects.toMatchObject({ code: 'RECEIPT_STATE_TRANSITION' })
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('clears only the exact preparing receipt expectation', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-clear-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const intent = makeCohortActivationReceiptIntent(makeManifest())
+    try {
+      await writeReceipt(receiptPath, intent, null)
+      await expect(
+        clearPreparingReceipt(receiptPath, {
+          ...receiptExpectation(intent)!,
+          payloadDigest: '0'.repeat(64),
+        })
+      ).rejects.toMatchObject({ code: 'RECEIPT_CONCURRENT_WRITE' })
+      await clearPreparingReceipt(receiptPath, receiptExpectation(intent)!)
+      await expect(readFile(receiptPath, 'utf8')).rejects.toMatchObject({
+        code: 'ENOENT',
+      })
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

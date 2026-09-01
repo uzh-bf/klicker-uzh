@@ -1690,6 +1690,76 @@ export async function prepareCohortActivation(
   })
 }
 
+export async function assertCohortActivationNotPrepared(
+  store: CohortActivationStore,
+  manifest: CohortActivationManifest,
+  intent: CohortActivationReceiptIntent
+): Promise<void> {
+  validateManifest(manifest)
+  validateCohortActivationReceiptIntent(intent)
+  assertIntentMatchesManifest(manifest, intent)
+  if (
+    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
+    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
+  ) {
+    fail(
+      'RECEIPT_INVALID',
+      'cohortActivation intent does not cover the manifest'
+    )
+  }
+
+  await store.transaction(async (tx) => {
+    await readSourceEntries(tx, manifest)
+    const targetByName = await tx.findServerByName(manifest.target.serverName)
+    let targetServer: CohortActivationServerRecord | null = null
+
+    if (intent.targetServerId === null) {
+      if (targetByName) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'target server appeared after the preparing intent was written'
+        )
+      }
+    } else {
+      const targetById = await tx.findServerById(intent.targetServerId)
+      if (
+        !targetByName ||
+        !targetById ||
+        targetByName.id.toLowerCase() !== intent.targetServerId.toLowerCase() ||
+        targetById.id.toLowerCase() !== intent.targetServerId.toLowerCase()
+      ) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'the pre-existing target server no longer matches the intent'
+        )
+      }
+      assertTargetServer(targetByName, manifest.target)
+      assertTargetServer(targetById, manifest.target)
+      targetServer = targetByName
+    }
+
+    for (const entry of manifest.entries) {
+      const targetConfigId = intent.targetConfigIds[entry.configId]
+      if (!targetConfigId || (await tx.findConfigById(targetConfigId))) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'a deterministic target config may have been prepared'
+        )
+      }
+      if (
+        targetServer &&
+        (await tx.findConfigByChatbotServer(
+          normalizeUuid(entry.chatbotId, 'entry.chatbotId'),
+          targetServer.id,
+          entry.chatMode
+        ))
+      ) {
+        fail('CLEAR_AMBIGUOUS', 'a target chatbot mode may have been prepared')
+      }
+    }
+  })
+}
+
 export async function recoverPreparedCohortActivation(
   store: CohortActivationStore,
   manifest: CohortActivationManifest,

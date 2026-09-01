@@ -126,4 +126,15 @@ Neither PR may merge under this plan.
   checks, focused ESLint, Prettier, staged secret scans, and diff checks). The
   final security and data-integrity correction review passed, including shared
   STG test-support compatibility.
+- [ ] The final AI review at `ee52c9d6f` reopened the activation package with
+  four material fail-closed findings. The local correction candidate now
+  durably syncs receipt transitions, adds an explicit evidence-gated command
+  for clearing a definitively uncommitted preparing intent, enforces the proof
+  child's exit contract, and emits only fixed diagnostic classes. Focused
+  activation and proof suites pass with 36 tests each, both affected type
+  checks pass, and focused lint, formatting, and diff checks pass. Dedicated
+  simplification, security/data-integrity review, and exact-head CI remain.
+  The configured planner route failed before reading the task with `Unknown
+  model combo/glm-5.3-flash`; the approved equivalent plan review passed on the
+  privacy-screened GPT-5.6 Sol xhigh continuity route.
 - [ ] Canonical and maintenance PRs published with terminal exact-head CI.

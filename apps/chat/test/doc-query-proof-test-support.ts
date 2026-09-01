@@ -41,6 +41,9 @@ export type RunProofMatrix = (options: {
   manifest: unknown
   environment: Record<string, string> | NodeJS.ProcessEnv
   invoke: ProofInvoke
+  createSigner?: () => Promise<
+    (input: Record<string, unknown>) => Promise<string>
+  >
 }) => Promise<ProofReceipt>
 
 export type SuperviseProof = (options: {
@@ -193,6 +196,7 @@ export function createProofReceiptSources({
       "  phase: 'complete',",
       "  result: 'passed',",
       "  failureClass: 'none',",
+      "  diagnosticClass: 'none',",
       '  failedCaseId: null,',
       '  failedRejectionClass: null,',
       `  counts: ${passedCounts},`,
@@ -215,6 +219,7 @@ export function createProofReceiptSources({
       "  phase: 'canary',",
       "  result: 'failed',",
       "  failureClass: 'canary_positive_failed',",
+      "  diagnosticClass: 'none',",
       "  failedCaseId: 'corpus_1',",
       '  failedRejectionClass: null,',
       `  counts: ${failedCounts},`,
@@ -596,12 +601,12 @@ export function defineProofSupervisorSuite(
           config
             .passedReceiptSource()
             .replaceAll("phase: 'complete'", "phase: 'matrix'"),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'missing preservation evidence',
         () => config.passedReceiptSource('', 'undefined'),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'non-zero preservation evidence',
@@ -610,7 +615,7 @@ export function defineProofSupervisorSuite(
             '',
             '{databaseWrites:1,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
           ),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'an exit-mismatched receipt',
@@ -635,6 +640,28 @@ export function defineProofSupervisorSuite(
       })
       expect(receipt.result).toBe('failed')
       expect(receipt.failureClass).toBe(expectedFailure)
+    })
+
+    test('classifies a successful exit with a failed receipt as a worker protocol failure', async () => {
+      const dummy = await config.writeDummy(
+        config
+          .failedReceiptSource()
+          .replaceAll('process.exit(1)', 'process.exit(0)')
+      )
+      const receipt = await behaviors.superviseProof({
+        sourceEnvironment:
+          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        childPath: dummy.path,
+        childArgs: [],
+        lockPath: dummy.lockPath,
+        deadlineMs: 2_000,
+      })
+      expect(receipt).toMatchObject({
+        result: 'failed',
+        failureClass: 'child_failed',
+        diagnosticClass: 'worker_protocol',
+        exitCode: 0,
+      })
     })
 
     test('preserves a protocol failure when a failed child claims writes', async () => {
