@@ -1,11 +1,47 @@
 import { useQuery } from '@apollo/client'
 import type { Element } from '@klicker-uzh/graphql/dist/ops'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import type { FormikProps } from 'formik'
+import { isEqual, omit } from 'lodash'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { CreationFormValues } from '../components/activities/creation/WizardLayout'
 
 const SNAPSHOT_VERSION = 1
+const DERIVED_COURSE_FIELDS = [
+  'courseStartDate',
+  'courseEndDate',
+  'courseGroupDeadline',
+]
 
 export type ActivityWizardMode = 'create' | 'duplicate' | 'convert' | 'edit'
+
+export function resolveActivityWizardMode({
+  editMode,
+  duplicationMode,
+  conversionMode = false,
+}: {
+  editMode: boolean
+  duplicationMode: boolean
+  conversionMode?: boolean
+}): ActivityWizardMode {
+  if (editMode) {
+    return 'edit'
+  }
+
+  if (duplicationMode) {
+    return 'duplicate'
+  }
+
+  return conversionMode ? 'convert' : 'create'
+}
 
 export const ACTIVITY_WIZARD_SNAPSHOT_PREFIX = 'autosave-activity-creation'
 
@@ -488,4 +524,189 @@ export function hasWizardSnapshot(options: {
     options.userKey !== 'user-unknown' &&
     readValidatedSnapshot(options) !== undefined
   )
+}
+
+interface ActivityWizardRecoveryOptions<T extends CreationFormValues> {
+  snapshot: {
+    mode: ActivityWizardMode
+    activityType: string
+    sourceId?: string
+  }
+  form: {
+    data: T
+    ref: { current: FormikProps<T> | null }
+    setData: Dispatch<SetStateAction<T>>
+  }
+  elements: {
+    selected: Record<number, Element>
+    restore: (selection: Record<number, Element>) => void
+  }
+  lifecycle: {
+    isCompleted: boolean
+    close: () => void
+  }
+}
+
+export function useActivityWizardRecovery<T extends CreationFormValues>({
+  snapshot: { mode, activityType, sourceId },
+  form: { data: formData, ref: formRef, setData: setFormData },
+  elements: { selected: selection, restore: restoreSelection },
+  lifecycle: { isCompleted, close },
+}: ActivityWizardRecoveryOptions<T>) {
+  const editMode = mode === 'edit'
+  const userKey = useWizardUserKey()
+  const recoveryOptions = useMemo(
+    () => ({ userKey, mode, activityType, sourceId }),
+    [activityType, mode, sourceId, userKey]
+  )
+  const readCurrentValues = useCallback(
+    () => formRef.current?.values,
+    [formRef]
+  )
+  const isClosingRef = useRef(false)
+  const hasPersistedSnapshotRef = useRef(false)
+  const initialDataRef = useRef(formData)
+  const isWizardDirty = useCallback(() => {
+    // Course metadata is derived when the settings step mounts, so it does
+    // not represent a lecturer edit on an otherwise pristine wizard.
+    const merged = {
+      ...initialDataRef.current,
+      ...formData,
+      ...formRef.current?.values,
+    }
+
+    return (
+      Object.keys(selection).length > 0 ||
+      !isEqual(
+        omit(initialDataRef.current, DERIVED_COURSE_FIELDS),
+        omit(merged, DERIVED_COURSE_FIELDS)
+      )
+    )
+  }, [formData, formRef, selection])
+  const [recoveryAvailable, setRecoveryAvailable] = useState(() =>
+    hasWizardSnapshot(recoveryOptions)
+  )
+
+  // Snapshots written before user scoping cannot be attributed to an
+  // account, so drop them once on mount instead of offering them back.
+  useEffect(() => {
+    clearLegacyUnscopedSnapshots()
+  }, [])
+
+  // The user key resolves asynchronously from the profile query; re-check
+  // for a snapshot when it lands so a saved draft is still offered.
+  useEffect(() => {
+    setRecoveryAvailable(hasWizardSnapshot(recoveryOptions))
+  }, [recoveryOptions])
+
+  // Steps commit values to formData only on navigation. Sample the mounted
+  // Formik step so reload recovery also observes in-progress edits.
+  useEffect(() => {
+    if (isCompleted || editMode || recoveryAvailable) {
+      return
+    }
+
+    const sampler = setInterval(() => {
+      setFormData((previous) => {
+        const merged = { ...previous, ...readCurrentValues() }
+        return isEqual(previous, merged) ? previous : merged
+      })
+    }, 1000)
+
+    return () => clearInterval(sampler)
+  }, [editMode, isCompleted, readCurrentValues, recoveryAvailable, setFormData])
+
+  useEffect(() => {
+    if (isCompleted || editMode || recoveryAvailable) {
+      return
+    }
+
+    if (!isWizardDirty()) {
+      // Only clear a snapshot written by this mounted wizard. An existing
+      // recovery candidate survives until the lecturer loads or discards it.
+      if (hasPersistedSnapshotRef.current) {
+        clearWizardSnapshot(recoveryOptions)
+        hasPersistedSnapshotRef.current = false
+        setRecoveryAvailable(false)
+      }
+      return
+    }
+
+    const timer = setTimeout(() => {
+      if (isClosingRef.current) {
+        return
+      }
+
+      if (
+        saveWizardSnapshot({
+          ...recoveryOptions,
+          values: { ...formData, ...readCurrentValues() },
+          selectedElements: selection,
+        })
+      ) {
+        hasPersistedSnapshotRef.current = true
+      }
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [
+    formData,
+    editMode,
+    isCompleted,
+    isWizardDirty,
+    readCurrentValues,
+    recoveryAvailable,
+    recoveryOptions,
+    selection,
+  ])
+
+  // A completed activity must never be offered as an interrupted draft.
+  useEffect(() => {
+    if (isCompleted) {
+      clearWizardSnapshot(recoveryOptions)
+      setRecoveryAvailable(false)
+    }
+  }, [isCompleted, recoveryOptions])
+
+  const handleRecover = () => {
+    const restored = loadWizardSnapshot<T>(recoveryOptions)
+
+    if (restored) {
+      setFormData((previous) => ({ ...previous, ...restored.values }))
+      // A mounted step owns its Formik state independently from formData, so
+      // hydrate both stores to make recovery visible without changing steps.
+      formRef.current?.setValues({
+        ...formRef.current.values,
+        ...restored.values,
+      })
+      if (restored.selectedElements) {
+        restoreSelection(restored.selectedElements)
+      }
+    }
+
+    setRecoveryAvailable(false)
+  }
+
+  const handleDiscardRecovery = () => {
+    clearWizardSnapshot(recoveryOptions)
+    setRecoveryAvailable(false)
+  }
+
+  const closeWizardAndClearSnapshot = useCallback(() => {
+    // A pending debounce must not recreate the snapshot after an explicit
+    // close, regardless of whether the close guard needed confirmation.
+    isClosingRef.current = true
+    clearWizardSnapshot(recoveryOptions)
+    close()
+  }, [close, recoveryOptions])
+
+  return {
+    recoveryProps: {
+      isDirty: isWizardDirty,
+      recoveryAvailable: recoveryAvailable && !editMode,
+      onRecover: handleRecover,
+      onDiscardRecovery: handleDiscardRecovery,
+    },
+    closeWizardAndClearSnapshot,
+  }
 }
