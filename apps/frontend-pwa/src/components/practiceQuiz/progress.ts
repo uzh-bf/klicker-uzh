@@ -47,10 +47,7 @@ export function summarizePracticeQuizCompletion(
       score = (score ?? 0) + stackProgress.score
     }
 
-    if (
-      stackProgress.status &&
-      stackProgress.status !== UNANSWERED_STATUS
-    ) {
+    if (stackProgress.status && stackProgress.status !== UNANSWERED_STATUS) {
       answeredCount += 1
     }
   }
