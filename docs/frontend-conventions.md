@@ -96,6 +96,8 @@ shows the server-provided total, and resets to page 1 after an import or delete.
 CSV selection rejects files above 1 MiB and imports above 200 data rows before
 submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
 
+Escape Room clients render the attempt, timer, hints, lockout, and available stage from server snapshots. The local monotonic countdown only animates between refetches. Group Activities reuse this contract with one shared attempt: the routed `groupId` accompanies start and hint requests so the server can verify the exact membership, and `apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx:GroupActivityStack` sends only answerable question responses in its atomic submission while read-only content remains visible. Lecturer monitoring uses the server-provided participant or group roster and group-aware reset identity.
+
 ## i18n (next-intl)
 
 Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `control`). Usage: `useTranslations()` without a namespace argument and full-path keys — `t('manage.settings.userSettings')`, `t('shared.generic.cancel')`; `t.rich` for markup. Messages load per page via `getStaticProps`; the plugin is wired in each `next.config.mjs` (`createNextIntlPlugin`).

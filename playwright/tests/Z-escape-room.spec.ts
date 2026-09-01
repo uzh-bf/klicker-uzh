@@ -13,6 +13,7 @@ import {
   loginLecturer,
   runTask,
 } from '../util/workflow.js'
+import { registerGroupEscapeRoomTests } from './escape-room/group.js'
 import {
   registerMicrolearningCreationTest,
   registerMicrolearningFlowTest,
@@ -68,4 +69,5 @@ test.describe.serial('Escape room workflows', () => {
   registerMicrolearningCreationTest()
   registerQrFallbackTest()
   registerMicrolearningFlowTest()
+  registerGroupEscapeRoomTests()
 })

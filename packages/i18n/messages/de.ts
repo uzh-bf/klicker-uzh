@@ -3726,6 +3726,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       extendGroupActivityDescription:
         'Verwenden Sie dieses Dialogfeld, um das Enddatum der Gruppenaktivität zu ändern. Bitte beachten Sie, dass nur zukünftige Daten als Enddatum gewählt werden können.',
       gradeGroupActivity: 'Gruppenaktivität bewerten',
+      monitorGroupActivity: 'Gruppenaktivität überwachen',
       courseElements: 'Kurs-Elemente',
       ltiLinks: 'LTI Links',
       enableGamification: 'Gamifizierung aktivieren',

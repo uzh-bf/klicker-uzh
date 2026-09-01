@@ -68,6 +68,12 @@ does not prove that the conversation stayed mounted.
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 
+## Escape Room coverage
+
+The focused GraphQL set is `escapeRoomCompletion`, `escapeRoomHintsAndReset`, `escapeRoomLifecycle`, `escapeRoomReset`, `escapeRoomRetentionAndProgress`, `qrScanContracts`, `qrScanPlacement`, plus the mode-specific suite. `escapeRoomGroupActivity.test.ts` covers exact-set validation, response-shape and sample-solution rejection, transaction rollback, expiry, mixed content, QR grading without code persistence, shared lockout, completion, and concurrent submissions.
+
+The ordered browser workflow lives in `playwright/tests/Z-escape-room.spec.ts`. It creates the shared questions once and registers each mode from `playwright/tests/escape-room/`. Group coverage authors and publishes the activity, starts one shared attempt from two participant sessions, verifies shared lockout and completion, monitors and resets it as the lecturer, includes read-only content in the rendered stack, and captures English desktop plus German mobile evidence.
+
 ## E2E stack and selector convention
 
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
@@ -202,3 +208,5 @@ Root typecheck includes the Playwright compiler surface through its package `che
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+Escape Room Group Activity tests must include a participant belonging to multiple groups in one course. Start and hint requests must select the routed group explicitly and prove that the server rejects a missing or unauthorized group identity instead of choosing an arbitrary membership.

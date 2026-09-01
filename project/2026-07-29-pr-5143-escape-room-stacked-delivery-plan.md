@@ -157,7 +157,7 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Commit and independently review this plan; revision findings incorporated.
 - [x] Extract and verify Layer 1.
 - [x] Add, extract, and verify Layer 2.
-- [ ] Add, extract, and verify Layer 3.
+- [x] Add, extract, and verify Layer 3.
 - [ ] Add, extract, and verify Layer 4.
 - [ ] Run final stack-wide review and verification gates.
 - [ ] Publish draft PRs and read back stack/PR state.
@@ -250,3 +250,32 @@ The review found that client-only filtering after the existing `numEntries`/`off
   suite expose only Practice Quiz and Microlearning Escape Rooms. The
   per-layer verification README records the deferred source paths and
   behaviors.
+
+## Layer 3 evidence
+
+- **Implementation commits:** `b07726167`, `ffc79e4d2`, `40d1e99e8`,
+  `4d4e682f6`, `33275873a`, and review correction `ac8a49d15`.
+- **Verification:** 85 focused GraphQL Escape Room tests, affected GraphQL,
+  PWA, and Playwright checks, repository-wide `check:all`, the full
+  22-workspace production build, and all 18 routed Escape Room Playwright
+  scenarios passed.
+- **Browser evidence:** the current branch records an English desktop
+  group-roster dashboard with both active and `NOT_STARTED` groups and a
+  German mobile participant view of the shared lockout state. The ordered
+  journey covers two members sharing start, lockout, completion, monitor
+  status, and reset while read-only content stays outside the exact submitted
+  answer set.
+- **Independent review:** correctness review found that deriving a participant
+  group with `findFirst` was ambiguous for valid same-course multi-group
+  membership. Group start and hint calls now carry the routed `groupId`, and
+  the server verifies the activity course and authenticated membership before
+  using it as the lifecycle actor. The regression suite proves distinct routed
+  attempts and rejection of missing group identity. Simplification review
+  replaced swallowed configuration-delete errors, removed mutable `any`
+  authoring data, and consolidated lifecycle-claim release.
+- **Extraction boundary:** the effective Layer 3 diff exposes Group Activity
+  authoring, shared attempts, atomic grading, participant runtime, monitoring,
+  and reset without Live Quiz block settings, participant/cockpit runtime,
+  response API/worker behavior, or Live-specific GraphQL inputs. The per-layer
+  verification README records the screenshots, commands, review corrections,
+  and the unchanged wiki-validator baseline warning.

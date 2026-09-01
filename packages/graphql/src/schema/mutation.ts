@@ -3483,6 +3483,10 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
@@ -3505,6 +3509,10 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
+            isEscapeRoom: t.arg.boolean({ required: false }),
+            escapeRoomTimeLimit: t.arg.int({ required: false }),
+            escapeRoomHintPenalty: t.arg.int({ required: false }),
+            escapeRoomIntroText: t.arg.string({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
@@ -3629,6 +3637,8 @@ export const Mutation = builder.mutationType({
         args: {
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          groupId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await EscapeRoomService.startEscapeRoomAttempt(args, ctx)
@@ -3639,7 +3649,9 @@ export const Mutation = builder.mutationType({
         args: {
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
           participantId: t.arg.string({ required: false }),
+          groupId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await EscapeRoomService.resetEscapeRoomAttempt(args, ctx)
@@ -3652,6 +3664,8 @@ export const Mutation = builder.mutationType({
         args: {
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          groupId: t.arg.string({ required: false }),
           instanceId: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {

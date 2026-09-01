@@ -101,7 +101,10 @@ function ActivityCreation({
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
     GetGroupActivityDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.GroupActivity,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.GroupActivity &&
@@ -311,6 +314,7 @@ function ActivityCreation({
             }
             editMode={editMode === ActivityType.GroupActivity}
             duplicationMode={duplicationMode === ActivityType.GroupActivity}
+            escapeRoomHints={dataGroupActivity?.escapeRoomHints ?? []}
           />
         )}
       </div>

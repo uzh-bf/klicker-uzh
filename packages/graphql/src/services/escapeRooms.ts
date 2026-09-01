@@ -19,6 +19,14 @@ const RELEASE_ESCAPE_ROOM_CLAIM = `
   return 0
 `
 
+export async function releaseEscapeRoomLifecycleClaim(
+  ctx: Pick<ContextWithUser, 'redisExec'>,
+  claimKey: string,
+  claimToken: string
+) {
+  await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+}
+
 export function validateEscapeRoomConfig({
   timeLimit,
   hintPenalty,
@@ -79,12 +87,15 @@ export async function getEscapeRoomHints(
   args: {
     practiceQuizId?: string | null
     microLearningId?: string | null
+    groupActivityId?: string | null
   },
   ctx: ContextWithUser
 ) {
-  const activityIdCount = [args.practiceQuizId, args.microLearningId].filter(
-    (id) => id != null
-  ).length
+  const activityIdCount = [
+    args.practiceQuizId,
+    args.microLearningId,
+    args.groupActivityId,
+  ].filter((id) => id != null).length
   if (activityIdCount !== 1) {
     throw new GraphQLError('Exactly one escape room activity ID is required')
   }
@@ -94,10 +105,15 @@ export async function getEscapeRoomHints(
         practiceQuizId: args.practiceQuizId,
         minimumPermissionLevel: DB.PermissionLevel.WRITE,
       }
-    : {
-        microLearningId: args.microLearningId!,
-        minimumPermissionLevel: DB.PermissionLevel.WRITE,
-      }
+    : args.microLearningId
+      ? {
+          microLearningId: args.microLearningId,
+          minimumPermissionLevel: DB.PermissionLevel.WRITE,
+        }
+      : {
+          groupActivityId: args.groupActivityId!,
+          minimumPermissionLevel: DB.PermissionLevel.WRITE,
+        }
   const hasWriteAccess = await checkAccess([accessRequest], ctx)
   if (!hasWriteAccess) {
     throw new GraphQLError('Write access is required to read escape room hints')
@@ -107,7 +123,9 @@ export async function getEscapeRoomHints(
     where: {
       elementStack: args.practiceQuizId
         ? { practiceQuizId: args.practiceQuizId }
-        : { microLearningId: args.microLearningId! },
+        : args.microLearningId
+          ? { microLearningId: args.microLearningId }
+          : { groupActivityId: args.groupActivityId! },
     },
     select: { id: true, options: true },
   })
@@ -170,21 +188,27 @@ export function isEscapeRoomStackCleared(
 interface EscapeRoomActivityArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null
+  groupActivityId?: string | null
+  groupId?: string | null
 }
 
 type EscapeRoomActivityReference =
   | { kind: 'practiceQuiz'; id: string }
   | { kind: 'microLearning'; id: string }
+  | { kind: 'groupActivity'; id: string }
 
 function getEscapeRoomActivityReference({
   practiceQuizId,
   microLearningId,
+  groupActivityId,
 }: EscapeRoomActivityArgs): EscapeRoomActivityReference {
   const references: EscapeRoomActivityReference[] = []
   if (practiceQuizId)
     references.push({ kind: 'practiceQuiz', id: practiceQuizId })
   if (microLearningId)
     references.push({ kind: 'microLearning', id: microLearningId })
+  if (groupActivityId)
+    references.push({ kind: 'groupActivity', id: groupActivityId })
 
   if (references.length !== 1) {
     throw new GraphQLError('Exactly one activity ID must be specified', {
@@ -198,16 +222,19 @@ function getEscapeRoomActivityReference({
 
 interface ResolvedParticipantEscapeRoom {
   reference: EscapeRoomActivityReference
+  groupId: string | null
   config: Pick<DB.EscapeRoomConfig, 'timeLimit' | 'hintPenalty'>
 }
 
 async function resolveParticipantEscapeRoom(
   reference: EscapeRoomActivityReference,
   participantId: string,
+  requestedGroupId: string | null | undefined,
   ctx: ContextWithUser
 ): Promise<ResolvedParticipantEscapeRoom> {
   let courseId: string
   let config: DB.EscapeRoomConfig | null
+  let groupId: string | null = null
 
   switch (reference.kind) {
     case 'practiceQuiz': {
@@ -234,6 +261,36 @@ async function resolveParticipantEscapeRoom(
       config = activity.escapeRoomConfig
       break
     }
+    case 'groupActivity': {
+      if (!requestedGroupId) {
+        throw new GraphQLError(
+          'A group ID is required for group escape room access',
+          { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
+        )
+      }
+      const activity = await ctx.prisma.groupActivity.findUnique({
+        where: { id: reference.id, isDeleted: false },
+        include: { escapeRoomConfig: true },
+      })
+      if (!activity || activity.status !== DB.PublicationStatus.PUBLISHED) {
+        throw new GraphQLError('Group activity not found')
+      }
+      courseId = activity.courseId
+      config = activity.escapeRoomConfig
+      const participantGroup = await ctx.prisma.participantGroup.findFirst({
+        where: {
+          id: requestedGroupId,
+          courseId,
+          participants: { some: { id: participantId } },
+        },
+        select: { id: true },
+      })
+      if (!participantGroup) {
+        throw new GraphQLError('Participant is not in a group for this course')
+      }
+      groupId = participantGroup.id
+      break
+    }
   }
 
   if (!config) {
@@ -255,7 +312,7 @@ async function resolveParticipantEscapeRoom(
     )
   }
 
-  return { reference, config }
+  return { reference, groupId, config }
 }
 
 function getAttemptWhere(
@@ -277,6 +334,16 @@ function getAttemptWhere(
           microLearningId: activity.reference.id,
         },
       }
+    case 'groupActivity':
+      if (!activity.groupId) {
+        throw new GraphQLError('Participant group could not be resolved')
+      }
+      return {
+        groupId_groupActivityId: {
+          groupId: activity.groupId,
+          groupActivityId: activity.reference.id,
+        },
+      }
   }
 }
 
@@ -284,7 +351,7 @@ function getAttemptActivityData(
   activity: ResolvedParticipantEscapeRoom
 ): Pick<
   DB.Prisma.EscapeRoomAttemptUncheckedCreateInput,
-  'practiceQuizId' | 'microLearningId'
+  'practiceQuizId' | 'microLearningId' | 'groupActivityId' | 'groupId'
 > {
   return {
     practiceQuizId:
@@ -293,6 +360,11 @@ function getAttemptActivityData(
       activity.reference.kind === 'microLearning'
         ? activity.reference.id
         : null,
+    groupActivityId:
+      activity.reference.kind === 'groupActivity'
+        ? activity.reference.id
+        : null,
+    groupId: activity.groupId,
   }
 }
 
@@ -313,12 +385,13 @@ export async function startEscapeRoomAttempt(
   const activity = await resolveParticipantEscapeRoom(
     getEscapeRoomActivityReference(args),
     participantId,
+    args.groupId,
     ctx
   )
   const claimKey = getEscapeRoomLifecycleClaimKey(
     activity.reference.kind,
     activity.reference.id,
-    participantId
+    activity.groupId ?? participantId
   )
   const claimToken = `start:${randomUUID()}`
   let claimed = false
@@ -375,7 +448,7 @@ export async function startEscapeRoomAttempt(
         update: {},
         create: {
           ...getAttemptActivityData(activity),
-          participantId,
+          participantId: activity.groupId ? null : participantId,
           timeLimit: activity.config.timeLimit,
           penaltySeconds: 0,
           hintsUsed: [],
@@ -396,7 +469,7 @@ export async function startEscapeRoomAttempt(
       throw error
     }
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }
 
@@ -414,6 +487,7 @@ function instanceBelongsToActivity(
     elementStack: {
       practiceQuizId: string | null
       microLearningId: string | null
+      groupActivityId: string | null
     } | null
   },
   reference: EscapeRoomActivityReference
@@ -423,6 +497,8 @@ function instanceBelongsToActivity(
       return instance.elementStack?.practiceQuizId === reference.id
     case 'microLearning':
       return instance.elementStack?.microLearningId === reference.id
+    case 'groupActivity':
+      return instance.elementStack?.groupActivityId === reference.id
   }
 }
 
@@ -477,34 +553,39 @@ async function revealEscapeRoomHint(
     })
   }
 
-  const stacks = await ctx.prisma.elementStack.findMany({
-    where:
-      activity.reference.kind === 'practiceQuiz'
-        ? { practiceQuizId: activity.reference.id }
-        : { microLearningId: activity.reference.id },
-    orderBy: { order: 'asc' },
-    select: {
-      id: true,
-      elements: {
-        select: {
-          id: true,
-          elementType: true,
-          responses: {
-            where: { participantId },
-            select: { lastResponseCorrectness: true },
+  if (
+    activity.reference.kind === 'practiceQuiz' ||
+    activity.reference.kind === 'microLearning'
+  ) {
+    const stacks = await ctx.prisma.elementStack.findMany({
+      where:
+        activity.reference.kind === 'practiceQuiz'
+          ? { practiceQuizId: activity.reference.id }
+          : { microLearningId: activity.reference.id },
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        elements: {
+          select: {
+            id: true,
+            elementType: true,
+            responses: {
+              where: { participantId },
+              select: { lastResponseCorrectness: true },
+            },
           },
         },
       },
-    },
-  })
-  const currentStack = stacks.find(
-    (stack) => !isEscapeRoomStackCleared(stack.elements)
-  )
-  if (!currentStack || instance.elementStackId !== currentStack.id) {
-    throw new GraphQLError(
-      'You must answer all preceding questions correctly before requesting this hint',
-      { extensions: { code: 'ESCAPE_ROOM_GATED' } }
+    })
+    const currentStack = stacks.find(
+      (stack) => !isEscapeRoomStackCleared(stack.elements)
     )
+    if (!currentStack || instance.elementStackId !== currentStack.id) {
+      throw new GraphQLError(
+        'You must answer all preceding questions correctly before requesting this hint',
+        { extensions: { code: 'ESCAPE_ROOM_GATED' } }
+      )
+    }
   }
 
   const hint = instance.options.escapeRoomHint
@@ -539,12 +620,13 @@ export async function requestEscapeRoomHint(
   const activity = await resolveParticipantEscapeRoom(
     getEscapeRoomActivityReference(args),
     participantId,
+    args.groupId,
     ctx
   )
   const claimKey = getEscapeRoomLifecycleClaimKey(
     activity.reference.kind,
     activity.reference.id,
-    participantId
+    activity.groupId ?? participantId
   )
   const claimToken = `hint:${randomUUID()}`
   let claimed = false
@@ -582,7 +664,7 @@ export async function requestEscapeRoomHint(
   try {
     return await revealEscapeRoomHint(instanceId, participantId, activity, ctx)
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }
 
@@ -618,6 +700,17 @@ async function requireResetPermission(
         ctx
       )
       break
+    case 'groupActivity':
+      hasAccess = await checkAccess(
+        [
+          {
+            groupActivityId: reference.id,
+            minimumPermissionLevel: DB.PermissionLevel.WRITE,
+          },
+        ],
+        ctx
+      )
+      break
   }
   if (!hasAccess) {
     throw new GraphQLError('You do not have write access to this activity')
@@ -625,7 +718,7 @@ async function requireResetPermission(
 }
 
 export async function resetEscapeRoomAttempt(
-  { participantId, ...args }: ResetEscapeRoomAttemptArgs,
+  { participantId, groupId, ...args }: ResetEscapeRoomAttemptArgs,
   ctx: ContextWithUser
 ) {
   if (
@@ -636,8 +729,16 @@ export async function resetEscapeRoomAttempt(
   }
 
   const activityReference = getEscapeRoomActivityReference(args)
-  if (!participantId) {
-    throw new GraphQLError('An individual reset requires one participant ID')
+  if (activityReference.kind === 'groupActivity') {
+    if (!groupId || participantId) {
+      throw new GraphQLError(
+        'A group reset requires exactly one group ID and no participant ID'
+      )
+    }
+  } else if (!participantId || groupId) {
+    throw new GraphQLError(
+      'An individual reset requires exactly one participant ID and no group ID'
+    )
   }
   await requireResetPermission(activityReference, ctx)
 
@@ -647,14 +748,21 @@ export async function resetEscapeRoomAttempt(
           practiceQuizId: activityReference.id,
           participantId,
         }
-      : {
-          microLearningId: activityReference.id,
-          participantId,
-        }
+      : activityReference.kind === 'microLearning'
+        ? {
+            microLearningId: activityReference.id,
+            participantId,
+          }
+        : {
+            groupActivityId: activityReference.id,
+            groupId,
+          }
+  const actorId =
+    activityReference.kind === 'groupActivity' ? groupId! : participantId!
   const claimKey = getEscapeRoomLifecycleClaimKey(
     activityReference.kind,
     activityReference.id,
-    participantId
+    actorId
   )
   const claimToken = randomUUID()
   const claimed = await ctx.redisExec.set(claimKey, claimToken, 'EX', 300, 'NX')
@@ -672,7 +780,7 @@ export async function resetEscapeRoomAttempt(
           await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
           await tx.questionResponse.deleteMany({
             where: {
-              participantId,
+              participantId: participantId!,
               elementInstance: {
                 elementStack: { practiceQuizId: activityReference.id },
               },
@@ -683,17 +791,26 @@ export async function resetEscapeRoomAttempt(
           await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
           await tx.questionResponse.deleteMany({
             where: {
-              participantId,
+              participantId: participantId!,
               elementInstance: {
                 elementStack: { microLearningId: activityReference.id },
               },
             },
           })
           break
+        case 'groupActivity':
+          await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
+          await tx.groupActivityInstance.deleteMany({
+            where: {
+              groupActivityId: activityReference.id,
+              groupId: groupId!,
+            },
+          })
+          break
       }
     })
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 
   return true
