@@ -79,7 +79,7 @@ const SYNTHETIC_DOCUMENTS = [
 ]
 
 function findDocuments(query) {
-  const normalizedQuery = query.toLocaleLowerCase()
+  const normalizedQuery = query.toLowerCase()
   return SYNTHETIC_DOCUMENTS.filter((document) =>
     document.keywords.some((keyword) => normalizedQuery.includes(keyword))
   )
