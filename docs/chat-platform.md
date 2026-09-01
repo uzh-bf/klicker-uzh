@@ -157,15 +157,17 @@ with no history projects budget 0 / used 0. The Zurich month boundary
 `packages/util/src/chatUsage.ts`.
 
 `CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls only the participant route's
-pre-provider budget rejection and defaults to `false`. Turn lifecycle writing
-has an independent default-off switch, `CHAT_TURN_LIFECYCLE_WRITES_ENABLED`
-(`chat.lifecycleWritersEnabled`; see
+pre-provider budget rejection and defaults to `false`. Turn lifecycle attempt
+tracking has an independent default-off switch,
+`CHAT_TURN_LIFECYCLE_WRITES_ENABLED` (`chat.lifecycleWritersEnabled`; see
 [ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md)). The Helm template
 omits the runtime key while the writer gate is false, so an older chart cannot
-accidentally enable it after a newer application is rolled back. A configured
-account row is still recorded after a completed provider response even when
-neither switch is enabled. Enabling each switch is a separate operational
-cutover decision for a named environment and cohort.
+accidentally enable it after a newer application is rolled back. With the
+switch disabled, claims still create hidden markers with a null attempt token;
+complete-only readers keep those markers out of history. A configured account
+row is still recorded after a completed provider response even when neither
+switch is enabled. Enabling each switch is a separate operational cutover
+decision for a named environment and cohort.
 
 The lecturer-facing GraphQL API projects the effective account month through
 `getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
@@ -282,32 +284,35 @@ settlement details. Exhausting one class neither disables the other nor invokes
 fallback. With the default-off setting, the route skips this rejection while
 retaining lifecycle claims and post-completion accounting for configured usage.
 
-The client-supplied assistant message ID is the turn lifecycle key.
-`apps/chat/src/services/accountUsage.ts:claimChatTurn` validates the thread,
-chatbot, and owner. In R2, when lifecycle writers are enabled, it inserts an
-`IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
-or provider work. Failed attempts may be reclaimed with a new UUID. In R1, when
-lifecycle writers are off, it validates the same scope but writes no row and
-returns an attempt ID of `null`, so older readers never observe an empty
-placeholder. Both modes reject duplicate or in-progress keys with the generic
-`409` behavior described below; R1 cannot prevent concurrent provider work
-because it has no reservation.
+The client-supplied assistant message ID remains the lifecycle row key, and the
+user message ID scopes a normal turn. `apps/chat/src/services/accountUsage.ts:claimChatTurn`
+validates the thread, chatbot, and owner. In R2, when lifecycle writers are
+enabled, it inserts an `IN_PROGRESS` assistant placeholder with a per-attempt
+UUID before MCP, image, or provider work. In R1, when lifecycle writers are
+off, it inserts the same hidden placeholder with a `null` attempt ID.
+Complete-only history reads keep either placeholder away from participants, and
+failed or empty R1 attempts delete it. A PostgreSQL transaction advisory lock
+keyed by thread and parent serializes normal claims, so concurrent requests for
+one user turn cannot create multiple provider attempts. Explicit regeneration
+sends an opt-in flag and may create a sibling answer. Failed R2 attempts may be
+reclaimed with a new UUID. Both modes reject duplicate or in-progress keys with
+the generic `409` behavior described below.
 
 `apps/chat/src/services/accountUsage.ts:finalizeChatTurn` is the single
 charging boundary. In R2, it updates the matching `IN_PROGRESS` or `FAILED`
-attempt to `COMPLETED`. In R1, it atomically inserts the completed result with
-`skipDuplicates`. In either mode, one non-empty completed answer also increments
-the owner/class/month counter by its rounded six-decimal credit value and updates
-the thread timestamp in one `ReadCommitted` transaction. In R1, a successful
-empty completion creates no row and is not charged; in R2, it closes the existing
-placeholder as an empty completed message and is not charged. Duplicate
-completion returns the stored result without charging again; a foreign or
-mismatched key conflicts. A normal finish and an abort use this finalizer once,
-and a late `onEnd` after an abort is ignored. Missing reliable main-stream
-usage still closes the message key with `creditsUsed = null` and no account
-charge. History
-reads hide `IN_PROGRESS` and `FAILED` placeholders. The availability check is
-not a reservation, so the bounded final-turn and concurrent overrun accepted by
+attempt to `COMPLETED`. In R1, it updates the matching hidden `IN_PROGRESS`
+placeholder to `COMPLETED` under the same thread-plus-parent lock. In either
+mode, one non-empty completed answer also increments the owner/class/month
+counter by its rounded six-decimal credit value and updates the thread timestamp
+in one `ReadCommitted` transaction. In R1, a successful empty completion deletes
+the hidden marker and is not charged; in R2, it closes the existing placeholder
+as an empty completed message and is not charged. Duplicate completion returns
+the stored result without charging again; a foreign or mismatched key conflicts.
+A normal finish and an abort use this finalizer once, and a late `onEnd` after an
+abort is ignored. Missing reliable main-stream usage still closes the message
+key with `creditsUsed = null` and no account charge. History reads hide
+`IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
+reservation, so the bounded final-turn and concurrent overrun accepted by
 [ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the
 next request then fails its live check.
 

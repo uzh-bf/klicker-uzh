@@ -54,6 +54,7 @@ export type ClaimChatTurnInput = {
   threadId: string
   assistantMessageId: string
   parentId: string | null
+  allowRegeneration?: boolean
 }
 
 export type ClaimChatTurnResult =
@@ -75,6 +76,18 @@ export function roundChatUsageCredits(value: number): Prisma.Decimal {
   }
 
   return rounded
+}
+
+async function lockChatTurnParent(
+  tx: Prisma.TransactionClient,
+  threadId: string,
+  parentId: string | null
+): Promise<void> {
+  if (!parentId) return
+
+  await tx.$executeRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`chat-turn:${threadId}:${parentId}`}))`
+  )
 }
 
 export async function isChatAccountUsageAvailable({
@@ -109,23 +122,9 @@ export async function isChatAccountUsageAvailable({
 export async function claimChatTurn(
   input: ClaimChatTurnInput
 ): Promise<ClaimChatTurnResult> {
-  if (!isChatTurnLifecycleWritesEnabled()) {
-    const thread = await prisma.chatThread.findFirst({
-      where: {
-        id: input.threadId,
-        chatbotId: input.chatbotId,
-        chatbot: { ownerId: input.ownerId },
-      },
-      select: { id: true },
-    })
-    if (!thread) {
-      throw new ChatTurnConflictError()
-    }
-
-    return { outcome: 'claimed', lifecycleAttemptId: null }
-  }
-
-  const lifecycleAttemptId = randomUUID()
+  const lifecycleAttemptId = isChatTurnLifecycleWritesEnabled()
+    ? randomUUID()
+    : null
 
   return withTransaction(async (tx) => {
     const thread = await tx.chatThread.findFirst({
@@ -140,23 +139,78 @@ export async function claimChatTurn(
       throw new ChatTurnConflictError()
     }
 
-    const created = await tx.chatMessage.createMany({
-      data: {
-        id: input.assistantMessageId,
-        threadId: input.threadId,
-        parentId: input.parentId,
-        role: 'assistant',
-        content: [],
-        lifecycleStatus: 'IN_PROGRESS',
-        lifecycleAttemptId,
-      },
-      skipDuplicates: true,
-    })
-    if (created.count === 1) {
-      return { outcome: 'claimed', lifecycleAttemptId }
+    if (!input.allowRegeneration) {
+      await lockChatTurnParent(tx, input.threadId, input.parentId)
     }
 
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    const existing = await tx.chatMessage.findUnique({
+      where: { id: input.assistantMessageId },
+      select: {
+        role: true,
+        threadId: true,
+        lifecycleStatus: true,
+        thread: {
+          select: {
+            chatbotId: true,
+            chatbot: { select: { ownerId: true } },
+          },
+        },
+      },
+    })
+    if (
+      existing &&
+      (existing.role !== 'assistant' ||
+        existing.threadId !== input.threadId ||
+        existing.thread.chatbotId !== input.chatbotId ||
+        existing.thread.chatbot.ownerId !== input.ownerId)
+    ) {
+      throw new ChatTurnConflictError()
+    }
+
+    if (existing?.lifecycleStatus === 'COMPLETED') {
+      return { outcome: 'completed', lifecycleAttemptId: null }
+    }
+    if (existing?.lifecycleStatus === 'IN_PROGRESS') {
+      return { outcome: 'in_progress', lifecycleAttemptId: null }
+    }
+
+    if (!input.allowRegeneration) {
+      const activeSibling = input.parentId
+        ? await tx.chatMessage.findFirst({
+            where: {
+              threadId: input.threadId,
+              parentId: input.parentId,
+              role: 'assistant',
+              lifecycleStatus: { in: ['IN_PROGRESS', 'COMPLETED'] },
+            },
+            select: { lifecycleStatus: true },
+          })
+        : null
+      if (activeSibling) {
+        return activeSibling.lifecycleStatus === 'COMPLETED'
+          ? { outcome: 'completed', lifecycleAttemptId: null }
+          : { outcome: 'in_progress', lifecycleAttemptId: null }
+      }
+
+      // A failed attempt may still have a provider callback in flight. Clear
+      // its attempt token before accepting a different normal claim so that
+      // the late callback cannot complete and charge a second sibling.
+      if (input.parentId) {
+        await tx.chatMessage.updateMany({
+          where: {
+            threadId: input.threadId,
+            parentId: input.parentId,
+            role: 'assistant',
+            lifecycleStatus: 'FAILED',
+            lifecycleAttemptId: { not: null },
+            id: { not: input.assistantMessageId },
+          },
+          data: { lifecycleAttemptId: null },
+        })
+      }
+    }
+
+    if (existing?.lifecycleStatus === 'FAILED') {
       const reclaimed = await tx.chatMessage.updateMany({
         where: {
           id: input.assistantMessageId,
@@ -179,35 +233,54 @@ export async function claimChatTurn(
       if (reclaimed.count === 1) {
         return { outcome: 'claimed', lifecycleAttemptId }
       }
+    }
 
-      const existing = await tx.chatMessage.findUnique({
-        where: { id: input.assistantMessageId },
-        select: {
-          role: true,
-          threadId: true,
-          lifecycleStatus: true,
-          thread: {
-            select: {
-              chatbotId: true,
-              chatbot: { select: { ownerId: true } },
-            },
+    // R1 keeps the attempt token disabled, but the durable marker still
+    // claims the provider work. Supported history readers return COMPLETED
+    // messages only, so they do not render this empty marker.
+    const created = await tx.chatMessage.createMany({
+      data: {
+        id: input.assistantMessageId,
+        threadId: input.threadId,
+        parentId: input.parentId,
+        role: 'assistant',
+        content: [],
+        lifecycleStatus: 'IN_PROGRESS',
+        lifecycleAttemptId,
+      },
+      skipDuplicates: true,
+    })
+    if (created.count === 1) {
+      return { outcome: 'claimed', lifecycleAttemptId }
+    }
+
+    const collision = await tx.chatMessage.findUnique({
+      where: { id: input.assistantMessageId },
+      select: {
+        role: true,
+        threadId: true,
+        lifecycleStatus: true,
+        thread: {
+          select: {
+            chatbotId: true,
+            chatbot: { select: { ownerId: true } },
           },
         },
-      })
-      if (
-        existing?.role !== 'assistant' ||
-        existing.threadId !== input.threadId ||
-        existing.thread.chatbotId !== input.chatbotId ||
-        existing.thread.chatbot.ownerId !== input.ownerId
-      ) {
-        throw new ChatTurnConflictError()
-      }
-      if (existing.lifecycleStatus === 'COMPLETED') {
-        return { outcome: 'completed', lifecycleAttemptId: null }
-      }
-      if (existing.lifecycleStatus === 'IN_PROGRESS') {
-        return { outcome: 'in_progress', lifecycleAttemptId: null }
-      }
+      },
+    })
+    if (
+      collision?.role !== 'assistant' ||
+      collision.threadId !== input.threadId ||
+      collision.thread.chatbotId !== input.chatbotId ||
+      collision.thread.chatbot.ownerId !== input.ownerId
+    ) {
+      throw new ChatTurnConflictError()
+    }
+    if (collision.lifecycleStatus === 'COMPLETED') {
+      return { outcome: 'completed', lifecycleAttemptId: null }
+    }
+    if (collision.lifecycleStatus === 'IN_PROGRESS') {
+      return { outcome: 'in_progress', lifecycleAttemptId: null }
     }
 
     throw new ChatTurnConflictError()
@@ -223,7 +296,18 @@ export async function failChatTurn({
   threadId: string
   lifecycleAttemptId: string | null
 }): Promise<void> {
-  if (lifecycleAttemptId === null) return
+  if (lifecycleAttemptId === null) {
+    await prisma.chatMessage.deleteMany({
+      where: {
+        id: assistantMessageId,
+        threadId,
+        role: 'assistant',
+        lifecycleStatus: 'IN_PROGRESS',
+        lifecycleAttemptId: null,
+      },
+    })
+    return
+  }
 
   await prisma.chatMessage.updateMany({
     where: {
@@ -260,11 +344,22 @@ export async function finalizeChatTurn(
       throw new ChatTurnConflictError()
     }
 
+    await lockChatTurnParent(tx, input.threadId, input.parentId)
+
     if (
       input.lifecycleAttemptId === null &&
       Array.isArray(input.content) &&
       input.content.length === 0
     ) {
+      await tx.chatMessage.deleteMany({
+        where: {
+          id: input.assistantMessageId,
+          threadId: input.threadId,
+          role: 'assistant',
+          lifecycleStatus: 'IN_PROGRESS',
+          lifecycleAttemptId: null,
+        },
+      })
       return { outcome: 'empty', creditsUsed: null }
     }
 
@@ -281,14 +376,15 @@ export async function finalizeChatTurn(
     }
     const completed =
       input.lifecycleAttemptId === null
-        ? await tx.chatMessage.createMany({
-            data: {
+        ? await tx.chatMessage.updateMany({
+            where: {
               id: input.assistantMessageId,
               threadId: input.threadId,
               role: 'assistant',
-              ...messageData,
+              lifecycleStatus: 'IN_PROGRESS',
+              lifecycleAttemptId: null,
             },
-            skipDuplicates: true,
+            data: messageData,
           })
         : await tx.chatMessage.updateMany({
             where: {

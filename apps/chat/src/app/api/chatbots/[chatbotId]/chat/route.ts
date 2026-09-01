@@ -660,6 +660,7 @@ export async function POST(
     reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
+    allowRegeneration: z.boolean().optional().default(false),
     images: z
       .array(
         z.union([
@@ -688,6 +689,7 @@ export async function POST(
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
+    allowRegeneration,
     images,
   } = parsed
 
@@ -998,6 +1000,7 @@ export async function POST(
       threadId: owningThread.id,
       assistantMessageId,
       parentId: userMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {

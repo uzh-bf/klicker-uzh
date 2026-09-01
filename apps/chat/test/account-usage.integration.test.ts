@@ -364,7 +364,18 @@ describePostgres('account usage PostgreSQL integration', () => {
     expect(claim).toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
     expect(
       await prisma.chatMessage.findUnique({ where: { id: messageId } })
-    ).toBeNull()
+    ).toMatchObject({
+      lifecycleStatus: 'IN_PROGRESS',
+      lifecycleAttemptId: null,
+    })
+    expect(
+      await prisma.chatMessage.count({
+        where: {
+          id: messageId,
+          lifecycleStatus: 'COMPLETED',
+        },
+      })
+    ).toBe(0)
 
     await expect(
       accountUsage.finalizeChatTurn({ ...input, lifecycleAttemptId: null })
@@ -390,9 +401,17 @@ describePostgres('account usage PostgreSQL integration', () => {
   test('charges one concurrent writer-off finalization', async () => {
     process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
     const messageId = randomUUID()
+    const claim = await accountUsage.claimChatTurn({
+      ownerId: OWNER_ID,
+      chatbotId: CHATBOT_ID,
+      threadId: THREAD_ONE_ID,
+      assistantMessageId: messageId,
+      parentId: null,
+    })
+    expect(claim).toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
     const input = {
       ...turnInput(messageId),
-      lifecycleAttemptId: null,
+      lifecycleAttemptId: claim.lifecycleAttemptId,
     }
 
     const results = await Promise.all([
@@ -458,6 +477,9 @@ describePostgres('account usage PostgreSQL integration', () => {
       parentId: null,
     })
     expect(claim).toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
+    expect(
+      await prisma.chatMessage.findUnique({ where: { id: messageId } })
+    ).toMatchObject({ lifecycleStatus: 'IN_PROGRESS' })
 
     await accountUsage.failChatTurn({
       assistantMessageId: messageId,
@@ -478,6 +500,83 @@ describePostgres('account usage PostgreSQL integration', () => {
       },
     })
     expect(usage.usedCredits.toString()).toBe('0')
+  })
+
+  test('claims one writer-off turn per parent and allows explicit regeneration', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const parentId = randomUUID()
+    const firstMessageId = randomUUID()
+    const secondMessageId = randomUUID()
+
+    const claims = await Promise.all([
+      accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId: THREAD_ONE_ID,
+        assistantMessageId: firstMessageId,
+        parentId,
+      }),
+      accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId: THREAD_ONE_ID,
+        assistantMessageId: secondMessageId,
+        parentId,
+      }),
+    ])
+
+    expect(claims.map((claim) => claim.outcome).sort()).toEqual([
+      'claimed',
+      'in_progress',
+    ])
+    const winnerIndex = claims.findIndex((claim) => claim.outcome === 'claimed')
+    const winnerMessageId = [firstMessageId, secondMessageId][winnerIndex]
+    if (!winnerMessageId) throw new Error('Expected a winning turn claim')
+
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...turnInput(winnerMessageId, { parentId }),
+        lifecycleAttemptId: null,
+      })
+    ).resolves.toEqual({ outcome: 'completed', creditsUsed: 0.25 })
+
+    const regenerationMessageId = randomUUID()
+    await expect(
+      accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId: THREAD_ONE_ID,
+        assistantMessageId: regenerationMessageId,
+        parentId,
+        allowRegeneration: true,
+      })
+    ).resolves.toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
+
+    await accountUsage.finalizeChatTurn({
+      ...turnInput(regenerationMessageId, { parentId }),
+      lifecycleAttemptId: null,
+    })
+
+    expect(
+      await prisma.chatMessage.count({
+        where: {
+          threadId: THREAD_ONE_ID,
+          parentId,
+          role: 'assistant',
+          lifecycleStatus: 'COMPLETED',
+        },
+      })
+    ).toBe(2)
+    const usage = await prisma.chatAccountUsage.findUniqueOrThrow({
+      where: {
+        ownerId_usageClass_monthStart: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      },
+    })
+    expect(usage.usedCredits.toString()).toBe('0.5')
   })
 
   test('allows only one concurrent provider-work claim for one key', async () => {
@@ -598,6 +697,62 @@ describePostgres('account usage PostgreSQL integration', () => {
       }),
     ])
     expect(message.lifecycleStatus).toBe('COMPLETED')
+    expect(usage.usedCredits.toString()).toBe('0.25')
+  })
+
+  test('invalidates a late callback when a failed sibling is retried', async () => {
+    const parentId = randomUUID()
+    const firstMessageId = randomUUID()
+    const firstInput = await claimedTurnInput(firstMessageId, { parentId })
+    await accountUsage.failChatTurn({
+      assistantMessageId: firstMessageId,
+      threadId: THREAD_ONE_ID,
+      lifecycleAttemptId: firstInput.lifecycleAttemptId,
+    })
+
+    const secondMessageId = randomUUID()
+    const secondClaim = await accountUsage.claimChatTurn({
+      ownerId: OWNER_ID,
+      chatbotId: CHATBOT_ID,
+      threadId: THREAD_ONE_ID,
+      assistantMessageId: secondMessageId,
+      parentId,
+    })
+    if (secondClaim.outcome !== 'claimed') {
+      throw new Error(
+        `Expected a new turn claim, received ${secondClaim.outcome}`
+      )
+    }
+
+    await expect(
+      accountUsage.finalizeChatTurn(firstInput)
+    ).rejects.toBeInstanceOf(accountUsage.ChatTurnConflictError)
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...turnInput(secondMessageId, { parentId }),
+        lifecycleAttemptId: secondClaim.lifecycleAttemptId,
+      })
+    ).resolves.toEqual({ outcome: 'completed', creditsUsed: 0.25 })
+
+    expect(
+      await prisma.chatMessage.count({
+        where: {
+          threadId: THREAD_ONE_ID,
+          parentId,
+          role: 'assistant',
+          lifecycleStatus: 'COMPLETED',
+        },
+      })
+    ).toBe(1)
+    const usage = await prisma.chatAccountUsage.findUniqueOrThrow({
+      where: {
+        ownerId_usageClass_monthStart: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      },
+    })
     expect(usage.usedCredits.toString()).toBe('0.25')
   })
 
