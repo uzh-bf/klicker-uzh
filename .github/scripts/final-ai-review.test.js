@@ -649,14 +649,16 @@ test('requires the exact finding evidence prefix in the model rule', () => {
 })
 
 function completeReviewResult(comments = []) {
+  const sessionId = '33333333-3333-4333-8333-333333333333'
+  const item = {
+    item_id: 'a'.repeat(64),
+    path: 'src/example.ts',
+    fingerprint: 'b'.repeat(64),
+  }
   return {
-    schema_version: OCR_RUN_MANIFEST_SCHEMA,
     status: 'complete',
-    llm: { model: FINAL_REVIEW_MODEL },
-    finish_reason: 'stop',
-    warnings: [],
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
     summary: {
-      coverage: 'complete',
       files_reviewed: 1,
       comments: comments.length,
       total_tokens: 100,
@@ -665,9 +667,32 @@ function completeReviewResult(comments = []) {
       elapsed: '1s',
     },
     comments,
+    session_id: sessionId,
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
       terminal_state: 'complete',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [item],
+        completed: [item],
+        reused: [],
+        failed: [],
+        waived: [],
+      },
+      elapsed_ms: 1_000,
     },
   }
 }
@@ -675,12 +700,12 @@ function completeReviewResult(comments = []) {
 function partialResumeResult(overrides = {}) {
   const sessionId = '11111111-1111-4111-8111-111111111111'
   const completed = {
-    item_id: 'completed',
+    item_id: 'a'.repeat(64),
     path: 'src/complete.ts',
     fingerprint: 'a'.repeat(64),
   }
   const failed = {
-    item_id: 'failed',
+    item_id: 'b'.repeat(64),
     path: 'src/timed-out.ts',
     fingerprint: 'b'.repeat(64),
     classification: 'timeout',
@@ -698,7 +723,6 @@ function partialResumeResult(overrides = {}) {
       elapsed: '30m0s',
     },
     comments: [],
-    warnings: [],
     session_id: sessionId,
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
@@ -724,6 +748,7 @@ function partialResumeResult(overrides = {}) {
         failed: [failed],
         waived: [],
       },
+      elapsed_ms: 1_800_000,
     },
     ...overrides,
   }
@@ -734,12 +759,9 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
   const completed = parent.manifest.coverage.selected[1]
   const reused = parent.manifest.coverage.selected[0]
   return {
-    schema_version: OCR_RUN_MANIFEST_SCHEMA,
     status: 'complete',
     llm: { ...parent.llm },
-    finish_reason: 'stop',
     summary: {
-      coverage: 'complete',
       files_reviewed: 2,
       comments: 0,
       total_tokens: 200,
@@ -748,7 +770,6 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
       elapsed: '12m0s',
     },
     comments: [],
-    warnings: [],
     session_id: sessionId,
     resume: {
       resumed_from: parent.session_id,
@@ -773,6 +794,7 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
         failed: [],
         waived: [],
       },
+      elapsed_ms: 720_000,
     },
     ...overrides,
   }
@@ -830,6 +852,71 @@ test('rejects malformed or already-resumed partial OCR sessions', () => {
         750_000
       ),
     /confidence score/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          summary: { ...parent.summary, comments: 1 },
+        },
+        750_000
+      ),
+    /usage counters/
+  )
+
+  const completed = parent.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              selected: [completed, completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /duplicate selected coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [completed, completed],
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /non-disjoint coverage partition/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /incomplete manifest coverage/
   )
 })
 
@@ -950,6 +1037,30 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
   assert.throws(
     () => mergeOCRResumeResults(parent, resumed, 400),
     /original token budget/
+  )
+
+  const changedItem = {
+    ...resumed.manifest.coverage.selected[1],
+    fingerprint: '9'.repeat(64),
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            coverage: {
+              ...resumed.manifest.coverage,
+              selected: [resumed.manifest.coverage.selected[0], changedItem],
+              completed: [changedItem],
+            },
+          },
+        },
+        750_000
+      ),
+    /changed its selected coverage/
   )
 })
 
@@ -1194,7 +1305,7 @@ test('retains only the rejected individual publisher input for one day', () => {
   )
   assert.match(
     step,
-    /failure\(\)[\s\S]*steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+    /failure\(\)[\s\S]*steps\.run_review\.outputs\.validation_failure == 'true'[\s\S]*steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
   )
   assert.match(
     step,
@@ -1206,11 +1317,37 @@ test('retains only the rejected individual publisher input for one day', () => {
   )
   assert.match(
     step,
-    /path: \$\{\{ runner\.temp \}\}\/final-ai-review-result\.json/
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-individual-publisher-failure/
   )
   assert.match(step, /if-no-files-found: error/)
   assert.match(step, /retention-days: 1/)
   assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
+})
+
+test('suppresses raw OCR output while retaining rejected validation inputs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const name of [
+    'Summarize final review failure output',
+    'Summarize cumulative review failure output',
+  ]) {
+    const step = workflow.match(
+      new RegExp(`      - name: ${name}\\n[\\s\\S]*?(?=\\n      - name:)`)
+    )?.[0]
+    assert.ok(step)
+    assert.match(step, /raw provider and result output is suppressed/i)
+    assert.doesNotMatch(step, /cat |tail |RESULT_PATH|STDERR_PATH|```json/)
+  }
+  assert.match(
+    workflow,
+    /plan-ocr-resume[\s\S]*cp -- "\$\{RESULT_PATH\}" "\$\{REJECTED_DIR\}\/initial-result\.json"[\s\S]*validation_failure=true/
+  )
+  assert.match(
+    workflow,
+    /merge-ocr-resume[\s\S]*cp -- "\$\{RESUMED_PATH\}" "\$\{REJECTED_DIR\}\/resumed-result\.json"[\s\S]*validation_failure=true/
+  )
 })
 
 test('validates complete OCR results and retains malformed artifacts', () => {
@@ -1232,6 +1369,9 @@ test('validates complete OCR results and retains malformed artifacts', () => {
     },
   ])
   fs.writeFileSync(resultPath, JSON.stringify(validResult))
+  assert.equal(Object.hasOwn(validResult, 'schema_version'), false)
+  assert.equal(Object.hasOwn(validResult, 'finish_reason'), false)
+  assert.equal(Object.hasOwn(validResult.summary, 'coverage'), false)
 
   const scriptPath = path.join(__dirname, 'final-ai-review.js')
   const validRun = spawnSync(
@@ -1275,6 +1415,27 @@ test('validates complete OCR results and retains malformed artifacts', () => {
       }),
     /usage counters/
   )
+  assert.throws(
+    () => validateOCRResult({ ...validResult, finish_reason: 'length' }),
+    /incomplete finish reason/
+  )
+  for (const [field, value] of [
+    ['status', 'complete\n::error::injected'],
+    ['model', 'expected\n::error::injected'],
+  ]) {
+    let error
+    try {
+      validateOCRResult(
+        field === 'status'
+          ? { ...validResult, status: value }
+          : { ...validResult, llm: { ...validResult.llm, model: value } }
+      )
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    assert.doesNotMatch(error.message, /injected/)
+  }
 })
 
 test('runs OCR validation after resume and gates individual publication', () => {
@@ -2626,7 +2787,7 @@ test('rejects incomplete or wrong-model OCR results', () => {
         },
         'a'.repeat(40)
       ),
-    /unexpected status: partial/
+    /unexpected terminal status/
   )
   assert.throws(
     () =>

@@ -2584,10 +2584,7 @@ function validateOCRResult(result) {
     throw new Error('OCR result envelope is not an object')
   }
   if (result.status !== 'complete') {
-    throw new Error(`OCR returned unexpected status: ${result.status}`)
-  }
-  if (result.schema_version !== OCR_RUN_MANIFEST_SCHEMA) {
-    throw new Error('OCR result has an invalid schema version')
+    throw new Error('OCR result has an unexpected terminal status')
   }
   if (
     result.manifest?.schema_version !== OCR_RUN_MANIFEST_SCHEMA ||
@@ -2603,9 +2600,9 @@ function validateOCRResult(result) {
     (Object.hasOwn(result.llm, 'provider') &&
       (typeof result.llm.provider !== 'string' || !result.llm.provider))
   ) {
-    throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)
+    throw new Error('OCR result has an unexpected model identity')
   }
-  if (result.finish_reason !== 'stop') {
+  if (result.finish_reason != null && result.finish_reason !== 'stop') {
     throw new Error('OCR result has an incomplete finish reason')
   }
   if (!result.summary || typeof result.summary !== 'object') {
@@ -2620,48 +2617,36 @@ function validateOCRResult(result) {
   ) {
     throw new Error('OCR result has an invalid budget flag')
   }
-  if (result.summary.coverage !== 'complete') {
-    throw new Error('OCR result has incomplete review coverage')
-  }
   if (!Array.isArray(result.comments)) {
     throw new Error('OCR result has no comments array')
   }
   if (result.comments.length > 100) {
     throw new Error('OCR result has too many comments')
   }
-  if (!Array.isArray(result.warnings)) {
+  if (result.warnings != null && !Array.isArray(result.warnings)) {
     throw new Error('OCR result has an invalid warnings array')
   }
-  if (result.warnings.length > 0) {
+  if ((result.warnings?.length ?? 0) > 0) {
     throw new Error('OCR result has coverage warnings; rerun the review')
   }
   validateReviewSummary(result.summary, result.comments.length)
 
-  if (
-    result.session_id != null ||
-    result.resume != null ||
-    result.manifest.run_id != null ||
-    result.manifest.operation != null ||
-    result.manifest.parent_run_id != null ||
-    result.manifest.coverage != null
-  ) {
-    const { coverage } = validateOCRSessionEnvelope(
-      result,
-      'complete',
-      'Complete OCR result'
-    )
-    if (coverage.failed.length > 0) {
-      throw new Error('Complete OCR result retained failed coverage')
-    }
-    if (result.resume != null) {
-      if (
-        typeof result.resume !== 'object' ||
-        Array.isArray(result.resume) ||
-        typeof result.resume.resumed_from !== 'string' ||
-        !result.resume.resumed_from
-      ) {
-        throw new Error('Complete OCR result has an invalid resume envelope')
-      }
+  const { coverage } = validateOCRSessionEnvelope(
+    result,
+    'complete',
+    'Complete OCR result'
+  )
+  if (coverage.failed.length > 0) {
+    throw new Error('Complete OCR result retained failed coverage')
+  }
+  if (result.resume != null) {
+    if (
+      typeof result.resume !== 'object' ||
+      Array.isArray(result.resume) ||
+      typeof result.resume.resumed_from !== 'string' ||
+      !result.resume.resumed_from
+    ) {
+      throw new Error('Complete OCR result has an invalid resume envelope')
     }
   }
 
@@ -2691,16 +2676,53 @@ function validateOCRTokenCounters(summary, label) {
 function validateOCRCoverage(manifest, label) {
   const coverage = manifest?.coverage
   const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
-  if (
-    !coverage ||
-    keys.some((key) => !Array.isArray(coverage[key])) ||
-    coverage.selected.length !==
-      coverage.completed.length +
-        coverage.reused.length +
-        coverage.failed.length +
-        coverage.waived.length
-  ) {
+  if (!coverage || keys.some((key) => !Array.isArray(coverage[key]))) {
     throw new Error(`${label} has invalid manifest coverage`)
+  }
+
+  const identity = (item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      !/^[0-9a-f]{64}$/.test(item.item_id ?? '') ||
+      typeof item.path !== 'string' ||
+      !item.path ||
+      !/^[0-9a-f]{64}$/.test(item.fingerprint ?? '') ||
+      (item.old_path != null && typeof item.old_path !== 'string')
+    ) {
+      throw new Error(`${label} has an invalid coverage item identity`)
+    }
+    return JSON.stringify([
+      item.item_id,
+      item.path,
+      item.old_path ?? '',
+      item.fingerprint,
+    ])
+  }
+  const selected = new Map()
+  for (const item of coverage.selected) {
+    if (selected.has(item.item_id)) {
+      throw new Error(`${label} has duplicate selected coverage`)
+    }
+    selected.set(item.item_id, identity(item))
+  }
+  const terminal = new Set()
+  for (const key of keys.slice(1)) {
+    for (const item of coverage[key]) {
+      const itemIdentity = identity(item)
+      if (
+        !selected.has(item.item_id) ||
+        selected.get(item.item_id) !== itemIdentity ||
+        terminal.has(item.item_id)
+      ) {
+        throw new Error(`${label} has a non-disjoint coverage partition`)
+      }
+      terminal.add(item.item_id)
+    }
+  }
+  if (terminal.size !== selected.size) {
+    throw new Error(`${label} has incomplete manifest coverage`)
   }
   return coverage
 }
@@ -2719,7 +2741,15 @@ function validateOCRSessionEnvelope(result, expectedStatus, label) {
     manifest.run_id !== sessionId ||
     manifest.operation !== 'review' ||
     manifest.terminal_state !== expectedStatus ||
-    result.status !== expectedStatus
+    result.status !== expectedStatus ||
+    !Number.isSafeInteger(manifest.elapsed_ms) ||
+    manifest.elapsed_ms < 0 ||
+    !manifest.repository ||
+    typeof manifest.repository !== 'object' ||
+    !manifest.input ||
+    typeof manifest.input !== 'object' ||
+    !manifest.execution ||
+    typeof manifest.execution !== 'object'
   ) {
     throw new Error(`${label} has inconsistent session or manifest identity`)
   }
@@ -2763,11 +2793,14 @@ function planOCRResume(result, maxTokensBudget) {
     throw new Error('Partial OCR result has too many comments')
   }
   result.comments.forEach((comment, index) => validateFinding(comment, index))
-  const usage = validateOCRTokenCounters(result.summary, 'Partial OCR result')
   if (hasOCRBudgetExhaustion(result, coverage)) {
     throw new Error('Partial OCR result exhausted its token budget')
   }
-  const remainingTokens = maxTokensBudget - usage.totalTokens
+  if ((result.warnings?.length ?? 0) > 0) {
+    throw new Error('Partial OCR result has coverage warnings')
+  }
+  const usage = validateReviewSummary(result.summary, result.comments.length)
+  const remainingTokens = maxTokensBudget - usage.total_tokens
   if (remainingTokens <= 0) {
     throw new Error('Partial OCR result has no token budget left to resume')
   }
@@ -2784,6 +2817,7 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
     'complete',
     'Resumed OCR result'
   )
+  validateOCRResult(resumedResult)
   if (
     resumed.sessionId === resumePlan.sessionId ||
     resumedResult.resume?.resumed_from !== resumePlan.sessionId ||
@@ -2810,6 +2844,24 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
   }
   if (resumed.coverage.failed.length > 0) {
     throw new Error('Resumed OCR result retained failed coverage')
+  }
+  if (
+    !isDeepStrictEqual(
+      resumed.coverage.selected.map((item) => ({
+        fingerprint: item.fingerprint,
+        item_id: item.item_id,
+        old_path: item.old_path ?? '',
+        path: item.path,
+      })),
+      initialResult.manifest.coverage.selected.map((item) => ({
+        fingerprint: item.fingerprint,
+        item_id: item.item_id,
+        old_path: item.old_path ?? '',
+        path: item.path,
+      }))
+    )
+  ) {
+    throw new Error('Resumed OCR result changed its selected coverage')
   }
   if (
     resumedResult.warnings != null &&

@@ -29,6 +29,7 @@ const {
   parseDispositionRecord,
   validateDispositionRecord,
   validateFinding,
+  validateOCRResult: validateProducerOCRResult,
   requiresColdIncrementalReview,
   runGhApi,
 } = require('./final-ai-review.js')
@@ -42,6 +43,7 @@ const STACK_REVIEW_COMMAND = '/final-review-stack'
 const FINAL_STACK_REVIEW_MODEL = 'z-ai/glm-5.3-flash'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
+const STACK_COMBINED_OCR_SCHEMA = 'final-ai-stack-combined-ocr/v1'
 const STACK_CLEAN_EVIDENCE_SCHEMA = 'final-ai-stack-clean-evidence/v1'
 const STACK_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI stack clean evidence'
 const STACK_REVIEW_WORKFLOW_PATH =
@@ -2297,12 +2299,18 @@ function validateUsage(usage, label) {
   }
 }
 
-function validateOCRResult(result, knownPaths = null) {
+function validateCumulativeOCRResult(result, knownPaths = null) {
+  if (result?.schema_version !== STACK_COMBINED_OCR_SCHEMA) {
+    validateProducerOCRResult(result)
+  }
   if (
     result?.status !== 'complete' ||
     result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
     result.manifest.terminal_state !== 'complete' ||
     result.llm?.model !== FINAL_STACK_REVIEW_MODEL ||
+    (result.schema_version === STACK_COMBINED_OCR_SCHEMA &&
+      (result.finish_reason !== 'stop' ||
+        result.summary?.coverage !== 'complete')) ||
     !Array.isArray(result.comments) ||
     result.summary?.budget_exceeded === true ||
     (Array.isArray(result.warnings) && result.warnings.length > 0) ||
@@ -2358,7 +2366,7 @@ function combineOCRResults(results, layerNumbers = null) {
   ) {
     throw new Error('OCR layer provenance is incomplete')
   }
-  const validated = results.map((result) => validateOCRResult(result))
+  const validated = results.map((result) => validateCumulativeOCRResult(result))
   const comments = validated.flatMap(({ comments: items }, resultIndex) =>
     items.map((item) =>
       layerNumbers === null
@@ -2383,7 +2391,9 @@ function combineOCRResults(results, layerNumbers = null) {
     }
   )
   return {
+    schema_version: STACK_COMBINED_OCR_SCHEMA,
     comments,
+    finish_reason: 'stop',
     llm: { model: FINAL_STACK_REVIEW_MODEL },
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
@@ -2392,6 +2402,7 @@ function combineOCRResults(results, layerNumbers = null) {
     status: 'complete',
     summary: {
       ...summary,
+      coverage: 'complete',
       elapsed: `${results.length} bounded OCR range(s)`,
     },
     warnings: [],
@@ -2595,7 +2606,7 @@ function renderStackReview({
   workflowSha,
   workflowRunId,
 }) {
-  const code = validateOCRResult(codeResult)
+  const code = validateCumulativeOCRResult(codeResult)
   const manifest = manifestBundle.manifest
   const manifestDigest =
     manifestBundle.manifest_digest ?? manifestBundle.manifestDigest
@@ -2899,7 +2910,7 @@ function topologyCodeSummary(
   reviewRanges = []
 ) {
   const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
-  const code = validateOCRResult(codeResult, knownPaths)
+  const code = validateCumulativeOCRResult(codeResult, knownPaths)
   const pathEntries = new Map(
     manifest.path_index.map((entry) => [entry.filename, entry])
   )

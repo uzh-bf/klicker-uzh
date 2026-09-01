@@ -398,6 +398,7 @@ jobs:
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           REVIEW_JOB_STARTED_AT: ${{ steps.job_start.outputs.epoch }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+          REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
         run: |
           set -euo pipefail
@@ -433,8 +434,13 @@ jobs:
           : >"${STDERR_PATH}"
           run_ocr_attempt "${RESULT_PATH}" 1000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
-          node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"
+          if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
+            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"; then
+            mkdir -p "${REJECTED_DIR}"
+            cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
+            echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
+            exit 1
+          fi
           mapfile -t RESUME_PLAN <"${RESUME_PLAN_PATH}"
           if (( ${#RESUME_PLAN[@]} > 0 )); then
             (( ${#RESUME_PLAN[@]} == 2 ))
@@ -446,8 +452,14 @@ jobs:
             MERGED_PATH="${RESULT_PATH}.merged"
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
-            node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"
+            if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
+              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"; then
+              mkdir -p "${REJECTED_DIR}"
+              cp -- "${RESULT_PATH}" "${REJECTED_DIR}/initial-result.json"
+              cp -- "${RESUMED_PATH}" "${REJECTED_DIR}/resumed-result.json"
+              echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
+              exit 1
+            fi
             mv "${MERGED_PATH}" "${RESULT_PATH}"
           fi
 
@@ -455,44 +467,25 @@ jobs:
         id: validate_result
         if: steps.run_review.outcome == 'success'
         env:
+          REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         run: |
           set -euo pipefail
-          node .github/scripts/final-ai-review.js validate-ocr-result "${RESULT_PATH}"
+          if ! node .github/scripts/final-ai-review.js validate-ocr-result "${RESULT_PATH}"; then
+            mkdir -p "${REJECTED_DIR}"
+            cp -- "${RESULT_PATH}" "${REJECTED_DIR}/result.json"
+            exit 1
+          fi
 
       - name: Summarize final review failure output
         if: failure() && steps.run_review.outcome == 'failure'
-        env:
-          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
-          STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
         run: |
           set -euo pipefail
-          echo '::group::Final review CLI failure output'
-          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
-          echo '::endgroup::'
-          if [[ -f "${RESULT_PATH}" ]]; then
-            echo '::group::Final review CLI result JSON'
-            cat "${RESULT_PATH}"
-            echo
-            echo '::endgroup::'
-          fi
+          echo 'Final review execution failed; raw provider and result output is suppressed.'
           {
             echo '### Final review CLI failure'
             echo
-            echo '```text'
-            if [[ -f "${STDERR_PATH}" ]]; then
-              tail -c 8000 "${STDERR_PATH}"
-            else
-              echo 'stderr log was not created'
-            fi
-            echo '```'
-            if [[ -f "${RESULT_PATH}" ]]; then
-              echo
-              echo '```json'
-              tail -c 8000 "${RESULT_PATH}"
-              echo
-              echo '```'
-            fi
+            echo 'Raw provider and result output is suppressed.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Summarize rejected final review result
@@ -566,15 +559,32 @@ jobs:
                 : 'No actionable findings; skipped the pull-request comment'
             )
 
+      - name: Stage rejected individual publisher input
+        if: >-
+          failure() &&
+          (steps.run_review.outputs.validation_failure == 'true' ||
+          steps.validate_result.outcome == 'failure' ||
+          steps.publish.outcome == 'failure')
+        env:
+          REJECTED_DIR: ${{ runner.temp }}/final-ai-individual-publisher-failure
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+        run: |
+          set -euo pipefail
+          mkdir -p "${REJECTED_DIR}"
+          if [[ ! -e "${REJECTED_DIR}/result.json" && -f "${RESULT_PATH}" ]]; then
+            cp -- "${RESULT_PATH}" "${REJECTED_DIR}/result.json"
+          fi
+
       - name: Upload rejected individual publisher input
         if: >-
           failure() &&
-          (steps.validate_result.outcome == 'failure' ||
+          (steps.run_review.outputs.validation_failure == 'true' ||
+          steps.validate_result.outcome == 'failure' ||
           steps.publish.outcome == 'failure')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/final-ai-review-result.json
+          path: ${{ runner.temp }}/final-ai-individual-publisher-failure
           if-no-files-found: error
           retention-days: 1
 
@@ -936,6 +946,7 @@ jobs:
           REVIEW_JOB_STARTED_AT: ${{ steps.job_start.outputs.epoch }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
+          REJECTED_DIR: ${{ runner.temp }}/final-ai-stack-publisher-failure
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
         run: |
           set -euo pipefail
@@ -978,8 +989,13 @@ jobs:
             local token_budget="$3"
             local result_path="$4"
             local plan_path="${result_path}.resume-plan"
-            node .github/scripts/final-ai-review.js plan-ocr-resume \
-              "${result_path}" "${token_budget}" >"${plan_path}"
+            if ! node .github/scripts/final-ai-review.js plan-ocr-resume \
+              "${result_path}" "${token_budget}" >"${plan_path}"; then
+              mkdir -p "${REJECTED_DIR}"
+              cp -- "${result_path}" "${REJECTED_DIR}/$(basename "${result_path}")"
+              echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
+              return 1
+            fi
             mapfile -t resume_plan <"${plan_path}"
             if (( ${#resume_plan[@]} == 0 )); then
               return
@@ -987,6 +1003,9 @@ jobs:
             (( ${#resume_plan[@]} == 2 ))
             if [[ "${RESUME_USED}" == 'true' ]]; then
               echo 'Only one partial OCR result may be resumed per stack job' >&2
+              mkdir -p "${REJECTED_DIR}"
+              cp -- "${result_path}" "${REJECTED_DIR}/$(basename "${result_path}")"
+              echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
               return 1
             fi
             local session_id="${resume_plan[0]}"
@@ -999,9 +1018,15 @@ jobs:
             run_ocr_attempt \
               "${review_from}" "${review_to}" "${remaining_tokens}" \
               "${resumed_path}" "${session_id}"
-            node .github/scripts/final-ai-review.js merge-ocr-resume \
+            if ! node .github/scripts/final-ai-review.js merge-ocr-resume \
               "${result_path}" "${resumed_path}" "${token_budget}" \
-              >"${merged_path}"
+              >"${merged_path}"; then
+              mkdir -p "${REJECTED_DIR}"
+              cp -- "${result_path}" "${REJECTED_DIR}/$(basename "${result_path}")"
+              cp -- "${resumed_path}" "${REJECTED_DIR}/$(basename "${resumed_path}")"
+              echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
+              return 1
+            fi
             mv "${merged_path}" "${result_path}"
           }
 
@@ -1014,8 +1039,13 @@ jobs:
               resume_partial_result \
                 "${BASE}" "${HEAD}" 750000 "${RANGE_PATH}"
             done < <(node -e 'for (const r of JSON.parse(process.env.REVIEW_RANGES || "[]")) console.log(`${r.layer_number}\t${r.base_sha}\t${r.head_sha}`)')
-            node .github/scripts/final-ai-stack-review.js combine-ocr \
-              "${RESULT_PATH}" "${RANGE_DIR}"/*.json
+            if ! node .github/scripts/final-ai-stack-review.js combine-ocr \
+              "${RESULT_PATH}" "${RANGE_DIR}"/*.json; then
+              mkdir -p "${REJECTED_DIR}"
+              cp -- "${RANGE_DIR}"/*.json "${REJECTED_DIR}/"
+              echo 'validation_failure=true' >>"${GITHUB_OUTPUT}"
+              exit 1
+            fi
           else
             run_ocr_attempt \
               "${REVIEW_FROM}" "${HEAD_SHA}" 2000000 "${RESULT_PATH}"
@@ -1025,37 +1055,13 @@ jobs:
 
       - name: Summarize cumulative review failure output
         if: failure() && steps.code_review.outcome == 'failure'
-        env:
-          RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
-          STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
         run: |
           set -euo pipefail
-          echo '::group::Cumulative review CLI failure output'
-          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
-          echo '::endgroup::'
-          if [[ -f "${RESULT_PATH}" ]]; then
-            echo '::group::Cumulative review CLI result JSON'
-            cat "${RESULT_PATH}"
-            echo
-            echo '::endgroup::'
-          fi
+          echo 'Cumulative review execution failed; raw provider and result output is suppressed.'
           {
             echo '### Cumulative review CLI failure'
             echo
-            echo '```text'
-            if [[ -f "${STDERR_PATH}" ]]; then
-              tail -c 8000 "${STDERR_PATH}"
-            else
-              echo 'stderr log was not created'
-            fi
-            echo '```'
-            if [[ -f "${RESULT_PATH}" ]]; then
-              echo
-              echo '```json'
-              tail -c 8000 "${RESULT_PATH}"
-              echo
-              echo '```'
-            fi
+            echo 'Raw provider and result output is suppressed.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Remove ephemeral OpenRouter access after code review
@@ -1145,7 +1151,8 @@ jobs:
       - name: Stage rejected stack publisher inputs
         if: >-
           failure() &&
-          (steps.topology_review.outcome == 'failure' ||
+          (steps.code_review.outputs.validation_failure == 'true' ||
+          steps.topology_review.outcome == 'failure' ||
           steps.publish.outcome == 'failure')
         shell: bash
         run: |
@@ -1154,6 +1161,9 @@ jobs:
           topology_result="${RUNNER_TEMP}/final-ai-stack-topology-result.json"
           staging_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure-staging"
           artifact_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure"
+          if [[ -d "${artifact_dir}" ]]; then
+            exit 0
+          fi
           test -f "${code_result}"
           mkdir "${staging_dir}"
           cp -- "${code_result}" "${staging_dir}/"
@@ -1165,7 +1175,8 @@ jobs:
       - name: Upload rejected stack publisher inputs
         if: >-
           failure() &&
-          (steps.topology_review.outcome == 'failure' ||
+          (steps.code_review.outputs.validation_failure == 'true' ||
+          steps.topology_review.outcome == 'failure' ||
           steps.publish.outcome == 'failure')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

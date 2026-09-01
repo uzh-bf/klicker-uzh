@@ -306,9 +306,15 @@ function stackFixture() {
 }
 
 function completeOCRResult(comments = []) {
+  const sessionId = '33333333-3333-4333-8333-333333333333'
+  const item = {
+    item_id: 'a'.repeat(64),
+    path: 'src/one.ts',
+    fingerprint: 'b'.repeat(64),
+  }
   return {
     status: 'complete',
-    llm: { model: FINAL_STACK_REVIEW_MODEL },
+    llm: { provider: 'openrouter', model: FINAL_STACK_REVIEW_MODEL },
     summary: {
       files_reviewed: 3,
       comments: comments.length,
@@ -318,9 +324,32 @@ function completeOCRResult(comments = []) {
       elapsed: '2s',
     },
     comments,
+    session_id: sessionId,
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
       terminal_state: 'complete',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_STACK_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [item],
+        completed: [item],
+        reused: [],
+        failed: [],
+        waived: [],
+      },
+      elapsed_ms: 2_000,
     },
   }
 }
@@ -1180,7 +1209,7 @@ test('retains only the rejected stack publisher inputs for one day', () => {
   )
   assert.match(
     stageStep,
-    /failure\(\)[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+    /failure\(\)[\s\S]*steps\.code_review\.outputs\.validation_failure == 'true'[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
   )
   assert.match(stageStep, /test -f "\$\{code_result\}"/)
   assert.match(stageStep, /cp -- "\$\{code_result\}" "\$\{staging_dir\}\/"/)
@@ -1191,7 +1220,7 @@ test('retains only the rejected stack publisher inputs for one day', () => {
   assert.match(stageStep, /mv -- "\$\{staging_dir\}" "\$\{artifact_dir\}"/)
   assert.match(
     uploadStep,
-    /failure\(\)[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+    /failure\(\)[\s\S]*steps\.code_review\.outputs\.validation_failure == 'true'[\s\S]*steps\.topology_review\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
   )
   assert.match(
     uploadStep,
@@ -2409,18 +2438,26 @@ test('combines complete OCR results for per-layer attestation ranges', () => {
   assert.equal(combined.summary.total_tokens, 200)
   assert.deepEqual(combined.comments[0].stack_layer_numbers, [1])
   assert.deepEqual(combined.warnings, [])
+  assert.throws(
+    () =>
+      combineOCRResults(
+        [{ ...completeOCRResult([]), finish_reason: 'length' }],
+        [1]
+      ),
+    /incomplete finish reason/
+  )
 })
 
 test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
   const parentId = '11111111-1111-4111-8111-111111111111'
   const resumedId = '22222222-2222-4222-8222-222222222222'
   const completed = {
-    item_id: 'completed',
+    item_id: 'a'.repeat(64),
     path: 'src/one.ts',
     fingerprint: 'a'.repeat(64),
   }
   const failed = {
-    item_id: 'failed',
+    item_id: 'b'.repeat(64),
     path: 'src/two.ts',
     fingerprint: 'b'.repeat(64),
     classification: 'timeout',
@@ -2466,6 +2503,7 @@ test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
         failed: [failed],
         waived: [],
       },
+      elapsed_ms: 1_800_000,
     },
   }
   const resumed = {
@@ -2497,6 +2535,7 @@ test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
         failed: [],
         waived: [],
       },
+      elapsed_ms: 240_000,
     },
   }
 
