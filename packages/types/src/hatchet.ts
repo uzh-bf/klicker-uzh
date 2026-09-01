@@ -5,6 +5,7 @@ import type {
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
@@ -17,6 +18,7 @@ export interface HatchetHandlerGlobalContext {
   redisCache?: Redis
   prisma: PrismaClient
   tasks: PreparedHatchetTasks
+  logger?: AppLogger
 }
 
 export type HatchetLoggingContext = {
@@ -97,7 +99,13 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleProcessCourseDuplication: (
-    { jobId }: { jobId: string },
+    {
+      jobId,
+      loggingContext,
+    }: {
+      jobId: string
+      loggingContext?: HatchetLoggingContext
+    },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>

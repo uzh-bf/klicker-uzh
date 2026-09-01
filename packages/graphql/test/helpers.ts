@@ -286,14 +286,25 @@ export async function testInitialization(
     }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
-      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
-        const success = await handleProcessCourseDuplication(
-          { jobId },
-          hatchetCtx,
+      fn: vi.fn(
+        async (
+          {
+            jobId,
+            loggingContext,
+          }: {
+            jobId: string
+            loggingContext?: { requestId?: string; correlationId?: string }
+          },
           executionCtx
-        )
-        return { success }
-      }),
+        ) => {
+          const success = await handleProcessCourseDuplication(
+            { jobId, loggingContext },
+            hatchetCtx,
+            executionCtx
+          )
+          return { success }
+        }
+      ),
     }),
     sweepStaleCourseDuplications: hatchet.task({
       name: 'sweep-stale-course-duplications',
@@ -330,6 +341,11 @@ export async function testInitialization(
     } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
+    requestContext: {
+      requestId: 'graphql-test-request',
+      correlationId: 'graphql-test-correlation',
+    },
+    log: createLogger({ service: 'graphql-test', environment: 'test' }),
   }
 
   // mock remaining contexts

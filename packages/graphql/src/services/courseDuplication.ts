@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { HatchetHandlers, HatchetLoggingContext } from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -287,16 +289,23 @@ async function deleteCourseDuplicationJob(redis: Redis, jobId: string) {
 
 async function publishCourseDuplicationEvent(
   hatchet: ContextWithUser['hatchet'],
-  jobId: string
+  jobId: string,
+  loggingContext?: HatchetLoggingContext
 ) {
   try {
-    await hatchet.events.push('process-course-duplication', { jobId })
+    await hatchet.events.push('process-course-duplication', {
+      jobId,
+      ...(loggingContext ? { loggingContext } : {}),
+    })
   } catch (error) {
     // Hatchet may have accepted the event before the client observed an
     // acknowledgement. Retry the same job id so a lost acknowledgement cannot
     // create a second course.
     try {
-      await hatchet.events.push('process-course-duplication', { jobId })
+      await hatchet.events.push('process-course-duplication', {
+        jobId,
+        ...(loggingContext ? { loggingContext } : {}),
+      })
     } catch (retryError) {
       const publishError = new Error(
         `Initial publish failed: ${getErrorMessage(error)}; retry failed: ${getErrorMessage(retryError)}`,
@@ -490,7 +499,8 @@ export async function startCourseDuplication(
       if (normalizedExistingJob.status === 'PENDING') {
         await publishCourseDuplicationEvent(
           ctx.hatchet,
-          normalizedExistingJob.id
+          normalizedExistingJob.id,
+          ctx.requestContext
         )
       }
 
@@ -538,7 +548,11 @@ export async function startCourseDuplication(
       await deleteCourseDuplicationJob(ctx.redisExec, job.id)
 
       if (lockedJob.status === 'PENDING') {
-        await publishCourseDuplicationEvent(ctx.hatchet, lockedJob.id)
+        await publishCourseDuplicationEvent(
+          ctx.hatchet,
+          lockedJob.id,
+          ctx.requestContext
+        )
       }
 
       return getPublicCourseDuplicationStatus(lockedJob)
@@ -567,7 +581,7 @@ export async function startCourseDuplication(
   }
 
   try {
-    await publishCourseDuplicationEvent(ctx.hatchet, job.id)
+    await publishCourseDuplicationEvent(ctx.hatchet, job.id, ctx.requestContext)
   } catch (error) {
     try {
       await updateCourseDuplicationJob(ctx.redisExec, job, {
@@ -620,7 +634,14 @@ export async function getCourseDuplicationStatuses(
 }
 
 export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCourseDuplication'] =
-  async ({ jobId }, globalCtx, executionCtx) => {
+  async ({ jobId, loggingContext }, globalCtx, executionCtx) => {
+    const requestContext = resolveRequestContext({
+      requestId: loggingContext?.requestId,
+      correlationId: loggingContext?.correlationId,
+    })
+    const log = (
+      globalCtx.logger ?? createLogger({ service: 'graphql' })
+    ).child(requestContext)
     const redis = globalCtx.redisExec
     const pendingJob = await getCourseDuplicationJob(redis, jobId)
 
@@ -738,6 +759,8 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           tasks: globalCtx.tasks,
           req: undefined as never,
           res: undefined as never,
+          requestContext,
+          log,
           user: {
             sub: job.userId,
             role: job.userRole,
