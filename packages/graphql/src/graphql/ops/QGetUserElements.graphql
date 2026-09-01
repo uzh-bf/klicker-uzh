@@ -1,6 +1,7 @@
 query GetUserElements(
   $status: ElementStatus
   $type: ElementType
+  $elementTypes: [ElementType!]
   $hasSampleSolution: Boolean!
   $hasAnswerFeedbacks: Boolean!
   $searchString: String
@@ -20,6 +21,7 @@ query GetUserElements(
   userElements(
     status: $status
     type: $type
+    elementTypes: $elementTypes
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     searchString: $searchString
@@ -320,6 +322,40 @@ query GetUserElements(
       }
 
       ... on ContentElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        tags {
+          id
+          name
+          order
+        }
+      }
+
+      ... on QrScanElement {
         id
         name
         status

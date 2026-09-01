@@ -31,6 +31,7 @@ import {
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
+  activityInputContainsElementType,
   deleteWithPublicationStatusGuard,
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
@@ -877,12 +878,6 @@ export async function manipulateGroupActivity(
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
-
-    // remove old clues as they will be replaced through new values
-    await prisma.groupActivity.update({
-      where: { id },
-      data: { clues: { deleteMany: {} } },
-    })
   }
 
   // get the course to which the practice quiz should be assigned
@@ -904,6 +899,29 @@ export async function manipulateGroupActivity(
     elementMap,
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx, prisma)
+
+  if (
+    activityInputContainsElementType({
+      stacksOrBlocks: [stack],
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are not supported in activities yet',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+
+  if (id) {
+    // Remove old clues only after all request validation has passed.
+    await prisma.groupActivity.update({
+      where: { id },
+      data: { clues: { deleteMany: {} } },
+    })
+  }
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []

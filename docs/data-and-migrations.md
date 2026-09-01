@@ -36,6 +36,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+- PostgreSQL `CREATE INDEX CONCURRENTLY` must be the only statement in its migration file and must not be wrapped in `BEGIN`/`COMMIT`. Keep the column/enum DDL in an earlier migration, replay the complete history into a disposable empty database with Prisma 7 `migrate deploy`, compare that database with the schema using `migrate diff --exit-code`, and inspect the resulting index for `indisunique` and `indisvalid`. A killed build leaves an `INVALID` index occupying its name — drop it with `DROP INDEX CONCURRENTLY` before re-running (see [Recovering a failed migration hook](#recovering-a-failed-migration-hook)).
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations

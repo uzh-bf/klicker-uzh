@@ -1226,7 +1226,7 @@ type DerivedPermissionOriginInformation {
   permissionUser: String!
 }
 
-union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
+union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | QrScanElement | SelectionElement
 
 type ElementBatchSharingOutcome {
   elementId: Int!
@@ -1281,7 +1281,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
+union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | QrScanElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID
@@ -1396,6 +1396,7 @@ enum ElementType {
   KPRIM
   MC
   NUMERICAL
+  QR_SCAN
   SC
   SELECTION
 }
@@ -2087,6 +2088,7 @@ type Mutation {
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateQrScanElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
@@ -2575,6 +2577,52 @@ type PushSubscription {
   id: Int!
 }
 
+type QrScanElement {
+  basePoints: Boolean!
+  content: String!
+  createdAt: Date
+  derivedAccess: Boolean
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isRemovable: Boolean
+  isShared: Boolean
+  name: String!
+  numSharedUsers: Int
+  permissionLevel: PermissionLevel
+  pointsMultiplier: Int!
+  sharingType: SharingType
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type QrScanElementData {
+  basePoints: Boolean!
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
+type QrScanPrintData {
+  code: String!
+  content: String!
+  decoys: [String!]!
+  elementId: Int!
+  name: String!
+}
+
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
@@ -2681,6 +2729,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  qrScanPrintData(decoyCount: Int!, elementId: Int!): QrScanPrintData
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
@@ -2690,7 +2739,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int, offset: Int, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
+  userElements(activityId: String, elementTypes: [ElementType!], hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int, offset: Int, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User

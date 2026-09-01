@@ -15,6 +15,7 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
+  activityInputContainsElementType,
   deleteWithPublicationStatusGuard,
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
@@ -244,6 +245,21 @@ export async function manipulateMicroLearning(
     elementMap,
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx, prisma)
+
+  if (
+    activityInputContainsElementType({
+      stacksOrBlocks: stacks,
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are not supported in activities yet',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []

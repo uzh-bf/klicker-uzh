@@ -23,6 +23,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
      variables so production builds remain independent of external font
      services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
+   - Answer-bearing print/export flows: show the launcher only to an exact owner, enforce ownership again in the API, keep answer legends out of printed CSS, label decoys neutrally, and use `crypto.getRandomValues` for anti-cheat ordering.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
    - Assessment comparison charts use equal-width categorical bars and a
      labelled 0–100 percentile ruler; keep the exact range/count table and

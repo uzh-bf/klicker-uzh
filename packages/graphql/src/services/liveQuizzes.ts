@@ -34,6 +34,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import {
+  activityInputContainsElementType,
   getPermissionBooleans,
   persistActivityWithPermissions,
 } from './activities.js'
@@ -263,6 +264,21 @@ export async function manipulateLiveQuiz(
     elementMap,
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx, prisma)
+
+  if (
+    activityInputContainsElementType({
+      stacksOrBlocks: blocks,
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are not supported in activities yet',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []

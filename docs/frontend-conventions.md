@@ -64,6 +64,7 @@ contract is unchanged.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
 - **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
+- Answer-bearing print/export views need two independent gates: hide their launcher unless the loaded object reports exact ownership, and enforce the same owner requirement on the API. Keep answer legends screen-only, label printed decoys neutrally, and use `crypto.getRandomValues` rather than `Math.random` when random placement is an anti-cheat measure.
 
 ## Markdown and Video Embeds
 
