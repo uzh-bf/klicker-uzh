@@ -152,7 +152,7 @@ execution:
 
 | Primitive | Existing seam | Planned extension | Boundary |
 | --- | --- | --- | --- |
-| Account AI authorization | `User.aiChatbotPublishingEnabled` and `aiChatbotCostCenter` in `packages/prisma/src/prisma/schema/user.prisma:110-116` | Reuse the account approval; add account-wide class budgets and usage projection without a second approval model | Owner/admin only; no funding details to participant clients |
+| Account AI authorization | `User.aiChatbotPublishingEnabled` and `aiChatbotCostCenter` in `packages/prisma/src/prisma/schema/user.prisma:110-116` | Preserve the account approval and merged account-wide usage projection without a second approval model | Owner/admin only; no funding details to participant clients |
 | Monthly usage budget | Merged M1 primitive: `ChatAccountUsage` stores one account + usage-class + Europe/Zurich month row with configured budget and used credits | Maintain the existing persistent configured limit and monthly used-credit reset; M2 adds no second budget primitive | One record per class and period; no hidden contribution fields |
 | Usage class registry | Merged M1 primitive: `apps/chat/src/lib/server/chatModelRegistry.ts` and the GraphQL registry enforce explicit `BASE`/`ADVANCED` metadata and parity | M2 consumes the server-derived class; no new client-selected class or registry copy | `Auto` remains `ADVANCED`; class is server-derived, not client-selected text |
 | Runtime charge | Merged M1 account-class availability, idempotent post-generation charging, and separate legacy participant credits | Lecturer test turns in C3 reuse the existing account-class lifecycle; any identity change requires its own data-integrity review | Charge only reliable provider usage; idempotent per turn lifecycle |
