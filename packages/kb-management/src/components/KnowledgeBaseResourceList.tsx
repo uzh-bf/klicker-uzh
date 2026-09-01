@@ -329,7 +329,7 @@ function ResourceTableRow({
   onToggleSelection,
   onInspect,
   onDelete,
-}: {
+}: Readonly<{
   resource: KnowledgeBaseResource
   selectedIds: Set<string>
   ingestingId: string | null
@@ -340,7 +340,7 @@ function ResourceTableRow({
   onToggleSelection: (id: string) => void
   onInspect: (id: string) => void
   onDelete: (resource: KnowledgeBaseResource) => void
-}) {
+}>) {
   const t = useTranslations()
   const format = useFormatter()
   const active = isActiveResource(resource)
@@ -529,7 +529,7 @@ function ResourceTable({
   onDelete,
   loadingMore,
   onLoadMore,
-}: {
+}: Readonly<{
   connection: KnowledgeBaseResourceConnection
   resources: KnowledgeBaseResource[]
   selectedIds: Set<string>
@@ -545,7 +545,7 @@ function ResourceTable({
   onDelete: (resource: KnowledgeBaseResource) => void
   loadingMore: boolean
   onLoadMore: () => void
-}) {
+}>) {
   const t = useTranslations()
 
   return (
@@ -666,7 +666,7 @@ function ResourceListContent({
   onDelete,
   loadingMore,
   onLoadMore,
-}: {
+}: Readonly<{
   connection: KnowledgeBaseResourceConnection | undefined
   loading: boolean
   error: unknown
@@ -685,14 +685,13 @@ function ResourceListContent({
   onDelete: (resource: KnowledgeBaseResource) => void
   loadingMore: boolean
   onLoadMore: () => void
-}) {
+}>) {
   const t = useTranslations()
 
   if (loading && !connection) {
     return (
-      <div
+      <output
         className="mt-4 space-y-3"
-        role="status"
         aria-label={t('shared.generic.loading')}
       >
         <Skeleton
@@ -703,7 +702,7 @@ function ResourceListContent({
           className="h-40 w-full motion-reduce:animate-none"
           aria-hidden="true"
         />
-      </div>
+      </output>
     )
   }
 
