@@ -40,8 +40,8 @@ const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 // character. No `g` flag — safe to `.test()` repeatedly without shared-state
 // bugs; the `g`-flagged exec below is a separate regex instance used only
 // inside `splitCitationMarkers`.
-const HAS_CITATION_MARKER_RE = /\[\d{1,2}(?:\s*[-–—]\s*\d{1,2})?\]/
-const CITATION_MARKER_EXEC_RE = /\[(\d{1,2})(?:\s*[-–—]\s*(\d{1,2}))?\]/g
+const HAS_CITATION_MARKER_RE = /\[\d{1,2}(?:[ \t]*[-–—][ \t]*\d{1,2})?\]/
+const CITATION_MARKER_EXEC_RE = /\[(\d{1,2})(?:[ \t]*[-–—][ \t]*(\d{1,2}))?\]/g
 
 export function citationHrefFor(index: number): string {
   return `#cite-${index}`

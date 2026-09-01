@@ -93,6 +93,11 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('[4–2]')).toEqual([textNode('[4–2]')])
   })
 
+  test('does not turn a soft line break inside a range into a citation run', () => {
+    expect(splitCitationMarkers('[2\n- 4]')).toEqual([textNode('[2\n- 4]')])
+    expect(splitCitationMarkers('[2 -\n4]')).toEqual([textNode('[2 -\n4]')])
+  })
+
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {
     expect(splitCitationMarkers('Facts [1][2].')).toEqual([
       textNode('Facts'),
