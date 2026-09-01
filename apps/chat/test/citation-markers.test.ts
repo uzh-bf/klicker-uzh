@@ -98,6 +98,17 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('[2 -\n4]')).toEqual([textNode('[2 -\n4]')])
   })
 
+  test('keeps over-wide ranges literal to bound citation chip expansion', () => {
+    expect(splitCitationMarkers('[1-12]')).toEqual(
+      Array.from({ length: 12 }, (_, index) => citationLinkNode(index + 1))
+    )
+    expect(splitCitationMarkers('Wide [1-13], valid [2].')).toEqual([
+      textNode('Wide [1-13], valid'),
+      citationLinkNode(2),
+      textNode('.'),
+    ])
+  })
+
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {
     expect(splitCitationMarkers('Facts [1][2].')).toEqual([
       textNode('Facts'),

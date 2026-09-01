@@ -1,10 +1,12 @@
+import { MAX_SOURCES } from '../sources/normalizeSources'
+
 // Transforms `[n]` and contiguous `[n–m]` citation markers (written by the
 // model per the S5 prompt contract) into adjacent markdown link nodes pointing
 // at `#cite-<n>`, so `markdown-text.tsx`'s `a` component override can render a
 // `CitationChip` instead of a normal anchor. Whether an index actually
 // resolves to a source is decided later, in `CitationChip` (message-scoped
 // `sources` context) — this module only does the structural markdown
-// transform and knows nothing about sources.
+// transform and does not inspect message sources.
 //
 // Runs as a `unified`/remark transformer plugin, appended after
 // `remark-gfm`/`remark-math` so it walks the already-fully-parsed mdast tree
@@ -97,6 +99,10 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
     // intentionally unchanged so the marker is included in the next text
     // slice (or the final remainder below).
     if (lastIndex < firstIndex) continue
+
+    // A wider range cannot fully resolve and would multiply CitationChip work
+    // on every streaming parse. Keep it literal, like a descending range.
+    if (lastIndex - firstIndex + 1 > MAX_SOURCES) continue
 
     const start = match.index
     if (start > lastTextIndex) {
