@@ -301,6 +301,13 @@ function runGit(candidateRoot, args) {
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        GIT_DIR: undefined,
+        GIT_INDEX_FILE: undefined,
+        GIT_PREFIX: undefined,
+        GIT_WORK_TREE: undefined,
+      },
     })
   } catch (error) {
     const detail = error.stderr?.trim() || error.message

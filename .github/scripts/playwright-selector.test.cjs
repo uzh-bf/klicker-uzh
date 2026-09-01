@@ -46,6 +46,13 @@ function gitAt(root, ...args) {
   return childProcess.execFileSync('git', ['-C', root, ...args], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      GIT_DIR: undefined,
+      GIT_INDEX_FILE: undefined,
+      GIT_PREFIX: undefined,
+      GIT_WORK_TREE: undefined,
+    },
   })
 }
 
