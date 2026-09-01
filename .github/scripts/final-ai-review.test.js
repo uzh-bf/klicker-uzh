@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -11,6 +12,7 @@ const {
   FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   GENERATED_PROMOTION_STATUS,
+  OCR_RUN_MANIFEST_SCHEMA,
   PROMOTION_FILE,
   authorizeFinalReview,
   buildIndividualCleanReviewEvidenceDigest,
@@ -47,6 +49,7 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validatePromotionContract,
+  validateOCRResult,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
@@ -627,11 +630,33 @@ test('uses the OCR runtime config path for both preflight and review', () => {
   )
 })
 
+test('requires the exact finding evidence prefix in the model rule', () => {
+  const rule = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../open-code-review/final-review-rules.json'),
+      'utf8'
+    )
+  ).rules[0]
+
+  assert.equal(rule.merge_system_rule, true)
+  assert.match(rule.rule, /Before calling the `code_comment` tool/)
+  assert.match(rule.rule, /no leading whitespace, omitted line, reordered line/)
+  assert.ok(
+    rule.rule.includes(
+      'Confidence: NN/100\nAutofix: mechanical OR manual OR not-applicable\nMotivating line: `exact source line`'
+    )
+  )
+})
+
 function completeReviewResult(comments = []) {
   return {
+    schema_version: OCR_RUN_MANIFEST_SCHEMA,
     status: 'complete',
     llm: { model: FINAL_REVIEW_MODEL },
+    finish_reason: 'stop',
+    warnings: [],
     summary: {
+      coverage: 'complete',
       files_reviewed: 1,
       comments: comments.length,
       total_tokens: 100,
@@ -1144,7 +1169,10 @@ test('retains only the rejected individual publisher input for one day', () => {
     workflow.indexOf('Publish consolidated final review') <
       workflow.indexOf('Upload rejected individual publisher input')
   )
-  assert.match(step, /if: failure\(\) && steps\.publish\.outcome == 'failure'/)
+  assert.match(
+    step,
+    /failure\(\)[\s\S]*steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
   assert.match(
     step,
     /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
@@ -1160,6 +1188,94 @@ test('retains only the rejected individual publisher input for one day', () => {
   assert.match(step, /if-no-files-found: error/)
   assert.match(step, /retention-days: 1/)
   assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
+})
+
+test('validates complete OCR results and retains malformed artifacts', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-ocr-'))
+  const resultPath = path.join(directory, 'result.json')
+  const validResult = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      start_line: 10,
+      end_line: 10,
+      category: 'bug',
+      severity: 'high',
+      content: [
+        'Confidence: 75/100',
+        'Autofix: manual',
+        'Motivating line: `return value`',
+        'This can fail at runtime.',
+      ].join('\n'),
+    },
+  ])
+  fs.writeFileSync(resultPath, JSON.stringify(validResult))
+
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const validRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.equal(validRun.status, 0, validRun.stderr)
+  assert.match(validRun.stdout, /OCR result passed validation/)
+  assert.equal(validateOCRResult(validResult), validResult)
+
+  const malformedResult = {
+    ...validResult,
+    comments: [
+      {
+        ...validResult.comments[0],
+        content: 'This finding omits the required confidence evidence.',
+      },
+    ],
+  }
+  fs.writeFileSync(resultPath, JSON.stringify(malformedResult))
+  const retainedBytes = fs.readFileSync(resultPath)
+  const invalidRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.notEqual(invalidRun.status, 0)
+  assert.match(invalidRun.stderr, /invalid confidence score/)
+  assert.equal(fs.existsSync(resultPath), true)
+  assert.deepEqual(fs.readFileSync(resultPath), retainedBytes)
+  assert.throws(
+    () => validateOCRResult(malformedResult),
+    /invalid confidence score/
+  )
+})
+
+test('runs OCR validation after resume and gates individual publication', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const runIndex = workflow.indexOf('      - name: Run final review')
+  const validateIndex = workflow.indexOf(
+    '      - name: Validate final review OCR result'
+  )
+  const publishIndex = workflow.indexOf(
+    '      - name: Publish consolidated final review'
+  )
+  assert.ok(runIndex >= 0)
+  assert.ok(validateIndex > runIndex)
+  assert.ok(publishIndex > validateIndex)
+
+  const validationStep = workflow.slice(validateIndex, publishIndex)
+  assert.match(validationStep, /id: validate_result/)
+  assert.match(validationStep, /if: steps\.run_review\.outcome == 'success'/)
+  assert.match(
+    validationStep,
+    /node \.github\/scripts\/final-ai-review\.js validate-ocr-result "\$\{RESULT_PATH\}"/
+  )
+
+  const publishStep = workflow.slice(publishIndex)
+  assert.match(publishStep, /steps\.validate_result\.outcome == 'success'/)
+  assert.match(
+    publishStep,
+    /steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
 })
 
 test('renders findings without making finding count a failure', () => {
@@ -2514,34 +2630,23 @@ test('rejects malformed native stack membership instead of inferring topology', 
 })
 
 test('rejects a report that would require partial publication', () => {
+  const comments = Array.from({ length: 5 }, (_, index) => ({
+    path: `src/example-${index}.ts`,
+    content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(11_000)}`,
+    start_line: index + 1,
+    end_line: index + 1,
+    category: 'bug',
+    severity: 'high',
+  }))
+
   assert.throws(
     () =>
-      renderFinalReviewChunks(
-        {
-          ...completeReviewResult(),
-          summary: {
-            ...completeReviewResult().summary,
-            comments: 1,
-          },
-          comments: [
-            {
-              path: 'src/example.ts',
-              content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(55_000)}`,
-              start_line: 1,
-              end_line: 1,
-              category: 'bug',
-              severity: 'high',
-            },
-          ],
-        },
-        'a'.repeat(40),
-        {
-          policyDigest: '2'.repeat(64),
-          trustedPolicySha: 'd'.repeat(40),
-          workflowHeadSha: 'd'.repeat(40),
-          workflowSha: 'd'.repeat(40),
-        }
-      ),
+      renderFinalReviewChunks(completeReviewResult(comments), 'a'.repeat(40), {
+        policyDigest: '2'.repeat(64),
+        trustedPolicySha: 'd'.repeat(40),
+        workflowHeadSha: 'd'.repeat(40),
+        workflowSha: 'd'.repeat(40),
+      }),
     /report limit/
   )
 })

@@ -34,6 +34,7 @@ const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review cle
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
+const OCR_RUN_MANIFEST_SCHEMA = 'ocr.run-manifest/v1'
 // Long-lived consolidation branches (for example, v3-ai) that staging
 // deployments are cut from. Individual final reviews treat open ready pull
 // requests targeting one of these bases exactly like pull requests targeting
@@ -82,6 +83,8 @@ const FINDING_CATEGORIES = new Set([
 ])
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
+const FINDING_CONTENT_PREFIX_RE =
+  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: `([^`\r\n]+)`(?:\n|$)/
 
 function buildFinalReviewEvidenceDigest(value) {
   return sha256(JSON.stringify(value))
@@ -2431,8 +2434,9 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} is not an object`)
   }
 
-  const filePath = String(comment.path ?? '')
+  const filePath = comment.path
   if (
+    typeof filePath !== 'string' ||
     !filePath ||
     filePath.length > 500 ||
     path.isAbsolute(filePath) ||
@@ -2442,8 +2446,8 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} has an invalid repository path`)
   }
 
-  const start = Number(comment.start_line)
-  const end = Number(comment.end_line)
+  const start = comment.start_line
+  const end = comment.end_line
   if (
     !Number.isSafeInteger(start) ||
     !Number.isSafeInteger(end) ||
@@ -2453,8 +2457,8 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} has an invalid line range`)
   }
 
-  const severity = String(comment.severity ?? '').toLowerCase()
-  const category = String(comment.category ?? '').toLowerCase()
+  const severity = comment.severity
+  const category = comment.category
   if (!FINDING_SEVERITIES.has(severity)) {
     throw new Error(`Finding ${index + 1} has an invalid severity`)
   }
@@ -2462,18 +2466,25 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} has an invalid category`)
   }
 
-  const content = String(comment.content ?? '').trim()
-  const confidenceMatch = content.match(/\bConfidence:\s*(\d{1,3})\/100\b/i)
+  const content = comment.content
+  if (typeof content !== 'string' || !content) {
+    throw new Error(`Finding ${index + 1} has invalid content`)
+  }
+  if (content.length > 12_000) {
+    throw new Error(`Finding ${index + 1} content is too long`)
+  }
+  const confidenceMatch = content.match(FINDING_CONTENT_PREFIX_RE)
   const confidence = Number(confidenceMatch?.[1])
   const threshold = severity === 'critical' ? 50 : 75
   if (!confidenceMatch || confidence < threshold || confidence > 100) {
     throw new Error(`Finding ${index + 1} has an invalid confidence score`)
   }
-  if (!/\bAutofix:\s*(mechanical|manual|not-applicable)\b/i.test(content)) {
-    throw new Error(`Finding ${index + 1} has no valid autofix class`)
-  }
-  if (!/\bMotivating line:\s*`[^`\r\n]+`/i.test(content)) {
-    throw new Error(`Finding ${index + 1} has no quoted motivating line`)
+  if (
+    Object.hasOwn(comment, 'suggestion_code') &&
+    (typeof comment.suggestion_code !== 'string' ||
+      comment.suggestion_code.length > 12_000)
+  ) {
+    throw new Error(`Finding ${index + 1} has invalid suggestion code`)
   }
 
   return { category, content, end, filePath, severity, start }
@@ -2574,6 +2585,96 @@ function validateReviewSummary(summary, commentCount) {
   }
 }
 
+function validateOCRResult(result) {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    throw new Error('OCR result envelope is not an object')
+  }
+  if (result.status !== 'complete') {
+    throw new Error(`OCR returned unexpected status: ${result.status}`)
+  }
+  if (result.schema_version !== OCR_RUN_MANIFEST_SCHEMA) {
+    throw new Error('OCR result has an invalid schema version')
+  }
+  if (
+    result.manifest?.schema_version !== OCR_RUN_MANIFEST_SCHEMA ||
+    result.manifest.terminal_state !== 'complete'
+  ) {
+    throw new Error('OCR result has no complete v1 run manifest')
+  }
+  if (
+    !result.llm ||
+    typeof result.llm !== 'object' ||
+    Array.isArray(result.llm) ||
+    result.llm.model !== FINAL_REVIEW_MODEL ||
+    (Object.hasOwn(result.llm, 'provider') &&
+      (typeof result.llm.provider !== 'string' || !result.llm.provider))
+  ) {
+    throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)
+  }
+  if (result.finish_reason !== 'stop') {
+    throw new Error('OCR result has an incomplete finish reason')
+  }
+  if (!result.summary || typeof result.summary !== 'object') {
+    throw new Error('OCR result has no review summary')
+  }
+  if (result.summary.budget_exceeded === true) {
+    throw new Error('OCR exhausted its review budget')
+  }
+  if (
+    Object.hasOwn(result.summary, 'budget_exceeded') &&
+    typeof result.summary.budget_exceeded !== 'boolean'
+  ) {
+    throw new Error('OCR result has an invalid budget flag')
+  }
+  if (result.summary.coverage !== 'complete') {
+    throw new Error('OCR result has incomplete review coverage')
+  }
+  if (!Array.isArray(result.comments)) {
+    throw new Error('OCR result has no comments array')
+  }
+  if (result.comments.length > 100) {
+    throw new Error('OCR result has too many comments')
+  }
+  if (!Array.isArray(result.warnings)) {
+    throw new Error('OCR result has an invalid warnings array')
+  }
+  if (result.warnings.length > 0) {
+    throw new Error('OCR result has coverage warnings; rerun the review')
+  }
+  validateReviewSummary(result.summary, result.comments.length)
+
+  if (
+    result.session_id != null ||
+    result.resume != null ||
+    result.manifest.run_id != null ||
+    result.manifest.operation != null ||
+    result.manifest.parent_run_id != null ||
+    result.manifest.coverage != null
+  ) {
+    const { coverage } = validateOCRSessionEnvelope(
+      result,
+      'complete',
+      'Complete OCR result'
+    )
+    if (coverage.failed.length > 0) {
+      throw new Error('Complete OCR result retained failed coverage')
+    }
+    if (result.resume != null) {
+      if (
+        typeof result.resume !== 'object' ||
+        Array.isArray(result.resume) ||
+        typeof result.resume.resumed_from !== 'string' ||
+        !result.resume.resumed_from
+      ) {
+        throw new Error('Complete OCR result has an invalid resume envelope')
+      }
+    }
+  }
+
+  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  return result
+}
+
 function validateOCRTokenCounters(summary, label) {
   const keys = ['total_tokens', 'input_tokens', 'output_tokens']
   if (
@@ -2620,7 +2721,7 @@ function validateOCRSessionEnvelope(result, expectedStatus, label) {
   }
   const manifest = result.manifest
   if (
-    manifest?.schema_version !== 'ocr.run-manifest/v1' ||
+    manifest?.schema_version !== OCR_RUN_MANIFEST_SCHEMA ||
     manifest.run_id !== sessionId ||
     manifest.operation !== 'review' ||
     manifest.terminal_state !== expectedStatus ||
@@ -2744,34 +2845,7 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
 }
 
 function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
-  if (result.status !== 'complete') {
-    throw new Error(`OCR returned unexpected status: ${result.status}`)
-  }
-  if (
-    result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
-    result.manifest.terminal_state !== 'complete'
-  ) {
-    throw new Error('OCR result has no complete v1 run manifest')
-  }
-  if (result.llm?.model !== FINAL_REVIEW_MODEL) {
-    throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)
-  }
-  if (!result.summary || typeof result.summary !== 'object') {
-    throw new Error('OCR result has no review summary')
-  }
-  if (result.summary.budget_exceeded === true) {
-    throw new Error('OCR exhausted its review budget')
-  }
-  if (!Array.isArray(result.comments)) {
-    throw new Error('OCR result has no comments array')
-  }
-  if (!Array.isArray(result.warnings)) {
-    if (result.warnings != null) {
-      throw new Error('OCR result has an invalid warnings array')
-    }
-  } else if (result.warnings.length > 0) {
-    throw new Error('OCR result has coverage warnings; rerun the review')
-  }
+  validateOCRResult(result)
   if (!/^[0-9a-f]{40}$/.test(headSha)) {
     throw new Error('Final review head is not a full commit SHA')
   }
@@ -3482,6 +3556,17 @@ function runCli() {
       )
     })
   }
+  if (command === 'validate-ocr-result') {
+    const resultPath = process.argv[3]
+    if (!resultPath) {
+      throw new Error(
+        'Usage: final-ai-review.js validate-ocr-result <result-path>'
+      )
+    }
+    validateOCRResult(JSON.parse(fs.readFileSync(resultPath, 'utf8')))
+    console.log('OCR result passed validation')
+    return
+  }
   if (command === 'plan-ocr-resume') {
     const resultPath = process.argv[3]
     const budgetText = process.argv[4]
@@ -3559,6 +3644,7 @@ module.exports = {
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_WORKFLOW_PATH,
   DISPOSITION_SCHEMA,
+  OCR_RUN_MANIFEST_SCHEMA,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
   PROMOTION_FILE,
@@ -3607,6 +3693,7 @@ module.exports = {
   runGhApi,
   startFinalReview,
   validateDispositionRecord,
+  validateOCRResult,
   validatePromotionContract,
   validateFinding,
   verifyPromotionBuilds,

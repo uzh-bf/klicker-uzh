@@ -451,8 +451,20 @@ jobs:
             mv "${MERGED_PATH}" "${RESULT_PATH}"
           fi
 
+      - name: Validate final review OCR result
+        id: validate_result
+        if: steps.run_review.outcome == 'success'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+        run: |
+          set -euo pipefail
+          node .github/scripts/final-ai-review.js validate-ocr-result "${RESULT_PATH}"
+
       - name: Summarize final review failure output
-        if: failure() && steps.run_review.outcome == 'failure'
+        if: >-
+          failure() &&
+          (steps.run_review.outcome == 'failure' ||
+          steps.validate_result.outcome == 'failure')
         env:
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -495,6 +507,7 @@ jobs:
         id: publish
         if: >-
           steps.run_review.outcome == 'success' &&
+          steps.validate_result.outcome == 'success' &&
           steps.cleanup.outcome == 'success'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -546,7 +559,10 @@ jobs:
             )
 
       - name: Upload rejected individual publisher input
-        if: failure() && steps.publish.outcome == 'failure'
+        if: >-
+          failure() &&
+          (steps.validate_result.outcome == 'failure' ||
+          steps.publish.outcome == 'failure')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
