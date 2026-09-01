@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { Prisma, type PrismaClient } from '@klicker-uzh/prisma/client'
 
 export const AUDIT_MONITOR_THRESHOLDS = {
   oldestPendingWarningSeconds: 2 * 60,
@@ -7,6 +7,8 @@ export const AUDIT_MONITOR_THRESHOLDS = {
   pendingDepthCritical: 10_000,
   dispatcherHeartbeatWarningSeconds: 2 * 60,
   dispatcherHeartbeatCriticalSeconds: 3 * 60,
+  coveredSubmissionWithoutTerminalWarningSeconds: 2 * 60,
+  coveredSubmissionWithoutTerminalCriticalSeconds: 5 * 60,
 } as const
 
 export type AuditMonitorCounts = {
@@ -16,6 +18,9 @@ export type AuditMonitorCounts = {
   differentHashConflictCount: number
   deliveredUnsealedCount: number
   deliveredUnsealedBytes: number
+  requiredMediaCaptureFailureCount: number
+  coveredSubmissionWithoutTerminalCount: number
+  oldestCoveredSubmissionWithoutTerminalAt: Date | null
 }
 
 export interface AuditMonitorRepository {
@@ -23,35 +28,103 @@ export interface AuditMonitorRepository {
 }
 
 export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
-  private readonly client: Pick<PrismaClient, 'assessmentAuditOutboxEvent'>
+  private readonly client: Pick<
+    PrismaClient,
+    'assessmentAuditOutboxEvent' | '$queryRaw'
+  >
 
-  constructor(client: Pick<PrismaClient, 'assessmentAuditOutboxEvent'>) {
+  constructor(
+    client: Pick<PrismaClient, 'assessmentAuditOutboxEvent' | '$queryRaw'>
+  ) {
     this.client = client
   }
 
   async readCounts(): Promise<AuditMonitorCounts> {
-    const [pending, quarantinedCount, differentHashConflictCount, unsealed] =
-      await Promise.all([
-        this.client.assessmentAuditOutboxEvent.aggregate({
-          where: { deliveryState: { in: ['PENDING', 'LEASED'] } },
-          _count: true,
-          _min: { recordedAt: true },
-        }),
-        this.client.assessmentAuditOutboxEvent.count({
-          where: { deliveryState: 'QUARANTINED' },
-        }),
-        this.client.assessmentAuditOutboxEvent.count({
-          where: {
-            deliveryState: 'QUARANTINED',
-            quarantineReason: 'DIFFERENT_HASH_CONFLICT',
-          },
-        }),
-        this.client.assessmentAuditOutboxEvent.aggregate({
-          where: { deliveryState: 'DELIVERED_UNSEALED' },
-          _count: true,
-          _sum: { canonicalByteLength: true },
-        }),
-      ])
+    const [
+      pending,
+      quarantinedCount,
+      differentHashConflictCount,
+      unsealed,
+      activationFailureRows,
+      accepted,
+    ] = await Promise.all([
+      this.client.assessmentAuditOutboxEvent.aggregate({
+        where: { deliveryState: { in: ['PENDING', 'LEASED'] } },
+        _count: true,
+        _min: { recordedAt: true },
+      }),
+      this.client.assessmentAuditOutboxEvent.count({
+        where: { deliveryState: 'QUARANTINED' },
+      }),
+      this.client.assessmentAuditOutboxEvent.count({
+        where: {
+          deliveryState: 'QUARANTINED',
+          quarantineReason: 'DIFFERENT_HASH_CONFLICT',
+        },
+      }),
+      this.client.assessmentAuditOutboxEvent.aggregate({
+        where: { deliveryState: 'DELIVERED_UNSEALED' },
+        _count: true,
+        _sum: { canonicalByteLength: true },
+      }),
+      this.client.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS count
+        FROM (
+          SELECT DISTINCT ON ("liveQuizId") "coverageState"
+          FROM "AssessmentAuditScope"
+          ORDER BY "liveQuizId", "lifecycleEpoch" DESC
+        ) latest
+        WHERE latest."coverageState" IN ('ACTIVATING', 'FAILED')
+      `),
+      this.client.assessmentAuditOutboxEvent.findMany({
+        where: { eventType: 'SUBMISSION_SERVER_ACCEPTED' },
+        orderBy: [{ recordedAt: 'asc' }, { eventId: 'asc' }],
+        take: 5_001,
+        select: { correlationId: true, recordedAt: true },
+      }),
+    ])
+
+    const acceptedByCorrelation = new Map<string, Date>()
+    for (const row of accepted) {
+      if (!acceptedByCorrelation.has(row.correlationId)) {
+        acceptedByCorrelation.set(row.correlationId, row.recordedAt)
+      }
+    }
+    const terminalCorrelations =
+      acceptedByCorrelation.size === 0
+        ? new Set<string>()
+        : new Set(
+            (
+              await this.client.assessmentAuditOutboxEvent.findMany({
+                where: {
+                  correlationId: { in: [...acceptedByCorrelation.keys()] },
+                  eventType: {
+                    in: [
+                      'SUBMISSION_REJECTED',
+                      'SUBMISSION_DUPLICATE',
+                      'SUBMISSION_PERSISTED',
+                    ],
+                  },
+                },
+                distinct: ['correlationId'],
+                select: { correlationId: true },
+              })
+            ).map((row) => row.correlationId)
+          )
+    const unresolved = [...acceptedByCorrelation].filter(
+      ([correlationId]) => !terminalCorrelations.has(correlationId)
+    )
+    const requiredMediaCaptureFailureCount = Number(
+      activationFailureRows[0]?.count ?? 0n
+    )
+    const oldestCoveredSubmissionWithoutTerminalAt =
+      unresolved.length === 0
+        ? null
+        : unresolved.reduce(
+            (oldest, [, recordedAt]) =>
+              recordedAt < oldest ? recordedAt : oldest,
+            unresolved[0]![1]
+          )
     return {
       pendingCount: pending._count,
       oldestPendingAt: pending._min.recordedAt,
@@ -59,6 +132,12 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       differentHashConflictCount,
       deliveredUnsealedCount: unsealed._count,
       deliveredUnsealedBytes: unsealed._sum.canonicalByteLength ?? 0,
+      requiredMediaCaptureFailureCount,
+      coveredSubmissionWithoutTerminalCount:
+        accepted.length > 5_000
+          ? Math.max(unresolved.length, 5_001)
+          : unresolved.length,
+      oldestCoveredSubmissionWithoutTerminalAt,
     }
   }
 }
@@ -70,6 +149,8 @@ export type AuditMonitorSignal = {
     | 'DISPATCHER_HEARTBEAT_SECONDS'
     | 'DIFFERENT_HASH_CONFLICT'
     | 'QUARANTINED_ROWS'
+    | 'REQUIRED_MEDIA_CAPTURE_FAILURES'
+    | 'OLDEST_COVERED_SUBMISSION_WITHOUT_TERMINAL_SECONDS'
   severity: 'WARNING' | 'CRITICAL'
   value: number
   threshold: number
@@ -79,6 +160,7 @@ export type AuditMonitorSnapshot = AuditMonitorCounts & {
   observedAt: string
   oldestPendingSeconds: number
   dispatcherHeartbeatSeconds: number
+  oldestCoveredSubmissionWithoutTerminalSeconds: number
   signals: AuditMonitorSignal[]
   status: 'HEALTHY' | 'WARNING' | 'CRITICAL'
 }
@@ -156,6 +238,10 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
     dispatcherLastSuccessAt ??
     auditWorkerStartedAt
   const dispatcherHeartbeatSeconds = elapsedSeconds(now, lastDispatch)
+  const oldestCoveredSubmissionWithoutTerminalSeconds = elapsedSeconds(
+    now,
+    counts.oldestCoveredSubmissionWithoutTerminalAt
+  )
   const signals: AuditMonitorSignal[] = []
   const possibleSignals = [
     thresholdSignal({
@@ -200,6 +286,25 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
       threshold: 1,
     })
   }
+  if (counts.requiredMediaCaptureFailureCount > 0) {
+    signals.push({
+      signal: 'REQUIRED_MEDIA_CAPTURE_FAILURES',
+      severity: 'CRITICAL',
+      value: counts.requiredMediaCaptureFailureCount,
+      threshold: 1,
+    })
+  }
+  if (counts.coveredSubmissionWithoutTerminalCount > 0) {
+    const signal = thresholdSignal({
+      signal: 'OLDEST_COVERED_SUBMISSION_WITHOUT_TERMINAL_SECONDS',
+      value: oldestCoveredSubmissionWithoutTerminalSeconds,
+      warning:
+        AUDIT_MONITOR_THRESHOLDS.coveredSubmissionWithoutTerminalWarningSeconds,
+      critical:
+        AUDIT_MONITOR_THRESHOLDS.coveredSubmissionWithoutTerminalCriticalSeconds,
+    })
+    if (signal !== undefined) signals.push(signal)
+  }
   const status = signals.some((signal) => signal.severity === 'CRITICAL')
     ? 'CRITICAL'
     : signals.length > 0
@@ -210,6 +315,7 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
     observedAt: now.toISOString(),
     oldestPendingSeconds,
     dispatcherHeartbeatSeconds,
+    oldestCoveredSubmissionWithoutTerminalSeconds,
     signals,
     status,
   }
@@ -295,6 +401,20 @@ export function renderAssessmentAuditPrometheusMetrics(
     [
       'assessment_audit_delivered_unsealed_bytes',
       prometheusNumber(latestSnapshot?.deliveredUnsealedBytes),
+    ],
+    [
+      'assessment_audit_required_media_capture_failures',
+      prometheusNumber(latestSnapshot?.requiredMediaCaptureFailureCount),
+    ],
+    [
+      'assessment_audit_covered_submissions_without_terminal',
+      prometheusNumber(latestSnapshot?.coveredSubmissionWithoutTerminalCount),
+    ],
+    [
+      'assessment_audit_oldest_covered_submission_without_terminal_seconds',
+      prometheusNumber(
+        latestSnapshot?.oldestCoveredSubmissionWithoutTerminalSeconds
+      ),
     ],
   ]
   return [

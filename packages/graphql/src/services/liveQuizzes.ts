@@ -651,7 +651,6 @@ export async function manipulateLiveQuiz(
       console.warn('New assessment audit activation remains pending')
     }
   }
-
   return {
     id: activity.id,
     templateId: activity.templateInfo?.id ?? null,
