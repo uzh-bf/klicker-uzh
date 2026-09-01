@@ -2435,14 +2435,7 @@ function validateFinding(comment, index) {
   }
 
   const filePath = comment.path
-  if (
-    typeof filePath !== 'string' ||
-    !filePath ||
-    filePath.length > 500 ||
-    path.isAbsolute(filePath) ||
-    filePath.split('/').includes('..') ||
-    /[\p{Cc}\p{Cf}`]/u.test(filePath)
-  ) {
+  if (!isSafeRepositoryPath(filePath) || path.isAbsolute(filePath)) {
     throw new Error(`Finding ${index + 1} has an invalid repository path`)
   }
 
