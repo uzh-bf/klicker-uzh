@@ -30,6 +30,22 @@ test.describe('Question library filter groups', () => {
       'open'
     )
     await expect(page.getByTestId(`${STATUS_HEADER}-applied`)).toHaveCount(0)
+    const draftFilter = page.getByTestId(
+      `element-status-filter-${ElementStatus.DRAFT}`
+    )
+    const draftDescription = page.getByTestId(
+      `description-element-status-filter-${ElementStatus.DRAFT}`
+    )
+    await expect(draftDescription).toBeHidden()
+    await draftFilter.hover()
+    await expect(draftDescription).toBeVisible()
+    await expect(draftDescription).toContainText('Manual status')
+    await draftFilter.focus()
+    await expect(draftDescription).toBeVisible()
+    await expect(draftFilter).toHaveAttribute(
+      'aria-describedby',
+      `description-element-status-filter-${ElementStatus.DRAFT}`
+    )
     await expect(page.getByTestId(MULTIPLIER_HEADER)).toHaveAttribute(
       'data-state',
       'closed'

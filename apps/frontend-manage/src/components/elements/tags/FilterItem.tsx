@@ -1,6 +1,5 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Tooltip } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 interface FilterItemProps {
@@ -10,7 +9,6 @@ interface FilterItemProps {
   disabled?: boolean
   onClick: () => void
   tooltip?: string
-  description?: string
   data?: { cy?: string; test?: string }
 }
 
@@ -21,45 +19,44 @@ function FilterItem({
   disabled,
   onClick,
   tooltip,
-  description,
   data,
 }: FilterItemProps) {
-  const filterItemElement = (
-    <li
-      className={twMerge(
-        'hover:text-primary-100 cursor-pointer px-2 py-0.5',
-        description ? 'flex items-start gap-2 py-1' : 'line-clamp-1',
-        active && 'text-primary-100',
-        disabled &&
-          'hover:text-uzh-grey-100 text-uzh-grey-100 cursor-not-allowed'
-      )}
-      onClick={disabled ? undefined : onClick}
-      data-cy={data?.cy}
-      data-test={data?.test}
-    >
-      <FontAwesomeIcon
-        icon={active ? icon[1] : icon[0]}
-        className={twMerge('mr-2 w-4', description && 'mt-0.5 mr-0 flex-none')}
-      />
-      {description ? (
-        <span className="min-w-0">
-          <span className="block">{text}</span>
-          <span className="block text-xs leading-snug text-slate-600">
-            {description}
-          </span>
-        </span>
-      ) : (
-        text
-      )}
-    </li>
-  )
+  const tooltipId = tooltip && data?.cy ? `description-${data.cy}` : undefined
 
-  return tooltip ? (
-    <Tooltip tooltip={tooltip} delay={700}>
-      {filterItemElement}
-    </Tooltip>
-  ) : (
-    filterItemElement
+  return (
+    <li className="group relative list-none">
+      <button
+        type="button"
+        disabled={disabled}
+        aria-pressed={active}
+        aria-describedby={tooltipId}
+        onClick={onClick}
+        data-cy={data?.cy}
+        data-test={data?.test}
+        className={twMerge(
+          'hover:text-primary-100 flex w-full cursor-pointer items-center px-2 py-0.5 text-left',
+          active && 'text-primary-100',
+          disabled &&
+            'hover:text-uzh-grey-100 text-uzh-grey-100 cursor-not-allowed'
+        )}
+      >
+        <FontAwesomeIcon
+          icon={active ? icon[1] : icon[0]}
+          className="mr-2 w-4 flex-none"
+        />
+        <span className="line-clamp-1">{text}</span>
+      </button>
+      {tooltip ? (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          data-cy={tooltipId}
+          className="pointer-events-none invisible absolute top-full left-2 z-30 mt-1 w-max max-w-52 rounded-md bg-slate-700 px-2 py-1 text-left text-xs leading-snug whitespace-normal text-white opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        >
+          {tooltip}
+        </span>
+      ) : null}
+    </li>
   )
 }
 

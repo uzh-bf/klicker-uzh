@@ -148,7 +148,7 @@ function FilterList({
             <FilterItem
               key={option.value}
               text={option.shortLabel}
-              description={option.description}
+              tooltip={option.description}
               icon={ELEMENT_STATUS_FILTERS[option.value]}
               active={filters.status === option.value}
               onClick={(): void =>
