@@ -1,10 +1,10 @@
 # HITL lecturer chatbot configuration roadmap
 
-Revision: 2026-08-26. This is the approved execution roadmap for the active
-`rs-roadmap-orchestrator` run. It sequences the work one horizon above
-implementation. The active transaction is M1 trusted-pilot finalization; the
-original U1–U3 implementation plan is historical context for the completed
-stack.
+Revision: 2026-09-01. This is the current execution roadmap for the
+`rs-roadmap-orchestrator` work. It sequences the work one horizon above
+implementation. The M1 usage-funding stack is merged; its later trusted-pilot
+finalization candidate was not published. The active planning transaction is a
+live-state reconciliation and a bounded handoff into the remaining M2 work.
 
 The goal is a small, reviewable lecturer configuration beta: an approved
 account can use two explicit model-usage classes, configure a chatbot with
@@ -29,20 +29,21 @@ Governing ADRs:
 
 ## Goal, terminal condition, and authority
 
-The current execution session finalizes the existing five-PR stack based on
-PR #5460 after the approved U4 hardening and trusted-pilot corrections. Its
-terminal condition is the published, reviewed stack and its evidence, with
-exact-head CI observed and the validation runtime stopped. It does not include
-merge, deployment, live traffic, or closing a superseded PR.
+The current execution session reconciles this roadmap with the live repository
+after the original five-PR M1 stack merged and defines the next M2 continuation.
+Its terminal condition is a committed roadmap-only reconciliation, focused
+Markdown and diff checks, a committed-diff final review, a pushed branch, and a
+draft PR for senior review. It does not include code implementation, merging
+any PR, deployment, account activation, live traffic, runtime startup, cleanup,
+or mutation of another worktree.
 
 The active orchestrator owns task IDs, stack order, child assignment, question
-custody, roadmap `Progress`, and boundary verification. The approved
-finalization plan authorizes the existing worktree, local U4 corrections,
-repository checks, synthetic browser proof, read-only reviews, plan and
-roadmap reconciliation, and publication of the same five PR branches. A child
-owns exactly one bounded review or verification task and must return its
-evidence. Merge, deployment, live traffic, PR closure, cleanup, and deletion
-remain withheld. The orchestrator must not silently widen the scope to
+custody, roadmap `Progress`, and boundary verification. This transaction
+authorizes only the clean roadmap branch, the exact live-state readback, this
+roadmap edit, repository-native documentation checks, a committed-diff review,
+and draft-PR delivery. Existing implementation PRs and worktrees retain their
+owners. Merge, deployment, live traffic, account activation, cleanup, and
+deletion remain withheld. The orchestrator must not silently widen the scope to
 billing, student-content analytics, a new knowledge-base service, or live
 operations.
 
@@ -50,20 +51,54 @@ operations.
 
 | Item | State and next-session action |
 | --- | --- |
-| Phase 0 base | PR [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460) remains the immutable bottom of the existing five-PR stack. Its historical GitGuardian fixture finding remains a base-PR disposition; do not rewrite it. |
-| Phase 0 scope | Lifecycle, account capability, publication mutations, prompt compile seam, approval foundations, and the accepted M1 usage corrections are present in the current candidate. |
-| Superseded plan PR | PR [#5453](https://github.com/uzh-bf/klicker-uzh/pull/5453) is fully incorporated into #5460 and is now closed. The closure happened outside this orchestration run. |
-| Stack capability | The existing five-PR stack is the active topology: #5460 → #5475 → #5480 → #5490 → #5524. Preserve PR identity, order, and ready state; do not create a second stack or layer. |
-| Worktree | `trees/feat-chatbot-lecturer-config-phase0` is the implementation worktree on `rs/chatbot-u4-model-registry-policy`; the primary checkout contains unrelated user changes and is read-only control state. |
-| Freshness | The approved recascade used fresh `origin/v3` at `7515632f229c9421a7ac7d62668e1743147ba158`. Before publication, rerun the exact remote lease, base, head, and ready-state gate. |
-| Runtime | Synthetic DevPod/browser validation is part of the active finalization and must be stopped after the last runtime-dependent check. No production, staging, provider, secret, cluster, or live-data action is authorized. |
-| Existing plan | `project/2026-08-26-pr-5524-trusted-pilot-hardening-plan.md` is the active execution contract. The Phase 0 plan remains historical evidence; do not create a second plan root. |
+| M1 implementation stack | PRs [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460), [#5475](https://github.com/uzh-bf/klicker-uzh/pull/5475), [#5480](https://github.com/uzh-bf/klicker-uzh/pull/5480), [#5490](https://github.com/uzh-bf/klicker-uzh/pull/5490), and [#5524](https://github.com/uzh-bf/klicker-uzh/pull/5524) merged in order on 2026-08-26. Their merge commits are `c8411c5679`, `fe63a9fb2d`, `cb1188f321`, `df5becfc06`, and `2d60516150`. | Treat M1 implementation as delivered; do not reopen or recreate the five-PR stack. |
+| Trusted-pilot finalization | The recorded hashes `ed0bad640`, `18b3813df`, `2a6ac883`, `d48d03673`, and `2b1bb3ae` are unpublished Phase 0/U1/U2/U3/U4 candidate layer heads from the final recascade. They are not one-to-one S0–S4 commits, and the five merged PRs exclude them. | Preserve the history as an unpublished candidate; do not claim those corrections shipped or attempt the old publication path. |
+| M2a authoring stack | [#5593](https://github.com/uzh-bf/klicker-uzh/pull/5593) → [#5614](https://github.com/uzh-bf/klicker-uzh/pull/5614) → [#5619](https://github.com/uzh-bf/klicker-uzh/pull/5619) are open, non-draft, and mergeable. [#5723](https://github.com/uzh-bf/klicker-uzh/pull/5723) is an open, draft, mergeable guided-setup extension on #5619. | Recognize this as the existing M2a stack. It partially delivers C2 and C4; it does not satisfy C1 or C3. Do not create a duplicate stack. |
+| Roadmap worktrees | The prior clean roadmap-refresh worktree integrated current `origin/v3` at local commit `caf1f84d08`. This deliverable uses `trees/chatbot-hitl-roadmap-reconciliation` on `rs/chatbot-hitl-roadmap-reconciliation`, based directly on `origin/v3` at `72096fafe5`, so the review PR contains only the roadmap change. The dirty primary checkout and unrelated worktrees remain untouched. | Keep the new branch docs-only and use the refresh worktree only as integration evidence. |
+| Target and freshness | `origin/v3` at `72096fafe50827c3ea3f50465f0a76d492e0a4c2` is the resolved target baseline. `origin/dev` is not the target and was not integrated. | Re-read the target and branch heads before publication of this documentation PR. |
+| Historical execution plan | `project/2026-08-26-pr-5524-trusted-pilot-hardening-plan.md` describes the superseded M1 finalization transaction. | Treat it as historical evidence; the live reconciliation below is the current execution contract. |
 
-The last CI run was green for builds, tests, CodeQL, SonarCloud, checks, and
-all Playwright shards. GitGuardian still reports the known historical
-synthetic fixture incident `36437584` in
-`packages/graphql/test/courseChatbots.test.ts`; the orchestrator must carry
-that as a base-PR disposition, not misreport it as a new usage-feature defect.
+The current `origin/v3` source contains the merged M1 lifecycle, account-usage,
+registry, runtime-charging, and lecturer-usage foundations. This roadmap does
+not claim that the default-off enforcement switch has been activated, that a
+trusted pilot is live, or that any provider, secret, account, staging, or
+production state changed.
+
+## Live-state reconciliation and next-package boundary
+
+The live readback closes the old M1 finalization transaction. The five M1 PRs
+merged before the recorded local S0–S4 work could be published, so those local
+candidate heads are not an alternative authoritative M1 history. The old
+trusted-pilot plan must not be revived by replaying its force-with-lease or
+runtime steps.
+
+The next implementation work is already represented by the open M2a stack. Its
+three non-draft layers provide the authoring contract, draft authoring UI, and
+publication-request UI. The draft #5723 extension provides the guided setup
+workspace. Together they remain an externally owned implementation sequence;
+this roadmap PR does not edit their branches or PR bodies.
+
+After M2a is merged or explicitly parked, the roadmap resumes with two
+risk-selected M2 slices:
+
+- **C1 — standard-mode typed fields and layered compiler:** add the bounded
+  persona fields and mode toggles, compile them over non-removable platform
+  scaffolding, and keep raw prompts out of the public GraphQL contract.
+- **C3 — lecturer-owned test identity and analytics exclusion:** add the
+  explicit owner-linked test-thread boundary, authorize it separately from
+  participant access, charge the owning account according to the settled usage
+  contract, and exclude it from participant history, ratings, and analytics.
+
+C1 and C3 remain separate because C1 is a prompt-policy boundary while C3 is
+an identity, authorization, persistence, and analytics boundary. Both preserve
+the existing C2/C4 lifecycle contracts and require their own implementation
+plan, risk review, and acceptance evidence. No second M2 stack starts during
+this reconciliation.
+
+The separately gated `v3-ai` entitlement-integration package from the M2a plan
+also remains in force. It begins only after the owner or user integrates the
+current `v3` into `v3-ai`; it is not superseded by this v3 roadmap change and
+is not integrated here.
 
 ## Binding product and data decisions
 
@@ -170,6 +205,9 @@ Planning-stage specialist status:
   read the encrypted task. The main session performed the evidence mapping
   directly. This is a routing limitation, not evidence that the repository was
   unexplored.
+- The current reconciliation plan used the permitted generic-continuity Sol
+  route at xhigh effort after the configured planner rejected its unavailable
+  model before work. It returned `VERDICT: APPROVED` after one revision round.
 
 ## Stacked milestone topology
 
@@ -200,8 +238,9 @@ database migration, public registry metadata, and the account-budget contract.
 The user validates the U1 foundation at Gate 2 before U2 starts.
 
 This section records the original U1–U3 topology and acceptance contracts. The
-stack has since completed that implementation sequence and is now governed by
-the trusted-pilot finalization plan named in the current-state table above.
+stack has since completed that implementation sequence. The five implementation
+PRs are merged; the later trusted-pilot finalization plan and its unpublished
+candidate recascade are historical evidence only.
 
 One stack lives in the existing repo-local worktree
 `trees/feat-chatbot-lecturer-config-phase0`. The orchestrator is the sole
@@ -218,9 +257,10 @@ worktree may mutate this stack.
 | U3 | `rs/chatbot-u3-usage-lanes`: authorized account usage API and exact two-lane lecturer UI | GraphQL authorization and manage-UI maintainers; review account isolation, hidden-contribution boundary, lane vocabulary, and empty/exhausted/reset states | GraphQL generation, focused resolver tests, `pnpm run check:all`, mandatory English/German desktop/mobile browser evidence; complete lecturer-facing M1 capability | High; about 350–550 human-authored lines across 10–16 files, plus generated operations. Threshold-crossing but one work package because the narrow API projection and its only consumer form one independently functional lecturer outcome |
 
 Draft PR publication means pushing the layer branch and creating a draft PR.
-It does not mark a layer ready for review. Gate 3 separately requires the
-user's ruling before any M1 draft becomes ready for review. M2–M5 remain
-follow-up stacks outside the active authority.
+It does not mark a layer ready for review. Gate 3 separately required the user's
+ruling before the historical M1 drafts became ready for review. M2–M5 remain
+follow-up stacks, with the current M2a stack recorded above and outside this
+roadmap-only transaction.
 
 Gate 1 approval: approved by the user on 2026-08-21.
 
@@ -631,7 +671,7 @@ decision.
 | A4 — custom/admin scope | Whether account approval has persistent intake and how live custom edits remain reviewed without full snapshots | Keep account authorization out-of-band until an intake model is approved; keep the last approved custom revision active while a new revision is pending |
 | A5 — base disposition | How the historical GitGuardian fixture finding on #5460 is represented in the base stack | Preserve the existing history and record the CI disposition in the base PR; do not broaden U1 to rewrite fixtures |
 | A6 — monthly limit persistence | Whether BASE and ADVANCED configured limits expire with each monthly usage counter or remain lecturer settings | **Resolved 2026-08-23:** configured limits persist until changed; only `usedCredits` resets at each Europe/Zurich month boundary |
-| A7 — correction publication | Whether the verified M1 review defects may reopen the ready stack and how corrected history is published | **Resolved 2026-08-23:** one sequential writer, layer-owned commits, four-branch recascade, atomic force-with-lease publication, preserved ready state, exact-head CI, refreshed PR evidence, Ox Alpha reviews, and serialized Phase 5; every withheld action remains withheld |
+| A7 — correction publication | Whether the verified M1 review defects may reopen the ready stack and how corrected history is published | **Resolved 2026-08-23 for the then-authorized transaction:** one sequential writer, layer-owned commits, four-branch recascade, atomic force-with-lease publication, preserved ready state, exact-head CI, refreshed PR evidence, Ox Alpha reviews, and serialized Phase 5. The later five-layer candidate was not published; do not revive that path from this roadmap. |
 
 ## Traps and implementation notes
 
@@ -672,30 +712,46 @@ Every W-item follows `$rs-sliced-development-workflow`:
   proposed boundary, and the smallest ruling needed. A `NEEDS_CONTEXT` packet
   must identify the missing external contract and the safe parked state.
 - No merge, PR closure, deploy, Argo sync, live smoke, or worktree deletion is
-  implied by this roadmap. The active finalization plan separately authorizes
-  only its guarded recascade and atomic force-with-lease publication of the
-  five existing branches; ask at every other boundary.
+  implied by this roadmap. The old finalization plan's guarded recascade and
+  atomic force-with-lease publication are closed historical actions, not current
+  authority. Ask at every other boundary.
+
+## Reconciliation package acceptance
+
+This documentation package is complete only when all of the following evidence
+is recorded on the committed branch before it is pushed:
+
+- The target and current branch heads are freshly read, and the exact M1 merge
+  receipts and open M2a PR topology match the live GitHub state.
+- The diff contains only the roadmap reconciliation file. Markdown formatting,
+  `git diff --check`, and any repository-native focused documentation check pass.
+- The staged diff is inspected for accidental secrets, credentials, personal
+  data, generated bulk data, and unrelated cleanup.
+- A read-only final reviewer inspects the immutable committed diff for factual
+  reconciliation, roadmap dependencies, product-primitive ownership,
+  authorization and data-protection boundaries, least-surprise scope, and
+  acceptance completeness. Any finding is dispositioned before push.
+- The exact committed branch is pushed and a draft PR is opened for senior
+  review. The PR does not claim a merge, deployment, activation, runtime proof,
+  or delivery of the unpublished trusted-pilot corrections.
 
 ## Orchestrator takeover checklist
 
 If this work is resumed after a pause, the execution session should perform
 these actions in order:
 
-1. Run the freshness gate and re-read this roadmap, the active trusted-pilot
-   finalization plan, ADRs 0019–0022 and 0041, `CONTEXT.md`, and current PR
-   checks.
-2. Reuse `trees/feat-chatbot-lecturer-config-phase0`, verify the recovery refs
-   and five-PR order, and carry the A5 GitGuardian disposition without
-   changing the Phase 0 contract.
-3. Complete only the remaining finalization gates: integrated checks,
-   synthetic browser proof, configured read-only reviews, and Progress
-   reconciliation. Do not reopen the historical U1–U3 implementation plan.
-4. Re-read exact remote leases, bases, heads, and ready states before the
-   authorized atomic publication of the same five branches; then observe
-   exact-head CI and update the existing PR evidence.
-5. Stop the exact validation runtime after the last runtime-dependent check.
-   Leave merge, deployment, live traffic, enforcement activation, PR closure,
-   cleanup, and deletion withheld unless separately authorized.
+1. Run the freshness gate and re-read this roadmap, ADRs 0019–0022 and 0041,
+   `CONTEXT.md`, and the current M1 and M2a PR state.
+2. Verify that the M1 merge receipts remain authoritative and that the
+   Phase 0/U1/U2/U3/U4 candidate hashes remain unpublished historical heads.
+3. Keep the roadmap reconciliation branch isolated from the dirty primary and
+   all implementation worktrees. Do not reopen the old finalization plan.
+4. After the documentation checks pass, inspect the exact committed diff,
+   obtain the required final review and disposition, then push the branch and
+   open or update its draft PR.
+5. Leave implementation, merge, deployment, account activation, live traffic,
+   runtime startup, cleanup, and deletion withheld. Resume C1 or C3 only in a
+   separately approved implementation plan after M2a is merged or parked.
 
 ## Progress
 
@@ -720,6 +776,8 @@ these actions in order:
 | 2026-08-24 | M1/U4 — final model registry policy | The fifth layer verifies every stored input/output rate, makes Luna the sole base model and current same-class fallback, and records the user-approved Auto estimate of 1/5 from the approximate 90% Luna / 10% Sol generation mix. Integrated Ox Alpha review returned `ACCEPT`; draft PR #5524 is published at implementation and review head `9c238e530` above #5490, with exact-head CI at 10 passed, 9 intentionally skipped, 0 failed, and 0 pending. Browser proof covers direct Luna selection, the synthetic `U4_LUNA_OK` turn, and enabled Base and Advanced monthly-budget controls for the seeded local synthetic account. The exact validation DevPod is stopped with zero routes. | U4 has reached its approved draft-delivery and validation terminal condition. Obtain explicit authorization before marking PR #5524 ready; merge, deployment, live traffic, PR closure, worktree cleanup, and deletion remain separate and withheld |
 | 2026-08-26 | M1 trusted-pilot finalization — S0 through S4 | Gate 1 was approved for the existing five-PR stack. The local U4 layer was recascaded onto fresh `origin/v3` at `7515632f229`, with recovery refs and unchanged lower-layer patches. S1 staged default-off enforcement; S2 added bounded registry validation and Luna-only new-bot defaults, including the Edge-safe dynamic-import correction; S3 moved budget writes behind explicit `ADMIN` targeting, removed Manage budget editing, and exposed localized lifecycle boundaries with PUBLISHED-only participant links; S4 records the operating boundary in ADR 0041, CONTEXT, the Chat and testing guides, and both execution artifacts. The implementation commits are local at `08a18497b`, `fb395db9c`, `4ef7ee43a`, `2d6a985eb`, and `886c5b6c2`; no remote ref moved. Generic-continuity reviews replaced unavailable encrypted native routes and found no blocking issue across S1 through S3, including successful rereview of the two S3 copy/translation corrections. | Run the integrated checks, host Playwright and mandatory agent-browser proof, final review, exact-head publication, CI observation, and runtime stop. Merge, deployment, live traffic, enforcement activation, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-26 | M1 trusted-pilot finalization — final trunk recascade | The final pre-publication freshness read found `origin/v3` at `079dc722b6e2b61d9210aa785978f4e29e5d2bad`, beyond the earlier `1a55ce239` baseline through one staging deployment promotion. Phase 0 through U4 were recascaded in lower-boundary order from the recorded recovery refs without conflicts. Pre-evidence implementation heads are Phase 0 `ed0bad640b05a979957766d7e365ea5f3d04cefb`, U1 `18b3813df1e0e173ff091171723547d5d4daecc5`, U2 `2a6ac883c6ec6835b9da11076e41e33d7ad736ab`, U3 `d48d03673d2983b77e1ff4b1f9a5bee8228b7d3f`, and U4 `2b1bb3aeff6506e408f6254461d3ea2575a0989d`. Ancestry from the fresh trunk is proven and the complete 106-commit range-diff reports every patch unchanged; no remote ref moved. | Commit the S5 evidence, run the immutable integrated final review over the committed candidate, then perform the authorized exact-lease publication and CI gates. Merge, deployment, live traffic, enforcement activation, PR closure, cleanup, and deletion remain withheld |
+| 2026-09-01 | Live M1 and M2a reconciliation | Live GitHub readback confirms the five M1 implementation PRs merged on 2026-08-26 in order. The five recorded Phase 0/U1/U2/U3/U4 hashes are unpublished candidate layer heads, not S0–S4 commits, and the old trusted-pilot finalization plan is historical. M2a remains the existing open stack #5593 → #5614 → #5619 with draft guided-setup extension #5723; these layers partially deliver C2/C4 and do not satisfy C1/C3. | Review this roadmap-only change, then open a draft PR. Do not recreate M1, duplicate M2a, integrate `origin/dev`, or begin the separately gated `v3-ai` entitlement package. |
+| 2026-09-01 | Roadmap reconciliation branch | The clean roadmap-refresh worktree integrated current `origin/v3` at `caf1f84d08`; the review branch starts directly at `origin/v3` `72096fafe5` so its diff remains documentation-only. The dirty primary checkout and unrelated worktrees were not changed. The generic-continuity Sol planner returned `VERDICT: APPROVED` after one revision. | Run the committed-diff final review, push the exact branch, and open the senior-review draft PR. |
 
 ## Glossary
 
