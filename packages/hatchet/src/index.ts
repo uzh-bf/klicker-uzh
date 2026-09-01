@@ -20,9 +20,13 @@ export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 export * from './client.js'
 export * from './logging.js'
 
-type AuditLogMessage = Record<string, string | HatchetLoggingContext | undefined> & {
+type AuditLogMessage = Record<
+  string,
+  string | HatchetLoggingContext | undefined
+> & {
   correlationId?: string
   info: string
+  loggingContext?: HatchetLoggingContext
 }
 
 type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
