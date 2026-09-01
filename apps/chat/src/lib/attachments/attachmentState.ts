@@ -41,6 +41,10 @@ type AttachmentIdentityInput = {
   position?: number
 }
 
+type RequestAttachmentInput = AttachmentIdentityInput & {
+  imageBase64?: string | null
+}
+
 type ComposerImageContentPart = {
   type: 'image'
   image: string
@@ -58,6 +62,10 @@ export type LocalImageAttachment = {
   imageDescription: null
 }
 
+export type ChatRequestImageAttachment =
+  | { type: 'new-image'; imageBase64: string }
+  | { type: 'persisted-image'; id: string }
+
 export function sortAttachmentsByPosition<T extends { position: number }>(
   attachments: T[]
 ): T[] {
@@ -73,6 +81,27 @@ export function getImageAttachmentKey(
   }
 
   return `pos:${attachment.position ?? index}`
+}
+
+export function buildChatRequestImageAttachments(
+  attachments?: RequestAttachmentInput[]
+): ChatRequestImageAttachment[] {
+  return (attachments ?? []).flatMap<ChatRequestImageAttachment>(
+    (attachment) => {
+      if (attachment.id) {
+        return [{ type: 'persisted-image' as const, id: attachment.id }]
+      }
+      if (typeof attachment.imageBase64 === 'string') {
+        return [
+          {
+            type: 'new-image' as const,
+            imageBase64: attachment.imageBase64,
+          },
+        ]
+      }
+      return []
+    }
+  )
 }
 
 export function hasAllImageAttachmentsHydrated<

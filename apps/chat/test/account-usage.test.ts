@@ -8,7 +8,12 @@ const mocks = vi.hoisted(() => ({
   },
   transaction: {
     chatAccountUsage: { upsert: vi.fn() },
-    chatMessage: { updateMany: vi.fn(), findUnique: vi.fn() },
+    chatMessage: {
+      createMany: vi.fn(),
+      updateMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+    },
     chatThread: {
       findFirst: vi.fn(),
       update: vi.fn(),
@@ -26,6 +31,8 @@ vi.mock('../src/utils/transactions', () => ({
 }))
 
 import {
+  claimChatTurn,
+  failChatTurn,
   finalizeChatTurn,
   roundChatUsageCredits,
 } from '../src/services/accountUsage'
@@ -49,6 +56,94 @@ describe('account usage credit rounding', () => {
   })
 })
 
+describe('account usage lifecycle fencing', () => {
+  test('scopes failed-turn reclaim to the owning thread', async () => {
+    mocks.withTransaction.mockImplementation(async (operation) =>
+      operation(mocks.transaction)
+    )
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue({
+      id: 'parent-1',
+    })
+    mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 0 })
+    mocks.transaction.chatMessage.updateMany.mockResolvedValue({ count: 1 })
+
+    await expect(
+      claimChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        threadId: 'thread-1',
+        assistantMessageId: 'message-1',
+        parentId: 'parent-1',
+      })
+    ).resolves.toMatchObject({ outcome: 'claimed' })
+
+    expect(mocks.transaction.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      }),
+      data: expect.any(Object),
+    })
+  })
+
+  test('reports a missed failed-turn transition without weakening its fence', async () => {
+    mocks.prisma.chatMessage.updateMany.mockResolvedValue({ count: 0 })
+
+    await expect(
+      failChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        assistantMessageId: 'message-1',
+        threadId: 'thread-1',
+        parentId: 'parent-1',
+        lifecycleAttemptId: 'attempt-1',
+      })
+    ).resolves.toBe(false)
+
+    expect(mocks.prisma.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'message-1',
+        threadId: 'thread-1',
+        parentId: 'parent-1',
+        role: 'assistant',
+        lifecycleStatus: 'IN_PROGRESS',
+        lifecycleAttemptId: 'attempt-1',
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      },
+      data: { lifecycleStatus: 'FAILED' },
+    })
+  })
+
+  test('distinguishes an invalid parent in internal conflict evidence', async () => {
+    mocks.withTransaction.mockImplementation(async (operation) =>
+      operation(mocks.transaction)
+    )
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue(null)
+
+    await expect(
+      claimChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        threadId: 'thread-1',
+        assistantMessageId: 'message-1',
+        parentId: 'parent-1',
+      })
+    ).rejects.toMatchObject({
+      reason: 'invalid_parent',
+    })
+  })
+})
+
 describe('account usage finalization errors', () => {
   test('propagates a later uniqueness error without duplicate verification', async () => {
     const error = new Prisma.PrismaClientKnownRequestError(
@@ -59,6 +154,9 @@ describe('account usage finalization errors', () => {
       operation(mocks.transaction)
     )
     mocks.transaction.chatThread.findFirst.mockResolvedValue({ id: 'thread-1' })
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue({
+      id: 'parent-1',
+    })
     mocks.transaction.chatMessage.updateMany.mockResolvedValue({ count: 1 })
     mocks.getEffectiveChatAccountUsage.mockResolvedValue({
       budgetCredits: new Prisma.Decimal('10'),
@@ -69,11 +167,12 @@ describe('account usage finalization errors', () => {
       finalizeChatTurn({
         ownerId: 'owner-1',
         chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'message-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
-        parentId: null,
+        parentId: 'parent-1',
         content: [],
         chatMode: 'tutor',
         modelId: 'model-1',
@@ -84,6 +183,16 @@ describe('account usage finalization errors', () => {
       })
     ).rejects.toBe(error)
 
+    expect(mocks.transaction.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      }),
+      data: expect.any(Object),
+    })
     expect(mocks.transaction.chatMessage.findUnique).not.toHaveBeenCalled()
   })
 })

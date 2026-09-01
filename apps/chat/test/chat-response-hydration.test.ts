@@ -71,7 +71,7 @@ function createStreamingResponse(lines: string[]) {
   }
 }
 
-describe('useChatResponse attachment hydration', () => {
+describe('useChatResponse authoritative attachment requests', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
 
@@ -103,7 +103,7 @@ describe('useChatResponse attachment hydration', () => {
     loadCreditsMock.mockClear()
   })
 
-  test('hydrates a historical preview-only trigger message before submit', async () => {
+  test('sends a historical preview-only image as a persisted reference', async () => {
     storeState.threads = [
       {
         id: 'thread-1',
@@ -147,26 +147,6 @@ describe('useChatResponse attachment hydration', () => {
       },
     ]
 
-    const hydratedMessage = {
-      id: 'message-1',
-      role: 'user',
-      content: [{ type: 'text', text: 'retry this' }],
-      parentId: null,
-      imageAttachments: [
-        {
-          id: 'att-1',
-          type: 'image' as const,
-          position: 0,
-          imageBase64: 'full-1',
-          imagePreviewBase64: 'preview-1',
-          imageDescription: 'attachment',
-          hasFullImage: true,
-        },
-      ],
-    }
-
-    storeState.ensureFullImageAttachments.mockResolvedValue(hydratedMessage)
-
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(
@@ -206,24 +186,30 @@ describe('useChatResponse attachment hydration', () => {
       'thread-1'
     )
 
-    expect(storeState.ensureFullImageAttachments).toHaveBeenCalledWith(
-      'chatbot-1',
-      'thread-1',
-      'message-1'
-    )
+    expect(storeState.ensureFullImageAttachments).not.toHaveBeenCalled()
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).toMatchObject({
-      images: ['full-1'],
+      trigger: {
+        id: 'message-1',
+        parentId: null,
+        text: 'retry this',
+        attachments: [{ type: 'persisted-image', id: 'att-1' }],
+      },
     })
+    expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).not.toHaveProperty(
+      'messages'
+    )
+    expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).not.toHaveProperty(
+      'images'
+    )
     expect(storeState.threads[0]?.messages[0]).toMatchObject({
       id: 'message-1',
       imageAttachments: [
         {
           id: 'att-1',
-          imageBase64: 'full-1',
           imagePreviewBase64: 'preview-1',
           imageDescription: 'attachment',
-          hasFullImage: true,
+          hasFullImage: false,
         },
       ],
     })
@@ -232,41 +218,21 @@ describe('useChatResponse attachment hydration', () => {
       imageAttachments: [
         {
           id: 'att-1',
-          imageBase64: 'full-1',
           imagePreviewBase64: 'preview-1',
           imageDescription: 'attachment',
-          hasFullImage: true,
+          hasFullImage: false,
         },
       ],
     })
   })
 
-  test('hydrates edited messages using their persisted attachment source id', async () => {
-    storeState.ensureFullImageAttachments.mockResolvedValue({
-      id: 'edited-message-id',
-      role: 'user',
-      content: [{ type: 'text', text: 'retry this' }],
-      parentId: null,
-      attachmentSourceMessageId: 'persisted-message-1',
-      imageAttachments: [
-        {
-          id: 'att-1',
-          type: 'image' as const,
-          position: 0,
-          imageBase64: 'full-1',
-          imagePreviewBase64: 'preview-1',
-          imageDescription: 'attachment',
-          hasFullImage: true,
-        },
-      ],
-    })
-
+  test('sends edited retained images as persisted references', async () => {
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(
         createStreamingResponse([
           'data: {"type":"text-delta","delta":"hello"}',
-          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium"}}',
+          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium","imageAttachments":[{"id":"new-binding-1","type":"image","position":0,"imagePreviewBase64":"preview-1","imageDescription":"attachment","hasFullImage":false}]}}',
           'data: [DONE]',
         ])
       )
@@ -301,15 +267,23 @@ describe('useChatResponse attachment hydration', () => {
       'thread-1'
     )
 
-    expect(storeState.ensureFullImageAttachments).toHaveBeenCalledWith(
-      'chatbot-1',
-      'thread-1',
-      'edited-message-id',
-      'persisted-message-1'
-    )
+    expect(storeState.ensureFullImageAttachments).not.toHaveBeenCalled()
+    expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).toMatchObject({
+      trigger: {
+        id: 'edited-message-id',
+        attachments: [{ type: 'persisted-image', id: 'att-1' }],
+      },
+    })
+    expect(storeState.threads[0]?.messages[0]).toMatchObject({
+      id: 'edited-message-id',
+      attachmentSourceMessageId: null,
+      imageAttachments: [
+        { id: 'new-binding-1', position: 0, hasFullImage: false },
+      ],
+    })
   })
 
-  test('same-session local full images are sent directly without hydration', async () => {
+  test('sends a same-session local image as a new raw binding', async () => {
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(
@@ -350,80 +324,11 @@ describe('useChatResponse attachment hydration', () => {
 
     expect(storeState.ensureFullImageAttachments).not.toHaveBeenCalled()
     expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).toMatchObject({
-      images: ['full-local-1'],
-    })
-  })
-
-  test('failed hydration keeps attachments intact and aborts instead of submitting', async () => {
-    storeState.ensureFullImageAttachments.mockResolvedValue({
-      id: 'message-1',
-      role: 'user',
-      content: [{ type: 'text', text: 'retry this' }],
-      parentId: null,
-      imageAttachments: [
-        {
-          id: 'att-1',
-          type: 'image' as const,
-          position: 0,
-          imagePreviewBase64: 'preview-1',
-          imageDescription: 'attachment',
-          hasFullImage: false,
-        },
-      ],
-    })
-
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-    const fetchSpy = vi.fn()
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const messagesToSend = [
-      {
-        id: 'message-1',
-        role: 'user',
-        content: [{ type: 'text', text: 'retry this' }],
-        parentId: null,
-        imageAttachments: [
-          {
-            id: 'att-1',
-            type: 'image' as const,
-            position: 0,
-            imagePreviewBase64: 'preview-1',
-            imageDescription: 'attachment',
-            hasFullImage: false,
-          },
-        ],
+      trigger: {
+        id: 'local-message-1',
+        attachments: [{ type: 'new-image', imageBase64: 'full-local-1' }],
       },
-    ]
-
-    const { generateChatResponse } = useChatResponse(
-      'model-1',
-      'chat',
-      'medium'
-    )
-
-    await generateChatResponse(messagesToSend as any, 'thread-1')
-
-    expect(storeState.ensureFullImageAttachments).toHaveBeenCalledWith(
-      'chatbot-1',
-      'thread-1',
-      'message-1'
-    )
-    expect(fetchSpy).not.toHaveBeenCalled()
-    expect(messagesToSend[0]?.imageAttachments).toEqual([
-      {
-        id: 'att-1',
-        type: 'image',
-        position: 0,
-        imagePreviewBase64: 'preview-1',
-        imageDescription: 'attachment',
-        hasFullImage: false,
-      },
-    ])
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('could not be loaded')
-    )
+    })
   })
 
   test('network-level send failure shows a localized error bubble instead of failing silently', async () => {
@@ -675,7 +580,7 @@ describe('useChatResponse attachment hydration', () => {
     ])
   })
 
-  test('assistant turns without text are excluded from the request body', async () => {
+  test('browser history is omitted from the canonical request body', async () => {
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(
@@ -718,9 +623,11 @@ describe('useChatResponse attachment hydration', () => {
     )
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
-    expect(body.messages.map((message: { id: string }) => message.id)).toEqual([
-      'message-1',
-      'message-2',
-    ])
+    expect(body).not.toHaveProperty('messages')
+    expect(body.trigger).toMatchObject({
+      id: 'message-2',
+      parentId: 'assistant-stopped',
+      text: 'second question',
+    })
   })
 })

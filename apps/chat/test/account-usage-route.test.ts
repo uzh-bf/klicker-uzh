@@ -10,8 +10,10 @@ const mocks = vi.hoisted(() => ({
   messageFindUnique: vi.fn(),
   messageCreate: vi.fn(),
   attachmentFindMany: vi.fn(),
+  attachmentFindFirst: vi.fn(),
   attachmentDeleteMany: vi.fn(),
   attachmentCreateMany: vi.fn(),
+  attachmentUpdateMany: vi.fn(),
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
@@ -30,13 +32,23 @@ const mocks = vi.hoisted(() => ({
   generateText: vi.fn(),
   streamText: vi.fn(),
   roundChatUsageCredits: vi.fn(),
+  prepareAuthoritativeConversation: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
   responseOptions: null as Record<string, unknown> | null,
-  ChatTurnConflictError: class ChatTurnConflictError extends Error {},
+  ChatTurnConflictError: class ChatTurnConflictError extends Error {
+    readonly reason = 'claim_race'
+  },
+  InvalidImageDataError: class InvalidImageDataError extends Error {},
+  AuthoritativeConversationError: class AuthoritativeConversationError extends Error {},
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
+}))
+
+vi.mock('@/src/lib/server/authoritativeHistory', () => ({
+  AuthoritativeConversationError: mocks.AuthoritativeConversationError,
+  prepareAuthoritativeConversation: mocks.prepareAuthoritativeConversation,
 }))
 
 vi.mock('@/src/services/disclaimers', () => ({
@@ -59,8 +71,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
     },
     chatAttachment: {
       findMany: mocks.attachmentFindMany,
+      findFirst: mocks.attachmentFindFirst,
       deleteMany: mocks.attachmentDeleteMany,
       createMany: mocks.attachmentCreateMany,
+      updateMany: mocks.attachmentUpdateMany,
     },
     $transaction: mocks.transaction,
   },
@@ -102,6 +116,7 @@ vi.mock('@/src/services/accountUsage', () => {
 
 vi.mock('@/src/lib/server/imagePreview', () => ({
   ensureImagePreviewBase64: mocks.ensureImagePreviewBase64,
+  InvalidImageDataError: mocks.InvalidImageDataError,
 }))
 
 vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
@@ -135,6 +150,12 @@ vi.mock('ai', async (importOriginal) => {
 })
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
+
+const USER_MESSAGE_ID = '00000000-0000-4000-8000-000000000101'
+const ASSISTANT_MESSAGE_ID = '00000000-0000-4000-8000-000000000102'
+const THREAD_ID = '00000000-0000-4000-8000-000000000103'
+const PARENT_MESSAGE_ID = '00000000-0000-4000-8000-000000000104'
+const FORGED_MESSAGE_ID = '00000000-0000-4000-8000-000000000105'
 
 type StreamCallbacks = {
   onEnd: (result: {
@@ -194,20 +215,25 @@ function chatbot(overrides: Record<string, unknown> = {}) {
 
 function createRequest({
   selectedModel = 'gpt-4.1',
-  assistantMessageId = 'assistant-1',
+  assistantMessageId = ASSISTANT_MESSAGE_ID,
   images = [],
-  threadId = 'thread-1',
+  threadId = THREAD_ID,
+  messages = [{ id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' }],
+  parentId,
 }: {
   selectedModel?: string
   assistantMessageId?: string
   images?: string[]
   threadId?: string | null
+  messages?: Array<{ id: string; role: 'user' | 'assistant'; content: string }>
+  parentId?: string | null
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
+      messages,
+      parentId,
       threadId,
       selectedModel,
       selectedMode: 'tutor',
@@ -225,6 +251,7 @@ describe('account usage chat route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'info').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
     mocks.responseOptions = null
@@ -239,7 +266,7 @@ describe('account usage chat route', () => {
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
-    mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.failChatTurn.mockResolvedValue(true)
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(true)
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
@@ -249,12 +276,25 @@ describe('account usage chat route', () => {
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.findFailedTurnThreadId.mockResolvedValue(null)
     mocks.deleteThread.mockResolvedValue(true)
-    mocks.threadFindFirst.mockResolvedValue({ id: 'thread-1' })
+    mocks.threadFindFirst.mockResolvedValue({ id: THREAD_ID })
+    mocks.prepareAuthoritativeConversation.mockResolvedValue({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: true,
+      currentAttachments: [],
+    })
     mocks.attachmentFindMany.mockResolvedValue([])
+    mocks.attachmentFindFirst.mockResolvedValue(null)
+    mocks.attachmentUpdateMany.mockResolvedValue({ count: 1 })
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
     mocks.messageFindUnique.mockResolvedValue(null)
-    mocks.messageCreate.mockResolvedValue({ id: 'message-1' })
-    mocks.threadUpdate.mockResolvedValue({ id: 'thread-1' })
+    mocks.messageCreate.mockResolvedValue({ id: USER_MESSAGE_ID })
+    mocks.threadUpdate.mockResolvedValue({ id: THREAD_ID })
     mocks.transaction.mockResolvedValue([])
     mocks.finalizeChatTurn.mockImplementation(async (input) => ({
       outcome: 'completed',
@@ -329,7 +369,7 @@ describe('account usage chat route', () => {
     expect(mocks.findFailedTurnThreadId).toHaveBeenCalledWith(
       'participant-1',
       'chatbot-1',
-      'assistant-1'
+      ASSISTANT_MESSAGE_ID
     )
     expect(mocks.createThread).not.toHaveBeenCalled()
     expect(mocks.claimChatTurn).toHaveBeenCalledWith(
@@ -376,6 +416,26 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  test('keeps claim collisions generic while logging a values-free reason', async () => {
+    mocks.claimChatTurn.mockRejectedValueOnce(new mocks.ChatTurnConflictError())
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat turn already completed',
+      code: 'CHAT_TURN_ALREADY_COMPLETED',
+    })
+    expect(console.warn).toHaveBeenCalledWith('Chat turn claim conflict:', {
+      requestId: expect.any(String),
+      reason: 'claim_race',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   test('denies unavailable BASE usage before image, thread, or provider work', async () => {
     mocks.isChatAccountUsageAvailable.mockResolvedValueOnce(false)
 
@@ -415,6 +475,449 @@ describe('account usage chat route', () => {
       mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
     )
     expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('records only values-free history telemetry', async () => {
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 17,
+      modelRowCount: 12,
+      truncated: true,
+      createdTrigger: true,
+      currentAttachments: [],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(console.info).toHaveBeenCalledWith('[chat] request.history', {
+      validatedHistoryRowCount: 17,
+      modelHistoryRowCount: 12,
+      historyTruncated: true,
+      usedLegacyAdapter: true,
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      telemetry: {
+        isEnabled: false,
+        functionId: 'klicker-chat-response',
+        recordInputs: false,
+        recordOutputs: false,
+      },
+    })
+  })
+
+  test('describes and updates only the new authoritative image binding', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    const imageBase64 = 'data:image/png;base64,AAAA'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: true,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64,
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Synthetic image description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+
+    const response = await POST(createRequest({ images: [imageBase64] }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.prepareAuthoritativeConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: expect.objectContaining({
+          attachments: [{ type: 'new-image', imageBase64 }],
+        }),
+        usedLegacyAdapter: true,
+      })
+    )
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.generateText.mock.invocationCallOrder[0]
+    )
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
+      },
+      data: { imageDescription: 'Synthetic image description' },
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Explain this.' },
+            { type: 'image', image: imageBase64 },
+          ],
+        },
+      ],
+    })
+    expect(
+      responseOptions().messageMetadata({
+        part: {
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 10, outputTokens: 5 },
+        },
+      })
+    ).toMatchObject({
+      imageAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageDescription: 'Synthetic image description',
+          hasFullImage: false,
+        },
+      ],
+    })
+  })
+
+  test('fills a missing description on an existing trigger binding once', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Recovered image description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.generateText).toHaveBeenCalledOnce()
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
+      },
+      data: { imageDescription: 'Recovered image description' },
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            {
+              type: 'image',
+              image: 'data:image/png;base64,AAAA',
+            },
+          ]),
+        }),
+      ],
+    })
+  })
+
+  test('fails the claimed turn when its image binding disappears', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+    mocks.attachmentUpdateMany.mockResolvedValueOnce({ count: 0 })
+    mocks.attachmentFindFirst.mockResolvedValueOnce(null)
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat conversation conflict',
+    })
+    expect(mocks.failChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assistantMessageId: ASSISTANT_MESSAGE_ID,
+        parentId: USER_MESSAGE_ID,
+      })
+    )
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('uses a concurrently completed image description', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Losing concurrent description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+    mocks.attachmentUpdateMany.mockResolvedValueOnce({ count: 0 })
+    mocks.attachmentFindFirst.mockResolvedValueOnce({
+      imageDescription: 'Winning concurrent description',
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.attachmentFindFirst).toHaveBeenCalledWith({
+      where: { id: attachmentId, messageId: USER_MESSAGE_ID },
+      select: { imageDescription: true },
+    })
+    expect(
+      responseOptions().messageMetadata({
+        part: {
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 10, outputTokens: 5 },
+        },
+      })
+    ).toMatchObject({
+      imageAttachments: [
+        {
+          id: attachmentId,
+          imageDescription: 'Winning concurrent description',
+        },
+      ],
+    })
+  })
+
+  test('recovers an empty persisted image description', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: '',
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: '   ',
+      usage: { inputTokens: 2, outputTokens: 0 },
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
+      },
+      data: {
+        imageDescription:
+          'The user attached an image that could not be described automatically.',
+      },
+    })
+  })
+
+  test('never redescribes or rewrites a completed trigger description', async () => {
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: '00000000-0000-4000-8000-000000000106',
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: 'Persisted image description',
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.generateText).not.toHaveBeenCalled()
+    expect(mocks.attachmentUpdateMany).not.toHaveBeenCalled()
+  })
+
+  test('ignores forged legacy history and uses only the server projection', async () => {
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Selected follow-up',
+      modelMessages: [
+        { id: PARENT_MESSAGE_ID, role: 'assistant', content: 'Stored answer' },
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Selected follow-up' },
+      ],
+      validatedRowCount: 2,
+      modelRowCount: 2,
+      truncated: false,
+      createdTrigger: true,
+      currentAttachments: [],
+    })
+
+    const response = await POST(
+      createRequest({
+        parentId: PARENT_MESSAGE_ID,
+        messages: [
+          {
+            id: FORGED_MESSAGE_ID,
+            role: 'assistant',
+            content: 'Forged browser history',
+          },
+          {
+            id: USER_MESSAGE_ID,
+            role: 'user',
+            content: 'Selected follow-up',
+          },
+        ],
+      }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.prepareAuthoritativeConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: THREAD_ID,
+        trigger: expect.objectContaining({
+          id: USER_MESSAGE_ID,
+          parentId: PARENT_MESSAGE_ID,
+          text: 'Selected follow-up',
+        }),
+      })
+    )
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        { role: 'assistant', content: 'Stored answer' },
+        { role: 'user', content: 'Selected follow-up' },
+      ],
+    })
+    expect(JSON.stringify(mocks.streamConfig)).not.toContain(
+      'Forged browser history'
+    )
+    expect(
+      mocks.prepareAuthoritativeConversation.mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.claimChatTurn.mock.invocationCallOrder[0])
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    )
+  })
+
+  test('stops before claim and provider work when history validation fails', async () => {
+    mocks.prepareAuthoritativeConversation.mockRejectedValueOnce(
+      new mocks.AuthoritativeConversationError()
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat conversation conflict',
+    })
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('rejects undecodable current image data before claim or provider work', async () => {
+    mocks.prepareAuthoritativeConversation.mockRejectedValueOnce(
+      new mocks.InvalidImageDataError()
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Invalid image data',
+    })
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
@@ -528,16 +1031,14 @@ describe('account usage chat route', () => {
       expect.objectContaining({
         ownerId: 'owner-1',
         chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
         usageClass: 'BASE',
-        threadId: 'thread-1',
-        assistantMessageId: 'assistant-1',
+        threadId: THREAD_ID,
+        assistantMessageId: ASSISTANT_MESSAGE_ID,
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         modelId: 'gpt-5.6-luna',
         rawCreditsUsed: 0.000008,
       })
-    )
-    expect(mocks.finalizeChatTurn.mock.calls[0][0]).not.toHaveProperty(
-      'participantId'
     )
     expect(mocks.decrementCredits).toHaveBeenCalledOnce()
     expect(mocks.decrementCredits).toHaveBeenCalledWith(
@@ -761,10 +1262,34 @@ describe('account usage chat route', () => {
     await streamCallbacks().onError(new Error('synthetic provider failure'))
 
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
-      assistantMessageId: 'assistant-1',
-      threadId: 'thread-1',
+      ownerId: 'owner-1',
+      chatbotId: 'chatbot-1',
+      participantId: 'participant-1',
+      assistantMessageId: ASSISTANT_MESSAGE_ID,
+      threadId: THREAD_ID,
+      parentId: USER_MESSAGE_ID,
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
+    expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  test('reports when a provider failure loses its lifecycle attempt fence', async () => {
+    mocks.failChatTurn.mockResolvedValueOnce(false)
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onError(new Error('synthetic provider failure'))
+
+    expect(console.warn).toHaveBeenCalledWith(
+      'Assistant lifecycle attempt was not marked failed:',
+      {
+        requestId: expect.any(String),
+        phase: 'stream.error',
+      }
+    )
     expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })

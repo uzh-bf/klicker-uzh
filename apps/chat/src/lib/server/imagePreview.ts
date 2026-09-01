@@ -9,6 +9,13 @@ export type ImagePreviewInput = {
   imagePreviewBase64: string | null
 }
 
+export class InvalidImageDataError extends Error {
+  constructor(options?: ErrorOptions) {
+    super('Invalid image data', options)
+    this.name = 'InvalidImageDataError'
+  }
+}
+
 function extractBase64Payload(dataUrl: string) {
   const prefixMatch = dataUrl.match(DATA_URL_PREFIX)
 
@@ -26,12 +33,19 @@ export async function ensureImagePreviewBase64<T extends ImagePreviewInput>(
     return image
   }
 
-  const inputBuffer = Buffer.from(
-    extractBase64Payload(image.imageBase64),
-    'base64'
-  )
+  let imagePipeline: sharp.Sharp
+  try {
+    const inputBuffer = Buffer.from(
+      extractBase64Payload(image.imageBase64),
+      'base64'
+    )
+    imagePipeline = sharp(inputBuffer)
+    await imagePipeline.metadata()
+  } catch (cause) {
+    throw new InvalidImageDataError({ cause })
+  }
 
-  const previewBuffer = await sharp(inputBuffer)
+  const previewBuffer = await imagePipeline
     .rotate()
     .resize({
       width: IMAGE_PREVIEW_MAX_DIMENSION,
