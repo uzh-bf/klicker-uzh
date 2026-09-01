@@ -212,7 +212,6 @@ function Chatbots() {
 
   const openCreateModal = () => {
     if (!confirmNavigation()) return
-    setNavigationState(cleanNavigationState)
     setCreateModalOpen(true)
   }
 

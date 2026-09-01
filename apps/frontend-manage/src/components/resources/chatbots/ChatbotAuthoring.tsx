@@ -15,9 +15,9 @@ import {
   Label,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { Form, Formik, useField } from 'formik'
+import { Form, Formik, useField, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
@@ -58,6 +58,39 @@ function NavigationStateReporter({
   useEffect(() => {
     return () => onChange({ dirty: false, pending: false })
   }, [onChange])
+
+  return null
+}
+
+function FormikInteractionEffects({ onDirty }: { onDirty?: () => void }) {
+  const { dirty, isValid, isValidating, submitCount } = useFormikContext()
+  const lastFocusedSubmitCount = useRef(0)
+
+  useEffect(() => {
+    if (dirty) onDirty?.()
+  }, [dirty, onDirty])
+
+  useEffect(() => {
+    if (submitCount === 0) {
+      lastFocusedSubmitCount.current = 0
+      return
+    }
+    if (
+      submitCount === lastFocusedSubmitCount.current ||
+      isValid ||
+      isValidating
+    ) {
+      return
+    }
+
+    lastFocusedSubmitCount.current = submitCount
+
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [isValid, isValidating, submitCount])
 
   return null
 }
@@ -114,6 +147,31 @@ function DisclaimerIntroField({
         </p>
       ) : null}
     </div>
+  )
+}
+
+function RequiredFormikTextField({
+  disabled,
+  label,
+  name,
+  testId,
+}: {
+  disabled: boolean
+  label: string
+  name: string
+  testId: string
+}) {
+  const [, meta] = useField<string>(name)
+
+  return (
+    <FormikTextField
+      required
+      aria-invalid={Boolean(meta.error && meta.touched)}
+      disabled={disabled}
+      name={name}
+      label={label}
+      data={{ cy: testId }}
+    />
   )
 }
 
@@ -311,6 +369,7 @@ function ChatbotAuthoring({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const clearMetadataSuccess = useCallback(() => setMetadataSuccess(false), [])
 
   const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
   const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
@@ -433,19 +492,19 @@ function ChatbotAuthoring({
                 }
               }}
             >
-              {({ dirty, isSubmitting, isValid }) => (
+              {({ dirty, isSubmitting }) => (
                 <Form className="space-y-4">
+                  <FormikInteractionEffects onDirty={clearMetadataSuccess} />
                   <NavigationStateReporter
                     dirty={dirty}
                     pending={isSubmitting}
                     onChange={setMetadataNavigationState}
                   />
-                  <FormikTextField
-                    required
+                  <RequiredFormikTextField
                     disabled={isSubmitting}
                     name="name"
                     label={t('manage.resources.chatbotName')}
-                    data={{ cy: 'chatbot-name' }}
+                    testId="chatbot-name"
                   />
                   <FormikTextareaField
                     disabled={isSubmitting}
@@ -466,7 +525,7 @@ function ChatbotAuthoring({
                         ? t('manage.resources.saveChatbotMetadata')
                         : t('manage.resources.chatbotSetupSaveAndContinue')
                     }
-                    disabled={!isValid || isSubmitting}
+                    disabled={isSubmitting}
                     loading={isSubmitting}
                     savingLabel={t('manage.resources.chatbotSetupSaving')}
                     success={published && metadataSuccess}
@@ -557,19 +616,19 @@ function ChatbotAuthoring({
                 }
               }}
             >
-              {({ dirty, isSubmitting, isValid, values }) => (
+              {({ dirty, isSubmitting, values }) => (
                 <Form className="space-y-4">
+                  <FormikInteractionEffects />
                   <NavigationStateReporter
                     dirty={dirty}
                     pending={isSubmitting}
                     onChange={setDisclaimerNavigationState}
                   />
-                  <FormikTextField
-                    required
+                  <RequiredFormikTextField
                     disabled={isSubmitting}
                     name="title"
                     label={t('manage.resources.chatbotDisclaimerTitle')}
-                    data={{ cy: 'chatbot-disclaimer-title' }}
+                    testId="chatbot-disclaimer-title"
                   />
                   <DisclaimerIntroField
                     disabled={isSubmitting}
@@ -601,7 +660,7 @@ function ChatbotAuthoring({
                   </div>
                   <SetupStepFooter
                     action={t('manage.resources.chatbotSetupSaveAndContinue')}
-                    disabled={!isValid || isSubmitting}
+                    disabled={isSubmitting}
                     loading={isSubmitting}
                     savingLabel={t('manage.resources.chatbotSetupSaving')}
                     testId="save-chatbot-disclaimer"

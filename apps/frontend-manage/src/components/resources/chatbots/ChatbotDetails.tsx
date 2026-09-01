@@ -13,6 +13,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Badge,
   Button,
+  H3,
   H4,
   Switch,
   UserNotification,
@@ -24,6 +25,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChatbotAuthoring, { metadataEditableStatuses } from './ChatbotAuthoring'
+import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
@@ -34,6 +36,12 @@ import type {
 } from './chatbotWorkspace'
 
 type ReasoningConfigState = Record<string, string[]>
+
+const overviewReadOnlyStatuses = [
+  ChatbotStatus.PendingApproval,
+  ChatbotStatus.Paused,
+  ChatbotStatus.Published,
+]
 
 const orderEffortsBy = (
   efforts: readonly string[],
@@ -254,6 +262,9 @@ function ChatbotDetails({
   const modelSettingsEditable = metadataEditableStatuses.includes(
     chatbot.status
   )
+  const showOverviewReadOnlyDetails = overviewReadOnlyStatuses.includes(
+    chatbot.status
+  )
 
   const handleAllowedModelToggle = (modelId: string, checked: boolean) => {
     setSaveError(null)
@@ -351,7 +362,9 @@ function ChatbotDetails({
         <div>
           <div className="flex flex-row items-start justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-xl font-bold">{chatbot.name}</div>
+              <H3 className={{ root: 'mb-0 text-xl font-bold' }}>
+                {chatbot.name}
+              </H3>
               <Badge
                 className="bg-gray-100 text-gray-800 hover:bg-gray-200"
                 data-cy="chatbot-status"
@@ -460,13 +473,27 @@ function ChatbotDetails({
                 <dd className="mt-1 text-gray-900">{updatedAtLabel}</dd>
               </div>
             </dl>
-            {!metadataEditableStatuses.includes(chatbot.status) ? (
-              <ChatbotPublicationRequest
-                chatbot={chatbot}
-                publishingAuthorized={publishingAuthorized}
-                publishingAuthorizationLoading={publishingAuthorizationLoading}
-                publishingAuthorizationError={publishingAuthorizationError}
-              />
+            {showOverviewReadOnlyDetails ? (
+              <>
+                <div className="border-t border-gray-200 pt-3">
+                  <H4>{t('manage.resources.chatbotDisclaimerPreview')}</H4>
+                  <p className="mb-3 text-sm text-gray-600">
+                    {t('manage.resources.chatbotDisclaimerPreviewDescription')}
+                  </p>
+                  <ChatbotDisclaimerPreview
+                    title={chatbot.disclaimerSummary?.title ?? ''}
+                    introText={chatbot.disclaimerSummary?.introText ?? ''}
+                  />
+                </div>
+                <ChatbotPublicationRequest
+                  chatbot={chatbot}
+                  publishingAuthorized={publishingAuthorized}
+                  publishingAuthorizationLoading={
+                    publishingAuthorizationLoading
+                  }
+                  publishingAuthorizationError={publishingAuthorizationError}
+                />
+              </>
             ) : null}
           </section>
         ) : null}

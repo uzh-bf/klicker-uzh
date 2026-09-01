@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 
-Status: Awaiting execution approval
+Status: In execution; final review and draft PR publication pending
 
 Execution owner: This session is the package execution orchestrator.
 
@@ -369,5 +369,18 @@ Return to the user if:
       selector, English and German routes, desktop and 390 x 844 layouts, and
       the dirty browser-history guard using synthetic local data. Four ignored
       screenshots record the EN/DE desktop/mobile states. Final package review
-      remains the only open verification gate.
+      identified five actionable interaction and accessibility findings.
+- [x] The user approved keeping the realized package as one cohesive fourth
+      layer after it crossed the plan's expected line-count threshold. Final
+      review corrections now preserve the dirty guard when Create is cancelled,
+      expose complete read-only disclaimer and publication details for pending,
+      published, and paused chatbots, clear saved metadata feedback after a new
+      edit, restore semantic heading order, and focus the first invalid required
+      field after submission. Focused formatting and TypeScript checks pass, the
+      host Playwright suite passes all 7 scenarios, and agent-browser confirms
+      the paused read-only overview plus first-error focus with synthetic data.
+      The corrected tree also passes root `check:all` and the root production
+      build with 23 of 23 tasks successful.
+- [ ] Corrected immutable commit reviewed by the integrated final reviewer and
+      all verified findings dispositioned.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.

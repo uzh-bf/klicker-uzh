@@ -8,7 +8,12 @@ import { COURSE_ID_TEST, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 const CHATBOT_PREFIX = 'E2E Authoring'
 const FIRST_CHATBOT = `${CHATBOT_PREFIX} One`
 const SECOND_CHATBOT = `${CHATBOT_PREFIX} Two`
-type PublicationChatbotStatus = 'DRAFT' | 'REJECTED'
+type PublicationChatbotStatus =
+  | 'DRAFT'
+  | 'REJECTED'
+  | 'PENDING_APPROVAL'
+  | 'PAUSED'
+  | 'PUBLISHED'
 
 function createRequestGate() {
   let releaseGate: (() => void) | undefined
@@ -124,8 +129,8 @@ async function seedPublicationChatbot({
       status,
       disclaimerId: disclaimer?.id,
       publicationUseCase:
-        status === 'REJECTED' ? 'Initial synthetic use case' : undefined,
-      expectedStudentCount: status === 'REJECTED' ? 20 : undefined,
+        status === 'DRAFT' ? undefined : 'Initial synthetic use case',
+      expectedStudentCount: status === 'DRAFT' ? undefined : 20,
       creditInitialCredits: 10,
       reviewComment,
     },
@@ -386,6 +391,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'aria-current',
       'page'
     )
+    const acceptedCreateDiscardDialogPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
+        return dialog.accept()
+      })
+    await page.getByTestId('create-chatbot').click()
+    await acceptedCreateDiscardDialogPromise
+    await expect(page.getByTestId('cancel-create-chatbot')).toBeVisible()
+    await page.getByTestId('cancel-create-chatbot').click()
     const discardDialogPromise = page.waitForEvent('dialog').then((dialog) => {
       expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
       return dialog.dismiss()
@@ -512,6 +527,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('awaiting publication review')
+    await expect(page.getByTestId('chatbot-disclaimer-preview')).toContainText(
+      'Synthetic publication disclaimer'
+    )
+    await expect(page.getByTestId('chatbot-disclaimer-preview')).toContainText(
+      'Student Responsibility'
+    )
     await expect(page.getByTestId('chatbot-publication-use-case')).toHaveCount(
       0
     )
@@ -545,7 +566,22 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       where: { id: chatbot.id },
       data: { status: 'PUBLISHED' },
     })
-    await page.reload()
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}`
+    )
+    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    const publishedPreview = page.getByTestId('chatbot-disclaimer-preview')
+    await expect(publishedPreview).toContainText(
+      'Synthetic publication disclaimer'
+    )
+    await expect(publishedPreview).toContainText(
+      'Synthetic disclaimer content for publication.'
+    )
+    await expect(publishedPreview).toContainText('Student Responsibility')
+    await expect(publishedPreview).toContainText('Data Protection')
+    await expect(
+      page.getByTestId('chatbot-publication-readonly')
+    ).toContainText('Support students with a synthetic study aid.')
     await page.getByTestId('chatbot-view-setup').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
     await page
@@ -556,6 +592,35 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
     ).toBeVisible()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
+    await page
+      .getByTestId('chatbot-description')
+      .fill('Published chatbot metadata edited again.')
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
+    ).toHaveCount(0)
+  })
+
+  test('shows the full read-only preview and publication details for a paused chatbot', async ({
+    page,
+  }) => {
+    await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Paused`,
+      status: 'PAUSED',
+      withDisclaimer: true,
+    })
+    await page.reload()
+
+    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
+    const pausedPreview = page.getByTestId('chatbot-disclaimer-preview')
+    await expect(pausedPreview).toContainText('Synthetic chatbot disclaimer')
+    await expect(pausedPreview).toContainText(
+      'Synthetic disclaimer text for this test chatbot.'
+    )
+    await expect(pausedPreview).toContainText('Student Responsibility')
+    await expect(pausedPreview).toContainText('Data Protection')
+    await expect(
+      page.getByTestId('chatbot-publication-readonly')
+    ).toContainText('Initial synthetic use case')
   })
 
   test('shows a rejection comment and allows correction and resubmission', async ({
@@ -623,7 +688,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     // The linked disclaimer exists but its normalized content is empty, so
     // the setup route must keep the lecturer on the incomplete step.
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
-    await expect(page.getByTestId('save-chatbot-disclaimer')).toBeDisabled()
+    await expect(page.getByTestId('save-chatbot-disclaimer')).toBeEnabled()
+    await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeFocused()
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
     await page.goto(
