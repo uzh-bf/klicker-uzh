@@ -59,9 +59,15 @@ EFFECTIVE_LOCAL_GT_DIR="${KLICKER_EVAL_GT_DIR:-$EFFECTIVE_DEFAULT_GT_DIR}"
 
 for ((index = 0; index < ${#EVAL_ARGS[@]}; index++)); do
   if [ "${EVAL_ARGS[$index]}" = "--gt-dir" ] && [ $((index + 1)) -lt ${#EVAL_ARGS[@]} ]; then
-    EFFECTIVE_LOCAL_GT_DIR="${EVAL_ARGS[$((index + 1))]}"
+    gt_dir="${EVAL_ARGS[$((index + 1))]}"
+    if [[ "$gt_dir" != /* ]]; then
+      gt_dir="$REPO_ROOT/$gt_dir"
+      EVAL_ARGS[$((index + 1))]="$gt_dir"
+    fi
+    EFFECTIVE_LOCAL_GT_DIR="$gt_dir"
   fi
 done
+set -- "${EVAL_ARGS[@]}"
 
 require_readable_file() {
   local variable="$1"
@@ -95,6 +101,28 @@ fi
 
 ADAPTER_PID=""
 ADAPTER_TMP_DIR=""
+
+TARGET_HELPER_PREFIX=(
+  env
+  -u AZURE_OPENAI_API_KEY
+  -u AZURE_OPENAI_BASE_URL
+  -u UPSTREAM_OPENAI_API_KEY
+  -u UPSTREAM_OPENAI_BASE_URL
+  -u OPENAI_API_KEY
+  -u LITELLM_API_KEY
+  -u EVAL_API_KEY
+)
+
+KEYGEN_PREFIX=(
+  "${TARGET_HELPER_PREFIX[@]}"
+  -u KLICKER_EVAL_API_ORIGIN
+  -u KLICKER_EVAL_CHAT_ORIGIN
+  -u KLICKER_EVAL_PARTICIPANT_USERNAME
+  -u KLICKER_EVAL_PARTICIPANT_PASSWORD
+  -u KLICKER_EVAL_TARGET_KEY
+  -u KLICKER_EVAL_GT_DIR
+  -u KLICKER_EVAL_CANARY_FILE
+)
 
 stop_local_target() {
   if [ -n "$ADAPTER_PID" ]; then
@@ -131,7 +159,7 @@ start_local_target() {
   done
 
   local target_key
-  target_key="$(node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))")" || {
+  target_key="$("${KEYGEN_PREFIX[@]}" node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))")" || {
     echo "Error: could not create the local evaluation target key" >&2
     return 1
   }
@@ -148,7 +176,7 @@ start_local_target() {
   ADAPTER_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/klicker-evaluation-target.XXXXXX")"
   local adapter_stdout="$ADAPTER_TMP_DIR/stdout"
   local adapter_stderr="$ADAPTER_TMP_DIR/stderr"
-  node "$REPO_ROOT/apps/chat/scripts/klicker-evaluation-target.mjs" \
+  "${TARGET_HELPER_PREFIX[@]}" node "$REPO_ROOT/apps/chat/scripts/klicker-evaluation-target.mjs" \
     >"$adapter_stdout" 2>"$adapter_stderr" &
   ADAPTER_PID=$!
 
@@ -197,6 +225,11 @@ if [ "$LOCAL_TARGET" = true ]; then
     -u KLICKER_EVAL_TARGET_KEY
     -u KLICKER_EVAL_GT_DIR
     -u KLICKER_EVAL_CANARY_FILE
+    -u AZURE_OPENAI_API_KEY
+    -u AZURE_OPENAI_BASE_URL
+    -u UPSTREAM_OPENAI_API_KEY
+    -u UPSTREAM_OPENAI_BASE_URL
+    -u OPENAI_API_KEY
   )
 fi
 if [ -z "$EFFECTIVE_CAPABILITY_MODEL" ]; then
@@ -227,10 +260,17 @@ if [ "$LOCAL_TARGET" = true ]; then
   )
 fi
 
-EVALUATOR_PREFIX=()
+EVALUATOR_PREFIX=(
+  env
+  -u AZURE_OPENAI_API_KEY
+  -u AZURE_OPENAI_BASE_URL
+  -u UPSTREAM_OPENAI_API_KEY
+  -u UPSTREAM_OPENAI_BASE_URL
+  -u OPENAI_API_KEY
+  -u LITELLM_API_KEY
+)
 if [ "$LOCAL_TARGET" = true ]; then
-  EVALUATOR_PREFIX=(
-    env
+  EVALUATOR_PREFIX+=(
     -u KLICKER_EVAL_API_ORIGIN
     -u KLICKER_EVAL_CHAT_ORIGIN
     -u KLICKER_EVAL_PARTICIPANT_USERNAME

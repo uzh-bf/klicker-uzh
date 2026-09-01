@@ -30,11 +30,17 @@ assert_line() {
 FAKE_BIN="$TEST_ROOT/bin"
 FAKE_REPO="$TEST_ROOT/repo"
 OPERATOR_LOG="$TEST_ROOT/operator.log"
+OPERATOR_ENV_LOG="$TEST_ROOT/operator-env.log"
 CHILD_LOG="$TEST_ROOT/child.log"
 mkdir -p "$FAKE_BIN"
 
 write_file "$FAKE_BIN/rs-infisical-operator" '#!/usr/bin/env bash
 printf "%s\n" "$@" >"$KLICKER_TEST_OPERATOR_LOG"
+if [ -n "${KLICKER_TEST_OPERATOR_ENV_LOG:-}" ]; then
+  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY; do
+    printf "%s_PRESENT=%s\n" "$name" "${!name:+yes}" >>"$KLICKER_TEST_OPERATOR_ENV_LOG"
+  done
+fi
 if [ -n "${KLICKER_TEST_OPERATOR_STATUS:-}" ]; then
   printf "%s\n" "synthetic operator stdout"
   printf "%s\n" "synthetic operator stderr" >&2
@@ -55,6 +61,18 @@ done
 exit 2'
 
 write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
+if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
+  if [ "${1:-}" = "-e" ]; then
+    helper="KEYGEN"
+  elif [ "${1:-}" = "$KLICKER_TEST_ADAPTER_SCRIPT" ]; then
+    helper="ADAPTER"
+  else
+    helper="OTHER"
+  fi
+  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY; do
+    printf "%s_%s_PRESENT=%s\n" "$helper" "$name" "${!name:+yes}" >>"$KLICKER_TEST_HELPER_LOG"
+  done
+fi
 if [ "${1:-}" = "-e" ]; then
   printf "%s" "synthetic-target-key"
   exit 0
@@ -69,6 +87,9 @@ exit 2'
 write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
 for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
+done
+for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY; do
+  printf "%s_PRESENT=%s\n" "$name" "${!name:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 printf "EVAL_API_KEY_PRESENT=%s\n" "${EVAL_API_KEY:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 printf "PARTICIPANT_USERNAME_PRESENT=%s\n" "${KLICKER_EVAL_PARTICIPANT_USERNAME:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
@@ -321,15 +342,22 @@ env -i \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
   KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  AZURE_OPENAI_API_KEY='synthetic-azure-key' \
+  AZURE_OPENAI_BASE_URL='https://azure.example.test' \
+  UPSTREAM_OPENAI_API_KEY='synthetic-upstream-key' \
+  UPSTREAM_OPENAI_BASE_URL='https://upstream.example.test' \
   KLICKER_TEST_ADAPTER_SCRIPT="$FAKE_REPO/apps/chat/scripts/klicker-evaluation-target.mjs" \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
+  KLICKER_TEST_HELPER_LOG="$TEST_ROOT/helper.log" \
+  KLICKER_TEST_OPERATOR_ENV_LOG="$OPERATOR_ENV_LOG" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='0' \
   PATH="$FAKE_BIN:$PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
-  "$WRAPPER" --local-target --mode query --limit 1
+  "$WRAPPER" --local-target --mode query --limit 1 \
+  --gt-dir evaluation/data/ground_truth/klicker_fineco
 
 assert_line 'EVAL_API_MODE=chat-completions' "$CHILD_LOG"
 assert_line 'EVAL_ENDPOINT_URL=http://127.0.0.1:41234/v1/chat/completions' "$CHILD_LOG"
@@ -337,9 +365,21 @@ assert_line 'EVAL_MODELS_URL=http://127.0.0.1:41234/v1/models' "$CHILD_LOG"
 assert_line 'EVAL_STREAM=false' "$CHILD_LOG"
 assert_line 'AGENT_ID=gpt-5.6-luna' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
+assert_line "ARG=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
 assert_line 'EVAL_API_KEY_PRESENT=yes' "$CHILD_LOG"
 assert_line 'PARTICIPANT_USERNAME_PRESENT=' "$CHILD_LOG"
 assert_line 'PARTICIPANT_PASSWORD_PRESENT=' "$CHILD_LOG"
+assert_line 'AZURE_OPENAI_API_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'UPSTREAM_OPENAI_API_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'KEYGEN_AZURE_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'KEYGEN_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'KEYGEN_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_AZURE_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=yes' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_TARGET_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
+assert_line 'AZURE_OPENAI_API_KEY_PRESENT=' "$OPERATOR_ENV_LOG"
+assert_line 'UPSTREAM_OPENAI_API_KEY_PRESENT=' "$OPERATOR_ENV_LOG"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a successful child run'
 if grep -Fq -- 'synthetic-target-key' "$OPERATOR_LOG" "$CHILD_LOG"; then
   fail 'ephemeral target key must not be written to logs'
