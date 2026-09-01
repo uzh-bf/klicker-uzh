@@ -224,6 +224,20 @@ async function snapshotKeys(page: Page) {
 }
 
 test.describe('W4 activity wizard safety', () => {
+  test('element creation remains available while an activity wizard is open', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await loginLecturer()
+    await openLibrary(page, 'en')
+    await openWizard(page, wizardTypes[0])
+
+    await page.getByTestId('create-question').click()
+    await expect(page.getByTestId('select-question-type')).toBeVisible()
+    await page.getByTestId('close-element-modal').click()
+    await expect(page.getByTestId(wizardTypes[0].nameField)).toBeVisible()
+  })
+
   for (const locale of locales) {
     test.describe('locale ' + locale, () => {
       for (const wizard of wizardTypes) {

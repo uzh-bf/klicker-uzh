@@ -291,22 +291,21 @@ function Index() {
       data={{ cy: 'homepage' }}
       className={{ children: 'pb-2' }}
     >
-      {typeof creationMode === 'undefined' && (
-        <Suspense fallback={<div />}>
-          <SuspendedCreationButtons
-            setCreationMode={setCreationMode}
-            onCreateElement={() => {
-              const value = localStorage.getItem('autosave-element-creation')
+      <Suspense fallback={<div />}>
+        <SuspendedCreationButtons
+          setCreationMode={setCreationMode}
+          showActivityChoices={typeof creationMode === 'undefined'}
+          onCreateElement={() => {
+            const value = localStorage.getItem('autosave-element-creation')
 
-              if (value) {
-                setShowRecoveryPrompt(true)
-              } else {
-                setIsElementCreationModalOpen(true)
-              }
-            }}
-          />
-        </Suspense>
-      )}
+            if (value) {
+              setShowRecoveryPrompt(true)
+            } else {
+              setIsElementCreationModalOpen(true)
+            }
+          }}
+        />
+      </Suspense>
 
       {creationMode && (
         <>

@@ -12,11 +12,13 @@ import CreationButton from './CreationButton'
 interface CreationButtonsProps {
   setCreationMode: (mode: ActivityType) => void
   onCreateElement: () => void
+  showActivityChoices: boolean
 }
 
 function SuspendedCreationButtons({
   setCreationMode,
   onCreateElement,
+  showActivityChoices,
 }: CreationButtonsProps) {
   const t = useTranslations()
 
@@ -40,9 +42,17 @@ function SuspendedCreationButtons({
         </div>
         <div
           aria-hidden="true"
-          className="hidden w-px shrink-0 self-stretch bg-slate-200 md:block"
+          className={
+            showActivityChoices
+              ? 'hidden w-px shrink-0 self-stretch bg-slate-200 md:block'
+              : 'hidden'
+          }
         />
-        <div className="flex flex-col items-start gap-1">
+        <div
+          className={
+            showActivityChoices ? 'flex flex-col items-start gap-1' : 'hidden'
+          }
+        >
           <span className="text-sm font-bold text-slate-700">
             {t('manage.questionPool.createActivitiesLabel')}
           </span>
