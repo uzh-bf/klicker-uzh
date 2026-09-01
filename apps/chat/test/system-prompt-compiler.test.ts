@@ -15,7 +15,7 @@ const GROUNDING_MARK = 'Course grounding:'
 const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
 const CITATION_MARK = 'Citation format:'
-const LANGUAGE_MARK = 'Swiss High German orthography'
+const LANGUAGE_MARK = 'Swiss Standard German orthography'
 
 const DOC_TOOL = 'KB_doc_query'
 const NON_DOC_TOOL = 'get_weather'
@@ -114,7 +114,7 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(legacyPrompt)
     expect(result).toContain(CITATION_MARK)
     expect(result).toContain(
-      'This citation format overrides conflicting bracket or formula instructions in the base persona.'
+      'This citation format overrides conflicting bracket or formula instructions in lecturer-provided guidance or a custom persona.'
     )
     expect(result.indexOf(CITATION_MARK)).toBeGreaterThan(
       result.indexOf(legacyPrompt)
@@ -164,6 +164,36 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).toContain(DEFAULT_QUIZZER_MARK)
     expect(quizzer).not.toContain(DEFAULT_TUTOR_MARK)
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
+  })
+
+  test('encodes the adaptive Tutor loop without interrogating simple requests', () => {
+    const prompt = DEFAULT_PROMPT.tutor.prompt
+
+    expect(prompt).toContain('Answer a simple course lookup')
+    expect(prompt).toContain('Do not turn every request into a question')
+    expect(prompt).toContain('ask one diagnostic question')
+    expect(prompt).toContain('one high-value, focused, open question')
+    expect(prompt).toContain('Avoid making the student guess')
+    expect(prompt).toContain('Begin with the least support likely to help')
+    expect(prompt).toContain('Do not follow a rigid number of failed attempts')
+    expect(prompt).toContain('Diagnose misconceptions')
+    expect(prompt).toContain('Fade support after progress')
+    expect(prompt).toContain('Avoid generic praise')
+    expect(prompt).toContain('remains stuck after adaptive support')
+    expect(prompt).toContain('formative snapshot')
+    expect(prompt).toContain('Do not assign a grade or claim mastery')
+    expect(prompt).toContain('at most one optional transfer check')
+  })
+
+  test('keeps Explainer direct and free of mandatory Socratic friction', () => {
+    const prompt = DEFAULT_PROMPT.explainer.prompt
+
+    expect(prompt).toContain('Lead with the core answer')
+    expect(prompt).toContain('do not infer ability from spelling')
+    expect(prompt).toContain('worked example')
+    expect(prompt).toContain('State uncertainty or missing course evidence')
+    expect(prompt).toContain('Do not impose a Socratic exchange')
+    expect(prompt).toContain('at most one optional comprehension')
   })
 
   test('defines Quizzer topic selection, recommendation, and continuation', () => {

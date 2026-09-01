@@ -6,13 +6,13 @@ Accepted
 
 ## Context
 
-Today a chatbot's `systemPrompts[mode].prompt` fully replaces the built-in
-default prompt, so exposing prompt editing to lecturers would silently drop
-the platform scaffolding (citation behavior, source grounding, safety, tutoring
-stance). Raw prompt access is also the knob most likely to degrade answer
-quality and the main liability surface, yet lecturers legitimately need to aim
-a bot at their course and, in advanced cases, define their own interaction
-styles.
+Historically a chatbot's `systemPrompts[mode].prompt` fully replaced the
+built-in default prompt, so exposing prompt editing to lecturers could silently
+drop the platform scaffolding (mode behavior, citation and source grounding,
+safety, language, and output formatting). Raw prompt access is also the knob
+most likely to degrade answer quality and the main liability surface, yet
+lecturers legitimately need to aim a bot at their course and, in advanced
+cases, define their own interaction styles.
 
 ## Decision
 
@@ -21,8 +21,9 @@ replacing:
 
 - **Standard modes** (`tutor`, `explainer`, `quizzer`) are maintained by the
   platform and compose additively with stored modes. A stored standard-mode
-  prompt overrides only that mode's persona; a missing entry uses the platform
-  default. The platform owns standard-mode labels and descriptions. A stored
+  prompt is delimited lower-priority lecturer guidance; it cannot replace the
+  platform mode contract. A missing entry uses only the platform contract. The
+  platform owns standard-mode labels and descriptions. A stored
   `enabled: false` explicitly opts a chatbot out of one mode without a schema
   migration.
 - Tutor and Explainer are general standard candidates. Quizzer is
@@ -48,8 +49,13 @@ replacing:
   scaffolding; publication of a new or edited custom mode requires team
   review (per ADR 0020).
 - In both tiers the platform scaffolding is non-removable: lecturer-authored
-  content is layered onto it by the compile step, replacing the current
-  replace-semantics.
+  content is layered onto it by the compile step. The scaffolding owns course
+  scope and evidence, privacy and safety, non-disclosure, epistemic integrity,
+  Markdown/mathematics/code formatting, conditional citations, and the final
+  language contract.
+- Every compiled prompt identifies the owning course with the server-sourced
+  `Course.displayName`. The compiler serializes it as JSON inside a labelled
+  data section, so course text is context and never an instruction.
 - The raw compiled prompt is not displayed to lecturers in the first version.
 
 ## Consequences
@@ -59,8 +65,9 @@ replacing:
 - The compile step becomes the contract every runtime must honor (ADR 0019).
 - Few-shot examples, not prompt text, are the primary self-service steering
   lever for behavior.
-- Existing chatbots receive changed standard defaults automatically without a
-  data migration unless they store an override or explicit opt-out. Stage 1
+- Existing chatbots receive changed platform contracts automatically without a
+  data migration. Stored standard-mode text remains lower-priority guidance;
+  only an explicit opt-out removes that mode. Stage 1
   Quizzer asks AI-generated questions grounded in course material; it does not
   imply access to lecturer-authored questions, personal practice cards, or an
   exam-equivalent question bank.

@@ -65,4 +65,14 @@ describe('withCitationContract', () => {
       'never continue numbering from an earlier message'
     )
   })
+
+  test('citation syntax overrides both lecturer prompt layers', () => {
+    const result = withCitationContract('Never use square brackets.', [
+      'doc_query',
+    ])
+
+    expect(result).toContain(
+      'instructions in lecturer-provided guidance or a custom persona'
+    )
+  })
 })

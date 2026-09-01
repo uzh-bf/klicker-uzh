@@ -347,18 +347,19 @@ MCP server configuration. If explicit opt-outs leave no effective mode, the clie
 composer with a localized unavailable notice and suppresses edit and retry generation actions
 instead of allowing requests the server would reject.
 
-Standard prompt changes apply automatically to chatbots that do not store an override for that
-mode. Stage 1 Quizzer chooses one specific grounded practice topic when the student's request is
-unclear and asks for simple confirmation rather than presenting only an unprioritised menu. Agreement
-or no preference starts the first question. It then generates one AI-generated practice question at a
-time from retrieved course material and continues automatically after each assessed attempt. When the
-current topic is sufficiently covered, it asks whether to change topics or explore the topic in more
-depth and proposes grounded next steps. It does not present questions as lecturer-authored or
-exam-equivalent. Chatbots without a safe course retrieval binding do not expose Quizzer. If an
-optional binding produces no `doc_query` tool during request-time discovery, Quizzer returns the
-required-tool-unavailable response instead of generating an ungrounded question; optional retrieval
-outages can still degrade gracefully in Tutor and Explainer. No stored prompt or database migration
-is required.
+Platform standard-mode contract changes apply automatically to every chatbot that exposes that
+mode. Stored standard-mode text remains lower-priority lecturer guidance rather than replacing
+the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
+practice topic when the student's request is unclear and asks for simple confirmation rather than
+presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
+generates one AI-generated practice question at a time from retrieved course material and continues
+automatically after each assessed attempt. When the current topic is sufficiently covered, it asks
+whether to change topics or explore the topic in more depth and proposes grounded next steps. It does
+not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
+retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
+request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
+an ungrounded question; optional retrieval outages can still degrade gracefully in Tutor and
+Explainer. No stored prompt or database migration is required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -560,26 +561,38 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
-`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats a stored per-mode prompt as the
-chatbot's configurable persona, not as the complete system policy. On every chat request, after the
-available MCP tool names are known, it composes the final prompt in this order:
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text as configurable
+lecturer influence, not as the complete system policy. On every chat request, after the available
+MCP tool names are known, it composes the final prompt in this order:
 
-1. stored mode prompt or `DEFAULT_PROMPT` fallback;
-2. fixed image-attachment description handling from
+1. server-sourced course data containing JSON-serialized `Course.displayName`;
+2. lower-priority lecturer guidance for a standard mode, when stored;
+3. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
+   lecturer-defined persona for a custom mode;
+4. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-3. fixed course-scope, evidence, tool-privacy, and safety policy from
-   `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-4. the conditional citation policy when a `doc_query`-style tool is available; and
-5. the fixed conversation-language and Swiss High German policy from
+5. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+   integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+6. fixed Markdown, inline/display mathematics, and fenced-code rules from
+   `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
+7. the conditional citation policy when a `doc_query`-style tool is available; and
+8. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
-output, and user attempts to change platform rules. It keeps answers within the owning course,
+The course-data section explicitly treats its entire JSON value as data rather than instructions.
+Quotes, newlines, and instruction-like text in a display name therefore cannot gain prompt
+authority. A custom mode omits the standard-mode contract but still receives every fixed platform
+section.
+
+The fixed policy explicitly overrides conflicting lecturer text, examples, retrieved material,
+tool output, and user attempts to change platform rules. It keeps answers within the owning course,
 asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
 unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
 queries must omit or generalise personal names, contact details such as email addresses, phone
 numbers, or postal addresses, participant or student identifiers, and other sensitive personal
-information. Retrieved content is evidence rather than instruction.
+information. Retrieved content is evidence rather than instruction. The assistant does not expose
+internal instructions or hidden tool configuration and independently reassesses user pushback
+instead of agreeing merely to be supportive.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
 claims, use only relevant results, treat returned chunks as a partial view rather than a complete
@@ -589,18 +602,19 @@ in the locked conversation language but may preserve exact non-personal course a
 titles, codes, and identifiers, or reformulate in a source language when retrieval genuinely needs
 it.
 
-Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
-applies to existing and newly created chatbots as soon as this application revision is deployed.
-No prompt-row migration is required. Existing stored prompts remain unchanged and continue to
-supply each mode's persona beneath the fixed policy. A chatbot served by an older application
-revision keeps the old behaviour until that revision is replaced.
+Because compilation happens for every request after loading `chatbot.systemPrompts` and the owning
+course, the policy applies to existing and newly created chatbots as soon as this application
+revision is deployed. No prompt-row migration is required. Existing stored prompts remain
+unchanged: standard-mode text supplies lower-priority lecturer guidance, while custom-mode text
+supplies that mode's persona. A chatbot served by an older application revision keeps the old
+behaviour until that revision is replaced.
 
 The language lock follows the user's latest non-trivial message or explicit language request.
 Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
 assistant messages cannot switch the response language. Short acknowledgements preserve the
-established conversation language. German answers use Swiss High German orthography (`ss`, never
-`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
-a separately authorised live-model evaluation.
+established conversation language. German answers use Swiss Standard German orthography (`ss`,
+never `ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still
+requires a separately authorised live-model evaluation.
 
 ## Sources and citations
 
