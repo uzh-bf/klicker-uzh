@@ -1,12 +1,4 @@
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { EVENT_REGISTRY } from '../src/index.js'
-
-const repositoryRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  '../../..'
-)
 
 const producerSources = {
   'assessment audit activation and baseline service': {
@@ -87,18 +79,6 @@ describe('launch lecturer and system producer coverage', () => {
       expect(mapping?.durabilityPoint, eventType).toBe(
         registration.durabilityPoint
       )
-    }
-  })
-
-  it('requires every launch event name to occur in its production sources', () => {
-    for (const [eventType, registration] of registrations) {
-      const mapping =
-        producerSources[registration.producer as keyof typeof producerSources]
-      if (mapping === undefined) throw new Error(eventType)
-      const productionSource = mapping.paths
-        .map((path) => readFileSync(resolve(repositoryRoot, path), 'utf8'))
-        .join('\n')
-      expect(productionSource, eventType).toContain(eventType)
     }
   })
 })

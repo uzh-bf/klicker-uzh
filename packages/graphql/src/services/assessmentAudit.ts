@@ -67,6 +67,12 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       differentHashConflictCount: snapshot.differentHashConflictCount,
       deliveredUnsealedCount: snapshot.deliveredUnsealedCount,
       deliveredUnsealedBytes: snapshot.deliveredUnsealedBytes,
+      requiredMediaCaptureFailureCount:
+        snapshot.requiredMediaCaptureFailureCount,
+      coveredSubmissionWithoutTerminalCount:
+        snapshot.coveredSubmissionWithoutTerminalCount,
+      oldestCoveredSubmissionWithoutTerminalSeconds:
+        snapshot.oldestCoveredSubmissionWithoutTerminalSeconds,
       signals: snapshot.signals,
     }
     if (snapshot.status === 'CRITICAL') {

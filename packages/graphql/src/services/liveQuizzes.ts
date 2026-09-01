@@ -56,6 +56,7 @@ import {
   assessmentResponseSnapshot,
   buildAssessmentMutationAuditDrafts,
   emitCoveredAssessmentAuditEvents,
+  recordAssessmentActionRejectedForUser,
 } from './assessmentAuditProducers.js'
 import {
   activateNewAssessmentAuditIfSelected,
@@ -79,6 +80,32 @@ async function scheduleAssessmentAuditMediaRenewal(ctx: ContextWithUser) {
     // The daily renewal cron remains the recovery path when Hatchet is
     // unavailable at the end of a quiz.
     console.warn('Assessment audit media renewal could not be scheduled')
+  }
+}
+
+async function recordRejectedAssessmentAction(
+  ctx: ContextWithUser,
+  input: {
+    liveQuizId: string
+    actionType: string
+    reasonCode: string
+    requiredPermission: string
+  }
+) {
+  try {
+    await recordAssessmentActionRejectedForUser({
+      client: ctx.prisma,
+      userId: ctx.user.sub,
+      ...input,
+    })
+  } catch (error) {
+    // An audit failure must not turn an already-rejected teaching action into
+    // a server error. The ordinary monitor observes storage failures.
+    console.error(
+      'Failed to record rejected assessment action %s',
+      input.actionType,
+      error
+    )
   }
 }
 
@@ -912,6 +939,12 @@ export async function startLiveQuiz(
 
     // if there is no live quiz matching the current user and quiz id, exit early
     if (!quiz) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_START',
+        reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+        requiredPermission: 'EXECUTE',
+      })
       return null
     }
 
@@ -2864,14 +2897,36 @@ export async function deleteLiveQuiz(
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_DELETE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'ADMIN',
+    })
+    return null
+  }
 
   if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
     // running live quizzes cannot be deleted
+    if (liveQuiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_DELETE',
+        reasonCode: 'ASSESSMENT_DELETE_RUNNING',
+        requiredPermission: 'ADMIN',
+      })
+    }
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
     // completed assessment live quizzes cannot be deleted
     if (liveQuiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_DELETE',
+        reasonCode: 'ASSESSMENT_DELETE_COMPLETED',
+        requiredPermission: 'ADMIN',
+      })
       return null
     }
 
@@ -2908,6 +2963,12 @@ export async function deleteLiveQuiz(
         liveQuiz.course._count.permissions > 0
 
       if (!isCourseAdminOwner) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: id,
+          actionType: 'ASSESSMENT_DELETE',
+          reasonCode: 'INSUFFICIENT_PERMISSION',
+          requiredPermission: 'ADMIN',
+        })
         return null
       }
     }
@@ -3058,7 +3119,15 @@ export async function resetAssessmentLiveQuiz(
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_RESET',
+      reasonCode: 'ASSESSMENT_RESET_NOT_ELIGIBLE',
+      requiredPermission: 'ADMIN',
+    })
+    return null
+  }
 
   const [existingCoveredAuditScope] = await Promise.all([
     ctx.prisma.assessmentAuditScope.findFirst({

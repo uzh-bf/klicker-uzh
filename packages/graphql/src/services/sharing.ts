@@ -21,6 +21,7 @@ import {
   assessmentAuditUserOperation,
   emitAssessmentLecturerPermissionChanges,
   loadAssessmentLecturerPermissionState,
+  recordCoveredAssessmentActionRejected,
 } from './assessmentAuditProducers.js'
 
 // ! Helper functions
@@ -6600,6 +6601,12 @@ export type ObjectSelectorFunction = (
   | { microLearningId: string }
   | { groupActivityId: string }
 
+export type AssessmentAuditPermissionFailure = Readonly<{
+  actionType: string
+  targetType?: string
+  targetId?: (args: any) => string | undefined
+}>
+
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)
 export function withPermission<TSource, TArgs, TReturn>(
@@ -6609,19 +6616,56 @@ export function withPermission<TSource, TArgs, TReturn>(
     root: TSource,
     args: TArgs,
     ctx: ContextWithUser
-  ) => Promise<TReturn>
+  ) => Promise<TReturn>,
+  assessmentAudit?: AssessmentAuditPermissionFailure
 ) {
   return async (
     root: TSource,
     args: TArgs,
     ctx: ContextWithUser
   ): Promise<TReturn | null> => {
+    const selectedObject = selector(args)
     const access = await checkAccess(
-      [{ ...selector(args), minimumPermissionLevel: level }],
+      [{ ...selectedObject, minimumPermissionLevel: level }],
       ctx
     )
 
-    if (!access) return null
+    if (!access) {
+      // Permission checks are intentionally fail-closed. Recording a denied
+      // assessment action is best-effort and must never change that behavior
+      // or make the protected mutation available when the audit store is down.
+      if (
+        assessmentAudit !== undefined &&
+        'liveQuizId' in selectedObject &&
+        typeof selectedObject.liveQuizId === 'string'
+      ) {
+        try {
+          await recordCoveredAssessmentActionRejected({
+            client: ctx.prisma,
+            liveQuizId: selectedObject.liveQuizId,
+            operation: assessmentAuditUserOperation({
+              userId: ctx.user.sub,
+              requiredPermission: level,
+            }),
+            actionType: assessmentAudit.actionType,
+            reasonCode: 'INSUFFICIENT_PERMISSION',
+            ...(assessmentAudit.targetType === undefined
+              ? {}
+              : { targetType: assessmentAudit.targetType }),
+            ...(assessmentAudit.targetId === undefined
+              ? {}
+              : { targetId: assessmentAudit.targetId(args) }),
+          })
+        } catch (error) {
+          console.error(
+            'Failed to record rejected assessment action %s',
+            assessmentAudit.actionType,
+            error
+          )
+        }
+      }
+      return null
+    }
     return resolver(root, args, ctx)
   }
 }

@@ -105,6 +105,22 @@ spec:
             assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
           annotations:
             summary: Assessment audit monitor reports a warning signal
+        - alert: AssessmentAuditRequiredMediaCaptureFailure
+          expr: max(assessment_audit_required_media_capture_failures{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) > 0
+          for: 1m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit has a durable required media or baseline activation failure
+        - alert: AssessmentAuditCoveredSubmissionWithoutTerminal
+          expr: max(assessment_audit_covered_submissions_without_terminal{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) > 0 and max(assessment_audit_oldest_covered_submission_without_terminal_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) >= 300
+          for: 1m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Covered assessment submission has no terminal audit outcome
         - alert: AssessmentAuditMediaPolicyHeartbeatMissing
           expr: absent(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) == 0 and time() - max(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 0 and time() - max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600)
           for: 5m

@@ -307,6 +307,33 @@ export async function recordCoveredAssessmentActionRejected(input: {
   ])
 }
 
+export async function recordAssessmentActionRejectedForUser(input: {
+  client: Pick<
+    DB.PrismaClient,
+    '$transaction' | 'assessmentAuditScope' | 'liveQuiz'
+  >
+  liveQuizId: string
+  userId: string
+  requiredPermission: string
+  actionType: string
+  reasonCode: string
+  targetType?: string
+  targetId?: string
+}) {
+  return recordCoveredAssessmentActionRejected({
+    client: input.client,
+    liveQuizId: input.liveQuizId,
+    operation: assessmentAuditUserOperation({
+      userId: input.userId,
+      requiredPermission: input.requiredPermission,
+    }),
+    actionType: input.actionType,
+    reasonCode: input.reasonCode,
+    ...(input.targetType === undefined ? {} : { targetType: input.targetType }),
+    ...(input.targetId === undefined ? {} : { targetId: input.targetId }),
+  })
+}
+
 export async function emitCoveredCourseAssessmentAuditEvents(input: {
   tx: Pick<Prisma.TransactionClient, 'liveQuiz' | 'assessmentAuditScope'>
   auditTx: AuditTransactionClient

@@ -259,6 +259,16 @@ concurrent change, and atomically writes the scope, baseline root and parts,
 activation event, and rollout-inventory outcome. Exact retries are idempotent;
 different evidence for an already activated scope fails closed.
 
+Before media capture, activation reserves the lifecycle scope as `ACTIVATING`.
+Capture or baseline failures transition that reservation to `FAILED`; an
+interrupted process leaves a durable `ACTIVATING` marker for reconciliation.
+The marker is never treated as covered evidence, and monitoring evaluates only
+the latest lifecycle per quiz so a repaired retry clears the active failure
+signal. Content-addressed Blob versions remain immutable until their retention
+policy permits cleanup; the reservation prevents a staged version from being
+an untracked evidence object while the cleanup/reconciliation worker is
+fast-follow work.
+
 The baseline includes effective quiz configuration, ordered blocks and element
 instances, effective element content and scoring, active participant UUIDs,
 effective permissions, immutable media references, and explicit limitations. It
@@ -368,16 +378,17 @@ accepts account-root Table and Blob HTTPS endpoints only; storage keys, SAS
 URLs, and connection strings are not options.
 
 The monitor logs a metadata-only snapshot and marks its Hatchet run failed for
-critical backlog, stale dispatcher heartbeat, quarantine, or different-hash
-conflict signals. `/metrics` exposes aggregate backlog, heartbeat, monitor
-status, quarantine, conflict, unsealed-byte, media-policy success, and
-media-horizon gauges, all labeled by environment and worker role. Separate
-`ServiceMonitor` targets and role-filtered alerts detect unavailable workers,
-stale heartbeats, monitor critical status, and a media policy horizon below 30
-days. Owner-only alert routing remains an infrastructure exit gate. The
-required-media-capture, covered-submission-terminal, and projected-capacity
-signals remain explicit launch-gate staging checks until their producer-side
-measurements are wired.
+critical backlog, stale dispatcher heartbeat, quarantine, different-hash
+conflict, durable rollout activation/media failure, or a covered submission
+that has not reached a terminal outbox outcome within the threshold. `/metrics`
+exposes aggregate backlog, heartbeat, monitor status, quarantine, conflict,
+unsealed-byte, media-policy success, media-horizon, activation-failure, and
+non-terminal-submission gauges, all labeled by environment and worker role.
+Separate `ServiceMonitor` targets and role-filtered alerts detect unavailable
+workers, stale heartbeats, monitor critical status, and a media policy horizon
+below 30 days. Owner-only alert routing remains an infrastructure exit gate.
+Projected `DELIVERED_UNSEALED` capacity remains an explicit staging/operations
+gate until a measured production volume and capacity budget are configured.
 
 The staged rollout command is:
 

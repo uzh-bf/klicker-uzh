@@ -17,12 +17,22 @@ export type BuiltAssessmentBaseline = {
   parts: BaselinePartPayload[]
 }
 
+// Baselines are assembled before their parts are written to the transactional
+// outbox. Keep the construction bounded so a malformed or unexpectedly large
+// assessment fails closed instead of exhausting the GraphQL worker.
+export const ASSESSMENT_BASELINE_MAX_PARTS = 100_000
+
 export function buildAssessmentBaseline(input: {
   baselineId: string
   baselineKind: BaselineRootPayload['baselineKind']
   capturedAt: string
   contents: readonly AssessmentBaselineContent[]
 }): BuiltAssessmentBaseline {
+  if (input.contents.length > ASSESSMENT_BASELINE_MAX_PARTS) {
+    throw new Error(
+      `Assessment baseline exceeds the maximum of ${ASSESSMENT_BASELINE_MAX_PARTS} parts`
+    )
+  }
   const parts = input.contents
     .map((content) =>
       buildAssessmentBaselinePart({
