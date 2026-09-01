@@ -808,6 +808,48 @@ test('plans one resume from a valid partial OCR session', () => {
   })
 })
 
+test('rejects failed partial sessions with reused or waived coverage', () => {
+  const parent = partialResumeResult()
+  const completed = parent.manifest.coverage.completed[0]
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              reused: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              waived: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
+})
+
 test('rejects malformed or already-resumed partial OCR sessions', () => {
   const parent = partialResumeResult()
   assert.throws(

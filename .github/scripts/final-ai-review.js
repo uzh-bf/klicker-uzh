@@ -2797,6 +2797,9 @@ function planOCRResume(result, maxTokensBudget) {
   if (coverage.failed.length === 0) {
     throw new Error('Partial OCR result has no failed coverage to resume')
   }
+  if (coverage.reused.length > 0 || coverage.waived.length > 0) {
+    throw new Error('Partial OCR result has reused or waived coverage')
+  }
   if (result.warnings != null && !Array.isArray(result.warnings)) {
     throw new Error('Partial OCR result has an invalid warnings array')
   }
