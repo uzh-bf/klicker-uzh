@@ -1,4 +1,5 @@
 import {
+  type AuditEventDraft,
   emitCoveredParticipantEligibilityChange,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
@@ -27,7 +28,12 @@ import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
-import { assessmentAuditParticipantOperation } from './assessmentAuditProducers.js'
+import {
+  assessmentAuditParticipantOperation,
+  assessmentAuditUserOperation,
+  assessmentResponseSnapshot,
+  emitCoveredAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
 import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
@@ -164,7 +170,7 @@ export async function joinCourseLeaderboard(
       }
       return { participation, lbEntry }
     }
-  })
+  )
 
   // invalidate participation and leaderboard entry
   ctx.emitter.emit('invalidate', {
@@ -1080,8 +1086,7 @@ async function upsertResponseAppliedCorrection(
     availableCorrectnessPoints: number
     availableBonusPoints: number
   },
-  tx: PrismaTransactionClient,
-  ctx: ContextWithUser
+  tx: PrismaTransactionClient
 ) {
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
@@ -1126,7 +1131,7 @@ async function upsertResponseAppliedCorrection(
   })
 
   // update applied correction entry
-  const appliedCorrection = await tx.appliedPointCorrection.create({
+  await tx.appliedPointCorrection.create({
     data: {
       // awarded and deducted points (true as award, false as deduction, null as no change)
       awardedBasePoints:
@@ -1156,11 +1161,71 @@ async function upsertResponseAppliedCorrection(
     },
   })
 
+  return { before: response ?? null, after: lqr }
+}
+
+function pointCorrectionAuditDraft(input: {
+  before: DB.LiveQuizResponse | null
+  after: DB.LiveQuizResponse
+  instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
+  producerOperationId: string
+}): AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> | null {
+  if (input.before === null) return null
+  const before = assessmentResponseSnapshot({
+    response: input.before,
+    elementType: input.instance.elementType,
+  })
+  const after = assessmentResponseSnapshot({
+    response: input.after,
+    elementType: input.instance.elementType,
+  })
   return {
-    message: {
-      info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
+    eventType: 'ASSESSMENT_POINTS_CORRECTED',
+    producerOperationId: input.producerOperationId,
+    scope: {
+      participantId: input.after.participantId,
+      elementInstanceId: input.instance.id,
+      blockId: input.instance.elementBlock.id,
+      elementId: input.instance.elementId,
+    },
+    payload: {
+      participantId: input.after.participantId,
+      responseId: input.after.id,
+      before,
+      after,
+      reasonCode: 'LECTURER_POINT_CORRECTION',
     },
   }
+}
+
+async function emitPointCorrectionAuditEvents(input: {
+  tx: Pick<DB.Prisma.TransactionClient, 'assessmentAuditScope'>
+  auditTx: Parameters<typeof emitCoveredAssessmentAuditEvents>[0]['auditTx']
+  liveQuizId: string
+  courseId: string
+  userId: string
+  correlationId: string
+  drafts: readonly (AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> | null)[]
+}) {
+  const drafts = input.drafts.filter(
+    (draft): draft is AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> =>
+      draft !== null
+  )
+  drafts.sort((left, right) =>
+    left.producerOperationId.localeCompare(right.producerOperationId)
+  )
+  return emitCoveredAssessmentAuditEvents({
+    tx: input.tx,
+    auditTx: input.auditTx,
+    liveQuizId: input.liveQuizId,
+    courseId: input.courseId,
+    operation: assessmentAuditUserOperation({
+      userId: input.userId,
+      requiredPermission: 'ADMIN',
+      correlationId: input.correlationId,
+    }),
+    drafts,
+  })
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1282,6 +1347,10 @@ export async function correctAssessmentPointsInstance(
       instance.elementBlock.liveQuiz.defaultCorrectPoints,
     activityBonusPoints: instance.elementBlock.liveQuiz.maxBonusPoints,
   })
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
@@ -1297,8 +1366,9 @@ export async function correctAssessmentPointsInstance(
 
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1327,7 +1397,7 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, participant: true, instance: true },
         })
 
-        const logObject = await upsertResponseAppliedCorrection(
+        const correctionResult = await upsertResponseAppliedCorrection(
           {
             correctionId: correction.id,
             instance: instance as DB.ElementInstance & {
@@ -1345,12 +1415,27 @@ export async function correctAssessmentPointsInstance(
             availableCorrectnessPoints,
             availableBonusPoints,
           },
-          tx,
-          ctx
+          tx
         )
 
-        // add an audit log entry for the correction
-        await ctx.tasks.createAuditLogEntry.runNoWait([logObject])
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: instance.elementBlock.liveQuizId,
+          courseId: instance.elementBlock.liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: [
+            pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            }),
+          ],
+        })
 
         // return the correction to display it to the lecturer
         return correction
@@ -1372,8 +1457,9 @@ export async function correctAssessmentPointsInstance(
       },
     })
 
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1402,12 +1488,13 @@ export async function correctAssessmentPointsInstance(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all responses and update them with the corrected points
         await Promise.all(
           responses.map(async (response) => {
-            const logObject = await upsertResponseAppliedCorrection(
+            const correctionResult = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1425,17 +1512,30 @@ export async function correctAssessmentPointsInstance(
                 availableCorrectnessPoints,
                 availableBonusPoints,
               },
-              tx,
-              ctx
+              tx
             )
 
-            // add the log object to the list of log entries
-            logEntries.push(logObject)
+            const draft = pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            })
+            if (draft !== null) correctionDrafts.push(draft)
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: instance.elementBlock.liveQuizId,
+          courseId: instance.elementBlock.liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         // return the correction to display it to the lecturer
         return correction
@@ -1474,8 +1574,9 @@ export async function correctAssessmentPointsInstance(
       },
     })
 
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1508,12 +1609,13 @@ export async function correctAssessmentPointsInstance(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all responses and update them with the corrected points
         await Promise.all(
           participations.map(async (participation) => {
-            const logEntry = await upsertResponseAppliedCorrection(
+            const correctionResult = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1531,17 +1633,30 @@ export async function correctAssessmentPointsInstance(
                 availableCorrectnessPoints,
                 availableBonusPoints,
               },
-              tx,
-              ctx
+              tx
             )
 
-            // push the log object to the list of log entries
-            logEntries.push(logEntry)
+            const draft = pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            })
+            if (draft !== null) correctionDrafts.push(draft)
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: instance.elementBlock.liveQuizId,
+          courseId: instance.elementBlock.liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         // return the correction to display it to the lecturer
         return correction
@@ -1685,13 +1800,18 @@ export async function correctAssessmentPointsLiveQuiz(
 
     return blockAcc
   }, {})
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1726,7 +1846,8 @@ export async function correctAssessmentPointsLiveQuiz(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and update the corresponding responses with the corrected points
         await Promise.all(
@@ -1750,7 +1871,7 @@ export async function correctAssessmentPointsLiveQuiz(
                   },
                 })
 
-                const logEntry = await upsertResponseAppliedCorrection(
+                const correctionResult = await upsertResponseAppliedCorrection(
                   {
                     correctionId: correction.id,
                     instance: { ...instance, elementBlock: block },
@@ -1766,19 +1887,30 @@ export async function correctAssessmentPointsLiveQuiz(
                     availableCorrectnessPoints,
                     availableBonusPoints,
                   },
-                  tx,
-                  ctx
+                  tx
                 )
 
-                // push the log object to the list of log entries
-                logEntries.push(logEntry)
+                const draft = pointCorrectionAuditDraft({
+                  before: correctionResult.before,
+                  after: correctionResult.after,
+                  instance: { ...instance, elementBlock: block },
+                  producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                })
+                if (draft !== null) correctionDrafts.push(draft)
               })
             )
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId: liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },
@@ -1832,8 +1964,9 @@ export async function correctAssessmentPointsLiveQuiz(
     )
 
     // update the responses of all participants that have submitted at least one response to the live quiz
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1861,8 +1994,8 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, liveQuiz: true },
         })
 
-        // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
@@ -1880,28 +2013,33 @@ export async function correctAssessmentPointsLiveQuiz(
                     async ([pId, instanceResponseMap]) => {
                       const response = instanceResponseMap[instance.id]
 
-                      const logEntry = await upsertResponseAppliedCorrection(
-                        {
-                          correctionId: correction.id,
-                          instance: { ...instance, elementBlock: block },
-                          response,
-                          participantId: pId,
-                          awardBasePoints,
-                          awardCorrectnessPoints,
-                          awardBonusPoints,
-                          deductBasePoints,
-                          deductCorrectnessPoints,
-                          deductBonusPoints,
-                          availableBasePoints,
-                          availableCorrectnessPoints,
-                          availableBonusPoints,
-                        },
-                        tx,
-                        ctx
-                      )
+                      const correctionResult =
+                        await upsertResponseAppliedCorrection(
+                          {
+                            correctionId: correction.id,
+                            instance: { ...instance, elementBlock: block },
+                            response,
+                            participantId: pId,
+                            awardBasePoints,
+                            awardCorrectnessPoints,
+                            awardBonusPoints,
+                            deductBasePoints,
+                            deductCorrectnessPoints,
+                            deductBonusPoints,
+                            availableBasePoints,
+                            availableCorrectnessPoints,
+                            availableBonusPoints,
+                          },
+                          tx
+                        )
 
-                      // push the log object to the list of log entries
-                      logEntries.push(logEntry)
+                      const draft = pointCorrectionAuditDraft({
+                        before: correctionResult.before,
+                        after: correctionResult.after,
+                        instance: { ...instance, elementBlock: block },
+                        producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                      })
+                      if (draft !== null) correctionDrafts.push(draft)
                     }
                   )
                 )
@@ -1910,8 +2048,15 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId: liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },
@@ -1939,8 +2084,9 @@ export async function correctAssessmentPointsLiveQuiz(
     })
 
     // update the responses of all participants in the course
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1972,8 +2118,8 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, participants: true, liveQuiz: true },
         })
 
-        // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
@@ -1999,28 +2145,35 @@ export async function correctAssessmentPointsLiveQuiz(
                       },
                     })
 
-                    const logEntry = await upsertResponseAppliedCorrection(
-                      {
-                        correctionId: correction.id,
-                        instance: { ...instance, elementBlock: block },
-                        response,
-                        participantId: pId,
-                        awardBasePoints,
-                        awardCorrectnessPoints,
-                        awardBonusPoints,
-                        deductBasePoints,
-                        deductCorrectnessPoints,
-                        deductBonusPoints,
-                        availableBasePoints,
-                        availableCorrectnessPoints,
-                        availableBonusPoints,
-                      },
-                      tx,
-                      ctx
-                    )
+                    const correctionResult =
+                      await upsertResponseAppliedCorrection(
+                        {
+                          correctionId: correction.id,
+                          instance: { ...instance, elementBlock: block },
+                          response,
+                          participantId: pId,
+                          awardBasePoints,
+                          awardCorrectnessPoints,
+                          awardBonusPoints,
+                          deductBasePoints,
+                          deductCorrectnessPoints,
+                          deductBonusPoints,
+                          availableBasePoints,
+                          availableCorrectnessPoints,
+                          availableBonusPoints,
+                        },
+                        tx
+                      )
 
-                    // push the log object to the list of log entries
-                    logEntries.push(logEntry)
+                    const draft = pointCorrectionAuditDraft({
+                      before: correctionResult.before,
+                      after: correctionResult.after,
+                      instance: instance as DB.ElementInstance & {
+                        elementBlock: DB.ElementBlock
+                      },
+                      producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                    })
+                    if (draft !== null) correctionDrafts.push(draft)
                   })
                 )
               })
@@ -2028,8 +2181,15 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId: liveQuiz.courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },

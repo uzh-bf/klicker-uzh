@@ -150,6 +150,10 @@ export interface PreparedHatchetTasks {
     Record<string, never>,
     { success: boolean }
   >
+  renewAssessmentAuditMediaPolicies: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   publishScheduledMicroLearning: TaskWorkflowDeclaration<
     { microLearningId: string },
     { success: boolean }

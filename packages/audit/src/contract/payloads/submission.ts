@@ -54,6 +54,7 @@ export function submissionOutcomePayloadSchema(stage: SubmissionStage) {
       responseId: z.number().int().positive().optional(),
       duplicateOfResponseId: z.number().int().positive().optional(),
       answerStateHash: sha256Schema.optional(),
+      answer: normalizedAnswerSchema.optional(),
       validationRulesVersion: z.string().min(1).optional(),
       scoringAlgorithmVersion: z.string().min(1).optional(),
       correctness: z.enum(['CORRECT', 'PARTIAL', 'WRONG']).optional(),
@@ -86,6 +87,7 @@ export function submissionOutcomePayloadSchema(stage: SubmissionStage) {
       }
       if (['PERSISTED', 'SCORED'].includes(stage)) {
         require('responseId', `${stage} requires responseId`)
+        require('answer', `${stage} requires normalized answer`)
       }
       if (stage === 'SCORED') {
         require('scoringAlgorithmVersion', 'SCORED requires scoringAlgorithmVersion')

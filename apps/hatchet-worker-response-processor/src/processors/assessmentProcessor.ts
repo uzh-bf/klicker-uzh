@@ -21,9 +21,11 @@ import {
   type CoveredAssessmentScope,
   commandHasRecordedFailure,
   emitSubmissionAuditEvents,
-  findAcceptedAnswerHashes,
+  findAcceptedSubmissionBindings,
   findCoveredAssessmentScope,
   getTerminalStageForCommand,
+  normalizeAssessmentAnswer,
+  recordSubmissionMetadataQuarantine,
   submissionDraft,
 } from './assessmentAudit.js'
 import {
@@ -200,37 +202,82 @@ export async function processAssessmentResponse(
       message.liveQuizId
     )
     if (coveredScope !== null) {
-      hatchetEventId = await dependencies.resolveHatchetEventId(message, ctx)
+      try {
+        hatchetEventId = await dependencies.resolveHatchetEventId(message, ctx)
+      } catch (error) {
+        if (error instanceof NonRetryableError) {
+          try {
+            await recordSubmissionMetadataQuarantine({
+              client: dependencies.client,
+              message,
+              scope: coveredScope,
+              reasonCode: error.message,
+              recordedAt: dependencies.now(),
+            })
+          } catch (quarantineError) {
+            ctx.logger.error(
+              'Assessment submission metadata quarantine was not recorded',
+              {
+                extra: {
+                  submissionId: message.submissionId,
+                  reasonCode: error.message,
+                  quarantineError,
+                },
+              }
+            )
+          }
+        }
+        throw error
+      }
       const scope = coveredScope
-      let reusedWithDifferentAnswer = false
+      let submissionReuseReasonCode:
+        | 'SUBMISSION_ID_ANSWER_MISMATCH'
+        | 'SUBMISSION_ID_SCOPE_MISMATCH'
+        | undefined
       await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
         const answerStateHash = hashCanonicalValue(message.response)
-        const previousHashes = await findAcceptedAnswerHashes({ tx, message })
-        reusedWithDifferentAnswer = [...previousHashes].some(
-          (hash) => hash !== answerStateHash
-        )
-        await emitSubmissionAuditEvents({
+        const previousBindings = await findAcceptedSubmissionBindings({
           tx,
-          auditTx,
           message,
-          scope,
-          hatchetEventId: requireHatchetEventId(),
-          recordedAt: dependencies.now(),
-          drafts: [
-            submissionDraft(message, requireHatchetEventId(), {
-              eventType: 'SUBMISSION_SERVER_ACCEPTED',
-              operationSuffix: 'server-accepted',
-              payload: {
-                submissionId: message.submissionId,
-                stage: 'SERVER_ACCEPTED',
-                answerStateHash,
-              },
-            }),
-          ],
         })
+        const scopeMismatch = previousBindings.some(
+          (binding) =>
+            binding.participantId !== message.participantId ||
+            binding.elementInstanceId !== Number(message.instanceId) ||
+            binding.lifecycleEpoch !== scope.lifecycleEpoch
+        )
+        const answerMismatch = previousBindings.some(
+          (binding) => binding.answerStateHash !== answerStateHash
+        )
+        submissionReuseReasonCode = scopeMismatch
+          ? 'SUBMISSION_ID_SCOPE_MISMATCH'
+          : answerMismatch
+            ? 'SUBMISSION_ID_ANSWER_MISMATCH'
+            : undefined
+        if (submissionReuseReasonCode === undefined) {
+          await emitSubmissionAuditEvents({
+            tx,
+            auditTx,
+            message,
+            scope,
+            hatchetEventId: requireHatchetEventId(),
+            recordedAt: dependencies.now(),
+            drafts: [
+              submissionDraft(message, requireHatchetEventId(), {
+                eventType: 'SUBMISSION_SERVER_ACCEPTED',
+                operationSuffix: 'server-accepted',
+                payload: {
+                  submissionId: message.submissionId,
+                  stage: 'SERVER_ACCEPTED',
+                  answerStateHash,
+                },
+              }),
+            ],
+          })
+        }
       })
-      if (reusedWithDifferentAnswer) {
-        await reject('SUBMISSION_ID_ANSWER_MISMATCH')
+      if (submissionReuseReasonCode !== undefined) {
+        await reject(submissionReuseReasonCode)
       }
     }
 
@@ -300,6 +347,11 @@ export async function processAssessmentResponse(
     if (!validation.valid) {
       await reject(validation.reasonCode)
     }
+    const normalizedAnswer = normalizeAssessmentAnswer({
+      type: type as ElementType,
+      response: message.response,
+      restrictions: parsedRestrictions,
+    })
     if (coveredScope !== null) {
       await emitStandalone([
         submissionDraft(message, requireHatchetEventId(), {
@@ -470,7 +522,10 @@ export async function processAssessmentResponse(
               ],
             })
           }
-          return { kind: 'rejected' as const }
+          return {
+            kind: 'rejected' as const,
+            reasonCode: 'PARTICIPATION_NOT_FOUND',
+          }
         }
 
         const existingResponse = await tx.liveQuizResponse.findUnique({
@@ -482,6 +537,50 @@ export async function processAssessmentResponse(
             },
           },
         })
+        const responseWithSubmissionId = await tx.liveQuizResponse.findUnique({
+          where: { submissionId: message.submissionId },
+        })
+        if (
+          responseWithSubmissionId !== null &&
+          (responseWithSubmissionId.participantId !== message.participantId ||
+            responseWithSubmissionId.instanceId !==
+              Number(message.instanceId) ||
+            responseWithSubmissionId.elementBlockExecution !==
+              Number.parseInt(blockExecution ?? '0', 10) ||
+            hashCanonicalValue(responseWithSubmissionId.response) !==
+              hashCanonicalValue(message.response))
+        ) {
+          if (coveredScope !== null) {
+            await assertTerminalStageAvailable({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+              intendedEventType: 'SUBMISSION_REJECTED',
+            })
+            const recovered = await commandHasRecordedFailure({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+            })
+            await emitSubmissionAuditEvents({
+              tx,
+              auditTx,
+              message,
+              scope: coveredScope,
+              hatchetEventId: requireHatchetEventId(),
+              courseId,
+              recordedAt: dependencies.now(),
+              drafts: [
+                rejectionDraft('SUBMISSION_ID_SCOPE_MISMATCH'),
+                ...(recovered ? [recoveryDraft()] : []),
+              ],
+            })
+          }
+          return {
+            kind: 'rejected' as const,
+            reasonCode: 'SUBMISSION_ID_SCOPE_MISMATCH',
+          }
+        }
         if (existingResponse) {
           const terminalStage =
             coveredScope === null
@@ -608,6 +707,7 @@ export async function processAssessmentResponse(
                   submissionId: message.submissionId,
                   stage: 'PERSISTED',
                   responseId: createdResponse.id,
+                  answer: normalizedAnswer,
                 },
               }),
               submissionDraft(message, requireHatchetEventId(), {
@@ -617,6 +717,7 @@ export async function processAssessmentResponse(
                   submissionId: message.submissionId,
                   stage: 'SCORED',
                   responseId: createdResponse.id,
+                  answer: normalizedAnswer,
                   scoringAlgorithmVersion: ASSESSMENT_SCORING_ALGORITHM_VERSION,
                   correctness: storedCorrectness,
                   basePoints: createdResponse.basePoints,
@@ -633,7 +734,7 @@ export async function processAssessmentResponse(
     )
 
     if (transactionResult.kind === 'rejected') {
-      throw new NonRetryableError('PARTICIPATION_NOT_FOUND')
+      throw new NonRetryableError(transactionResult.reasonCode)
     }
     if (transactionResult.kind === 'duplicate') {
       return { status: 208 }

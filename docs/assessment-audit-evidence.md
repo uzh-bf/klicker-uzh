@@ -28,7 +28,10 @@ leased rows through a provider-neutral append-sink, and implements Azure Table,
 immutable-media, owner-CLI, and media-policy adapters. GraphQL owns assessment
 snapshot mapping, two-phase activation, rollout accounting, automatic
 `all`-mode creation coverage, atomic reopening, start-time readiness, and typed
-lecturer/system producer orchestration. The
+lecturer/system producer orchestration. Assessment scheduling, scheduled
+publication (with the scheduling lecturer retained as `initiatedBy`),
+unpublishing, cancellation, block activation/closure, and standalone quiz
+name/settings mutations use the same transactional producer boundary. The
 dedicated deployments remain dormant by default until their Pulumi-provisioned
 staging identities and endpoints are supplied. The manifest sealer and
 retention worker remain fast-follow work.
@@ -366,13 +369,15 @@ URLs, and connection strings are not options.
 
 The monitor logs a metadata-only snapshot and marks its Hatchet run failed for
 critical backlog, stale dispatcher heartbeat, quarantine, or different-hash
-conflict signals. `/metrics` exposes aggregate backlog, heartbeat, quarantine,
-conflict, unsealed-byte, media-policy success, and media-horizon gauges, all
-labeled by environment and worker role. Separate `ServiceMonitor` targets and
-role-filtered alerts detect unavailable workers, stale heartbeats, and a media
-policy horizon below 30 days. Owner-only alert routing remains an infrastructure
-exit gate. Hatchet-submission and projected-capacity signals arrive with their
-producer layers.
+conflict signals. `/metrics` exposes aggregate backlog, heartbeat, monitor
+status, quarantine, conflict, unsealed-byte, media-policy success, and
+media-horizon gauges, all labeled by environment and worker role. Separate
+`ServiceMonitor` targets and role-filtered alerts detect unavailable workers,
+stale heartbeats, monitor critical status, and a media policy horizon below 30
+days. Owner-only alert routing remains an infrastructure exit gate. The
+required-media-capture, covered-submission-terminal, and projected-capacity
+signals remain explicit launch-gate staging checks until their producer-side
+measurements are wired.
 
 The staged rollout command is:
 

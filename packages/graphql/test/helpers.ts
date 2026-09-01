@@ -154,6 +154,10 @@ export async function testInitialization(
       name: 'monitor-assessment-audit-test',
       fn: async () => ({ success: true }),
     }),
+    renewAssessmentAuditMediaPolicies: hatchet.task({
+      name: 'renew-assessment-audit-media-policies-test',
+      fn: async () => ({ success: true }),
+    }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
       fn: async (
@@ -198,9 +202,15 @@ export async function testInitialization(
     }),
     publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
-      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+      fn: async (
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: { liveQuizId: string; initiatedByUserId?: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledLiveQuiz(
-          { liveQuizId },
+          { liveQuizId, initiatedByUserId },
           hatchetCtx,
           executionCtx
         )

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
-  AzureTableAppendSink,
   AzureImmutableAuditMediaStore,
+  AzureTableAppendSink,
   baselinePartPayloadSchema,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
@@ -11,9 +11,10 @@ import {
   parseCanonicalAuditEnvelope,
   readAzureAuditStorageConfig,
   recordAssessmentAuditDispatcherSuccess,
-  recordAssessmentAuditMonitorSuccess,
   recordAssessmentAuditMediaPolicySuccess,
+  recordAssessmentAuditMonitorSuccess,
   renewActiveAssessmentMediaPolicies,
+  retentionBatchFor,
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
@@ -82,12 +83,15 @@ export async function* activeAssessmentMediaReferences(
     'assessmentAuditScope' | 'assessmentAuditOutboxEvent'
   >
 ) {
+  const references = new Map<
+    string,
+    { contentHash: string; retainUntil?: Date }
+  >()
   let scopeCursor: { liveQuizId: string; lifecycleEpoch: number } | undefined
   while (true) {
     const scopes = await client.assessmentAuditScope.findMany({
       where: {
         coverageState: DB.AssessmentAuditCoverageState.COVERED,
-        retentionAnchorAt: null,
       },
       orderBy: [{ liveQuizId: 'asc' }, { lifecycleEpoch: 'asc' }],
       take: 100,
@@ -97,13 +101,16 @@ export async function* activeAssessmentMediaReferences(
             cursor: { liveQuizId_lifecycleEpoch: scopeCursor },
             skip: 1,
           }),
-      select: { liveQuizId: true, lifecycleEpoch: true },
+      select: {
+        liveQuizId: true,
+        lifecycleEpoch: true,
+        retentionAnchorAt: true,
+      },
     })
-    if (scopes.length === 0) return
+    if (scopes.length === 0) break
 
     for (const scope of scopes) {
       let eventCursor: string | undefined
-      const seen = new Set<string>()
       while (true) {
         const events = await client.assessmentAuditOutboxEvent.findMany({
           where: {
@@ -122,14 +129,31 @@ export async function* activeAssessmentMediaReferences(
         for (const event of events) {
           const envelope = parseCanonicalAuditEnvelope(event.canonicalEnvelope)
           const payload = baselinePartPayloadSchema.parse(envelope.payload)
-          if (
-            payload.content.kind === 'MEDIA_REFERENCE' &&
-            !seen.has(payload.content.media.blobName)
-          ) {
-            seen.add(payload.content.media.blobName)
-            yield {
-              blobName: payload.content.media.blobName,
-              contentHash: payload.content.media.contentHash,
+          if (payload.content.kind === 'MEDIA_REFERENCE') {
+            const media = payload.content.media
+            const retainUntil =
+              scope.retentionAnchorAt === null
+                ? undefined
+                : retentionBatchFor(scope.retentionAnchorAt)
+            const previous = references.get(media.blobName)
+            if (
+              previous !== undefined &&
+              previous.contentHash !== media.contentHash
+            ) {
+              throw new Error(
+                `Assessment media blob ${media.blobName} has conflicting content hashes`
+              )
+            }
+            if (
+              previous === undefined ||
+              (retainUntil !== undefined &&
+                (previous.retainUntil === undefined ||
+                  retainUntil.getTime() > previous.retainUntil.getTime()))
+            ) {
+              references.set(media.blobName, {
+                contentHash: media.contentHash,
+                ...(retainUntil === undefined ? {} : { retainUntil }),
+              })
             }
           }
         }
@@ -137,6 +161,10 @@ export async function* activeAssessmentMediaReferences(
       }
     }
     scopeCursor = scopes.at(-1)!
+  }
+
+  for (const [blobName, reference] of references) {
+    yield { blobName, ...reference }
   }
 }
 

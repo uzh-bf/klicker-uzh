@@ -89,6 +89,22 @@ spec:
             assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
           annotations:
             summary: Assessment audit worker has no available replica
+        - alert: AssessmentAuditMonitorCritical
+          expr: max(assessment_audit_monitor_status{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) >= 2
+          for: 1m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit monitor reports a critical signal
+        - alert: AssessmentAuditMonitorWarning
+          expr: max(assessment_audit_monitor_status{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit monitor reports a warning signal
         - alert: AssessmentAuditMediaPolicyHeartbeatMissing
           expr: absent(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) == 0 and time() - max(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 0 and time() - max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600)
           for: 5m

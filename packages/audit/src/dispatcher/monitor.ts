@@ -273,6 +273,18 @@ export function renderAssessmentAuditPrometheusMetrics(
       prometheusNumber(latestSnapshot?.oldestPendingSeconds),
     ],
     [
+      'assessment_audit_monitor_status',
+      prometheusNumber(
+        latestSnapshot === undefined
+          ? undefined
+          : latestSnapshot.status === 'CRITICAL'
+            ? 2
+            : latestSnapshot.status === 'WARNING'
+              ? 1
+              : 0
+      ),
+    ],
+    [
       'assessment_audit_outbox_quarantined',
       prometheusNumber(latestSnapshot?.quarantinedCount),
     ],

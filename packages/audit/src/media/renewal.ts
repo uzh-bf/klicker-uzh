@@ -4,6 +4,7 @@ import { retentionBatchFor } from './retention-horizon.js'
 export type ActiveAssessmentMediaReference = {
   blobName: string
   contentHash: string
+  retainUntil?: Date
 }
 
 export type AssessmentMediaPolicyRenewalSummary = {
@@ -28,8 +29,9 @@ export async function renewActiveAssessmentMediaPolicies(input: {
 
   for await (const reference of input.references) {
     const result = await input.store.extendRetention({
-      ...reference,
-      retainUntil,
+      blobName: reference.blobName,
+      contentHash: reference.contentHash,
+      retainUntil: reference.retainUntil ?? retainUntil,
     })
     inspected += 1
     if (result.outcome === 'EXTENDED') extended += 1

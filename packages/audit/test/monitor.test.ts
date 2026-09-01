@@ -75,6 +75,9 @@ describe('assessment audit monitor', () => {
       'assessment_audit_delivered_unsealed_bytes{environment="stg",role="dispatcher"} 512'
     )
     expect(metrics).toContain(
+      'assessment_audit_monitor_status{environment="stg",role="dispatcher"} 0'
+    )
+    expect(metrics).toContain(
       'assessment_audit_worker_started_timestamp_seconds{environment="stg",role="dispatcher"}'
     )
     expect(metrics).not.toContain('participant')

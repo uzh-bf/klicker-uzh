@@ -402,7 +402,9 @@ review required by decision 26.
   `packages/prisma/src/prisma/schema/migrations/<timestamp>_assessment_audit_core/migration.sql`.
 - Run the required Prisma analytics sync; modify generated analytics schema only
   through that workflow.
-- Create `docs/assessment-audit-evidence.md` and link it from `docs/index.md`.
+- Create `docs/assessment-audit-evidence.md`. The repository deliberately keeps
+  `docs/index.md` and `docs/log/` absent; discover the page through the docs
+  directory and the direct links in affected documentation.
 - Update `turbo.json` only for the two rollout variables; Azure endpoints are
   added with the deployment layer.
 
