@@ -40,10 +40,7 @@ function storedModePrompt(
   return typeof prompt === 'string' && prompt.length > 0 ? prompt : null
 }
 
-function modeSections(
-  systemPrompts: unknown,
-  selectedMode: string
-): string[] {
+function modeSections(systemPrompts: unknown, selectedMode: string): string[] {
   const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
   const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
 
@@ -57,10 +54,7 @@ function modeSections(
             ),
           ]
         : []),
-      promptSection(
-        `Platform mode contract: ${selectedMode}`,
-        platformMode
-      ),
+      promptSection(`Platform mode contract: ${selectedMode}`, platformMode),
     ]
   }
 
@@ -93,10 +87,7 @@ export function compileSystemPrompt(
     ...modeSections(systemPrompts, selectedMode),
   ].join('\n\n')
   const inputContext = withInputContextContract(base)
-  const coursePolicy = withCoursePolicyContract(
-    inputContext,
-    context.toolNames
-  )
+  const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)
   const outputFormat = withOutputFormatContract(coursePolicy)
   const citations = withCitationContract(outputFormat, context.toolNames)
   return withLanguageStyleContract(citations)
