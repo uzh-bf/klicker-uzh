@@ -1996,9 +1996,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createLiveQuizDescription: 'Engage participants live during a session.',
       createMicrolearning: 'Create microlearning',
+      createMicrolearningDescription:
+        'Schedule short learning activities over a defined period.',
       createPracticeQuiz: 'Create practice quiz',
+      createPracticeQuizDescription:
+        'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
+      createGroupTaskDescription: 'Let groups collaborate on a shared task.',
       createElement: 'Create Element',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',

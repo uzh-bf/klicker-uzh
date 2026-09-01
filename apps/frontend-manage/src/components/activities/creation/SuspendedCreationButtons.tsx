@@ -6,26 +6,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import type { ReactNode } from 'react'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
   setCreationMode: (mode: ActivityType) => void
-}
-
-function createUseCaseLinkRenderer(href: string) {
-  return function UseCaseLinkRenderer(chunks: ReactNode) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline"
-      >
-        {chunks}
-      </a>
-    )
-  }
 }
 
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
@@ -33,7 +17,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
 
   return (
     <div
-      className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2"
+      className="grid gap-2 pb-4 md:grid-cols-2 xl:grid-cols-4"
       data-cy="activity-creation-choices"
     >
       <CreationButton
@@ -42,11 +26,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.LiveQuiz)
         }}
-        description={t.rich('manage.activityWizard.liveQuizUseCase', {
-          link: createUseCaseLinkRenderer(
-            'https://www.klicker.uzh.ch/use_cases/live_quiz/'
-          ),
-        })}
+        description={t('manage.questionPool.createLiveQuizDescription')}
+        tooltipAlignment="start"
         data={{ cy: 'create-live-quiz' }}
       />
       <CreationButton
@@ -55,11 +36,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.MicroLearning)
         }}
-        description={t.rich('manage.activityWizard.microlearningUseCase', {
-          link: createUseCaseLinkRenderer(
-            'https://www.klicker.uzh.ch/use_cases/microlearning/'
-          ),
-        })}
+        description={t('manage.questionPool.createMicrolearningDescription')}
         data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
@@ -68,11 +45,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.PracticeQuiz)
         }}
-        description={t.rich('manage.activityWizard.practiceQuizUseCase', {
-          link: createUseCaseLinkRenderer(
-            'https://www.klicker.uzh.ch/use_cases/practice_quiz/'
-          ),
-        })}
+        description={t('manage.questionPool.createPracticeQuizDescription')}
         data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
@@ -81,11 +54,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.GroupActivity)
         }}
-        description={t.rich('manage.activityWizard.groupActivityUseCase', {
-          link: createUseCaseLinkRenderer(
-            'https://www.klicker.uzh.ch/use_cases/group_activity/'
-          ),
-        })}
+        description={t('manage.questionPool.createGroupTaskDescription')}
+        tooltipAlignment="end"
         data={{ cy: 'create-group-activity' }}
       />
     </div>

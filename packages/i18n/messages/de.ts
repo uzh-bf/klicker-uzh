@@ -2007,9 +2007,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
+      createLiveQuizDescription:
+        'Interagieren Sie während einer Veranstaltung direkt mit Ihren Teilnehmenden.',
       createMicrolearning: 'Microlearning erstellen',
+      createMicrolearningDescription:
+        'Planen Sie kurze Lernaktivitäten über einen festgelegten Zeitraum.',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
+      createPracticeQuizDescription:
+        'Lassen Sie Teilnehmende selbstständig im eigenen Tempo üben.',
       createGroupTask: 'Gruppenaktivität erstellen',
+      createGroupTaskDescription:
+        'Lassen Sie Gruppen gemeinsam an einer Aufgabe arbeiten.',
       createElement: 'Element Erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',

@@ -12,63 +12,55 @@ import {
 
 test('CLEANUP', cleanupTest)
 
-const standardActivityDescriptions = [
+const standardActivityGuidance = [
   {
     button: 'create-live-quiz',
     description: 'description-create-live-quiz',
     firstStep: 'insert-live-quiz-name',
-    text: /Live quizzes can be used to promote interactivity in lectures, seminars and workshops/,
-    href: 'https://www.klicker.uzh.ch/use_cases/live_quiz/',
+    text: 'Engage participants live during a session.',
   },
   {
     button: 'create-practice-quiz',
     description: 'description-create-practice-quiz',
     firstStep: 'insert-practice-quiz-name',
-    text: /Practice quizzes can be used to prepare for exams and to review learning content/,
-    href: 'https://www.klicker.uzh.ch/use_cases/practice_quiz/',
+    text: 'Let participants review content independently at their own pace.',
   },
   {
     button: 'create-microlearning',
     description: 'description-create-microlearning',
     firstStep: 'insert-microlearning-name',
-    text: /Microlearnings can be solved by students within a specified timespan/,
-    href: 'https://www.klicker.uzh.ch/use_cases/microlearning/',
+    text: 'Schedule short learning activities over a defined period.',
   },
   {
     button: 'create-group-activity',
     description: 'description-create-group-activity',
     firstStep: 'insert-groupactivity-name',
-    text: /Group activities can be solved once per group and require collaboration/,
-    href: 'https://www.klicker.uzh.ch/use_cases/group_activity/',
+    text: 'Let groups collaborate on a shared task.',
   },
 ] as const
 
 async function expectStandardActivityChoiceGuidance(page: Page) {
   const choiceRegion = page.getByTestId('activity-creation-choices')
 
-  for (const activity of standardActivityDescriptions) {
-    await expect(page.getByTestId(activity.button)).not.toBeDisabled()
-    await expect(page.getByTestId(activity.description)).toBeVisible()
+  for (const activity of standardActivityGuidance) {
+    const button = page.getByTestId(activity.button)
+    const description = page.getByTestId(activity.description)
+
+    await expect(button).not.toBeDisabled()
+    await expect(description).toBeHidden()
+    await button.hover()
+    await expect(description).toBeVisible()
     await expect(page.getByTestId(activity.description)).toContainText(
       activity.text
     )
-    await expect(
-      page.getByTestId(activity.description).getByRole('link')
-    ).toHaveAttribute('href', activity.href)
-    await expect(
-      page.getByTestId(activity.description).getByRole('link')
-    ).toHaveAttribute('target', '_blank')
-    await expect(
-      page.getByTestId(activity.description).getByRole('link')
-    ).toHaveAttribute('rel', 'noopener noreferrer')
-    const describedBy = await page
-      .getByTestId(activity.button)
-      .getAttribute('aria-describedby')
+    await button.focus()
+    await expect(description).toBeVisible()
+    const describedBy = await button.getAttribute('aria-describedby')
     expect(describedBy).toBe(activity.description)
   }
 
   await expect(choiceRegion).not.toContainText(/catalyst/i)
-  await expect(choiceRegion.locator('a[href*="catalyst" i]')).toHaveCount(0)
+  await expect(choiceRegion.getByRole('link')).toHaveCount(0)
   await expect(choiceRegion.locator('[data-cy*="catalyst" i]')).toHaveCount(0)
   await expect(choiceRegion.locator('[data-icon="crown"]')).toHaveCount(0)
 }
@@ -172,7 +164,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
     await expectStandardActivityChoiceGuidance(page)
 
-    for (const activity of standardActivityDescriptions) {
+    for (const activity of standardActivityGuidance) {
       await page.getByTestId(activity.button).click()
       await expect(page.getByTestId(activity.firstStep)).toBeVisible()
       await page.getByTestId('cancel-activity-creation').click()
