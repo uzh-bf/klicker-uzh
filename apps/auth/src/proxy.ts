@@ -168,7 +168,9 @@ export async function proxy(request: NextRequest) {
         { event: 'auth.redirect.rejected', audience: 'lecturer' },
         'Rejected auth redirect'
       )
-      return withRequestId(new NextResponse('Invalid redirect URL', { status: 400 }))
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
     // Set/refresh cookie and show index login page (UI offers EduID or delegated)
@@ -199,7 +201,9 @@ export async function proxy(request: NextRequest) {
         { event: 'auth.redirect.rejected', audience: 'participant' },
         'Rejected auth redirect'
       )
-      return withRequestId(new NextResponse('Invalid redirect URL', { status: 400 }))
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
     // Set/refresh the redirect cookie so it's available on callback even if

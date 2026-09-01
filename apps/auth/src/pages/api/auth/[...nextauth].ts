@@ -132,15 +132,15 @@ function getParticipantConfig({ log }: { log: AppLogger }): NextAuthOptions {
 
           profile(profile) {
             // Ensure we have the required fields for NextAuth
-              if (!profile.sub) {
-                log.warn(
-                  {
-                    event: 'auth.sign_in.rejected',
-                    audience: 'participant',
-                    outcome: 'missing_subject',
-                  },
-                  'Rejected authentication attempt'
-                )
+            if (!profile.sub) {
+              log.warn(
+                {
+                  event: 'auth.sign_in.rejected',
+                  audience: 'participant',
+                  outcome: 'missing_subject',
+                },
+                'Rejected authentication attempt'
+              )
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -651,7 +651,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('x-request-id', requestId)
   res.setHeader('x-correlation-id', requestContext.correlationId)
 
-  log.info({ event: 'http.request.started', route: '/api/auth' }, 'Auth request started')
+  log.info(
+    { event: 'http.request.started', route: '/api/auth' },
+    'Auth request started'
+  )
 
   const context = getAuthContext(req, log)
   log.info(
