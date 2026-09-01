@@ -270,11 +270,15 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   adapter tests; staged Gitleaks; and the required fallback simplifier and
   slice-reviewer passes. The fallback reviewers confirmed the first correction
   and the final lifecycle fix has direct test evidence.
-- Remaining: Slice B wrapper, metric seam, LiteLLM retry guard, documentation,
-  and review; then the developer-Foundry runtime canary, the FineCo retrieval
-  gate, final verification, final review, and runtime cleanup.
+- Completed: Slice B wrapper, metric seam, LiteLLM retry guard, documentation,
+  focused wrapper checks, and fallback review. The reviewer suggested one
+  shared evaluator-launch simplification, which is applied in the next local
+  correction; repeated runbook excerpts remain intentionally available in the
+  wiki and agent skill.
+- Remaining: developer-Foundry runtime canary, FineCo retrieval gate, final
+  verification, final review, and runtime cleanup.
 - Delivery layer required: reviewed local commits and bounded local runtime
-  evidence. Achieved: plan and adapter source commits; wrapper and runtime
-  evidence remain.
-- Next: implement Slice B and run its focused wrapper, formatting, and
-  documentation checks.
+  evidence. Achieved: plan, adapter, and Slice B source commits; runtime
+  evidence remains.
+- Next: verify the Slice B correction, then run the developer-Foundry canary
+  and park or proceed at the FineCo binding gate.

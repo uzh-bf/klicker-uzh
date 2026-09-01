@@ -227,41 +227,31 @@ if [ "$LOCAL_TARGET" = true ]; then
   )
 fi
 
+EVALUATOR_PREFIX=()
 if [ "$LOCAL_TARGET" = true ]; then
-  set +e
-  env \
-    -u KLICKER_EVAL_API_ORIGIN \
-    -u KLICKER_EVAL_CHAT_ORIGIN \
-    -u KLICKER_EVAL_PARTICIPANT_USERNAME \
-    -u KLICKER_EVAL_PARTICIPANT_PASSWORD \
-    -u KLICKER_EVAL_TARGET_KEY \
-    -u KLICKER_EVAL_GT_DIR \
-    -u KLICKER_EVAL_CANARY_FILE \
-    rs-infisical-operator --profile klicker-uzh-stg run \
-    --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY -- \
-    "${EVAL_ENV[@]}" \
-    bash -c '
-      set -euo pipefail
-      if [ -z "${LITELLM_API_KEY:-}" ]; then
-        echo "Error: mapped LITELLM_API_KEY is missing or empty" >&2
-        exit 1
-      fi
-      framework_root="$1"
-      framework_runner="$2"
-      shift 2
-      exec uv run --project "$framework_root" \
-        "$framework_runner" \
-        --no-dotenv \
-        "$@"
-    ' klicker-eval "$FRAMEWORK_ROOT" "$FRAMEWORK_RUNNER" "$@"
-  status=$?
-  exit "$status"
+  EVALUATOR_PREFIX=(
+    env
+    -u KLICKER_EVAL_API_ORIGIN
+    -u KLICKER_EVAL_CHAT_ORIGIN
+    -u KLICKER_EVAL_PARTICIPANT_USERNAME
+    -u KLICKER_EVAL_PARTICIPANT_PASSWORD
+    -u KLICKER_EVAL_TARGET_KEY
+    -u KLICKER_EVAL_GT_DIR
+    -u KLICKER_EVAL_CANARY_FILE
+  )
 fi
 
-exec rs-infisical-operator --profile klicker-uzh-stg run \
-  --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY -- \
-  "${EVAL_ENV[@]}" \
-  bash -c '
+EVALUATOR_COMMAND=(
+  "${EVALUATOR_PREFIX[@]}"
+  rs-infisical-operator
+  --profile klicker-uzh-stg
+  run
+  --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY
+  --
+  "${EVAL_ENV[@]}"
+  bash
+  -c
+  '
     set -euo pipefail
     if [ -z "${LITELLM_API_KEY:-}" ]; then
       echo "Error: mapped LITELLM_API_KEY is missing or empty" >&2
@@ -274,4 +264,17 @@ exec rs-infisical-operator --profile klicker-uzh-stg run \
       "$framework_runner" \
       --no-dotenv \
       "$@"
-  ' klicker-eval "$FRAMEWORK_ROOT" "$FRAMEWORK_RUNNER" "$@"
+  '
+  klicker-eval
+  "$FRAMEWORK_ROOT"
+  "$FRAMEWORK_RUNNER"
+)
+
+if [ "$LOCAL_TARGET" = true ]; then
+  set +e
+  "${EVALUATOR_COMMAND[@]}" "$@"
+  status=$?
+  exit "$status"
+fi
+
+exec "${EVALUATOR_COMMAND[@]}" "$@"
