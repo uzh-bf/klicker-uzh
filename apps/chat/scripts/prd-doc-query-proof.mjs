@@ -977,6 +977,7 @@ export async function superviseProof({
   lockPath = DEFAULT_LOCK_PATH,
   installSignalHandlers = false,
   acquireLockForProof = acquireLock,
+  spawnForProof = spawn,
 }) {
   const startedAt = Date.now()
   let lock
@@ -1009,12 +1010,16 @@ export async function superviseProof({
 
   try {
     const environment = minimalChildEnvironment(sourceEnvironment, process.pid)
-    child = spawn(process.execPath, [resolve(childPath), ...childArgs], {
-      detached: true,
-      env: environment,
-      shell: false,
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
-    })
+    child = spawnForProof(
+      process.execPath,
+      [resolve(childPath), ...childArgs],
+      {
+        detached: true,
+        env: environment,
+        shell: false,
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      }
+    )
     child.on('message', (candidate) => {
       if (message === null) message = sanitizeReceipt(candidate)
     })
@@ -1066,7 +1071,12 @@ export async function superviseProof({
       if (message?.result !== 'passed') {
         receipt = workerProtocolFailureReceipt('child_failed')
       }
-    } else if (message === null || message.result === 'passed') {
+    } else if (
+      !Number.isInteger(close.code) ||
+      close.code <= 0 ||
+      message === null ||
+      message.result === 'passed'
+    ) {
       receipt = workerProtocolFailureReceipt('child_failed')
     }
 
