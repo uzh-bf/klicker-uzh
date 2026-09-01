@@ -2,10 +2,11 @@ import {
   ConcurrencyLimitStrategy,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import { hatchetClient, withHatchetTaskLogging } from '@klicker-uzh/hatchet'
+import { logger, loggerForInput } from './logger.js'
 import {
   aggregateAssessmentResponses,
+  type AssessmentResponseMessage,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
@@ -15,7 +16,11 @@ export const processAnonymousResponseTask = hatchetClient.task({
   retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    logger,
+    taskName: 'process-anonymous-response',
+    handler: processResponseMessage,
+  }),
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -30,42 +35,51 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    logger,
+    taskName: 'process-authenticated-response',
+    handler: processResponseMessage,
+  }),
 })
 
-export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
-  correlationId: string
-  participantId: string
-  liveQuizId: string
-  instanceId: string
-  response: LiveQuizResponseInput
-  cookie?: string
-  responseTimestamp: number
-}>({
-  name: 'process-assessment-response-workflow',
-  defaultPriority: Priority.HIGH,
-  onEvents: ['response-received:assessment'],
-})
+export const processAssessmentResponseWorkflow =
+  hatchetClient.workflow<AssessmentResponseMessage>({
+    name: 'process-assessment-response-workflow',
+    defaultPriority: Priority.HIGH,
+    onEvents: ['response-received:assessment'],
+  })
 processAssessmentResponseWorkflow.durableTask({
   name: 'process-assessment-response',
   retries: 3,
-  fn: (input, ctx) => processAssessmentResponse(input, ctx),
+  fn: withHatchetTaskLogging({
+    logger,
+    taskName: 'process-assessment-response',
+    handler: processAssessmentResponse,
+  }),
 })
 processAssessmentResponseWorkflow.onFailure({
   name: 'log-assessment-response-failure',
-  fn: async (input, ctx) => {
-    const error = JSON.stringify(ctx.errors)
-    const message = `[ERROR] [AddResponse Assessment] ${error}.`
+  fn: withHatchetTaskLogging({
+    logger,
+    taskName: 'log-assessment-response-failure',
+    handler: async (input, ctx) => {
+      const message = '[ERROR] [AddResponse Assessment] Processing failed.'
 
-    // log the error
-    ctx.logger.error(message)
+      loggerForInput(input).error(
+        { event: 'response.assessment.failed' },
+        'Assessment response processing failed'
+      )
 
-    // push the error to the audit log
-    ctx.v1.events.push('create-audit-log-entry', {
-      correlationId: input.correlationId,
-      info: message,
-    })
-  },
+      // push only an application-owned safe message to the audit log
+      ctx.v1.events.push('create-audit-log-entry', {
+        correlationId: input.correlationId,
+        info: message,
+        ...(input.loggingContext
+          ? { loggingContext: input.loggingContext }
+          : {}),
+      })
+    },
+  }),
 })
 
 export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
@@ -78,12 +92,14 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
     limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
   },
   onEvents: ['response-processed:aggregation'],
-  fn: aggregateAssessmentResponses,
+  fn: withHatchetTaskLogging({
+    logger,
+    taskName: 'aggregate-assessment-responses',
+    handler: aggregateAssessmentResponses,
+  }),
 })
 
 async function main() {
-  console.log('Starting response processor worker...')
-
   const mode =
     process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
   const workflows =
@@ -91,10 +107,15 @@ async function main() {
       ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
       : [processAuthenticatedResponseTask, processAnonymousResponseTask]
 
-  console.log(`Mode: ${mode}`)
-  console.log(`Workflows: ${workflows.length}`)
+  logger.info(
+    {
+      event: 'hatchet.worker.starting',
+      mode,
+      workflowCount: workflows.length,
+    },
+    'Starting response processor worker'
+  )
 
-  console.log('Creating worker...')
   const worker = await hatchetClient.worker(
     'hatchet-worker-response-processor',
     {
@@ -102,10 +123,16 @@ async function main() {
     }
   )
 
-  console.log('▶Starting worker to process responses...')
   await worker.start()
 
-  console.log('Response processor worker started successfully!')
+  logger.info(
+    {
+      event: 'hatchet.worker.started',
+      mode,
+      workflowCount: workflows.length,
+    },
+    'Response processor worker is ready'
+  )
 }
 
 await main()

@@ -8,6 +8,7 @@ import type {
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type {
   FreeTextRestrictions,
+  HatchetLoggingContext,
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
@@ -15,6 +16,7 @@ import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
+import { loggerForInput } from '../logger.js'
 import { getRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
@@ -31,28 +33,40 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
+export type ResponseMessage = {
+  messageId: string
+  sessionId: string
+  instanceId: string
+  response: LiveQuizResponseInput
+  cookie?: string
+  responseTimestamp: number
+  loggingContext?: HatchetLoggingContext
+}
+
 export async function processResponseMessage(
-  message: {
-    messageId: string
-    sessionId: string
-    instanceId: string
-    response: LiveQuizResponseInput
-    cookie?: string
-    responseTimestamp: number
-  },
+  message: ResponseMessage,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
-  ctx.logger.info('ProcessResponse: received message', {
-    messageId: message.messageId,
-    sessionId: message.sessionId,
-    instanceId: message.instanceId,
-  })
+  const log = loggerForInput(message)
+
+  log.info(
+    {
+      event: 'response.processing.started',
+      messageId: message.messageId,
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    },
+    'Processing response'
+  )
 
   try {
     assert(!!redisExec)
-  } catch (e) {
-    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
-    throw new Error(`Redis connection error ${String(e)}`)
+  } catch {
+    log.error(
+      { event: 'dependency.unavailable', dependency: 'redis' },
+      'Redis is unavailable'
+    )
+    throw new Error('Redis connection unavailable')
   }
 
   if (message.sessionId === 'ping') {
@@ -72,13 +86,15 @@ export async function processResponseMessage(
     const responseTimestamp = message.responseTimestamp
     const response = message.response
     if (!response) {
-      ctx.logger.error(
-        'Missing response ' +
-          JSON.stringify({
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-          })
+      log.info(
+        {
+          event: 'response.rejected',
+          reason: 'missing_response',
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        },
+        'Response rejected'
       )
       return { status: 400 }
     }
@@ -104,8 +120,6 @@ export async function processResponseMessage(
 
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
-          } else {
-            ctx.logger.info("Participant's JWT verified")
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
@@ -115,12 +129,16 @@ export async function processResponseMessage(
 
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
             participantData = null
-          } else {
-            ctx.logger.info("Temporary Participant's JWT verified")
           }
         }
-      } catch (e) {
-        ctx.logger.error(`JWT verification failed: ${String(e)}`)
+      } catch {
+        log.info(
+          {
+            event: 'response.authentication.rejected',
+            reason: 'invalid_token',
+          },
+          'Response authentication rejected'
+        )
       }
 
       // if the participant has already responded to the question instance, return instantly
@@ -133,8 +151,13 @@ export async function processResponseMessage(
             : participantData.sub
         ))
       ) {
-        ctx.logger.info(
-          'Participant has already responded to this question instance'
+        log.info(
+          {
+            event: 'response.rejected',
+            reason: 'already_processed',
+            instanceId: message.instanceId,
+          },
+          'Response already processed'
         )
         return { status: 200 }
       }
@@ -143,17 +166,25 @@ export async function processResponseMessage(
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Element instance metadata not found', {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
+      log.info(
+        {
+          event: 'response.block_closed',
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        },
+        'Response block is no longer available'
+      )
       return { status: 400 }
     }
-    ctx.logger.info('Instance info loaded', {
-      sessionId: message.sessionId,
-      instanceId: message.instanceId,
-    })
+    log.debug(
+      {
+        event: 'response.instance.loaded',
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+      'Response instance loaded'
+    )
 
     const {
       type,
@@ -168,8 +199,12 @@ export async function processResponseMessage(
     } = instanceInfo
 
     if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-      ctx.logger.error(
-        `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+      log.info(
+        {
+          event: 'response.block_closed',
+          instanceId: message.instanceId,
+        },
+        'Response received after block closure'
       )
       ctx.cancel()
       return { status: 200 }
@@ -203,21 +238,22 @@ export async function processResponseMessage(
       )
     }
 
-    const { valid, message: validationError } = validateStudentResponse({
+    const { valid } = validateStudentResponse({
       type: type as any,
       response,
       restrictions: parsedRestrictions,
     })
 
     if (!valid) {
-      ctx.logger.error(
-        'Response validation failed: ' +
-          validationError +
-          JSON.stringify({
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-          })
+      log.info(
+        {
+          event: 'response.rejected',
+          reason: 'validation_failed',
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        },
+        'Response validation failed'
       )
       return { status: 400 }
     }
@@ -231,13 +267,15 @@ export async function processResponseMessage(
       case 'KPRIM': {
         // if response choices are not defined, return early
         if (!response.choices) {
-          ctx.logger.error(
-            'Missing response choices ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
+          log.info(
+            {
+              event: 'response.rejected',
+              reason: 'missing_choices',
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+            'Response rejected'
           )
           return { status: 400 }
         }
@@ -310,13 +348,15 @@ export async function processResponseMessage(
       case 'NUMERICAL': {
         // if response value is not defined, return early
         if (typeof response.value === 'undefined' || response.value === null) {
-          ctx.logger.error(
-            'Missing response value ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
+          log.info(
+            {
+              event: 'response.rejected',
+              reason: 'missing_value',
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+            'Response rejected'
           )
           return { status: 400 }
         }
@@ -387,13 +427,15 @@ export async function processResponseMessage(
       case 'FREE_TEXT': {
         // if response value is not defined, return early
         if (typeof response.value !== 'string') {
-          ctx.logger.error(
-            'Missing response value ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
+          log.info(
+            {
+              event: 'response.rejected',
+              reason: 'missing_value',
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+            'Response rejected'
           )
           return { status: 400 }
         }
@@ -464,13 +506,15 @@ export async function processResponseMessage(
       case 'SELECTION': {
         // if response selection is not defined, return early
         if (!response.selection) {
-          ctx.logger.error(
-            'Missing response selection ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
+          log.info(
+            {
+              event: 'response.rejected',
+              reason: 'missing_selection',
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+            'Response rejected'
           )
           return { status: 400 }
         }
@@ -547,13 +591,15 @@ export async function processResponseMessage(
       case 'CASE_STUDY': {
         // if response assessment is not defined, return early
         if (!response.assessment) {
-          ctx.logger.error(
-            'Missing response assessment ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
+          log.info(
+            {
+              event: 'response.rejected',
+              reason: 'missing_assessment',
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+            'Response rejected'
           )
           return { status: 400 }
         }
@@ -652,37 +698,45 @@ export async function processResponseMessage(
         break
       }
     }
-  } catch (e) {
-    ctx.logger.error(
-      `Error processing response: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
+  } catch {
+    log.error(
+      {
+        event: 'response.processing.failed',
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+      'Response processing failed'
     )
     redisMulti?.discard()
-    return { status: 500 }
+    throw new Error('Response processing failed')
   }
 
   try {
     await redisMulti.exec()
-    ctx.logger.info("Successfully processed participant's response", {
-      messageId: message.messageId,
-      sessionId: message.sessionId,
-      instanceId: message.instanceId,
-    })
+    log.info(
+      {
+        event: 'response.processed',
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+      'Response processed'
+    )
     return { status: 200 }
-  } catch (e) {
-    ctx.logger.error(
-      `Redis transaction failed: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
+  } catch {
+    log.error(
+      {
+        event: 'dependency.unavailable',
+        dependency: 'redis',
+        operation: 'response_pipeline',
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+      'Redis response pipeline failed'
     )
     redisMulti?.discard()
-    throw new Error(`Redis transaction failed ${String(e)}`)
+    throw new Error('Redis response pipeline failed')
   }
 }

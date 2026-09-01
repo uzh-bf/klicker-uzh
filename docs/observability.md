@@ -77,6 +77,17 @@ assessment response pipeline already has an MD5-derived business field named
 `correlationId` for Redis deduplication. That existing field is not diagnostic
 context and must never be bound to application log correlation.
 
+Every wrapped Hatchet task emits `hatchet.task.started` and either
+`hatchet.task.completed` or `hatchet.task.failed`. These records bind the task
+name plus Hatchet workflow/task run IDs. Old queued inputs remain valid and do
+not receive invented request or correlation identifiers.
+
+Response-worker outcome events include `response.rejected`,
+`response.authentication.rejected`, `response.block_closed`,
+`response.processed`, `response.aggregation.completed`, and
+`dependency.unavailable`. The assessment payload's business `correlationId`
+and participant identifiers are deliberately excluded from diagnostic fields.
+
 ## Privacy boundary
 
 Logging is allowlist-first. Do not log:
