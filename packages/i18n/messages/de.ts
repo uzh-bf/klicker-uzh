@@ -16,7 +16,7 @@ export default {
         'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
       quizzer: 'Quiz',
       quizzerDescription:
-        'Übe mit jeweils einer KI-generierten Frage auf Basis der Kursunterlagen.',
+        'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -200,7 +200,7 @@ export default {
         'Starte ein Übungsquiz auf Basis der Kursunterlagen. Wähle ein passendes Thema und stelle mir jeweils eine Frage.',
       practiceWeakSpot: 'Unsicheres Thema üben',
       practiceWeakSpotPrompt:
-        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und stelle mir danach jeweils eine KI-generierte Frage auf Basis der Kursunterlagen.',
+        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und stelle mir danach jeweils eine prüfungsnahe Frage auf Basis der Kursunterlagen.',
     },
     message: {
       creditsUsed:

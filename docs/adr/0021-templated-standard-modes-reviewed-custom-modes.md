@@ -68,6 +68,6 @@ replacing:
 - Existing chatbots receive changed platform contracts automatically without a
   data migration. Stored standard-mode text remains lower-priority guidance;
   only an explicit opt-out removes that mode. Stage 1
-  Quizzer asks AI-generated questions grounded in course material; it does not
-  imply access to lecturer-authored questions, personal practice cards, or an
-  exam-equivalent question bank.
+  Quizzer presents course-grounded, exam-style practice questions without
+  implying access to lecturer-authored questions, personal practice cards, or
+  an official exam question bank.

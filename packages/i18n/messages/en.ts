@@ -16,7 +16,7 @@ export default {
         'Get direct explanations with definitions and course-based examples.',
       quizzer: 'Quizzer',
       quizzerDescription:
-        'Practise one AI-generated question at a time, based on course material.',
+        'Practise with exam-style course questions, one at a time, with formative feedback.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -199,7 +199,7 @@ export default {
         'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
       practiceWeakSpot: 'Practise a weak spot',
       practiceWeakSpotPrompt:
-        'Help me practise a topic I find difficult. First ask which topic, then give me one AI-generated question at a time based on the course materials.',
+        'Help me practise a topic I find difficult. First ask which topic, then give me one exam-style question at a time based on the course materials.',
     },
     message: {
       creditsUsed:

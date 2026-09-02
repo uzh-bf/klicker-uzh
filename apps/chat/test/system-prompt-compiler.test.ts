@@ -194,31 +194,53 @@ describe('compileSystemPrompt', () => {
     expect(prompt).toContain('at most one optional comprehension')
   })
 
-  test('defines Quizzer topic selection, recommendation, and continuation', () => {
+  test('defines Quizzer topic selection, feedback, and bounded checkpoints', () => {
     const prompt = DEFAULT_PROMPT.quizzer.prompt
 
-    expect(prompt).toContain('Establish the practice topic')
-    expect(prompt).toContain('one specific recommended course topic')
-    expect(prompt).toContain('ask for simple confirmation')
-    expect(prompt).toContain('Do not respond with only a menu')
-    expect(prompt).toContain('If the student agrees')
-    expect(prompt).toContain('Treat retrieved topic suggestions as examples')
-    expect(prompt).toContain(
-      'never imply that topics missing from the retrieved results are absent'
-    )
-    expect(prompt).toContain(
-      'Continue automatically after each assessed attempt'
-    )
-    expect(prompt).toContain(
-      'ask whether the student wants another AI-generated practice question'
-    )
-    expect(prompt).toContain(
-      'change topics or explore the current topic in more depth'
-    )
-    expect(prompt).toContain('suggest a better-supported course topic')
-    expect(prompt).not.toContain(
-      'After the explanation, ask whether to continue'
-    )
+    const requiredFragments = [
+      'Establish the practice topic',
+      'one specific recommended course topic',
+      'ask for simple confirmation',
+      'Do not respond with only a menu',
+      'If the student agrees',
+      'Treat retrieved topic suggestions as examples',
+      'never imply that topics missing from the retrieved results are absent',
+      'Continue automatically after each assessed attempt',
+      'Make the session feel like a mock exam',
+      'without a provenance label',
+      'After every completed practice attempt',
+      'When the visible attempt supports it',
+      'instead of inventing a strength',
+      'one actionable next step',
+      'student explicitly asks how they are doing',
+      'too little evidence for a reliable pattern',
+      'ask whether the student wants another practice question',
+      'at least three completed question-answer-assessment cycles',
+      'at least two distinct course-grounded criteria',
+      'with no hint or retry pending',
+      'practice checkpoint',
+      'Based on the questions practised in this chat',
+      'snapshot of this short practice round',
+      'up to two evidence-supported strengths',
+      'if none is supported yet, say that neutrally',
+      'Do not use grades, percentages, proficiency labels, mastery, completion',
+      'Reset checkpoint evidence',
+      'Never infer that a topic is complete from retrieval exhaustion',
+      'change topics or explore the current topic in more depth',
+      'suggest a better-supported course topic',
+    ]
+    const forbiddenFragments = [
+      'AI-generated',
+      'topic is sufficiently covered',
+      'After the explanation, ask whether to continue',
+    ]
+
+    for (const fragment of requiredFragments) {
+      expect(prompt).toContain(fragment)
+    }
+    for (const fragment of forbiddenFragments) {
+      expect(prompt).not.toContain(fragment)
+    }
   })
 
   test('keeps fixed platform contracts out of the mode contract text', () => {

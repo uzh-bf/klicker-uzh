@@ -3,5 +3,5 @@ export const DEFAULT_MODE_DESCRIPTIONS = {
   explainer:
     'Explains course concepts directly with definitions and grounded examples.',
   quizzer:
-    'Practises one AI-generated question at a time, based on course material.',
+    'Practises exam-style course questions one at a time, with formative feedback.',
 } as const

@@ -148,7 +148,7 @@ describe('effective chatbot modes', () => {
       resolveEffectiveChatModeOptions(null, configurations)
     ).toHaveProperty(
       'quizzer',
-      'Practises one AI-generated question at a time, based on course material.'
+      'Practises exam-style course questions one at a time, with formative feedback.'
     )
   })
 
