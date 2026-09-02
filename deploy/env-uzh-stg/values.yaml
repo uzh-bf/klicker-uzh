@@ -131,6 +131,8 @@ assessmentAudit:
       tag: v3
   monitoring:
     enabled: false
+    deliveredUnsealedCapacityBytes: 0
+    deliveredUnsealedGrowthBytesPerWeek: 0
 
 auth:
   priorityClassName: staging-workload

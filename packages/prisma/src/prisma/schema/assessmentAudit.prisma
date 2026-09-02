@@ -142,5 +142,9 @@ model AssessmentAuditOutboxEvent {
   @@index([deliveryState, leaseExpiresAt])
   @@index([liveQuizId, lifecycleEpoch, recordedAt, eventId])
   @@index([liveQuizId, correlationId, eventType], map: "AuditOutbox_quiz_correlation_event_idx")
+  @@index([liveQuizId, lifecycleEpoch, correlationId, eventType], map: "AuditOutbox_submission_terminal_lookup_idx")
   @@index([deliveryState, deliveredAt])
+  // The submission-gap monitor also uses a migration-owned partial index on
+  // SUBMISSION_SERVER_ACCEPTED rows; Prisma schema syntax cannot express its
+  // WHERE predicate (see the follow-up migration).
 }

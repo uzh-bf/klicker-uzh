@@ -401,7 +401,7 @@ describe('assessment lecturer and system producer snapshots', () => {
 
     expect(result).toBeNull()
     expect(rows).toHaveLength(1)
-    const envelope = JSON.parse(rows[0].canonicalEnvelope)
+    const envelope = JSON.parse(rows[0]!.canonicalEnvelope)
     expect(envelope).toMatchObject({
       eventType: 'ASSESSMENT_ACTION_REJECTED',
       actor: { kind: 'USER', userId },

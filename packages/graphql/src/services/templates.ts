@@ -462,6 +462,21 @@ export async function createActivityTemplate(
     return false
   }
 
+  // Assessment quizzes are evidence-bearing objects. Converting one into a
+  // template would change its lifecycle without a corresponding audit event;
+  // keep the operation explicit and fail closed until a dedicated template
+  // transition producer exists.
+  if (
+    !copyBeforeConversion &&
+    activityType === ActivityType.LIVE_QUIZ &&
+    activity !== null &&
+    activity !== undefined &&
+    'isAssessmentEnabled' in activity &&
+    activity.isAssessmentEnabled
+  ) {
+    return false
+  }
+
   if (copyBeforeConversion) {
     if (activityType === ActivityType.LIVE_QUIZ) {
       if (!activity) {
@@ -1932,7 +1947,12 @@ export async function createLiveQuizFromTemplate(
         liveQuizId: newLiveQuiz.id,
       })
       if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
-        console.warn('Assessment template copy recorded an audit coverage gap')
+        // The template copy has already committed. Rollout failure is durably
+        // recorded by the activation service; returning the created quiz keeps
+        // a transient audit gap from causing a duplicate copy on retry.
+        console.warn('Assessment template copied without audit coverage', {
+          liveQuizId: newLiveQuiz.id,
+        })
       } else {
         const auditOperation = assessmentAuditUserOperation({
           userId: ctx.user.sub,
@@ -1963,8 +1983,11 @@ export async function createLiveQuizFromTemplate(
           })
         })
       }
-    } catch {
-      console.warn('Assessment template copy audit activation remains pending')
+    } catch (error) {
+      console.error('Assessment template copy audit activation failed', {
+        liveQuizId: newLiveQuiz.id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
     }
   }
 

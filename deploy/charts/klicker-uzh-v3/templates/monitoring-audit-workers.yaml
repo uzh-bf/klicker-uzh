@@ -1,4 +1,7 @@
 {{- if and .Values.assessmentAudit.enabled .Values.assessmentAudit.monitoring.enabled }}
+{{- if or (le (int64 .Values.assessmentAudit.monitoring.deliveredUnsealedCapacityBytes) 0) (le (int64 .Values.assessmentAudit.monitoring.deliveredUnsealedGrowthBytesPerWeek) 0) }}
+{{- fail "assessmentAudit.monitoring capacity and growth forecast must be positive when monitoring is enabled" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -121,6 +124,22 @@ spec:
             assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
           annotations:
             summary: Covered assessment submission has no terminal audit outcome
+        - alert: AssessmentAuditDeliveredUnsealedCapacityLow
+          expr: max(assessment_audit_delivered_unsealed_capacity_weeks_remaining{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) < 8
+          for: 5m
+          labels:
+            severity: warning
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit delivered-unsealed capacity forecast is below eight weeks
+        - alert: AssessmentAuditDeliveredUnsealedCapacityCritical
+          expr: max(assessment_audit_delivered_unsealed_capacity_weeks_remaining{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) < 4
+          for: 1m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit delivered-unsealed capacity forecast is below four weeks
         - alert: AssessmentAuditMediaPolicyHeartbeatMissing
           expr: absent(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) == 0 and time() - max(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 0 and time() - max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600)
           for: 5m

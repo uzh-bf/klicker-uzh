@@ -374,16 +374,25 @@ export type AssessmentLecturerPermissionState = Map<
 export async function loadAssessmentLecturerPermissionState(input: {
   tx: Pick<Prisma.TransactionClient, 'liveQuiz'>
   liveQuizId?: string
+  liveQuizIds?: readonly string[]
   courseId?: string
+  courseIds?: readonly string[]
   subjectUserIds: readonly string[]
 }): Promise<AssessmentLecturerPermissionState> {
   const subjectUserIds = [...new Set(input.subjectUserIds)].sort()
   if (subjectUserIds.length === 0) return new Map()
+  const liveQuizIds = [...new Set(input.liveQuizIds ?? [])]
+  const courseIds = [...new Set(input.courseIds ?? [])]
+  const targetFilter = [
+    ...(input.liveQuizId === undefined ? [] : [{ id: input.liveQuizId }]),
+    ...(liveQuizIds.length === 0 ? [] : [{ id: { in: liveQuizIds } }]),
+    ...(input.courseId === undefined ? [] : [{ courseId: input.courseId }]),
+    ...(courseIds.length === 0 ? [] : [{ courseId: { in: courseIds } }]),
+  ]
   const liveQuizzes = await input.tx.liveQuiz.findMany({
     where: {
       isAssessmentEnabled: true,
-      ...(input.liveQuizId === undefined ? {} : { id: input.liveQuizId }),
-      ...(input.courseId === undefined ? {} : { courseId: input.courseId }),
+      ...(targetFilter.length === 0 ? {} : { OR: targetFilter }),
     },
     orderBy: { id: 'asc' },
     select: {
@@ -410,6 +419,27 @@ export async function loadAssessmentLecturerPermissionState(input: {
       },
     ])
   )
+}
+
+export function permissionTargetIds(
+  permissions: readonly Pick<DB.Permission, 'liveQuizId' | 'courseId'>[]
+) {
+  return {
+    liveQuizIds: [
+      ...new Set(
+        permissions.flatMap((permission) =>
+          permission.liveQuizId === null ? [] : [permission.liveQuizId]
+        )
+      ),
+    ],
+    courseIds: [
+      ...new Set(
+        permissions.flatMap((permission) =>
+          permission.courseId === null ? [] : [permission.courseId]
+        )
+      ),
+    ],
+  }
 }
 
 export async function emitAssessmentLecturerPermissionChanges(input: {
@@ -612,7 +642,7 @@ export function assessmentResponseSnapshot(input: {
     submittedAt: input.response.submittedAt.toISOString(),
     answer,
     answerHash: hashCanonicalValue(answer),
-    correctness: input.response.correctness,
+    correctness: input.response.correctness as 'CORRECT' | 'PARTIAL' | 'WRONG',
     basePoints: input.response.basePoints,
     correctnessPoints: input.response.correctnessPoints,
     bonusPoints: input.response.bonusPoints,
@@ -986,6 +1016,31 @@ export function assessmentLifecycleDraft<
       ...(input.sourceLiveQuizId === undefined
         ? {}
         : { sourceLiveQuizId: input.sourceLiveQuizId }),
+    },
+  } as AuditEventDraft<T>
+}
+
+export function assessmentSessionDraft<
+  T extends
+    | 'ASSESSMENT_SESSION_STARTED'
+    | 'ASSESSMENT_SESSION_RESUMED'
+    | 'ASSESSMENT_SESSION_ENDED',
+>(input: {
+  eventType: T
+  producerOperationId: string
+  sessionId: string
+  transition: 'STARTED' | 'RESUMED' | 'ENDED'
+  reasonCode?: string
+}): AuditEventDraft<T> {
+  return {
+    eventType: input.eventType,
+    producerOperationId: input.producerOperationId,
+    payload: {
+      sessionId: input.sessionId,
+      transition: input.transition,
+      ...(input.reasonCode === undefined
+        ? {}
+        : { reasonCode: input.reasonCode }),
     },
   } as AuditEventDraft<T>
 }

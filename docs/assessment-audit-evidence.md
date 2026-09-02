@@ -387,8 +387,21 @@ non-terminal-submission gauges, all labeled by environment and worker role.
 Separate `ServiceMonitor` targets and role-filtered alerts detect unavailable
 workers, stale heartbeats, monitor critical status, and a media policy horizon
 below 30 days. Owner-only alert routing remains an infrastructure exit gate.
-Projected `DELIVERED_UNSEALED` capacity remains an explicit staging/operations
-gate until a measured production volume and capacity budget are configured.
+The monitor also forecasts the remaining weeks before the configured
+`DELIVERED_UNSEALED` byte budget is exhausted from the observed weekly growth
+rate; it raises a warning below eight weeks and a critical alert below four
+weeks. Production capacity and growth values are supplied through
+`ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES` and
+`ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK` and must be
+positive when monitoring is enabled.
+
+The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
+lifecycle epoch, and correlation ID. A migration-owned partial index covers
+`SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates
+terminal-event lookups; Prisma does not currently express the partial-index
+predicate in the schema. Before launch, staging must capture
+`EXPLAIN (ANALYZE, BUFFERS)` for this query at representative volume and keep
+the result with the rollout evidence.
 
 The staged rollout command is:
 
@@ -424,17 +437,22 @@ lease recovery, database checks, and the absence of audit-table foreign keys.
 GraphQL's database-backed tests additionally cover activation commit/rollback,
 exact retry versus changed snapshots, rollout resumption and gap accounting,
 automatic all-mode activation, and atomic reopening.
-Layer 4 adds a registry-to-production-source coverage test plus focused tests
-for exact configuration/block/instance snapshots, deterministic response/reset
-hashes, effective-permission filtering, media capture/replacement, and
-post-activation media retention indexes.
+Layer 4 adds registry metadata and producer-boundary coverage tests plus focused
+tests for exact configuration/block/instance snapshots, deterministic
+response/reset hashes, effective-permission filtering, media
+capture/replacement, and post-activation media retention indexes. The coverage
+test verifies that every launch event has an owner, emission path, durability
+point, and explicit delivery tier; it does not claim to statically prove every
+runtime call site.
 Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer
 commands, late and missing-participation rejection, persistence/evidence
 rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
+The Playwright core workflow also proves that a PWA retry reuses the same
+submission UUID; the Response API tests prove the receipt contract itself.
 These local proofs do not replace the staging Azure conformance, owner export,
-full assessment-browser flow, or burst/RSS gates required before this draft
-layer can leave draft status.
+full covered-assessment browser flow, or burst/RSS gates required before this
+draft layer can leave draft status.
 
 ```bash
 pnpm --filter @klicker-uzh/audit check

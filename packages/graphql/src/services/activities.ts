@@ -1,11 +1,23 @@
-import { ContextWithUser } from '@/lib/context.js'
+import {
+  type AuditTransactionClient,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
+import type { ContextWithUser } from '@/lib/context.js'
+import { loadAssessmentAuditSnapshot } from './assessmentAuditActivation.js'
+import {
+  assessmentAuditUserOperation,
+  buildAssessmentMutationAuditDrafts,
+  emitCoveredAssessmentAuditEvents,
+  recordAssessmentActionRejectedForUser,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -755,14 +767,26 @@ export async function applyActivityBatchOperations(
       : []
 
   // apply activity updates
-  let updatedLiveQuizzes: string[] = []
-  let updatedPracticeQuizzes: string[] = []
-  let updatedMicroLearnings: string[] = []
-  let updatedGroupActivities: string[] = []
+  const updatedLiveQuizzes: string[] = []
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
+  const updatedPracticeQuizzes: string[] = []
+  const updatedMicroLearnings: string[] = []
+  const updatedGroupActivities: string[] = []
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
-    const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
+    const shouldAudit =
+      liveQuiz.isAssessmentEnabled || newCourse?.isAssessmentEnabled === true
+    const updateLiveQuiz = async (
+      tx: DB.Prisma.TransactionClient,
+      auditTx?: AuditTransactionClient
+    ) => {
+      const before = shouldAudit
+        ? await loadAssessmentAuditSnapshot(tx, liveQuiz.id)
+        : null
       // check if the course is different from before
       const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
 
@@ -870,10 +894,72 @@ export async function applyActivityBatchOperations(
         )
       }
 
+      if (before !== null && auditTx !== undefined) {
+        const after = await loadAssessmentAuditSnapshot(tx, liveQuiz.id)
+        if (after !== null) {
+          const mutationDrafts = buildAssessmentMutationAuditDrafts({
+            before,
+            after,
+            producerOperationId: `${auditOperation.correlationId}:batch:${liveQuiz.id}`,
+          })
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId: liveQuiz.id,
+            courseId: after.courseId,
+            operation: auditOperation,
+            drafts: [
+              {
+                eventType: 'ASSESSMENT_BULK_OPERATION_STARTED',
+                producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuiz.id}:started`,
+                payload: {
+                  operationId: auditOperation.correlationId,
+                  operationType: 'ACTIVITY_BATCH_MUTATION',
+                  status: 'STARTED',
+                },
+              },
+              ...mutationDrafts,
+              {
+                eventType: 'ASSESSMENT_BULK_ITEM_COMPLETED',
+                producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuiz.id}:completed`,
+                payload: {
+                  operationId: auditOperation.correlationId,
+                  operationType: 'ACTIVITY_BATCH_MUTATION',
+                  itemId: liveQuiz.id,
+                  status: 'SUCCEEDED',
+                },
+              },
+              {
+                eventType: 'ASSESSMENT_BULK_OPERATION_COMPLETED',
+                producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuiz.id}:finished`,
+                payload: {
+                  operationId: auditOperation.correlationId,
+                  operationType: 'ACTIVITY_BATCH_MUTATION',
+                  status: 'COMPLETED',
+                  succeededCount: 1,
+                  failedCount: 0,
+                },
+              },
+            ],
+          })
+        }
+      }
+
       return modifiedLiveQuiz
-    })
+    }
+    const updatedLiveQuiz = shouldAudit
+      ? await runInAuditTransaction(ctx.prisma, (tx, auditTx) =>
+          updateLiveQuiz(tx, auditTx)
+        )
+      : await ctx.prisma.$transaction((tx) => updateLiveQuiz(tx))
 
     updatedLiveQuizzes.push(updatedLiveQuiz.id)
+    if (!liveQuiz.isAssessmentEnabled && updatedLiveQuiz.isAssessmentEnabled) {
+      await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: updatedLiveQuiz.id,
+      })
+    }
   }
 
   if (!setLiveQuizPoints) {
@@ -1703,22 +1789,23 @@ export async function setActivityReviewStatus(
 
   try {
     if (activityType === ActivityType.LIVE_QUIZ) {
-      const liveQuiz = await ctx.prisma.liveQuiz.update({
-        where: {
-          id: activityId,
-          OR: [
-            {
-              courseId: null,
-              permissions: {
-                some: {
-                  userId: ctx.user.sub,
-                  permissionLevel: { in: acceptedPermissionLevels },
-                },
-              },
-            },
-            {
-              courseId: { not: null },
-              course: {
+      const auditMode = await ctx.prisma.liveQuiz.findUnique({
+        where: { id: activityId },
+        select: { isAssessmentEnabled: true },
+      })
+      const updateLiveQuiz = async (
+        tx: DB.Prisma.TransactionClient,
+        auditTx?: AuditTransactionClient
+      ) => {
+        const before = auditTx
+          ? await loadAssessmentAuditSnapshot(tx, activityId)
+          : null
+        const liveQuiz = await tx.liveQuiz.update({
+          where: {
+            id: activityId,
+            OR: [
+              {
+                courseId: null,
                 permissions: {
                   some: {
                     userId: ctx.user.sub,
@@ -1726,13 +1813,50 @@ export async function setActivityReviewStatus(
                   },
                 },
               },
-            },
-          ],
-        },
-        data: { reviewStatus },
-      })
+              {
+                courseId: { not: null },
+                course: {
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: { in: acceptedPermissionLevels },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          data: { reviewStatus },
+        })
+        if (before !== null && auditTx !== undefined) {
+          const after = await loadAssessmentAuditSnapshot(tx, activityId)
+          if (after !== null) {
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: activityId,
+              courseId: after.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'ADMIN',
+              }),
+              drafts: buildAssessmentMutationAuditDrafts({
+                before,
+                after,
+                producerOperationId: `assessment:${activityId}:review-status:${reviewStatus}`,
+              }),
+            })
+          }
+        }
+        return liveQuiz
+      }
+      const liveQuiz = auditMode?.isAssessmentEnabled
+        ? await runInAuditTransaction(ctx.prisma, (tx, auditTx) =>
+            updateLiveQuiz(tx, auditTx)
+          )
+        : await ctx.prisma.$transaction((tx) => updateLiveQuiz(tx))
 
-      return !!liveQuiz ? reviewStatus : null
+      return liveQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
       const practiceQuiz = await ctx.prisma.practiceQuiz.update({
         where: {
@@ -1749,7 +1873,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!practiceQuiz ? reviewStatus : null
+      return practiceQuiz ? reviewStatus : null
     } else if (activityType === ActivityType.MICRO_LEARNING) {
       const microLearning = await ctx.prisma.microLearning.update({
         where: {
@@ -1766,7 +1890,7 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!microLearning ? reviewStatus : null
+      return microLearning ? reviewStatus : null
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
       const groupActivity = await ctx.prisma.groupActivity.update({
         where: {
@@ -1783,10 +1907,31 @@ export async function setActivityReviewStatus(
         data: { reviewStatus },
       })
 
-      return !!groupActivity ? reviewStatus : null
+      return groupActivity ? reviewStatus : null
     }
   } catch (error) {
-    console.error('Error setting activity review status:', error)
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      try {
+        await recordAssessmentActionRejectedForUser({
+          client: ctx.prisma,
+          liveQuizId: activityId,
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+          actionType: 'ASSESSMENT_REVIEW_STATUS_CHANGE',
+          reasonCode: 'INSUFFICIENT_PERMISSION_OR_INVALID_STATE',
+        })
+      } catch (auditError) {
+        console.error('Failed to record rejected assessment review change', {
+          liveQuizId: activityId,
+          errorType: auditError instanceof Error ? auditError.name : 'unknown',
+        })
+      }
+    }
+    console.error('Error setting activity review status', {
+      activityId,
+      activityType,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
     return null
   }
 

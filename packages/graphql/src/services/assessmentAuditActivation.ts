@@ -627,7 +627,7 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
 }
 
 export async function persistPreparedAssessmentAuditActivation(input: {
-  client: Pick<DB.PrismaClient, '$transaction'>
+  client: Pick<DB.PrismaClient, '$transaction' | 'assessmentAuditScope'>
   prepared: PreparedAssessmentAuditActivation
   actor: Extract<AuditActor, { kind: 'USER' | 'SYSTEM' }>
   correlationId: string

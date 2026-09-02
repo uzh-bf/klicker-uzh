@@ -39,7 +39,6 @@ import {
   persistActivityWithPermissions,
 } from './activities.js'
 import {
-  anchorCoveredAssessmentAuditScope,
   assessmentIsSelectedForAuditActivation,
   createAssessmentAuditMediaDependencies,
   loadAssessmentAuditSnapshot,
@@ -49,13 +48,17 @@ import {
   readAssessmentAuditRolloutConfig,
 } from './assessmentAuditActivation.js'
 import {
+  anchorCoveredAssessmentAuditScope,
   assessmentAuditSystemOperation,
   assessmentAuditUserOperation,
   assessmentLifecycleDraft,
   assessmentParticipantResetDrafts,
   assessmentResponseSnapshot,
+  assessmentSessionDraft,
   buildAssessmentMutationAuditDrafts,
+  emitAssessmentLecturerPermissionChanges,
   emitCoveredAssessmentAuditEvents,
+  loadAssessmentLecturerPermissionState,
   recordAssessmentActionRejectedForUser,
 } from './assessmentAuditProducers.js'
 import {
@@ -90,6 +93,8 @@ async function recordRejectedAssessmentAction(
     actionType: string
     reasonCode: string
     requiredPermission: string
+    targetType?: string
+    targetId?: string
   }
 ) {
   try {
@@ -101,11 +106,11 @@ async function recordRejectedAssessmentAction(
   } catch (error) {
     // An audit failure must not turn an already-rejected teaching action into
     // a server error. The ordinary monitor observes storage failures.
-    console.error(
-      'Failed to record rejected assessment action %s',
-      input.actionType,
-      error
-    )
+    console.error('Failed to record rejected assessment action', {
+      actionType: input.actionType,
+      liveQuizId: input.liveQuizId,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
   }
 }
 
@@ -702,8 +707,14 @@ export async function removeLiveQuiz(
   }
 
   // remove direct permission and recompute derived permissions for this live quiz and user
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
       await prisma.liveQuiz.update({
         where: { id },
         data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
@@ -724,6 +735,22 @@ export async function removeLiveQuiz(
         { liveQuizId: id, userId: ctx.user.sub },
         prisma
       )
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'live-quiz-permission-removed',
+      })
     },
     { timeout: 60000 }
   )
@@ -987,8 +1014,11 @@ export async function startLiveQuiz(
           })
 
           await pipeline.exec()
-        } catch (e) {
-          console.error(e)
+        } catch (error) {
+          console.error('Failed to update live quiz Redis metadata', {
+            liveQuizId: quiz.id,
+            errorType: error instanceof Error ? error.name : 'unknown',
+          })
         }
 
         // remove the scheduled hatchet publication task, if it exists
@@ -996,10 +1026,10 @@ export async function startLiveQuiz(
           try {
             await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
           } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
+            console.error('Failed to delete scheduled live quiz task', {
+              liveQuizId: id,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            })
           }
         }
 
@@ -1038,6 +1068,13 @@ export async function startLiveQuiz(
                       toState: 'RUNNING',
                       reasonCode: 'LECTURER_STARTED_ASSESSMENT',
                     }),
+                    assessmentSessionDraft({
+                      eventType: 'ASSESSMENT_SESSION_STARTED',
+                      producerOperationId: `assessment:${id}:session-start:${startedAt.toISOString()}`,
+                      sessionId: id,
+                      transition: 'STARTED',
+                      reasonCode: 'LECTURER_STARTED_ASSESSMENT',
+                    }),
                   ],
                 })
                 return started
@@ -1064,7 +1101,7 @@ export async function startLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
-      text: `ERROR - failed to start live quiz: ${error}`,
+      text: `ERROR - failed to start live quiz ${id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -1138,7 +1175,10 @@ export async function scheduleLiveQuiz(
       ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
       return updatedQuiz
     } catch (error) {
-      console.error('Error scheduling live quiz publication:', error)
+      console.error('Error scheduling live quiz publication', {
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
       return null
     }
   } else {
@@ -1156,6 +1196,18 @@ export async function unpublishLiveQuiz(
   })
 
   if (!liveQuiz) {
+    const assessmentState = await ctx.prisma.liveQuiz.findUnique({
+      where: { id },
+      select: { isAssessmentEnabled: true, status: true },
+    })
+    if (assessmentState?.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_UNPUBLISH',
+        reasonCode: 'ASSESSMENT_NOT_SCHEDULED',
+        requiredPermission: 'EXECUTE',
+      })
+    }
     return null
   }
 
@@ -1164,10 +1216,10 @@ export async function unpublishLiveQuiz(
     try {
       await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for live quiz ${id}:`,
-        error
-      )
+      console.error('Failed to delete scheduled task for live quiz', {
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
     }
   }
 
@@ -1330,12 +1382,36 @@ export async function activateLiveQuizBlock(
     include: { blocks: { orderBy: { id: 'asc' } } },
   })
 
-  if (!quiz) return null
+  if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: quizId,
+      actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+      targetType: 'BLOCK',
+      targetId: String(blockId),
+    })
+    return null
+  }
 
   const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
   // if the block is not from the current quiz or it is already active, return early
-  if (!newBlock || quiz.activeBlockId === blockId) return quiz
+  if (!newBlock || quiz.activeBlockId === blockId) {
+    if (quiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: quizId,
+        actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+        reasonCode: !newBlock
+          ? 'ASSESSMENT_BLOCK_NOT_FOUND'
+          : 'ASSESSMENT_BLOCK_ALREADY_ACTIVE',
+        requiredPermission: 'EXECUTE',
+        targetType: 'BLOCK',
+        targetId: String(blockId),
+      })
+    }
+    return quiz
+  }
 
   // set the new block to active
   const activatedAt = new Date()
@@ -1373,6 +1449,34 @@ export async function activateLiveQuizBlock(
           const updated = await updateBlock(tx)
           const after = await loadAssessmentAuditSnapshot(tx, quizId)
           if (before !== null && after !== null) {
+            const resumedAfterCompletedBlock =
+              quiz.activeBlockId === null &&
+              quiz.blocks.some(
+                (block) => block.status === DB.ElementBlockStatus.EXECUTED
+              )
+            const mutationDrafts = buildAssessmentMutationAuditDrafts({
+              before,
+              after,
+              producerOperationId: `assessment:${quizId}:block:${blockId}:activate:${activatedAt.toISOString()}`,
+            })
+            if (resumedAfterCompletedBlock) {
+              mutationDrafts.push(
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_RESUMED',
+                  producerOperationId: `assessment:${quizId}:resume:${activatedAt.toISOString()}`,
+                  fromState: 'PAUSED',
+                  toState: 'RUNNING',
+                  reasonCode: 'LECTURER_RESUMED_ASSESSMENT',
+                }),
+                assessmentSessionDraft({
+                  eventType: 'ASSESSMENT_SESSION_RESUMED',
+                  producerOperationId: `assessment:${quizId}:session-resume:${activatedAt.toISOString()}`,
+                  sessionId: quizId,
+                  transition: 'RESUMED',
+                  reasonCode: 'LECTURER_RESUMED_ASSESSMENT',
+                })
+              )
+            }
             await emitCoveredAssessmentAuditEvents({
               tx,
               auditTx,
@@ -1383,11 +1487,7 @@ export async function activateLiveQuizBlock(
                 requiredPermission: 'EXECUTE',
                 occurredAt: activatedAt,
               }),
-              drafts: buildAssessmentMutationAuditDrafts({
-                before,
-                after,
-                producerOperationId: `assessment:${quizId}:block:${blockId}:activate:${activatedAt.toISOString()}`,
-              }),
+              drafts: mutationDrafts,
             })
           }
           return updated
@@ -1609,6 +1709,7 @@ export async function deactivateLiveQuizBlock(
       where: { id: quizId },
       select: { isAssessmentEnabled: true },
     })
+    isAssessmentEnabled = auditMode?.isAssessmentEnabled ?? false
     const res = auditMode?.isAssessmentEnabled
       ? await runInAuditTransaction(
           ctx.prisma,
@@ -1630,20 +1731,41 @@ export async function deactivateLiveQuizBlock(
                 const closedAt = after.blocks.find(
                   (block) => block.id === blockId
                 )?.closedAt
+                const mutationDrafts = buildAssessmentMutationAuditDrafts({
+                  before,
+                  after,
+                  producerOperationId: `assessment:${quizId}:block:${blockId}:close:${closedAt?.toISOString() ?? new Date().toISOString()}`,
+                })
+                const pausedBeforeNextBlock = result.updatedQuiz.blocks.some(
+                  (block) => block.status === DB.ElementBlockStatus.SCHEDULED
+                )
+                if (pausedBeforeNextBlock) {
+                  mutationDrafts.push(
+                    assessmentLifecycleDraft({
+                      eventType: 'ASSESSMENT_PAUSED',
+                      producerOperationId: `assessment:${quizId}:pause:${closedAt?.toISOString() ?? new Date().toISOString()}`,
+                      fromState: 'RUNNING',
+                      toState: 'PAUSED',
+                      reasonCode: isScheduled
+                        ? 'SYSTEM_CLOSED_ASSESSMENT_BLOCK'
+                        : 'LECTURER_CLOSED_ASSESSMENT_BLOCK',
+                    })
+                  )
+                }
                 await emitCoveredAssessmentAuditEvents({
                   tx,
                   auditTx,
                   liveQuizId: quizId,
                   courseId: after.courseId,
-                  operation: assessmentAuditUserOperation({
-                    userId: ctx.user.sub,
-                    requiredPermission: 'EXECUTE',
-                  }),
-                  drafts: buildAssessmentMutationAuditDrafts({
-                    before,
-                    after,
-                    producerOperationId: `assessment:${quizId}:block:${blockId}:close:${closedAt?.toISOString() ?? new Date().toISOString()}`,
-                  }),
+                  operation: isScheduled
+                    ? assessmentAuditSystemOperation({
+                        initiatedByUserId: ctx.user.sub,
+                      })
+                    : assessmentAuditUserOperation({
+                        userId: ctx.user.sub,
+                        requiredPermission: 'EXECUTE',
+                      }),
+                  drafts: mutationDrafts,
                 })
               }
             }
@@ -1662,7 +1784,19 @@ export async function deactivateLiveQuizBlock(
         })
 
     // if the update was not successful, return false
-    if (!res) return false
+    if (!res) {
+      if (isAssessmentEnabled) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: quizId,
+          actionType: 'ASSESSMENT_BLOCK_CLOSE',
+          reasonCode: 'ASSESSMENT_BLOCK_NOT_ACTIVE_OR_NOT_FOUND',
+          requiredPermission: isScheduled ? 'SYSTEM' : 'EXECUTE',
+          targetType: 'BLOCK',
+          targetId: String(blockId),
+        })
+      }
+      return false
+    }
 
     const updatedQuiz = res.updatedQuiz
     const activeInstanceIds = res.activeInstanceIds
@@ -1713,12 +1847,10 @@ export async function deactivateLiveQuizBlock(
       }
       await redis.exec()
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await sendTeamsNotification({
       scope: 'graphql/deactivateLiveQuizBlock',
-      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
-        quizId
-      } with active block ${blockId}: ${error?.message || error}`,
+      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${quizId} (${error instanceof Error ? error.name : 'unknown'})`,
     })
 
     throw error
@@ -1739,10 +1871,11 @@ export async function deactivateLiveQuizBlock(
       )
     }
   } catch (error) {
-    console.error(
-      `Failed to schedule aggregation task for closed block ${blockId} in live quiz ${quizId}:`,
-      error
-    )
+    console.error('Failed to schedule aggregation task for closed block', {
+      liveQuizId: quizId,
+      blockId,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
   }
 
   return true
@@ -1991,6 +2124,12 @@ export async function endLiveQuiz(
 
   // if there is no live quiz matching the current user and quiz id, exit early
   if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_COMPLETE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+    })
     return null
   }
 
@@ -2001,6 +2140,14 @@ export async function endLiveQuiz(
     quiz.status === DB.PublicationStatus.DRAFT ||
     quiz.status === DB.PublicationStatus.SCHEDULED
   ) {
+    if (quiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_COMPLETE',
+        reasonCode: 'ASSESSMENT_NOT_RUNNING',
+        requiredPermission: 'EXECUTE',
+      })
+    }
     return null
   }
 
@@ -2290,6 +2437,13 @@ export async function endLiveQuiz(
                   toState: 'COMPLETED',
                   reasonCode: 'LECTURER_ENDED_ASSESSMENT',
                 }),
+                assessmentSessionDraft({
+                  eventType: 'ASSESSMENT_SESSION_ENDED',
+                  producerOperationId: `assessment:${id}:session-end:${finishedAt.toISOString()}`,
+                  sessionId: id,
+                  transition: 'ENDED',
+                  reasonCode: 'LECTURER_ENDED_ASSESSMENT',
+                }),
               ],
             })
             await anchorCoveredAssessmentAuditScope({
@@ -2323,7 +2477,7 @@ export async function endLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
-      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -2504,7 +2658,10 @@ export async function changeLiveQuizName(
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     return true
   } catch (error) {
-    console.error('Error changing live quiz name:', error)
+    console.error('Error changing live quiz name', {
+      liveQuizId: id,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
     return false
   }
 }
@@ -2589,10 +2746,26 @@ export async function cancelLiveQuiz(
     },
   })
 
-  if (!quiz) return null
+  if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_CANCEL',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+    })
+    return null
+  }
 
   try {
     if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
+      if (quiz.isAssessmentEnabled) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: id,
+          actionType: 'ASSESSMENT_CANCEL',
+          reasonCode: 'ASSESSMENT_NOT_RUNNING',
+          requiredPermission: 'EXECUTE',
+        })
+      }
       throw new Error('Live quiz is not running')
     }
 
@@ -2604,6 +2777,12 @@ export async function cancelLiveQuiz(
           (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
         ))
     ) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_CANCEL',
+        reasonCode: 'ASSESSMENT_ALREADY_PROGRESSING',
+        requiredPermission: 'EXECUTE',
+      })
       throw new Error(
         'Assessment quizzes can only be aborted before the first block is activated'
       )
@@ -2678,9 +2857,16 @@ export async function cancelLiveQuiz(
               }),
               drafts: [
                 assessmentLifecycleDraft({
-                  eventType: 'ASSESSMENT_RESET',
+                  eventType: 'ASSESSMENT_CANCELLED',
                   producerOperationId: `assessment:${id}:cancel:${cancelledAt.toISOString()}`,
                   fromState: 'PUBLISHED',
+                  toState: 'CANCELLED',
+                  reasonCode: 'LECTURER_CANCELLED_ASSESSMENT',
+                }),
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_RESET',
+                  producerOperationId: `assessment:${id}:cancel-reset:${cancelledAt.toISOString()}`,
+                  fromState: 'CANCELLED',
                   toState: 'DRAFT',
                   reasonCode: 'LECTURER_CANCELLED_ASSESSMENT',
                 }),
@@ -2716,7 +2902,7 @@ export async function cancelLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
-      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -2997,10 +3183,10 @@ export async function deleteLiveQuiz(
                   quiz.scheduledPublicationTaskId
                 )
               } catch (error) {
-                console.error(
-                  `Failed to delete scheduled task for live quiz ${id}:`,
-                  error
-                )
+                console.error('Failed to delete scheduled task for live quiz', {
+                  liveQuizId: id,
+                  errorType: error instanceof Error ? error.name : 'unknown',
+                })
               }
             }
             await emitCoveredAssessmentAuditEvents({
@@ -3059,10 +3245,10 @@ export async function deleteLiveQuiz(
                   quiz.scheduledPublicationTaskId
                 )
               } catch (error) {
-                console.error(
-                  `Failed to delete scheduled task for live quiz ${id}:`,
-                  error
-                )
+                console.error('Failed to delete scheduled task for live quiz', {
+                  liveQuizId: id,
+                  errorType: error instanceof Error ? error.name : 'unknown',
+                })
               }
             }
 
@@ -3153,6 +3339,12 @@ export async function resetAssessmentLiveQuiz(
         media: createAssessmentAuditMediaDependencies(),
       })
     } catch {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_RESET',
+        reasonCode: 'ASSESSMENT_AUDIT_BASELINE_UNAVAILABLE',
+        requiredPermission: 'ADMIN',
+      })
       throw new GraphQLError(
         'Assessment cannot be reopened until its audit baseline is available'
       )
@@ -3244,6 +3436,13 @@ export async function resetAssessmentLiveQuiz(
           courseId: liveQuiz.courseId,
           operation: resetOperation,
           drafts: [
+            assessmentLifecycleDraft({
+              eventType: 'ASSESSMENT_REOPENED',
+              producerOperationId: `${resetOperation.correlationId}:reopened`,
+              fromState: 'COMPLETED',
+              toState: 'DRAFT',
+              reasonCode: 'COURSE_ADMIN_ASSESSMENT_REOPENED',
+            }),
             assessmentLifecycleDraft({
               eventType: 'ASSESSMENT_RESET',
               producerOperationId: `${resetOperation.correlationId}:lifecycle`,
@@ -3945,10 +4144,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 
       return true
     } catch (error) {
-      console.error('Error publishing scheduled live quiz:', error)
+      console.error('Error publishing scheduled live quiz', {
+        liveQuizId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
-        text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
+        text: `Error publishing live quiz with ID ${liveQuizId} (${error instanceof Error ? error.name : 'unknown'})`,
       })
       throw error // rethrow to allow Hatchet to handle retries
     }

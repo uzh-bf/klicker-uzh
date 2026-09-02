@@ -3097,6 +3097,81 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.waitForTimeout(500)
   })
 
+  test('Retries a PWA submission with the same submission ID and receipt', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginStudentWithStoredPwaState(page)
+
+    // The response-api integration suite proves the server-side receipt
+    // contract. This browser regression proves the PWA keeps the caller's
+    // submission identity stable when the first transport attempt is retryable.
+    await page.unroute('**/AddResponse')
+    const submissionIds: string[] = []
+    let attempts = 0
+    await page.route('**/AddResponse', async (route) => {
+      const body = route.request().postDataJSON() as {
+        submissionId?: unknown
+      }
+      if (typeof body.submissionId !== 'string') {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'missing_submission_id' }),
+        })
+        return
+      }
+
+      submissionIds.push(body.submissionId)
+      attempts += 1
+      if (attempts === 1) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: 'submission_transport_unavailable',
+            submissionId: body.submissionId,
+          }),
+        })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'response_submitted',
+          submissionId: body.submissionId,
+          responseTimestamp: Date.parse('2026-08-12T12:00:00.000Z'),
+          hatchetEventId: 'browser-receipt',
+        }),
+      })
+    })
+
+    await openStudentLiveQuiz(data.course2.quiz.displayName)
+    await acceptGamifiedLiveQuizAccountPrompt(data.course2.quiz.displayName)
+    await expectByAssertion(
+      page.getByTestId('student-submit-answer'),
+      'be.disabled'
+    )
+    await page.getByTestId('sc-0-answer-option-0').click()
+    await page.getByTestId('student-submit-answer').click()
+
+    await expect.poll(() => attempts).toBe(2)
+    expect(submissionIds).toHaveLength(2)
+    expect(submissionIds[0]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    )
+    expect(submissionIds[1]).toBe(submissionIds[0])
+    await expectByAssertion(
+      page.getByTestId('student-submit-answer'),
+      'be.disabled'
+    )
+  })
+
   test('Respond to the first block of the running live quiz from the student view', async ({
     page: testPage,
   }, testInfo) => {

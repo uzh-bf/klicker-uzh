@@ -7,6 +7,7 @@ export const AUDIT_MONITOR_THRESHOLDS = {
   pendingDepthCritical: 10_000,
   dispatcherHeartbeatWarningSeconds: 2 * 60,
   dispatcherHeartbeatCriticalSeconds: 3 * 60,
+  activationInProgressCriticalSeconds: 10 * 60,
   coveredSubmissionWithoutTerminalWarningSeconds: 2 * 60,
   coveredSubmissionWithoutTerminalCriticalSeconds: 5 * 60,
 } as const
@@ -46,7 +47,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       differentHashConflictCount,
       unsealed,
       activationFailureRows,
-      accepted,
+      submissionGapRows,
     ] = await Promise.all([
       this.client.assessmentAuditOutboxEvent.aggregate({
         where: { deliveryState: { in: ['PENDING', 'LEASED'] } },
@@ -70,61 +71,52 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       this.client.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
         SELECT COUNT(*)::bigint AS count
         FROM (
-          SELECT DISTINCT ON ("liveQuizId") "coverageState"
+          SELECT DISTINCT ON ("liveQuizId") "coverageState", "updatedAt"
           FROM "AssessmentAuditScope"
           ORDER BY "liveQuizId", "lifecycleEpoch" DESC
         ) latest
-        WHERE latest."coverageState" IN ('ACTIVATING', 'FAILED')
+        WHERE latest."coverageState" = 'FAILED'
+           OR (
+             latest."coverageState" = 'ACTIVATING'
+             AND latest."updatedAt" <= NOW() - ${AUDIT_MONITOR_THRESHOLDS.activationInProgressCriticalSeconds} * INTERVAL '1 second'
+           )
       `),
-      this.client.assessmentAuditOutboxEvent.findMany({
-        where: { eventType: 'SUBMISSION_SERVER_ACCEPTED' },
-        orderBy: [{ recordedAt: 'asc' }, { eventId: 'asc' }],
-        take: 5_001,
-        select: { correlationId: true, recordedAt: true },
-      }),
-    ])
-
-    const acceptedByCorrelation = new Map<string, Date>()
-    for (const row of accepted) {
-      if (!acceptedByCorrelation.has(row.correlationId)) {
-        acceptedByCorrelation.set(row.correlationId, row.recordedAt)
-      }
-    }
-    const terminalCorrelations =
-      acceptedByCorrelation.size === 0
-        ? new Set<string>()
-        : new Set(
-            (
-              await this.client.assessmentAuditOutboxEvent.findMany({
-                where: {
-                  correlationId: { in: [...acceptedByCorrelation.keys()] },
-                  eventType: {
-                    in: [
-                      'SUBMISSION_REJECTED',
-                      'SUBMISSION_DUPLICATE',
-                      'SUBMISSION_PERSISTED',
-                    ],
-                  },
-                },
-                distinct: ['correlationId'],
-                select: { correlationId: true },
-              })
-            ).map((row) => row.correlationId)
+      this.client.$queryRaw<Array<{ count: bigint; oldest: Date | null }>>(
+        Prisma.sql`
+          SELECT COUNT(*)::bigint AS count, MIN(accepted."recordedAt") AS oldest
+          FROM (
+            SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId")
+              accepted."liveQuizId",
+              accepted."lifecycleEpoch",
+              accepted."correlationId",
+              accepted."recordedAt"
+            FROM "AssessmentAuditOutboxEvent" accepted
+            INNER JOIN "AssessmentAuditScope" scope
+              ON scope."liveQuizId" = accepted."liveQuizId"
+              AND scope."lifecycleEpoch" = accepted."lifecycleEpoch"
+              AND scope."coverageState" = 'COVERED'
+            WHERE accepted."eventType" = 'SUBMISSION_SERVER_ACCEPTED'
+            ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."recordedAt", accepted."eventId"
+          ) accepted
+          WHERE NOT EXISTS (
+            SELECT 1
+            FROM "AssessmentAuditOutboxEvent" terminal
+            WHERE terminal."liveQuizId" = accepted."liveQuizId"
+              AND terminal."lifecycleEpoch" = accepted."lifecycleEpoch"
+              AND terminal."correlationId" = accepted."correlationId"
+              AND terminal."eventType" IN (
+                'SUBMISSION_REJECTED',
+                'SUBMISSION_DUPLICATE',
+                'SUBMISSION_PERSISTED'
+              )
           )
-    const unresolved = [...acceptedByCorrelation].filter(
-      ([correlationId]) => !terminalCorrelations.has(correlationId)
-    )
+        `
+      ),
+    ])
     const requiredMediaCaptureFailureCount = Number(
       activationFailureRows[0]?.count ?? 0n
     )
-    const oldestCoveredSubmissionWithoutTerminalAt =
-      unresolved.length === 0
-        ? null
-        : unresolved.reduce(
-            (oldest, [, recordedAt]) =>
-              recordedAt < oldest ? recordedAt : oldest,
-            unresolved[0]![1]
-          )
+    const submissionGaps = submissionGapRows[0]
     return {
       pendingCount: pending._count,
       oldestPendingAt: pending._min.recordedAt,
@@ -133,11 +125,10 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       deliveredUnsealedCount: unsealed._count,
       deliveredUnsealedBytes: unsealed._sum.canonicalByteLength ?? 0,
       requiredMediaCaptureFailureCount,
-      coveredSubmissionWithoutTerminalCount:
-        accepted.length > 5_000
-          ? Math.max(unresolved.length, 5_001)
-          : unresolved.length,
-      oldestCoveredSubmissionWithoutTerminalAt,
+      coveredSubmissionWithoutTerminalCount: Number(
+        submissionGaps?.count ?? 0n
+      ),
+      oldestCoveredSubmissionWithoutTerminalAt: submissionGaps?.oldest ?? null,
     }
   }
 }
@@ -151,6 +142,7 @@ export type AuditMonitorSignal = {
     | 'QUARANTINED_ROWS'
     | 'REQUIRED_MEDIA_CAPTURE_FAILURES'
     | 'OLDEST_COVERED_SUBMISSION_WITHOUT_TERMINAL_SECONDS'
+    | 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING'
   severity: 'WARNING' | 'CRITICAL'
   value: number
   threshold: number
@@ -161,6 +153,7 @@ export type AuditMonitorSnapshot = AuditMonitorCounts & {
   oldestPendingSeconds: number
   dispatcherHeartbeatSeconds: number
   oldestCoveredSubmissionWithoutTerminalSeconds: number
+  deliveredUnsealedCapacityWeeksRemaining: number | null
   signals: AuditMonitorSignal[]
   status: 'HEALTHY' | 'WARNING' | 'CRITICAL'
 }
@@ -229,6 +222,8 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
   now?: Date
   dispatcherLastSuccess?: Date
   requireDispatcherHeartbeat?: boolean
+  deliveredUnsealedCapacityBytes?: number
+  deliveredUnsealedGrowthBytesPerWeek?: number
 }): Promise<AuditMonitorSnapshot> {
   const now = input.now ?? new Date()
   const counts = await input.repository.readCounts()
@@ -242,6 +237,18 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
     now,
     counts.oldestCoveredSubmissionWithoutTerminalAt
   )
+  const capacityBytes = input.deliveredUnsealedCapacityBytes
+  const growthBytesPerWeek = input.deliveredUnsealedGrowthBytesPerWeek
+  const deliveredUnsealedCapacityWeeksRemaining =
+    capacityBytes !== undefined &&
+    growthBytesPerWeek !== undefined &&
+    capacityBytes > 0 &&
+    growthBytesPerWeek > 0
+      ? Math.max(
+          0,
+          (capacityBytes - counts.deliveredUnsealedBytes) / growthBytesPerWeek
+        )
+      : null
   const signals: AuditMonitorSignal[] = []
   const possibleSignals = [
     thresholdSignal({
@@ -305,6 +312,23 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
     })
     if (signal !== undefined) signals.push(signal)
   }
+  if (deliveredUnsealedCapacityWeeksRemaining !== null) {
+    if (deliveredUnsealedCapacityWeeksRemaining < 4) {
+      signals.push({
+        signal: 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING',
+        severity: 'CRITICAL',
+        value: deliveredUnsealedCapacityWeeksRemaining,
+        threshold: 4,
+      })
+    } else if (deliveredUnsealedCapacityWeeksRemaining < 8) {
+      signals.push({
+        signal: 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING',
+        severity: 'WARNING',
+        value: deliveredUnsealedCapacityWeeksRemaining,
+        threshold: 8,
+      })
+    }
+  }
   const status = signals.some((signal) => signal.severity === 'CRITICAL')
     ? 'CRITICAL'
     : signals.length > 0
@@ -316,6 +340,7 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
     oldestPendingSeconds,
     dispatcherHeartbeatSeconds,
     oldestCoveredSubmissionWithoutTerminalSeconds,
+    deliveredUnsealedCapacityWeeksRemaining,
     signals,
     status,
   }
@@ -401,6 +426,12 @@ export function renderAssessmentAuditPrometheusMetrics(
     [
       'assessment_audit_delivered_unsealed_bytes',
       prometheusNumber(latestSnapshot?.deliveredUnsealedBytes),
+    ],
+    [
+      'assessment_audit_delivered_unsealed_capacity_weeks_remaining',
+      prometheusNumber(
+        latestSnapshot?.deliveredUnsealedCapacityWeeksRemaining ?? undefined
+      ),
     ],
     [
       'assessment_audit_required_media_capture_failures',

@@ -21,6 +21,7 @@ import {
   assessmentAuditUserOperation,
   emitAssessmentLecturerPermissionChanges,
   loadAssessmentLecturerPermissionState,
+  permissionTargetIds,
   recordCoveredAssessmentActionRejected,
 } from './assessmentAuditProducers.js'
 
@@ -3321,8 +3322,14 @@ export async function transferCourseOwnership(
     return null
   }
 
-  const updatedCourse = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const updatedCourse = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [course.ownerId, newOwner.id, ctx.user.sub],
+      })
       // update the owner of the course and grant admin permissions to the current user
       const updated = await prisma.course.update({
         where: { id },
@@ -3388,6 +3395,23 @@ export async function transferCourseOwnership(
         prisma
       )
 
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [course.ownerId, newOwner.id, ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'course-owner-transfer',
+      })
+
       return updated
     },
     { timeout: 60000 }
@@ -3431,8 +3455,14 @@ export async function transferLiveQuizOwnership(
     return null
   }
 
-  const updatedLiveQuiz = await ctx.prisma.$transaction(
-    async (prisma) => {
+  const updatedLiveQuiz = await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [liveQuiz.ownerId, newOwner.id, ctx.user.sub],
+      })
       // update the owner of the live quiz and grant admin permissions to the current user
       const updated = await prisma.liveQuiz.update({
         where: { id },
@@ -3497,6 +3527,23 @@ export async function transferLiveQuizOwnership(
         { liveQuizId: id, userId: ctx.user.sub, updateAccessRequests: false },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [liveQuiz.ownerId, newOwner.id, ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'live-quiz-owner-transfer',
+      })
 
       return updated
     },
@@ -4122,6 +4169,9 @@ type ResolvedSharingTarget =
       kind: 'USER_GROUP'
       id: number
       name: string
+      ownerId: string
+      admins: { id: string }[]
+      members: { id: string }[]
     }
 
 function isPrismaSerializationConflict(error: unknown) {
@@ -4195,7 +4245,13 @@ async function resolveSharingTarget(
           { members: { some: { id: ctx.user.sub } } },
         ],
       },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        admins: { select: { id: true } },
+        members: { select: { id: true } },
+      },
     })
 
     if (!userGroup) {
@@ -4206,7 +4262,14 @@ async function resolveSharingTarget(
     }
 
     return {
-      target: { kind: 'USER_GROUP', id: userGroup.id, name: userGroup.name },
+      target: {
+        kind: 'USER_GROUP',
+        id: userGroup.id,
+        name: userGroup.name,
+        ownerId: userGroup.ownerId,
+        admins: userGroup.admins,
+        members: userGroup.members,
+      },
       error: null,
     }
   }
@@ -6589,8 +6652,8 @@ export async function checkCatalogAssignment(
   return assignment !== null
 }
 
-export type ObjectSelectorFunction = (
-  args: any
+export type ObjectSelectorFunction<TArgs = unknown> = (
+  args: TArgs
 ) =>
   | { catalogCollectionId: string }
   | { answerCollectionId: number }
@@ -6601,23 +6664,23 @@ export type ObjectSelectorFunction = (
   | { microLearningId: string }
   | { groupActivityId: string }
 
-export type AssessmentAuditPermissionFailure = Readonly<{
+export type AssessmentAuditPermissionFailure<TArgs = unknown> = Readonly<{
   actionType: string
   targetType?: string
-  targetId?: (args: any) => string | undefined
+  targetId?: (args: TArgs) => string | undefined
 }>
 
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)
 export function withPermission<TSource, TArgs, TReturn>(
-  selector: ObjectSelectorFunction,
+  selector: ObjectSelectorFunction<TArgs>,
   level: DB.PermissionLevel,
   resolver: (
     root: TSource,
     args: TArgs,
     ctx: ContextWithUser
   ) => Promise<TReturn>,
-  assessmentAudit?: AssessmentAuditPermissionFailure
+  assessmentAudit?: AssessmentAuditPermissionFailure<TArgs>
 ) {
   return async (
     root: TSource,
@@ -6636,32 +6699,46 @@ export function withPermission<TSource, TArgs, TReturn>(
       // or make the protected mutation available when the audit store is down.
       if (
         assessmentAudit !== undefined &&
-        'liveQuizId' in selectedObject &&
-        typeof selectedObject.liveQuizId === 'string'
+        ('liveQuizId' in selectedObject || 'courseId' in selectedObject)
       ) {
         try {
-          await recordCoveredAssessmentActionRejected({
-            client: ctx.prisma,
-            liveQuizId: selectedObject.liveQuizId,
-            operation: assessmentAuditUserOperation({
-              userId: ctx.user.sub,
-              requiredPermission: level,
-            }),
-            actionType: assessmentAudit.actionType,
-            reasonCode: 'INSUFFICIENT_PERMISSION',
-            ...(assessmentAudit.targetType === undefined
-              ? {}
-              : { targetType: assessmentAudit.targetType }),
-            ...(assessmentAudit.targetId === undefined
-              ? {}
-              : { targetId: assessmentAudit.targetId(args) }),
-          })
-        } catch (error) {
-          console.error(
-            'Failed to record rejected assessment action %s',
-            assessmentAudit.actionType,
-            error
+          const liveQuizIds =
+            'liveQuizId' in selectedObject
+              ? [selectedObject.liveQuizId]
+              : (
+                  await ctx.prisma.liveQuiz.findMany({
+                    where: {
+                      courseId: selectedObject.courseId,
+                      isAssessmentEnabled: true,
+                    },
+                    select: { id: true },
+                  })
+                ).map((liveQuiz) => liveQuiz.id)
+          await Promise.all(
+            liveQuizIds.map((liveQuizId) =>
+              recordCoveredAssessmentActionRejected({
+                client: ctx.prisma,
+                liveQuizId,
+                operation: assessmentAuditUserOperation({
+                  userId: ctx.user.sub,
+                  requiredPermission: level,
+                }),
+                actionType: assessmentAudit.actionType,
+                reasonCode: 'INSUFFICIENT_PERMISSION',
+                ...(assessmentAudit.targetType === undefined
+                  ? {}
+                  : { targetType: assessmentAudit.targetType }),
+                ...(assessmentAudit.targetId === undefined
+                  ? {}
+                  : { targetId: assessmentAudit.targetId(args) }),
+              })
+            )
           )
+        } catch (error) {
+          console.error('Failed to record rejected assessment action', {
+            actionType: assessmentAudit.actionType,
+            errorType: error instanceof Error ? error.name : 'unknown',
+          })
         }
       }
       return null
@@ -6965,6 +7042,7 @@ export async function leaveUserGroup(
     include: {
       members: { where: { id: ctx.user.sub } },
       admins: { where: { id: ctx.user.sub } },
+      permissions: true,
     },
   })
 
@@ -6975,8 +7053,15 @@ export async function leaveUserGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [ctx.user.sub],
+      })
       const updated = await prisma.userGroup.update({
         where: { id: groupId },
         data: {
@@ -7012,6 +7097,23 @@ export async function leaveUserGroup(
         prisma
       )
 
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-leave',
+      })
+
       return updated
     },
     { timeout: 60000 }
@@ -7027,15 +7129,27 @@ export async function deleteUserGroup(
   // check if the user is the owner of the group
   const userGroup = await ctx.prisma.userGroup.findUnique({
     where: { id: groupId, ownerId: ctx.user.sub },
-    include: { permissions: true },
+    include: { permissions: true, members: true, admins: true, owner: true },
   })
 
   if (!userGroup) {
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  const affectedUserIds = [
+    userGroup.ownerId,
+    ...userGroup.admins.map((user) => user.id),
+    ...userGroup.members.map((user) => user.id),
+  ]
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: affectedUserIds,
+      })
       // delete the user group
       await prisma.userGroup.delete({
         where: { id: groupId },
@@ -7096,6 +7210,23 @@ export async function deleteUserGroup(
           )
         }
       }
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: affectedUserIds,
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'OWNER',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-delete',
+      })
     },
     { timeout: 60000 }
   )
@@ -7112,6 +7243,7 @@ export async function promoteGroupMemberToAdmin(
     include: {
       members: { where: { id: memberId } },
       admins: { where: { id: ctx.user.sub } },
+      permissions: true,
     },
   })
 
@@ -7124,28 +7256,62 @@ export async function promoteGroupMemberToAdmin(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // disconnect the member from the members and add them to the admins
-    await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        members: { disconnect: { id: memberId } },
-        admins: { connect: { id: memberId } },
-      },
-    })
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [memberId],
+      })
+      // disconnect the member from the members and add them to the admins
+      const updatedGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          members: { disconnect: { id: memberId } },
+          admins: { connect: { id: memberId } },
+        },
+        include: { permissions: true },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(group.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: memberId,
-        message: `User promoted from member to admin.`,
-      },
-    })
-  })
+      // Recompute derived access before taking the after snapshot.
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedGroup.permissions, userId: memberId },
+        prisma
+      )
+
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(group.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: memberId,
+          message: `User promoted from member to admin.`,
+        },
+      })
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [memberId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-promoted',
+      })
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -7158,6 +7324,7 @@ export async function demoteGroupAdminToMember(
     where: { id: groupId },
     include: {
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7171,28 +7338,62 @@ export async function demoteGroupAdminToMember(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    // disconnect the admin from the admins and add them to the members
-    await prisma.userGroup.update({
-      where: { id: groupId },
-      data: {
-        admins: { disconnect: { id: adminId } },
-        members: { connect: { id: adminId } },
-      },
-    })
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [adminId],
+      })
+      // disconnect the admin from the admins and add them to the members
+      const updatedGroup = await prisma.userGroup.update({
+        where: { id: groupId },
+        data: {
+          admins: { disconnect: { id: adminId } },
+          members: { connect: { id: adminId } },
+        },
+        include: { permissions: true },
+      })
 
-    // create an audit log entry
-    await prisma.auditLogEntry.create({
-      data: {
-        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
-        objectType: DB.ObjectType.USER_GROUP,
-        objectId: String(group.id),
-        sourceUserId: ctx.user.sub,
-        targetUserId: adminId,
-        message: `User demoted from admin to member.`,
-      },
-    })
-  })
+      // Recompute derived access before taking the after snapshot.
+      await recomputePermissionsUserGroupMember(
+        { permissions: updatedGroup.permissions, userId: adminId },
+        prisma
+      )
+
+      // create an audit log entry
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+          objectType: DB.ObjectType.USER_GROUP,
+          objectId: String(group.id),
+          sourceUserId: ctx.user.sub,
+          targetUserId: adminId,
+          message: `User demoted from admin to member.`,
+        },
+      })
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [adminId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-admin-demoted',
+      })
+    },
+    { timeout: 60000 }
+  )
 
   return true
 }
@@ -7211,6 +7412,7 @@ export async function removeUserFromGroup(
     include: {
       members: { where: { id: userId } },
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7227,8 +7429,15 @@ export async function removeUserFromGroup(
     return false
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(group.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
       // disconnect the member from the members and admins
       const updatedUserGroup = await prisma.userGroup.update({
         where: { id: groupId },
@@ -7258,6 +7467,23 @@ export async function removeUserFromGroup(
         { permissions: updatedUserGroup.permissions, userId },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-removed',
+      })
     },
     { timeout: 60000 }
   )
@@ -7312,6 +7538,8 @@ export async function transferGroupOwnership(
     where: { id },
     include: {
       admins: { where: { id: newOwnerId } },
+      permissions: true,
+      members: true,
     },
   })
 
@@ -7324,7 +7552,19 @@ export async function transferGroupOwnership(
     return false
   }
 
-  await ctx.prisma.$transaction(async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  const affectedUserIds = [
+    userGroup.ownerId,
+    newOwnerId,
+    ctx.user.sub,
+    ...userGroup.members.map((member) => member.id),
+  ]
+  await runInAuditTransaction(ctx.prisma, async (prisma, auditTx) => {
+    const beforePermissions = await loadAssessmentLecturerPermissionState({
+      tx: prisma,
+      ...targets,
+      subjectUserIds: affectedUserIds,
+    })
     // check if the owner already has an user group with the same name -> potential issues with uniqueness
     let groupName = userGroup.name
     let counter = 0
@@ -7378,6 +7618,23 @@ export async function transferGroupOwnership(
         message: `User group ownership transferred to group admin.`,
       },
     })
+
+    const afterPermissions = await loadAssessmentLecturerPermissionState({
+      tx: prisma,
+      ...targets,
+      subjectUserIds: affectedUserIds,
+    })
+    await emitAssessmentLecturerPermissionChanges({
+      tx: prisma,
+      auditTx,
+      operation: assessmentAuditUserOperation({
+        userId: ctx.user.sub,
+        requiredPermission: 'OWNER',
+      }),
+      before: beforePermissions,
+      after: afterPermissions,
+      operationSuffix: 'group-owner-transfer',
+    })
   })
 
   return true
@@ -7407,6 +7664,7 @@ export async function addUserToUserGroup(
     include: {
       members: true,
       admins: true,
+      permissions: true,
     },
   })
 
@@ -7426,8 +7684,15 @@ export async function addUserToUserGroup(
     return null
   }
 
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  const targets = permissionTargetIds(userGroup.permissions)
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
       // add the user to the group
       const updatedUserGroup = await prisma.userGroup.update({
         where: { id: groupId },
@@ -7457,6 +7722,23 @@ export async function addUserToUserGroup(
         { permissions: updatedUserGroup.permissions, userId },
         prisma
       )
+
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        ...targets,
+        subjectUserIds: [userId],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'ADMIN',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'group-member-added',
+      })
     },
     { timeout: 60000 }
   )

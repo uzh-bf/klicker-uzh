@@ -18,6 +18,8 @@ data:
   ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
   ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
   ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
+  ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES: {{ .Values.assessmentAudit.monitoring.deliveredUnsealedCapacityBytes | quote }}
+  ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK: {{ .Values.assessmentAudit.monitoring.deliveredUnsealedGrowthBytesPerWeek | quote }}
   AZURE_TOKEN_CREDENTIALS: WorkloadIdentityCredential
 ---
 apiVersion: v1

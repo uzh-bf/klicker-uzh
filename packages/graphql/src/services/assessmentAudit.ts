@@ -53,8 +53,20 @@ export const handleDispatchAssessmentAuditOutbox: HatchetHandlers['handleDispatc
 
 export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessmentAudit'] =
   async (_input, globalCtx, executionCtx) => {
+    const capacityBytes = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES ?? 0
+    )
+    const growthBytesPerWeek = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK ?? 0
+    )
     const snapshot = await collectAssessmentAuditMonitorSnapshot({
       repository: new PrismaAuditMonitorRepository(globalCtx.prisma),
+      ...(Number.isFinite(capacityBytes) && capacityBytes > 0
+        ? { deliveredUnsealedCapacityBytes: capacityBytes }
+        : {}),
+      ...(Number.isFinite(growthBytesPerWeek) && growthBytesPerWeek > 0
+        ? { deliveredUnsealedGrowthBytesPerWeek: growthBytesPerWeek }
+        : {}),
     })
     recordAssessmentAuditMonitorSuccess(snapshot)
     const metadata = {
@@ -67,6 +79,8 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       differentHashConflictCount: snapshot.differentHashConflictCount,
       deliveredUnsealedCount: snapshot.deliveredUnsealedCount,
       deliveredUnsealedBytes: snapshot.deliveredUnsealedBytes,
+      deliveredUnsealedCapacityWeeksRemaining:
+        snapshot.deliveredUnsealedCapacityWeeksRemaining,
       requiredMediaCaptureFailureCount:
         snapshot.requiredMediaCaptureFailureCount,
       coveredSubmissionWithoutTerminalCount:
