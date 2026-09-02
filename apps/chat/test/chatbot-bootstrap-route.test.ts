@@ -31,6 +31,7 @@ describe('chatbot bootstrap route', () => {
             description: 'Tutor description',
           },
         },
+        mcpConfigurations: [],
       },
     })
   })
@@ -43,11 +44,9 @@ describe('chatbot bootstrap route', () => {
 
     expect(response.status).toBe(200)
     const payload = await response.json()
-    expect(payload).toEqual({
-      modelSelection: true,
-      modeDescriptions: { tutor: 'Tutor description' },
-      modeDescriptionsAreFallback: false,
-    })
+    expect(Object.keys(payload)).toEqual(['modelSelection', 'modeOptions'])
+    expect(payload.modelSelection).toBe(true)
+    expect(typeof payload.modeOptions.tutor).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
   })
 

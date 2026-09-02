@@ -1,10 +1,7 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
-import {
-  hasConfiguredModeDescriptions,
-  resolveModeDescriptions,
-} from '../../lib/config/modes'
+import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 import {
   getChatbotOr404,
   withChatbotTokenAuth,
@@ -33,13 +30,23 @@ export default async function ChatLayout({
     name: true,
     avatar: true,
     systemPrompts: true,
+    mcpConfigurations: {
+      select: {
+        allowedTools: true,
+        chatMode: true,
+        isEnabled: true,
+        parameters: true,
+        priority: true,
+        mcpServer: { select: { id: true } },
+      },
+    },
   })
   if ('response' in chatbotResult) notFound()
   const { chatbot } = chatbotResult
 
-  const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
-  const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(
-    chatbot.systemPrompts
+  const initialModeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
   )
 
   return (
@@ -51,7 +58,6 @@ export default async function ChatLayout({
           avatar: chatbot.avatar ?? undefined,
         }}
         initialModeOptions={initialModeOptions}
-        initialModeOptionsAreFallback={initialModeOptionsAreFallback}
       />
       {children}
     </>

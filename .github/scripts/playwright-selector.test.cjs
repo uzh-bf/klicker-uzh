@@ -43,8 +43,15 @@ function change(kind, ...paths) {
 }
 
 function gitAt(root, ...args) {
+  // Git exports repository-local variables to hooks. Fixture repositories must
+  // not inherit them, or `git -C` can still mutate the parent repository.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+
   return childProcess.execFileSync('git', ['-C', root, ...args], {
     encoding: 'utf8',
+    env,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
@@ -54,6 +61,20 @@ function gitAt(root, ...args) {
       GIT_WORK_TREE: undefined,
     },
   })
+}
+
+function commitFixture(root, message) {
+  return gitAt(
+    root,
+    '-c',
+    'user.email=ci@example.invalid',
+    '-c',
+    'user.name=CI fixture',
+    'commit',
+    '-q',
+    '-m',
+    message
+  )
 }
 
 function createCandidate() {
@@ -72,10 +93,8 @@ function createCandidate() {
     fs.writeFileSync(path.join(root, 'playwright/tests', spec), 'test base\n')
   }
   gitAt(root, 'init', '-q', '-b', 'main')
-  gitAt(root, 'config', 'user.email', 'ci@example.invalid')
-  gitAt(root, 'config', 'user.name', 'CI fixture')
   gitAt(root, 'add', '.')
-  gitAt(root, 'commit', '-q', '-m', 'base')
+  commitFixture(root, 'base')
   const baseSha = gitAt(root, 'rev-parse', 'HEAD').trim()
   return { root, baseSha }
 }
@@ -231,7 +250,7 @@ test('uses the exact merge-base and diff range, with history failures falling ba
       'test head\n'
     )
     gitAt(root, 'add', '.')
-    gitAt(root, 'commit', '-q', '-m', 'head')
+    commitFixture(root, 'head')
     const headSha = gitAt(root, 'rev-parse', 'HEAD').trim()
 
     const selected = selectPlaywrightPlan({

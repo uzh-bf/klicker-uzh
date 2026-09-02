@@ -1,9 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server'
-import {
-  hasConfiguredModeDescriptions,
-  resolveModeDescriptions,
-} from '@/src/lib/config/modes'
-import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
+import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
+import { NextRequest, NextResponse } from 'next/server'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 
 /**
  * Retrieves model details for a specific chatbot.
@@ -23,19 +21,28 @@ export async function GET(
     const chatbotResult = await getChatbotOr404(chatbotId, {
       modelSelection: true,
       systemPrompts: true,
+      mcpConfigurations: {
+        select: {
+          allowedTools: true,
+          chatMode: true,
+          isEnabled: true,
+          parameters: true,
+          priority: true,
+          mcpServer: { select: { id: true } },
+        },
+      },
     })
 
     if ('response' in chatbotResult) {
       return chatbotResult.response
     }
 
+    const { mcpConfigurations, ...chatbot } = chatbotResult.chatbot
     return NextResponse.json({
-      modelSelection: chatbotResult.chatbot.modelSelection,
-      modeDescriptions: resolveModeDescriptions(
-        chatbotResult.chatbot.systemPrompts
-      ),
-      modeDescriptionsAreFallback: !hasConfiguredModeDescriptions(
-        chatbotResult.chatbot.systemPrompts
+      modelSelection: chatbot.modelSelection,
+      modeOptions: resolveEffectiveChatModeOptions(
+        chatbot.systemPrompts,
+        mcpConfigurations
       ),
     })
   } catch (error) {

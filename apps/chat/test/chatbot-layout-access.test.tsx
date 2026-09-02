@@ -44,6 +44,7 @@ describe('chatbot layout access', () => {
         name: 'Course chatbot',
         avatar: null,
         systemPrompts: null,
+        mcpConfigurations: [],
       },
     })
     mocks.notFound.mockImplementation(() => {
