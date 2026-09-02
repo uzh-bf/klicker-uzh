@@ -46,55 +46,130 @@ What v4 changes, from the grill rulings:
 
 ## Progress
 
-Current status (2026-08-30): both approved current-target integrations and
-their companion source corrections are published. This receipt records the
-reviewed source state; GitHub PR metadata remains the authoritative readback for
-later check completion and draft state.
+Current status (2026-09-02): the release contract and staging-promotion
+safeguard are published in open PRs. The safeguard's ordinary exact-head checks
+are terminal and successful; its required manual final-review context remains
+pending. Roadmap custody still has a repository-policy failure because its
+`v3-ai` target is neither the default branch nor a verified native stack
+member. Neither PR is merge-ready, and no repository-control, staging,
+deployment, runtime, or acceptance action has occurred.
 
-- Active package: finish PR readiness for
+### 2026-08-30 Phase 5 boundary reconciliation
+
+- Package: staging-promotion pause safeguard
   [#5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) against `v3` and
+  roadmap custody
   [#5663](https://github.com/uzh-bf/klicker-uzh/pull/5663) against `v3-ai`.
-- Completed: roadmap and ADR custody, `3.4.0` RC correction, staging-pause
-  safeguard implementation and correction, focused local verification,
-  dedicated safeguard reviews, approved upstream integrations, draft PR
-  publication, and current parallel-owner inventory.
-- Latest verified integration commits: `20b0faab2` merges approved
-  `v3@aaf7cdf34` into the safeguard; `88fefcf9c` merges approved
-  `v3-ai@54fbfc921` into roadmap custody. The safeguard source head is
-  `a5ee745e9`; the custody content head before this Progress and ADR correction
-  is `04555a351`. The current PR heads are read back from GitHub before any
-  delivery decision.
-- Fresh verification: the safeguard passes all 39 policy tests, Bash syntax,
+- Required and achieved delivery: `pr_ready` for both. GitHub readback confirms
+  open, non-draft PRs at exact heads `a5ee745e9` and `4f2552c11`. Both are
+  `MERGEABLE` but `UNSTABLE`, so neither is merge-ready.
+- Source and verification: both package heads were clean before this Phase 5
+  transaction. The safeguard passes all 39 policy tests, Bash syntax,
   ShellCheck, YAML parsing, Prettier, and diff checks. Custody passes Prettier,
-  diff checks, and byte-equality checks proving it adds no Chat, deployment,
-  Playwright, or lockfile delta over `v3-ai@54fbfc921`.
-- Review and CI evidence: every ordinary exact-head check passed for safeguard
-  head `a5ee745e9` and custody head `04555a351`. Safeguard OpenCodeReview run
-  `33298221805` timed out both selected executable files with zero completed
-  coverage and no verdict, so it is unavailable evidence rather than a clean or
-  adverse review. The integrated native final review found no correctness or
-  security blocker; it required this Progress refresh and raised only
-  non-blocking durability and test-simplification concerns. This docs-only
-  correction receives its own immutable check and review readback in PR #5663.
-- Later target drift: `v3` advanced once more to `e84103606` after the
-  approved snapshot. That commit changes final-review configuration-path
-  coverage in the shared policy-test and deployment-guide files, but it does
-  not change the staging-promotion workflow or helper. No second integration
-  pass is authorized or performed. `v3-ai` still equals the integrated
-  `54fbfc921` target.
-- Required delivery layer: `pr_ready` for both initial packages. Achieved
-  layer: integrated and reviewed draft PR branches under the approved
-  publication pass; PR #5663 still requires the exact-head readback for this
-  receipt correction, and PR #5662 retains the recorded OCR timeout.
-- Remaining package gates: reconcile those two exact-head review states under
-  repository policy, then separately authorize each merge.
-  Repository controls, staging operations, tags, deployment, and live proof
-  remain withheld.
-- Parallel-work rule: keep N2, N3, and N5 read-only until their existing
-  owners publish exact-head receipts; reconcile their work instead of
-  recreating it.
-- Next action: publish this custody receipt under the approved pass, confirm
-  both exact remote heads, and let fresh exact-head CI settle.
+  diff checks, and byte-equality checks proving it added no Chat, deployment,
+  Playwright, or lockfile delta over its reviewed `v3-ai@54fbfc921` baseline.
+- Review state: the native integrated final-review correction returned `DONE`
+  with no findings. Safeguard OCR run `33298221805` timed out both selected
+  executable files with zero completed coverage and no verdict. Repository
+  final-review run `33299738112` completed its model pass but rejected a
+  malformed finding and preserved no report payload; the latest policy-only
+  body edit left the exact-head context pending manual review in run
+  `33300338455`. Custody run `33300164314` leaves its exact-head context in
+  `ERROR` because repository policy cannot verify the non-default `v3-ai`
+  target as a native stack. These are merge-policy gates, not unclassified
+  implementation work.
+- Target drift: fresh refs are `origin/v3@cd7426e3c` and
+  `origin/v3-ai@e9e8f2952`. The safeguard is 7 commits behind and 9 ahead of
+  `origin/v3`; custody is 26 behind and 8 ahead of `origin/v3-ai`. The newest
+  `v3-ai` commit is merged promotion PR #5684, which updates
+  `deploy/env-uzh-stg/values.yaml` for source `d32bff8b1`. It is desired-state
+  evidence only; this receipt does not infer deployed revision, runtime health,
+  or acceptance from it. No upstream integration is authorized or performed.
+- Parallel ownership: no active roadmap orchestrator owns this roadmap, so the
+  current package owner performed this reconciliation. N2, N3, N5, and other
+  active feature work remain with their existing owners. The active `v3`
+  release review and idle big-picture task were inspected read-only as evidence;
+  neither received a message, assignment, or instruction.
+- Withheld: no upstream integration, PR merge, repository variable or ruleset
+  write, Argo access, tag, staging reset, deployment, runtime proof, or live
+  acceptance action is authorized by this reconciliation.
+- Next W-item: **G0-2 — land the staging-promotion pause safeguard on `v3`,
+  then set `STG_PROMOTION_PAUSED=true`.** Start it through
+  `$rs-sliced-development-workflow`. Its plan must keep one current-`v3`
+  integration pass, review-policy resolution, PR merge, and the repository
+  variable write as named separate authority gates.
+
+### 2026-08-31 G0-2 current-v3 integration
+
+- Authority: the user approved one local integration of exact
+  `origin/v3@5a21988fb1b4acd285d60d3c41f481f0a96be892` into
+  `rs/stg-promotion-pause-guard`, focused checks, and then publication of that
+  exact head. PR merge and repository-variable writes remain withheld.
+- Source: merge commit `7e4998a713fd659d46030648d46f0a9401d8b748`
+  has parents `a5ee745e96c8e2a1b911387cb63689922d4ddbd9` and
+  `5a21988fb1b4acd285d60d3c41f481f0a96be892`. The guard worktree is clean and
+  matches its published upstream.
+  [PR #5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) points to the
+  exact merge head, targets `v3`, and is open, non-draft, `MERGEABLE`, and
+  `UNSTABLE` while its new exact-head checks are pending.
+- Interaction check: the shared policy-test and deployment-guide files merged
+  without conflicts. The new `v3` changes concern final-review runtime policy,
+  while the safeguard changes concern staging-promotion control. Against the
+  integrated `v3` parent, the candidate still changes only the five intended
+  safeguard paths.
+- Verification: all 55 policy tests pass; Bash syntax, ShellCheck, workflow
+  YAML parsing, Prettier, and both merge and candidate diff checks pass. Biome
+  exits successfully with ten warnings: five inherited from current `v3` and
+  five already present in the safeguard tests before this integration. The
+  merge introduced no new warning.
+- Review state: reuse the existing integrated-final review because the
+  integration preserves the reviewed safeguard behavior and current-base diff.
+  The target movement required and received the focused interaction evidence
+  above; it does not by itself re-arm a full review.
+- Required delivery layer: published, exact-head verified PR against `v3`.
+  Achieved layer: published exact-head candidate; CI and review-policy checks
+  are pending. Next action: let those checks settle and classify any failure
+  before requesting merge authority. Merging
+  [PR #5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) and writing
+  `STG_PROMOTION_PAUSED=true` remain later, separate gates.
+
+### 2026-09-02 consolidation and expert-transfer receipt
+
+- Fresh remote refs after `git fetch --prune` are
+  `origin/v3@72096fafe50827c3ea3f50465f0a76d492e0a4c2` and
+  `origin/v3-ai@05ff5e0727dc207df1bbdba6035cd446108e7d90`.
+- The staging-promotion safeguard remains clean and published at
+  `7e4998a713fd659d46030648d46f0a9401d8b748`. It is 10 commits ahead and 6
+  behind current `origin/v3`; GitHub reports it open, non-draft, `MERGEABLE`,
+  and `UNSTABLE`. All ordinary exact-head checks have passed or intentionally
+  skipped. The only pending context is `final-ai-review`, which requests the
+  repository's manual review route for this head. No second upstream
+  integration, merge, or repository-variable write is authorized or performed.
+- Roadmap custody before this receipt is published remains at
+  `4f2552c1186c45d8433b493f43751cf020b1fb17`, 8 commits ahead and 28 behind
+  current `origin/v3-ai`. GitHub reports it open, non-draft, `MERGEABLE`, and
+  `UNSTABLE`. Its ordinary checks passed; `final-ai-review` fails only because
+  repository policy does not accept a non-default `v3-ai` target without native
+  stack metadata. Retargeting away from `v3-ai` or inventing stack metadata is
+  not an acceptable workaround.
+- The repository's primary checkout remains unsuitable for implementation. It
+  is on `docs/chatbot-hitl-config-roadmap`, 1 commit ahead and 149 behind
+  `origin/v3`, with unrelated tracked and untracked changes. `origin/dev` has
+  advanced 62 commits past its merge-base and overlaps 37 files changed on that
+  branch. The consolidation expert must reuse the named custody and safeguard
+  worktrees and obtain explicit approval before any upstream integration.
+- Existing AI feature branches, PRs, worktrees, and Codex tasks retain their
+  current owners. This handoff creates no competing implementation and sends no
+  instruction to another active task. Reconciliation means inventorying and
+  reusing current owner heads before cutting the N1 lifecycle through N6 final
+  migration-tail normalization stack.
+- Continuation is transferred through
+  `~/.handoffs/klicker-uzh/2026-09-02-v3-ai-consolidation-expert-handoff.md`.
+  The next execution orchestrator starts from that handoff, this roadmap, and
+  live GitHub readback. Its first delivery boundary is source-only
+  reconciliation and package preparation; PR merge, repository controls,
+  staging, destructive reset, deployment, and acceptance remain separate
+  approvals.
 
 ## 1. Verified repository constraints (refreshed 2026-08-29)
 
