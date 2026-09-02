@@ -54,7 +54,7 @@ run and verify that its provider is stopped and no route remains.
 | Local Klicker target adapter | reviewed and committed | HEAD `4c11b8f17e118e1d04a7ba9ab62d5160d43b5e7e`; ten focused adapter tests pass. |
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. The tool config's expected name `EXPERT_df_fineco_expert` matches the verified runtime tool contract, and all 20 ground-truth cases key on that exact name (10 tutor, 10 explainer) with no `KB_doc_query` canary leakage. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
-| FineCo expert binding | desired-state config and source-verified bound; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. The Klicker doc-query overlays pin `v0.2.5-arm` (STG) and `v0.3.0-arm` (PRD); both serialize full chunk content with no trim under the same 60/20 retrieval contract. The proven local runtime exposed only `KB_doc_query`. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled); no runtime FineCo inventory is available, and the owner checklist below covers closing it. |
+| FineCo expert binding | runtime registration proven (server + DB wiring); session probe optional | Live STG (v0.7.2) and PRD (v0.3.0) doc-query both serve `df_fineco_expert` in `tools/list`; the klicker STG database routes the FineCo chatbot's tutor and explainer configs through the active `EXPERT` server with allowed tool `df_fineco_expert`, yielding `EXPERT_df_fineco_expert` via the verified namespacing. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled). A paid session probe remains optional confirmation. |
 | FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
 | Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
@@ -254,11 +254,14 @@ proof.
 
 ## External dependencies to watch
 
-- FineCo runtime owner: an authorized synthetic binding exposing
-  `EXPERT_df_fineco_expert` in tutor and explainer. The per-result output
-  ceiling is source-verified as finite (20 reranked documents × the
-  collection's 65,535-character `content` cap), but owner confirmation of
-  the runtime binding remains outstanding.
+- FineCo runtime binding: proven values-free at the deterministic runtime
+  layers (2026-09-02). The live STG (v0.7.2) and PRD (v0.3.0) doc-query
+  services both list `df_fineco_expert` in `tools/list`; the klicker STG
+  database has an active `EXPERT` MCP server, and the FineCo chatbot's
+  config rows enable `df_fineco_expert` on that server in both tutor and
+  explainer. The per-result output ceiling is source-verified as finite
+  (20 reranked documents × the collection's 65,535-character `content`
+  cap). The optional confirmatory step is one paid session probe.
 
   ### Owner inventory checklist (values-free)
 
@@ -434,6 +437,21 @@ auth flow, cookies, or other browser-only behavior.
   evidence is unchanged. The runtime inventory request remains with the
   FineCo runtime owner; W1 — FineCo expert-binding readiness and W2 —
   twenty-case FineCo capture and semantic judge remain `delivery_pending`.
+- 2026-09-02 — With the user's explicit lift of the no-runtime boundary for
+  a bounded read-only inventory, the runtime registration was verified
+  values-free in both environments. A port-forwarded MCP `tools/list` on
+  the live STG Klicker doc-query (pod image `sha-4fc395d137` = v0.7.2) and
+  the live PRD instance (pod image `v0.3.0-arm`, 30 tools) each include
+  `df_fineco_expert` and `df_fineco_expert_chunk_topics`. The captured
+  klicker STG database inventory (2026-08-26) shows an active `EXPERT` MCP
+  server whose host is the `mcp-doc-query-pipeline.prd-klicker-pipelines`
+  service, and the FineCo chatbot's enabled config rows allow
+  `df_fineco_expert` on that server in both tutor and explainer — with the
+  verified client namespacing this yields `EXPERT_df_fineco_expert`.
+  Live-vs-overlay drift is recorded: STG runs v0.7.2 while its overlay pins
+  `v0.2.5-arm`; PRD live matches its overlay. The only remaining step is
+  the optional paid session probe; the deterministic A1 — authorized FineCo
+  binding and finite response bound evidence is complete.
 - 2026-09-02 — Verified the tool-input side from source: the doc-query
   contract exposes `question` as a bare string parameter with no pydantic
   length constraint, `run_query` passes it into the prompt template
