@@ -75,6 +75,10 @@ does not deploy or migrate any environment.
   readers must not be mixed into that rollout. A crash after claiming and
   before terminal completion can leave a hidden marker; R1 therefore needs a
   documented detection owner and recovery path before activation.
+- Participant-credit debiting previously happened after message and owner-usage
+  finalization. The correction now performs the participant debit in that same
+  transaction, so a debit failure rolls back the completed message and owner
+  charge and a duplicate finalization cannot debit twice.
 - The exact current `v3` migration set has 182 migrations. Production history
   previously ended at 179, leaving the three reviewed Chat migrations as the
   release delta.
@@ -217,6 +221,8 @@ Check:
 - Concurrent writer-off claims with distinct assistant IDs produce one marker,
   one provider-eligible claim, one completed message, and one charge; explicit
   regeneration still creates a sibling and its separate charge.
+- Participant credit debit commits with the assistant message and owner usage,
+  and duplicate finalization leaves the participant balance unchanged.
 - A completed normal claim blocks a later normal claim with a distinct
   assistant ID without creating another message or charge.
 - Zero-content completion and pre-terminal failure remove the hidden marker and
@@ -365,6 +371,8 @@ compatibility limitation, not an authorization or charging bypass.
 - [x] Disposition the slice review: stale markers and cached-client reload
       behavior are documented as R1 operational gates; no automatic cleanup is
       added without a separate safety review.
+- [x] Move participant credit debiting into the finalization transaction and
+      verify one debit for a completed turn and no debit for its duplicate.
 - [x] Record the duplicate-charge root cause and prevention contract in
       `docs/solutions/data/chat-turn-duplicate-charging.md`.
 - [ ] Run fresh simplifier, slice-risk, and integrated final reviews on the

@@ -54,14 +54,16 @@ attempts remove it. A PostgreSQL transaction advisory lock keyed by the thread
 and user-message parent serializes normal claims. A completed or in-progress
 sibling therefore blocks a second normal provider attempt.
 
-`finalizeChatTurn` completes the claimed marker and applies the account-usage
-mutation in one transaction. R2 attempt tokens remain available for reclaim and
-late-callback protection. A failed sibling's old attempt token is invalidated
-before a different normal retry can claim the parent. The reload path in
-`useThreadManagement.onReload` opts into an explicit regeneration branch, so
-intentional sibling answers remain possible. No migration is required because
-the existing `ChatMessage` lifecycle columns already store the marker and
-attempt token.
+`finalizeChatTurn` completes the claimed marker, applies the account-usage
+mutation, and debits participant credits in one transaction. A participant
+credit failure therefore rolls back the completed message and owner charge,
+and a duplicate finalization returns the stored amount without debiting again.
+R2 attempt tokens remain available for reclaim and late-callback protection. A
+failed sibling's old attempt token is invalidated before a different normal
+retry can claim the parent. The reload path in `useThreadManagement.onReload`
+opts into an explicit regeneration branch, so intentional sibling answers
+remain possible. No migration is required because the existing `ChatMessage`
+lifecycle columns already store the marker and attempt token.
 
 ## Why This Works
 
@@ -80,6 +82,6 @@ separate user action.
   prove every Chat pod uses the complete-only reader before activation.
 - Retain PostgreSQL integration coverage for concurrent distinct-ID claims,
   duplicate finalization, failed retries, stale callbacks, empty completion,
-  and explicit regeneration.
+  explicit regeneration, and one-time participant credit debiting.
 - Do not replace the parent-scoped claim with a global parent uniqueness rule;
   reload and edit branches intentionally create sibling answers.

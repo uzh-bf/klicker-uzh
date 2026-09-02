@@ -73,9 +73,10 @@ invariants.
   reconciliation to a later usage-accounting package.
 - R1's hidden marker makes the claim boundary durable without exposing an empty
   assistant row. The completed-message transition remains the charging
-  boundary: one normal non-empty turn persists and charges, while duplicate,
-  failed, and successful empty attempts do not. Explicit regeneration may still
-  create and charge a sibling answer by design.
+  boundary: one normal non-empty turn persists and charges the owner and
+  participant balances together, while duplicate, failed, and successful empty
+  attempts do not. Explicit regeneration may still create and charge a sibling
+  answer by design.
 - Strict startup parsing can prevent readiness after a bad registry change;
   deployment configuration must therefore be validated and rolled back to the
   last valid registry before any later activation.

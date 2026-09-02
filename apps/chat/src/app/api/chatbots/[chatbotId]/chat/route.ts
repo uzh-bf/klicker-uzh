@@ -1433,14 +1433,11 @@ export async function POST(
       rawCreditsUsed: number | null
       phase: 'complete' | 'abort'
     }) => {
-      let finalizationOutcome: 'completed' | 'duplicate' | 'empty' | 'failed' =
-        'failed'
-      let participantCreditsUsed: number | null = null
-
       try {
-        const result = await finalizeChatTurn({
+        await finalizeChatTurn({
           ownerId: chatbot.ownerId,
           chatbotId,
+          participantId,
           usageClass: selectedModelConfig.usageClass,
           threadId: owningThread.id,
           assistantMessageId,
@@ -1453,10 +1450,6 @@ export async function POST(
           reasoningContent,
           rawCreditsUsed,
         })
-        finalizationOutcome = result.outcome
-        if (result.outcome === 'completed') {
-          participantCreditsUsed = result.creditsUsed
-        }
       } catch (error) {
         console.error(
           'Failed to finalize assistant message and account usage:',
@@ -1467,26 +1460,6 @@ export async function POST(
           }
         )
         await failAssistantClaim(`finalize.${phase}`)
-      }
-
-      if (
-        finalizationOutcome === 'completed' &&
-        participantCreditsUsed !== null &&
-        participantCreditsUsed > 0
-      ) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            participantCreditsUsed
-          )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
       }
     }
 

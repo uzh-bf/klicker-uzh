@@ -34,6 +34,7 @@ function turnInput(
   return {
     ownerId: OWNER_ID,
     chatbotId: CHATBOT_ID,
+    participantId: PARTICIPANT_ID,
     usageClass: 'BASE',
     threadId: THREAD_ONE_ID,
     assistantMessageId,
@@ -70,6 +71,9 @@ async function claimedTurnInput(
 async function resetUsage(usedCredits = 0, budgetCredits = 10) {
   await prisma.chatMessage.deleteMany({
     where: { threadId: { in: [THREAD_ONE_ID, THREAD_TWO_ID] } },
+  })
+  await prisma.chatUsageCredits.deleteMany({
+    where: { participantId: PARTICIPANT_ID, chatbotId: CHATBOT_ID },
   })
   await prisma.user.update({
     where: { id: OWNER_ID },
@@ -318,6 +322,40 @@ describePostgres('account usage PostgreSQL integration', () => {
         where: { ownerId: OWNER_ID, usageClass: 'BASE' },
       })
     ).toBe(0)
+  })
+
+  test('debits participant credits in the finalization transaction once', async () => {
+    const messageId = randomUUID()
+    const input = await claimedTurnInput(messageId)
+
+    await expect(accountUsage.finalizeChatTurn(input)).resolves.toEqual({
+      outcome: 'completed',
+      creditsUsed: 0.25,
+    })
+
+    const firstBalance = await prisma.chatUsageCredits.findUniqueOrThrow({
+      where: {
+        participantId_chatbotId: {
+          participantId: PARTICIPANT_ID,
+          chatbotId: CHATBOT_ID,
+        },
+      },
+    })
+    expect(firstBalance.current.toString()).toBe('0.75')
+
+    await expect(
+      accountUsage.finalizeChatTurn({ ...input, rawCreditsUsed: 9 })
+    ).resolves.toEqual({ outcome: 'duplicate', creditsUsed: 0.25 })
+
+    const duplicateBalance = await prisma.chatUsageCredits.findUniqueOrThrow({
+      where: {
+        participantId_chatbotId: {
+          participantId: PARTICIPANT_ID,
+          chatbotId: CHATBOT_ID,
+        },
+      },
+    })
+    expect(duplicateBalance.current.toString()).toBe('0.75')
   })
 
   test('claims one message key and charges a retry only once', async () => {

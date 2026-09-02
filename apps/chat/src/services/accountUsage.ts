@@ -3,6 +3,7 @@ import { type ChatUsageClass, Prisma } from '@klicker-uzh/prisma/client'
 import { getZurichMonthStart } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { withTransaction } from '../utils/transactions'
+import { CreditsService } from './credits'
 
 const CREDIT_SCALE = 6
 const CREDIT_LIMIT = new Prisma.Decimal('1000000000000')
@@ -29,6 +30,7 @@ export class ChatTurnConflictError extends Error {
 export type FinalizeChatTurnInput = {
   ownerId: string
   chatbotId: string
+  participantId: string
   usageClass: ChatUsageClass
   threadId: string
   assistantMessageId: string
@@ -335,6 +337,7 @@ export async function finalizeChatTurn(
     const thread = await tx.chatThread.findFirst({
       where: {
         id: input.threadId,
+        participantId: input.participantId,
         chatbotId: input.chatbotId,
         chatbot: { ownerId: input.ownerId },
       },
@@ -458,6 +461,15 @@ export async function finalizeChatTurn(
           },
         })
       }
+    }
+
+    if (credits !== null && credits.greaterThan(0)) {
+      await CreditsService.decrementCreditsInTransaction(
+        tx,
+        input.participantId,
+        input.chatbotId,
+        credits.toNumber()
+      )
     }
 
     await tx.chatThread.update({

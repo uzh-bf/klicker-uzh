@@ -586,20 +586,13 @@ describe('account usage chat route', () => {
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'assistant-1',
+        participantId: 'participant-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         modelId: 'gpt-5.6-luna',
         rawCreditsUsed: 0.000008,
       })
     )
-    expect(mocks.finalizeChatTurn.mock.calls[0][0]).not.toHaveProperty(
-      'participantId'
-    )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.000008
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
 
     expect(
       responseOptions().messageMetadata({
@@ -803,7 +796,7 @@ describe('account usage chat route', () => {
         ]),
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('marks a provider error as failed so the same key can be retried', async () => {

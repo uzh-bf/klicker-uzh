@@ -317,16 +317,18 @@ reservation, so the bounded final-turn and concurrent overrun accepted by
 next request then fails its live check.
 
 The existing `ChatUsageCredits` balance remains a separate participant
-allowance. Its decrement runs after account finalization and is not part of the
-account transaction. At zero participant credits, the route switches from any
-effective model to GPT-5.6 Luna and clamps its effective usage class to
-`BASE` before enforcement; Luna is therefore charged only through its `BASE`
-account lane and the participant allowance. This fallback intentionally does
-not require the chatbot allow-list to contain Luna. Automatic selection
-otherwise retains Auto and is attributed to `ADVANCED`; the credits response
-keeps allow-listed model capabilities visible independently of the participant
-balance. Strict reservations, immutable ledgers, automated refunds, invoices,
-per-chatbot allocation, and participant-credit migration remain deferred.
+allowance. Its decrement is part of the `finalizeChatTurn` transaction together
+with the completed message and account usage, so a failed debit rolls back the
+other two writes and a duplicate completion cannot debit twice. At zero
+participant credits, the route switches from any effective model to GPT-5.6
+Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
+therefore charged only through its `BASE` account lane and the participant
+allowance. This fallback intentionally does not require the chatbot allow-list
+to contain Luna. Automatic selection otherwise retains Auto and is attributed
+to `ADVANCED`; the credits response keeps allow-listed model capabilities
+visible independently of the participant balance. Strict reservations,
+immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
+participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - The zero-credit participant path uses GPT-5.6 Luna as the base-lane fallback
