@@ -374,3 +374,18 @@ auth flow, cookies, or other browser-only behavior.
   authorized values-free tool inventory; W1 — FineCo expert-binding readiness
   and W2 — twenty-case FineCo capture and semantic judge remain
   `delivery_pending`.
+- 2026-09-02 — Re-verified the deployment basis read-only: no commits touch
+  `pipelines/` since `origin/main@08d82585`, so the STG and PRD tool
+  configs still point `df_fineco_expert` at Milvus collection
+  `df_fineco_v1` while the PRD activation targeted the shared collection.
+  The activation receipts now prove both FineCo copies applied in full:
+  `status: applied` with 459 source rows, 459 copied, and 0 skipped in both
+  the STG sweep and the PRD activation. A targeted diff of the standalone
+  doc-query service from the deployed v0.7.2 to `origin/main@748b5a2` found
+  no output-limit or content-trim change; the only truncation-like hit is a
+  32-hex fallback for generated chunk IDs. The finite per-result ceiling
+  therefore remains 20 × 65,535 characters on both the deployed and current
+  service source. The remaining A1 — authorized FineCo binding and finite
+  response bound dependency is still the runtime owner's authorized
+  values-free tool inventory; W1 — FineCo expert-binding readiness and W2 —
+  twenty-case FineCo capture and semantic judge remain `delivery_pending`.
