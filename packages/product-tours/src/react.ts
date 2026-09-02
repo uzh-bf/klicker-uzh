@@ -21,6 +21,13 @@ import { escapeHtml } from './index.js'
 const DOCUMENTATION_LINK_CLASS = 'driver-popover-doc-link'
 
 /**
+ * The structural class on the skip control. Driver.js has no button slot left
+ * for it — next, previous and close are all spoken for — so the tour adds its
+ * own element and needs a stable hook to style it, exactly as above.
+ */
+const SKIP_BUTTON_CLASS = 'driver-popover-skip-btn'
+
+/**
  * The look of every product-tour popover, in one place, so the lecturer
  * interface, the student app and the chat introduce themselves the same way.
  *
@@ -64,6 +71,16 @@ export const TOUR_POPOVER_CLASS = `
   [&_.driver-popover-footer]:gap-4
   [&_.driver-popover-progress-text]:text-xs
   [&_.driver-popover-progress-text]:text-muted-foreground
+  [&_.driver-popover-skip-btn]:ml-3
+  [&_.driver-popover-skip-btn]:cursor-pointer
+  [&_.driver-popover-skip-btn]:bg-transparent
+  [&_.driver-popover-skip-btn]:p-0
+  [&_.driver-popover-skip-btn]:text-xs
+  [&_.driver-popover-skip-btn]:font-medium
+  [&_.driver-popover-skip-btn]:text-muted-foreground
+  [&_.driver-popover-skip-btn]:underline
+  [&_.driver-popover-skip-btn]:underline-offset-2
+  [&_.driver-popover-skip-btn:hover]:text-foreground
   [&_.driver-popover-navigation-btns]:gap-2
   [&_.driver-popover-navigation-btns_button]:ml-0
   [&_.driver-popover-next-btn]:rounded-md
@@ -231,6 +248,8 @@ export interface ProductTourLabels {
   next: string
   previous: string
   done: string
+  /** The labelled way out, next to the step counter. */
+  skip: string
   /** Carries driver.js' `{{current}}` and `{{total}}` markers. */
   progress: string
 }
@@ -342,6 +361,28 @@ export function useProductTour({
       nextBtnText: escapeHtml(current.labels.next),
       prevBtnText: escapeHtml(current.labels.previous),
       doneBtnText: escapeHtml(current.labels.done),
+      // Driver.js only offers a close icon to leave early, and an unlabelled
+      // glyph is not an obvious way out for someone who is met by a tour they
+      // never asked for. The footer gains a named control beside the step
+      // counter, deliberately quiet so it does not compete with the primary
+      // action. It is omitted on the last step, where "Done" already ends the
+      // tour and a second button with the same effect only reads as a puzzle.
+      onPopoverRender: (popover, opts) => {
+        if (opts.driver.isLastStep()) return
+
+        const skip = document.createElement('button')
+        skip.type = 'button'
+        skip.className = SKIP_BUTTON_CLASS
+        // textContent, not innerHTML: this is the one popover string driver.js
+        // does not write itself, so it never needs the escaping the others do.
+        skip.textContent = current.labels.skip
+        skip.addEventListener('click', () => {
+          endReason.current = 'skip'
+          instance.destroy()
+        })
+
+        popover.footer.insertBefore(skip, popover.footerButtons)
+      },
       // Driver.js only calls these instead of its own teardown, so each one has
       // to destroy the overlay itself. They exist to tell the three endings
       // apart; the state they leave behind is the same for all of them.
