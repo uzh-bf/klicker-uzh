@@ -498,3 +498,24 @@ Return to the user if:
       that this drift does not require a second integration pass. The
       unrelated user-owned historical-plan edit was restored byte-for-byte and
       remains unstaged.
+- [x] Exact-head CI diagnosis found that Layer 3 Playwright run `33633389975`
+      failed before its third shard could start because the candidate-only
+      authoring spec was assigned to `full`, while that lower branch did not
+      yet contain the trusted `full` to bounded `playwright` profile adapter.
+      The already-reviewed fallback was therefore moved to the first branch
+      that introduces the spec: Layer 2 now ends at `0e0d788e863b`, Layer 3
+      propagates it at `c31276df203`, and Layer 4 records the ancestry at
+      `2d442df99ed`. The top tree otherwise changes only
+      `ChatbotDetails.tsx`: explicit locale-aware sort comparators replace two
+      implicit sorts, and the usage summary's key cells are semantic row
+      headers. Those corrections resolve the three exact Sonar findings without
+      changing business logic. The final Node 24 devcontainer run passes root
+      `check:all`, including all 57 Playwright CI/runtime tests, all 7 lint tasks,
+      and all 25 check tasks; the production build passes all 23 tasks. A
+      trusted Sol xhigh final reviewer approved exact head `2d442df99ed` for
+      publication to exact-head CI with no findings. The configured simplifier
+      route returned unrelated context twice, so the continuity fallback used
+      trusted Luna max and approved the correction with no warranted
+      simplification. No response-example or ground-truth work entered the
+      stack, and the unrelated user-owned historical-plan edit remains
+      unstaged.
