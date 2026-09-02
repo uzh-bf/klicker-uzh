@@ -5,12 +5,55 @@ import {
 import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
 import { decodeJWT } from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+
+export async function getParticipantIdFromToken(
+  participantToken: string | undefined
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  if (!participantToken) {
+    return {
+      response: NextResponse.json(
+        { error: 'No authentication token found' },
+        { status: 401 }
+      ),
+    }
+  }
+
+  try {
+    const jwtPayload = await jwtVerify(
+      participantToken,
+      new TextEncoder().encode(process.env.APP_SECRET || '')
+    )
+    const participantId =
+      typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub
+        ? jwtPayload.payload.sub
+        : null
+
+    if (!participantId) {
+      return {
+        response: NextResponse.json(
+          { error: 'Invalid authentication token' },
+          { status: 401 }
+        ),
+      }
+    }
+
+    return { participantId }
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    return {
+      response: NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      ),
+    }
+  }
+}
 
 export type { AuthMode }
 
@@ -263,6 +306,35 @@ export async function withChatbotAuth(
   return { participantId, authMode, chatbot: chatbotResult.chatbot }
 }
 
+export async function withChatbotTokenAuth(
+  participantToken: string | undefined,
+  chatbotId: string
+): Promise<
+  | { participantId: string; chatbot: { courseId: string } }
+  | { response: NextResponse }
+> {
+  const participantResult = await getParticipantIdFromToken(participantToken)
+  if ('response' in participantResult) {
+    return participantResult
+  }
+  const { participantId } = participantResult
+
+  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
+  if ('response' in chatbotResult) {
+    return chatbotResult
+  }
+
+  const participationResult = await requireParticipation(
+    participantId,
+    chatbotResult.chatbot.courseId
+  )
+  if ('response' in participationResult) {
+    return participationResult
+  }
+
+  return { participantId, chatbot: chatbotResult.chatbot }
+}
+
 export async function requireParticipation(
   participantId: string,
   courseId: string
@@ -275,6 +347,7 @@ export async function requireParticipation(
           participantId,
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {

@@ -2,7 +2,11 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { createChatbot, updateChatbot } from '../src/services/chatbots.js'
+import {
+  createChatbot,
+  getChatbotsInfo,
+  updateChatbot,
+} from '../src/services/chatbots.js'
 import {
   initializePrisma,
   seedCourse,
@@ -46,7 +50,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
   afterEach(async () => await testCleanup(prisma))
 
   describe('createChatbot', () => {
-    it('creates a DRAFT tutor-only chatbot owned by the caller', async () => {
+    it('creates a DRAFT chatbot with platform modes owned by the caller', async () => {
       const course = await seedCourse({}, userOneCtx)
 
       const chatbot = await createChatbot(
@@ -66,8 +70,8 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         courses: [{ id: course.id }],
       })
 
-      // Row is persisted with the caller as owner, DRAFT, no custom modes
-      // (systemPrompts null -> tutor-only default at runtime).
+      // Row is persisted with the caller as owner, DRAFT, and no custom mode
+      // overrides (systemPrompts null -> platform defaults at runtime).
       const row = await prisma.chatbot.findUniqueOrThrow({
         where: { id: chatbot.id },
         select: {
@@ -177,6 +181,46 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         select: { name: true },
       })
       expect(row).toEqual({ name: 'Original' })
+    })
+  })
+
+  describe('getChatbotsInfo', () => {
+    it('normalizes a retired allow-list for the owner without rewriting the row', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      const chatbot = await prisma.chatbot.create({
+        data: {
+          name: 'Legacy model chatbot',
+          courseId: course.id,
+          ownerId: userOneCtx.user.sub,
+          allowedModelIds: ['gpt-4.1-mini'],
+          allowedReasoningEffortsByModel: {
+            'gpt-4.1-mini': ['medium'],
+          },
+        },
+      })
+
+      const [info] = await getChatbotsInfo(userOneCtx)
+
+      expect(info).toMatchObject({
+        id: chatbot.id,
+        allowedModelIds: ['gpt-5.6-luna'],
+        allowedReasoningEffortsByModel: [],
+      })
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+          select: {
+            allowedModelIds: true,
+            allowedReasoningEffortsByModel: true,
+          },
+        })
+      ).resolves.toEqual({
+        allowedModelIds: ['gpt-4.1-mini'],
+        allowedReasoningEffortsByModel: {
+          'gpt-4.1-mini': ['medium'],
+        },
+      })
     })
   })
 })

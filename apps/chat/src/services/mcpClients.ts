@@ -383,8 +383,9 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   }
 
   return allowedTools.some((pattern) => {
-    // Convert wildcard pattern to regex
+    // Escape regex syntax so only the documented wildcards stay special.
     const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*') // Replace * with .*
       .replace(/\?/g, '.') // Replace ? with .
 

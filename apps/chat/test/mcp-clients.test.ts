@@ -302,6 +302,17 @@ describe('MCP runtime policy', () => {
     ).resolves.toEqual({ IW_search_docs: { description: 'search' } })
   })
 
+  test('treats regex metacharacters as literals in optional allow lists', async () => {
+    setTools({ doc_query: { description: 'search' }, unrelated: {} })
+
+    await expect(
+      getAggregatedMCPTools(
+        [createServer({}, { allowedTools: ['doc_query', '|'] })],
+        'chatbot-1'
+      )
+    ).resolves.toEqual({ IW_doc_query: { description: 'search' } })
+  })
+
   test('rejects malformed strict policy and alias collisions', async () => {
     for (const parameters of [
       { required: true },

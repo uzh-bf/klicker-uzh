@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
       update: vi.fn(),
     },
   },
+  decrementCreditsInTransaction: vi.fn(),
   withTransaction: vi.fn(),
 }))
 
@@ -23,6 +24,11 @@ vi.mock('@klicker-uzh/prisma', () => ({
 }))
 vi.mock('../src/utils/transactions', () => ({
   withTransaction: mocks.withTransaction,
+}))
+vi.mock('../src/services/credits', () => ({
+  CreditsService: {
+    decrementCreditsInTransaction: mocks.decrementCreditsInTransaction,
+  },
 }))
 
 import {
@@ -69,6 +75,7 @@ describe('account usage finalization errors', () => {
       finalizeChatTurn({
         ownerId: 'owner-1',
         chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'message-1',
