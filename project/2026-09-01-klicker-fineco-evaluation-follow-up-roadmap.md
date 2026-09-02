@@ -251,7 +251,10 @@ prove runtime registration or a finite per-result input/tool-output bound.
 ## External dependencies to watch
 
 - FineCo runtime owner: an authorized synthetic binding exposing
-  `EXPERT_df_fineco_expert` and its finite response bound.
+  `EXPERT_df_fineco_expert` in tutor and explainer. The per-result output
+  ceiling is source-verified as finite (20 reranked documents × the
+  collection's 65,535-character `content` cap), but owner confirmation of
+  the runtime binding remains outstanding.
 - AI infrastructure deployment source: `origin/main@08d82585` contains the
   `df_fineco_expert` tool config and includes it in the STG and PRD tool
   ConfigMaps. Both base ConfigMaps set `RETRIEVAL_TOP_K=60`,
@@ -356,3 +359,18 @@ auth flow, cookies, or other browser-only behavior.
   20-document count still lacks a runtime-backed per-result output byte/token
   ceiling; W1 — FineCo expert-binding readiness and W2 — twenty-case FineCo
   capture and semantic judge remain `delivery_pending`.
+- 2026-09-02 — Inspected the prior activation artifacts read-only: the S4
+  legacy schema capture contains an actual Milvus readback of `df_fineco_v1`
+  with `content` as VARCHAR `max_length` 65535, and the shared
+  `klicker_course_materials_v1` target shows the same cap. The PRD
+  activation manifest additionally shows the `df_fineco_expert` tool wired
+  as required with alias `doc_query` in both tutor and explainer, targeting
+  the shared collection, while the deployed STG and PRD tool ConfigMaps at
+  `origin/main@08d82585` still name `df_fineco_v1` directly; both
+  collections carry the same content cap, so the ceiling conclusion holds on
+  either path. The per-result serialization ceiling is source-verified as
+  finite at 20 × 65,535 characters. The remaining A1 — authorized FineCo
+  binding and finite response bound dependency is the runtime owner's
+  authorized values-free tool inventory; W1 — FineCo expert-binding readiness
+  and W2 — twenty-case FineCo capture and semantic judge remain
+  `delivery_pending`.

@@ -295,11 +295,18 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   exact runtime was then stopped; its app and LiteLLM providers are exited,
   and zero exact devrouter routes remain.
 - A1 source readback: `ai-infrastructure/deployment` `origin/main@08d82585`
-  includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes
-  reranked output to 20 documents. The local `ai-buddy` `dev@344a6800a`
-  source passes that bound to the Cohere reranker but serializes full chunk
-  content with no final output trim. This is a desired-state 20-document-count
-  lead, not runtime proof or a finite per-result output byte/token ceiling.
+  includes `df_fineco_expert` in the STG and PRD tool ConfigMaps, points both
+  at Milvus collection `df_fineco_v1`, and fixes reranked output to 20
+  documents. The local `ai-buddy` `dev@344a6800a` source passes that bound
+  to the Cohere reranker but serializes full chunk content with no final
+  output trim. An actual Milvus schema readback captured 2026-08-26 shows the
+  `df_fineco_v1` `content` field as VARCHAR with `max_length` 65535, and
+  the shared `klicker_course_materials_v1` target shows the same cap.
+  Combined with the 20-document rerank bound, the per-result serialization
+  ceiling is source-verified as finite: 20 × 65,535 characters. Ingestion
+  chunk-size defaults remain leads, not bounds. This is still desired-state
+  and stored-field evidence, not runtime proof that
+  `EXPERT_df_fineco_expert` is registered in tutor and explainer.
 - FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
   `Context7_resolve-library-id`, but not `EXPERT_df_fineco_expert`. No
   20-case query, semantic judge, or external FineCo binding was run. The
