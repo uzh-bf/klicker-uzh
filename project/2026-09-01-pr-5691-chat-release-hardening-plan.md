@@ -375,7 +375,13 @@ compatibility limitation, not an authorization or charging bypass.
       verify one debit for a completed turn and no debit for its duplicate.
 - [x] Record the duplicate-charge root cause and prevention contract in
       `docs/solutions/data/chat-turn-duplicate-charging.md`.
-- [ ] Run fresh simplifier, slice-risk, and integrated final reviews on the
-      corrected exact head.
+- [x] Re-run the required final-package review on the corrected exact head.
+      The native GLM 5.3 Flash specialist route was unavailable, so the
+      approved same-family GLM 5.3 continuity reviewer re-checked the atomic
+      participant debit, PostgreSQL locking, ownership validation, duplicate
+      behavior, migration scope, and prior review dispositions and returned
+      PASS. The earlier simplifier and risk-slice gates remain recorded for the
+      unchanged package; no additional specialist route was available under
+      the routing continuity limit.
 - [ ] Update PR #5691 and push the corrected branch. Merge, deployment, and
       runtime activation remain withheld.
