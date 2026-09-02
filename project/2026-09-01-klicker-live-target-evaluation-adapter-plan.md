@@ -294,11 +294,12 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   unintegrated after the user selected the verified `origin/v3` basis. The
   exact runtime was then stopped; its app and LiteLLM providers are exited,
   and zero exact devrouter routes remain.
-- A1 source readback: `ai-infrastructure/deployment` `origin/main@1188ff25`
-  includes `df_fineco_expert` in the STG and PRD tool ConfigMaps. The local
-  `ai-buddy` `dev@41db6926` doc-query source appends all remaining documents
-  after source-priority rescue without a final output trim. This is a source
-  lead, not runtime proof or a finite per-result input/tool-output bound.
+- A1 source readback: `ai-infrastructure/deployment` `origin/main@08d82585`
+  includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes
+  reranked output to 20 documents. The local `ai-buddy` `dev@344a6800a`
+  source passes that bound to the Cohere reranker but serializes full chunk
+  content with no final output trim. This is a desired-state 20-document-count
+  lead, not runtime proof or a finite per-result output byte/token ceiling.
 - FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
   `Context7_resolve-library-id`, but not `EXPERT_df_fineco_expert`. No
   20-case query, semantic judge, or external FineCo binding was run. The

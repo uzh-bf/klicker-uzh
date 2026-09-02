@@ -54,7 +54,7 @@ run and verify that its provider is stopped and no route remains.
 | Local Klicker target adapter | reviewed and committed | HEAD `4c11b8f17e118e1d04a7ba9ab62d5160d43b5e7e`; ten focused adapter tests pass. |
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
-| FineCo expert binding | desired-state config found; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@1188ff25` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps, but the proven local runtime exposed only `KB_doc_query` and `Context7_resolve-library-id`; no runtime inventory or finite response bound is available. |
+| FineCo expert binding | desired-state config and source bound refined; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. `ai-buddy` `dev@344a6800a` returns full chunk content with no character/token trim. The proven local runtime exposed only `KB_doc_query`; no runtime FineCo inventory or finite output byte/token ceiling is available. |
 | FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
 | Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
@@ -252,13 +252,15 @@ prove runtime registration or a finite per-result input/tool-output bound.
 
 - FineCo runtime owner: an authorized synthetic binding exposing
   `EXPERT_df_fineco_expert` and its finite response bound.
-- AI infrastructure deployment source: `origin/main@1188ff25` contains the
+- AI infrastructure deployment source: `origin/main@08d82585` contains the
   `df_fineco_expert` tool config and includes it in the STG and PRD tool
-  ConfigMaps. This is desired-state evidence, not live runtime proof.
-- Doc-query source contract: `ai-buddy` `dev@41db6926` contains a source-priority
-  stage that appends all remaining documents after rescue, without a final
-  output trim. The source and deployment config therefore do not yet provide
-  the required finite per-result input/tool-output ceiling.
+  ConfigMaps. Both base ConfigMaps set `RETRIEVAL_TOP_K=60`,
+  `RETRIEVAL_RERANKER_TOP_K=20`, and `RERANKER_TYPE=cohere`. This is
+  desired-state evidence, not live runtime proof.
+- Doc-query source contract: `ai-buddy` `dev@344a6800a` passes the configured
+  `top_k` to the Cohere reranker and returns full chunk content without a
+  final character/token trim. This gives a desired-state 20-document-count
+  lead, but not the required finite per-result output byte/token ceiling.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain operator-injected and never enter Git.
 - Infisical profiles `klicker-dev` and the separately approved judge profile:
@@ -342,3 +344,15 @@ auth flow, cookies, or other browser-only behavior.
   evaluation worktree was repaired and amended without source changes. The
   primary checkout remains restored with safety stash
   `b8fb2568bef5e0d3bc53bbbd96464d3a86822fff` intact.
+- 2026-09-02 — Refreshed read-only source inspection found the FineCo config
+  in STG and PRD at deployment `origin/main@08d82585`, with both base
+  ConfigMaps setting retrieval to 60 and reranked output to 20. At
+  `ai-buddy` `dev@344a6800a`, the configured reranker is Cohere and documents
+  mode serializes each reranked chunk's full content with no final trim. The
+  Klicker client namespaces `EXPERT` + `df_fineco_expert` to the expected
+  tool name, but no authorized runtime inventory or synthetic probe proves
+  that binding is active in tutor and explainer. A1 — authorized FineCo
+  binding and finite response bound remains open because the desired-state
+  20-document count still lacks a runtime-backed per-result output byte/token
+  ceiling; W1 — FineCo expert-binding readiness and W2 — twenty-case FineCo
+  capture and semantic judge remain `delivery_pending`.
