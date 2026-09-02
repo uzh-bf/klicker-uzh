@@ -3292,6 +3292,65 @@ test('does not overwrite a newer individual-review status during finalization', 
   assert.equal(statuses.length, 0)
 })
 
+test('terminalizes over a later passive manual-review status for the same head', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'feature/review',
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    statuses: [
+      {
+        context: 'final-ai-review',
+        state: 'pending',
+        description: `Manual ${FINAL_REVIEW_MODEL} final review required for this head`,
+        target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+      },
+    ],
+  })
+  const context = {
+    payload: { repository: { default_branch: 'v3' } },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 702,
+    serverUrl: 'https://github.com',
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha,
+    headSha,
+    scopeKind: 'default',
+    stackId: '',
+    stackPosition: '',
+    stackOrderDigest: '',
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(state.createdStatuses.length, 1)
+  assert.equal(state.createdStatuses[0].state, 'success')
+  assert.equal(
+    state.createdStatuses[0].description,
+    `${FINAL_REVIEW_MODEL} final review completed for this head`
+  )
+})
+
 test('rejects duplicate disposition markers as ambiguous', () => {
   const record = {
     schema_version: 'final-ai-disposition/v1',

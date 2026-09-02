@@ -31,6 +31,7 @@ const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; evidence=`
+const FINAL_REVIEW_REQUIRED_DESCRIPTION = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
@@ -2229,7 +2230,7 @@ async function initializeFinalReview({
 }) {
   const pull = context.payload.pull_request
   let state = 'pending'
-  let description = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
+  let description = FINAL_REVIEW_REQUIRED_DESCRIPTION
 
   if (pull.state !== 'open') {
     state = 'error'
@@ -3226,18 +3227,22 @@ function decideFinalStatus({
   }
 }
 
+function canFinalizeLatestStatus(latestStatus, context) {
+  return (
+    !latestStatus?.target_url ||
+    latestStatus.target_url === workflowRunUrl(context) ||
+    (latestStatus.state === 'pending' &&
+      latestStatus.description === FINAL_REVIEW_REQUIRED_DESCRIPTION)
+  )
+}
+
 async function finalizeFinalReviewFailure({ github, context, headSha }) {
   const latestStatus = await getLatestFinalReviewStatus(
     github,
     context,
     headSha
   )
-  if (
-    latestStatus?.target_url &&
-    latestStatus.target_url !== workflowRunUrl(context)
-  ) {
-    return
-  }
+  if (!canFinalizeLatestStatus(latestStatus, context)) return
   await setCommitStatus({
     github,
     context,
@@ -3276,10 +3281,7 @@ async function finalizeFinalReview({
       context,
       headSha
     )
-    return (
-      !latestStatus?.target_url ||
-      latestStatus.target_url === workflowRunUrl(context)
-    )
+    return canFinalizeLatestStatus(latestStatus, context)
   }
   let pull
   let eligibility
@@ -3390,12 +3392,7 @@ async function finalizeFinalReview({
     context,
     headSha
   )
-  if (
-    latestStatus?.target_url &&
-    latestStatus.target_url !== workflowRunUrl(context)
-  ) {
-    return
-  }
+  if (!canFinalizeLatestStatus(latestStatus, context)) return
   if (status.state === 'success' && cleanEvidenceMetadata) {
     try {
       await publishIndividualCleanEvidence({
