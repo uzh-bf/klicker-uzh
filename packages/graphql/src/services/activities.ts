@@ -41,7 +41,10 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null } },
+        where: {
+          courseId: { not: null },
+          course: { deletionRequestedAt: null },
+        },
         include: {
           course: {
             select: {
@@ -1098,7 +1101,22 @@ export async function getLiveQuizDetails(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [
+        { courseId: null },
+        { course: { deletionRequestedAt: null } },
+        {
+          course: {
+            deletionRequestedAt: { not: null },
+          },
+          OR: [
+            { status: { not: DB.PublicationStatus.DRAFT } },
+            { course: { deleteDraftActivitiesOnDeletion: false } },
+          ],
+        },
+      ],
+    },
     include: {
       owner: true,
       _count: {
@@ -1270,11 +1288,15 @@ export async function getLiveQuizDetails(
       }
 
   const isActivityManager = liveQuiz._count.permissions > 0
+  const visibleCourse = liveQuiz.course?.deletionRequestedAt
+    ? null
+    : liveQuiz.course
   return {
     ...liveQuiz,
+    course: visibleCourse,
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
-      (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
+      (!!visibleCourse && visibleCourse._count.permissions > 0),
     isActivityManager,
     ownerShortname: liveQuiz.owner.shortname,
     ownerEmail: isActivityManager ? liveQuiz.owner.email : null,
@@ -1384,7 +1406,7 @@ export async function getPracticeQuizDetails(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1482,7 +1504,7 @@ export async function getMicroLearningDetails(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1581,7 +1603,7 @@ export async function getGroupActivityDetails(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       owner: true,
       _count: {
@@ -1803,15 +1825,58 @@ export async function getCourseActivityIds(
       objects: {
         where: {
           OR: [
-            { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            {
+              liveQuiz: {
+                isDeleted: false,
+                courseId: courseId ?? null,
+                ...(courseId
+                  ? {
+                      OR: [
+                        { course: { deletionRequestedAt: null } },
+                        {
+                          status: DB.PublicationStatus.DRAFT,
+                          course: {
+                            deletionRequestedAt: { not: null },
+                            deleteDraftActivitiesOnDeletion: false,
+                          },
+                        },
+                      ],
+                    }
+                  : {}),
+              },
+            },
             ...(courseId
-              ? [{ practiceQuiz: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    practiceQuiz: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ microLearning: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    microLearning: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
             ...(courseId
-              ? [{ groupActivity: { isDeleted: false, courseId } }]
+              ? [
+                  {
+                    groupActivity: {
+                      isDeleted: false,
+                      courseId,
+                      course: { deletionRequestedAt: null },
+                    },
+                  },
+                ]
               : []),
           ],
         },

@@ -7,6 +7,7 @@ import * as ActivitiesService from '../services/activities.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -25,7 +26,11 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import {
+  Course,
+  CourseDeletionRequestPayload,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -673,6 +678,7 @@ export const Mutation = builder.mutationType({
       deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
+        deprecationReason: 'Use requestCourseDeletion instead.',
         args: {
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
@@ -681,7 +687,31 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return request.course
+          }
+        ),
+      }),
+
+      requestCourseDeletion: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseDeletionRequestPayload,
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return { courseId: request.courseId }
           }
         ),
       }),

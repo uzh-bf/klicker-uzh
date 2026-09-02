@@ -3331,6 +3331,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
       noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
+      courseDeletionActiveLiveQuiz:
+        'This course cannot be deleted while it contains a published live quiz. Please end or unpublish the live quiz first.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:

@@ -101,6 +101,22 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleProcessCourseDeletion: (
+    {
+      courseId,
+      deletionRequestedAt,
+    }: {
+      courseId: string
+      deletionRequestedAt: string
+    },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleSweepCourseDeletions: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -151,6 +167,14 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   sweepStaleCourseDuplications: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
+  processCourseDeletion: TaskWorkflowDeclaration<
+    { courseId: string; deletionRequestedAt: string },
+    { success: boolean }
+  >
+  sweepCourseDeletions: TaskWorkflowDeclaration<
     Record<string, never>,
     { success: boolean }
   >

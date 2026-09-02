@@ -151,6 +151,57 @@ describe('deleteCourse', () => {
       id: 'course-id',
     })
   })
+
+  it('cancels a pending deletion if a live quiz is published during processing', async () => {
+    const deletionRequestedAt = new Date('2026-01-01T00:00:00.000Z')
+    const course = {
+      id: 'course-id',
+      deletionRequestedAt,
+      deletionRequestedById: 'requester-id',
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    }
+    const transactionClient = {
+      course: {
+        updateMany: vi
+          .fn()
+          .mockResolvedValueOnce({ count: 1 })
+          .mockResolvedValueOnce({ count: 1 }),
+        delete: vi.fn(),
+      },
+      liveQuiz: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'published-live-quiz' }),
+      },
+      derivedPermission: {
+        findFirst: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      $queryRaw: vi.fn(),
+    }
+    const emitter = { emit: vi.fn() }
+    const ctx = {
+      prisma: {
+        course: { findUnique: vi.fn().mockResolvedValue(course) },
+        $transaction: vi.fn(
+          async (callback: (client: typeof transactionClient) => unknown) =>
+            callback(transactionClient)
+        ),
+      },
+      emitter,
+      hatchet: { scheduled: { delete: vi.fn() } },
+    } as unknown as ContextWithUser
+
+    await expect(
+      deleteCourse({ id: course.id, deletionRequestedAt }, ctx)
+    ).resolves.toBeNull()
+
+    expect(transactionClient.course.delete).not.toHaveBeenCalled()
+    expect(emitter.emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Course',
+      id: course.id,
+    })
+  })
 })
 
 describe('getCourseSummary', () => {
@@ -184,7 +235,7 @@ describe('getCourseSummary', () => {
       numOfParticipantGroups: 8,
     })
     expect(findUnique).toHaveBeenCalledWith({
-      where: { id: 'course-id' },
+      where: { id: 'course-id', deletionRequestedAt: null },
       include: {
         liveQuizzes: {
           where: {

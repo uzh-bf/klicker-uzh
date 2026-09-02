@@ -6,7 +6,20 @@ export async function getFeedbacks(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
+    where: {
+      id: quizId,
+      OR: [
+        { courseId: null },
+        { course: { deletionRequestedAt: null } },
+        {
+          course: { deletionRequestedAt: { not: null } },
+          OR: [
+            { status: { not: DB.PublicationStatus.DRAFT } },
+            { course: { deleteDraftActivitiesOnDeletion: false } },
+          ],
+        },
+      ],
+    },
     include: {
       feedbacks: {
         include: { responses: { orderBy: { createdAt: 'desc' } } },

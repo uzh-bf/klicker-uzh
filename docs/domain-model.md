@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-09-02'
 tags:
   - backend
   - prisma
@@ -71,6 +71,15 @@ off by default and describes it in activity-level terms: the asynchronous
 activities already cascade with the course, while opting in additionally
 removes linked draft live quizzes
 (`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
+`requestCourseDeletion` accepts the deletion request in one transaction by
+storing a timestamp, requester, and draft-live-quiz option on the course. The
+marker immediately excludes the course and activities destined for deletion
+from user-facing reads; it is not a user-visible progress state. Retained live
+quizzes remain available as unassigned activities while the Hatchet worker
+performs the permanent deletion. Published live quizzes block acceptance, and
+the worker clears a matching request if publication or the requester's
+ADMIN/OWNER permission changes before deletion.
 
 ## Course duplication
 

@@ -44,6 +44,22 @@ import { computeStackEvaluation } from './stacks.js'
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
+const liveQuizCourseVisibilityFilter = {
+  OR: [
+    { courseId: null },
+    { course: { deletionRequestedAt: null } },
+    {
+      course: {
+        deletionRequestedAt: { not: null },
+      },
+      OR: [
+        { status: { not: DB.PublicationStatus.DRAFT } },
+        { course: { deleteDraftActivitiesOnDeletion: false } },
+      ],
+    },
+  ],
+} satisfies DB.Prisma.LiveQuizWhereInput
+
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
@@ -627,7 +643,10 @@ export async function getLiveQuizData(
   if (!id) return null
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: {
+      id,
+      ...liveQuizCourseVisibilityFilter,
+    },
     include: {
       blocks: {
         include: {
@@ -646,6 +665,11 @@ export async function getLiveQuizData(
   })
 
   return quiz
+    ? {
+        ...quiz,
+        course: quiz.course?.deletionRequestedAt ? null : quiz.course,
+      }
+    : null
 }
 
 export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
@@ -663,14 +687,24 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
               DB.PermissionLevel.OWNER,
             ],
           },
-          liveQuiz: { status: DB.PublicationStatus.PUBLISHED },
+          liveQuiz: {
+            ...liveQuizCourseVisibilityFilter,
+            status: DB.PublicationStatus.PUBLISHED,
+          },
         },
         include: { liveQuiz: { include: { course: true } } },
       },
     },
   })
 
-  return user?.objects.map((object) => object.liveQuiz!) ?? []
+  return (
+    user?.objects.map((object) => ({
+      ...object.liveQuiz!,
+      course: object.liveQuiz!.course?.deletionRequestedAt
+        ? null
+        : object.liveQuiz!.course,
+    })) ?? []
+  )
 }
 
 export async function getLecturerViewLiveQuiz(
@@ -678,7 +712,7 @@ export async function getLecturerViewLiveQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: { id, ...liveQuizCourseVisibilityFilter },
     include: {
       confusionFeedbacks: true,
       feedbacks: { where: { isPinned: true } },
@@ -703,7 +737,11 @@ export async function getControlLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED },
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      ...liveQuizCourseVisibilityFilter,
+    },
     include: {
       activeBlock: true,
       course: true,
@@ -726,7 +764,10 @@ export async function getControlLiveQuiz(
     return null
   }
 
-  return quiz
+  return {
+    ...quiz,
+    course: quiz.course?.deletionRequestedAt ? null : quiz.course,
+  }
 }
 
 export async function getShortnameQuizzes(
@@ -743,6 +784,7 @@ export async function getShortnameQuizzes(
           liveQuiz: {
             status: DB.PublicationStatus.PUBLISHED,
             accessMode: DB.AccessMode.PUBLIC,
+            ...liveQuizCourseVisibilityFilter,
           },
           // only users with at least execution permissions can execute a live quiz
           permissionLevel: {
@@ -764,6 +806,9 @@ export async function getShortnameQuizzes(
       obj.liveQuiz
         ? {
             ...obj.liveQuiz,
+            course: obj.liveQuiz.course?.deletionRequestedAt
+              ? null
+              : obj.liveQuiz.course,
             isPinProtected: !!obj.liveQuiz.pinCode,
           }
         : []
@@ -779,7 +824,6 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
     include: {
       liveQuizzes: {
         where: {
-          courseId: null,
           status: {
             in: [
               DB.PublicationStatus.PUBLISHED,
@@ -787,13 +831,29 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
               DB.PublicationStatus.DRAFT,
             ],
           },
+          OR: [
+            { courseId: null },
+            {
+              course: {
+                deletionRequestedAt: { not: null },
+              },
+              OR: [
+                { status: { not: DB.PublicationStatus.DRAFT } },
+                { course: { deleteDraftActivitiesOnDeletion: false } },
+              ],
+            },
+          ],
         },
         orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return (
+    user?.liveQuizzes.map((liveQuiz) =>
+      liveQuiz.courseId ? { ...liveQuiz, courseId: null } : liveQuiz
+    ) ?? []
+  )
 }
 // #endregion
 
@@ -966,7 +1026,11 @@ export async function getCockpitQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED },
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      ...liveQuizCourseVisibilityFilter,
+    },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
@@ -1029,6 +1093,7 @@ export async function getCockpitQuiz(
   // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
+    course: liveQuiz.course?.deletionRequestedAt ? null : liveQuiz.course,
     activeBlock: liveQuiz.activeBlock,
     blocks: liveQuiz.blocks.map((block) => {
       return {
@@ -2045,7 +2110,7 @@ export async function getLiveQuizSummary(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
+    where: { id: quizId, ...liveQuizCourseVisibilityFilter },
     include: {
       _count: {
         select: {
@@ -2231,6 +2296,7 @@ export async function getLiveQuizEvaluation(
         in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
+      ...liveQuizCourseVisibilityFilter,
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
@@ -2682,7 +2748,7 @@ export async function getLiveQuizEmbeddingInfo(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: { id, ...liveQuizCourseVisibilityFilter },
     include: {
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -2875,7 +2941,9 @@ function removeSolutionFromInstances({
 
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // only get the minimal required information of the quiz
-  const quizInfo = await ctx.prisma.liveQuiz.findUnique({ where: { id } })
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, ...liveQuizCourseVisibilityFilter },
+  })
 
   // if the quiz is not available, return early
   if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED) {
@@ -2949,7 +3017,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   }
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
+    where: { id, ...liveQuizCourseVisibilityFilter },
     include: {
       activeBlock: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -3016,10 +3084,12 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     return quizWithoutSolutions
       ? {
           ...quizWithoutSolutions,
+          course: quiz.course?.deletionRequestedAt ? null : quiz.course,
           isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
         }
       : {
           ...quiz,
+          course: quiz.course?.deletionRequestedAt ? null : quiz.course,
           isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
           beforeFirstBlock,
         }
@@ -3037,6 +3107,7 @@ export async function validateAvailableLiveQuiz(
       id: quizId,
       status: DB.PublicationStatus.PUBLISHED,
       courseId,
+      course: { deletionRequestedAt: null },
     },
   })
 
@@ -3050,6 +3121,7 @@ export async function getCourseRunningLiveQuizzes(
   const course = await ctx.prisma.course.findUnique({
     where: {
       id: courseId,
+      deletionRequestedAt: null,
     },
     include: {
       liveQuizzes: {
@@ -3071,7 +3143,7 @@ export async function getLiveQuizLeaderboard(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
+    where: { id: quizId, ...liveQuizCourseVisibilityFilter },
     include: {
       leaderboard: {
         include: { participant: true, sessionParticipation: true },

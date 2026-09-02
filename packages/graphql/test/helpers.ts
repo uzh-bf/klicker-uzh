@@ -40,6 +40,10 @@ import {
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
 import {
+  handleProcessCourseDeletion,
+  handleSweepCourseDeletions,
+} from '@/services/courseDeletion.js'
+import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from '@/services/groups.js'
@@ -298,6 +302,33 @@ export async function testInitialization(
       name: 'sweep-stale-course-duplications',
       fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
         const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    processCourseDeletion: hatchet.task({
+      name: 'process-course-deletion',
+      fn: vi.fn(
+        async (
+          input: { courseId: string; deletionRequestedAt: string },
+          executionCtx
+        ) => {
+          const success = await handleProcessCourseDeletion(
+            input,
+            hatchetCtx,
+            executionCtx
+          )
+          return { success }
+        }
+      ),
+    }),
+    sweepCourseDeletions: hatchet.task({
+      name: 'sweep-course-deletions',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepCourseDeletions(
           {},
           hatchetCtx,
           executionCtx

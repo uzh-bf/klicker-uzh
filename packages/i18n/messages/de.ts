@@ -3389,6 +3389,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur Kurse mit einem Enddatum in der Vergangenheit können archiviert werden.',
       noDeletionAssessment:
         'Kurse im Assessment-Modus können nicht gelöscht werden.',
+      courseDeletionActiveLiveQuiz:
+        'Dieser Kurs kann nicht gelöscht werden, solange er ein veröffentlichtes Live-Quiz enthält. Bitte beenden oder depublizieren Sie das Live-Quiz zuerst.',
       archiveCourse: 'Kurs archivieren',
       unarchiveCourse: 'Kurs wiederherstellen',
       confirmCourseArchive:
