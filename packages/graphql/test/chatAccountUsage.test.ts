@@ -79,7 +79,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   function contextFor(
     sub: string,
     role: UserRole,
-    scope: UserLoginScope
+    scope: UserLoginScope,
+    catalyst = false
   ): ContextWithUser {
     return {
       prisma,
@@ -87,7 +88,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         sub,
         role,
         scope,
-        catalystInstitutional: false,
+        catalystInstitutional: catalyst,
         catalystIndividual: false,
       },
     } as ContextWithUser
@@ -668,6 +669,42 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     expect(result.data).toEqual({ getChatAccountUsage: null })
     expect(result.errors?.[0]?.message).toBe('Unauthorized')
+  })
+
+  it('exposes only the live publication capability to full-access lecturers', async () => {
+    const source = `query { getChatbotPublishingCapability }`
+
+    const ownerResult = await executeGraphql({ source })
+    expect(ownerResult.data).toBeNull()
+    expect(ownerResult.errors?.[0]?.message).toBe('Unauthorized')
+
+    const fullAccessContext = contextFor(
+      ownerId,
+      UserRole.USER,
+      UserLoginScope.FULL_ACCESS,
+      true
+    )
+    const enabledResult = await executeGraphql({
+      source,
+      context: fullAccessContext,
+    })
+    expect(enabledResult.errors).toBeUndefined()
+    expect(enabledResult.data).toEqual({
+      getChatbotPublishingCapability: true,
+    })
+
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiChatbotPublishingEnabled: false },
+    })
+    const disabledResult = await executeGraphql({
+      source,
+      context: fullAccessContext,
+    })
+    expect(disabledResult.errors).toBeUndefined()
+    expect(disabledResult.data).toEqual({
+      getChatbotPublishingCapability: false,
+    })
   })
 })
 

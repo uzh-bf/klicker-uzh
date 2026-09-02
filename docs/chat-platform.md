@@ -528,6 +528,36 @@ later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
+## Lecturer authoring and publication contract
+
+The owner-facing GraphQL contract lives in
+`packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
+can create a course-bound `DRAFT` chatbot before their account is authorized to
+publish. The course is fixed after creation. Metadata and model policy are
+editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
+`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
+`DRAFT` and `REJECTED`.
+
+`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
+plus the disclaimer ID the client loaded. It normalizes line endings and outer
+whitespace, validates both fields, and rejects introduction Markdown outside
+paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
+uses transactional copy-on-write. The replacement retains the internal name,
+description, and media fields. A stale expected ID fails with
+`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
+This preserves the participant acceptance contract: acceptance and Manage's
+accepted count apply only when
+`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
+
+`requestChatbotPublication` still requires the live account capability from
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
+linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
+`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
+to Catalyst and full-access lecturers; it does not expose account budget data.
+Submission never publishes automatically; the existing administrator approval
+remains a separate transition.
+
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where

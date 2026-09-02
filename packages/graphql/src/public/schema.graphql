@@ -763,6 +763,7 @@ type ChatbotDisclaimerSummary {
   acceptedCount: Int!
   declinedCount: Int!
   id: ID!
+  introText: String
   name: String!
   pendingCount: Int!
   title: String!
@@ -2115,6 +2116,7 @@ type Mutation {
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, introText: String!, title: String!): Chatbot
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -2620,6 +2622,7 @@ type Query {
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getChatAccountUsage(ownerId: String): ChatAccountUsageOverview
   getChatModelRegistry: [ChatModelCapability!]!
+  getChatbotPublishingCapability: Boolean!
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
