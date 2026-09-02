@@ -26,6 +26,7 @@ query GetCockpitQuiz($id: String!) {
       expiresAt
       timeLimit
       randomSelection
+      isPeerInstructionEnabled
       execution
       elements {
         id

@@ -64,7 +64,42 @@ export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
   randomSelection?: number | null
+  isPeerInstructionEnabled?: boolean | null
   elements: ElementInstanceInput[]
+}
+
+export type PeerInstructionRunState = {
+  originalExecution: number
+  attempt: 1 | 2
+  instanceIds: number[]
+  timeLimit: number | null
+  revisionStartedAt: string | null
+  revisionEndsAt: string | null
+}
+
+export type PeerInstructionScope = {
+  liveQuizId: string
+  blockId: number
+  originalExecution: number
+  attempt: 1 | 2
+}
+
+export type PeerInstructionQuestionType =
+  | 'SC'
+  | 'MC'
+  | 'KPRIM'
+  | 'NUMERICAL'
+  | 'FREE_TEXT'
+  | 'SELECTION'
+  | 'CASE_STUDY'
+
+export type PeerInstructionInstanceMeta = {
+  type: PeerInstructionQuestionType
+  restrictions?: NumericalRestrictions | FreeTextRestrictions
+}
+
+export type PeerInstructionRevisionEvent = PeerInstructionScope & {
+  messageId: string
 }
 
 export type ElementStackInput = {
@@ -595,8 +630,8 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
-export interface ElementOptionsFlashcard {}
-export interface ElementOptionsContent {}
+export type ElementOptionsFlashcard = {}
+export type ElementOptionsContent = {}
 
 export type ElementOptions =
   | ElementOptionsChoices
@@ -724,6 +759,15 @@ export type ElementInstanceResults =
   | ElementResultsContent
   | ElementResultsSelection
   | ElementResultsCaseStudy
+
+export type PeerInstructionComparison = {
+  originalExecution: number
+  attempt: 1 | 2
+  pairedResponseCount: number
+  unpairedRevisedResponseCount: number
+  initial: ElementInstanceResults
+  revised: ElementInstanceResults
+}
 
 export type GroupActivityDecision = {
   instanceId: number

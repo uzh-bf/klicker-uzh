@@ -10,6 +10,7 @@ query GetSingleLiveQuiz($quizId: String!) {
       status
       timeLimit
       randomSelection
+      isPeerInstructionEnabled
       elements {
         id
         type

@@ -51,6 +51,7 @@ export const ElementBlockInput = ElementBlockInputRef.implement({
     order: t.int({ required: true }),
     timeLimit: t.int({ required: false }),
     randomSelection: t.int({ required: false }),
+    isPeerInstructionEnabled: t.boolean({ required: false }),
     elements: t.field({ type: [ElementInstanceInput], required: true }),
   }),
 })

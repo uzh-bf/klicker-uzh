@@ -91,6 +91,14 @@ interchangeably; a change to one is not a change to the other.
 single live quiz. Leaderboards exist only where gamification is enabled for the
 course.
 
+**Peer Instruction**: A formative live-quiz learning sequence in which
+participants answer individually, discuss their reasoning with peers, answer
+the same questions again, and compare the group-level evaluations before a
+lecturer debrief. It is a learning capability, not gamification or assessment,
+and does not change the existing scoring of the initial answers. The complete
+sequence is a public standard capability and does not require Catalyst
+entitlement or services.
+
 ## Identity and attestation
 
 **Assessment participation identity**: The given name, surname, and

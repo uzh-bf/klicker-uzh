@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-08-30'
 tags:
   - backend
   - prisma
@@ -56,6 +56,22 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+### Peer Instruction state
+
+Peer Instruction is a standard LiveQuiz capability. A lecturer prepares a
+block through `ElementBlock.isPeerInstructionEnabled`; copying a course or
+template preserves only this setting. Runtime coordination stays on the block:
+`peerInstructionPhase` is the explicit state machine and
+`peerInstructionRun` identifies the original execution, attempt, participating
+instances, and revision timing. Creating or editing a LiveQuiz resets runtime
+state to `INACTIVE`.
+
+After a revised run is finalized, each `ElementInstance` can hold one typed
+`peerInstructionComparison` snapshot with the anonymous initial and revised
+aggregates plus paired and unpaired counts. It stores no participant identity.
+The ordinary first response remains the scored response; the revision does not
+replace its points or XP.
 
 ## Course deletion
 

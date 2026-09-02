@@ -15,6 +15,7 @@ query GetControlLiveQuiz($id: String!) {
       timeLimit
       randomSelection
       execution
+      isPeerInstructionEnabled
       elements {
         id
         ...ElementDataInfo

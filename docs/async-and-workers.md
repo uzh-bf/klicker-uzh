@@ -20,6 +20,12 @@ student answer → apps/response-api (HTTP) → Hatchet event
         apps/hatchet-worker-response-processor (consume + re-emit)
                                               ↓
         apps/hatchet-worker-general (aggregation + scheduled jobs)
+
+Peer Instruction revision → response API → transient Redis registration
+                                                 ↓ opaque message pointer
+                              response processor revision workflow
+                                                 ↓
+                                   transient revised response map
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
@@ -28,7 +34,21 @@ Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setu
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, with health, initial-response, and Peer Instruction
+revision routes. Non-assessment `POST /AddResponse` requests emit
+`response-received:authenticated|anonymous`. Fully anonymous initial responses
+also receive a server-generated pairing token; only its hash enters the
+transient state. The assessment path verifies a JWT correlation key, dedupes
+via `hget` on the assessment Redis, then emits
+`response-received:assessment`; audit-log events are emitted throughout.
+Live-quiz vs assessment behavior switches on `ASSESSMENT_MODE`.
+
+`POST /PeerInstructionResponse` exists only outside assessment mode. It derives
+the participant identity from a verified participant cookie or a previously
+registered anonymous pairing token. The response and transient identity are
+registered atomically in Redis before Hatchet publication. Hatchet receives
+only an opaque message id plus quiz, block, execution, and attempt scope; it
+does not receive the pairing identity or response value.
 
 ## Worker task catalog
 
@@ -36,8 +56,46 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
+- `processPeerInstructionRevisionWorkflow` — dedicated, durable, and
+  non-scoring; its failure hook records terminal failure for drain accounting
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
+
+## Peer Instruction transient state
+
+Peer Instruction uses the standard Redis execution service but a separate
+`pi:<quiz>:b:<block>:e:<execution>` namespace. Initial response maps are
+captured for standard question blocks so a lecturer can invoke the sequence
+after the original block closes. Authenticated and temporary participant ids
+are converted to execution-scoped HMAC identities. Anonymous clients receive a
+random server token, while Redis stores only its hash.
+
+Each revision attempt has explicit ingress, accepted, terminal, and failed
+counters. Ingress registration claims one response per identity and instance
+atomically. Closing an attempt seals ingress before the server waits for
+`accepted === terminal`; therefore no accepted event can appear after the
+drain snapshot. Attempt two is the only technical replacement and reuses the
+unchanged initial map.
+
+Queue delivery is intentionally at least once for accepted revision messages.
+A duplicate request that finds an accepted claim republishes the same opaque
+pointer, while the processor's terminal transition makes repeated delivery a
+no-op. A failed first publication releases its claim when cleanup succeeds; if
+cleanup is unavailable, the accepted claim remains retryable rather than being
+silently discarded. Malformed scopes return a client error, while transient
+Redis failures return a service-unavailable response.
+
+All keys join a root registry and share the first root key's absolute expiry.
+Later writes reapply that timestamp but never extend it. Successful
+finalization, cancellation, reset, abandonment, or a later block can unlink
+the complete registry earlier. The hard limit is 24 hours. Only anonymous
+aggregate comparison snapshots leave this namespace in the later finalization
+step.
+
+The revision processor imports response validation only. It has no grading,
+Prisma, assessment Redis, points, XP, achievement, leaderboard, grade, access,
+or durable response-history dependency. Existing initial responses retain
+their current scoring behavior.
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 

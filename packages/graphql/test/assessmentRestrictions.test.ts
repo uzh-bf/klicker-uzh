@@ -4,6 +4,7 @@ import {
   ElementInstanceType,
   ElementType,
   LeaderboardType,
+  PeerInstructionPhase,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
@@ -373,6 +374,33 @@ describe('Integration tests for assessment configuration functionalities', () =>
         data: { username: `p-${Date.now()}`, password: 'secret' },
       })
       const instance = endedQuizWithBlocks.blocks[0]!.elements[0]!
+      await prisma.elementBlock.update({
+        where: { id: endedQuizWithBlocks.blocks[0]!.id },
+        data: {
+          peerInstructionPhase: PeerInstructionPhase.COMPARISON_READY,
+          peerInstructionRun: {
+            originalExecution: 0,
+            attempt: 1,
+            instanceIds: [instance.id],
+            timeLimit: 60,
+            revisionStartedAt: null,
+            revisionEndsAt: null,
+          },
+        },
+      })
+      await prisma.elementInstance.update({
+        where: { id: instance.id },
+        data: {
+          peerInstructionComparison: {
+            originalExecution: 0,
+            attempt: 1,
+            pairedResponseCount: 1,
+            unpairedRevisedResponseCount: 0,
+            initial: instance.results,
+            revised: instance.results,
+          },
+        },
+      })
       await prisma.liveQuizResponse.create({
         data: {
           submittedAt: new Date(),
@@ -452,6 +480,10 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       expect(res6).toBeNull()
 
+      userTwoCtx.redisAssessmentExec = {
+        keys: vi.fn().mockResolvedValue([]),
+      } as unknown as ContextWithUser['redisAssessmentExec']
+
       // course admin can reset the ended assessment live quiz
       const res7 = await resetAssessmentLiveQuiz(
         { id: endedQuiz.id },
@@ -497,6 +529,10 @@ describe('Integration tests for assessment configuration functionalities', () =>
       expect(resetBlock.closedAt).toBeNull()
       expect(resetBlock.expiresAt).toBeNull()
       expect(resetBlock.execution).toEqual(1)
+      expect(resetBlock.peerInstructionPhase).toEqual(
+        PeerInstructionPhase.INACTIVE
+      )
+      expect(resetBlock.peerInstructionRun).toBeNull()
 
       // instances reset: responses deleted and results reinitialized
       const resetInstance = resetBlock.elements[0]!
@@ -506,6 +542,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       expect(resetInstance.results).toEqual(resetInitial)
       expect(resetInstance.anonymousResults).toEqual(resetInitial)
+      expect(resetInstance.peerInstructionComparison).toBeNull()
     })
 
     it('Verify that only assessment course owners and admins can remove activities from the course', async () => {

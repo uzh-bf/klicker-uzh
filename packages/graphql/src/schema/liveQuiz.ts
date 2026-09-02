@@ -208,6 +208,7 @@ export const ElementBlock = ElementBlockRef.implement({
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
+    isPeerInstructionEnabled: t.exposeBoolean('isPeerInstructionEnabled'),
 
     elements: t.expose('elements', {
       type: [ElementInstanceRef],

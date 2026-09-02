@@ -27,8 +27,8 @@ import {
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
   updateLeaderboards,
-  validateStudentResponse,
 } from './helpers.js'
+import { validateStudentResponse } from './responseValidation.js'
 
 const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
 

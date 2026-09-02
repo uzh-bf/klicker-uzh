@@ -50,6 +50,7 @@ The floor is set per capability, not globally.
 | Learning analytics           | **Stub**                                     | Nothing. A degraded psychometric engine produces numbers that look authoritative and are not, and wrong learning analytics are worse than absent ones                                                                                                                                                                                              |
 | Content generation           | **Stub**                                     | Nothing. There is no meaningful degraded mode for generating questions from course material                                                                                                                                                                                                                                                        |
 | Formative feedback / grading | **Degraded default**                         | Deterministic rubric scoring without the AI layer. Genuinely useful on its own, and honest about what it does not do                                                                                                                                                                                                                               |
+| Peer Instruction             | **Working public capability**                | The complete formative LiveQuiz sequence: initial response, external peer discussion, revised response, privacy-filtered comparison, and lecturer debrief. It has no private engine or Catalyst entitlement dependency                                                                                                                             |
 
 `chat-api` and `chat-engine` are the public platform boundary and build around
 _both_ engine implementations — the public AI SDK engine and the Catalyst Mastra
@@ -96,6 +97,9 @@ commit trail — is the artifact that must be right.
   Catalyst's or their own.
 - Learning analytics and content generation become visibly Catalyst-gated features.
   The UI must say so rather than failing silently, which is new work in public.
+- Peer Instruction is a standard LiveQuiz capability. Future AI-assisted
+  debrief, semantic clustering, or cross-session analytics may use Catalyst,
+  but their absence cannot weaken the public discuss-and-revote sequence.
 - Entitlement and availability are two different gates, and both apply. The existing
   `catalyst` scope answers "is this user on the paid tier"; this ADR's floor answers
   "are the private services deployed at all". A self-hosting institution can have

@@ -9,6 +9,8 @@ import type {
   ElementOptions,
   GroupActivityDecisions,
   GroupActivityResults,
+  PeerInstructionComparison,
+  PeerInstructionRunState,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
@@ -39,6 +41,8 @@ declare global {
     type PrismaElementResults = ElementInstanceResults
     type PrismaElementData = ElementData
     type PrismaElementInstanceOptions = ElementInstanceOptions
+    type PrismaPeerInstructionRunState = PeerInstructionRunState
+    type PrismaPeerInstructionComparison = PeerInstructionComparison
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails

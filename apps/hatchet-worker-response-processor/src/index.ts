@@ -3,11 +3,18 @@ import {
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import type {
+  LiveQuizResponseInput,
+  PeerInstructionRevisionEvent,
+} from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
+import {
+  failPeerInstructionRevisionMessage,
+  processPeerInstructionRevisionMessage,
+} from './processors/peerInstructionProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
@@ -31,6 +38,24 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
   fn: processResponseMessage,
+})
+
+export const processPeerInstructionRevisionWorkflow =
+  hatchetClient.workflow<PeerInstructionRevisionEvent>({
+    name: 'process-peer-instruction-revision-workflow',
+    defaultPriority: Priority.HIGH,
+    onEvents: ['peer-instruction-revision-received'],
+  })
+processPeerInstructionRevisionWorkflow.durableTask({
+  name: 'process-peer-instruction-revision',
+  retries: 3,
+  fn: processPeerInstructionRevisionMessage,
+})
+processPeerInstructionRevisionWorkflow.onFailure({
+  name: 'mark-peer-instruction-revision-failed',
+  fn: async (input) => {
+    await failPeerInstructionRevisionMessage(input)
+  },
 })
 
 export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
@@ -89,7 +114,11 @@ async function main() {
   const workflows =
     process.env.ASSESSMENT_MODE === 'true'
       ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+      : [
+          processAuthenticatedResponseTask,
+          processAnonymousResponseTask,
+          processPeerInstructionRevisionWorkflow,
+        ]
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)

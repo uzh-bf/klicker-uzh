@@ -31,6 +31,7 @@ query GetActivityTemplate($templateId: String!) {
         order
         status
         timeLimit
+        isPeerInstructionEnabled
         elements {
           id
           type

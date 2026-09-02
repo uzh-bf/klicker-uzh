@@ -1261,6 +1261,7 @@ type ElementBlock {
   execution: Int
   expiresAt: Date
   id: Int!
+  isPeerInstructionEnabled: Boolean!
   numOfParticipants: Int
   order: Int!
   randomSelection: Int
@@ -1270,6 +1271,7 @@ type ElementBlock {
 
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
+  isPeerInstructionEnabled: Boolean
   order: Int!
   randomSelection: Int
   timeLimit: Int
