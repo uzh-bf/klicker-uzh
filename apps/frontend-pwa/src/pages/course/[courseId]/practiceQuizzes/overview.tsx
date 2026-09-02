@@ -1,12 +1,18 @@
 import { useQuery } from '@apollo/client'
-import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { GetCoursePublishedPracticeQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { faBookOpenReader, faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  GetCoursePublishedPracticeQuizzesDocument,
+  SelfDocument,
+  UserRole,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { H2, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Layout from '../../../../components/Layout'
@@ -37,6 +43,7 @@ function PracticeQuizOverview({
       skip: isInactive,
     }
   )
+  const { data: selfData } = useQuery(SelfDocument)
 
   if (loading) {
     return (
@@ -57,7 +64,10 @@ function PracticeQuizOverview({
   ) {
     return (
       <Layout>
-        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+        <div
+          className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
+          data-cy="practice-quiz-overview-empty"
+        >
           <H2>{t.rich('shared.generic.activePracticeQuizzes')}</H2>
           <UserNotification
             type="warning"
@@ -69,15 +79,44 @@ function PracticeQuizOverview({
     )
   }
 
+  const showPracticePool = selfData?.self?.role === UserRole.Participant
+
   return (
     <Layout course={course}>
-      <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+      <div className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>
           {t('pwa.general.activePracticeQuizzesInCourse', {
             name: course.displayName,
           })}
         </H2>
-        <div className="flex flex-col gap-1.5">
+        {showPracticePool && (
+          <Link
+            href={`/course/${course.id}/practice`}
+            data-cy="open-practice-pool"
+            className="flex min-h-24 w-full items-center gap-4 rounded bg-uzh-blue p-4 text-white transition-colors hover:bg-uzh-blue-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue"
+          >
+            <FontAwesomeIcon
+              icon={faRepeat}
+              className="h-7 w-7 flex-none"
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block text-xl font-semibold leading-tight">
+                {t('pwa.general.practicePoolPromotionTitle')}
+              </span>
+              <span className="mt-1 block text-base leading-snug">
+                {t('pwa.general.practicePoolPromotionDescription')}
+              </span>
+              <span className="mt-3 inline-block rounded border border-white px-3 py-1 font-semibold">
+                {t('pwa.general.startPracticePool')}
+              </span>
+            </span>
+          </Link>
+        )}
+        <H3 className={{ root: 'mb-0 text-lg' }}>
+          {t('pwa.general.individualPracticeQuizzes')}
+        </H3>
+        <div className="flex flex-col gap-1.5" data-cy="practice-quiz-list">
           {quizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}
@@ -123,17 +162,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           isInactive: true,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
-        },
-      }
-    }
-
-    // if only a single practice quiz is running, redirect directly to the corresponding quiz page
-    // or if linkTo is set, redirect to the specified link
-    if (quizzes.length === 1) {
-      return {
-        redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/practiceQuizzes/${quizzes[0].id}`,
-          permanent: false,
         },
       }
     }

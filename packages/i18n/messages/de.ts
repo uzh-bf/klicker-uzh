@@ -828,6 +828,11 @@ export default {
       activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
       noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
       activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      practicePoolPromotionTitle: 'Gezielt mit Spaced Repetition üben',
+      practicePoolPromotionDescription:
+        'Bis zu 25 Fragensets aus allen Übungs-Quizzes. Deine bisherigen Antworten können die Reihenfolge beeinflussen.',
+      startPracticePool: 'Übungspool starten',
+      individualPracticeQuizzes: 'Einzelne Übungs-Quizzes',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -1065,7 +1070,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEndedToast:
         'Microlearning "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
       coursePracticeArea:
-        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
+        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden bis zu 25 Fragensets gemäss unserer Spaced-Repetition-Logik ausgewählt. Eure bisherigen Antworten können die Reihenfolge beeinflussen.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -3513,7 +3518,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
-      practiceQuizList: 'Übungs-Quiz Liste',
+      practiceQuizList: 'Übungspool & Übungs-Quizzes',
       microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
@@ -3524,7 +3529,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Übungs-Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Übungspool & Übungs-Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',

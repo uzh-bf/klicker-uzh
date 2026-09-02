@@ -821,6 +821,11 @@ export default {
       activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
       noPracticeQuizzesActive: 'No practice quizzes active.',
       activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      practicePoolPromotionTitle: 'Practice with spaced repetition',
+      practicePoolPromotionDescription:
+        'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
+      startPracticePool: 'Start Practice Pool',
+      individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -1057,7 +1062,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microLearningEndedToast:
         'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
-        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
+        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetition, up to 25 question sets are selected according to our spaced repetition logic. Your previous answers can influence the order.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -3454,7 +3459,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
-      practiceQuizList: 'Practice Quiz List',
+      practiceQuizList: 'Practice Pool & Practice Quizzes',
       microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
@@ -3465,7 +3470,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Practice Pool & Practice Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit Microlearning',

@@ -398,7 +398,7 @@ planner then returned `DONE` with `Verdict: APPROVED`.
 - [x] Record the approved branch baseline, resolved target drift, and withheld
   integration separately.
 - [x] Obtain the final `APPROVED` plan-hardening verdict.
-- [ ] Commit the approved plan (active slice).
-- [ ] Implement W1 — Promote the Practice Pool at the course entry point.
+- [x] Commit the approved plan.
+- [x] Implement W1 — Promote the Practice Pool at the course entry point.
 - [ ] Verify and review the local exact head.
 - [ ] Request separate authority for push and PR creation if desired.
