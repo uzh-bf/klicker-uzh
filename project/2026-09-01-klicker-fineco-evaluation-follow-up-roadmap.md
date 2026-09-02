@@ -54,7 +54,7 @@ run and verify that its provider is stopped and no route remains.
 | Local Klicker target adapter | reviewed and committed | HEAD `4c11b8f17e118e1d04a7ba9ab62d5160d43b5e7e`; ten focused adapter tests pass. |
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
-| FineCo expert binding | desired-state config and source bound refined; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. `ai-buddy` `dev@344a6800a` returns full chunk content with no character/token trim. The proven local runtime exposed only `KB_doc_query`; no runtime FineCo inventory or finite output byte/token ceiling is available. |
+| FineCo expert binding | desired-state config and source-verified bound; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. `ai-buddy` `dev@344a6800a` returns full chunk content with no character/token trim. The proven local runtime exposed only `KB_doc_query`. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled); no runtime FineCo inventory is available, and the owner checklist below covers closing it. |
 | FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
 | Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
@@ -70,7 +70,8 @@ run and verify that its provider is stopped and no route remains.
   `KB_doc_query` canary cannot satisfy this gate and must never enter the
   FineCo query, QA, or metric output.
 - A binding is eligible only when it exposes a verified finite per-result
-  input/tool-output ceiling. Observed or average retrieval size is not a
+  response ceiling; tool inputs are harness-controlled because the service
+  imposes no input cap. Observed or average retrieval size is not a
   pre-call bound.
 - Keep target and judge boundaries separate. The local Chat target uses the
   developer Azure Foundry through local LiteLLM; the semantic judge uses the
@@ -99,7 +100,7 @@ run and verify that its provider is stopped and no route remains.
 | A query-eval run starts judging incomplete data | Structural query failures are not a quality result | Run `query` first, require exactly 20 structural records, then run `eval` against the captured QA file. |
 | A cleanup check reports route-state drift | The route inspector can be unavailable even after the exact runtime stopped | Use the exact `devrouter stop` result, provider state, process state, and exact route count; do not restart the runtime merely to satisfy an unavailable inspector. |
 | The preserved Lena changes look ready to reapply onto the reconciled tree | The stash was made against the old branch tree, not the current `origin/v3` tree | Keep the primary checkout on its restored old ref for that user-owned work; use the isolated reconciliation branch for current-state inspection, and do not drop the safety stash. |
-| Deployment source config is mistaken for a usable FineCo binding | GitOps desired state does not prove the deployed tool inventory, authorization, or response-size contract | Treat `df_fineco_expert` in `ai-infrastructure/deployment` as a source lead only; obtain an authorized values-free runtime inventory and finite per-result bound before W2 — twenty-case FineCo capture and semantic judge. |
+| Deployment source config is mistaken for a usable FineCo binding | GitOps desired state does not prove the deployed tool inventory, authorization, or response-size contract | Treat `df_fineco_expert` in `ai-infrastructure/deployment` as a source lead only; obtain an authorized values-free runtime inventory and owner confirmation of the source-verified finite bound before W2 — twenty-case FineCo capture and semantic judge. |
 
 ## Work items
 
@@ -246,7 +247,10 @@ shared evaluator.
 Status: open. The 2026-09-01 ruling opened the follow-up roadmap but did not
 grant tunnel, secret, permission, deployment, or cluster authority. Read-only
 source inspection found the STG/PRD desired-state tool config, but it did not
-prove runtime registration or a finite per-result input/tool-output bound.
+prove runtime registration. The per-result output ceiling is source-verified
+as finite (20 × 65,535 characters, with tool inputs harness-controlled); the
+owner inventory checklist below covers the remaining runtime registration
+proof.
 
 ## External dependencies to watch
 
@@ -283,8 +287,9 @@ prove runtime registration or a finite per-result input/tool-output bound.
   desired-state evidence, not live runtime proof.
 - Doc-query source contract: `ai-buddy` `dev@344a6800a` passes the configured
   `top_k` to the Cohere reranker and returns full chunk content without a
-  final character/token trim. This gives a desired-state 20-document-count
-  lead, but not the required finite per-result output byte/token ceiling.
+  final character/token trim. This is one half of the source-verified finite
+  per-result ceiling; combined with the collection schema's 65,535-character
+  `content` cap, the bound is 20 × 65,535 characters.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain operator-injected and never enter Git.
 - Infisical profiles `klicker-dev` and the separately approved judge profile:

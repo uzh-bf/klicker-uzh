@@ -313,8 +313,9 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 - FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
   `Context7_resolve-library-id`, but not `EXPERT_df_fineco_expert`. No
   20-case query, semantic judge, or external FineCo binding was run. The
-  finite expert response bound is therefore unverified, so the quality phase
-  is parked at `delivery_pending`; the deterministic MCP canary is transport
+  expert response bound is source-verified as finite (20 × 65,535
+  characters) but was never exercised at runtime, so the quality phase is
+  parked at `delivery_pending`; the deterministic MCP canary is transport
   evidence only.
 - Cleanup evidence: `devrouter stop` completed for the exact worktree; the
   provider, LiteLLM, databases, managed processes, and adapter are stopped;
