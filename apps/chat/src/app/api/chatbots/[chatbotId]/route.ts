@@ -1,4 +1,5 @@
 import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
+import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -20,13 +21,30 @@ export async function GET(
       allowedReasoningEffortsByModel: true,
       systemPrompts: true,
       disclaimerId: true,
+      mcpConfigurations: {
+        select: {
+          allowedTools: true,
+          chatMode: true,
+          isEnabled: true,
+          parameters: true,
+          priority: true,
+          mcpServer: { select: { id: true } },
+        },
+      },
     })
 
     if ('response' in chatbotResult) {
       return chatbotResult.response
     }
 
-    return NextResponse.json(chatbotResult.chatbot)
+    const { mcpConfigurations, ...chatbot } = chatbotResult.chatbot
+    return NextResponse.json({
+      ...chatbot,
+      modeOptions: resolveEffectiveChatModeOptions(
+        chatbot.systemPrompts,
+        mcpConfigurations
+      ),
+    })
   } catch (error) {
     console.error('Failed to fetch model details:', error)
     return NextResponse.json(

@@ -18,5 +18,27 @@ UZH-internal users with GitLab access can materialize the framework explicitly:
 git submodule update --init --checkout evaluation/framework
 ```
 
-How the framework consumes the datasets in `data/` (ground-truth roots, tool
-profiles, metric suites) is still being wired up and documented.
+The root wrapper uses the restricted `klicker-uzh-stg` Infisical operator
+profile. It maps only the approved LiteLLM credential, selects Klicker's
+namespaced Azure deployment, and points the framework at the FineCo ground
+truth and tool catalogue. Caller-provided model and framework settings win over
+these defaults. Changing only `EVAL_MODEL` leaves the Luna capability mapping
+unset, so a different model uses its own metadata; set both variables when a
+different deployment alias needs explicit capability metadata. Set
+`LITELLM_API_BASE` to an approved reachable proxy route; the public repository
+does not store an internal hostname. The operator fails when the mapped secret
+is missing, and the wrapper rejects an empty `LITELLM_API_KEY` before starting
+the evaluator. The wrapper also checks that the selected metrics and tool files
+and both ground-truth directories are readable before secret retrieval.
+
+Eval mode judges an existing synthetic QA artifact; it does not query Klicker:
+
+```bash
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
+```
+
+Query and query-eval modes require a separately verified OpenAI Responses or
+Chat Completions target. Klicker's current authenticated AI-SDK UI stream is not
+that target contract, so the wrapper does not claim a live Klicker target run.
+Use only synthetic inputs and do not add local QA or evaluation outputs to the
+repository.

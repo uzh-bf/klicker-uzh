@@ -221,6 +221,17 @@ Commit: `ci(playwright): use reusable profile plans`.
       feedback is covered by exact profile-union, invalid timing/shard-count,
       empty-app, and readiness-widening regressions; frozen install disproves
       the stale lockfile finding.
-- [ ] Push the exact head, qualify PR #5683, and merge when safe.
-- [ ] The first self-hosted performance measurement remains separately gated
-      until the exact reusable workflow is merged to `v3`.
+- [x] PR #5683 merged to `v3` as `b0a824e09`. Direct run `33326967458`
+      scheduled the public build and all eight shards on the restricted ARM64
+      pool, but shards 1, 4, and 8 failed because activity-lifecycle specs did
+      not select the `live-quiz` profile that owns both Hatchet workers. This
+      run is routing proof, not runtime acceptance or performance evidence.
+- [x] Remediation commit `d32e6e8d6` assigns every activity-lifecycle spec to
+      the worker-bearing profile, adds a focused regression, and gives caller
+      checkouts from before the profile migration an explicit all-or-nothing
+      legacy startup. A partial profile runtime still fails closed. Full
+      `check:all`, staged secret scanning, formatting, and the exact legacy
+      checkout fixture pass under Node `24.16.0`.
+- [ ] Publish and qualify the focused remediation, merge it when safe, then
+      rerun both a current-source public route and the legacy PR compatibility
+      case before claiming runtime acceptance or measuring performance.
