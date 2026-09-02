@@ -119,6 +119,7 @@ export function usePwaOnboardingTour(): UseProductTourResult {
       next: t('pwa.productTours.next'),
       previous: t('pwa.productTours.previous'),
       done: t('pwa.productTours.done'),
+      skip: t('pwa.productTours.skip'),
       // Driver.js fills its own counters into the rendered string, so the
       // markers travel through the translation as plain values.
       progress: t('pwa.productTours.progress', {
