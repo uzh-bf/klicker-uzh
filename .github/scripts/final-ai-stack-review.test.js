@@ -993,9 +993,10 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
     workflowRunId: 700,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
   })
-  assert.deepEqual(parseStackReviewMetadata(report).findings[0].layer_numbers, [
-    1,
-  ])
+  assert.deepEqual(
+    parseStackReviewMetadata(report).findings[0].layer_numbers,
+    [1]
+  )
   assert.equal(
     parseStackReviewMetadata(report).reviewed_path_aliases.includes(
       'src/rename-old.ts'
