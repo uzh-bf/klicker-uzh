@@ -1,15 +1,15 @@
 import {
-  IconDefinition,
   faBarsStaggered,
   faCheck,
   faCheckDouble,
   faInbox,
   faRepeat,
   faX,
+  type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
-import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
+import { Button, type StepItem, StepProgress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
@@ -26,6 +26,7 @@ interface StepProgressWithScoringProps {
   currentIx: number
   setCurrentIx: (ix: number) => void
   resetLocalStorage?: () => void
+  navigableUntilIx?: number
   readOnly?: boolean
 }
 
@@ -34,12 +35,16 @@ function StepProgressWithScoring({
   currentIx,
   setCurrentIx,
   resetLocalStorage,
+  navigableUntilIx,
   readOnly = false,
 }: StepProgressWithScoringProps) {
   const t = useTranslations()
-  const isNavigable = () => !readOnly
-  const gatedItems = items.map((item) =>
-    isNavigable() ? item : { ...item, disabled: true }
+
+  const isNavigable = (ix: number) =>
+    !readOnly &&
+    (typeof navigableUntilIx !== 'number' || ix <= navigableUntilIx)
+  const gatedItems = items.map((item, ix) =>
+    isNavigable(ix) ? item : { ...item, disabled: true }
   )
 
   return (
@@ -50,7 +55,7 @@ function StepProgressWithScoring({
         value={currentIx === -1 ? undefined : currentIx}
         items={gatedItems}
         onItemClick={(ix: number) => {
-          if (isNavigable()) setCurrentIx(ix)
+          if (isNavigable(ix)) setCurrentIx(ix)
         }}
         data={{ cy: 'practice-quiz-progress' }}
         className={{ root: 'w-full' }}

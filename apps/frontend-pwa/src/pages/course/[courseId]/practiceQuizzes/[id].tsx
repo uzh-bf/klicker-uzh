@@ -3,17 +3,17 @@
  * This page only owns the browser wiring and quiz state projection.
  */
 import { useQuery } from '@apollo/client'
+import { faRepeat } from '@fortawesome/free-solid-svg-icons'
 import {
   GetPracticeQuizDocument,
   PublicationStatus,
-  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -37,14 +37,15 @@ import {
   QUIZ_STATE_MESSAGE_TYPE,
   QUIZ_STATE_VERSION,
 } from '../../../../components/practiceQuiz/embed'
-import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
-
-type PracticeQuizProgressState = Record<
-  string,
-  {
-    status: StackFeedbackStatus
-  }
->
+import PracticeQuiz, {
+  resetPracticeQuizLocalStorage,
+} from '../../../../components/practiceQuiz/PracticeQuiz'
+import {
+  findFirstUnansweredStack,
+  type PracticeQuizCompletionSummary,
+  type PracticeQuizProgressState,
+  summarizePracticeQuizCompletion,
+} from '../../../../components/practiceQuiz/progress'
 
 function PracticeQuizPage({
   courseId,
@@ -76,6 +77,7 @@ function PracticeQuizPage({
     })
   const [isCompleted, setIsCompleted] = useState(false)
   const [completionLoaded, setCompletionLoaded] = useState(false)
+  const [resumeIx, setResumeIx] = useState(0)
 
   const hostNavigationRequested =
     focusedEmbedRequested || embedCapabilities.hostNavigation === true
@@ -85,7 +87,13 @@ function PracticeQuizPage({
     parentOrigin !== null
 
   const handleHostNavigationStateChange = useCallback(
-    (nextState: EmbedQuizNavigationState) => setHostNavigationState(nextState),
+    (nextState: EmbedQuizNavigationState) =>
+      setHostNavigationState((currentState) =>
+        currentState.phase === nextState.phase &&
+        currentState.canAdvance === nextState.canAdvance
+          ? currentState
+          : nextState
+      ),
     []
   )
 
@@ -226,7 +234,12 @@ function PracticeQuizPage({
     if (!embedded || !data?.practiceQuiz) return
 
     const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
-    setIsCompleted(readStoredCompletion(id, stackIds))
+    const progressState = readStoredProgressState(id)
+    setIsCompleted(
+      stackIds.length > 0 &&
+        findFirstUnansweredStack(progressState, stackIds) === stackIds.length
+    )
+    setResumeIx(findFirstUnansweredStack(progressState, stackIds))
     setCompletionLoaded(true)
   }, [embedded, id, data?.practiceQuiz])
 
@@ -242,12 +255,13 @@ function PracticeQuizPage({
     }
 
     setHostNavigationState({ phase: 'answering', canAdvance: false })
-    setCurrentIx(0)
+    setCurrentIx(Math.min(resumeIx, totalSteps - 1))
   }, [
     completionLoaded,
     currentIx,
     hostNavigationRequested,
     isCompleted,
+    resumeIx,
     totalSteps,
   ])
 
@@ -258,7 +272,15 @@ function PracticeQuizPage({
   }, [currentIx])
 
   useEffect(() => {
-    if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
+    if (
+      !embedded ||
+      !parentOrigin ||
+      loading ||
+      !data?.practiceQuiz ||
+      !completionLoaded
+    ) {
+      return
+    }
 
     const payload = buildQuizStatePayload({
       currentIx,
@@ -285,6 +307,7 @@ function PracticeQuizPage({
     totalSteps,
     hostNavigationActive,
     hostNavigationState,
+    completionLoaded,
   ])
 
   if (loading)
@@ -344,13 +367,6 @@ function PracticeQuizPage({
     setCurrentIx((ix) => ix + 1)
   }
 
-  const handleSetCurrentIx = (ix: number) => {
-    if (ix >= 0) {
-      setHostNavigationState({ phase: 'answering', canAdvance: false })
-    }
-    setCurrentIx(ix)
-  }
-
   return (
     <Layout
       embedded={embedded}
@@ -359,15 +375,12 @@ function PracticeQuizPage({
       course={data.practiceQuiz.course ?? undefined}
     >
       {focusedEmbedRequested && isCompleted ? (
-        <div
-          role="status"
-          className="rounded-lg bg-slate-50 px-4 py-5 text-center text-sm font-medium text-slate-700"
-          data-cy="focused-embed-completed"
-        >
-          {t.rich('pwa.practiceQuiz.solvedPracticeQuiz', {
-            name: data.practiceQuiz.displayName,
-            it: (text) => <span className="italic">{text}</span>,
-          })}
+        <div className="pb-20">
+          <FocusedEmbedCompletedPanel
+            quizId={id}
+            displayName={data.practiceQuiz.displayName}
+            stackIds={data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []}
+          />
         </div>
       ) : (
         <PracticeQuiz
@@ -375,6 +388,7 @@ function PracticeQuizPage({
           embedded={embedded}
           focusedPresentation={focusedEmbedRequested}
           hostNavigation={hostNavigationActive}
+          hostNavigationRequested={hostNavigationRequested}
           hostAdvanceRequest={hostAdvanceRequest}
           onHostNavigationStateChange={handleHostNavigationStateChange}
           quiz={{
@@ -382,7 +396,7 @@ function PracticeQuizPage({
             course: data.practiceQuiz.course!,
           }}
           currentIx={currentIx}
-          setCurrentIx={handleSetCurrentIx}
+          setCurrentIx={setCurrentIx}
           handleNextElement={handleNextQuestion}
           onAllStacksCompletion={
             embedded
@@ -528,34 +542,78 @@ function buildQuizStatePayload({
     : payload
 }
 
-function readStoredCompletion(
-  quizId: string,
-  stackIds: Array<string | number>
-): boolean {
-  if (typeof window === 'undefined' || stackIds.length === 0) {
-    return false
-  }
+function readStoredProgressState(
+  quizId: string
+): PracticeQuizProgressState | undefined {
+  if (typeof window === 'undefined') return undefined
 
   try {
     const rawProgressState = window.localStorage.getItem(`pq-${quizId}`)
-    if (!rawProgressState) return false
-
-    const progressState = JSON.parse(
-      rawProgressState
-    ) as PracticeQuizProgressState
-
-    return stackIds.every((stackId) => {
-      const status = progressState?.[String(stackId)]?.status
-      return status && status !== StackFeedbackStatus.Unanswered
-    })
+    return rawProgressState
+      ? (JSON.parse(rawProgressState) as PracticeQuizProgressState)
+      : undefined
   } catch (error) {
     console.warn(
       'Failed to read stored practice quiz progress for embed state',
-      {
-        quizId,
-        error,
-      }
+      { quizId, error }
     )
-    return false
+    return undefined
   }
+}
+
+function FocusedEmbedCompletedPanel({
+  quizId,
+  displayName,
+  stackIds,
+}: {
+  quizId: string
+  displayName: string
+  stackIds: Array<string | number>
+}) {
+  const t = useTranslations()
+  const [summary] = useState<PracticeQuizCompletionSummary>(() =>
+    summarizePracticeQuizCompletion(readStoredProgressState(quizId), stackIds)
+  )
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-lg bg-slate-50 px-4 py-5 text-center">
+      <div
+        role="status"
+        className="text-sm font-medium text-slate-700"
+        data-cy="focused-embed-completed"
+      >
+        {t.rich('pwa.practiceQuiz.solvedPracticeQuiz', {
+          name: displayName,
+          it: (text) => <span className="italic">{text}</span>,
+        })}
+      </div>
+
+      {summary.score !== null ? (
+        <div className="text-sm text-slate-600" data-cy="focused-embed-score">
+          {t('pwa.practiceQuiz.totalPoints', {
+            points: summary.score,
+          })}
+        </div>
+      ) : summary.answeredCount > 0 ? (
+        <div className="text-sm text-slate-600" data-cy="focused-embed-score">
+          {t('pwa.practiceQuiz.answeredMinOnce', {
+            answered: summary.answeredCount,
+            total: stackIds.length,
+          })}
+        </div>
+      ) : null}
+
+      <Button
+        className={{ root: 'flex h-7 flex-row text-sm' }}
+        onClick={() => {
+          resetPracticeQuizLocalStorage(quizId)
+          window.location.reload()
+        }}
+        data={{ cy: 'focused-embed-retry' }}
+      >
+        <Button.Icon icon={faRepeat} className={{ root: 'mr-2' }} />
+        <Button.Label>{t('pwa.practiceQuiz.resetAnswers')}</Button.Label>
+      </Button>
+    </div>
+  )
 }

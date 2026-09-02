@@ -1,21 +1,25 @@
 import { useQuery } from '@apollo/client'
 import {
-  Course,
+  type Course,
   GetBookmarksPracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
+  type PracticeQuiz as PracticeQuizType,
   SelfDocument,
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
-import PracticeQuizOverview from './PracticeQuizOverview'
 import type { EmbedQuizNavigationState } from './embed'
+import PracticeQuizOverview from './PracticeQuizOverview'
+import {
+  findFirstUnansweredStack,
+  type PracticeQuizProgressState,
+} from './progress'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -29,9 +33,11 @@ export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
 }
 
 export function resetPracticeQuizLocalStorage(id: string) {
+  const progressKey = `pq-${id}`
+  const stackPrefix = `qi-${id}-`
   const localStorageKeys = Object.keys(localStorage)
   localStorageKeys.forEach((key) => {
-    if (key.includes(id)) {
+    if (key === progressKey || key.startsWith(stackPrefix)) {
       localStorage.removeItem(key)
     }
   })
@@ -48,6 +54,7 @@ interface PracticeQuizProps {
   focusedPresentation?: boolean
   previewOnly?: boolean
   hostNavigation?: boolean
+  hostNavigationRequested?: boolean
   hostAdvanceRequest?: number
   onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
 }
@@ -63,6 +70,7 @@ function PracticeQuiz({
   focusedPresentation = false,
   previewOnly = false,
   hostNavigation = false,
+  hostNavigationRequested = false,
   hostAdvanceRequest = 0,
   onHostNavigationStateChange,
 }: PracticeQuizProps) {
@@ -84,27 +92,25 @@ function PracticeQuiz({
     router.push(`/`)
   }
 
-  const [progressState, setProgressState] = useLocalStorage<
-    Record<
-      string,
-      {
-        status: StackFeedbackStatus
-        score?: number | null
-      }
-    >
-  >(
-    `pq-${quiz.id}`,
-    quiz.stacks?.reduce(
-      (acc, stack) => ({
-        ...acc,
-        [stack.id]: {
-          status: 'unanswered',
+  const [progressState, setProgressState] =
+    useLocalStorage<PracticeQuizProgressState>(
+      `pq-${quiz.id}`,
+      quiz.stacks?.reduce<PracticeQuizProgressState>((acc, stack) => {
+        acc[stack.id] = {
+          status: StackFeedbackStatus.Unanswered,
           score: null,
-        },
-      }),
-      {}
+        }
+        return acc
+      }, {})
     )
-  )
+
+  const navigableUntilIx =
+    embedded && hostNavigationRequested
+      ? findFirstUnansweredStack(
+          progressState,
+          quiz.stacks?.map((stack) => stack.id) ?? []
+        )
+      : undefined
 
   const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
     variables: {
@@ -147,9 +153,10 @@ function PracticeQuiz({
           }
           currentIx={currentIx}
           setCurrentIx={setCurrentIx}
-          readOnly={focusedEmbed}
+          navigableUntilIx={navigableUntilIx}
+          readOnly={hostNavigation}
           resetLocalStorage={
-            showResetLocalStorage && !focusedEmbed
+            showResetLocalStorage && !hostNavigation
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
