@@ -197,11 +197,13 @@ function createRequest({
   assistantMessageId = 'assistant-1',
   images = [],
   threadId = 'thread-1',
+  allowRegeneration = false,
 }: {
   selectedModel?: string
   assistantMessageId?: string
   images?: string[]
   threadId?: string | null
+  allowRegeneration?: boolean
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
@@ -212,6 +214,7 @@ function createRequest({
       selectedModel,
       selectedMode: 'tutor',
       assistantMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
       images,
     }),
   })
@@ -315,6 +318,29 @@ describe('account usage chat route', () => {
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('defaults omitted regeneration to a normal turn claim', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.calls[0]?.[0]).not.toHaveProperty(
+      'allowRegeneration'
+    )
+  })
+
+  test('passes explicit regeneration to the turn claim', async () => {
+    const response = await POST(createRequest({ allowRegeneration: true }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ allowRegeneration: true })
+    )
   })
 
   test('reuses a failed turn thread when a retry omits the thread ID', async () => {

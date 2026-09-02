@@ -25,9 +25,9 @@ does not deploy or migrate any environment.
   router configuration. Persisted allow-lists containing only retired models
   resolve to the narrow GPT-5.6 Luna base fallback until they are repaired.
 - Lifecycle writers are off by default in the first rollout. R1 creates only a
-  hidden `IN_PROGRESS` marker, and complete-only reads keep it away from older
-  readers. Normal requests are claimed once per thread and user-message parent;
-  explicit regeneration remains the opt-in path for a sibling answer.
+  hidden `IN_PROGRESS` marker, and supported complete-only reads keep it away
+  from readers. Normal requests are claimed once per thread and user-message
+  parent; explicit regeneration remains the opt-in path for a sibling answer.
 
 ## Non-goals
 
@@ -72,7 +72,9 @@ does not deploy or migrate any environment.
   assistant IDs could both reach provider work and charge. Current Chat history
   readers already filter lifecycle status, so a hidden marker is safe for the
   supported R1 pod set without a new migration. Pre-lifecycle unfiltered
-  readers must not be mixed into that rollout.
+  readers must not be mixed into that rollout. A crash after claiming and
+  before terminal completion can leave a hidden marker; R1 therefore needs a
+  documented detection owner and recovery path before activation.
 - The exact current `v3` migration set has 182 migrations. Production history
   previously ended at 179, leaving the three reviewed Chat migrations as the
   release delta.
@@ -215,6 +217,8 @@ Check:
 - Concurrent writer-off claims with distinct assistant IDs produce one marker,
   one provider-eligible claim, one completed message, and one charge; explicit
   regeneration still creates a sibling and its separate charge.
+- A completed normal claim blocks a later normal claim with a distinct
+  assistant ID without creating another message or charge.
 - Zero-content completion and pre-terminal failure remove the hidden marker and
   create no completed row or charge.
 - Writer-on claim, retry, stale callback, failure, and duplicate tests remain
@@ -224,6 +228,9 @@ Check:
   compatible R1 rollout target and must be excluded by the pod-revision gate.
 - Helm checks prove false omits the key and an explicit true override renders
   it.
+- The R1 rollout runbook names the stale-marker detection owner and accepts
+  explicit reload as the recovery path, or schedules bounded cleanup as a
+  separately reviewed follow-up before activation.
 
 Commit:
 
@@ -278,6 +285,7 @@ Check:
 | Database delta | Three additive Chat migrations after production migration 179 | Rehearse 179 to 182, prove schema equivalence and lock behavior, then obtain backup and maintenance approval |
 | Lifecycle rollout R1 | Hidden-marker claims, attempt tracking off | Deploy exact candidate with attempt tracking off and prove every Chat pod runs a complete-only reader |
 | Lifecycle rollout R2 | Not prepared | Separate configuration PR and approval after R1 proof; R1 is the rollback floor |
+| Client/API skew | New clients send explicit regeneration; cached old clients do not | Treat the new Chat client and route as one release unit; monitor 409s after rollout and do not claim old-client reload compatibility |
 | Assessment drift | Argo previously Healthy but OutOfSync | Reconcile only after chart merge and explicit deployment approval |
 | LiteLLM cost audit | Latest job failed because its cost source was unreachable | Diagnose endpoint ownership in df-cloud; no retry or write from this package |
 | Chat availability | One ready replica and no PDB observed | Separate HA proposal for replicas, disruption budget, and spread |
@@ -285,6 +293,18 @@ Check:
 | Beta signup | Exists only on the broader `v3-ai` branch | Redesign as an audited, concurrency-safe, default-off feature before release |
 | Model registry cleanup | GPT-4.1 Mini remains in active defaults and deployment values | Retire it in this release and preserve historical analysis records |
 | Account enforcement | Default off | Inventory budgets and owners before a separately approved cutover |
+
+R1 operational decision: a process or pod loss after a claim can leave a hidden
+`IN_PROGRESS` marker and block an ordinary retry. Chat on-call owns detection of
+markers older than the configured provider request timeout; the read-only check
+is an `IN_PROGRESS` marker with a null attempt token whose `createdAt` exceeds
+that threshold. After the provider timeout is confirmed, support can direct the
+participant to use the explicit reload action, which creates a deliberate
+regeneration sibling. Automatic stale-marker cleanup remains a separate
+reviewed change because it must define a safe age threshold and avoid deleting a
+live provider attempt. During rollout, monitor the conflict response rate for
+cached clients whose reload action omits the new flag; this is an accepted
+compatibility limitation, not an authorization or charging bypass.
 
 ## Production qualification sequence
 
@@ -340,6 +360,11 @@ Check:
       route failed terminally; it found one accepted high-severity correction.
 - [x] Implement and verify the distinct-assistant-ID claim correction with
       Chat unit, PostgreSQL integration, typecheck, and lint evidence.
+- [x] Add direct coverage for post-completion distinct-ID blocking and route
+      default-versus-explicit regeneration propagation.
+- [x] Disposition the slice review: stale markers and cached-client reload
+      behavior are documented as R1 operational gates; no automatic cleanup is
+      added without a separate safety review.
 - [x] Record the duplicate-charge root cause and prevention contract in
       `docs/solutions/data/chat-turn-duplicate-charging.md`.
 - [ ] Run fresh simplifier, slice-risk, and integrated final reviews on the

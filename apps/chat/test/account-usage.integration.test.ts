@@ -579,6 +579,51 @@ describePostgres('account usage PostgreSQL integration', () => {
     expect(usage.usedCredits.toString()).toBe('0.5')
   })
 
+  test('blocks a distinct normal claim after the parent is completed', async () => {
+    const parentId = randomUUID()
+    const firstMessageId = randomUUID()
+    const firstInput = await claimedTurnInput(firstMessageId, { parentId })
+
+    await expect(accountUsage.finalizeChatTurn(firstInput)).resolves.toEqual({
+      outcome: 'completed',
+      creditsUsed: 0.25,
+    })
+
+    const secondMessageId = randomUUID()
+    const secondClaim = await accountUsage.claimChatTurn({
+      ownerId: OWNER_ID,
+      chatbotId: CHATBOT_ID,
+      threadId: THREAD_ONE_ID,
+      assistantMessageId: secondMessageId,
+      parentId,
+    })
+
+    expect(secondClaim).toEqual({
+      outcome: 'completed',
+      lifecycleAttemptId: null,
+    })
+    expect(
+      await prisma.chatMessage.count({
+        where: {
+          threadId: THREAD_ONE_ID,
+          parentId,
+          role: 'assistant',
+          lifecycleStatus: 'COMPLETED',
+        },
+      })
+    ).toBe(1)
+    const usage = await prisma.chatAccountUsage.findUniqueOrThrow({
+      where: {
+        ownerId_usageClass_monthStart: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      },
+    })
+    expect(usage.usedCredits.toString()).toBe('0.25')
+  })
+
   test('allows only one concurrent provider-work claim for one key', async () => {
     const messageId = randomUUID()
     const claimInput = {
