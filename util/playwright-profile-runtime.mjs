@@ -257,33 +257,113 @@ export function buildStartCommand(plan) {
   }
 }
 
+// The profile runtime replaces the legacy "run-p --race" startup, which
+// always ran the mock GrowthBook feature-flag server next to the test apps.
+// Server-side flag resolution points at 127.0.0.1:4010, so a runtime without
+// this process silently disables every AI/beta feature under test.
+export function buildGrowthBookCommand() {
+  return {
+    command: 'node',
+    args: ['./playwright/util/mockGrowthBookServer.mjs'],
+  }
+}
+
+// 'exit' and 'error' can both fire for one child, so each child's terminal
+// outcome is recorded at most once. The first non-benign failure wins, and
+// the final code is only produced after every child has been recorded.
+export function createTerminalAccounting(childCount) {
+  const settled = new Array(childCount).fill(false)
+  let remaining = childCount
+  let failureCode = null
+  return {
+    record(index, code) {
+      if (settled[index]) {
+        return undefined
+      }
+      settled[index] = true
+      remaining -= 1
+      if (code !== null && failureCode === null) {
+        failureCode = code
+      }
+      return remaining === 0 ? (failureCode ?? 0) : undefined
+    },
+  }
+}
+
+// A child that already terminated on its own must keep its real exit
+// classification. Only still-running children are marked as stopped by us
+// and killed; re-marking an exited child could mask its non-zero code.
+export function stopRunningChildren(children, signal) {
+  for (const entry of children) {
+    if (
+      entry.child.exitCode !== null ||
+      entry.child.signalCode !== null ||
+      entry.child.killed
+    ) {
+      continue
+    }
+    // Only a successful kill makes the later exit benign; a failed kill
+    // must leave the child's own terminal classification intact.
+    if (!entry.child.kill(signal)) {
+      continue
+    }
+    entry.stoppedByUs = true
+  }
+}
+
 function startRuntime(plan) {
   console.log(
     `Starting Playwright profile ${plan.profile}: ${plan.apps.join(', ')}`
   )
   console.log(`Turbo filters: ${plan.turboFilters.join(' ')}`)
 
-  const startCommand = buildStartCommand(plan)
-  const child = spawn(startCommand.command, startCommand.args, {
-    cwd: REPOSITORY_ROOT,
-    env: process.env,
-    stdio: 'inherit',
+  const commands = [
+    ['test apps', buildStartCommand(plan)],
+    ['mock GrowthBook server', buildGrowthBookCommand()],
+  ]
+  const children = commands.map(([name, command]) => {
+    const child = spawn(command.command, command.args, {
+      cwd: REPOSITORY_ROOT,
+      env: process.env,
+      stdio: 'inherit',
+    })
+    return { name, child, stoppedByUs: false }
   })
 
+  const stopAll = (signal) => stopRunningChildren(children, signal)
   for (const signal of ['SIGINT', 'SIGTERM']) {
-    process.on(signal, () => child.kill(signal))
+    process.on(signal, () => stopAll(signal))
   }
-  child.on('error', (error) => {
-    console.error(`Could not start the Playwright runtime: ${error.message}`)
-    process.exitCode = 1
-  })
-  child.on('exit', (code, signal) => {
-    if (code !== null) {
-      process.exitCode = code
-      return
+
+  let failureCode = null
+  const accounting = createTerminalAccounting(children.length)
+  const settle = (index, code) => {
+    if (code !== null && failureCode === null) {
+      failureCode = code
+      // Mirror run-p --race: stop the remaining runtime processes on the
+      // first failure so the shard fails loudly instead of limping.
+      stopAll('SIGTERM')
     }
-    process.exitCode = signal === 'SIGTERM' ? 143 : 130
-  })
+    const finalCode = accounting.record(index, code)
+    if (finalCode !== undefined) {
+      process.exitCode = finalCode
+    }
+  }
+
+  for (const [index, { name, child }] of children.entries()) {
+    child.on('error', (error) => {
+      console.error(`Could not start ${name}: ${error.message}`)
+      settle(index, 1)
+    })
+    child.on('exit', (code, signal) => {
+      const entry = children.find((candidate) => candidate.child === child)
+      if (entry?.stoppedByUs) {
+        settle(index, null)
+        return
+      }
+      settle(index, code === null ? (signal === 'SIGTERM' ? 143 : 130) : code)
+    })
+  }
 }
 
 function main(args = process.argv.slice(2)) {
