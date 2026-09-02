@@ -1767,7 +1767,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_CREATE' }
           ),
         }),
 
@@ -1788,7 +1789,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_DELETE' }
           ),
         }),
 

@@ -92,4 +92,37 @@ describe('assessment audit monitor', () => {
     )
     expect(metrics).not.toContain('participant')
   })
+
+  it('forecasts delivered-unsealed capacity and raises the configured thresholds', async () => {
+    const now = new Date('2026-08-11T08:10:00.000Z')
+    const warning = await collectAssessmentAuditMonitorSnapshot({
+      repository: repository({ ...EMPTY, deliveredUnsealedBytes: 2_500 }),
+      now,
+      dispatcherLastSuccess: now,
+      deliveredUnsealedCapacityBytes: 10_000,
+      deliveredUnsealedGrowthBytesPerWeek: 1_000,
+    })
+    expect(warning.deliveredUnsealedCapacityWeeksRemaining).toBe(7.5)
+    expect(warning.signals).toContainEqual({
+      signal: 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING',
+      severity: 'WARNING',
+      value: 7.5,
+      threshold: 8,
+    })
+
+    const critical = await collectAssessmentAuditMonitorSnapshot({
+      repository: repository({ ...EMPTY, deliveredUnsealedBytes: 7_500 }),
+      now,
+      dispatcherLastSuccess: now,
+      deliveredUnsealedCapacityBytes: 10_000,
+      deliveredUnsealedGrowthBytesPerWeek: 1_000,
+    })
+    expect(critical.deliveredUnsealedCapacityWeeksRemaining).toBe(2.5)
+    expect(critical.signals).toContainEqual({
+      signal: 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING',
+      severity: 'CRITICAL',
+      value: 2.5,
+      threshold: 4,
+    })
+  })
 })
