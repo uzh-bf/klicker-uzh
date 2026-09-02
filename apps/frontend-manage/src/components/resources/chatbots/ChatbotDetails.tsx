@@ -154,8 +154,12 @@ function ChatbotDetails({
     if (!chatbot) return false
 
     const initialUseAllModels = chatbot.allowedModelIds.length === 0
-    const initialAllowedModelIds = [...chatbot.allowedModelIds].sort()
-    const currentAllowedModelIds = [...allowedModelIds].sort()
+    const initialAllowedModelIds = [...chatbot.allowedModelIds].sort((a, b) =>
+      a.localeCompare(b)
+    )
+    const currentAllowedModelIds = [...allowedModelIds].sort((a, b) =>
+      a.localeCompare(b)
+    )
     const initialReasoningConfig = buildReasoningConfigState(
       chatbot,
       modelRegistry
@@ -568,65 +572,89 @@ function ChatbotDetails({
                 <table className="w-full text-sm">
                   <tbody className="divide-y divide-gray-200 bg-white">
                     <tr className="divide-x divide-gray-200">
-                      <td className="w-1/3 bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="w-1/3 bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageThreads')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {usageSummary?.threadCount ?? 0}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageMessages')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {usageSummary?.messageCount ?? 0}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageParticipants')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {usageSummary?.participantCount ?? 0}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageLastActivity')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {lastActivityLabel}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageTotalCredits')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {formatNumber(usageSummary?.totalCredits)}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageCurrentCredits')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {formatNumber(usageSummary?.currentCredits)}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageTotalResets')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {usageSummary?.totalResets ?? 0}
                       </td>
                     </tr>
                     <tr className="divide-x divide-gray-200">
-                      <td className="bg-gray-50 px-4 py-2 font-medium text-gray-500">
+                      <th
+                        scope="row"
+                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                      >
                         {t('manage.resources.usageLastReset')}
-                      </td>
+                      </th>
                       <td className="px-4 py-2 text-gray-900">
                         {lastResetLabel}
                       </td>
