@@ -416,3 +416,12 @@ The package's final review must explicitly verify that source type and material 
 - The simplifier pass returned `VERDICT: PASS` with no findings.
 - The concurrency/data-integrity slice review returned `VERDICT: PASS` with two non-actionable confirmations: lost claims are re-read and classified under PostgreSQL READ COMMITTED with fail-closed error paths and ingestion-run creation strictly after a winning claim; and the regression deterministically pauses the production snapshot query, exercises the concurrent single-resource path, releases the pause in `finally`, and introduces no lock cycle.
 - No review corrections were required. Normal push of the branch and the PR refresh are next per the approved slice; merge, deployment, live ingestion, graph generation, production action, secret access/write, cluster write, runtime teardown, and cleanup remain withheld.
+
+### 2026-09-02 — W1 published at 32492f1402 and exact-head CI dispositioned
+
+- The branch was pushed normally after the full pre-push build passed 26 of 26; `origin/rs/kb-resource-operations-w1` and PR #5710 both read back at `32492f1402`, MERGEABLE, stacked on `rs/question-generation-review-inbox@bd8cce83`.
+- Exact-head checks are terminal. Every branch-relevant check passes: repository check, GraphQL, unit, MCP, olat-api, image builds, gitleaks, GitGuardian, trusted policy, SonarCloud, CodeQL, and code analysis.
+- Five Playwright hosted shards (1, 2, 4, 6, 7) and the status mirror fail with the identical failing specs already failing on the parent head's own run 33494015438 at `bd8cce83`: `Y-manage-assistant`, `Y-response-examples`, `Y-question-generation-review`, `Y-kb-management-ux`, and `B-feature-access` (shard 7 shows a service-start connection refusal on port 4010). Spec titles and shard placement match between both heads, so these are inherited from the parent layer and are not introduced by this branch.
+- `final-ai-review` and `final-ai-stack-review` fail with the repository's stacked-PR topology policy (stack root does not target the default branch), identical to the parent.
+- The PR description was refreshed through the description gates — whole-branch accounting for 17 commits, terminal CI readback, and earlier-head evidence re-labeled — and read back from the forge.
+- The stack-level merge blocker is now the parent layer's five failing e2e specs plus the lower dependency PR #5635; fixing parent-layer specs is outside this slice's authority. Merge remains withheld.
