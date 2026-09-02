@@ -1,0 +1,223 @@
+name: Build Playwright artifacts
+description: Build the shared Playwright artifact contract on either backend
+
+inputs:
+  route:
+    description: Execution route reported in telemetry
+    required: true
+  mode:
+    description: Canonical selector mode
+    required: true
+  cache-enabled:
+    description: Whether restore-only Actions caches are enabled
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download canonical Playwright execution plan
+      uses: actions/download-artifact@v4
+      with:
+        name: playwright-execution-plan
+
+    - name: Validate canonical Playwright execution plan
+      shell: bash
+      env:
+        EXPECTED_MODE: ${{ inputs.mode }}
+      run: |
+        node - <<'NODE'
+        const fs = require('node:fs')
+        const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json'))
+        if (plan.mode !== process.env.EXPECTED_MODE) {
+          throw new Error(`execution plan mode ${plan.mode} does not match ${process.env.EXPECTED_MODE}`)
+        }
+        if (plan.mode !== 'skip' && plan.shards.length !== plan.shardCount) {
+          throw new Error('execution plan shard metadata is inconsistent')
+        }
+        NODE
+
+    - name: Reserve trusted control path
+      shell: bash
+      run: |
+        set -euo pipefail
+        rm -rf -- "$GITHUB_WORKSPACE/.ci-control"
+        test ! -e "$GITHUB_WORKSPACE/.ci-control" && test ! -L "$GITHUB_WORKSPACE/.ci-control"
+
+    - name: Check out trusted cache contract
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ job.workflow_repository }}
+        ref: ${{ job.workflow_sha }}
+        path: .ci-control
+        persist-credentials: false
+
+    - name: Trust mounted workspace
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Define node version
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: package.json
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 11.5.0
+        run_install: false
+
+    - name: Compute cache contract
+      id: cache-contract
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+    - name: Restore pnpm cache
+      if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
+      id: pnpm-cache
+      continue-on-error: true
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+
+    - name: Restore turbo build artifacts
+      if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
+      id: turbo-cache
+      continue-on-error: true
+      uses: actions/cache/restore@v4
+      with:
+        path: .turbo
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install
+
+    - name: Build all packages and apps
+      id: build
+      shell: bash
+      run: |
+        started=$(date +%s)
+        set +e
+        set -o pipefail
+        pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+        prisma_status=("${PIPESTATUS[@]}")
+        pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+        build_status=("${PIPESTATUS[@]}")
+        status=0
+        if [ "${prisma_status[0]}" -ne 0 ] ||
+          [ "${prisma_status[1]}" -ne 0 ] ||
+          [ "${build_status[0]}" -ne 0 ] ||
+          [ "${build_status[1]}" -ne 0 ]; then
+          status=1
+        fi
+        set -e
+        echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+        exit "$status"
+      env:
+        APP_SECRET: abcd
+        DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+        NODE_ENV: test
+        REDIS_HOST: localhost
+        REDIS_PASS: ''
+        REDIS_PORT: 6379
+        REDIS_CACHE_HOST: localhost
+        REDIS_CACHE_PORT: 6379
+        REDIS_ASSESSMENT_PORT: 6379
+        REDIS_ASSESSMENT_PASS: ''
+        REDIS_ASSESSMENT_HOST: localhost
+        APP_ORIGIN_API: http://127.0.0.1:3000
+        APP_ORIGIN_AUTH: http://127.0.0.1:3010
+        APP_ORIGIN_LTI: http://127.0.0.1:4000
+        APP_ORIGIN_PWA: http://127.0.0.1:3001
+        APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+        APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+        APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+        APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+    - name: Archive Next build outputs
+      shell: bash
+      run: |
+        tar -cf playwright-next-builds.tar \
+          --exclude='apps/auth/.next/cache' \
+          --exclude='apps/auth/.next/standalone' \
+          --exclude='apps/chat/.next/cache' \
+          --exclude='apps/chat/.next/standalone' \
+          --exclude='apps/frontend-control/.next/cache' \
+          --exclude='apps/frontend-control/.next/standalone' \
+          --exclude='apps/frontend-manage/.next/cache' \
+          --exclude='apps/frontend-manage/.next/standalone' \
+          --exclude='apps/frontend-pwa/.next/cache' \
+          --exclude='apps/frontend-pwa/.next/standalone' \
+          apps/auth/.next \
+          apps/chat/.next \
+          apps/frontend-control/.next \
+          apps/frontend-manage/.next \
+          apps/frontend-pwa/.next
+
+    - name: Upload Playwright build outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-build-artifact
+        path: |
+          playwright-next-builds.tar
+          apps/backend-docker/dist
+          apps/hatchet-worker-general/dist
+          apps/hatchet-worker-response-processor/dist
+          apps/lti/dist
+          apps/mcp-lecturer/dist
+          apps/olat-api/dist
+          apps/response-api/dist
+          packages/export/dist
+          packages/feature-flags/dist
+          packages/grading/dist
+          packages/graphql/dist
+          packages/hatchet/dist
+          packages/markdown/dist
+          packages/prisma/dist
+          packages/types/dist
+          packages/util/dist
+        retention-days: 1
+
+    - name: Extract Turbo build telemetry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/turbo-telemetry.cjs --log turbo-build.log
+
+    - name: Write build telemetry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      env:
+        PLAYWRIGHT_TELEMETRY_PHASE: build
+        PLAYWRIGHT_ROUTE: ${{ inputs.route }}
+        PLAYWRIGHT_MODE: ${{ inputs.mode }}
+        PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+        PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+        PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+        PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+        TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+        TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
+        TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
+        PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
+      run: node .ci-control/.github/scripts/playwright-telemetry.cjs --output playwright-build-telemetry.json
+
+    - name: Upload build telemetry
+      if: always()
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-build-telemetry
+        path: playwright-build-telemetry.json
+        if-no-files-found: ignore
+        retention-days: 1

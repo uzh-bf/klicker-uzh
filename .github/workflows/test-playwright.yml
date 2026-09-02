@@ -1,515 +1,86 @@
 name: Klicker automated testing with playwright
+
 on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
-
-env:
-  REGISTRY: ghcr.io
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 jobs:
-  # The hosted and public-PR predicates are intentional complements. Only the
-  # exact lowercase value "true" or an exact canary PR number enables the
-  # self-hosted path; every other value fails closed to GitHub-hosted runners.
-  filter-hosted:
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.repository.private != false ||
-      github.event.pull_request.draft == true ||
-      github.event.pull_request.head.repo.full_name != github.repository ||
-      endsWith(github.event.pull_request.user.login, '[bot]') ||
-      (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED != 'true' &&
-        vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR != format('{0}', github.event.pull_request.number))
+  # The called workflow is the only execution envelope. It recomputes the
+  # route and selector state from the immutable event payload and exposes one
+  # result to the required status job.
+  test-playwright-execution:
     concurrency:
-      group: ${{ github.workflow }}-hosted-filter-${{ github.event.pull_request.number || github.ref }}
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
-    runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Check for changes
-        id: check
-        uses: ./.github/actions/changed-paths
-        with:
-          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
-
-  build-and-compile-hosted:
-    needs: filter-hosted
-    if: needs.filter-hosted.outputs.should_run == 'true'
-    concurrency:
-      group: ${{ github.workflow }}-hosted-build-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Define node version
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.0
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Cache turbo build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
-            ${{ runner.os }}-turbo-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
-        env:
-          APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
-          NODE_ENV: test
-          REDIS_HOST: localhost
-          REDIS_PASS: ''
-          REDIS_PORT: 6379
-          REDIS_CACHE_HOST: localhost
-          REDIS_CACHE_PORT: 6379
-          REDIS_ASSESSMENT_PORT: 6379
-          REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_HOST: localhost
-          APP_ORIGIN_API: http://127.0.0.1:3000
-          APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:4000
-          APP_ORIGIN_PWA: http://127.0.0.1:3001
-          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
-          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
-          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
-          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-
-      - name: Archive Next build outputs
-        run: |
-          tar -cf playwright-next-builds.tar \
-            --exclude='apps/auth/.next/cache' \
-            --exclude='apps/auth/.next/standalone' \
-            --exclude='apps/chat/.next/cache' \
-            --exclude='apps/chat/.next/standalone' \
-            --exclude='apps/frontend-control/.next/cache' \
-            --exclude='apps/frontend-control/.next/standalone' \
-            --exclude='apps/frontend-manage/.next/cache' \
-            --exclude='apps/frontend-manage/.next/standalone' \
-            --exclude='apps/frontend-pwa/.next/cache' \
-            --exclude='apps/frontend-pwa/.next/standalone' \
-            apps/auth/.next \
-            apps/chat/.next \
-            apps/frontend-control/.next \
-            apps/frontend-manage/.next \
-            apps/frontend-pwa/.next
-
-      - name: Upload Playwright build outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-build-artifact
-          path: |
-            playwright-next-builds.tar
-            apps/backend-docker/dist
-            apps/hatchet-worker-general/dist
-            apps/hatchet-worker-response-processor/dist
-            apps/lti/dist
-            apps/mcp-lecturer/dist
-            apps/olat-api/dist
-            apps/response-api/dist
-            packages/export/dist
-            packages/grading/dist
-            packages/feature-flags/dist
-            packages/graphql/dist
-            packages/hatchet/dist
-            packages/markdown/dist
-            packages/prisma/dist
-            packages/types/dist
-            packages/util/dist
-          retention-days: 1
-
-  test-playwright-hosted:
-    needs: [filter-hosted, build-and-compile-hosted]
-    if: >-
-      needs.filter-hosted.outputs.should_run == 'true'
-    concurrency:
-      group: ${{ github.workflow }}-hosted-shard-${{ matrix.shardIndex }}-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
-    runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
-      # Shares /config with the hatchet service so this job can read the worker
-      # API token that hatchet-lite-dev mints on boot. Reading it via `docker
-      # exec` (as the non-containerized workflows do) is impossible here: the
-      # Playwright image has no Docker CLI.
-      volumes:
-        - hatchet_lite_config:/config
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: klicker-prod
-          POSTGRES_PASSWORD: klicker
-          POSTGRES_DB: klicker-prod
-        options: >-
-          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      postgres_hatchet:
-        image: postgres:15
-        env:
-          POSTGRES_USER: hatchet
-          POSTGRES_PASSWORD: hatchet
-          POSTGRES_DB: hatchet
-        options: >-
-          --health-cmd "pg_isready -U hatchet -d hatchet"
-          --health-interval 5s
-          --health-timeout 10s
-          --health-retries 10
-          --health-start-period 30s
-        ports:
-          - 5433:5432
-      redis_cache:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6380:6379
-      redis_exec:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-      redis_assessment_exec:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6381:6379
-      hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
-        ports:
-          - '8888:8888'
-          - '7077:7077'
-        env:
-          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
-          SERVER_AUTH_COOKIE_DOMAIN: hatchet
-          SERVER_AUTH_COOKIE_INSECURE: 't'
-          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
-          SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
-          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
-          SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://hatchet:8888
-          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
-          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
-          SERVER_LOGGER_LEVEL: debug
-          SERVER_LOGGER_FORMAT: console
-        options: >-
-          --health-cmd "curl -f http://localhost:8888/healthz"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 10
-        volumes:
-          - hatchet_lite_config:/config
-
-    steps:
-      - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
-
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Define node version
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Download Playwright build outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: playwright-build-artifact
-
-      - name: Restore generated GraphQL client
-        run: |
-          mkdir -p packages/graphql/src/public
-          test -s packages/graphql/dist/client.json
-          cp packages/graphql/dist/client.json packages/graphql/src/public/client.json
-
-      - name: Restore Next build outputs
-        run: tar -xf playwright-next-builds.tar
-
-      - name: Generate Prisma Client
-        run: pnpm --filter @klicker-uzh/prisma generate
-        env:
-          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-
-      - name: Prepare .env files
-        run: |
-          ./util/_create_hatchet_token_test.sh
-        env:
-          HATCHET_API_URL: http://hatchet:8888
-          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-
-      - name: Apply migrations and reset database
-        run: |
-          cd packages/prisma
-          pnpm run prisma:reset:raw -f
-        env:
-          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-
-      - name: Seed test participants for Playwright
-        run: pnpm --filter @klicker-uzh/prisma-data seed:test
-        env:
-          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-
-      - name: Start services, wait for readiness, and run Playwright tests
-        timeout-minutes: 120
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x .github/scripts/wait-for-services.sh
-          SHARD_PLAN=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }} --json)
-          PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
-          mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
-          if [ "${#TEST_FILES[@]}" -eq 0 ]; then
-            echo "Shard plan contains no test files" >&2
-            exit 1
-          fi
-          RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${{ matrix.shardIndex }}.json"
-          node util/playwright-profile-runtime.mjs resolve \
-            --profile "$PROFILE" \
-            --output "$RUNTIME_PLAN"
-          export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
-          SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
-          export SERVICE_ENDPOINTS
-          echo "Running tests for shard ${{ matrix.shardIndex }} with profile $PROFILE: ${TEST_FILES[*]}"
-          .github/scripts/wait-for-services.sh -- \
-            env NODE_ENV=test \
-            pnpm --filter @klicker-uzh/playwright exec playwright test \
-              --project=chromium \
-              "${TEST_FILES[@]}"
-        env:
-          APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
-          NODE_ENV: production
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
-          URL_AUTH: http://127.0.0.1:3010
-          URL_CONTROL: http://127.0.0.1:3003
-          URL_MANAGE: http://127.0.0.1:3002
-          URL_STUDENT: http://127.0.0.1:3001
-          URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
-          URL_CHAT: http://127.0.0.1:3004
-          SERVICE_START_SCRIPT: start:playwright:ci
-          TIMEOUT_SECONDS: '300'
-          CHECK_INTERVAL: '5'
-          POSTGRES_CHECK_HOST: postgres
-          POSTGRES_CHECK_PORT: 5432
-          POSTGRES_CHECK_USER: klicker-prod
-          POSTGRES_CHECK_DATABASE: klicker-prod
-          REDIS_HOST: redis_exec
-          REDIS_PASS: ''
-          REDIS_PORT: 6379
-          REDIS_CACHE_HOST: redis_cache
-          REDIS_CACHE_PORT: 6379
-          REDIS_ASSESSMENT_PORT: 6379
-          REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_HOST: redis_assessment_exec
-          HATCHET_CHECK_HOST: hatchet
-          HATCHET_HTTP_PORT: 8888
-          HATCHET_GRPC_PORT: 7077
-          HATCHET_API_URL: http://hatchet:8888
-          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-          HATCHET_CLIENT_HOST_PORT: hatchet:7077
-          HATCHET_HOST_PORT: hatchet:7077
-          HATCHET_CLIENT_TLS_STRATEGY: none
-          APP_ORIGIN_API: http://127.0.0.1:3000
-          APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:4000
-          APP_ORIGIN_PWA: http://127.0.0.1:3001
-          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
-          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
-          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
-          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-
-      - name: Upload Playwright JUnit results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
-          path: playwright/test-results/junit.xml
-          if-no-files-found: ignore
-          retention-days: 1
-
-      - name: Upload Playwright diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-diagnostics-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
-          path: |
-            playwright/playwright-report
-            playwright/test-results
-            service.log
-          if-no-files-found: ignore
-          retention-days: 1
-
-  test-playwright-public-pr:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.repository.private == false &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      !endsWith(github.event.pull_request.user.login, '[bot]') &&
-      (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED == 'true' ||
-        vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR == format('{0}', github.event.pull_request.number))
-    concurrency:
-      group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
+    permissions:
+      contents: read
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+    with:
+      route_hint: auto
 
-  # Always reports a status even when the tests are skipped by the path filter,
-  # so this job can be used as a required check in branch protection.
+  # Always reports a status even when the canonical plan skips all tests.
+  # This job intentionally stays outside the reusable workflow's concurrency
+  # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
-    needs:
-      [
-        filter-hosted,
-        build-and-compile-hosted,
-        test-playwright-hosted,
-        test-playwright-public-pr,
-      ]
+    needs: test-playwright-execution
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
     steps:
       - name: Check result
+        shell: bash
+        env:
+          EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
+          ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
+          MODE: ${{ needs.test-playwright-execution.outputs.mode }}
+          SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
+          SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
         run: |
-          hosted_filter_result="${{ needs.filter-hosted.result }}"
-          hosted_build_result="${{ needs.build-and-compile-hosted.result }}"
-          hosted_test_result="${{ needs.test-playwright-hosted.result }}"
-          public_pr_result="${{ needs.test-playwright-public-pr.result }}"
-          should_run=''
-
-          if [ "$hosted_filter_result" = 'success' ] && [ "$public_pr_result" = 'skipped' ]; then
-            route='hosted'
-            should_run="${{ needs.filter-hosted.outputs.should_run }}"
-          elif [ "$hosted_filter_result" = 'skipped' ] && [ "$public_pr_result" = 'success' ]; then
-            route='public-pr'
-            should_run="${{ needs.test-playwright-public-pr.outputs.should_run }}"
-          else
-            route='invalid'
-          fi
-
+          set -euo pipefail
           {
-            printf 'route=%s\n' "$route"
-            printf 'should_run=%s\n' "$should_run"
-            printf 'hosted_filter_result=%s\n' "$hosted_filter_result"
-            printf 'hosted_build_result=%s\n' "$hosted_build_result"
-            printf 'hosted_test_result=%s\n' "$hosted_test_result"
-            printf 'public_pr_result=%s\n' "$public_pr_result"
+            printf 'route=%s\n' "${ROUTE:-unknown}"
+            printf 'mode=%s\n' "${MODE:-unknown}"
+            printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
+            printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
+            printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
 
           {
             echo '### Playwright route status'
             echo
-            echo "- Route: \`$route\`"
-            echo "- Relevant changes: \`${should_run:-unknown}\`"
-            echo "- Hosted filter/build/tests: \`$hosted_filter_result/$hosted_build_result/$hosted_test_result\`"
-            echo "- Public PR workflow: \`$public_pr_result\`"
+            echo "- Route: \`${ROUTE:-unknown}\`"
+            echo "- Mode: \`${MODE:-unknown}\`"
+            echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
+            echo "- Envelope result: \`$EXECUTION_RESULT\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # A run cancelled by concurrency (duplicate push, quick re-push) must not
-          # leave a red required check behind: the surviving run is the real signal.
-          if [ "$hosted_filter_result" = 'cancelled' ] || \
-             [ "$hosted_build_result" = 'cancelled' ] || \
-             [ "$hosted_test_result" = 'cancelled' ] || \
-             [ "$public_pr_result" = 'cancelled' ]; then
-            echo 'Superseded by a newer run; jobs were cancelled by concurrency.'
+          # A newer event cancels the old reusable invocation. The surviving
+          # invocation is the required signal for the pull request.
+          if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
+            echo 'Superseded by a newer Playwright invocation.'
             exit 0
           fi
-
-          if [ "$route" = 'invalid' ]; then
-            echo 'Routing error: expected exactly one Playwright route.'
-            echo "Hosted filter result: $hosted_filter_result"
-            echo "Public PR result: $public_pr_result"
+          if [ "$EXECUTION_RESULT" != 'success' ]; then
+            echo 'Playwright execution envelope failed.'
             exit 1
           fi
-
-          if [ "$should_run" != 'true' ]; then
-            echo "Tests skipped by path filter on the $route route."
+          if [ "$ROUTE" != 'hosted' ] && [ "$ROUTE" != 'public-pr' ]; then
+            echo 'Playwright execution returned an invalid route.'
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" = 'false' ]; then
+            echo 'No Playwright-relevant tests selected.'
             exit 0
           fi
-
-          if [ "$route" = 'public-pr' ]; then
-            exit 0
+          if [ "$SHOULD_RUN" != 'true' ]; then
+            echo 'Playwright execution did not expose a valid selection result.'
+            exit 1
           fi
-
-          if [ "$hosted_build_result" = 'success' ] && [ "$hosted_test_result" = 'success' ]; then
-            exit 0
-          fi
-
-          echo 'Hosted Playwright execution failed or produced an unexpected result.'
-          echo "Hosted build result: $hosted_build_result"
-          echo "Hosted test result: $hosted_test_result"
-          exit 1
+          echo 'Playwright execution passed.'
 
       - name: Upload run metadata
         if: always()
@@ -517,4 +88,128 @@ jobs:
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
+          retention-days: 1
+
+  # Queue inspection is deliberately hosted and checkout-free. It has only
+  # actions: read permission and never runs on the public self-hosted pool.
+  playwright-queue-telemetry:
+    needs: [test-playwright-execution, test-playwright-status]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    steps:
+      - name: Collect current-run queue telemetry
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('node:fs')
+
+            const secondsBetween = (start, end) => {
+              if (!start || !end) return null
+              const seconds = (Date.parse(end) - Date.parse(start)) / 1000
+              return Number.isFinite(seconds) && seconds >= 0 ? seconds : null
+            }
+
+            const percentile = (values, fraction) => {
+              if (values.length === 0) return null
+              const sorted = [...values].sort((a, b) => a - b)
+              const index = Math.min(
+                sorted.length - 1,
+                Math.ceil(sorted.length * fraction) - 1
+              )
+              return sorted[index]
+            }
+
+            const jobClass = (name) => {
+              const value = name.toLowerCase()
+              if (value.includes('public-pr')) return 'public-pr'
+              if (value.includes('hosted')) return 'hosted'
+              if (value.includes('build')) return 'build'
+              if (value.includes('status')) return 'status'
+              if (value.includes('playwright')) return 'playwright'
+              return 'other'
+            }
+
+            const runId = Number(process.env.GITHUB_RUN_ID)
+            let report
+
+            try {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              )
+              const records = jobs
+                .filter(
+                  (job) =>
+                    !job.name.toLowerCase().includes('queue-telemetry')
+                )
+                .map((job) => ({
+                  jobClass: jobClass(job.name),
+                  status: job.status ?? 'unknown',
+                  conclusion: job.conclusion ?? null,
+                  runner: job.runner_name ?? null,
+                  queueSeconds: secondsBetween(
+                    job.created_at,
+                    job.started_at
+                  ),
+                  durationSeconds: secondsBetween(
+                    job.started_at,
+                    job.completed_at
+                  ),
+                }))
+              const queueSeconds = records
+                .map((record) => record.queueSeconds)
+                .filter((value) => value !== null)
+
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'envelope',
+                runId,
+                jobCount: records.length,
+                queueObservedCount: queueSeconds.length,
+                queueP50Seconds: percentile(queueSeconds, 0.5),
+                queueP95Seconds: percentile(queueSeconds, 0.95),
+                jobs: records,
+              }
+            } catch {
+              core.warning('Current-run queue telemetry is unavailable')
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'envelope',
+                runId,
+                collection: 'unavailable',
+                errorClass: 'actions-api',
+              }
+            }
+
+            fs.writeFileSync(
+              'playwright-queue-telemetry.json',
+              `${JSON.stringify(report, null, 2)}\n`
+            )
+            await core.summary
+              .addHeading('Playwright queue telemetry')
+              .addRaw(
+                report.collection === 'unavailable'
+                  ? 'Collection unavailable; execution was not affected.'
+                  : `Observed ${report.queueObservedCount} of ${report.jobCount} jobs; queue p50=${report.queueP50Seconds ?? 'n/a'}s, p95=${report.queueP95Seconds ?? 'n/a'}s.`
+              )
+              .write()
+
+      - name: Upload queue telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-queue-telemetry
+          path: playwright-queue-telemetry.json
+          if-no-files-found: error
           retention-days: 1

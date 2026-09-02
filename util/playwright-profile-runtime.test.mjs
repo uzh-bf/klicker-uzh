@@ -234,21 +234,25 @@ test('the start command passes validated filters as distinct argv entries', () =
 })
 
 test('workflow shard startup steps explicitly select Bash', () => {
-  const workflowUrls = [
-    new URL('../.github/workflows/test-playwright.yml', import.meta.url),
-    new URL(
-      '../.github/workflows/public-pr-playwright-shards.yml',
-      import.meta.url
-    ),
-  ]
+  const action = readFileSync(
+    new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
+    'utf8'
+  )
+  assert.match(
+    action,
+    /- name: Start services, wait for readiness, and run Playwright tests\n\s+shell: bash\n\s+run: \|/
+  )
+})
 
-  for (const workflowUrl of workflowUrls) {
-    const workflow = readFileSync(workflowUrl, 'utf8')
-    assert.match(
-      workflow,
-      /- name: Start services, wait for readiness, and run Playwright tests\n\s+timeout-minutes: 120\n\s+shell: bash\n\s+run: \|/
-    )
-  }
+test('workflow shard startup supports only complete profile or legacy runtimes', () => {
+  const action = readFileSync(
+    new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
+    'utf8'
+  )
+  assert.match(action, /PROFILE_RUNTIME_FILES=/)
+  assert.match(action, /profile_file_count/)
+  assert.match(action, /legacy full-stack Playwright startup/)
+  assert.match(action, /partially present/)
 })
 
 test('local full-stack startup stays independent from the CI runtime plan', () => {
