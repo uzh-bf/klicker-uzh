@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
@@ -5,10 +6,9 @@ import {
   KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
-  PrismaClient,
+  type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
-import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -40,6 +40,29 @@ function createDeferred<T>() {
     resolve = resolvePromise
   })
   return { promise, resolve }
+}
+
+function withKbResourceSnapshotPause(
+  ctx: ContextWithUser,
+  kbId: string,
+  onSnapshot: () => void,
+  continueSnapshot: Promise<void>
+): ContextWithUser {
+  const prisma = ctx.prisma.$extends({
+    query: {
+      kBResource: {
+        async findMany({ args, query }) {
+          const resources = await query(args)
+          if (args.where?.kbId === kbId) {
+            onSnapshot()
+            await continueSnapshot
+          }
+          return resources
+        },
+      },
+    },
+  })
+  return { ...ctx, prisma: prisma as unknown as PrismaClient }
 }
 
 describe('Integration tests for knowledge base ingestion', () => {
@@ -739,6 +762,52 @@ describe('Integration tests for knowledge base ingestion', () => {
         where: { resourceId: { in: resources.map(({ id }) => id) } },
       })
     ).resolves.toBe(2)
+  })
+
+  it('counts a concurrent single-resource claim in the bulk result', async () => {
+    const created = await createKb(
+      { name: 'Concurrent single-resource ingestion' },
+      userOneCtx
+    )
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Concurrent resource',
+        url: 'https://example.com/concurrent-resource',
+      },
+      userOneCtx
+    )
+    const snapshotRead = createDeferred<void>()
+    const releaseSnapshot = createDeferred<void>()
+    const bulkCtx = withKbResourceSnapshotPause(
+      userOneCtx,
+      created.id,
+      snapshotRead.resolve,
+      releaseSnapshot.promise
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const bulk = ingestAllKbResources({ kbId: created.id }, bulkCtx)
+    await snapshotRead.promise
+    try {
+      await ingestKbResource({ id: resource.id }, userOneCtx)
+    } finally {
+      releaseSnapshot.resolve()
+    }
+
+    await expect(bulk).resolves.toEqual({
+      queuedCount: 0,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 0,
+      alreadyInProgressCount: 1,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(1)
+    await expect(
+      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+    ).resolves.toBe(1)
   })
 
   it('compensates only failed bulk dispatches', async () => {

@@ -2031,7 +2031,33 @@ export async function ingestAllKbResources(
             errorCode: null,
           },
         })
-        if (claim.count !== 1) continue
+        if (claim.count !== 1) {
+          const claimedResource = await prisma.kBResource.findFirst({
+            where: { id: resource.id, kbId, deletedAt: null },
+          })
+          if (!claimedResource) {
+            throw new GraphQLError('KB resource changed during ingestion')
+          }
+          const claimedRun = claimedResource.ingestionAttemptId
+            ? await prisma.kBIngestionRun.findUnique({
+                where: { id: claimedResource.ingestionAttemptId },
+                select: { status: true },
+              })
+            : undefined
+          const claimedState = getResourceReconciliationState(
+            claimedResource,
+            claimedRun ?? undefined
+          )
+          if (claimedState === 'current') {
+            alreadyCurrentCount += 1
+            continue
+          }
+          if (claimedState === 'in-progress') {
+            alreadyInProgressCount += 1
+            continue
+          }
+          throw new GraphQLError('KB resource changed during ingestion')
+        }
 
         await prisma.kBIngestionRun.create({
           data: {
