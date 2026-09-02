@@ -890,7 +890,7 @@ checks passed.
   `x-request-id`, and Hatchet messages carrying an optional diagnostic
   `loggingContext`.
 
-- [ ] **Step 1: Check out layer 3 and write request-adapter tests**
+- [x] **Step 1: Check out layer 3 and write request-adapter tests**
 
 ```bash
 gh stack checkout feat/logging-core-apis
@@ -911,7 +911,7 @@ pnpm --filter @klicker-uzh/response-api test -- requestLogging.test.ts
 
 Expected: failure because the adapter is absent.
 
-- [ ] **Step 2: Implement the Node HTTP request adapter**
+- [x] **Step 2: Implement the Node HTTP request adapter**
 
 The adapter receives the route string from the matched branch; it never parses
 a route from `req.url` for logging. It resolves headers, sets `x-request-id`,
@@ -959,7 +959,7 @@ export function beginNodeRequest(
 
 Wire completion from `sendJson`/error ownership so every request records once.
 
-- [ ] **Step 3: Replace unsafe response-api logging and propagate context**
+- [x] **Step 3: Replace unsafe response-api logging and propagate context**
 
 Create the root with `response-api` versus `response-api-assessment`. For every
 Hatchet response event, add:
@@ -973,25 +973,26 @@ loggingContext: {
 
 Keep the existing assessment business `correlationId` hash unchanged on the
 payload for queued-work and Redis compatibility. Alias it locally to
-`assessmentSubmissionId` when reading it for deduplication or safe operational
-events; it must never replace the diagnostic ID or expose the source token.
+`assessmentSubmissionId` when reading it for deduplication; it must never
+replace the diagnostic ID, enter an application log, or expose the source
+token.
 
 Replace payload/audit prose with these safe events:
 
-| Boundary                      | Event                     | Safe fields                           |
-| ----------------------------- | ------------------------- | ------------------------------------- |
-| Accepted response             | `response.accepted`       | event name, internal message ID       |
-| Duplicate assessment response | `response.duplicate`      | assessment submission ID, instance ID |
-| Validation/auth rejection     | `response.rejected`       | reason code only                      |
-| Hatchet publish failure       | `response.publish.failed` | safe `err`                            |
-| Redis startup                 | `dependency.connected`    | dependency name                       |
-| Service ready                 | `service.started`         | port, assessment boolean              |
+| Boundary                      | Event                     | Safe fields              |
+| ----------------------------- | ------------------------- | ------------------------ |
+| Accepted response             | `response.accepted`       | event only               |
+| Duplicate assessment response | `response.duplicate`      | event only               |
+| Validation/auth rejection     | `response.rejected`       | reason code only         |
+| Hatchet publish failure       | `response.publish.failed` | safe `err`               |
+| Redis startup                 | `dependency.connected`    | dependency name          |
+| Service ready                 | `service.started`         | port, assessment boolean |
 
 Delete every log/audit message that contains `req`, payload, response, cookie,
 correlation token, participant ID, or full Hatchet message. Preserve the
 existing client responses and status codes.
 
-- [ ] **Step 4: Verify and commit response-api**
+- [x] **Step 4: Verify and commit response-api**
 
 ```bash
 pnpm install
@@ -1024,7 +1025,7 @@ git commit -m "feat(logging): instrument response API ingress"
 - Consumes the same request contract as response-api; no public GraphQL schema
   or generated operation changes.
 
-- [ ] **Step 1: Write backend adapter tests**
+- [x] **Step 1: Write backend adapter tests**
 
 Add `@klicker-uzh/logging: workspace:*` to runtime dependencies,
 `vitest: ~3.2.4` to dev dependencies, and `test`, `test:run`, and `test:watch`
@@ -1041,7 +1042,7 @@ pnpm --filter @klicker-uzh/backend-docker test -- requestLogging.test.ts
 
 Expected: failure until the adapter and test script are added.
 
-- [ ] **Step 2: Install request middleware before authentication**
+- [x] **Step 2: Install request middleware before authentication**
 
 Create the backend root as `backend-graphql` or `backend-assessment`. The
 middleware stores these fields without replacing `req.locals.user`:
@@ -1049,7 +1050,7 @@ middleware stores these fields without replacing `req.locals.user`:
 ```ts
 declare global {
   namespace Express {
-    interface Locals {
+    interface Request {
       user?: unknown
       requestContext: RequestContext
       log: AppLogger
@@ -1063,7 +1064,7 @@ Have JWT middleware add only `user`; on verification failure record
 library error. Set GraphQL Yoga `logging: false` because the owned HTTP boundary
 now records completion/failure.
 
-- [ ] **Step 3: Extend internal GraphQL context**
+- [x] **Step 3: Extend internal GraphQL context**
 
 Add `requestContext` and `log` to `Context` in
 `packages/graphql/src/lib/context.ts`. `enhanceContext` reads them from
@@ -1071,7 +1072,7 @@ Add `requestContext` and `log` to `Context` in
 request's allowed headers and a child of the backend root. Pass the root logger
 to `prepareHatchetTasks({ logger })` in `apps/backend-docker/src/index.ts`.
 
-- [ ] **Step 4: Propagate correlation to GraphQL-published tasks**
+- [x] **Step 4: Propagate correlation to GraphQL-published tasks**
 
 For each scheduling/publishing call in these files, add this to its existing
 input:
@@ -1091,7 +1092,7 @@ loggingContext: {
 Scheduled work initiated by scripts or a cron and therefore lacking a request
 context omits correlation rather than generating a misleading one.
 
-- [ ] **Step 5: Verify and commit request context**
+- [x] **Step 5: Verify and commit request context**
 
 ```bash
 pnpm install
@@ -1138,7 +1139,7 @@ git commit -m "feat(logging): bind GraphQL request context"
 - Produces: no production `console.*` in GraphQL request/service paths; CLI
   scripts retain their terminal output.
 
-- [ ] **Step 1: Classify every production call before changing it**
+- [x] **Step 1: Classify every production call before changing it**
 
 For each file above, mark the call as one of:
 
@@ -1152,7 +1153,7 @@ For each file above, mark the call as one of:
 Do not touch `packages/graphql/src/scripts/**`; those are operator CLI output
 and outside the server-console guard.
 
-- [ ] **Step 2: Apply the semantic conversion**
+- [x] **Step 2: Apply the semantic conversion**
 
 Use object-first Pino calls:
 
@@ -1172,7 +1173,7 @@ configuration, notification payloads, template content, GraphQL variables, or
 raw third-party errors. Validation helpers should normally return their current
 error result without logging expected invalid input.
 
-- [ ] **Step 3: Prove only operator scripts retain consoles and commit**
+- [x] **Step 3: Prove only operator scripts retain consoles and commit**
 
 ```bash
 rg -n "console\.(log|info|warn|error|debug)" packages/graphql/src \
@@ -1190,6 +1191,15 @@ code is removed. Then:
 git add packages/graphql
 git commit -m "refactor(logging): migrate GraphQL service events"
 ```
+
+Execution note: Tasks 6-8 form the single layer-three work package committed as
+`1c16d74d6`. The response and backend adapter suites (eight tests), all focused
+checks, all three production builds, repository-wide `check:all`, the production
+console guard, and a diff-aware OpenGrep scan with zero new findings passed. The
+raw host GraphQL suite reached four passing files before its database suites
+failed with sandbox `EPERM`; the intended devrouter rerun could not build the
+container because the Docker credential helper canceled the GHCR credential
+request. This environment limitation is recorded for final stack verification.
 
 ### Task 9: Secure auth logging across Node and Edge
 

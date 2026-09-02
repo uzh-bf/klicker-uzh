@@ -614,7 +614,10 @@ async function resolveOrCreateParticipantForLti(
   // caller could mint a token for an arbitrary subject or email. Only accept
   // LTI 1.3, which is verified by apps/lti before the JWT is issued.
   if (ltiData.scope !== 'LTI1.3') {
-    console.warn(`event=lti_rejected_scope scope=${ltiData.scope}`)
+    ctx.log.warn(
+      { event: 'lti.account.resolve.rejected', reason: 'unsupported_scope' },
+      'LTI account resolution rejected'
+    )
     return { type: 'unsupported_scope' }
   }
 
@@ -651,8 +654,9 @@ async function resolveOrCreateParticipantForLti(
             })
           : accountBySsoId
 
-      console.info(
-        `event=lti_linked_by_ssoid participantId=${account.participant.id} ssoType=${account.ssoType}`
+      ctx.log.info(
+        { event: 'lti.account.resolved', mode: 'linked_by_ssoid' },
+        'LTI account resolved'
       )
 
       await ensureParticipation(account.participant.id)
@@ -670,8 +674,13 @@ async function resolveOrCreateParticipantForLti(
       })
 
       if (matchedParticipants.length > 1) {
-        console.warn(
-          `event=lti_conflict_duplicate_email normalizedEmail=${normalizedEmail} matches=${matchedParticipants.length}`
+        ctx.log.warn(
+          {
+            event: 'lti.account.resolve.rejected',
+            reason: 'duplicate_email',
+            matchCount: matchedParticipants.length,
+          },
+          'LTI account resolution rejected'
         )
         return { type: 'conflict_duplicate_email' }
       }
@@ -703,8 +712,13 @@ async function resolveOrCreateParticipantForLti(
                 })
               : accountForSsoType
 
-          console.info(
-            `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=true`
+          ctx.log.info(
+            {
+              event: 'lti.account.resolved',
+              mode: 'linked_by_email',
+              reusedSsoType: true,
+            },
+            'LTI account resolved'
           )
 
           await ensureParticipation(account.participant.id)
@@ -730,8 +744,13 @@ async function resolveOrCreateParticipantForLti(
           include: { participant: true },
         })
 
-        console.info(
-          `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=false`
+        ctx.log.info(
+          {
+            event: 'lti.account.resolved',
+            mode: 'linked_by_email',
+            reusedSsoType: false,
+          },
+          'LTI account resolved'
         )
 
         await ensureParticipation(account.participant.id)
@@ -792,8 +811,9 @@ async function resolveOrCreateParticipantForLti(
       include: { participant: true },
     })
 
-    console.info(
-      `event=lti_created_new participantId=${account.participant.id} ssoType=${account.ssoType}`
+    ctx.log.info(
+      { event: 'lti.account.resolved', mode: 'created_new' },
+      'LTI account resolved'
     )
 
     await ensureParticipation(account.participant.id)
@@ -850,7 +870,10 @@ export async function createParticipantAccount(
       ctx
     )
     if (resolved.type !== 'resolved') {
-      console.warn(`event=lti_create_account_failed type=${resolved.type}`)
+      ctx.log.warn(
+        { event: 'lti.account.create.rejected', reason: resolved.type },
+        'LTI account creation rejected'
+      )
       return null
     }
 
@@ -869,8 +892,11 @@ export async function createParticipantAccount(
         participant: account.participant,
         participantToken: jwt,
       }
-    } catch (e) {
-      console.error(e)
+    } catch {
+      ctx.log.error(
+        { event: 'lti.account.login.failed' },
+        'LTI account login failed'
+      )
       return null
     }
   }
@@ -967,7 +993,10 @@ export async function createParticipantAccount(
       participant,
     }
   } catch (e) {
-    console.error(e)
+    ctx.log.error(
+      { event: 'participant.account.create.failed' },
+      'Participant account creation failed'
+    )
     await sendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
       text: `Failed to create participant account: ${email} with error: ${
@@ -1009,7 +1038,10 @@ export async function loginParticipantWithLti(
   )
 
   if (resolved.type !== 'resolved') {
-    console.warn(`event=lti_login_failed type=${resolved.type}`)
+    ctx.log.warn(
+      { event: 'lti.account.login.rejected', reason: resolved.type },
+      'LTI account login rejected'
+    )
     return null
   }
 

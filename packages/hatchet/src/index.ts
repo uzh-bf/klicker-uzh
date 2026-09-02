@@ -83,6 +83,7 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
+    logger,
     get tasks() {
       if (!preparedTasks) {
         throw new Error(
@@ -438,11 +439,11 @@ export function prepareHatchetTasks({
     fn: withTaskLogging(
       'process-course-duplication',
       async (
-        { jobId }: { jobId: string } & LoggableHatchetInput,
+        { jobId, loggingContext }: { jobId: string } & LoggableHatchetInput,
         executionContext
       ) => {
         const success = await handlers.handleProcessCourseDuplication(
-          { jobId },
+          { jobId, loggingContext },
           globalContext,
           executionContext
         )

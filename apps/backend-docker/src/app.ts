@@ -10,6 +10,8 @@ import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import { logger } from './logger.js'
+import { requestLoggingMiddleware } from './requestLogging.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -36,6 +38,7 @@ function prepareApp({
 
   const app = express()
 
+  app.use(requestLoggingMiddleware(logger))
   app.use(
     cors({
       origin(origin, cb) {
@@ -96,13 +99,16 @@ function prepareApp({
     if (token) {
       try {
         user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
+      } catch {
         // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
+        req.locals.log.info(
+          { event: 'auth.jwt.rejected' },
+          'JWT authentication rejected'
+        )
       }
     }
 
-    req.locals = { user }
+    req.locals = { ...req.locals, user }
     next()
   }
 
@@ -150,7 +156,6 @@ function prepareApp({
       //   // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
       //   // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
       //   // skip: (executionArgs) => {
-      //   //   console.log(executionArgs)
       //   //   if (!executionArgs.operationName) {
       //   //     return true
       //   //   }
@@ -169,7 +174,7 @@ function prepareApp({
       hatchet,
       tasks,
     }),
-    logging: true,
+    logging: false,
     cors: false,
     maskedErrors: !process.env.DEBUG,
     graphqlEndpoint: '/api/graphql',

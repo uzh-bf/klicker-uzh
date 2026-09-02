@@ -167,3 +167,15 @@ checkout's unrelated untracked files.
   package/app checks and builds, repository-wide `check:all`, standard and
   assessment production-service smoke records, a source privacy guard, and an
   OpenGrep scan with zero findings.
+- 2026-08-05: Layer 3 implements safe request ownership for standard and
+  assessment response/backend APIs, HTTP and WebSocket GraphQL context,
+  request-to-Hatchet correlation, stable service events, and a semantic cleanup
+  of every production GraphQL `console.*` call. Adapter tests, focused checks,
+  all three production builds, and repository-wide `check:all` pass. The raw
+  GraphQL suite requires its database-backed environment; its host run reached
+  4 passing files before 23 database suites failed with sandbox `EPERM`.
+- 2026-08-05: The layer-three diff-aware OpenGrep scan reported zero new
+  findings. A devrouter retry was attempted for the database suites but the
+  fresh container build stopped when Docker's credential helper canceled the
+  GHCR request. Core API code was committed as `1c16d74d6`; local Gitleaks is
+  unavailable and remains CI-enforced.

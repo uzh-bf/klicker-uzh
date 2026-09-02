@@ -7,9 +7,6 @@ function validateFreeTextOptions(options?: ElementOptionsInput | null) {
     typeof options.hasSampleSolution !== 'boolean' ||
     options.hasSampleSolution === null
   ) {
-    console.error(
-      'Options and sample solution flag are required for free text questions'
-    )
     return false
   }
 
@@ -20,9 +17,6 @@ function validateFreeTextOptions(options?: ElementOptionsInput | null) {
       options.solutions.length === 0 ||
       options.solutions[0] === '')
   ) {
-    console.error(
-      'At least one solution is required for free text questions with sample solution'
-    )
     return false
   }
 

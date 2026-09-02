@@ -53,8 +53,8 @@ without breaking queries.
 - Tests: silent by default. Contract tests inject a capture destination.
 - `LOG_LEVEL` controls the threshold and defaults to `info` outside tests.
 
-The package pins Pino 9.14.0 and constrains `pino-pretty` to `~13.1.3`. Pino 10 adoption is a
-separate dependency change.
+The package pins Pino 9.14.0 and constrains `pino-pretty` to `~13.1.3`. Pino 10
+adoption is a separate dependency change.
 
 ## Correlation contract
 
@@ -87,6 +87,25 @@ Response-worker outcome events include `response.rejected`,
 `response.processed`, `response.aggregation.completed`, and
 `dependency.unavailable`. The assessment payload's business `correlationId`
 and participant identifiers are deliberately excluded from diagnostic fields.
+
+The response API binds this context to every accepted Hatchet response event.
+The GraphQL backend binds it to HTTP and WebSocket contexts and passes the same
+envelope to activity publication, completion, and aggregation jobs scheduled by
+a request. Jobs started without a request omit the envelope.
+
+## Owned HTTP boundaries
+
+`response-api` and `backend-docker` each own one request-completion record. The
+adapter accepts a parameterized route from the matched route branch; it never
+derives a log field from the raw URL. It validates incoming diagnostic headers,
+echoes `x-request-id`, suppresses health-probe completion records, and records
+method, route, status, and duration only.
+
+The GraphQL request child logger is exposed internally as `ctx.log` together
+with `ctx.requestContext`. GraphQL Yoga's built-in logger is disabled to avoid a
+second, unowned record. Service-level recovery signals use stable events; normal
+validation failures remain return values and do not create log noise. Operator
+scripts under `packages/graphql/src/scripts/` keep their terminal output.
 
 ## Privacy boundary
 

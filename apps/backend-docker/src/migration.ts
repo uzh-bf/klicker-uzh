@@ -2,6 +2,7 @@
 
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { logger } from './logger.js'
 
 interface Migration {
   id: string
@@ -16,12 +17,18 @@ export async function migrate(prisma: PrismaClient) {
     const migration = await prisma.migration.findFirst({ where: { id } })
     if (migration === null) {
       if (isIdempotent) {
-        console.log(`Migrating ${id} (idempotent mode without transaction)`)
+        logger.info(
+          { event: 'migration.started', migrationId: id, transactional: false },
+          'Database migration started'
+        )
 
         await migrate(prisma)
         await prisma.migration.create({ data: { id } })
       } else {
-        console.log(`Migrating ${id} (with transaction)`)
+        logger.info(
+          { event: 'migration.started', migrationId: id, transactional: true },
+          'Database migration started'
+        )
 
         await prisma.$transaction(
           async (tx: PrismaMigrationClient) => {
@@ -34,7 +41,10 @@ export async function migrate(prisma: PrismaClient) {
         )
       }
 
-      console.log(`Migrated ${id}`)
+      logger.info(
+        { event: 'migration.completed', migrationId: id },
+        'Database migration completed'
+      )
     }
   }
 }

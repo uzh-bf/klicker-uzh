@@ -845,7 +845,10 @@ export async function startLiveQuiz(
 
           await pipeline.exec()
         } catch (e) {
-          console.error(e)
+          ctx.log.warn(
+            { event: 'live-quiz.cache.cleanup.failed' },
+            'Live quiz cache cleanup failed'
+          )
         }
 
         // remove the scheduled hatchet publication task, if it exists
@@ -853,9 +856,12 @@ export async function startLiveQuiz(
           try {
             await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
           } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
+            ctx.log.warn(
+              {
+                event: 'hatchet.schedule.delete_failed',
+                task: 'live-quiz-publish',
+              },
+              'Hatchet scheduled task deletion failed'
             )
           }
         }
@@ -897,7 +903,7 @@ export async function scheduleLiveQuiz(
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
         availableFrom,
-        { liveQuizId: id }
+        { liveQuizId: id, loggingContext: ctx.requestContext }
       )
       const taskId = scheduledTask.metadata.id
 
@@ -914,7 +920,10 @@ export async function scheduleLiveQuiz(
       ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
       return updatedQuiz
     } catch (error) {
-      console.error('Error scheduling live quiz publication:', error)
+      ctx.log.error(
+        { event: 'hatchet.schedule.failed', task: 'live-quiz-publish' },
+        'Hatchet task scheduling failed'
+      )
       return null
     }
   } else {
@@ -940,9 +949,12 @@ export async function unpublishLiveQuiz(
     try {
       await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for live quiz ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'live-quiz-publish',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -1391,18 +1403,26 @@ export async function deactivateLiveQuizBlock(
     if (isAssessmentEnabled) {
       await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        {
+          liveQuizId: quizId,
+          blockId,
+          loggingContext: ctx.requestContext,
+        }
       )
     } else {
       await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        {
+          liveQuizId: quizId,
+          blockId,
+          loggingContext: ctx.requestContext,
+        }
       )
     }
   } catch (error) {
-    console.error(
-      `Failed to schedule aggregation task for closed block ${blockId} in live quiz ${quizId}:`,
-      error
+    ctx.log.warn(
+      { event: 'hatchet.schedule.failed', task: 'live-quiz-aggregate' },
+      'Hatchet task scheduling failed'
     )
   }
 
@@ -2035,7 +2055,10 @@ export async function changeLiveQuizName(
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     return true
   } catch (error) {
-    console.error('Error changing live quiz name:', error)
+    ctx.log.error(
+      { event: 'live-quiz.rename.failed' },
+      'Live quiz rename failed'
+    )
     return false
   }
 }
@@ -2460,9 +2483,12 @@ export async function deleteLiveQuiz(
           try {
             await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
           } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
+            ctx.log.warn(
+              {
+                event: 'hatchet.schedule.delete_failed',
+                task: 'live-quiz-publish',
+              },
+              'Hatchet scheduled task deletion failed'
             )
           }
         }
@@ -3239,7 +3265,6 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 
       return true
     } catch (error) {
-      console.error('Error publishing scheduled live quiz:', error)
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
         text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
