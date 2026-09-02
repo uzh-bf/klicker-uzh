@@ -159,6 +159,7 @@ export function useManageOnboardingTour(): UseProductTourResult {
       next: t('manage.productTours.next'),
       previous: t('manage.productTours.previous'),
       done: t('manage.productTours.done'),
+      skip: t('manage.productTours.skip'),
       // Driver.js fills its own counters into the rendered string, so the
       // markers travel through the translation as plain values.
       progress: t('manage.productTours.progress', {
