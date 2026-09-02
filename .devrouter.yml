@@ -60,6 +60,12 @@ profiles:
     readiness: [pwa, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
+  # maximal application runtime for trusted Playwright fallback selection
+  playwright:
+    apps: [chat, pwa, control, manage, api, auth, response-api]
+    readiness: [chat, pwa, manage, api, response-api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
   # pure capabilities: no routes, no app process
   ai:
     apps: []
