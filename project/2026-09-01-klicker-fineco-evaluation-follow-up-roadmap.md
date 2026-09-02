@@ -389,3 +389,16 @@ auth flow, cookies, or other browser-only behavior.
   response bound dependency is still the runtime owner's authorized
   values-free tool inventory; W1 — FineCo expert-binding readiness and W2 —
   twenty-case FineCo capture and semantic judge remain `delivery_pending`.
+- 2026-09-02 — Verified the tool-input side from source: the doc-query
+  contract exposes `question` as a bare string parameter with no pydantic
+  length constraint, `run_query` passes it into the prompt template
+  untouched (the only slice is a 100-character log line), and the Klicker
+  MCP client adds no tool-argument length validation. The tool-input side is
+  therefore not finitely capped at either layer; the finite per-result bound
+  remains the verified output ceiling of 20 × 65,535 characters, with
+  evaluation inputs controlled by the W2 — twenty-case FineCo capture and
+  semantic judge harness and live-chat inputs bounded only by the calling
+  model's output-token configuration. A1 — authorized FineCo binding and
+  finite response bound still awaits the runtime owner's authorized
+  values-free tool inventory; W1 — FineCo expert-binding readiness and W2 —
+  twenty-case FineCo capture and semantic judge remain `delivery_pending`.

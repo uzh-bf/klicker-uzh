@@ -304,7 +304,10 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   the shared `klicker_course_materials_v1` target shows the same cap.
   Combined with the 20-document rerank bound, the per-result serialization
   ceiling is source-verified as finite: 20 × 65,535 characters. Ingestion
-  chunk-size defaults remain leads, not bounds. This is still desired-state
+  chunk-size defaults remain leads, not bounds. The tool-input side has no
+  service-layer cap: `question` is an unconstrained string passed through to
+  the prompt template, so the finite bound is output-side only and
+  evaluation inputs are harness-controlled. This is still desired-state
   and stored-field evidence, not runtime proof that
   `EXPERT_df_fineco_expert` is registered in tutor and explainer.
 - FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
