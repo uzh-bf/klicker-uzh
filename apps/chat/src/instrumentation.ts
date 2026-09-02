@@ -6,6 +6,9 @@ export async function register() {
     return
   }
 
+  const { logger } = await import('./lib/server/logger')
+  logger.info({ event: 'service.started' }, 'Chat service started')
+
   const { getChatModelRegistry } = await import(
     './lib/server/chatModelRegistry'
   )

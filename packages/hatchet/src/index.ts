@@ -1,3 +1,4 @@
+import type EventEmitter from 'node:events'
 import {
   ConcurrencyLimitStrategy,
   type Context,
@@ -11,7 +12,6 @@ import type {
   HatchetLoggingContext,
   PreparedHatchetTasks,
 } from '@klicker-uzh/types'
-import type EventEmitter from 'node:events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import { type LoggableHatchetInput, withHatchetTaskLogging } from './logging.js'
@@ -83,7 +83,7 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
-    logger,
+    log: logger,
     get tasks() {
       if (!preparedTasks) {
         throw new Error(
@@ -131,8 +131,10 @@ export function prepareHatchetTasks({
     const { info, ...args } = message
     delete args.loggingContext
     delete args.correlationId
-    const correlationId =
-      message.correlationId ?? message.loggingContext?.correlationId
+    const loggingContext = (
+      message as { loggingContext?: HatchetLoggingContext }
+    ).loggingContext
+    const correlationId = message.correlationId ?? loggingContext?.correlationId
 
     // TODO: send the message to the actual audit log service with the correlation ID as a key?
     if (logger) {

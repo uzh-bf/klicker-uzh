@@ -1,9 +1,9 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
@@ -14,6 +14,12 @@ type ChatbotPageProps = {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/course/:courseId/chatbot/:chatbotId'
+  )
+
   try {
     if (
       typeof ctx.params?.courseId !== 'string' ||
@@ -27,7 +33,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo(undefined, ctx)
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
@@ -65,12 +71,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       ensureSuccess = Boolean(result.data?.ensureParticipation)
-    } catch (err) {
+    } catch {
       ensureSuccess = false
-      console.error('Failed to ensure participation before chatbot redirect', {
-        courseId,
-        err,
-      })
+      logFailure('participation_setup_failed')
     }
 
     if (!ensureSuccess) {
@@ -99,8 +102,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         permanent: false,
       },
     }
-  } catch (error) {
-    console.error('Error in getServerSideProps on chatbot:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     return {
       redirect: {

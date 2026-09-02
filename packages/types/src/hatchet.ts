@@ -18,7 +18,7 @@ export interface HatchetHandlerGlobalContext {
   redisCache?: Redis
   prisma: PrismaClient
   tasks: PreparedHatchetTasks
-  logger?: AppLogger
+  log?: AppLogger
 }
 
 export type HatchetLoggingContext = {
@@ -102,10 +102,7 @@ export interface HatchetHandlers {
     {
       jobId,
       loggingContext,
-    }: {
-      jobId: string
-      loggingContext?: HatchetLoggingContext
-    },
+    }: { jobId: string; loggingContext?: HatchetLoggingContext },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>

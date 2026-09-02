@@ -65,24 +65,31 @@ describe('OLAT request logging', () => {
     expect(lifecycle.responseHeaders.get('x-request-id')).toBe(
       'olat-request-123'
     )
-    expect(records).toHaveLength(2)
-    expect(records.map((record) => record.event)).toEqual([
-      'http.request.started',
-      'http.request.completed',
-    ])
-    expect(
-      records.every((record) => record.requestId === 'olat-request-123')
-    ).toBe(true)
-    expect(
-      records.every(
-        (record) =>
-          (record.http as { route?: string }).route ===
-          '/api/configuration/courses'
-      )
-    ).toBe(true)
+    expect(records).toHaveLength(1)
+    expect(records[0]?.event).toBe('http.request.completed')
+    expect(records[0]?.requestId).toBe('olat-request-123')
+    expect((records[0]?.http as { route?: string } | undefined)?.route).toBe(
+      '/api/configuration/courses'
+    )
     expect(JSON.stringify(records)).not.toContain(
       'fake-olat-key-logging-canary-20260805'
     )
+  })
+
+  test('records server failures at error level', () => {
+    const records: Record<string, unknown>[] = []
+    const middleware = createRequestLoggingMiddleware(captureLogger(records))
+    const lifecycle = requestLifecycle({ path: '/openapi.yaml' })
+
+    middleware(lifecycle.req, lifecycle.res, () => {
+      lifecycle.res.statusCode = 500
+    })
+    lifecycle.finish()
+
+    expect(records).toHaveLength(1)
+    expect(records[0]?.level).toBe('error')
+    expect(records[0]?.event).toBe('http.request.completed')
+    expect(records[0]?.outcome).toBe('failure')
   })
 
   test('suppresses health-check requests', async () => {

@@ -153,7 +153,7 @@ checkout's unrelated untracked files.
   layer-one implementation.
 - 2026-08-05: Implemented the shared request, Node/Pino, and Edge logging seams
   test-first; the general Hatchet worker is the first application canary.
-- 2026-08-05: Layer 1 committed as `0e623fbe6` after 15 logging tests, focused
+- 2026-08-05: Layer 1 committed as `44c554641` after 15 logging tests, focused
   package and worker typechecks/builds, repository-wide `check:all`, the full
   23-target production build, production NDJSON and development-pretty smoke
   tests, and an OpenGrep scan with zero findings. Local Gitleaks remains
@@ -163,7 +163,7 @@ checkout's unrelated untracked files.
   assessment response-worker roots. Sensitive SDK/console diagnostics in the
   response processors were replaced with stable allowlisted application
   events.
-- 2026-08-05: Layer 2 committed as `792a26727` after five wrapper tests,
+- 2026-08-05: Layer 2 committed as `6448be0e8` after five wrapper tests,
   package/app checks and builds, repository-wide `check:all`, standard and
   assessment production-service smoke records, a source privacy guard, and an
   OpenGrep scan with zero findings.
@@ -177,16 +177,100 @@ checkout's unrelated untracked files.
 - 2026-08-05: The layer-three diff-aware OpenGrep scan reported zero new
   findings. A devrouter retry was attempted for the database suites but the
   fresh container build stopped when Docker's credential helper canceled the
-  GHCR request. Core API code was committed as `1c16d74d6`; local Gitleaks is
+  GHCR request. Core API code was committed as `1704371fa`; local Gitleaks is
   unavailable and remains CI-enforced.
 - 2026-08-05: Layer 4 replaces sensitive auth Node/Edge diagnostics with
   request-scoped categorical outcomes, adds stable LTI lifecycle events, and
   gives OLAT fixed-template Express request ownership plus safe dependency
   errors. Auth, LTI, and OLAT checks/builds, two OLAT privacy tests,
   repository-wide `check:all`, source guards, and targeted OpenGrep passed; code
-  was committed as `46a139e1a`.
+  was committed as `ebd46b330`.
 - 2026-08-05: Browser smoke remains blocked before container startup by the
   Docker credential helper canceling the GHCR base-image request. The legacy
   OLAT container harness also failed before its test phase while rebuilding the
   unrelated shared `util` package for Linux; its focused socket-free adapter
   tests pass on the restored host toolchain.
+- 2026-08-05: Layer 5 wraps every Chat Node API route with fixed-template
+  request ownership, removes the previous prompt/tool/provider diagnostic dump,
+  adds safe stream and MCP milestones, and verifies 45 Chat tests plus the
+  production build. Chat was committed as `ef6a39ca8`.
+- 2026-08-05: Manage, standard/assessment PWA, and Control now have Node startup
+  roots. PWA SSR failures use safe request children and propagate diagnostic
+  headers only to internal GraphQL. The deterministic server-console guard is
+  part of `check:all`; all three production builds and compiled NDJSON service
+  smoke checks passed. This slice was committed as `22a6f268e`.
+- 2026-08-05: The linked cloud helper worktree is
+  `/Users/paldov/Documents/df-cloud-klickeruzh/trees/klicker-structured-logging`
+  on parent/helper branch `feat/klicker-structured-logging`. Alloy and Loki
+  helper commits `0b04794` and `1bb9fa4` pass the full Node 20/pnpm 9 build, all
+  six Node tests, formatting, targeted OpenGrep, and strict maintainability
+  review. Draft helper MR [!23](https://gitlab.uzh.ch/uzh-bf/cloud/azure-helpers/-/merge_requests/23)
+  targets `infra-2025`; it remains unmerged pending explicit approval, so the
+  parent gitlink MR has not been created.
+- 2026-08-05: Rebased the complete native stack onto current `v3` commit
+  `add842927`. Conflicts were reconciled with the current Chat AI SDK v7 and
+  Langfuse behavior, the removed Cypress middleware, the per-change wiki-log
+  convention, and current Turborepo environment configuration. All five native
+  layers report clean ancestry with no pending rebase.
+- 2026-08-05: Post-rebase targeted verification passes: 16 logging contract
+  tests, five Hatchet wrapper tests, three backend request tests, five response
+  API request tests, two OLAT request tests, and all 228 Chat tests. Production
+  JSON and local pretty-output smoke records both parse as expected.
+- 2026-08-05: Final stack-tip `check:all` passes all 25 TypeScript checks, seven
+  lint targets, formatting, Syncpack, Prisma/AGENTS checks, and the deterministic
+  server-console guard. The full production build passes all 23 targets; its
+  page-size, stale Browserslist, and `MISSING_MESSAGE` output is pre-existing.
+- 2026-08-05: Root `test:run` completed six of seven targets. Playwright alone
+  stopped during global database setup with `Connection terminated
+  unexpectedly`; a production-like database was not available in the host
+  environment. This is an environment acceptance gap, not a passing E2E claim.
+- 2026-08-05: The final devrouter/browser attempt pulled the base image but
+  stopped before container creation when Docker's credential helper canceled
+  dependency-image pulls for Litellm and Hatchet. Delegated-login, redirect,
+  cookie, and browser smoke evidence therefore remains a staging/CI acceptance
+  item; no screenshots are claimed.
+- 2026-08-05: Final repository-wide OpenGrep scanned 3,227 tracked files with
+  1,074 rules. Four findings intersect touched paths, all on pre-existing MCP
+  dynamic configuration, development WebSocket fallback, or response CORS
+  behavior; no new logging-specific finding was introduced. The final Edge
+  threshold fix received a separate 210-rule scan with zero findings.
+- 2026-08-05: The strict aggregate maintainability/privacy review found one
+  contract gap: Auth Edge logs did not consume `LOG_LEVEL`. Foundation commit
+  `e101ee0c3` now normalizes environment-style levels with a safe `info`
+  fallback, and Auth commit `973ca3c19` wires the environment value. Sixteen
+  logging tests, the Auth check, `check:all`, and the full production build pass
+  after the fix. No remaining review blocker was found; large touched GraphQL
+  and Chat modules predate this feature, and the Chat route shrinks materially.
+- 2026-08-05: Compared with old PRs #4918 and #4750, this stack keeps Pino and
+  child context but rejects profile/URL logging, per-app policy drift, and a
+  bespoke logger. It adds a single privacy contract, Edge parity, validated
+  request/correlation propagation, Hatchet task context, runtime-wide adoption,
+  automated console protection, and the linked Alloy/Loki configuration.
+- 2026-08-05: Final worktree audit: the clean GitHub stack lives at
+  `trees/logging-stack`; the clean helper branch lives inside
+  `/Users/paldov/Documents/df-cloud-klickeruzh/trees/klicker-structured-logging`.
+  The cloud parent contains only the expected helper gitlink change, while the
+  source checkout's unrelated `util/storage/` files remain untouched.
+- 2026-09-01: Replayed the five native layers onto current `origin/v3` and
+  resolved the conflicts against the current reusable Playwright workflow,
+  Chat AI SDK, GraphQL group behavior, and documentation policy. Because stale
+  worktree metadata still claims the historical branch names, the verified
+  local branches use the `-ready` suffix: `feat/logging-foundation-ready`,
+  `feat/logging-hatchet-correlation-ready`,
+  `feat/logging-core-apis-ready`, `feat/logging-auth-integrations-ready`, and
+  `feat/logging-server-apps-ready`.
+- 2026-09-01: The stack-tip hardening pass adds runtime logging-package copies
+  and explicit production `NODE_ENV` to every non-Next Node image, propagates
+  Hatchet correlation into course-duplication tasks, supplies logging fields in
+  GraphQL test contexts, adopts the Chat Edge proxy, sanitizes model/MCP/provider
+  diagnostics to counts and categorical outcomes, and extends the active server
+  console guard to template interpolation and Chat proxy code. Focused logging,
+  Hatchet, GraphQL, backend, response API, auth, Chat, PWA, manage, control,
+  formatting, and server-console checks pass. Full repository build, browser
+  smoke, database-backed suites, and staging/Loki acceptance remain required
+  before publication or production rollout.
+- 2026-09-01: The final contract cleanup makes OLAT emit one request-completion
+  record (with `error` severity for 5xx responses), adds a focused 500-path
+  adapter test, and uses the PWA `@lib` alias for its SSR logger import. The
+  OLAT adapter tests and OLAT/PWA typechecks pass; Docker-based OLAT tests and
+  browser/database/staging acceptance remain environment-gated.

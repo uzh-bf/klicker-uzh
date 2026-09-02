@@ -1,18 +1,21 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { DisclaimersService } from '@/src/services/disclaimers'
-import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 60
 
 /**
  * Get disclaimer information for a chatbot and check acceptance status
  */
-export async function GET(
+async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -33,8 +36,7 @@ export async function GET(
       disclaimer,
       status,
     })
-  } catch (error) {
-    console.error('Failed to fetch disclaimer:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch disclaimer information' },
       { status: 500 }
@@ -45,12 +47,13 @@ export async function GET(
 /**
  * Accept or decline disclaimer
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -86,11 +89,24 @@ export async function POST(
         { status: 400 }
       )
     }
-  } catch (error) {
-    console.error('Failed to update disclaimer status:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to update disclaimer status' },
       { status: 500 }
     )
   }
+}
+
+type RouteContext = { params: Promise<{ chatbotId: string }> }
+
+export function GET(req: NextRequest, context: RouteContext) {
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/disclaimer', (log) =>
+    handleGET(req, context, log)
+  )
+}
+
+export function POST(req: NextRequest, context: RouteContext) {
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/disclaimer', (log) =>
+    handlePOST(req, context, log)
+  )
 }

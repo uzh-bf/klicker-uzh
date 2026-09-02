@@ -46,16 +46,9 @@ export function createRequestLoggingMiddleware(rootLogger: AppLogger) {
     res.locals.logRoute = route
     res.locals.logStartedAt = startedAt
 
-    log.info(
-      {
-        event: 'http.request.started',
-        http: { method: req.method, route },
-      },
-      'OLAT API request started'
-    )
-
     res.on('finish', () => {
-      log.info(
+      const level = res.statusCode >= 500 ? 'error' : 'info'
+      log[level](
         {
           event: 'http.request.completed',
           http: {
