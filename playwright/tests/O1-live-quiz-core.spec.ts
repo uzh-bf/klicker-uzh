@@ -3686,7 +3686,9 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.evaluate(() => localStorage.clear()).catch(() => undefined)
     await page.waitForTimeout(500)
     await gotoCommit(page, page.url())
-    await expect(page).toHaveURL(/(?:127\.0\.0\.1:3010|auth\.klicker\.com)/)
+    await expect(page).toHaveURL(
+      new RegExp(`^${env('URL_AUTH').replaceAll('.', '\\.')}`)
+    )
     await expect(
       page.getByRole('heading', { name: 'Authentication' })
     ).toBeVisible()
