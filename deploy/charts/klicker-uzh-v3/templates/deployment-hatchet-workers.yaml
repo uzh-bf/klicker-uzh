@@ -75,6 +75,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.hatchet.workers.general.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.hatchet.workers.general.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
@@ -156,6 +160,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessor.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.hatchet.workers.responseProcessor.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
@@ -235,6 +243,10 @@ spec:
       {{- end }}
       {{- with .Values.hatchet.workers.responseProcessorAssessment.affinity }}
       affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.hatchet.workers.responseProcessorAssessment.tolerations }}
