@@ -427,6 +427,13 @@ auth flow, cookies, or other browser-only behavior.
   for the actually-pinned versions. The earlier service-diff entry's
   "deployed v0.7.2" wording was inaccurate for the deployed Klicker
   instances; the bound conclusion is unchanged.
+- 2026-09-02 — Re-verified deployment freshness after `origin/main`
+  advanced to `7797f836`: the two new commits (custom favicon, PRD Web
+  Index publication package) touch no pipelines, so the FineCo tool-config
+  basis `08d82585` remains current and all recorded ceiling and pinning
+  evidence is unchanged. The runtime inventory request remains with the
+  FineCo runtime owner; W1 — FineCo expert-binding readiness and W2 —
+  twenty-case FineCo capture and semantic judge remain `delivery_pending`.
 - 2026-09-02 — Verified the tool-input side from source: the doc-query
   contract exposes `question` as a bare string parameter with no pydantic
   length constraint, `run_query` passes it into the prompt template
