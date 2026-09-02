@@ -116,7 +116,7 @@ function PracticeQuizOverview({
         <H3 className={{ root: 'mb-0 text-lg' }}>
           {t('pwa.general.individualPracticeQuizzes')}
         </H3>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5" data-cy="practice-quiz-list">
           {quizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}

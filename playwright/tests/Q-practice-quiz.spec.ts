@@ -2101,6 +2101,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       'href',
       `/course/${quiz.courseId}/practice`
     )
+    await expect(page.getByTestId('practice-quiz-list')).toBeVisible()
     await expect(
       page.getByTestId(`open-practice-quiz-${data.running.nameNew}`)
     ).toBeVisible()
@@ -2763,6 +2764,7 @@ test.describe.serial('Different practice quiz workflows', () => {
       'href',
       `/course/${quiz.courseId}/practice`
     )
+    await expect(page.getByTestId('practice-quiz-list')).toBeVisible()
     await expect(
       page.getByTestId(`open-practice-quiz-${data.manipulation.name}`)
     ).toBeVisible()

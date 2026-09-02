@@ -206,9 +206,10 @@ Scope:
 - Update both Manage labels: `linkLTIPracticeQuizzesLabel` and
   `practiceQuizList`. Update `lti_integration.mdx` to recommend the combined
   entry point and to state that its overview remains available with one quiz.
-- Record the overview contract in `docs/frontend-conventions.md`, update the
-  matching `klicker-frontend-ui` skill guidance, and create the required
-  `docs/log/` entry.
+- Record the overview contract in `docs/frontend-conventions.md` and update the
+  matching `klicker-frontend-ui` skill guidance. The repository's
+  `check:removed-doc-artifacts` gate prohibits recreating the retired
+  `docs/log/` path, so no change-log file is added there.
 - Leave the global PWA home Practice Pool unchanged.
 - Add stable selectors for the Practice Pool link and the individual quiz list.
 
