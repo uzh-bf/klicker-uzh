@@ -15,6 +15,7 @@ import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
+import type { EmbedQuizNavigationState } from './embed'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -44,7 +45,11 @@ interface PracticeQuizProps {
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
   embedded?: boolean
+  focusedPresentation?: boolean
   previewOnly?: boolean
+  hostNavigation?: boolean
+  hostAdvanceRequest?: number
+  onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
 }
 
 function PracticeQuiz({
@@ -55,10 +60,15 @@ function PracticeQuiz({
   onAllStacksCompletion,
   showResetLocalStorage = false,
   embedded = false,
+  focusedPresentation = false,
   previewOnly = false,
+  hostNavigation = false,
+  hostAdvanceRequest = 0,
+  onHostNavigationStateChange,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
+  const focusedEmbed = embedded && focusedPresentation
   const currentStack = quiz.stacks?.[currentIx]
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
@@ -112,8 +122,10 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
-          !embedded ? 'md:border' : ''
+          focusedEmbed
+            ? 'w-full space-y-3 px-1 pt-2 pb-20 sm:px-2'
+            : 'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded && 'md:border'
         )}
       >
         <StepProgressWithScoring
@@ -135,8 +147,9 @@ function PracticeQuiz({
           }
           currentIx={currentIx}
           setCurrentIx={setCurrentIx}
+          readOnly={focusedEmbed}
           resetLocalStorage={
-            showResetLocalStorage
+            showResetLocalStorage && !focusedEmbed
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
@@ -145,7 +158,7 @@ function PracticeQuiz({
           }
         />
 
-        {previewOnly && (
+        {previewOnly && !focusedEmbed && (
           <PreviewMessage
             activityType={t('shared.generic.practiceQuiz')}
             name={quiz.name}
@@ -153,7 +166,7 @@ function PracticeQuiz({
           />
         )}
 
-        {currentIx === -1 && (
+        {currentIx === -1 && !focusedEmbed && (
           <PracticeQuizOverview
             displayName={quiz.displayName}
             description={quiz.description ?? undefined}
@@ -192,6 +205,10 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            focusedPresentation={focusedEmbed}
+            hostNavigation={hostNavigation}
+            hostAdvanceRequest={hostAdvanceRequest}
+            onHostNavigationStateChange={onHostNavigationStateChange}
           />
         )}
       </div>

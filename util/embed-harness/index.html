@@ -352,7 +352,7 @@
         <h1>Klicker Practice Quiz Embed Harness</h1>
         <p>
           Static parent page for verifying the embedded practice-quiz handshake
-          and resize contract. Load a quiz URL, send
+          and resize/navigation contract. Load a quiz URL, send
           <code>klicker:embed-init</code>, inspect the latest payload, and keep
           a timestamped log of accepted and rejected messages.
         </p>
@@ -393,6 +393,14 @@
               <button class="secondary" id="send-init" type="button">
                 Send init
               </button>
+              <button
+                class="secondary"
+                id="send-advance"
+                type="button"
+                disabled
+              >
+                Request quiz advance
+              </button>
               <button id="reload-frame" type="button">Reload iframe</button>
               <button class="ghost" id="clear-log" type="button">
                 Clear log
@@ -407,6 +415,11 @@
             <label class="inline-control" for="auto-resize">
               <input id="auto-resize" type="checkbox" checked />
               <span>Let the host own vertical scrolling</span>
+            </label>
+
+            <label class="inline-control" for="host-navigation">
+              <input id="host-navigation" type="checkbox" />
+              <span>Let the host control quiz navigation</span>
             </label>
 
             <div class="stack">
@@ -464,6 +477,14 @@
                   <strong>Viewport height</strong>
                   <span id="viewport-height">720px</span>
                 </div>
+                <div class="status-card">
+                  <strong>Quiz phase</strong>
+                  <span id="quiz-phase">-</span>
+                </div>
+                <div class="status-card">
+                  <strong>Host advance</strong>
+                  <span id="host-advance" class="status-warn">Unavailable</span>
+                </div>
               </div>
             </div>
 
@@ -477,7 +498,9 @@
               handshake should surface resize and
               <code>overview</code>, then <code>in-progress</code>, then
               <code>completed</code> with
-              <code>currentStep === totalSteps</code>.
+              <code>currentStep === totalSteps</code>. With host navigation
+              enabled, the advance control is available only when the latest
+              state reports <code>canAdvance: true</code>.
             </div>
           </div>
         </aside>
@@ -524,6 +547,7 @@
     <script>
       const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
       const EMBED_RESIZE_MESSAGE_TYPE = 'klicker:embed-resize'
+      const QUIZ_ADVANCE_MESSAGE_TYPE = 'klicker:quiz-advance'
       const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
       const PROTOCOL_VERSION = 1
       const DEFAULT_HEIGHT = 720
@@ -533,10 +557,12 @@
         quizUrl: document.getElementById('quiz-url'),
         loadFrame: document.getElementById('load-frame'),
         sendInit: document.getElementById('send-init'),
+        sendAdvance: document.getElementById('send-advance'),
         reloadFrame: document.getElementById('reload-frame'),
         clearLog: document.getElementById('clear-log'),
         autoInit: document.getElementById('auto-init'),
         autoResize: document.getElementById('auto-resize'),
+        hostNavigation: document.getElementById('host-navigation'),
         customHeight: document.getElementById('custom-height'),
         applyHeight: document.getElementById('apply-height'),
         quizFrame: document.getElementById('quiz-frame'),
@@ -546,6 +572,8 @@
         lastType: document.getElementById('last-type'),
         resolvedUrl: document.getElementById('resolved-url'),
         viewportHeight: document.getElementById('viewport-height'),
+        quizPhase: document.getElementById('quiz-phase'),
+        hostAdvance: document.getElementById('host-advance'),
         latestPayload: document.getElementById('latest-payload'),
         logList: document.getElementById('log-list'),
         logEmpty: document.getElementById('log-empty'),
@@ -559,6 +587,8 @@
         initSent: false,
         lastAcceptedType: null,
         latestPayload: null,
+        latestQuizState: null,
+        advancePending: false,
         logEntries: 0,
         initRetryTimers: [],
       }
@@ -603,7 +633,93 @@
         elements.latestPayload.textContent = state.latestPayload
           ? safeStringify(state.latestPayload)
           : 'No accepted payload yet.'
+        const latestQuizState = state.latestQuizState
+        elements.quizPhase.textContent = latestQuizState?.phase || '-'
+        const advanceAllowed = canSendHostAdvance()
+        elements.hostAdvance.textContent = state.advancePending
+          ? 'Pending'
+          : advanceAllowed
+            ? 'Allowed'
+            : latestQuizState?.canAdvance === false
+              ? 'Blocked'
+              : 'Unavailable'
+        elements.hostAdvance.className = advanceAllowed
+          ? 'status-ok'
+          : 'status-warn'
+        elements.sendAdvance.disabled = !advanceAllowed
         elements.logCount.textContent = String(state.logEntries)
+      }
+
+      function isValidQuizStatePayload(payload) {
+        if (!payload || typeof payload !== 'object') return false
+        if (payload.version !== PROTOCOL_VERSION) return false
+        if (
+          !['overview', 'in-progress', 'completed'].includes(payload.status)
+        ) {
+          return false
+        }
+        if (
+          !Number.isInteger(payload.currentStep) ||
+          !Number.isInteger(payload.totalSteps) ||
+          payload.totalSteps < 0 ||
+          payload.currentStep < 0 ||
+          payload.currentStep > payload.totalSteps
+        ) {
+          return false
+        }
+        if (payload.status === 'overview' && payload.currentStep !== 0) {
+          return false
+        }
+        if (
+          payload.status === 'completed' &&
+          payload.currentStep !== payload.totalSteps
+        ) {
+          return false
+        }
+
+        const hasPhase = Object.hasOwn(payload, 'phase')
+        const hasCanAdvance = Object.hasOwn(
+          payload,
+          'canAdvance'
+        )
+
+        if (hasPhase !== hasCanAdvance) return false
+        if (
+          hasPhase &&
+          !['overview', 'answering', 'feedback', 'completed'].includes(
+            payload.phase
+          )
+        ) {
+          return false
+        }
+        if (hasCanAdvance && typeof payload.canAdvance !== 'boolean') {
+          return false
+        }
+        if (
+          hasPhase &&
+          ((payload.status === 'overview' && payload.phase !== 'overview') ||
+            (payload.status === 'completed' &&
+              (payload.phase !== 'completed' || payload.canAdvance !== false)) ||
+            (payload.status === 'in-progress' &&
+              !['answering', 'feedback'].includes(payload.phase)))
+        ) {
+          return false
+        }
+
+        return true
+      }
+
+      function canSendHostAdvance() {
+        const latestQuizState = state.latestQuizState
+        return Boolean(
+          state.iframeOrigin &&
+            elements.quizFrame.contentWindow &&
+            !state.advancePending &&
+            latestQuizState?.phase &&
+            latestQuizState.status !== 'completed' &&
+            latestQuizState.phase !== 'completed' &&
+            latestQuizState.canAdvance === true
+        )
       }
 
       function setViewportHeight(height) {
@@ -674,6 +790,8 @@
         state.iframeUrl = normalizedUrl.toString()
         state.lastAcceptedType = null
         state.latestPayload = null
+        state.latestQuizState = null
+        state.advancePending = false
         clearInitRetries()
         setInitState(false)
 
@@ -710,11 +828,43 @@
           type: EMBED_INIT_MESSAGE_TYPE,
           capabilities: {
             resize: elements.autoResize.checked,
+            hostNavigation: elements.hostNavigation.checked,
           },
         }
         frameWindow.postMessage(message, state.iframeOrigin)
         setInitState(true)
         appendLog('outbound', 'Sent embed init message.', {
+          reason,
+          targetOrigin: state.iframeOrigin,
+          message,
+        })
+        updateStatus()
+      }
+
+      function sendHostAdvance(reason) {
+        if (!canSendHostAdvance()) {
+          appendLog(
+            'warning',
+            'Host advance not sent because the latest quiz state is not advanceable.',
+            {
+              latestQuizState: state.latestQuizState,
+            }
+          )
+          return
+        }
+
+        const message = {
+          type: QUIZ_ADVANCE_MESSAGE_TYPE,
+          payload: {
+            version: PROTOCOL_VERSION,
+          },
+        }
+        elements.quizFrame.contentWindow.postMessage(
+          message,
+          state.iframeOrigin
+        )
+        state.advancePending = true
+        appendLog('outbound', 'Sent host quiz advance request.', {
           reason,
           targetOrigin: state.iframeOrigin,
           message,
@@ -751,6 +901,9 @@
       elements.sendInit.addEventListener('click', function () {
         sendInit('manual')
       })
+      elements.sendAdvance.addEventListener('click', function () {
+        sendHostAdvance('manual')
+      })
       elements.reloadFrame.addEventListener('click', function () {
         if (!elements.quizFrame.src) {
           appendLog(
@@ -762,6 +915,10 @@
 
         setInitState(false)
         clearInitRetries()
+        state.lastAcceptedType = null
+        state.latestPayload = null
+        state.latestQuizState = null
+        state.advancePending = false
         elements.quizFrame.src = elements.quizFrame.src
         appendLog('outbound', 'Reloaded iframe.', {
           iframeUrl: elements.quizFrame.src,
@@ -879,8 +1036,19 @@
           return
         }
 
+        const payload = event.data.payload
+        if (!isValidQuizStatePayload(payload)) {
+          appendLog('ignored', 'Ignored invalid quiz-state message.', {
+            origin: event.origin,
+            data: event.data,
+          })
+          return
+        }
+
         state.lastAcceptedType = event.data.type
-        state.latestPayload = event.data.payload || null
+        state.latestPayload = payload
+        state.latestQuizState = payload
+        state.advancePending = false
         clearInitRetries()
         appendLog('inbound', 'Accepted quiz-state message.', {
           origin: event.origin,

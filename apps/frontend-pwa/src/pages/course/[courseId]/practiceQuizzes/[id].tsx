@@ -18,33 +18,26 @@ import dayjs from 'dayjs'
 import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
 import {
-  EMBED_PROTOCOL_VERSION,
   EMBED_RESIZE_MESSAGE_TYPE,
+  EMBED_RESIZE_VERSION,
   type EmbedCapabilities,
+  type EmbedQuizNavigationState,
+  type EmbedQuizStatePayload,
   type EmbedResizePayload,
+  isAllowedQuizAdvanceMessage,
   isEmbedInitMessage,
   isValidEmbedResizePayload,
   mergeEmbedCapabilities,
   QUIZ_STATE_MESSAGE_TYPE,
+  QUIZ_STATE_VERSION,
 } from '../../../../components/practiceQuiz/embed'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
-
-const QUIZ_STATE_VERSION = EMBED_PROTOCOL_VERSION
-
-type EmbedQuizStatus = 'overview' | 'in-progress' | 'completed'
-
-type EmbedQuizStatePayload = {
-  version: typeof QUIZ_STATE_VERSION
-  status: EmbedQuizStatus
-  currentStep: number
-  totalSteps: number
-}
 
 type PracticeQuizProgressState = Record<
   string,
@@ -59,12 +52,14 @@ function PracticeQuizPage({
   participantToken,
   cookiesAvailable,
   embedded,
+  focusedEmbedRequested,
 }: {
   courseId: string
   id: string
   participantToken?: string
   cookiesAvailable?: boolean
   embedded: boolean
+  focusedEmbedRequested: boolean
 }) {
   const t = useTranslations()
   const [currentIx, setCurrentIx] = useState(-1)
@@ -73,7 +68,26 @@ function PracticeQuizPage({
     {}
   )
   const [resizeHeightValid, setResizeHeightValid] = useState(false)
+  const [hostAdvanceRequest, setHostAdvanceRequest] = useState(0)
+  const [hostNavigationState, setHostNavigationState] =
+    useState<EmbedQuizNavigationState>({
+      phase: 'overview',
+      canAdvance: false,
+    })
   const [isCompleted, setIsCompleted] = useState(false)
+  const [completionLoaded, setCompletionLoaded] = useState(false)
+
+  const hostNavigationRequested =
+    focusedEmbedRequested || embedCapabilities.hostNavigation === true
+  const hostNavigationActive =
+    embedded &&
+    embedCapabilities.hostNavigation === true &&
+    parentOrigin !== null
+
+  const handleHostNavigationStateChange = useCallback(
+    (nextState: EmbedQuizNavigationState) => setHostNavigationState(nextState),
+    []
+  )
 
   const embeddedAutoResize =
     embedded &&
@@ -98,17 +112,33 @@ function PracticeQuizPage({
 
     function handleMessage(event: MessageEvent) {
       if (event.source !== window.parent) return
-      if (!isEmbedInitMessage(event.data) || event.origin === 'null') return
 
-      setEmbedCapabilities((currentCapabilities) =>
-        mergeEmbedCapabilities(
-          currentCapabilities,
-          event.data.capabilities ?? {}
+      if (isEmbedInitMessage(event.data)) {
+        if (event.origin === 'null') return
+
+        setEmbedCapabilities((currentCapabilities) =>
+          mergeEmbedCapabilities(
+            currentCapabilities,
+            event.data.capabilities ?? {}
+          )
         )
-      )
-      setParentOrigin((currentOrigin) =>
-        currentOrigin === event.origin ? currentOrigin : event.origin
-      )
+        setParentOrigin((currentOrigin) =>
+          currentOrigin === event.origin ? currentOrigin : event.origin
+        )
+        return
+      }
+
+      if (
+        !hostNavigationActive ||
+        event.origin !== parentOrigin ||
+        !isAllowedQuizAdvanceMessage(event.data, hostNavigationState) ||
+        isCompleted ||
+        currentIx < 0
+      ) {
+        return
+      }
+
+      setHostAdvanceRequest((request) => request + 1)
     }
 
     window.addEventListener('message', handleMessage)
@@ -116,7 +146,14 @@ function PracticeQuizPage({
     return () => {
       window.removeEventListener('message', handleMessage)
     }
-  }, [embedded])
+  }, [
+    currentIx,
+    embedded,
+    hostNavigationActive,
+    hostNavigationState,
+    isCompleted,
+    parentOrigin,
+  ])
 
   useEffect(() => {
     if (!autoResize) return
@@ -147,7 +184,7 @@ function PracticeQuizPage({
 
       animationFrame = window.requestAnimationFrame(() => {
         const payload: EmbedResizePayload = {
-          version: EMBED_PROTOCOL_VERSION,
+          version: EMBED_RESIZE_VERSION,
           height: Math.ceil(
             Math.max(
               container.getBoundingClientRect().height,
@@ -190,7 +227,29 @@ function PracticeQuizPage({
 
     const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
     setIsCompleted(readStoredCompletion(id, stackIds))
+    setCompletionLoaded(true)
   }, [embedded, id, data?.practiceQuiz])
+
+  useEffect(() => {
+    if (
+      !hostNavigationRequested ||
+      !completionLoaded ||
+      isCompleted ||
+      currentIx >= 0 ||
+      totalSteps === 0
+    ) {
+      return
+    }
+
+    setHostNavigationState({ phase: 'answering', canAdvance: false })
+    setCurrentIx(0)
+  }, [
+    completionLoaded,
+    currentIx,
+    hostNavigationRequested,
+    isCompleted,
+    totalSteps,
+  ])
 
   useEffect(() => {
     if (currentIx >= 0) {
@@ -205,6 +264,8 @@ function PracticeQuizPage({
       currentIx,
       isCompleted,
       totalSteps,
+      hostNavigation: hostNavigationActive,
+      hostNavigationState,
     })
 
     window.parent.postMessage(
@@ -222,6 +283,8 @@ function PracticeQuizPage({
     currentIx,
     isCompleted,
     totalSteps,
+    hostNavigationActive,
+    hostNavigationState,
   ])
 
   if (loading)
@@ -277,7 +340,15 @@ function PracticeQuizPage({
 
   const handleNextQuestion = () => {
     document.getElementById(LAYOUT_SCROLL_CONTAINER_ID)?.scrollTo({ top: 0 })
+    setHostNavigationState({ phase: 'answering', canAdvance: false })
     setCurrentIx((ix) => ix + 1)
+  }
+
+  const handleSetCurrentIx = (ix: number) => {
+    if (ix >= 0) {
+      setHostNavigationState({ phase: 'answering', canAdvance: false })
+    }
+    setCurrentIx(ix)
   }
 
   return (
@@ -287,26 +358,43 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      <PracticeQuiz
-        showResetLocalStorage
-        embedded={embedded}
-        quiz={{
-          ...data.practiceQuiz,
-          course: data.practiceQuiz.course!,
-        }}
-        currentIx={currentIx}
-        setCurrentIx={setCurrentIx}
-        handleNextElement={handleNextQuestion}
-        onAllStacksCompletion={
-          embedded
-            ? () => {
-                setIsCompleted(true)
-                setCurrentIx(-1)
-              }
-            : undefined
-        }
-        previewOnly={data.practiceQuiz.isOwner ?? undefined}
-      />
+      {focusedEmbedRequested && isCompleted ? (
+        <div
+          role="status"
+          className="rounded-lg bg-slate-50 px-4 py-5 text-center text-sm font-medium text-slate-700"
+          data-cy="focused-embed-completed"
+        >
+          {t.rich('pwa.practiceQuiz.solvedPracticeQuiz', {
+            name: data.practiceQuiz.displayName,
+            it: (text) => <span className="italic">{text}</span>,
+          })}
+        </div>
+      ) : (
+        <PracticeQuiz
+          showResetLocalStorage
+          embedded={embedded}
+          focusedPresentation={focusedEmbedRequested}
+          hostNavigation={hostNavigationActive}
+          hostAdvanceRequest={hostAdvanceRequest}
+          onHostNavigationStateChange={handleHostNavigationStateChange}
+          quiz={{
+            ...data.practiceQuiz,
+            course: data.practiceQuiz.course!,
+          }}
+          currentIx={currentIx}
+          setCurrentIx={handleSetCurrentIx}
+          handleNextElement={handleNextQuestion}
+          onAllStacksCompletion={
+            embedded
+              ? () => {
+                  setIsCompleted(true)
+                  setCurrentIx(-1)
+                }
+              : undefined
+          }
+          previewOnly={data.practiceQuiz.isOwner ?? undefined}
+        />
+      )}
       {!embedded && (
         <Footer
           browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
@@ -333,6 +421,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const apolloClient = initializeApollo()
 
     const embedded = parseEmbedParam(ctx.query.embed)
+    const focusedEmbedRequested = embedded && ctx.query.embedMode === 'focused'
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
@@ -348,6 +437,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           id: ctx.params.id,
           courseId: ctx.params.courseId,
           embedded,
+          focusedEmbedRequested,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -359,6 +449,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         embedded,
+        focusedEmbedRequested,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
@@ -392,35 +483,49 @@ function buildQuizStatePayload({
   currentIx,
   isCompleted,
   totalSteps,
+  hostNavigation,
+  hostNavigationState,
 }: {
   currentIx: number
   isCompleted: boolean
   totalSteps: number
+  hostNavigation: boolean
+  hostNavigationState: EmbedQuizNavigationState
 }): EmbedQuizStatePayload {
   if (currentIx >= 0) {
-    return {
+    const payload: EmbedQuizStatePayload = {
       version: QUIZ_STATE_VERSION,
       status: 'in-progress',
       currentStep: currentIx + 1,
       totalSteps,
     }
+
+    return hostNavigation ? { ...payload, ...hostNavigationState } : payload
   }
 
   if (isCompleted) {
-    return {
+    const payload: EmbedQuizStatePayload = {
       version: QUIZ_STATE_VERSION,
       status: 'completed',
       currentStep: totalSteps,
       totalSteps,
     }
+
+    return hostNavigation
+      ? { ...payload, phase: 'completed', canAdvance: false }
+      : payload
   }
 
-  return {
+  const payload: EmbedQuizStatePayload = {
     version: QUIZ_STATE_VERSION,
     status: 'overview',
     currentStep: 0,
     totalSteps,
   }
+
+  return hostNavigation
+    ? { ...payload, phase: 'overview', canAdvance: false }
+    : payload
 }
 
 function readStoredCompletion(
