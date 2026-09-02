@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import {
   type Chatbot,
   type ChatModelCapability,
+  GetChatbotPublishingCapabilityDocument,
   GetChatbotsInfoDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
@@ -29,6 +30,13 @@ function Chatbots() {
   )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
+  })
+  const {
+    data: publishingCapabilityData,
+    loading: publishingCapabilityLoading,
+    error: publishingCapabilityError,
+  } = useQuery(GetChatbotPublishingCapabilityDocument, {
+    fetchPolicy: 'network-only',
   })
 
   const chatbots = data?.getChatbotsInfo ?? []
@@ -66,6 +74,11 @@ function Chatbots() {
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}
             loading={loading || modelRegistryLoading}
+            publishingAuthorized={
+              publishingCapabilityData?.getChatbotPublishingCapability ?? false
+            }
+            publishingAuthorizationLoading={publishingCapabilityLoading}
+            publishingAuthorizationError={Boolean(publishingCapabilityError)}
           />
         </div>
         <div className="lg:w-1/2 lg:pr-4">

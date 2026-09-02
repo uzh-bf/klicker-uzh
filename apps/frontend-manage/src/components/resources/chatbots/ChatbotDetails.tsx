@@ -69,10 +69,16 @@ function ChatbotDetails({
   chatbot,
   modelRegistry,
   loading,
+  publishingAuthorized,
+  publishingAuthorizationLoading,
+  publishingAuthorizationError,
 }: {
   chatbot?: Chatbot
   modelRegistry: ChatModelCapability[]
   loading: boolean
+  publishingAuthorized: boolean
+  publishingAuthorizationLoading: boolean
+  publishingAuthorizationError: boolean
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
@@ -263,7 +269,13 @@ function ChatbotDetails({
     <div data-cy="chatbot-details">
       <H3>{t('manage.resources.chatbotDetails')}</H3>
       <div className="mt-3">
-        <ChatbotAuthoring key={chatbot.id} chatbot={chatbot} />
+        <ChatbotAuthoring
+          key={chatbot.id}
+          chatbot={chatbot}
+          publishingAuthorized={publishingAuthorized}
+          publishingAuthorizationLoading={publishingAuthorizationLoading}
+          publishingAuthorizationError={publishingAuthorizationError}
+        />
       </div>
       <div className="mt-3 space-y-6">
         <div>

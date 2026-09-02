@@ -571,6 +571,12 @@ preview renders the fixed `chat.disclaimer.*` sections without participant
 actions, and its Slate editor remounts when either the chatbot or current
 disclaimer ID changes so a selection change cannot retain stale text.
 
+The publication section keeps `DRAFT` and `REJECTED` request details editable
+for preparation, but enables submission only when a complete disclaimer and
+the live account publication capability are present. `PENDING_APPROVAL`,
+`PAUSED`, and `PUBLISHED` chatbots show read-only publication details, while a
+rejected request retains its review comment for correction and resubmission.
+
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where

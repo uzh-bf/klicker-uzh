@@ -3753,6 +3753,47 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotErrorBadUserInput: 'Check the chatbot details and try again.',
       chatbotErrorForbidden:
         'You do not have permission to change this chatbot.',
+      chatbotPublication: 'Publication request',
+      chatbotPublicationDescription:
+        'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationUseCase: 'Use case',
+      chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
+      chatbotPublicationUseCaseTooLong:
+        'The use case must be 2,000 characters or fewer.',
+      chatbotPublicationUseCaseInvalid:
+        'The use case must be between 1 and 2,000 characters long.',
+      chatbotPublicationExpectedStudentCount: 'Expected student count',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Enter the expected student count.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Enter a positive whole number for the expected student count.',
+      chatbotPublicationProposedCredits: 'Proposed credits',
+      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Enter a positive whole number for the proposed credits.',
+      requestChatbotPublication: 'Request publication',
+      resubmitChatbotPublication: 'Resubmit for approval',
+      chatbotPublicationSubmitted: 'Publication request submitted for review.',
+      chatbotPublicationRequestError:
+        'Could not submit the publication request. Please try again.',
+      chatbotPublicationDisclaimerRequired:
+        'Save a complete disclaimer before requesting publication.',
+      chatbotPublicationAuthorizationChecking:
+        'Checking whether this account can request publication...',
+      chatbotPublicationAuthorizationUnavailable:
+        'The account publication approval could not be checked. Try again later.',
+      chatbotPublicationUnauthorized:
+        'This account is not approved to request chatbot publication.',
+      chatbotPublicationPending:
+        'This chatbot is awaiting publication review. Its publication details are locked until the review is complete.',
+      chatbotPublicationPaused:
+        'Publication is paused for this chatbot. Its publication details are locked while it is paused.',
+      chatbotPublicationReadonly:
+        'Publication details cannot be edited in this status.',
+      chatbotPublicationPublished:
+        'This chatbot is published. Its publication details are read-only.',
+      chatbotPublicationPublishedAt: 'Published on {date}.',
+      chatbotPublicationReviewComment: 'Review comment:',
       chatbotDetails: 'Chatbot Details',
       chatbotMetadata: 'Chatbot Metadata',
       chatbotCourseReadonly: 'The course cannot be changed after creation.',
