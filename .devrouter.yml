@@ -31,16 +31,16 @@ managedRuntime:
     baseServices: [postgres, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
-    # creates all three. LiteLLM and MailHog are opt-in capabilities.
+    # creates all three. Azurite, LiteLLM, and MailHog are opt-in capabilities.
     profileServices:
-      [redis_exec, redis_assessment, redis_cache, litellm, mailhog]
+      [redis_exec, redis_assessment, redis_cache, azurite, litellm, mailhog]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
     apps: [manage, api, auth]
     readiness: [manage, api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache, azurite]
     processes: [klicker-dev]
   # student PWA work: pwa + API and auth
   pwa:
@@ -58,6 +58,12 @@ profiles:
   live-quiz:
     apps: [pwa, control, api, auth, response-api]
     readiness: [pwa, api, response-api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
+  # maximal application runtime for trusted Playwright fallback selection
+  playwright:
+    apps: [chat, pwa, control, manage, api, auth, response-api]
+    readiness: [chat, pwa, manage, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # pure capabilities: no routes, no app process

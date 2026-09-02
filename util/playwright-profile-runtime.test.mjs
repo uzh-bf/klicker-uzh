@@ -276,7 +276,12 @@ test('local full-stack startup stays independent from the CI runtime plan', () =
 
 test('installed Devrouter plans every shard profile union from the real contract', () => {
   const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-plan-'))
-  const profiles = ['manage,pwa', 'live-quiz,manage,pwa', 'chat,manage,pwa']
+  const profiles = [
+    'manage,pwa',
+    'live-quiz,manage,pwa',
+    'chat,manage,pwa',
+    'full,live-quiz,manage,pwa',
+  ]
 
   try {
     const runtimes = profiles.map((profile, index) => {
@@ -288,7 +293,7 @@ test('installed Devrouter plans every shard profile union from the real contract
 
     assert.deepEqual(
       runtimes.map((runtime) => runtime.turboFilters.length),
-      [4, 8, 5]
+      [4, 8, 5, 9]
     )
     assert.ok(
       runtimes[1].turboFilters.includes(
@@ -297,6 +302,15 @@ test('installed Devrouter plans every shard profile union from the real contract
     )
     assert.ok(
       runtimes[2].serviceEndpoints.includes('http://127.0.0.1:3004/noLogin')
+    )
+    assert.equal(runtimes[3].profile, 'playwright')
+    assert.throws(
+      () =>
+        resolveRuntimePlan({
+          profile: 'full,does-not-exist',
+          output: join(outputDir, 'invalid-profile.json'),
+        }),
+      /does-not-exist/
     )
   } finally {
     rmSync(outputDir, { recursive: true, force: true })
