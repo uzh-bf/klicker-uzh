@@ -397,3 +397,15 @@ compatibility limitation, not an authorization or charging bypass.
       (21/21), and the full production build (23/23 tasks). The host pre-commit
       gate (gitleaks plus repository `check:all`) also passed on the merge
       commit. The unrelated analytics Python toolchain issue did not recur.
+- [x] Complete the re-run integrated final review on exact merged head
+      `36ffe3de3` (GLM 5.3 `final-reviewer` role, the approved same-family
+      route). Verdict: PASS. All five risk lenses held: participant
+      authorization and privacy, Luna fallback and atomic debit, zero
+      migration delta, intact v3 Quizzer/MCP integration, and plan compliance.
+      One verified low-severity finding: a duplicate `env` key in the
+      Playwright selector silently disabled the documented strip-all-`GIT_*`
+      filter.
+- [x] Fix the selector finding in both helper files by keeping the filtered
+      environment (`9e48ac7ba`, selector tests and full pre-commit suite
+      green). The CI-only fix does not touch reviewed chat contracts, so the
+      integrated review verdict remains valid for the pushed head.
