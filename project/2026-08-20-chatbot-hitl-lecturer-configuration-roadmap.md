@@ -167,11 +167,11 @@ execution:
 The following evidence was re-checked while preparing this roadmap. A child
 must begin from these seams rather than rediscovering the whole repository:
 
-- `packages/prisma/src/prisma/schema/chat.prisma:18-55,116-168` defines
+- `packages/prisma/src/prisma/schema/chat.prisma:18-55,116-168,201-204` defines
   lifecycle state, legacy participant credits, model policy, prompts, and
   owner/course relationships.
-- `packages/graphql/src/schema/mutation.ts:1407-1491` and
-  `packages/graphql/src/services/chatbots.ts:418-825` define the current model
+- `packages/graphql/src/schema/mutation.ts:1407-1576` and
+  `packages/graphql/src/services/chatbots.ts:418-918` define the current model
   settings, create, publication request, and conditional approve/reject
   seams.
 - `apps/chat/src/lib/server/chatModelRegistry.ts:4-65,107-260` owns registry
