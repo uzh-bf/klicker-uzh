@@ -365,7 +365,7 @@ type SavedElementForRetry = {
 }
 
 function normalizedTagNames(tags: string[] | null | undefined) {
-  return [...new Set(tags ?? [])].sort()
+  return [...new Set(tags ?? [])].sort((a, b) => a.localeCompare(b))
 }
 
 function savedElementMatchesKeepRequest(
@@ -394,7 +394,9 @@ function savedElementMatchesKeepRequest(
     savedElement.difficultyLevel === (elementInput.difficultyLevel ?? null) &&
     isDeepStrictEqual(savedElement.options, persistedOptions) &&
     isDeepStrictEqual(
-      savedElement.tags.map((tag) => tag.name).sort(),
+      savedElement.tags
+        .map((tag) => tag.name)
+        .sort((a, b) => a.localeCompare(b)),
       normalizedTagNames(elementInput.tags)
     )
   )
