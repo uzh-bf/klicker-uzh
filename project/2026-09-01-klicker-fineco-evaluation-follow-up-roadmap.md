@@ -54,7 +54,7 @@ run and verify that its provider is stopped and no route remains.
 | Local Klicker target adapter | reviewed and committed | HEAD `4c11b8f17e118e1d04a7ba9ab62d5160d43b5e7e`; ten focused adapter tests pass. |
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. The tool config's expected name `EXPERT_df_fineco_expert` matches the verified runtime tool contract, and all 20 ground-truth cases key on that exact name (10 tutor, 10 explainer) with no `KB_doc_query` canary leakage. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
-| FineCo expert binding | desired-state config and source-verified bound; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. `ai-buddy` `dev@344a6800a` returns full chunk content with no character/token trim. The proven local runtime exposed only `KB_doc_query`. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled); no runtime FineCo inventory is available, and the owner checklist below covers closing it. |
+| FineCo expert binding | desired-state config and source-verified bound; runtime eligibility unproven | `ai-infrastructure/deployment` `origin/main@08d82585` includes `df_fineco_expert` in the STG and PRD tool ConfigMaps and fixes reranked output to 20 documents. The Klicker doc-query overlays pin `v0.2.5-arm` (STG) and `v0.3.0-arm` (PRD); both serialize full chunk content with no trim under the same 60/20 retrieval contract. The proven local runtime exposed only `KB_doc_query`. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled); no runtime FineCo inventory is available, and the owner checklist below covers closing it. |
 | FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
 | Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
@@ -285,11 +285,12 @@ proof.
   ConfigMaps. Both base ConfigMaps set `RETRIEVAL_TOP_K=60`,
   `RETRIEVAL_RERANKER_TOP_K=20`, and `RERANKER_TYPE=cohere`. This is
   desired-state evidence, not live runtime proof.
-- Doc-query source contract: `ai-buddy` `dev@344a6800a` passes the configured
-  `top_k` to the Cohere reranker and returns full chunk content without a
-  final character/token trim. This is one half of the source-verified finite
-  per-result ceiling; combined with the collection schema's 65,535-character
-  `content` cap, the bound is 20 × 65,535 characters.
+- Doc-query source contract: the deployed Klicker doc-query overlays pin
+  `v0.2.5-arm` in STG and `v0.3.0-arm` in PRD; both tags consume the same
+  `RETRIEVAL_TOP_K`/`RETRIEVAL_RERANKER_TOP_K` env contract and serialize
+  full chunk content in documents mode with no trim, so the
+  20 × 65,535-character bound holds for the deployed versions. Newer source
+  (`ai-buddy` `dev@344a6800a`, `origin/main@748b5a2`) behaves identically.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain operator-injected and never enter Git.
 - Infisical profiles `klicker-dev` and the separately approved judge profile:
@@ -415,6 +416,15 @@ auth flow, cookies, or other browser-only behavior.
   response bound dependency is still the runtime owner's authorized
   values-free tool inventory; W1 — FineCo expert-binding readiness and W2 —
   twenty-case FineCo capture and semantic judge remain `delivery_pending`.
+- 2026-09-02 — Corrected the deployed-version anchor: a deployment-wide
+  image scan found no v0.7.2 pin in any pipeline; the Klicker doc-query
+  overlays pin `v0.2.5-arm` in STG and `v0.3.0-arm` in PRD. Both tags were
+  verified in the standalone repo: they consume the same
+  retrieval/rerank env contract and serialize full chunk content in
+  documents mode with no trim, so the 20 × 65,535-character ceiling holds
+  for the actually-pinned versions. The earlier service-diff entry's
+  "deployed v0.7.2" wording was inaccurate for the deployed Klicker
+  instances; the bound conclusion is unchanged.
 - 2026-09-02 — Verified the tool-input side from source: the doc-query
   contract exposes `question` as a bare string parameter with no pydantic
   length constraint, `run_query` passes it into the prompt template
