@@ -1,12 +1,29 @@
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -19,26 +36,26 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
@@ -48,23 +65,6 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -655,6 +655,7 @@ export async function POST(
     reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
+    allowRegeneration: z.boolean().optional().default(false),
     images: z
       .array(
         z.union([
@@ -683,6 +684,7 @@ export async function POST(
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
+    allowRegeneration,
     images,
   } = parsed
 
@@ -765,11 +767,13 @@ export async function POST(
     chatbot.allowedModelIds.length > 0
       ? new Set(chatbot.allowedModelIds as string[])
       : null
+  const hasActiveAllowedModel =
+    allowedIds === null ||
+    modelRegistry.some((model) => allowedIds.has(model.id))
+  let automaticModelId: string | null = null
 
   if (!chatbot.modelSelection) {
-    const automaticModelId = getAutomaticModelId(
-      chatbot.allowedModelIds as string[]
-    )
+    automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
     if (!automaticModelId) {
       return NextResponse.json(
         { error: 'No model is available for this chatbot' },
@@ -779,26 +783,59 @@ export async function POST(
     selectedModel = automaticModelId
   }
 
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
+  const initialModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!initialModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
       { status: 400 }
     )
   }
+  // Declared non-optional so closures that swap the fallback model cannot
+  // widen later uses back to `undefined`; every assignment below is checked.
+  let selectedModelConfig: ChatModelConfig = initialModelConfig
 
   // Enforce per-chatbot model allow-list
-  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+  // Automatic selection is authoritative when a persisted allow-list contains
+  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // unconditional base fallback, so the stale list must not reject the turn.
+  if (
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    selectedModelConfig.id !== automaticModelId &&
+    (hasActiveAllowedModel ||
+      selectedModelConfig.id !== getParticipantFallbackModelId())
+  ) {
     return NextResponse.json(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
     )
   }
 
-  if (isChatAccountUsageEnforcementEnabled()) {
-    let accountUsageAvailable = false
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
+    )
+    if (!fallbackModelId || !fallbackModelConfig) return false
+
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    return true
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  }
+
+  const accountUsageAvailableForSelectedModel = async () => {
     try {
-      accountUsageAvailable = await isChatAccountUsageAvailable({
+      return await isChatAccountUsageAvailable({
         ownerId: chatbot.ownerId,
         usageClass: selectedModelConfig.usageClass,
       })
@@ -807,9 +844,31 @@ export async function POST(
         requestId,
         error,
       })
+      return false
     }
-    if (!accountUsageAvailable) {
+  }
+
+  if (isChatAccountUsageEnforcementEnabled()) {
+    if (!(await accountUsageAvailableForSelectedModel())) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+    }
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      if (!selectParticipantFallback()) {
+        return chatModelUnavailableResponse('BASE')
+      }
+      if (
+        isChatAccountUsageEnforcementEnabled() &&
+        !(await accountUsageAvailableForSelectedModel())
+      ) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
     }
   }
 
@@ -837,46 +896,9 @@ export async function POST(
     },
   }))
 
-  if (!selectedModelConfig.fallback) {
-    const creditPreview = await CreditsService.previewUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (
-      creditPreview.current <= 0 &&
-      !getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-    ) {
-      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-    }
-  }
-
-  if (!selectedModelConfig.fallback) {
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (userCredits.current <= 0) {
-      const fallbackModelId = getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-      if (!fallbackModelId) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
-
-      selectedModel = fallbackModelId
-      selectedModelConfig = modelRegistry.find(
-        (modelConfig) => modelConfig.id === fallbackModelId
-      )!
-    }
-  }
-
-  // Resolve the participant-owned thread before acquiring the provider-work
-  // claim. The claim must exist before MCP discovery, image description, or
-  // model streaming can begin.
+  // Resolve the participant-owned thread before the provider-work boundary.
+  // Lifecycle-enabled deployments claim the assistant key here; the initial
+  // mixed-version rollout performs only the same ownership validation.
   let createdThreadId: string | null = null
   if (!currentThreadId && messages.length > 0) {
     try {
@@ -929,7 +951,7 @@ export async function POST(
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -956,7 +978,7 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
@@ -964,6 +986,7 @@ export async function POST(
       threadId: owningThread.id,
       assistantMessageId,
       parentId: userMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
@@ -1413,13 +1436,11 @@ export async function POST(
       rawCreditsUsed: number | null
       phase: 'complete' | 'abort'
     }) => {
-      let finalizationOutcome: 'completed' | 'duplicate' | 'failed' = 'failed'
-      let participantCreditsUsed: number | null = null
-
       try {
-        const result = await finalizeChatTurn({
+        await finalizeChatTurn({
           ownerId: chatbot.ownerId,
           chatbotId,
+          participantId,
           usageClass: selectedModelConfig.usageClass,
           threadId: owningThread.id,
           assistantMessageId,
@@ -1432,10 +1453,6 @@ export async function POST(
           reasoningContent,
           rawCreditsUsed,
         })
-        finalizationOutcome = result.outcome
-        if (result.outcome === 'completed') {
-          participantCreditsUsed = result.creditsUsed
-        }
       } catch (error) {
         console.error(
           'Failed to finalize assistant message and account usage:',
@@ -1446,26 +1463,6 @@ export async function POST(
           }
         )
         await failAssistantClaim(`finalize.${phase}`)
-      }
-
-      if (
-        finalizationOutcome === 'completed' &&
-        participantCreditsUsed !== null &&
-        participantCreditsUsed > 0
-      ) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            participantCreditsUsed
-          )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
       }
     }
 

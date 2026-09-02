@@ -49,10 +49,12 @@ per-model approval.
 Usage is tracked in two explicit model classes. Registry entries are classified
 as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
 participant-credit fallback. Every other current registry entry, including
-`Auto`, is `ADVANCED`. Participant-credit fallbacks stay within the selected
-class, and the service never silently switches classes when a class is
-exhausted. This is distinct from provider-level LiteLLM fallbacks, which do not
-change the selected registry entry or its usage class.
+`Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
+the selected entry with Luna and therefore meters that effective turn as
+`BASE`, independently of the chatbot allow-list. Account-budget exhaustion
+remains class-specific and never switches classes. Provider-level LiteLLM
+fallbacks remain separate: they do not change the selected registry entry or
+its usage class.
 
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The registry cannot
@@ -96,8 +98,9 @@ messages and participant credits remain legacy analytics.
   production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.
-- Class-specific exhaustion does not disable the other class or trigger a
-  silent cross-class switch. Participant clients receive only the stable
-  availability and exhaustion contract, never cost-center or funding details.
+- Class-specific account-budget exhaustion does not disable the other class or
+  trigger a cross-class switch. Zero participant credits are the deliberate
+  exception: the effective turn uses and is metered as base Luna. Participant
+  clients never receive cost-center or funding details.
 - Draft-config machinery for live bots is deliberately deferred until editing
   live bots proves painful.

@@ -3536,7 +3536,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.context().clearCookies()
     await page.evaluate(() => localStorage.clear()).catch(() => undefined)
     await page.waitForTimeout(500)
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await gotoCommit(page, page.url())
     await expect(page).toHaveURL(/(?:127\.0\.0\.1:3010|auth\.klicker\.com)/)
     await expect(
       page.getByRole('heading', { name: 'Authentication' })
