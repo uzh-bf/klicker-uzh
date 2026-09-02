@@ -1,0 +1,287 @@
+# PR 5712: Klicker evaluation integration repair plan
+
+## Goal
+
+Make Klicker's synthetic FineCo ground truth consumable by the shared evaluation
+framework, and make the Azure OpenAI judge work through the restricted LiteLLM
+route without weakening secret, retry, or evidence boundaries.
+
+## Plan identity and authority
+
+- Klicker branch: `rs/klicker-evaluation-repair`
+- Klicker pull request: `#5712`
+- Klicker worktree:
+  `trees/rs/klicker-evaluation-repair`
+- Klicker base: `origin/v3` at
+  `5a21988fb1b4acd285d60d3c41f481f0a96be892`
+- Evaluation branch: `rs/klicker-integration-repair`
+- Evaluation worktree:
+  `trees/rs/klicker-integration-repair` in the private evaluator repository
+- Evaluation base: `origin/main` at
+  `95d566fb26aec82bb01a98240fbb42d6564929ca`
+- User-approved terminal condition: publish the evaluator branch first, publish
+  the dependent Klicker branch, create both review requests, verify exact heads,
+  descriptions, mergeability, and CI, and mark them ready for review when their
+  gates pass.
+- Additional authority: on 2026-09-01 the user approved merging
+  [Klicker pull request #5712](https://github.com/uzh-bf/klicker-uzh/pull/5712)
+  after its exact-head delivery gates pass.
+- Withheld: upstream integration, deployment, secret or permission mutation,
+  tunnel or cluster-connectivity repair, real course data, and a live Klicker
+  target write.
+
+The dirty primary Klicker checkout, the stale `trees/eval-submodule` worktree,
+and the dirty evaluation primary checkout are outside this plan. They will not
+be integrated, rebased, cleaned, or modified.
+
+## Verified findings
+
+- Lena's surviving Klicker branch is `origin/eval-submodule`. Pull request
+  #5190 merged an earlier submodule integration; pull request #5543 closed
+  without merge. Her earlier private evaluator changes are merged, and their
+  source branches no longer exist.
+- Current Klicker `v3` pins evaluation commit `86e4b978`, which is not on the
+  current evaluation default branch. The wrapper references
+  `klicker_chatbot.yaml`, but that metrics file never existed in the inspected
+  history.
+- The wrapper injects the broad `dev` environment, overwrites caller model
+  settings, and requests the generic `gpt-5.6-luna` alias. The restricted
+  Klicker key can use namespaced aliases such as
+  `klickeruzh/azure/gpt-5.6-luna-high` instead.
+- DeepEval recognizes the base Luna model but not the namespaced deployment
+  alias. The current proxy model therefore loses strict structured-output
+  capability and falls back to untyped JSON parsing.
+- All 20 synthetic FineCo cases load, but all warn because their expected
+  `EXPERT_df_fineco_expert` tool is absent. Their `tutor` or `explainer` mode is
+  also dropped before the QA artifact is evaluated.
+- The evaluator's target clients speak OpenAI Responses or Chat Completions.
+  Klicker's current chat endpoint is an authenticated AI-SDK UI stream with
+  product-specific thread, message, model, and mode fields. An eval-only judge
+  run is not a Klicker target-quality run.
+- The restricted secret profile is authenticated and can read the mapped
+  LiteLLM key. The current Headscale host failed DNS resolution before any
+  request or model cost occurred.
+- Evaluation focused baseline: 137 tests pass. Offline integration baseline:
+  20 cases load, 20 unknown-tool warnings occur, and no chat mode reaches the
+  normalized QA artifact.
+
+## Settled contracts
+
+### Generic evaluator model capability
+
+`EVAL_MODEL` remains the exact deployment alias sent to LiteLLM. The optional
+`EVAL_MODEL_CAPABILITY_MODEL` identifies an explicit, known DeepEval model whose
+capability, pricing, and temperature metadata apply to that alias. Unknown
+capability models fail before a provider request. The evaluator does not infer
+product names or provider aliases.
+
+`EVAL_JUDGE_SINGLE_ATTEMPT=true` disables OpenAI client retries for the judge.
+Invalid Boolean values fail before a request. The Klicker wrapper enables this
+by default while allowing an explicit caller override.
+
+### Ground-truth projection and ownership
+
+The evaluator accepts `chat_mode` or `mode` at the top level or in Markdown
+frontmatter, normalizes only `tutor` and `explainer`, and preserves the result
+in generated QA artifacts. Invalid values fail clearly.
+
+The FineCo expert-tool definition belongs beside Klicker's synthetic
+evaluation assets. The shared evaluator's default tool catalogue remains
+product-neutral.
+
+### Wrapper and target boundary
+
+The wrapper uses the restricted `klicker-uzh-stg` operator profile and maps only
+`PIPELINES_LITELLM_API_KEY` to `LITELLM_API_KEY`. It supplies safe defaults for
+the namespaced judge, its capability model, the existing shared metrics,
+Klicker's tool definition and ground-truth root, and the single-attempt policy.
+Native caller overrides remain effective, and the framework's `.env` is not
+loaded.
+
+Eval mode consumes an existing QA artifact. Query modes require a verified
+OpenAI-compatible target. This plan does not invent an adapter for Klicker's
+authenticated AI-SDK route.
+
+### Submodule publication order
+
+Local proof may use a command-scoped local submodule URL override. No local
+filesystem path enters `.gitmodules` or a commit. A Klicker gitlink to the local
+evaluation commit is not remotely consumable until that evaluation commit is
+published through the configured private evaluator repository. Evaluation
+publication must precede Klicker publication.
+
+## Delegation map
+
+| Slice | Owner | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| Evaluation framework contract | `executor`, then main-session verification | Evaluation baseline | Focused and full pytest, Ruff format and lint, exact diff, local commit |
+| Klicker integration | Main session | Committed evaluation slice | Fake-runner wrapper contract, shell syntax, ground-truth validation, docs checks, exact diff, local commit |
+| Offline and live proof | Main session | Both committed slices | One-call fake-proxy proof, 20-case offline proof, fail-closed values-free live gate, integrated reviews |
+
+Repository mapping remains in the main session because it is complete. The
+private-repository boundary and critical-path coupling make another exploration
+dispatch more costly than the remaining read-only work.
+
+## Slice A: evaluation framework contract
+
+- Add explicit capability-model configuration while preserving the outgoing
+  alias.
+- Add environment-controlled single-attempt judge behavior.
+- Preserve normalized chat mode in generated QA records.
+- Add mapped, unmapped, invalid, sync, async, retry, and ground-truth tests.
+- Document the new environment and ground-truth contracts.
+- Run focused tests, the full test suite, Ruff format checking, and Ruff lint.
+- Inspect and commit only the evaluation-owned files.
+
+Risk gate: the slice crosses provider-capability and artifact-data contracts.
+Run a simplifier and one slice reviewer after the immutable local commit.
+
+## Slice B: Klicker integration
+
+- Add a Klicker-owned FineCo tool catalogue.
+- Replace the wrapper's broad secret injection and invalid model or metrics
+  defaults with the settled restricted contract.
+- Fail clearly when the operator or private submodule is unavailable.
+- Add a no-network fake-runner shell test for defaults, caller overrides,
+  forwarded arguments, and missing-submodule behavior.
+- Update the submodule gitlink to the committed evaluation slice and prove it
+  locally with a command-scoped local URL override.
+- Correct `evaluation/README.md`, `docs/getting-started.md`, and the Klicker
+  testing skill. Keep reserved OKF index and log paths absent.
+- Run shell, formatting, OKF, link, and ground-truth checks; inspect and commit
+  only planned files.
+
+Risk gate: the slice crosses secret injection and a private cross-repository
+gitlink. Run a simplifier and one slice reviewer after the immutable commit.
+
+## Slice C: proof and finish
+
+- Load all 20 FineCo cases with zero unknown-tool warnings and prove that their
+  mode survives into normalized QA records.
+- Outside both repositories, create one synthetic expected-answer QA record and
+  a one-metric semantic-similarity configuration.
+- Run eval mode against a local fake OpenAI-compatible judge. Assert exactly one
+  standard `/v1/chat/completions` request, strict `json_schema`, the exact
+  deployment alias, and no `/parse`. Repeat with a transient failure and assert
+  one attempt.
+- Recheck restricted operator status and permissions without values. Probe
+  `/v1/models` only through the existing route. If the required namespaced model
+  is visible and single-call cardinality is proven, run at most the same one-case
+  and one-metric judge evaluation live. Record only non-content status, model,
+  timing, and usage evidence.
+- If DNS, authentication, model visibility, retry safety, or call cardinality
+  fails, skip the paid call and report that no model request was made.
+- Label the self-baseline as judge-transport proof, not Klicker target quality.
+  Full target `query-eval` remains blocked until a verified endpoint,
+  authentication, and `selectedMode` transport contract exists.
+- Run the integrated final reviewer after both slice reviews and corrections.
+
+## Acceptance
+
+- No secret values, real participant data, or real course content enter output
+  or commits.
+- The exact namespaced Luna alias uses strict JSON schema through standard Chat
+  Completions and never the unsupported parse endpoint.
+- Judge retries are disabled for the bounded smoke path.
+- All 20 synthetic FineCo cases validate with their expected tool and retain
+  `tutor` or `explainer` mode.
+- The wrapper preserves caller overrides, uses the restricted profile, and
+  fails clearly when its private dependency is absent.
+- Source, offline tests, local submodule proof, live judge transport, and live
+  Klicker target quality remain separate evidence layers.
+- Both branches end with scoped commits and published review requests. All
+  remaining withheld actions stay unperformed.
+
+## Progress
+
+- Plan hardened by the required planner through three review rounds.
+- Planner verdict: approved.
+- Evaluation Slice A commits:
+  - `b5f687b` — explicit judge capability and retry contracts plus chat-mode
+    projection.
+  - `8df1115` — review correction for imported and blank chat modes.
+  - `421b135` — strict-schema and single-attempt corrections for every DeepEval
+    judge entry point, plus normalized conversation imports.
+  - `9f73aa6` — preserve inherited schema fallback and raw-response retry
+    behavior when single-attempt mode is disabled.
+  - `e191248` — bind capability metadata to the configured alias and preserve
+    reserved property names during strict-schema traversal.
+- Evaluation verification: 351 tests pass; the final correction tree has 129
+  focused passing tests, and Ruff format and lint pass. The private-safe review
+  findings were applied. The evaluator slice review and integrated final review
+  approve exact evaluator head `e191248`.
+- Klicker Slice B implementation and verification are complete. The local
+  integration branch pins evaluator commit `e191248`; the wrapper contract and
+  shell syntax pass, and all 20 FineCo cases validate with zero tool warnings,
+  both supported modes, and matching expected tools.
+- Privacy correction: `LITELLM_API_BASE` is required at runtime. The public
+  repository does not persist the private proxy hostname.
+- Documentation formatting and the removed-wiki-artifact check pass. The OKF
+  validator still reports 25 pre-existing core conformance errors in unrelated
+  ADR, agent, screenshot, and solution files; the edited guide introduces no
+  new core error.
+- The prior Klicker slice findings and the simplifier's accepted test-isolation,
+  dependency, and documentation reductions are applied. Current-head
+  revalidation and the integrated final review approve exact Klicker head
+  `1e35d17`.
+- The exact pinned evaluator passes a no-cost one-case eval against a local fake
+  proxy with one `/v1/chat/completions` request, the exact Klicker alias, strict
+  `json_schema`, and no parse request. A synthetic 503 produces one request and
+  zero retries.
+- Restricted profile authentication and values-free permissions checks pass.
+  The direct private route still fails during DNS resolution with `gaierror`
+  errno 8. Through an explicitly approved localhost-only port-forward to the
+  STG LiteLLM Service, one authenticated model-list request returned HTTP 200
+  and exposed the required alias. One paid one-case, one-metric evaluation then
+  produced exactly one usage record for the required alias, scored `1.0`, and
+  completed without an evaluation error. The measured request used 321 prompt,
+  45 completion, and 366 total tokens at an estimated cost of USD 0.0001182.
+  The temporary tunnel was closed and its local listener verified absent.
+- The earlier isolated local LiteLLM 1.96.2 proxy proof used the restricted
+  `ai-buddy-judge-dev` key and forwarded through the DEV LiteLLM Service. It
+  remains valid transport evidence but is superseded as developer-key
+  acceptance because the required path is local LiteLLM directly to the
+  developer Azure Foundry.
+- The direct developer Foundry proof uses the `klicker-dev` profile's
+  `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL`, added to that profile's
+  readable allowlist after explicit approval. The local proxy targets the
+  Azure OpenAI v1 endpoint as `openai/gpt-5.6-luna`, with one local alias and
+  zero retries. The initial off-VPN checks produced `401` for the wrong
+  upstream key and then `403 Access denied due to Virtual Network/Firewall
+  rules` for the exact developer credentials; both failed attempts produced
+  zero evaluator usage records. After connecting to the UZH VPN, local health
+  and exact-alias visibility returned HTTP 200. One paid one-case, one-metric
+  evaluation then produced one local proxy POST and one evaluator usage record,
+  scored `1.0`, and completed without an evaluation error. The direct Foundry
+  request used 321 prompt, 45 completion, and 366 total tokens at an estimated
+  cost of USD 0.0001182 in 4.97 seconds. The local proxy was stopped and its
+  listener verified absent.
+- Live Klicker target quality remains unproven because the authenticated AI-SDK
+  stream still lacks a verified evaluator endpoint, authentication, and mode
+  adapter.
+- [Evaluator merge request !50](https://gitlab.uzh.ch/ai-infrastructure/evaluation/-/merge_requests/50)
+  merged through passing pipeline `654930` as squash commit `2a75632`. Its tree
+  is identical to reviewed feature head `e191248`.
+- The dependent [Klicker pull request #5712](https://github.com/uzh-bf/klicker-uzh/pull/5712)
+  is ready for review and mergeable. Its public gitlink now targets the merged
+  evaluator squash commit so the pin survives source-branch removal.
+- Review correction: the wrapper now rejects an empty mapped
+  `LITELLM_API_KEY` before starting `uv`; the operator already fails when the
+  source secret is missing. The contract test also distinguishes an explicitly
+  empty capability variable from an absent child variable. Default-value
+  assertions remain intentional regression pins.
+- Exact-head OpenCodeReview then identified two missing failure-path checks.
+  The fake harness now proves that a non-zero operator failure bypasses `uv`
+  and that evaluator-runner status, stdout, and stderr pass through unchanged.
+  It also creates the product tool-profile fixture used by the wrapper.
+- Klicker source checks, all CodeQL languages, both build fallbacks, secret
+  scans, the hosted Playwright build, and OpenCodeReview pass on the corrected
+  branch. All eight Playwright shards still fail before tests while loading the
+  trusted `v3` composite action because it contains unsupported step-level
+  `timeout-minutes`; the branch does not modify that action.
+- A later review's `--no-dotenv` finding was rejected after checking current uv
+  documentation and the pinned evaluator runner: uv's own switch is
+  `--no-env-file`, while `--no-dotenv` is intentionally a runner argument and
+  the wrapper test pins that position. Accepted follow-ups add readable-input
+  preflights, successful runner output propagation, explicit fake-uv argument
+  checks, and proof that the empty-key path never starts `uv`.

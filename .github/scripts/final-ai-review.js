@@ -13,6 +13,7 @@ const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const { isDeepStrictEqual } = require('node:util')
 
 const {
   compareRange: compareNativeRange,
@@ -2573,6 +2574,175 @@ function validateReviewSummary(summary, commentCount) {
   }
 }
 
+function validateOCRTokenCounters(summary, label) {
+  const keys = ['total_tokens', 'input_tokens', 'output_tokens']
+  if (
+    !summary ||
+    typeof summary !== 'object' ||
+    keys.some(
+      (key) => !Number.isSafeInteger(summary[key]) || summary[key] < 0
+    ) ||
+    summary.total_tokens !== summary.input_tokens + summary.output_tokens
+  ) {
+    throw new Error(`${label} has invalid token usage counters`)
+  }
+  return {
+    inputTokens: summary.input_tokens,
+    outputTokens: summary.output_tokens,
+    totalTokens: summary.total_tokens,
+  }
+}
+
+function validateOCRCoverage(manifest, label) {
+  const coverage = manifest?.coverage
+  const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
+  if (
+    !coverage ||
+    keys.some((key) => !Array.isArray(coverage[key])) ||
+    coverage.selected.length !==
+      coverage.completed.length +
+        coverage.reused.length +
+        coverage.failed.length +
+        coverage.waived.length
+  ) {
+    throw new Error(`${label} has invalid manifest coverage`)
+  }
+  return coverage
+}
+
+function validateOCRSessionEnvelope(result, expectedStatus, label) {
+  const sessionId = result?.session_id
+  if (
+    typeof sessionId !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(sessionId)
+  ) {
+    throw new Error(`${label} has no safe session ID`)
+  }
+  const manifest = result.manifest
+  if (
+    manifest?.schema_version !== 'ocr.run-manifest/v1' ||
+    manifest.run_id !== sessionId ||
+    manifest.operation !== 'review' ||
+    manifest.terminal_state !== expectedStatus ||
+    result.status !== expectedStatus
+  ) {
+    throw new Error(`${label} has inconsistent session or manifest identity`)
+  }
+  return { coverage: validateOCRCoverage(manifest, label), manifest, sessionId }
+}
+
+function hasOCRBudgetExhaustion(result, coverage) {
+  return (
+    result.summary?.budget_exceeded === true ||
+    result.warnings?.some(
+      (warning) => warning?.type === 'token_budget_reached'
+    ) ||
+    coverage.failed.some((item) => item?.classification === 'budget')
+  )
+}
+
+function planOCRResume(result, maxTokensBudget) {
+  if (!Number.isSafeInteger(maxTokensBudget) || maxTokensBudget <= 0) {
+    throw new Error('OCR resume ceiling must be a positive safe integer')
+  }
+  if (result?.status !== 'partial') return null
+
+  const { coverage, manifest, sessionId } = validateOCRSessionEnvelope(
+    result,
+    'partial',
+    'Partial OCR result'
+  )
+  if (result.resume != null || manifest.parent_run_id) {
+    throw new Error('Partial OCR result is already a resumed run')
+  }
+  if (coverage.failed.length === 0) {
+    throw new Error('Partial OCR result has no failed coverage to resume')
+  }
+  if (result.warnings != null && !Array.isArray(result.warnings)) {
+    throw new Error('Partial OCR result has an invalid warnings array')
+  }
+  const usage = validateOCRTokenCounters(result.summary, 'Partial OCR result')
+  if (hasOCRBudgetExhaustion(result, coverage)) {
+    throw new Error('Partial OCR result exhausted its token budget')
+  }
+  const remainingTokens = maxTokensBudget - usage.totalTokens
+  if (remainingTokens <= 0) {
+    throw new Error('Partial OCR result has no token budget left to resume')
+  }
+  return { remainingTokens, sessionId }
+}
+
+function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
+  const resumePlan = planOCRResume(initialResult, maxTokensBudget)
+  if (!resumePlan) {
+    throw new Error('OCR resume merge requires a partial parent result')
+  }
+  const resumed = validateOCRSessionEnvelope(
+    resumedResult,
+    'complete',
+    'Resumed OCR result'
+  )
+  if (
+    resumed.sessionId === resumePlan.sessionId ||
+    resumedResult.resume?.resumed_from !== resumePlan.sessionId ||
+    resumed.manifest.parent_run_id !== initialResult.manifest.run_id
+  ) {
+    throw new Error('Resumed OCR result has incorrect parent lineage')
+  }
+  if (
+    !isDeepStrictEqual(
+      resumed.manifest.repository,
+      initialResult.manifest.repository
+    ) ||
+    !isDeepStrictEqual(resumed.manifest.input, initialResult.manifest.input) ||
+    resumed.manifest.execution?.rule_config_sha256 !==
+      initialResult.manifest.execution?.rule_config_sha256 ||
+    resumed.manifest.execution?.provider !==
+      initialResult.manifest.execution?.provider ||
+    resumed.manifest.execution?.model !==
+      initialResult.manifest.execution?.model ||
+    resumedResult.llm?.provider !== initialResult.llm?.provider ||
+    resumedResult.llm?.model !== initialResult.llm?.model
+  ) {
+    throw new Error('Resumed OCR result changed its review identity')
+  }
+  if (resumed.coverage.failed.length > 0) {
+    throw new Error('Resumed OCR result retained failed coverage')
+  }
+  if (
+    resumedResult.warnings != null &&
+    !Array.isArray(resumedResult.warnings)
+  ) {
+    throw new Error('Resumed OCR result has an invalid warnings array')
+  }
+  const initialUsage = validateOCRTokenCounters(
+    initialResult.summary,
+    'Partial OCR result'
+  )
+  const resumedUsage = validateOCRTokenCounters(
+    resumedResult.summary,
+    'Resumed OCR result'
+  )
+  const totalTokens = initialUsage.totalTokens + resumedUsage.totalTokens
+  const inputTokens = initialUsage.inputTokens + resumedUsage.inputTokens
+  const outputTokens = initialUsage.outputTokens + resumedUsage.outputTokens
+  if (
+    hasOCRBudgetExhaustion(resumedResult, resumed.coverage) ||
+    totalTokens > maxTokensBudget
+  ) {
+    throw new Error('Resumed OCR result exceeded the original token budget')
+  }
+  return {
+    ...resumedResult,
+    summary: {
+      ...resumedResult.summary,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      total_tokens: totalTokens,
+    },
+  }
+}
+
 function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   if (result.status !== 'complete') {
     throw new Error(`OCR returned unexpected status: ${result.status}`)
@@ -3312,6 +3482,43 @@ function runCli() {
       )
     })
   }
+  if (command === 'plan-ocr-resume') {
+    const resultPath = process.argv[3]
+    const budgetText = process.argv[4]
+    if (!resultPath || !/^[1-9][0-9]*$/.test(budgetText ?? '')) {
+      throw new Error(
+        'Usage: final-ai-review.js plan-ocr-resume <result-path> <token-budget>'
+      )
+    }
+    const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
+    const plan = planOCRResume(result, Number(budgetText))
+    if (plan) {
+      console.log(plan.sessionId)
+      console.log(plan.remainingTokens)
+    }
+    return
+  }
+  if (command === 'merge-ocr-resume') {
+    const initialPath = process.argv[3]
+    const resumedPath = process.argv[4]
+    const budgetText = process.argv[5]
+    if (
+      !initialPath ||
+      !resumedPath ||
+      !/^[1-9][0-9]*$/.test(budgetText ?? '')
+    ) {
+      throw new Error(
+        'Usage: final-ai-review.js merge-ocr-resume <initial-path> <resumed-path> <token-budget>'
+      )
+    }
+    const merged = mergeOCRResumeResults(
+      JSON.parse(fs.readFileSync(initialPath, 'utf8')),
+      JSON.parse(fs.readFileSync(resumedPath, 'utf8')),
+      Number(budgetText)
+    )
+    console.log(JSON.stringify(merged, null, 2))
+    return
+  }
   if (command === 'verify-clean-status') {
     const repository = process.argv[3]
     const prNumber = Number(process.argv[4])
@@ -3382,7 +3589,9 @@ module.exports = {
   hasCurrentSuccessfulFinalReview,
   hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
+  mergeOCRResumeResults,
   normalizeTitle,
+  planOCRResume,
   parseIndividualCleanEvidence,
   listReviewArtifacts,
   parseDispositionRecord,
