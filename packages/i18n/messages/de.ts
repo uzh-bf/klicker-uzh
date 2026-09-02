@@ -1881,6 +1881,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       next: 'Weiter',
       previous: 'Zurück',
       done: 'Fertig',
+      skip: 'Tour überspringen',
       progress: 'Schritt {current} von {total}',
       replayTitle: 'Tour starten',
       replayDesc: 'Ein kurzer Rundgang durch die KlickerUZH-Oberfläche',

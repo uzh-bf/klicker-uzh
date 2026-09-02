@@ -1868,6 +1868,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       next: 'Next',
       previous: 'Back',
       done: 'Done',
+      skip: 'Skip tour',
       progress: 'Step {current} of {total}',
       replayTitle: 'Take the tour',
       replayDesc: 'A short walk through the KlickerUZH interface',
