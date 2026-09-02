@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -47,6 +48,7 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validatePromotionContract,
+  validateOCRResult,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
@@ -627,10 +629,34 @@ test('uses the OCR runtime config path for both preflight and review', () => {
   )
 })
 
+test('requires the exact finding evidence prefix in the model rule', () => {
+  const rule = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../open-code-review/final-review-rules.json'),
+      'utf8'
+    )
+  ).rules[0]
+
+  assert.equal(rule.merge_system_rule, true)
+  assert.match(rule.rule, /Before calling the `code_comment` tool/)
+  assert.match(rule.rule, /no leading whitespace, omitted line, reordered line/)
+  assert.ok(
+    rule.rule.includes(
+      'Confidence: NN/100\nAutofix: mechanical OR manual OR not-applicable\nMotivating line: `exact source line`'
+    )
+  )
+})
+
 function completeReviewResult(comments = []) {
+  const sessionId = '33333333-3333-4333-8333-333333333333'
+  const item = {
+    item_id: 'a'.repeat(64),
+    path: 'src/example.ts',
+    fingerprint: 'b'.repeat(64),
+  }
   return {
     status: 'complete',
-    llm: { model: FINAL_REVIEW_MODEL },
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
     summary: {
       files_reviewed: 1,
       comments: comments.length,
@@ -640,9 +666,32 @@ function completeReviewResult(comments = []) {
       elapsed: '1s',
     },
     comments,
+    session_id: sessionId,
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
       terminal_state: 'complete',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [item],
+        completed: [item],
+        reused: [],
+        failed: [],
+        waived: [],
+      },
+      elapsed_ms: 1_000,
     },
   }
 }
@@ -650,12 +699,12 @@ function completeReviewResult(comments = []) {
 function partialResumeResult(overrides = {}) {
   const sessionId = '11111111-1111-4111-8111-111111111111'
   const completed = {
-    item_id: 'completed',
+    item_id: 'a'.repeat(64),
     path: 'src/complete.ts',
     fingerprint: 'a'.repeat(64),
   }
   const failed = {
-    item_id: 'failed',
+    item_id: 'b'.repeat(64),
     path: 'src/timed-out.ts',
     fingerprint: 'b'.repeat(64),
     classification: 'timeout',
@@ -673,7 +722,6 @@ function partialResumeResult(overrides = {}) {
       elapsed: '30m0s',
     },
     comments: [],
-    warnings: [],
     session_id: sessionId,
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
@@ -699,6 +747,7 @@ function partialResumeResult(overrides = {}) {
         failed: [failed],
         waived: [],
       },
+      elapsed_ms: 1_800_000,
     },
     ...overrides,
   }
@@ -720,7 +769,6 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
       elapsed: '12m0s',
     },
     comments: [],
-    warnings: [],
     session_id: sessionId,
     resume: {
       resumed_from: parent.session_id,
@@ -745,6 +793,7 @@ function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
         failed: [],
         waived: [],
       },
+      elapsed_ms: 720_000,
     },
     ...overrides,
   }
@@ -756,6 +805,48 @@ test('plans one resume from a valid partial OCR session', () => {
     sessionId: '11111111-1111-4111-8111-111111111111',
     remainingTokens: 749_700,
   })
+})
+
+test('rejects failed partial sessions with reused or waived coverage', () => {
+  const parent = partialResumeResult()
+  const completed = parent.manifest.coverage.completed[0]
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              reused: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              waived: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
 })
 
 test('rejects malformed or already-resumed partial OCR sessions', () => {
@@ -783,6 +874,236 @@ test('rejects malformed or already-resumed partial OCR sessions', () => {
         750_000
       ),
     /already a resumed run/
+  )
+  for (const parent_run_id of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          {
+            ...parent,
+            manifest: { ...parent.manifest, parent_run_id },
+          },
+          750_000
+        ),
+      /already a resumed run/
+    )
+  }
+  assert.throws(
+    () =>
+      planOCRResume(
+        partialResumeResult({
+          comments: [
+            {
+              path: 'src/complete.ts',
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+              content: 'This partial finding omits the required evidence.',
+            },
+          ],
+        }),
+        750_000
+      ),
+    /confidence score/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          summary: { ...parent.summary, comments: 1 },
+        },
+        750_000
+      ),
+    /usage counters/
+  )
+
+  const completed = parent.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              selected: [completed, completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /duplicate selected coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [completed, completed],
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /non-disjoint coverage partition/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /incomplete manifest coverage/
+  )
+})
+
+test('requires the configured OCR model in every producer receipt', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, llm: { ...parent.llm, model: 'wrong-model' } },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            execution: { ...parent.manifest.execution, model: 'wrong-model' },
+          },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+
+  const complete = completeReviewResult()
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        llm: { ...complete.llm, model: 'wrong-model' },
+      }),
+    /unexpected model identity/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        manifest: {
+          ...complete.manifest,
+          execution: { ...complete.manifest.execution, model: 'wrong-model' },
+        },
+      }),
+    /session or manifest identity/
+  )
+})
+
+test('requires complete resume lineage and coverage counts', () => {
+  const firstAttempt = completeReviewResult()
+  assert.equal(validateOCRResult(firstAttempt), firstAttempt)
+
+  const firstItem = firstAttempt.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          coverage: {
+            ...firstAttempt.manifest.coverage,
+            completed: [],
+            reused: [firstItem],
+          },
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          parent_run_id: firstAttempt.session_id,
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        resume: {
+          resumed_from: firstAttempt.session_id,
+          reused_files: 0,
+          rerun_files: 1,
+        },
+      }),
+    /invalid resume envelope/
+  )
+
+  const resumed = completedResumeResult()
+  assert.equal(validateOCRResult(resumed), resumed)
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        manifest: {
+          ...resumed.manifest,
+          parent_run_id: '44444444-4444-4444-8444-444444444444',
+        },
+      }),
+    /invalid resume envelope/
+  )
+  for (const parentId of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        validateOCRResult({
+          ...resumed,
+          resume: { ...resumed.resume, resumed_from: parentId },
+          manifest: { ...resumed.manifest, parent_run_id: parentId },
+        }),
+      /invalid resume envelope/
+    )
+  }
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, reused_files: 0 },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, rerun_files: 0 },
+      }),
+    /invalid resume envelope/
   )
 })
 
@@ -828,6 +1149,30 @@ test('rejects every OCR budget-exhaustion signal before resuming', () => {
   )
 })
 
+test('rejects non-boolean OCR budget flags before planning a resume', () => {
+  const parent = partialResumeResult()
+  for (const budget_exceeded of ['false', 0, 1, null]) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          { ...parent, summary: { ...parent.summary, budget_exceeded } },
+          750_000
+        ),
+      /invalid budget flag/
+    )
+  }
+  assert.deepEqual(
+    planOCRResume(
+      { ...parent, summary: { ...parent.summary, budget_exceeded: false } },
+      750_000
+    ),
+    {
+      sessionId: parent.session_id,
+      remainingTokens: 749_700,
+    }
+  )
+})
+
 test('merges only validated complete resume usage within the original ceiling', () => {
   const parent = partialResumeResult()
   const resumed = completedResumeResult(parent)
@@ -841,6 +1186,7 @@ test('merges only validated complete resume usage within the original ceiling', 
   assert.equal(merged.summary.input_tokens, 390)
   assert.equal(merged.summary.output_tokens, 110)
   assert.equal(merged.summary.total_tokens, 500)
+  assert.equal(validateOCRResult(merged), merged)
 })
 
 test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
@@ -902,6 +1248,82 @@ test('rejects incorrect resume lineage, identity, and incomplete coverage', () =
   assert.throws(
     () => mergeOCRResumeResults(parent, resumed, 400),
     /original token budget/
+  )
+
+  const changedItem = {
+    ...resumed.manifest.coverage.selected[1],
+    fingerprint: '9'.repeat(64),
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            coverage: {
+              ...resumed.manifest.coverage,
+              selected: [resumed.manifest.coverage.selected[0], changedItem],
+              completed: [changedItem],
+            },
+          },
+        },
+        750_000
+      ),
+    /changed its selected coverage/
+  )
+})
+
+test('requires exact resume coverage mappings, counts, and terminal outcomes', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+
+  const swappedCoverage = {
+    ...resumed.manifest.coverage,
+    completed: [resumed.manifest.coverage.reused[0]],
+    reused: [resumed.manifest.coverage.completed[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: swappedCoverage },
+        },
+        750_000
+      ),
+    /coverage partition/
+  )
+
+  for (const resume of [
+    { ...resumed.resume, reused_files: 0 },
+    { ...resumed.resume, rerun_files: 0 },
+    { ...resumed.resume, reused_files: '1' },
+  ]) {
+    assert.throws(
+      () => mergeOCRResumeResults(parent, { ...resumed, resume }, 750_000),
+      /(?:inconsistent resume counts|invalid resume envelope)/
+    )
+  }
+
+  const waivedCoverage = {
+    ...resumed.manifest.coverage,
+    reused: [],
+    waived: [resumed.manifest.coverage.reused[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: waivedCoverage },
+        },
+        750_000
+      ),
+    /failed or waived coverage/
   )
 })
 
@@ -1144,7 +1566,10 @@ test('retains only the rejected individual publisher input for one day', () => {
     workflow.indexOf('Publish consolidated final review') <
       workflow.indexOf('Upload rejected individual publisher input')
   )
-  assert.match(step, /if: failure\(\) && steps\.publish\.outcome == 'failure'/)
+  assert.match(
+    step,
+    /failure\(\)[\s\S]*steps\.run_review\.outputs\.validation_failure == 'true'[\s\S]*steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
   assert.match(
     step,
     /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
@@ -1155,11 +1580,176 @@ test('retains only the rejected individual publisher input for one day', () => {
   )
   assert.match(
     step,
-    /path: \$\{\{ runner\.temp \}\}\/final-ai-review-result\.json/
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-individual-publisher-failure/
   )
   assert.match(step, /if-no-files-found: error/)
   assert.match(step, /retention-days: 1/)
   assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
+})
+
+test('suppresses raw OCR output while retaining rejected validation inputs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const name of [
+    'Summarize final review failure output',
+    'Summarize cumulative review failure output',
+  ]) {
+    const step = workflow.match(
+      new RegExp(`      - name: ${name}\\n[\\s\\S]*?(?=\\n      - name:)`)
+    )?.[0]
+    assert.ok(step)
+    assert.match(step, /raw provider and result output is suppressed/i)
+    assert.doesNotMatch(step, /cat |tail |RESULT_PATH|STDERR_PATH|```json/)
+  }
+  assert.match(
+    workflow,
+    /plan-ocr-resume[\s\S]*cp -- "\$\{RESULT_PATH\}" "\$\{REJECTED_DIR\}\/initial-result\.json"[\s\S]*validation_failure=true/
+  )
+  assert.match(
+    workflow,
+    /merge-ocr-resume[\s\S]*cp -- "\$\{RESUMED_PATH\}" "\$\{REJECTED_DIR\}\/resumed-result\.json"[\s\S]*validation_failure=true/
+  )
+})
+
+test('validates complete OCR results and retains malformed artifacts', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-ocr-'))
+  const resultPath = path.join(directory, 'result.json')
+  const validResult = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      start_line: 10,
+      end_line: 10,
+      category: 'bug',
+      severity: 'high',
+      content: [
+        'Confidence: 75/100',
+        'Autofix: manual',
+        'Motivating line: `return value`',
+        'This can fail at runtime.',
+      ].join('\n'),
+    },
+  ])
+  fs.writeFileSync(resultPath, JSON.stringify(validResult))
+  assert.equal(Object.hasOwn(validResult, 'schema_version'), false)
+  assert.equal(Object.hasOwn(validResult, 'finish_reason'), false)
+  assert.equal(Object.hasOwn(validResult.summary, 'coverage'), false)
+
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const validRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.equal(validRun.status, 0, validRun.stderr)
+  assert.match(validRun.stdout, /OCR result passed validation/)
+  assert.equal(validateOCRResult(validResult), validResult)
+
+  const malformedResult = {
+    ...validResult,
+    comments: [
+      {
+        ...validResult.comments[0],
+        content: 'This finding omits the required confidence evidence.',
+      },
+    ],
+  }
+  fs.writeFileSync(resultPath, JSON.stringify(malformedResult))
+  const retainedBytes = fs.readFileSync(resultPath)
+  const invalidRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.notEqual(invalidRun.status, 0)
+  assert.match(invalidRun.stderr, /invalid confidence score/)
+  assert.equal(fs.existsSync(resultPath), true)
+  assert.deepEqual(fs.readFileSync(resultPath), retainedBytes)
+  assert.throws(
+    () => validateOCRResult(malformedResult),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...validResult,
+        summary: { ...validResult.summary, total_tokens: 101 },
+      }),
+    /usage counters/
+  )
+  assert.throws(
+    () => validateOCRResult({ ...validResult, finish_reason: 'length' }),
+    /incomplete finish reason/
+  )
+  for (const [field, value] of [
+    ['status', 'complete\n::error::injected'],
+    ['model', 'expected\n::error::injected'],
+  ]) {
+    let error
+    try {
+      validateOCRResult(
+        field === 'status'
+          ? { ...validResult, status: value }
+          : { ...validResult, llm: { ...validResult.llm, model: value } }
+      )
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    assert.doesNotMatch(error.message, /injected/)
+  }
+})
+
+test('runs OCR validation after resume and gates individual publication', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const runIndex = workflow.indexOf('      - name: Run final review')
+  const validateIndex = workflow.indexOf(
+    '      - name: Validate final review OCR result'
+  )
+  const publishIndex = workflow.indexOf(
+    '      - name: Publish consolidated final review'
+  )
+  const rejectedSummaryIndex = workflow.indexOf(
+    '      - name: Summarize rejected final review result'
+  )
+  const cleanupIndex = workflow.indexOf(
+    '      - name: Remove ephemeral OpenRouter access'
+  )
+  assert.ok(runIndex >= 0)
+  assert.ok(validateIndex > runIndex)
+  assert.ok(rejectedSummaryIndex > validateIndex)
+  assert.ok(cleanupIndex > rejectedSummaryIndex)
+  assert.ok(publishIndex > validateIndex)
+
+  const validationStep = workflow.slice(validateIndex, publishIndex)
+  assert.match(validationStep, /id: validate_result/)
+  assert.match(validationStep, /if: steps\.run_review\.outcome == 'success'/)
+  assert.match(
+    validationStep,
+    /node \.github\/scripts\/final-ai-review\.js validate-ocr-result "\$\{RESULT_PATH\}"/
+  )
+
+  const rejectedSummaryStep = workflow.slice(rejectedSummaryIndex, cleanupIndex)
+  assert.match(
+    rejectedSummaryStep,
+    /if: failure\(\) && steps\.validate_result\.outcome == 'failure'/
+  )
+  assert.match(rejectedSummaryStep, /rejected input is retained/)
+  assert.doesNotMatch(
+    rejectedSummaryStep,
+    /RESULT_PATH|STDERR_PATH|cat |tail |```json/
+  )
+
+  const publishStep = workflow.slice(publishIndex)
+  assert.match(publishStep, /steps\.validate_result\.outcome == 'success'/)
+  assert.match(
+    publishStep,
+    /steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
 })
 
 test('renders findings without making finding count a failure', () => {
@@ -2460,7 +3050,7 @@ test('rejects incomplete or wrong-model OCR results', () => {
         },
         'a'.repeat(40)
       ),
-    /unexpected status: partial/
+    /unexpected terminal status/
   )
   assert.throws(
     () =>
@@ -2514,34 +3104,23 @@ test('rejects malformed native stack membership instead of inferring topology', 
 })
 
 test('rejects a report that would require partial publication', () => {
+  const comments = Array.from({ length: 5 }, (_, index) => ({
+    path: `src/example-${index}.ts`,
+    content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(11_000)}`,
+    start_line: index + 1,
+    end_line: index + 1,
+    category: 'bug',
+    severity: 'high',
+  }))
+
   assert.throws(
     () =>
-      renderFinalReviewChunks(
-        {
-          ...completeReviewResult(),
-          summary: {
-            ...completeReviewResult().summary,
-            comments: 1,
-          },
-          comments: [
-            {
-              path: 'src/example.ts',
-              content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(55_000)}`,
-              start_line: 1,
-              end_line: 1,
-              category: 'bug',
-              severity: 'high',
-            },
-          ],
-        },
-        'a'.repeat(40),
-        {
-          policyDigest: '2'.repeat(64),
-          trustedPolicySha: 'd'.repeat(40),
-          workflowHeadSha: 'd'.repeat(40),
-          workflowSha: 'd'.repeat(40),
-        }
-      ),
+      renderFinalReviewChunks(completeReviewResult(comments), 'a'.repeat(40), {
+        policyDigest: '2'.repeat(64),
+        trustedPolicySha: 'd'.repeat(40),
+        workflowHeadSha: 'd'.repeat(40),
+        workflowSha: 'd'.repeat(40),
+      }),
     /report limit/
   )
 })
@@ -2711,6 +3290,65 @@ test('does not overwrite a newer individual-review status during finalization', 
   })
 
   assert.equal(statuses.length, 0)
+})
+
+test('terminalizes over a later passive manual-review status for the same head', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'feature/review',
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    statuses: [
+      {
+        context: 'final-ai-review',
+        state: 'pending',
+        description: `Manual ${FINAL_REVIEW_MODEL} final review required for this head`,
+        target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+      },
+    ],
+  })
+  const context = {
+    payload: { repository: { default_branch: 'v3' } },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 702,
+    serverUrl: 'https://github.com',
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha,
+    headSha,
+    scopeKind: 'default',
+    stackId: '',
+    stackPosition: '',
+    stackOrderDigest: '',
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(state.createdStatuses.length, 1)
+  assert.equal(state.createdStatuses[0].state, 'success')
+  assert.equal(
+    state.createdStatuses[0].description,
+    `${FINAL_REVIEW_MODEL} final review completed for this head`
+  )
 })
 
 test('rejects duplicate disposition markers as ambiguous', () => {
