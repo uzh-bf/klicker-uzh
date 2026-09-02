@@ -283,6 +283,22 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 - The developer profile's test-participant values were present but did not
   identify a participant in this local database. The canary used the
   repository-local seeded test fixture without recording credential values.
+- Follow-up runtime proof: after restarting the exact worktree so the
+  injected values reached the LiteLLM service, the local adapter returned
+  HTTP 200 with source `canary`, the synthetic answer marker, and
+  `KB_doc_query`. The direct MCP inventory inside the app container returned
+  only `doc_query`; `EXPERT_df_fineco_expert` was absent. The local seed
+  participant authenticated successfully when derived inside the child
+  process from the committed test fixture; no credential value was recorded.
+- Base ruling: `origin/dev` drift was inspected read-only and left
+  unintegrated after the user selected the verified `origin/v3` basis. The
+  exact runtime was then stopped; its app and LiteLLM providers are exited,
+  and zero exact devrouter routes remain.
+- A1 source readback: `ai-infrastructure/deployment` `origin/main@1188ff25`
+  includes `df_fineco_expert` in the STG and PRD tool ConfigMaps. The local
+  `ai-buddy` `dev@41db6926` doc-query source appends all remaining documents
+  after source-priority rescue without a final output trim. This is a source
+  lead, not runtime proof or a finite per-result input/tool-output bound.
 - FineCo gate: the tutor runtime inventory exposed `KB_doc_query` and
   `Context7_resolve-library-id`, but not `EXPERT_df_fineco_expert`. No
   20-case query, semantic judge, or external FineCo binding was run. The
@@ -292,8 +308,21 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 - Cleanup evidence: `devrouter stop` completed for the exact worktree; the
   provider, LiteLLM, databases, managed processes, and adapter are stopped;
   and the exact route count is zero.
+- Integrated final review: passed with no findings on the exact committed
+  package, using the committed canary receipt rather than re-running live
+  behavior. The parent package therefore closes at its reviewed local-evidence
+  boundary while retaining `delivery_pending` for the missing FineCo binding.
+- Documentation follow-up: the local documentation commit records the FineCo
+  follow-up roadmap and this Progress reconciliation, preserving the evaluator
+  submodule at `2a75632a`. Prettier, diff checks, staged Gitleaks, and standalone
+  `check:playwright-ci` passed. The pre-commit selector fixture inherited Git's
+  hook environment and was repaired without source changes; the commit was
+  amended locally after that unrelated hook failure.
 - Delivery layer required: reviewed local commits and bounded local runtime
   evidence. Push, MR/PR publication, merge, deployment, and remote FineCo
   tunnel remain outside this package.
-- Next: run final repository-native checks and the integrated final review,
-  then close the goal with the parked FineCo outcome.
+- Next: no parent implementation slice remains. Keep the parent package at
+  `delivery_pending` and use the [FineCo evaluation follow-up roadmap](2026-09-01-klicker-fineco-evaluation-follow-up-roadmap.md)
+  for W1 — FineCo expert-binding readiness and W2 — twenty-case FineCo
+  capture and semantic judge; A1 — authorized FineCo binding and finite
+  response bound remains open.
