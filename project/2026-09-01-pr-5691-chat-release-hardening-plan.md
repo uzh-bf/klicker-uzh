@@ -383,5 +383,6 @@ compatibility limitation, not an authorization or charging bypass.
       PASS. The earlier simplifier and risk-slice gates remain recorded for the
       unchanged package; no additional specialist route was available under
       the routing continuity limit.
-- [ ] Update PR #5691 and push the corrected branch. Merge, deployment, and
-      runtime activation remain withheld.
+- [x] Update PR #5691 and push the corrected branch. The PR now points to the
+      corrected head; merge, deployment, migration application, and runtime
+      activation remain withheld.
