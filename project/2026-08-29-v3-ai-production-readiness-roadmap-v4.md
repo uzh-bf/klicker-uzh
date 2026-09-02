@@ -171,6 +171,47 @@ deployment, runtime, or acceptance action has occurred.
   staging, destructive reset, deployment, and acceptance remain separate
   approvals.
 
+### 2026-09-02 owner-head reconciliation receipt
+
+- Orchestration transferred to this session at 10:18 local time. The Codex
+  destination task named in the handoff had been idle for one hour and custody
+  was clean at `283031d9f33deee2cfff96bf239c798028920cec`, so no two-writer
+  collision exists. No worktree was created, no child was dispatched, no
+  runtime was touched, and no PR, variable, ruleset, tag, or deployment
+  changed.
+- Refs unchanged from the transfer receipt: `origin/v3@72096fafe5` and
+  `origin/v3-ai@05ff5e0727`; `origin/v3-ai` is 100 ahead and 12 behind
+  `origin/v3`. Safeguard `7e4998a713` (10 ahead, 6 behind `origin/v3`) and
+  custody `283031d9f3` (9 ahead, 28 behind `origin/v3-ai`) both pass every
+  ordinary exact-head check; only `final-ai-review` is pending on each and
+  requires the repository's manual review route. The primary checkout is now
+  clean; it remains read-only. Local `v3-ai` in `trees/v3-ai-sync` carries
+  eight unpushed commits of unresolved ownership and stays untouched.
+- Every open AI PR was reconciled to an exact head with its schema class and
+  disposition (full table in the gitignored evidence manifest). Reuse as
+  owned: #5650 (merge-ready, S0, precedes N3), #5633, #5635, #5637 chain,
+  #5491/#5492 (deploy track), the `v3` chat stack #5593/#5614/#5619/#5723,
+  #5656/#5707, #5676, #5691, #5709, #5726. Normalize: #5710 (S2, adds
+  `KBResource.materialType`; owner active) into N2 after its owner receipt;
+  #5481–#5483 and #5665 (two conflicting) into the N5 re-cut. Later-train:
+  #5430 (S2) and #5514 (excluded). Decision required: #5668 (S2, merge-ready,
+  targets `v3`) carries migration `20260823180000_chatbot_prompt_catalog`,
+  which sorts inside the existing `v3-ai` tail; the release manifest places
+  prompt versioning after core unless the release contract promotes it.
+- Migration tail: the six custody-baseline migrations are unchanged on
+  `origin/v3-ai`; pending PR migrations (#5481, #5668, #5430, #5710) all sort
+  before or between them except #5710, so N6 must regenerate the whole AI
+  tail whichever merge first.
+- Proposed G2 topology, pending approval and not yet created: custody
+  authors one stack N1 → N4 → N6 in a single new worktree cut from exact
+  `origin/v3-ai@05ff5e0727`; N2, N3, and N5 remain owner-delivered PRs that
+  land on `v3-ai` between custody layers and are integrated by rebase, never
+  re-authored. N1 is S0 and may start before the staging pause; every S2
+  layer waits for the proven pause.
+- Next step after approval: create the normalization worktree, author N1,
+  and keep the manual final-review trigger, #5650 merge, #5668 placement, and
+  custody push as separate user decisions.
+
 ## 1. Verified repository constraints (refreshed 2026-08-29)
 
 - At execution-custody start, `v3` head was `c942cd246` and `v3-ai` head
