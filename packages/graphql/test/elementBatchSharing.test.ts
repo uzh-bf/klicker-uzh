@@ -491,9 +491,7 @@ describe('Integration tests for batch sharing elements', () => {
     emitter.once('invalidate', () => {
       throw new Error('synthetic invalidation failure')
     })
-    const warnSpy = vi
-      .spyOn(userOneCtx.log, 'warn')
-      .mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const result = await shareElementsBatch(
       {
@@ -512,14 +510,12 @@ describe('Integration tests for batch sharing elements', () => {
         where: { elementId: element.id, userId: userTwo.id },
       })
     ).toBe(1)
-    expect(warnSpy).toHaveBeenCalledWith(
-      {
-        event: 'sharing.permission.invalidation_failed',
-        outcome: 'continuing',
-      },
-      'Failed to invalidate shared element permission'
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to invalidate permission %s after sharing element %s',
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Error)
     )
-    warnSpy.mockRestore()
 
     const group = await prisma.userGroup.create({
       data: { name: 'Direct resolver priority group', ownerId: userOne.id },

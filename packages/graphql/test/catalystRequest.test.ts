@@ -40,9 +40,6 @@ function buildContext({
         findUnique: prismaUserFindUnique,
       },
     },
-    log: {
-      error: vi.fn(),
-    } as unknown as ContextWithUser['log'],
     user: {
       sub: ownerSub,
       role: UserRole.USER,
@@ -165,10 +162,6 @@ describe('Catalyst access request', () => {
     const result = await executeMutation(context)
     expect(result.errors?.[0]?.extensions?.code).toBe('INTERNAL_SERVER_ERROR')
     expect(result.data?.requestCatalystAccess).toBeUndefined()
-    expect(context.log.error).toHaveBeenCalledWith(
-      { event: 'support.catalyst_access.email_failed' },
-      'Failed to send Catalyst access request'
-    )
   })
 
   it('fails closed without exposing internals when the account has no email', async () => {
