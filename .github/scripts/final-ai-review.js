@@ -2645,16 +2645,7 @@ function validateOCRResult(result) {
   if (coverage.failed.length > 0 || coverage.waived.length > 0) {
     throw new Error('Complete OCR result retained failed or waived coverage')
   }
-  if (result.resume != null) {
-    if (
-      typeof result.resume !== 'object' ||
-      Array.isArray(result.resume) ||
-      typeof result.resume.resumed_from !== 'string' ||
-      !result.resume.resumed_from
-    ) {
-      throw new Error('Complete OCR result has an invalid resume envelope')
-    }
-  }
+  validateOCRResumeEnvelope(result, coverage, 'Complete OCR result')
 
   result.comments.forEach((comment, index) => validateFinding(comment, index))
   return result
@@ -2768,6 +2759,33 @@ function validateOCRSessionEnvelope(result, expectedStatus, label) {
   return { coverage: validateOCRCoverage(manifest, label), manifest, sessionId }
 }
 
+function validateOCRResumeEnvelope(result, coverage, label) {
+  const manifest = result.manifest
+  const hasResumeMetadata =
+    Object.hasOwn(result, 'resume') || Object.hasOwn(manifest, 'parent_run_id')
+  if (!hasResumeMetadata && coverage.reused.length === 0) return
+
+  const resume = result.resume
+  if (
+    !resume ||
+    typeof resume !== 'object' ||
+    Array.isArray(resume) ||
+    typeof resume.resumed_from !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(resume.resumed_from) ||
+    typeof manifest.parent_run_id !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(manifest.parent_run_id) ||
+    manifest.parent_run_id !== resume.resumed_from ||
+    !Number.isSafeInteger(resume.reused_files) ||
+    resume.reused_files < 0 ||
+    !Number.isSafeInteger(resume.rerun_files) ||
+    resume.rerun_files < 0 ||
+    resume.reused_files !== coverage.reused.length ||
+    resume.rerun_files !== coverage.completed.length
+  ) {
+    throw new Error(`${label} has an invalid resume envelope`)
+  }
+}
+
 function hasOCRBudgetExhaustion(result, coverage) {
   return (
     result.summary?.budget_exceeded === true ||
@@ -2791,7 +2809,10 @@ function planOCRResume(result, maxTokensBudget) {
     'partial',
     'Partial OCR result'
   )
-  if (result.resume != null || manifest.parent_run_id) {
+  if (
+    Object.hasOwn(result, 'resume') ||
+    Object.hasOwn(manifest, 'parent_run_id')
+  ) {
     throw new Error('Partial OCR result is already a resumed run')
   }
   if (coverage.failed.length === 0) {
@@ -2834,7 +2855,6 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
     'complete',
     'Resumed OCR result'
   )
-  validateOCRResult(resumedResult)
   if (
     resumed.sessionId === resumePlan.sessionId ||
     resumedResult.resume?.resumed_from !== resumePlan.sessionId ||
@@ -2842,6 +2862,7 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
   ) {
     throw new Error('Resumed OCR result has incorrect parent lineage')
   }
+  validateOCRResult(resumedResult)
   if (
     !isDeepStrictEqual(
       resumed.manifest.repository,

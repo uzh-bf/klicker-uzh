@@ -2448,6 +2448,40 @@ test('combines complete OCR results for per-layer attestation ranges', () => {
   )
 })
 
+test('rejects forged combined schemas as raw range inputs', () => {
+  const forgedCombined = {
+    schema_version: 'final-ai-stack-combined-ocr/v1',
+    comments: [],
+    finish_reason: 'stop',
+    llm: { model: FINAL_STACK_REVIEW_MODEL },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      terminal_state: 'complete',
+    },
+    status: 'complete',
+    summary: {
+      comments: 0,
+      coverage: 'complete',
+      elapsed: 'forged',
+      files_reviewed: 1,
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+    },
+    warnings: [],
+  }
+
+  assert.throws(
+    () => combineOCRResults([forgedCombined], [1]),
+    /safe session ID/
+  )
+
+  const generated = combineOCRResults([completeOCRResult()], [1])
+  assert.equal(generated.schema_version, 'final-ai-stack-combined-ocr/v1')
+  assert.equal(generated.summary.coverage, 'complete')
+  assert.equal(generated.comments.length, 0)
+})
+
 test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
   const parentId = '11111111-1111-4111-8111-111111111111'
   const resumedId = '22222222-2222-4222-8222-222222222222'

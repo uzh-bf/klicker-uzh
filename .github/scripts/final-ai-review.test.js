@@ -876,6 +876,19 @@ test('rejects malformed or already-resumed partial OCR sessions', () => {
       ),
     /already a resumed run/
   )
+  for (const parent_run_id of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          {
+            ...parent,
+            manifest: { ...parent.manifest, parent_run_id },
+          },
+          750_000
+        ),
+      /already a resumed run/
+    )
+  }
   assert.throws(
     () =>
       planOCRResume(
@@ -1006,6 +1019,92 @@ test('requires the configured OCR model in every producer receipt', () => {
         },
       }),
     /session or manifest identity/
+  )
+})
+
+test('requires complete resume lineage and coverage counts', () => {
+  const firstAttempt = completeReviewResult()
+  assert.equal(validateOCRResult(firstAttempt), firstAttempt)
+
+  const firstItem = firstAttempt.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          coverage: {
+            ...firstAttempt.manifest.coverage,
+            completed: [],
+            reused: [firstItem],
+          },
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          parent_run_id: firstAttempt.session_id,
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        resume: {
+          resumed_from: firstAttempt.session_id,
+          reused_files: 0,
+          rerun_files: 1,
+        },
+      }),
+    /invalid resume envelope/
+  )
+
+  const resumed = completedResumeResult()
+  assert.equal(validateOCRResult(resumed), resumed)
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        manifest: {
+          ...resumed.manifest,
+          parent_run_id: '44444444-4444-4444-8444-444444444444',
+        },
+      }),
+    /invalid resume envelope/
+  )
+  for (const parentId of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        validateOCRResult({
+          ...resumed,
+          resume: { ...resumed.resume, resumed_from: parentId },
+          manifest: { ...resumed.manifest, parent_run_id: parentId },
+        }),
+      /invalid resume envelope/
+    )
+  }
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, reused_files: 0 },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, rerun_files: 0 },
+      }),
+    /invalid resume envelope/
   )
 })
 

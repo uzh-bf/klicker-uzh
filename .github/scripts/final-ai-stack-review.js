@@ -2299,18 +2299,12 @@ function validateUsage(usage, label) {
   }
 }
 
-function validateCumulativeOCRResult(result, knownPaths = null) {
-  if (result?.schema_version !== STACK_COMBINED_OCR_SCHEMA) {
-    validateProducerOCRResult(result)
-  }
+function validateStackOCRResult(result, knownPaths = null) {
   if (
     result?.status !== 'complete' ||
     result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
     result.manifest.terminal_state !== 'complete' ||
     result.llm?.model !== FINAL_STACK_REVIEW_MODEL ||
-    (result.schema_version === STACK_COMBINED_OCR_SCHEMA &&
-      (result.finish_reason !== 'stop' ||
-        result.summary?.coverage !== 'complete')) ||
     !Array.isArray(result.comments) ||
     result.summary?.budget_exceeded === true ||
     (Array.isArray(result.warnings) && result.warnings.length > 0) ||
@@ -2330,6 +2324,9 @@ function validateCumulativeOCRResult(result, knownPaths = null) {
   ) {
     throw new Error('Cumulative OCR result has incomplete summary counters')
   }
+  const findings = result.comments.map((comment, index) =>
+    validateFinding(comment, index)
+  )
   const usage = validateUsage(
     {
       total_tokens: summary.total_tokens,
@@ -2339,8 +2336,7 @@ function validateCumulativeOCRResult(result, knownPaths = null) {
     'Cumulative OCR result'
   )
   if (knownPaths) {
-    result.comments.forEach((comment, index) => {
-      const finding = validateFinding(comment, index)
+    findings.forEach((finding, index) => {
       if (!knownPaths.has(finding.filePath)) {
         throw new Error(
           `Cumulative OCR finding ${index + 1} is outside the stack`
@@ -2349,6 +2345,25 @@ function validateCumulativeOCRResult(result, knownPaths = null) {
     })
   }
   return { comments: result.comments, summary, usage }
+}
+
+function validateProducerOCRResultForStack(result, knownPaths = null) {
+  validateProducerOCRResult(result)
+  return validateStackOCRResult(result, knownPaths)
+}
+
+function validateCombinedOCRResult(result, knownPaths = null) {
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    Array.isArray(result) ||
+    result.schema_version !== STACK_COMBINED_OCR_SCHEMA ||
+    result.finish_reason !== 'stop' ||
+    result.summary?.coverage !== 'complete'
+  ) {
+    throw new Error('Generated cumulative OCR result is incomplete')
+  }
+  return validateStackOCRResult(result, knownPaths)
 }
 
 function combineOCRResults(results, layerNumbers = null) {
@@ -2366,7 +2381,9 @@ function combineOCRResults(results, layerNumbers = null) {
   ) {
     throw new Error('OCR layer provenance is incomplete')
   }
-  const validated = results.map((result) => validateCumulativeOCRResult(result))
+  const validated = results.map((result) =>
+    validateProducerOCRResultForStack(result)
+  )
   const comments = validated.flatMap(({ comments: items }, resultIndex) =>
     items.map((item) =>
       layerNumbers === null
@@ -2606,7 +2623,10 @@ function renderStackReview({
   workflowSha,
   workflowRunId,
 }) {
-  const code = validateCumulativeOCRResult(codeResult)
+  const code =
+    mode === 'incremental'
+      ? validateCombinedOCRResult(codeResult)
+      : validateProducerOCRResultForStack(codeResult)
   const manifest = manifestBundle.manifest
   const manifestDigest =
     manifestBundle.manifest_digest ?? manifestBundle.manifestDigest
@@ -2910,7 +2930,10 @@ function topologyCodeSummary(
   reviewRanges = []
 ) {
   const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
-  const code = validateCumulativeOCRResult(codeResult, knownPaths)
+  const code =
+    mode === 'incremental'
+      ? validateCombinedOCRResult(codeResult, knownPaths)
+      : validateProducerOCRResultForStack(codeResult, knownPaths)
   const pathEntries = new Map(
     manifest.path_index.map((entry) => [entry.filename, entry])
   )
