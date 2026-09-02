@@ -558,6 +558,19 @@ to Catalyst and full-access lecturers; it does not expose account budget data.
 Submission never publishes automatically; the existing administrator approval
 remains a separate transition.
 
+Manage exposes draft preparation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
+limited to the lecturer's owned, non-archived courses, and the newly created
+chatbot is selected immediately. The selected course is then read-only. Name,
+description, and model settings follow the metadata lifecycle matrix above;
+the disclaimer title and introduction are editable only for `DRAFT` and
+`REJECTED` chatbots. `ContentInput` keeps its full toolbar by default and uses
+the `basic` preset for disclaimer introductions, retaining simple formatting
+while omitting media, video, math, code, and quote controls. The lecturer
+preview renders the fixed `chat.disclaimer.*` sections without participant
+actions, and its Slate editor remounts when either the chatbot or current
+disclaimer ID changes so a selection change cannot retain stale text.
+
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where

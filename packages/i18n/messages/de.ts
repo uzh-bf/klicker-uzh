@@ -746,6 +746,8 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
+      undo: 'Letzte Formatierungsänderung rückgängig machen.',
+      redo: 'Letzte Formatierungsänderung wiederholen.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -3792,7 +3794,65 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbots: 'Chatbots',
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
+      createChatbot: 'Chatbot erstellen',
+      createChatbotDescription:
+        'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
+      chatbotName: 'Name',
+      chatbotDescription: 'Beschreibung',
+      chatbotCourse: 'Kurs',
+      chatbotCourseRequired: 'Bitte wählen Sie einen Kurs aus.',
+      chatbotNoOwnedCourses:
+        'Sie müssen mindestens einen Kurs besitzen, bevor Sie einen Chatbot erstellen können.',
+      chatbotNameRequired: 'Bitte geben Sie einen Chatbot-Namen ein.',
+      chatbotCreateError:
+        'Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      chatbotErrorNotEditable:
+        'Dieser Chatbot kann nicht mehr bearbeitet werden.',
+      chatbotErrorEditConflict:
+        'Dieser Chatbot wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorDisclaimerConflict:
+        'Der Disclaimer wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorBadUserInput:
+        'Bitte prüfen Sie die Chatbot-Angaben und versuchen Sie es erneut.',
+      chatbotErrorForbidden:
+        'Sie haben keine Berechtigung, diesen Chatbot zu ändern.',
       chatbotDetails: 'Chatbot-Details',
+      chatbotMetadata: 'Chatbot-Metadaten',
+      chatbotCourseReadonly:
+        'Der Kurs kann nach der Erstellung nicht geändert werden.',
+      saveChatbotMetadata: 'Metadaten speichern',
+      chatbotMetadataSaveSuccess: 'Chatbot-Metadaten gespeichert.',
+      chatbotMetadataSaveError:
+        'Die Chatbot-Metadaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotMetadataReadonly:
+        'Die Metadaten können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
+      chatbotDisclaimerReadonly:
+        'Der Disclaimer kann nach der Veröffentlichung, während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerTitle: 'Disclaimer-Titel',
+      chatbotDisclaimerTitleRequired:
+        'Bitte geben Sie einen Disclaimer-Titel ein.',
+      chatbotDisclaimerTitleTooLong:
+        'Der Disclaimer-Titel darf höchstens 160 Zeichen enthalten.',
+      chatbotDisclaimerIntro: 'Disclaimer-Einleitung',
+      chatbotDisclaimerIntroRequired:
+        'Bitte geben Sie eine Disclaimer-Einleitung ein.',
+      chatbotDisclaimerIntroTooLong:
+        'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+      saveChatbotDisclaimer: 'Disclaimer speichern',
+      chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
+      chatbotDisclaimerSaveError:
+        'Der Chatbot-Disclaimer konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotDisclaimerPreview: 'Vorschau des Teilnehmer-Disclaimers',
+      chatbotDisclaimerPreviewDescription:
+        'Diese Vorschau enthält den Plattformtext, den Teilnehmende sehen werden.',
+      chatbotDisclaimerTitlePlaceholder: 'Titel Ihres Disclaimers',
+      chatbotDisclaimerIntroPlaceholder:
+        'Fügen Sie hier eine Einleitung für die Teilnehmenden hinzu.',
+      chatbotModelSettingsReadonly:
+        'Die Modelleinstellungen können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       overview: 'Überblick',
       chatbotId: 'Chatbot-ID',
       avatarUrl: 'Avatar-URL',
