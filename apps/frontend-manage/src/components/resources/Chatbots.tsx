@@ -1,3 +1,4 @@
+import type { ParsedUrlQuery } from 'node:querystring'
 import { useQuery } from '@apollo/client'
 import {
   type Chatbot,
@@ -7,18 +8,34 @@ import {
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { Button, H2, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ChatbotCreateModal from './chatbots/ChatbotCreateModal'
 import ChatbotDetails from './chatbots/ChatbotDetails'
 import ChatbotList from './chatbots/ChatbotList'
+import { getChatbotStatusTranslationKey } from './chatbots/chatbotStatus'
+import {
+  type ChatbotNavigationState,
+  type ChatbotSetupStep,
+  type ChatbotWorkspaceState,
+  type ChatbotWorkspaceView,
+  normalizeWorkspaceState,
+} from './chatbots/chatbotWorkspace'
+import useChatbotNavigationGuard from './chatbots/useChatbotNavigationGuard'
+
+const cleanNavigationState: ChatbotNavigationState = {
+  dirty: false,
+  pending: false,
+}
 
 function Chatbots() {
   const t = useTranslations()
   const router = useRouter()
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [navigationState, setNavigationState] =
+    useState<ChatbotNavigationState>(cleanNavigationState)
   const { data, loading } = useQuery(GetChatbotsInfoDocument, {
     fetchPolicy: 'network-only',
   })
@@ -48,48 +65,221 @@ function Chatbots() {
       : undefined
   const selectedChatbot =
     chatbots.find((chatbot) => chatbot.id === selectedId) ?? chatbots[0]
+  const requestedView =
+    typeof router.query?.view === 'string' ? router.query.view : undefined
+  const requestedStep =
+    typeof router.query?.step === 'string' ? router.query.step : undefined
+  const workspaceState = useMemo<ChatbotWorkspaceState>(
+    () =>
+      selectedChatbot
+        ? normalizeWorkspaceState(selectedChatbot, requestedView, requestedStep)
+        : { view: 'overview' },
+    [requestedStep, requestedView, selectedChatbot]
+  )
   const ownedCourses = (courseData?.userCourses ?? []).filter(
     (course) => course.isOwner && !course.isArchived
   )
 
-  const selectChatbot = (chatbotId: string) => {
-    void router.push(
-      {
-        pathname: router.pathname,
-        query: { ...router.query, chatbotId },
-      },
-      undefined,
-      { shallow: true }
+  const { confirmNavigation, runInternalNavigation, runNavigation } =
+    useChatbotNavigationGuard({
+      router,
+      state: navigationState,
+      discardMessage: t('manage.resources.chatbotDiscardChangesConfirmation'),
+      pendingMessage: t('manage.resources.chatbotNavigationPending'),
+    })
+
+  const buildWorkspaceQuery = useCallback(
+    (chatbotId: string, state: ChatbotWorkspaceState) => {
+      const query: ParsedUrlQuery = {
+        ...router.query,
+        chatbotId,
+        view: state.view,
+      }
+      if (state.step) {
+        query.step = state.step
+      } else {
+        delete query.step
+      }
+      return query
+    },
+    [router.query]
+  )
+
+  useEffect(() => {
+    if (!router.isReady || loading || !selectedChatbot) return
+
+    const queryIsCanonical =
+      selectedId === selectedChatbot.id &&
+      requestedView === workspaceState.view &&
+      requestedStep === workspaceState.step
+    if (queryIsCanonical) return
+
+    runInternalNavigation(() =>
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: buildWorkspaceQuery(selectedChatbot.id, workspaceState),
+        },
+        undefined,
+        { shallow: true }
+      )
     )
+  }, [
+    loading,
+    buildWorkspaceQuery,
+    requestedStep,
+    requestedView,
+    router,
+    router.isReady,
+    runInternalNavigation,
+    selectedChatbot,
+    selectedId,
+    workspaceState,
+  ])
+
+  const selectChatbot = (chatbotId: string, internal = false) => {
+    if (chatbotId === selectedChatbot?.id) return
+    const chatbot = chatbots.find((item) => item.id === chatbotId)
+    if (!chatbot) return
+    const nextState = normalizeWorkspaceState(chatbot, undefined, undefined)
+    const navigate = () => {
+      setNavigationState(cleanNavigationState)
+      return router.push(
+        {
+          pathname: router.pathname,
+          query: buildWorkspaceQuery(chatbotId, nextState),
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+    if (internal) {
+      runInternalNavigation(navigate)
+    } else {
+      runNavigation(navigate)
+    }
+  }
+
+  const navigateWorkspace = (
+    view: ChatbotWorkspaceView,
+    step?: ChatbotSetupStep,
+    internal = false
+  ) => {
+    if (!selectedChatbot) return
+    if (
+      view === workspaceState.view &&
+      (view !== 'setup' || step === workspaceState.step)
+    ) {
+      return
+    }
+    const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
+    const navigate = () => {
+      setNavigationState(cleanNavigationState)
+      return router.push(
+        {
+          pathname: router.pathname,
+          query: buildWorkspaceQuery(selectedChatbot.id, nextState),
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+    if (internal) {
+      runInternalNavigation(navigate)
+    } else {
+      runNavigation(navigate)
+    }
   }
 
   const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
 
+  const selectCreatedChatbot = (chatbotId: string) => {
+    runInternalNavigation(() => {
+      setNavigationState(cleanNavigationState)
+      return router.push(
+        {
+          pathname: router.pathname,
+          query: buildWorkspaceQuery(chatbotId, {
+            view: 'setup',
+            step: 'disclaimer',
+          }),
+        },
+        undefined,
+        { shallow: true }
+      )
+    })
+  }
+
+  const openCreateModal = () => {
+    if (!confirmNavigation()) return
+    setCreateModalOpen(true)
+  }
+
   return (
     <div className="h-full w-full">
       <H2>{t('manage.resources.chatbots')}</H2>
-      <div className="mt-6 flex flex-col lg:flex-row-reverse">
-        <div className="lg:w-1/2 lg:border-l lg:pl-4">
+      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white lg:flex lg:min-h-[42rem]">
+        <div className="border-b border-gray-200 p-4 lg:hidden">
+          <div className="flex items-end gap-2">
+            <label
+              htmlFor="chatbot-mobile-selector"
+              className="min-w-0 flex-1 text-sm font-medium text-gray-700"
+            >
+              <span className="mb-1 block">
+                {t('manage.resources.chatbotMobileSelector')}
+              </span>
+              <Select
+                id="chatbot-mobile-selector"
+                items={chatbots.map((chatbot) => ({
+                  value: chatbot.id,
+                  label: `${chatbot.name} · ${t(getChatbotStatusTranslationKey(chatbot.status))}`,
+                  data: { cy: `chatbot-mobile-selector-option-${chatbot.id}` },
+                }))}
+                value={selectedChatbot?.id ?? ''}
+                onChange={(value) => selectChatbot(value)}
+                className={{
+                  root: 'w-full',
+                  trigger: 'h-10 w-full text-sm text-gray-900',
+                }}
+                data={{ cy: 'chatbot-mobile-selector' }}
+              />
+            </label>
+            <Button
+              primary
+              onClick={openCreateModal}
+              data={{ cy: 'create-chatbot-mobile' }}
+            >
+              <Button.Label>
+                {t('manage.resources.createChatbotShort')}
+              </Button.Label>
+            </Button>
+          </div>
+        </div>
+        <aside className="hidden w-80 shrink-0 border-r border-gray-200 bg-gray-50 p-4 lg:block">
+          <ChatbotList
+            chatbots={chatbots}
+            loading={loading}
+            selectedId={selectedChatbot?.id}
+            onSelect={handleSelect}
+            onCreate={openCreateModal}
+          />
+        </aside>
+        <main className="min-w-0 flex-1 p-4 lg:p-6">
           <ChatbotDetails
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}
             loading={loading || modelRegistryLoading}
+            view={workspaceState.view}
+            step={workspaceState.step}
+            onNavigate={navigateWorkspace}
+            onNavigationStateChange={setNavigationState}
             publishingAuthorized={
               publishingCapabilityData?.getChatbotPublishingCapability ?? false
             }
             publishingAuthorizationLoading={publishingCapabilityLoading}
             publishingAuthorizationError={Boolean(publishingCapabilityError)}
           />
-        </div>
-        <div className="lg:w-1/2 lg:pr-4">
-          <ChatbotList
-            chatbots={chatbots}
-            loading={loading}
-            selectedId={selectedChatbot?.id}
-            onSelect={handleSelect}
-            onCreate={() => setCreateModalOpen(true)}
-          />
-        </div>
+        </main>
       </div>
       {createModalOpen ? (
         <ChatbotCreateModal
@@ -97,7 +287,7 @@ function Chatbots() {
           onClose={() => setCreateModalOpen(false)}
           onCreated={(chatbotId) => {
             setCreateModalOpen(false)
-            selectChatbot(chatbotId)
+            selectCreatedChatbot(chatbotId)
           }}
         />
       ) : null}

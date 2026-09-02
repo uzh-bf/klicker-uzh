@@ -15,15 +15,19 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import type { ChatbotNavigationState } from './chatbotWorkspace'
 
 type ChatbotPublicationRequestProps = {
   chatbot: Chatbot
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  setupDirty?: boolean
+  setupPending?: boolean
+  onNavigationStateChange?: (state: ChatbotNavigationState) => void
 }
 
 type PublicationFormValues = {
@@ -165,6 +169,9 @@ function ChatbotPublicationRequest({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  setupDirty = false,
+  setupPending = false,
+  onNavigationStateChange,
 }: ChatbotPublicationRequestProps) {
   const t = useTranslations()
   const [requestChatbotPublication, { loading: requestLoading }] = useMutation(
@@ -187,7 +194,15 @@ function ChatbotPublicationRequest({
     hasDisclaimer &&
     publishingAuthorized &&
     !publishingAuthorizationLoading &&
-    !publishingAuthorizationError
+    !publishingAuthorizationError &&
+    !setupDirty &&
+    !setupPending
+
+  useEffect(() => {
+    if (!editable) {
+      onNavigationStateChange?.({ dirty: false, pending: false })
+    }
+  }, [editable, onNavigationStateChange])
 
   if (!editable) {
     return <ChatbotPublicationReadOnly chatbot={chatbot} />
@@ -258,8 +273,15 @@ function ChatbotPublicationRequest({
         }
       }}
     >
-      {({ isSubmitting, isValid }) => (
+      {({ dirty, isSubmitting, isValid }) => (
         <Form className="space-y-4" data-cy="chatbot-publication-request">
+          {onNavigationStateChange ? (
+            <PublicationNavigationStateReporter
+              dirty={dirty}
+              pending={isSubmitting || requestLoading}
+              onChange={onNavigationStateChange}
+            />
+          ) : null}
           <div>
             <H4>{t('manage.resources.chatbotPublication')}</H4>
             <p className="mt-1 text-sm text-gray-600">
@@ -286,6 +308,12 @@ function ChatbotPublicationRequest({
           {!hasDisclaimer ? (
             <UserNotification type="warning">
               {t('manage.resources.chatbotPublicationDisclaimerRequired')}
+            </UserNotification>
+          ) : null}
+
+          {setupDirty || setupPending ? (
+            <UserNotification type="warning">
+              {t('manage.resources.chatbotPublicationUnsavedSetup')}
             </UserNotification>
           ) : null}
 
@@ -356,6 +384,24 @@ function ChatbotPublicationRequest({
       )}
     </Formik>
   )
+}
+
+function PublicationNavigationStateReporter({
+  dirty,
+  pending,
+  onChange,
+}: ChatbotNavigationState & {
+  onChange: (state: ChatbotNavigationState) => void
+}) {
+  useEffect(() => {
+    onChange({ dirty, pending })
+  }, [dirty, onChange, pending])
+
+  useEffect(() => {
+    return () => onChange({ dirty: false, pending: false })
+  }, [onChange])
+
+  return null
 }
 
 export default ChatbotPublicationRequest
