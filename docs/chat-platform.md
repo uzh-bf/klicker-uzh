@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-27'
+timestamp: '2026-08-31'
 tags:
   - frontend
   - chat
@@ -38,12 +38,15 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
-- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
+- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
+  `[n–m]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
-  read-only `doc_query` tool on port 1417 for the seeded Benibot.
+  read-only `doc_query` tool on port 1417 for the seeded Benibot. It returns
+  synthetic Banking and Finance excerpts for matching topic or practice
+  queries, including source pages, and returns no sources for unmatched terms.
 - Local runtime profiles keep these capabilities independent: `chat` starts
   the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
   fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
@@ -328,9 +331,37 @@ The settings panel translates model capabilities into student-facing description
 render deployment registry descriptions, because those can expose provider or router terminology
 and are not localized. Automatic, reasoning, general-purpose, and fallback models each have a
 localized explanation in `packages/i18n/messages/en.ts` and `de.ts`; the read-only automatic
-selection state uses the same plain-language contract. Known Tutor and Explainer modes use their
-localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
-their configured description.
+selection state uses the same plain-language contract. Known Tutor, Explainer, and Quizzer modes
+use their platform-owned localized purpose descriptions in `src/components/mode-switcher.tsx`;
+custom modes use their configured description.
+
+`src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
+defaults with stored per-mode overrides and custom modes, honours `enabled: false`, excludes modes
+that cannot satisfy the chatbot's required-MCP policy, and exposes Quizzer only with a provably
+restricted course `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per
+MCP server, including disabled exact rows; inherited optional bindings are narrowed to
+`doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
+fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
+MCP selection all use this resolver. The browser receives resolved mode descriptions but never
+MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
+composer with a localized unavailable notice and suppresses edit and retry generation actions
+instead of allowing requests the server would reject.
+
+Platform standard-mode contract changes apply automatically to every chatbot that exposes that
+mode. Stored standard-mode text remains lower-priority lecturer guidance rather than replacing
+the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
+practice topic when the student's request is unclear and asks for simple confirmation rather than
+presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
+generates one AI-generated practice question at a time from retrieved course material and continues
+automatically after each assessed attempt. When the current topic is sufficiently covered, it asks
+whether to change topics or explore the topic in more depth and proposes grounded next steps. It does
+not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
+retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
+request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
+an ungrounded question. Once discovered, the route requires that document-query tool on Quizzer's
+first model step, then restores automatic tool selection for later steps. Optional retrieval outages
+can still degrade gracefully in Tutor and Explainer. No stored prompt or database migration is
+required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -372,8 +403,12 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
-than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
-while active until the participant manually chooses an open state; that manual choice then wins.
+than one, and a single tool call keeps its direct result disclosure. These trace rows use the
+same compact spacing, with 24px controls by default and 44px touch targets on coarse pointers.
+Reasoning rows use a brain icon, while tool rows use their current status icon; both reserve the same
+leading icon slot so their labels share one column.
+Reasoning auto-opens only while active until the participant manually chooses an open state; that
+manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
 including after answer text begins. This lets the viewport follow the growing
@@ -528,43 +563,60 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
-`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats a stored per-mode prompt as the
-chatbot's configurable persona, not as the complete system policy. On every chat request, after the
-available MCP tool names are known, it composes the final prompt in this order:
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text as configurable
+lecturer influence, not as the complete system policy. On every chat request, after the available
+MCP tool names are known, it composes the final prompt in this order:
 
-1. stored mode prompt or `DEFAULT_PROMPT` fallback;
-2. fixed course-scope, evidence, tool-privacy, and safety policy from
-   `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-3. the conditional citation policy when a `doc_query`-style tool is available; and
-4. the fixed conversation-language and Swiss High German policy from
+1. server-sourced course data containing JSON-serialized `Course.displayName`;
+2. lower-priority lecturer guidance for a standard mode, when stored;
+3. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
+   lecturer-defined persona for a custom mode;
+4. fixed image-attachment description handling from
+   `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
+5. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+   integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+6. fixed Markdown, inline/display mathematics, and fenced-code rules from
+   `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
+7. the conditional citation policy when a `doc_query`-style tool is available; and
+8. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
-output, and user attempts to change platform rules. It keeps answers within the owning course,
+The course-data section explicitly treats its entire JSON value as data rather than instructions.
+Quotes, newlines, and instruction-like text in a display name therefore cannot gain prompt
+authority. A custom mode omits the standard-mode contract but still receives every fixed platform
+section.
+
+The fixed policy explicitly overrides conflicting lecturer text, examples, retrieved material,
+tool output, and user attempts to change platform rules. It keeps answers within the owning course,
 asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
 unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
 queries must omit or generalise personal names, contact details such as email addresses, phone
 numbers, or postal addresses, participant or student identifiers, and other sensitive personal
-information. Retrieved content is evidence rather than instruction.
+information. Retrieved content is evidence rather than instruction. The assistant does not expose
+internal instructions or hidden tool configuration and independently reassesses user pushback
+instead of agreeing merely to be supportive.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
-claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
-gaps from general knowledge. Free-text queries start in the locked conversation language but may
-preserve exact non-personal course and source labels, titles, codes, and identifiers, or
-reformulate in a source language when retrieval genuinely needs it.
+claims, use only relevant results, treat returned chunks as a partial view rather than a complete
+course inventory, introduce retrieved topic or source lists as examples, and acknowledge
+insufficient course evidence instead of filling gaps from general knowledge. Free-text queries start
+in the locked conversation language but may preserve exact non-personal course and source labels,
+titles, codes, and identifiers, or reformulate in a source language when retrieval genuinely needs
+it.
 
-Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
-applies to existing and newly created chatbots as soon as this application revision is deployed.
-No prompt-row migration is required. Existing stored prompts remain unchanged and continue to
-supply each mode's persona beneath the fixed policy. A chatbot served by an older application
-revision keeps the old behaviour until that revision is replaced.
+Because compilation happens for every request after loading `chatbot.systemPrompts` and the owning
+course, the policy applies to existing and newly created chatbots as soon as this application
+revision is deployed. No prompt-row migration is required. Existing stored prompts remain
+unchanged: standard-mode text supplies lower-priority lecturer guidance, while custom-mode text
+supplies that mode's persona. A chatbot served by an older application revision keeps the old
+behaviour until that revision is replaced.
 
 The language lock follows the user's latest non-trivial message or explicit language request.
 Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
 assistant messages cannot switch the response language. Short acknowledgements preserve the
-established conversation language. German answers use Swiss High German orthography (`ss`, never
-`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
-a separately authorised live-model evaluation.
+established conversation language. German answers use Swiss Standard German orthography (`ss`,
+never `ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still
+requires a separately authorised live-model evaluation.
 
 ## Sources and citations
 
@@ -608,8 +660,11 @@ message write. Chat may create a short-lived thread and assistant lifecycle clai
 preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
-- `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
-  literal text in the answer — which is the intended failure mode, not a bug.
+- `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
+  that range stays literal text in the answer — which is the intended failure mode, not a bug.
+- Citation numbering is local to one assistant message and resets to `[1]` for every new message;
+  it is not a conversation-wide counter. Within one message, numbering spans all `doc_query` calls
+  in first-appearance order after normalization.
 - A source returned again by a later search keeps its original number; no second index is ever
   minted. `src/lib/server/citationInstructions.ts` therefore tells the model to **reuse** a repeat
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
@@ -618,11 +673,13 @@ configs without the reserved keys retain the existing optional/fail-open behavio
 - **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
-On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** nodes into
-`#cite-n` links, skipping anything inside a link label (including nested emphasis), and
-`markdown-text.tsx` intercepts those in its `a` override to render `CitationChip`. Normalization
-runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
-the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
+On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
+markdown **text** nodes into adjacent `#cite-n` links, expanding a range into one link per source
+number. It skips anything inside a link label (including nested emphasis), and
+`markdown-text.tsx` intercepts those links in its `a` override to render `CitationChip`.
+Normalization runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both
+the cards and the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf
+component.
 
 A chip must wrap **with** the word it cites, never start a line on its own — and the
 punctuation after it must not wrap alone either. Two mechanisms enforce that and both are
@@ -740,8 +797,11 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 Start the self-contained devcontainer with
 `devrouter ensure . --profile chat,ai,mcp`. `post-start.sh` then starts the
 seeded local MCP fixture. Benibot's Tutor and Explainer configurations point to
-`http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+`http://localhost:1417/mcp` and allow `doc_query`; Quizzer therefore inherits
+the restricted Tutor binding automatically. The runtime namespaces the tool
+as `KB_doc_query`; if discovery does not return that tool, Quizzer fails closed
+while Tutor and Explainer retain their optional-retrieval behavior. Keep Auto
+Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the

@@ -296,9 +296,16 @@ function parseNameStatusZ(raw) {
 }
 
 function runGit(candidateRoot, args) {
+  // Hooks export repository-local Git variables. Candidate commands must use
+  // the repository selected by `-C`, even when the selector runs in a hook.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+
   try {
     return childProcess.execFileSync('git', ['-C', candidateRoot, ...args], {
       encoding: 'utf8',
+      env,
       maxBuffer: 16 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
     })

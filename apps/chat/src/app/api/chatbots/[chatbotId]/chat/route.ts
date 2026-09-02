@@ -1,5 +1,5 @@
-import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
@@ -9,6 +9,11 @@ import {
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
+} from '@/src/lib/server/effectiveChatModes'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -205,12 +210,6 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
-}
-
-function getSupportedChatModes(systemPrompts: unknown): Set<string> {
-  const configuredModes = asObject(systemPrompts)
-  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
-  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -652,11 +651,7 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
+    selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
@@ -684,7 +679,7 @@ export async function POST(
   const {
     messages,
     threadId,
-    selectedMode,
+    selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
@@ -712,7 +707,7 @@ export async function POST(
     threadId,
     assistantMessageId,
     selectedModel: parsed.selectedModel,
-    selectedMode,
+    selectedMode: requestedMode,
     messageCount: messages.length,
   })
 
@@ -721,8 +716,9 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch the chatbot with its enabled MCP configurations (its stored
-  // systemPrompts feed compileSystemPrompt once the tool set is known below)
+  // Fetch every MCP configuration so an explicitly disabled Quizzer row can
+  // block inheritance from the matching Tutor server. Only effective enabled
+  // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
 
@@ -730,10 +726,10 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        course: {
+          select: { displayName: true },
+        },
         mcpConfigurations: {
-          where: {
-            isEnabled: true,
-          },
           include: {
             mcpServer: true,
           },
@@ -752,9 +748,14 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
-  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
+  )
+  const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${selectedMode}` },
+      { error: `Unsupported chat mode: ${requestedMode}` },
       { status: 400 }
     )
   }
@@ -812,25 +813,10 @@ export async function POST(
     }
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
-  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
-    (config) => config.chatMode === selectedMode
+  const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations ?? [],
+    selectedMode
   )
-  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
-    return NextResponse.json(
-      {
-        error: 'Required MCP tool unavailable',
-        code: REQUIRED_MCP_UNAVAILABLE_CODE,
-      },
-      { status: 503 }
-    )
-  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -1042,17 +1028,34 @@ export async function POST(
     }
 
     const toolNames = Object.keys(mcpTools || {})
+    const quizzerDocQueryToolName =
+      selectedMode === 'quizzer'
+        ? toolNames.find(isDocQueryToolName)
+        : undefined
 
-    // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (course policy, conditional
-    // citations, then unconditional language policy — see compileSystemPrompt).
+    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
+    // Compile the full system prompt only after course metadata and effective
+    // tool names are known. The compiler owns the fixed authority order.
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      toolNames
+      {
+        courseDisplayName: chatbot.course.displayName,
+        toolNames,
+      }
     )
 
     // track partial content for cancelled streams
@@ -1515,6 +1518,17 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
+        prepareStep: quizzerDocQueryToolName
+          ? ({ stepNumber }) =>
+              stepNumber === 0
+                ? {
+                    toolChoice: {
+                      type: 'tool' as const,
+                      toolName: quizzerDocQueryToolName,
+                    },
+                  }
+                : {}
+          : undefined,
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 
