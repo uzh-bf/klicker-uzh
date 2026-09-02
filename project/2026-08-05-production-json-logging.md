@@ -1221,7 +1221,7 @@ request. This environment limitation is recorded for final stack verification.
 - Produces: request-scoped auth outcome records and an echoed request ID without
   logging auth profiles, identity data, redirects, cookies, or query values.
 
-- [ ] **Step 1: Check out layer 4 and add auth roots**
+- [x] **Step 1: Check out layer 4 and add auth roots**
 
 ```bash
 gh stack checkout feat/logging-auth-integrations
@@ -1232,7 +1232,7 @@ gh stack checkout feat/logging-auth-integrations
 `src/instrumentation.ts` logs `service.started` only when
 `process.env.NEXT_RUNTIME === 'nodejs'`. Add the workspace logging dependency.
 
-- [ ] **Step 2: Replace middleware diagnostics with safe outcome events**
+- [x] **Step 2: Replace middleware diagnostics with safe outcome events**
 
 At middleware entry, resolve IDs from headers and create an Edge child. Add a
 single helper that attaches `x-request-id` to every returned `NextResponse`.
@@ -1249,7 +1249,7 @@ Replace detailed URL/referer/search/cookie logs with the following allowlist:
 Do not log `request.url`, pathname query, referer, host, callback URL, redirect
 URL, cookie values, participant parameter, or serialized `NextRequest`.
 
-- [ ] **Step 3: Thread a Node child through NextAuth callbacks**
+- [x] **Step 3: Thread a Node child through NextAuth callbacks**
 
 In `[...nextauth].ts`, replace the ad hoc request ID with
 `resolveRequestContext` from incoming headers, set `x-request-id`, and create a
@@ -1270,7 +1270,7 @@ counts. Delete profile dumps, `sub`, email arrays, affiliation values,
 invitation email lists, raw errors from OIDC/NextAuth/Axios, callback URLs, and
 request URLs. Normalize third-party failures with `toSafeError`.
 
-- [ ] **Step 4: Verify privacy by source scan and production build**
+- [x] **Step 4: Verify privacy by source scan and production build**
 
 ```bash
 rg -n "console\.(log|info|warn|error|debug)" \
@@ -1313,7 +1313,7 @@ git commit -m "feat(logging): secure auth request logs"
 - Produces stable `lti` and `olat-api` services, safe Express completion
   records, and no launch token, public key, account identifier, or API key logs.
 
-- [ ] **Step 1: Replace LTI launch diagnostics**
+- [x] **Step 1: Replace LTI launch diagnostics**
 
 Create the `lti` root. Migrate startup, registration, launch, redirect, and
 failure logs to:
@@ -1329,7 +1329,7 @@ launch payloads, public key material, redirect URLs, database configuration, or
 raw ltijs errors. `/info` continues returning its existing response; logging it
 is unnecessary.
 
-- [ ] **Step 2: Add OLAT request completion and safe dependency events**
+- [x] **Step 2: Add OLAT request completion and safe dependency events**
 
 Create the `olat-api` root and an Express adapter equivalent to Task 7 with
 explicit route templates:
@@ -1347,7 +1347,7 @@ request owner and `dependency.read.failed` for the local activity-type file.
 Do not log API keys, provider account IDs, course IDs, response data, bodies, or
 raw file/client configuration.
 
-- [ ] **Step 3: Add an OLAT request-logging adapter test**
+- [x] **Step 3: Add an OLAT request-logging adapter test**
 
 With stubbed Express request/response objects and a capture destination, assert
 a successful request has one completion record with a parameterized route and
@@ -1356,7 +1356,7 @@ canary `fake-olat-key-logging-canary-20260805`. Keep the existing containerized
 integration test unchanged; the new test runs within its existing Vitest
 command.
 
-- [ ] **Step 4: Verify layer 4 and commit**
+- [x] **Step 4: Verify layer 4 and commit**
 
 ```bash
 pnpm install
@@ -1369,6 +1369,18 @@ pnpm run check:all
 git add apps/lti apps/olat-api pnpm-lock.yaml
 git commit -m "feat(logging): instrument LMS integrations"
 ```
+
+Execution note: Tasks 9-10 form the single layer-four work package committed as
+`46a139e1a`. The auth, LTI, and OLAT checks and production builds,
+repository-wide `check:all`, two OLAT ingress/privacy tests, production-console
+guard, lockfile review, and targeted OpenGrep scan with zero findings passed.
+The existing OLAT container suite did not reach its tests: after a temporary
+override avoided its conflicting host Postgres port, the bind-mount harness
+reinstalled Linux dependencies and failed while compiling the unrelated shared
+`util` package. Devrouter browser verification also remains unavailable because
+Docker's credential helper cancels the GHCR base-image request. Both checks are
+deferred to final stack verification; neither failure originated in the
+layer-four application paths.
 
 ### Task 11: Instrument chat route handlers
 

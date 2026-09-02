@@ -6,6 +6,8 @@ import {
   LECTURER_REDIRECT_COOKIE_NAME,
   STUDENT_REDIRECT_COOKIE_NAME,
 } from './lib/constants'
+import { edgeLogger } from './lib/edgeLogger'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 
 // Cookie maxAge is specified in seconds
 const REDIRECT_COOKIE_TTL_S = 10
@@ -58,6 +60,16 @@ function getHostFromHeaderUrl(h?: string | null): string | null {
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const requestContext = resolveRequestContext({
+    requestId: request.headers.get('x-request-id'),
+    correlationId: request.headers.get('x-correlation-id'),
+  })
+  const log = edgeLogger.child(requestContext)
+  const withRequestId = (response: NextResponse) => {
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return response
+  }
 
   // If the request is initiated from the PWA, redirect to the PWA login
   const referer = request.headers.get('referer')
@@ -119,7 +131,11 @@ export async function proxy(request: NextRequest) {
     (refererHost && PWA_HOSTS.includes(refererHost)) ||
     (redirectToHost && PWA_HOSTS.includes(redirectToHost))
   ) {
-    return NextResponse.redirect(pwaLoginUrl)
+    log.info(
+      { event: 'auth.redirect.selected', audience: 'participant' },
+      'Selected PWA login redirect'
+    )
+    return withRequestId(NextResponse.redirect(pwaLoginUrl))
   }
 
   // Handle root (lecturer login UI). If a redirectTo is provided, set cookie early.
@@ -132,7 +148,11 @@ export async function proxy(request: NextRequest) {
         ...commonCookieOpts,
         maxAge: REDIRECT_COOKIE_TTL_S,
       })
-      return response
+      log.info(
+        { event: 'auth.redirect_cookie.updated', audience: 'lecturer' },
+        'Updated redirect cookie'
+      )
+      return withRequestId(response)
     }
   }
 
@@ -144,7 +164,13 @@ export async function proxy(request: NextRequest) {
       'https://manage.klicker.uzh.ch'
 
     if (!isValidLecturerRedirectUrl(redirectTo)) {
-      return new NextResponse('Invalid redirect URL', { status: 400 })
+      log.warn(
+        { event: 'auth.redirect.rejected', audience: 'lecturer' },
+        'Rejected auth redirect'
+      )
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
     // Set/refresh cookie and show index login page (UI offers EduID or delegated)
@@ -156,7 +182,11 @@ export async function proxy(request: NextRequest) {
       ...commonCookieOpts,
       maxAge: REDIRECT_COOKIE_TTL_S,
     })
-    return response
+    log.info(
+      { event: 'auth.redirect_cookie.updated', audience: 'lecturer' },
+      'Updated redirect cookie'
+    )
+    return withRequestId(response)
   }
 
   // Handle /student route - render login page and set cookie early (belt-and-suspenders)
@@ -167,7 +197,13 @@ export async function proxy(request: NextRequest) {
       'https://assessment.klicker.uzh.ch'
 
     if (!isValidStudentRedirectUrl(redirectTo)) {
-      return new NextResponse('Invalid redirect URL', { status: 400 })
+      log.warn(
+        { event: 'auth.redirect.rejected', audience: 'participant' },
+        'Rejected auth redirect'
+      )
+      return withRequestId(
+        new NextResponse('Invalid redirect URL', { status: 400 })
+      )
     }
 
     // Set/refresh the redirect cookie so it's available on callback even if
@@ -178,7 +214,11 @@ export async function proxy(request: NextRequest) {
       ...commonCookieOpts,
       maxAge: REDIRECT_COOKIE_TTL_S,
     })
-    return response
+    log.info(
+      { event: 'auth.redirect_cookie.updated', audience: 'participant' },
+      'Updated redirect cookie'
+    )
+    return withRequestId(response)
   }
 
   // Process auth routes for context detection (stateless approach)
@@ -235,20 +275,24 @@ export async function proxy(request: NextRequest) {
           const resp = NextResponse.redirect(url)
           // Clear all redirect cookies on callback (scoped + legacy)
           clearAllRedirectCookies(resp)
-          return resp
+          log.info(
+            { event: 'auth.callback.normalized' },
+            'Normalized authentication callback'
+          )
+          return withRequestId(resp)
         }
 
         // Clear the cookies in any case on callback to avoid lingering state
         const passthrough = NextResponse.next()
         clearAllRedirectCookies(passthrough)
-        return passthrough
+        return withRequestId(passthrough)
       }
       // If generic cookie is not present, still clear any specific cookies
       const passthrough = NextResponse.next()
       if (studentRedirect || lecturerRedirect) {
         clearAllRedirectCookies(passthrough)
       }
-      return passthrough
+      return withRequestId(passthrough)
     }
 
     // Default passthrough for auth routes; avoid unnecessary URL rewrites
@@ -273,10 +317,10 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    return response
+    return withRequestId(response)
   }
 
-  return NextResponse.next()
+  return withRequestId(NextResponse.next())
 }
 
 export const config = {

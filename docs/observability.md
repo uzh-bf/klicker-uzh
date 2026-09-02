@@ -107,6 +107,21 @@ second, unowned record. Service-level recovery signals use stable events; normal
 validation failures remain return values and do not create log noise. Operator
 scripts under `packages/graphql/src/scripts/` keep their terminal output.
 
+Auth uses the same validated request context in both Next middleware and the
+NextAuth Node handler. Middleware logs only categorical audience, redirect, and
+cookie actions; NextAuth adds categorical sign-in, token, account, affiliation,
+and invitation outcomes. Responses echo `x-request-id`. Profiles, identities,
+URLs, referrers, query values, cookies, and raw provider errors are excluded.
+
+LTI records verified launch acceptance, target rejection/selection, platform
+registration, and lifecycle events without emitting the launch token, public
+key, user information, or redirect target. OLAT owns Express request records for
+an explicit route-template allowlist and suppresses `/health`; API keys,
+provider/course identifiers, bodies, response data, and raw dependency errors
+are excluded. Local configuration-file reads have separate
+`dependency.read_failed` events while the HTTP boundary owns
+`http.request.failed`.
+
 ## Privacy boundary
 
 Logging is allowlist-first. Do not log:
