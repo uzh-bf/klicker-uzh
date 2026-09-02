@@ -69,7 +69,7 @@ export default {
       progress: 'Step {current} of {total}',
       previous: 'Back',
       next: 'Next',
-      skip: 'Skip',
+      skip: 'Skip tour',
       done: 'Start chatting',
       modesTitle: 'Two ways to ask',
       modesBody:

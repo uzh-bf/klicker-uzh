@@ -72,7 +72,7 @@ export default {
       progress: 'Schritt {current} von {total}',
       previous: 'Zurück',
       next: 'Weiter',
-      skip: 'Überspringen',
+      skip: 'Tour überspringen',
       done: 'Chat starten',
       modesTitle: 'Zwei Arten zu fragen',
       modesBody:

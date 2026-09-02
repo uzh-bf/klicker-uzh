@@ -204,6 +204,7 @@ export function ChatOnboardingProvider({
       next: t('chat.onboarding.next'),
       previous: t('chat.onboarding.previous'),
       done: t('chat.onboarding.done'),
+      skip: t('chat.onboarding.skip'),
       // Driver.js fills its own counters into the rendered string, so the
       // markers travel through the translation as plain values.
       progress: t('chat.onboarding.progress', {
