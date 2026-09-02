@@ -401,5 +401,9 @@ planner then returned `DONE` with `Verdict: APPROVED`.
 - [x] Obtain the final `APPROVED` plan-hardening verdict.
 - [x] Commit the approved plan.
 - [x] Implement W1 — Promote the Practice Pool at the course entry point.
-- [ ] Verify and review the local exact head.
+- [x] Verify and review the local exact head. Focused PWA, Manage, Playwright,
+  Biome, Prettier, and browser checks passed; the integrated final reviewer
+  approved the package. The serial E2E run passed the changed one-quiz,
+  lecturer, and empty-state checks before an unrelated scheduled-status
+  assertion stopped the remaining serial tests.
 - [ ] Request separate authority for push and PR creation if desired.
