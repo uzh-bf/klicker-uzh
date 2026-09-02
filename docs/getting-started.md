@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-29'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -219,11 +219,11 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.
