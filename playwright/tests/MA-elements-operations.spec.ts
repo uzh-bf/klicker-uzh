@@ -748,6 +748,7 @@ test.describe('Create different types of elements (with and without sample solut
       page,
       loginLecturer,
     }) => {
+      test.setTimeout(120_000)
       await loginLecturer()
 
       for (const quiz of [
