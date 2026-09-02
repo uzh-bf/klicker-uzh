@@ -288,9 +288,11 @@ proof.
 - Doc-query source contract: the deployed Klicker doc-query overlays pin
   `v0.2.5-arm` in STG and `v0.3.0-arm` in PRD; both tags consume the same
   `RETRIEVAL_TOP_K`/`RETRIEVAL_RERANKER_TOP_K` env contract and serialize
-  full chunk content in documents mode with no trim, so the
-  20 × 65,535-character bound holds for the deployed versions. Newer source
-  (`ai-buddy` `dev@344a6800a`, `origin/main@748b5a2`) behaves identically.
+  full chunk content in documents mode with no trim, pass the rerank count
+  into the slicing reranker, and build tools from deployment-provided
+  configs, so the 20 × 65,535-character bound holds for the deployed
+  versions. Newer source (`ai-buddy` `dev@344a6800a`,
+  `origin/main@748b5a2`) behaves identically.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain operator-injected and never enter Git.
 - Infisical profiles `klicker-dev` and the separately approved judge profile:
