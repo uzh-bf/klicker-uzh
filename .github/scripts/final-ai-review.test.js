@@ -32,10 +32,12 @@ const {
   isFinalReviewCommand,
   isTrustedPermission,
   initializeFinalReview,
+  mergeOCRResumeResults,
   normalizeTitle,
   parseDispositionRecord,
   parseIndividualCleanEvidence,
   parseReviewMetadata,
+  planOCRResume,
   publishFinalReview,
   promotionBody,
   removeOCRConfig,
@@ -61,15 +63,37 @@ test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   assert.match(buildReviewBackground(title), /untrusted metadata/)
 })
 
-test('bounds individual and stack review token usage', () => {
+test('bounds individual and stack review retries, tokens, and runtime', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
 
-  assert.equal(source.match(/--max-tokens-budget 750000/g)?.length, 2)
-  assert.equal(source.match(/--max-tokens-budget 2000000/g)?.length, 1)
-  assert.equal(source.match(/--timeout 30/g)?.length, 3)
+  assert.equal(source.match(/--timeout 45/g)?.length, 1)
+  assert.equal(source.match(/--timeout 30/g)?.length, 1)
+  assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
+  assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
+  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 2000000/)
+  assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
+  assert.equal(
+    source.match(/steps:\n {6}- name: Record review job start/g)?.length,
+    2
+  )
+  assert.equal(
+    source.match(
+      /REVIEW_JOB_STARTED_AT: \$\{\{ steps\.job_start\.outputs\.epoch \}\}/g
+    )?.length,
+    2
+  )
+  assert.match(source, /now \+ 2760 > REVIEW_JOB_STARTED_AT \+ 4800/)
+  assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 4200/)
+  assert.equal(source.match(/timeout-minutes: 90/g)?.length, 2)
+  assert.equal(source.match(/RESUME_USED=true/g)?.length, 1)
+  assert.match(
+    source,
+    /Only one partial OCR result may be resumed per stack job/
+  )
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
@@ -545,7 +569,7 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
     2
   )
   assert.equal(source.match(/verify-openrouter-tools/g)?.length, 2)
-  assert.equal(source.match(/--effort low/g)?.length, 3)
+  assert.equal(source.match(/--effort low/g)?.length, 2)
   assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
   assert.doesNotMatch(source, /ocr llm test/)
   assert.doesNotMatch(source, /OCR_CONFIG_PATH/)
@@ -622,6 +646,264 @@ function completeReviewResult(comments = []) {
     },
   }
 }
+
+function partialResumeResult(overrides = {}) {
+  const sessionId = '11111111-1111-4111-8111-111111111111'
+  const completed = {
+    item_id: 'completed',
+    path: 'src/complete.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'failed',
+    path: 'src/timed-out.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+    reason: 'concurrent task timeout',
+  }
+  return {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 300,
+      input_tokens: 240,
+      output_tokens: 60,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: sessionId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
+      terminal_state: 'partial',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+    },
+    ...overrides,
+  }
+}
+
+function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
+  const sessionId = '22222222-2222-4222-8222-222222222222'
+  const completed = parent.manifest.coverage.selected[1]
+  const reused = parent.manifest.coverage.selected[0]
+  return {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 200,
+      input_tokens: 150,
+      output_tokens: 50,
+      elapsed: '12m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: sessionId,
+    resume: {
+      resumed_from: parent.session_id,
+      reused_files: 1,
+      rerun_files: 1,
+      previous_model: FINAL_REVIEW_MODEL,
+      current_model: FINAL_REVIEW_MODEL,
+    },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      parent_run_id: parent.manifest.run_id,
+      operation: 'review',
+      terminal_state: 'complete',
+      repository: { ...parent.manifest.repository },
+      input: { ...parent.manifest.input },
+      execution: { ...parent.manifest.execution },
+      coverage: {
+        selected: [reused, completed],
+        completed: [completed],
+        reused: [reused],
+        failed: [],
+        waived: [],
+      },
+    },
+    ...overrides,
+  }
+}
+
+test('plans one resume from a valid partial OCR session', () => {
+  assert.equal(planOCRResume(completeReviewResult(), 750_000), null)
+  assert.deepEqual(planOCRResume(partialResumeResult(), 750_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 749_700,
+  })
+})
+
+test('rejects malformed or already-resumed partial OCR sessions', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume({ ...parent, session_id: '../../unsafe-session' }, 750_000),
+    /safe session ID/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: { ...parent.manifest, run_id: 'different-run' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, resume: { resumed_from: 'older-run' } },
+        750_000
+      ),
+    /already a resumed run/
+  )
+})
+
+test('rejects every OCR budget-exhaustion signal before resuming', () => {
+  const parent = partialResumeResult()
+  const cases = [
+    {
+      ...parent,
+      summary: { ...parent.summary, budget_exceeded: true },
+    },
+    {
+      ...parent,
+      warnings: [
+        {
+          type: 'token_budget_reached',
+          file: 'src/timed-out.ts',
+          message: 'budget reached',
+        },
+      ],
+    },
+    {
+      ...parent,
+      manifest: {
+        ...parent.manifest,
+        coverage: {
+          ...parent.manifest.coverage,
+          failed: [
+            {
+              ...parent.manifest.coverage.failed[0],
+              classification: 'budget',
+            },
+          ],
+        },
+      },
+    },
+  ]
+  for (const result of cases) {
+    assert.throws(() => planOCRResume(result, 750_000), /token budget/)
+  }
+  assert.throws(
+    () => planOCRResume(parent, parent.summary.total_tokens),
+    /no token budget left/
+  )
+})
+
+test('merges only validated complete resume usage within the original ceiling', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+
+  assert.equal(merged.manifest, resumed.manifest)
+  assert.equal(merged.comments, resumed.comments)
+  assert.equal(merged.summary.files_reviewed, 2)
+  assert.equal(merged.summary.comments, 0)
+  assert.equal(merged.summary.elapsed, '12m0s')
+  assert.equal(merged.summary.input_tokens, 390)
+  assert.equal(merged.summary.output_tokens, 110)
+  assert.equal(merged.summary.total_tokens, 500)
+})
+
+test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        { ...resumed, resume: { ...resumed.resume, resumed_from: 'wrong' } },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          session_id: parent.session_id,
+          manifest: {
+            ...resumed.manifest,
+            run_id: parent.manifest.run_id,
+          },
+        },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            input: { ...resumed.manifest.input, resolved_head: '9'.repeat(40) },
+          },
+        },
+        750_000
+      ),
+    /changed its review identity/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          status: 'partial',
+          manifest: { ...resumed.manifest, terminal_state: 'partial' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () => mergeOCRResumeResults(parent, resumed, 400),
+    /original token budget/
+  )
+})
 
 function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
   return {

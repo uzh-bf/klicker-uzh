@@ -5,7 +5,10 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
-const { FINAL_REVIEW_MODEL } = require('./final-ai-review.js')
+const {
+  FINAL_REVIEW_MODEL,
+  mergeOCRResumeResults,
+} = require('./final-ai-review.js')
 const {
   FINAL_STACK_REVIEW_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
@@ -2406,6 +2409,103 @@ test('combines complete OCR results for per-layer attestation ranges', () => {
   assert.equal(combined.summary.files_reviewed, 6)
   assert.equal(combined.summary.total_tokens, 200)
   assert.deepEqual(combined.comments[0].stack_layer_numbers, [1])
+  assert.deepEqual(combined.warnings, [])
+})
+
+test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
+  const parentId = '11111111-1111-4111-8111-111111111111'
+  const resumedId = '22222222-2222-4222-8222-222222222222'
+  const completed = {
+    item_id: 'completed',
+    path: 'src/one.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'failed',
+    path: 'src/two.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+  }
+  const identity = {
+    repository: { identity_sha256: 'c'.repeat(64) },
+    input: {
+      mode: 'range',
+      resolved_base: 'd'.repeat(40),
+      resolved_head: 'e'.repeat(40),
+      source_artifact_sha256: 'f'.repeat(64),
+    },
+    execution: {
+      provider: 'openrouter',
+      model: FINAL_STACK_REVIEW_MODEL,
+      rule_config_sha256: '1'.repeat(64),
+    },
+  }
+  const parent = {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_STACK_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 60,
+      input_tokens: 45,
+      output_tokens: 15,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: parentId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: parentId,
+      operation: 'review',
+      terminal_state: 'partial',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+    },
+  }
+  const resumed = {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 40,
+      input_tokens: 30,
+      output_tokens: 10,
+      elapsed: '4m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: resumedId,
+    resume: { resumed_from: parentId, reused_files: 1, rerun_files: 1 },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: resumedId,
+      parent_run_id: parentId,
+      operation: 'review',
+      terminal_state: 'complete',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [failed],
+        reused: [completed],
+        failed: [],
+        waived: [],
+      },
+    },
+  }
+
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+  const combined = combineOCRResults([completeOCRResult([]), merged], [1, 2])
+  assert.equal(combined.status, 'complete')
+  assert.equal(combined.summary.files_reviewed, 5)
+  assert.equal(combined.summary.total_tokens, 200)
   assert.deepEqual(combined.warnings, [])
 })
 
