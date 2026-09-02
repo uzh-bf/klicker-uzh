@@ -255,6 +255,27 @@ prove runtime registration or a finite per-result input/tool-output bound.
   ceiling is source-verified as finite (20 reranked documents × the
   collection's 65,535-character `content` cap), but owner confirmation of
   the runtime binding remains outstanding.
+
+  ### Owner inventory checklist (values-free)
+
+  The FineCo runtime owner can close A1 — authorized FineCo binding and
+  finite response bound with three values-free checks that return only tool
+  names, counts, and versions, never tool payloads:
+
+  - Deployed doc-query: report the running image tag and confirm
+    `df_fineco_expert` appears in the server's `tools/list` for the STG
+    and PRD doc-query deployments.
+  - Chatbot inventory: for the FineCo catalog chatbot
+    `27c3f981-f4f6-4c03-9723-9cb495255bc1` (`catalog_expert_v1`), list
+    the model-visible tool names in one tutor session and one explainer
+    session; `EXPERT_df_fineco_expert` must appear in both.
+  - Bound confirmation: confirm the live config matches desired state
+    (`RETRIEVAL_RERANKER_TOP_K=20`, Cohere reranker) and that the tool
+    reads Milvus collection `df_fineco_v1` or the shared
+    `klicker_course_materials_v1`; both carry the verified
+    65,535-character `content` cap, so either reading keeps the
+    20 × 65,535-character ceiling finite.
+
 - AI infrastructure deployment source: `origin/main@08d82585` contains the
   `df_fineco_expert` tool config and includes it in the STG and PRD tool
   ConfigMaps. Both base ConfigMaps set `RETRIEVAL_TOP_K=60`,
