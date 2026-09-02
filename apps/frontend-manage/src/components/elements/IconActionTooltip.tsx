@@ -18,7 +18,7 @@ function IconActionTooltip({
       {children}
       <span
         role="tooltip"
-        className="bg-slate-700 pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs text-white opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+        className="bg-slate-700 pointer-events-none invisible absolute right-0 bottom-full z-30 mb-1.5 w-max max-w-64 rounded-md px-2 py-1 text-left text-xs whitespace-normal text-white opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
       >
         {label}
       </span>
