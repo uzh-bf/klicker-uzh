@@ -617,4 +617,44 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       })
     })
   })
+
+  describe('getChatbotsInfo', () => {
+    it('normalizes a retired allow-list for the owner without rewriting the row', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      const chatbot = await prisma.chatbot.create({
+        data: {
+          name: 'Legacy model chatbot',
+          courseId: course.id,
+          ownerId: userOneCtx.user.sub,
+          allowedModelIds: ['gpt-4.1-mini'],
+          allowedReasoningEffortsByModel: {
+            'gpt-4.1-mini': ['medium'],
+          },
+        },
+      })
+
+      const [info] = await getChatbotsInfo(userOneCtx)
+
+      expect(info).toMatchObject({
+        id: chatbot.id,
+        allowedModelIds: ['gpt-5.6-luna'],
+        allowedReasoningEffortsByModel: [],
+      })
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+          select: {
+            allowedModelIds: true,
+            allowedReasoningEffortsByModel: true,
+          },
+        })
+      ).resolves.toEqual({
+        allowedModelIds: ['gpt-4.1-mini'],
+        allowedReasoningEffortsByModel: {
+          'gpt-4.1-mini': ['medium'],
+        },
+      })
+    })
+  })
 })

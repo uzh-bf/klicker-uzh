@@ -14,6 +14,9 @@ data:
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
   CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: {{ .Values.chat.accountUsageEnforcementEnabled | default false | quote }}
+  {{- if .Values.chat.lifecycleWritersEnabled }}
+  CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
+  {{- end }}
   {{- if .Values.chat.modelRegistry }}
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}

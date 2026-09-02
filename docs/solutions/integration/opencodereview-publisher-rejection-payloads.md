@@ -53,18 +53,22 @@ runner, but no artifact survived for exact parser replay.
 
 ## Solution
 
-Upload only the JSON files already passed to a failed publisher. The individual
-job keeps `final-ai-review-result.json`
+Upload only the exact JSON inputs involved in the failed validation or
+publisher step. The individual job keeps its initial, resumed, or final result
+JSON as applicable
 ([check-ocr-final-review.yml](../../../.github/workflows/check-ocr-final-review.yml#L503)).
-The stack job keeps `final-ai-stack-code-result.json` and
-`final-ai-stack-topology-result.json`
+The stack job normally keeps `final-ai-stack-code-result.json` and the optional
+`final-ai-stack-topology-result.json`. An incremental validation or resume
+failure may instead retain the exact affected range result JSONs, while a
+combine failure retains every range result passed to that failed combine step
 ([check-ocr-final-review.yml](../../../.github/workflows/check-ocr-final-review.yml#L1015)).
 
-Both steps run only when their publisher step fails, require the expected file,
-and retain the artifact for one day. They upload no stderr, provider
-configuration, manifest, review-range directory, wildcard path, or runner
-workspace. Because the repository is public, treat the artifacts as public
-output and use only public pull-request inputs in this diagnostic path.
+These paths run only after the corresponding validation or publisher step
+fails, require the expected files, and retain the artifact for one day. They
+upload no stderr, provider configuration, manifest, review-range directory as
+a directory, unrelated wildcard input, or runner workspace. Because the
+repository is public, treat the artifacts as public output and use only public
+pull-request inputs in this diagnostic path.
 
 Download a rejected payload for offline parser diagnosis. Do not replay the
 review, publish feedback, or infer a clean result from the artifact without the

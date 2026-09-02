@@ -124,7 +124,7 @@ cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
-Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) verifies the participant JWT, checks the published chatbot, and confirms that a `Participation` row exists for its course. It covers the standard `{ courseId: true }` case — use it for new routes and fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Existence of a `Participation` authorizes access; `isActive` is the leaderboard opt-in and is never part of this guard ([Domain model](./domain-model.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
 ## Model registry and credits
 
@@ -159,12 +159,18 @@ with no history projects budget 0 / used 0. The Zurich month boundary
 (including DST) is derived deterministically in
 `packages/util/src/chatUsage.ts`.
 
-`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls the participant route's
-pre-provider budget rejection and defaults to `false`. While the switch is
-false, the route skips account authorization and budget-availability rejection,
-but turn lifecycle claims remain active and configured account usage is still
-recorded after a completed provider response. Enabling the switch is a separate
-operational cutover decision for a named environment and cohort.
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls only the participant route's
+pre-provider budget rejection and defaults to `false`. Turn lifecycle attempt
+tracking has an independent default-off switch,
+`CHAT_TURN_LIFECYCLE_WRITES_ENABLED` (`chat.lifecycleWritersEnabled`; see
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md)). The Helm template
+omits the runtime key while the writer gate is false, so an older chart cannot
+accidentally enable it after a newer application is rolled back. With the
+switch disabled, claims still create hidden markers with a null attempt token;
+complete-only readers keep those markers out of history. A configured account
+row is still recorded after a completed provider response even when neither
+switch is enabled. Enabling each switch is a separate operational cutover
+decision for a named environment and cohort.
 
 The lecturer-facing GraphQL API projects the effective account month through
 `getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
@@ -228,9 +234,10 @@ production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
-a direct comparison. The seeded Benibot fixture allow-lists all three of
-`auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
-strict model allow-list. Runtime fallback never bypasses that allow-list.
+a direct comparison. The seeded Benibot fixture allow-lists all three active
+options — `auto`, `gpt-5.6-luna` and `gpt-4.1` — explicitly, so it satisfies
+the strict model allow-list. The zero-credit safety fallback may use Luna even
+when that allow-list omits it.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
@@ -280,45 +287,62 @@ settlement details. Exhausting one class neither disables the other nor invokes
 fallback. With the default-off setting, the route skips this rejection while
 retaining lifecycle claims and post-completion accounting for configured usage.
 
-The client-supplied assistant message ID is the turn lifecycle key.
-`apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
-`IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
-or provider work. Concurrent and completed claims return the same generic
-`409`; collision checks verify the assistant role, thread, chatbot, and owner
-without revealing foreign scope. Failed attempts may be reclaimed with a new
-UUID, while callbacks from an older attempt cannot complete or charge the
-turn. Claims have no timeout or automatic lease stealing.
+The client-supplied assistant message ID remains the lifecycle row key, and the
+user message ID scopes a normal turn. `apps/chat/src/services/accountUsage.ts:claimChatTurn`
+validates the thread, chatbot, and owner. In R2, when lifecycle writers are
+enabled, it inserts an `IN_PROGRESS` assistant placeholder with a per-attempt
+UUID before MCP, image, or provider work. In R1, when lifecycle writers are
+off, it inserts the same hidden placeholder with a `null` attempt ID.
+Complete-only history reads keep either placeholder away from participants, and
+failed or empty R1 attempts delete it. A PostgreSQL transaction advisory lock
+keyed by thread and parent serializes normal claims, so concurrent requests for
+one user turn cannot create multiple provider attempts. Explicit regeneration
+sends an opt-in flag and may create a sibling answer. Failed R2 attempts may be
+reclaimed with a new UUID. Both modes reject duplicate or in-progress keys with
+the generic `409` behavior described below.
 
-`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
-matching attempt to `COMPLETED`, stores the terminal assistant result,
-increments the owner/class/month counter by the same rounded six-decimal value,
-and updates the thread timestamp in one `ReadCommitted` transaction. A normal
-finish and an abort use this finalizer once, and a late `onEnd` after an abort
-is ignored. Missing reliable main-stream usage still closes the message key
-with `creditsUsed = null` and no account charge. History reads hide
+`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` is the single
+charging boundary. In R2, it updates the matching `IN_PROGRESS` or `FAILED`
+attempt to `COMPLETED`. In R1, it updates the matching hidden `IN_PROGRESS`
+placeholder to `COMPLETED` under the same thread-plus-parent lock. In either
+mode, one non-empty completed answer also increments the owner/class/month
+counter by its rounded six-decimal credit value and updates the thread timestamp
+in one `ReadCommitted` transaction. In R1, a successful empty completion deletes
+the hidden marker and is not charged; in R2, it closes the existing placeholder
+as an empty completed message and is not charged. Duplicate completion returns
+the stored result without charging again; a foreign or mismatched key conflicts.
+A normal finish and an abort use this finalizer once, and a late `onEnd` after an
+abort is ignored. Missing reliable main-stream usage still closes the message
+key with `creditsUsed = null` and no account charge. History reads hide
 `IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
 reservation, so the bounded final-turn and concurrent overrun accepted by
-[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
-request then fails its live check.
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the
+next request then fails its live check.
 
 The existing `ChatUsageCredits` balance remains a separate participant
-allowance. Its decrement runs after account finalization and is not part of the
-account transaction. At zero participant credits, fallback must intersect the
-selected usage class, `fallback: true`, and the chatbot allow-list. The current
-registry has a `BASE` fallback only, so a zero-credit `ADVANCED` turn is denied
-instead of switching to `BASE`. Automatic model selection retains Auto and is
-therefore attributed to `ADVANCED`; the credits response keeps allow-listed
-model capabilities visible independently of the participant balance. Strict
-reservations, immutable ledgers, automated refunds, invoices, per-chatbot
-allocation, and participant-credit migration remain deferred.
+allowance. Its decrement is part of the `finalizeChatTurn` transaction together
+with the completed message and account usage, so a failed debit rolls back the
+other two writes and a duplicate completion cannot debit twice. At zero
+participant credits, the route switches from any effective model to GPT-5.6
+Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
+therefore charged only through its `BASE` account lane and the participant
+allowance. This fallback intentionally does not require the chatbot allow-list
+to contain Luna. Automatic selection otherwise retains Auto and is attributed
+to `ADVANCED`; the credits response keeps allow-listed model capabilities
+visible independently of the participant balance. Strict reservations,
+immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
+participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` (default
-  `gpt-5.6-luna`) only when that model is marked as fallback, shares the
-  selected usage class, and appears in the chatbot's explicit
-  `allowedModelIds`. It stops when no allowed fallback exists in that class.
-  Audit configured chatbot allow-lists with
-  `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
+- The zero-credit participant path uses GPT-5.6 Luna as the base-lane fallback
+  even when the chatbot allow-list excludes it. The registry must contain a
+  `fallback` GPT-5.6 Luna `BASE` entry; the route denies the turn only if that
+  entry is absent. Retired model IDs in persisted allow-lists are ignored, and
+  an automatic chatbot with no current allowed model resolves to Luna. The
+  chart still emits `CHAT_FALLBACK_MODEL_ID` for mixed-version compatibility
+  and the one-off maintenance script, but the current Chat runtime ignores it.
+  `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
+  safety fallback is always Luna.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
