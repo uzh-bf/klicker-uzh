@@ -475,3 +475,26 @@ Return to the user if:
       with no actionable findings after verifying all three corrections. The
       final production build completes with 23 of 23 tasks successful. This
       plan-only completion receipt does not change the reviewed implementation.
+- [x] The user authorized one bottom-up `v3` integration pass for the complete
+      four-PR authoring stack. Layer 1 merged `v3` at
+      `f94e59d2fbbe11eef1d1da10f9e522d926f04d18`, and that updated ancestry was
+      propagated through Layers 2, 3, and 4. The top merge commit is
+      `92745b05fabda3db380c4dd55e6a9904715081fc`. The only conflicts were the
+      Playwright runtime guidance in
+      `.agents/skills/klicker-playwright-e2e/SKILL.md` and
+      `docs/ci-and-deployment.md`; both retain current `v3` routing while
+      documenting the existing trusted `full` to explicit `playwright`
+      profile behavior. Excluding those two files, the top-layer delta has the
+      same stable patch ID before and after integration. The focused runtime
+      suite passes all 11 tests, and the merge pre-commit passes gitleaks,
+      `check:all`, the 57 Playwright CI/runtime tests, all 7 lint tasks, and all
+      25 type-check tasks. The configured final-reviewer transport failed with
+      `unreadable_encrypted_agent_task`; the trusted native Sol xhigh
+      continuity reviewer approved exact integrated head `92745b05fa` with no
+      actionable code, security, architecture, business-logic, or integration
+      findings. Current `v3` later advanced only through
+      `50fc439749282b0b390c422369890a2da41885f0`, which changes the unrelated
+      production assessment-affinity values; the clean virtual merge confirms
+      that this drift does not require a second integration pass. The
+      unrelated user-owned historical-plan edit was restored byte-for-byte and
+      remains unstaged.
