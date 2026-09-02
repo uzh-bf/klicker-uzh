@@ -386,3 +386,14 @@ compatibility limitation, not an authorization or charging bypass.
 - [x] Update PR #5691 and push the corrected branch. The PR now points to the
       corrected head; merge, deployment, migration application, and runtime
       activation remain withheld.
+- [x] Integrate `origin/v3` once with explicit user approval after the branch
+      advanced (Quizzer formative checkpoints and grounded quizzer mode,
+      #5707). Resolved the conflicts, recorded the approved staging decisions,
+      and committed merge head `81d5364ba2` with `MERGE_HEAD` equal to
+      `origin/v3` `f94e59d2fb`.
+- [x] Re-verify the merged head in the managed devcontainer: format check,
+      workspace typecheck (25/25 packages), Chat unit tests (474 passed,
+      21 integration tests excluded), the PostgreSQL integration suite
+      (21/21), and the full production build (23/23 tasks). The host pre-commit
+      gate (gitleaks plus repository `check:all`) also passed on the merge
+      commit. The unrelated analytics Python toolchain issue did not recur.
