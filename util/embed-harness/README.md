@@ -5,7 +5,11 @@ Static parent page for verifying the embedded practice-quiz handshake locally.
 ## What it verifies
 
 - parent sends `klicker:embed-init`
+- parent retries initialization after 250 ms and 1 s so child hydration cannot
+  lose the one-time iframe `load` handshake
 - embedded practice quiz emits `klicker:quiz-state`
+- resize-aware parents receive `klicker:embed-resize` and apply the iframe
+  content height
 - payload transitions through `overview`, `in-progress`, and `completed`
 - accepted and rejected events are visible in the harness log
 
@@ -76,6 +80,16 @@ http://127.0.0.1:3101/en/course/test-course/practiceQuizzes/test-quiz?embed=true
   "totalSteps": 1
 }
 ```
+
+### Resize-aware embed
+
+1. Keep `Let the host own vertical scrolling` enabled.
+2. Click `Load iframe` and confirm the harness receives an
+   `embed-resize` message.
+3. Confirm `Viewport height` follows the reported height and the iframe has
+   no independent vertical scrollbar.
+4. Uncheck the option, reload the iframe, and confirm the harness no longer
+   applies resize messages.
 
 ### In-progress payload
 
