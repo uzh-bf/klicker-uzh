@@ -156,8 +156,8 @@ execution:
 | Monthly usage budget | Merged M1 primitive: `ChatAccountUsage` stores one account + usage-class + Europe/Zurich month row with configured budget and used credits | Maintain the existing persistent configured limit and monthly used-credit reset; M2 adds no second budget primitive | One record per class and period; no hidden contribution fields |
 | Usage class registry | Merged M1 primitive: `apps/chat/src/lib/server/chatModelRegistry.ts` and the GraphQL registry enforce explicit `BASE`/`ADVANCED` metadata and parity | M2 consumes the server-derived class; no new client-selected class or registry copy | `Auto` remains `ADVANCED`; class is server-derived, not client-selected text |
 | Runtime charge | Merged M1 account-class availability, idempotent post-generation charging, and separate legacy participant credits | Lecturer test turns in C3 reuse the existing account-class lifecycle; any identity change requires its own data-integrity review | Charge only reliable provider usage; idempotent per turn lifecycle |
-| Chatbot lifecycle | `ChatbotStatus` and publication mutations in `packages/graphql/src/services/chatbots.ts:633-825` | Reuse for creation, private testing, publication, and later custom review | Publication never doubles as AI usage authorization |
-| Lecturer usage lanes | Merged M1 `ChatbotDetails` account summary and explicit-admin budget mutation | M2 preserves exactly two account-level read-only lanes and the hidden-contribution boundary | Never display the hidden base contribution |
+| Chatbot lifecycle | `ChatbotStatus` and the publication, approval, and rejection service mutations in `packages/graphql/src/services/chatbots.ts:594-918` | Reuse for creation, private testing, publication, and later custom review | Publication never doubles as AI usage authorization |
+| Lecturer usage lanes | Merged M1 `ChatAccountUsageSettings` manage surface, `GetChatAccountUsage` account summary query, and explicit-admin budget mutation | M2 preserves exactly two account-level read-only lanes and the hidden-contribution boundary | Never display the hidden base contribution |
 | Test thread | `ChatThread` and current participant-scoped access | Add explicit lecturer-owned test identity/flag | Never synthesize a student participant; exclude from student analytics |
 | Feedback | Nullable `ChatMessage.rating` and feedback route | Preserve current semantics first; add a table in M3 | No student text enters manage |
 | Knowledge | External KB MCP/resource lifecycle | Adapt the existing KB resource/binding API when verified | No parallel source model or retrieval-control UI in Klicker |
@@ -718,8 +718,8 @@ Every W-item follows `$rs-sliced-development-workflow`:
 
 ## Reconciliation package acceptance
 
-This documentation package is complete only when all of the following evidence
-is recorded on the committed branch before it is pushed:
+This documentation package is complete only when all of the following pre-push
+evidence is recorded on the committed branch:
 
 - The target and current branch heads are freshly read, and the exact M1 merge
   receipts and open M2a PR topology match the live GitHub state.
@@ -731,9 +731,11 @@ is recorded on the committed branch before it is pushed:
   reconciliation, roadmap dependencies, product-primitive ownership,
   authorization and data-protection boundaries, least-surprise scope, and
   acceptance completeness. Any finding is dispositioned before push.
-- The exact committed branch is pushed and a draft PR is opened for senior
-  review. The PR does not claim a merge, deployment, activation, runtime proof,
-  or delivery of the unpublished trusted-pilot corrections.
+
+After the pre-push gates pass, the terminal delivery actions are to push the
+exact committed branch and open a draft PR for senior review. The PR does not
+claim a merge, deployment, activation, runtime proof, or delivery of the
+unpublished trusted-pilot corrections.
 
 ## Orchestrator takeover checklist
 
