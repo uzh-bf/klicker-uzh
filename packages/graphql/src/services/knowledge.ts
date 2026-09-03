@@ -1724,16 +1724,14 @@ export async function confirmKbFileReplacement(
     },
   })
   if (confirmedReplacement) {
-    if (
-      confirmedReplacement.type !== DB.KBResourceType.BLOB ||
-      confirmedReplacement.originalFilename !== originalFilename ||
-      confirmedReplacement.mimeType !== validated.contentType ||
-      confirmedReplacement.sizeBytes !== sizeBytes
-    ) {
-      throw new GraphQLError('KB upload ticket is invalid', {
-        extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
-      })
-    }
+    assertMatchingConfirmedBlob(confirmedReplacement, {
+      kbId,
+      blobName,
+      title: confirmedReplacement.title,
+      originalFilename,
+      mimeType: validated.contentType,
+      sizeBytes,
+    })
     return confirmedReplacement
   }
 
@@ -1901,9 +1899,7 @@ export async function confirmKbFileReplacement(
     })
   }
 
-  return ctx.prisma.kBResource.findUniqueOrThrow({
-    where: { id: result.resource.id },
-  })
+  return result.resource
 }
 
 export async function createKbUrlResource(

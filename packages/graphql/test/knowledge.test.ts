@@ -1829,8 +1829,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       })
     )
     await expect(
-      prisma.kBUploadTicket.findUnique({
-        where: { id: replacementTicket.blobName.slice(0, -4) },
+      prisma.kBUploadTicket.findFirst({
+        where: { blobName: replacementTicket.blobName },
       })
     ).resolves.toBeNull()
     await expect(
@@ -2042,8 +2042,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
-    await prisma.kBUploadTicket.update({
-      where: { id: ticket.blobName.slice(0, -4) },
+    await prisma.kBUploadTicket.updateMany({
+      where: { blobName: ticket.blobName },
       data: { expiresAt: new Date(Date.now() - 1) },
     })
     await expect(
