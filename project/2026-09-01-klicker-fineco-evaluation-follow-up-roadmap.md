@@ -37,8 +37,10 @@ does not require a personal operator.
 
 Set namespaced API and Chat origins plus seeded participant credentials in the
 invoking shell only. Provide the approved judge proxy and key as
-`LITELLM_API_BASE` and `LITELLM_API_KEY`; the developer Foundry values are for
-the local Chat target and must not enter the evaluator child. Run
+`LITELLM_API_BASE` and optionally `LITELLM_API_KEY`; when the key is unset,
+the wrapper fetches `PIPELINES_LITELLM_API_KEY` with the Infisical CLI (PR
+#5747). The developer Foundry values are for the local Chat target and must
+not enter the evaluator child. Run
 `bash util/test-klicker-eval-wrapper.sh` before any credentialed traffic. Stop
 the exact worktree with `devrouter stop` after the run and verify that its
 provider is stopped and no route remains.
@@ -51,10 +53,10 @@ provider is stopped and no route remains.
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. The tool config's expected name `EXPERT_df_fineco_expert` matches the verified runtime tool contract, and all 20 ground-truth cases key on that exact name (10 tutor, 10 explainer) with no `KB_doc_query` canary leakage. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
 | FineCo expert binding | runtime registration proven (server + DB wiring); session probe optional | Live STG (v0.7.2) and PRD (v0.3.0) doc-query both serve `df_fineco_expert` in `tools/list`; the klicker STG database routes the FineCo chatbot's tutor and explainer configs through the active `EXPERT` server with allowed tool `df_fineco_expert`, yielding `EXPERT_df_fineco_expert` via the verified namespacing. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled). A paid session probe remains optional confirmation. |
-| FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
+| FineCo 20-case quality run | capture proven; semantic judge pending | The 20-case query capture ran live on 2026-09-03 after a runtime restart: 20/20 OK, every case with tool `EXPERT_df_fineco_expert`, 20/20 tool-match, non-empty answers, concurrency 1, direct `gpt-5.6-luna` via local LiteLLM. Receipts stay under `/private/tmp` outside Git. An earlier same-day capture failed the tool-policy gate 20/20 and was superseded by the green rerun. The semantic judge phase has not run: the local Infisical CLI fetch of `PIPELINES_LITELLM_API_KEY` is unauthenticated. The canary remains transport-only evidence. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
 | Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
-| Package Git baseline | documentation committed; integration pending | Branch `rs/klicker-live-target-evaluation` is at the verified local documentation head, nine commits ahead and two behind current `origin/v3` `f94e59d2fb`. The two roadmap documents are committed; no base integration was performed. |
+| Package Git baseline | merged to `v3` | The adapter, wrapper, and roadmap documents merged via PR #5734 (merge `328d9cf051`) and PR #5747 (merge `fa41086f`). The superseded local branch `rs/klicker-live-target-evaluation` is retained locally pending a cleanup ruling. |
 | Lena branch | reconciled locally and user state restored | The isolated reconciliation ref `rs/chatbot-hitl-config-roadmap-upstream-reconciled` remains at `62cebcda7b`, whose tree exactly matches `origin/v3` `72096fafe5`. The primary `docs/chatbot-hitl-config-roadmap` checkout was restored to `ea673f8470` and the former dirty state was reapplied there; the safety stash `b8fb2568bef5e0d3bc53bbbd96464d3a86822fff` (`stash@{0}`) remains intact. |
 
 ## Non-negotiables
@@ -337,6 +339,23 @@ auth flow, cookies, or other browser-only behavior.
   safety stash, or deleting either Lena worktree.
 
 ## Progress
+
+- 2026-09-03 — Close-out reconciliation. W1 — FineCo expert-binding readiness
+  is complete on the recorded values-free runtime evidence. The paid W2 —
+  twenty-case FineCo capture and semantic judge capture phase ran live: after
+  one failed attempt (`participant_login_rejected`, HTTP 502) and a runtime
+  restart with valid seeded-participant credentials, the 20-case query capture
+  passed 20/20 with every case calling `EXPERT_df_fineco_expert`, 20/20
+  tool-match, and non-empty answers at concurrency 1 on direct
+  `gpt-5.6-luna`; an earlier same-day capture that failed the tool-policy
+  gate on all 20 cases was superseded by this green rerun. The semantic judge
+  phase did not run: the wrapper's Infisical-CLI fetch of
+  `PIPELINES_LITELLM_API_KEY` fails locally because the plain CLI has no
+  login session, and no judge metric records exist. W2 therefore remains
+  `delivery_pending` on the judge credential boundary (`infisical login`
+  with klicker-uzh access, or an exported `LITELLM_API_KEY`); it is not
+  `live_proven`. PR #5747 (merge `fa41086f`) made the Infisical-CLI fetch
+  the `v3` default judge-key contract.
 
 - 2026-09-03 — The portability follow-up removes the evaluator's executable
   dependency on `rs-infisical-operator`. Judge credentials are now explicit
