@@ -24,6 +24,7 @@ interface WizardNavigationProps {
 }
 
 const disabledReasonId = 'activity-creation-disabled-reason'
+const createElementTooltipId = 'create-element-during-activity-tooltip'
 
 function WizardNavigation({
   editMode,
@@ -42,6 +43,11 @@ function WizardNavigation({
   const closeGuard = useWizardCloseGuard()
   const { onCreateElement } = useWizardActions()
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const continueLabels = [
+    t('manage.activityWizard.continueToDescription'),
+    t('manage.activityWizard.continueToSettings'),
+    t('manage.activityWizard.continueToQuestions'),
+  ]
 
   useEffect(() => {
     onDisabledReasonChangeRef.current = onDisabledReasonChange
@@ -99,15 +105,28 @@ function WizardNavigation({
         </Button>
       </div>
       {onCreateElement ? (
-        <Button
-          className={{ root: 'h-8 justify-self-center font-bold' }}
-          onClick={onCreateElement}
-          data={{ cy: 'create-question' }}
-          type="button"
-        >
-          <Button.Icon icon={faPlus} />
-          <Button.Label>{t('manage.questionPool.createElement')}</Button.Label>
-        </Button>
+        <div className="group relative justify-self-center">
+          <Button
+            className={{ root: 'h-8 w-max' }}
+            onClick={onCreateElement}
+            data={{ cy: 'create-question' }}
+            type="button"
+            aria-describedby={createElementTooltipId}
+          >
+            <Button.Icon icon={faPlus} />
+            <Button.Label>
+              {t('manage.questionPool.createElement')}
+            </Button.Label>
+          </Button>
+          <span
+            id={createElementTooltipId}
+            role="tooltip"
+            data-cy={createElementTooltipId}
+            className="pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1.5 w-max max-w-64 -translate-x-1/2 rounded-md bg-slate-700 px-2 py-1 text-left text-xs whitespace-normal text-white opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+          >
+            {t('manage.activityWizard.createElementDuringActivityTooltip')}
+          </span>
+        </div>
       ) : (
         <span />
       )}
@@ -126,7 +145,7 @@ function WizardNavigation({
           </div>
         )}
         <Button
-          primary={lastStep}
+          primary
           disabled={!stepValidity[activeStep] || continueDisabled}
           loading={isSubmitting}
           type="submit"
@@ -145,7 +164,7 @@ function WizardNavigation({
               ? editMode
                 ? t('shared.generic.save')
                 : t('shared.generic.create')
-              : t('shared.generic.continue')}
+              : (continueLabels[activeStep] ?? t('shared.generic.continue'))}
           </Button.Label>
         </Button>
       </div>

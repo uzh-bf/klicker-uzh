@@ -2412,6 +2412,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
       confirmCancelDiscard: 'Discard',
       confirmCancelKeepEditing: 'Keep editing',
+      continueToDescription: 'Continue to description',
+      continueToSettings: 'Continue to settings',
+      continueToQuestions: 'Continue to questions',
+      createElementDuringActivityTooltip:
+        'Create a reusable element, then return to this activity.',
       temporaryStorageCreation:
         'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       temporaryStorageEditing:

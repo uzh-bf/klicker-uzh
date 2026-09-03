@@ -236,6 +236,17 @@ test.describe('W4 activity wizard safety', () => {
     const navigation = page.getByTestId('activity-wizard-navigation')
     const createElement = navigation.getByTestId('create-question')
     await expect(createElement).toBeVisible()
+    await expect(createElement).toHaveAttribute(
+      'aria-describedby',
+      'create-element-during-activity-tooltip'
+    )
+    await createElement.focus()
+    await expect(
+      navigation.getByTestId('create-element-during-activity-tooltip')
+    ).toHaveText(en.createElementDuringActivityTooltip)
+    await expect(navigation.getByTestId('next-or-submit')).toHaveText(
+      en.continueToDescription
+    )
 
     const navigationBox = await navigation.boundingBox()
     const createElementBox = await createElement.boundingBox()
