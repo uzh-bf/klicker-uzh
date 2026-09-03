@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `stack_b_b0_committed_local`
+- Status: `stack_b_b1_committed_local`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1154,3 +1154,16 @@ follow_up_stacks:
   this session, so a main-session simplification pass covered the committed
   scope; it removed one dead parameter and found no other reductions. Push and
   draft-PR publication remain withheld pending explicit authority.
+- B1 (2026-09-03): Commit `2fac35d2f9` adds the Chat-local
+  `klicker_docs_search` tool: deterministic keyword search over the bundled
+  B0 manifest (AND term matching, title/tags/headings/summary weights,
+  route-ascending tie-breaks, exact/closest/ambiguous/no-result honesty
+  classes, bounded query, results, and output), merged into the request tool
+  set after a reserved-name collision assertion, fenced through the request's
+  sentinel, and available even when lecturer MCP is degraded. Includes
+  snapshot capability copy (system prompt plus EN/DE welcome bullet) and 17
+  focused tests; the full chat suite passes 876, typecheck and lint pass.
+  Wiki updated (`docs/chat-platform.md`, `docs/testing.md`). B0 published as
+  draft PR #5753 (base `v3-ai`, head `fba9d54a9d`). Remaining before Stack B
+  Gate 3: the representative product-help browser journey on a running stack
+  (model-key / paid-call boundary) and exact-head CI.
