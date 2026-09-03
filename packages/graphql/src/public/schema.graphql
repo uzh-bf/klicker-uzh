@@ -754,19 +754,10 @@ type Chatbot {
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
-  status: ChatbotStatus!
   standardModeConfig: ChatbotStandardModeConfig
+  status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
-}
-
-type ChatbotStandardModeConfig {
-  courseName: String
-  explainerEnabled: Boolean!
-  languageOfInstruction: LocaleType
-  scopeNote: String
-  subjectDomain: String
-  tutorEnabled: Boolean!
 }
 
 type ChatbotDisclaimerSummary {
@@ -805,6 +796,15 @@ type ChatbotReasoningConfig {
 input ChatbotReasoningConfigInput {
   efforts: [String!]!
   modelId: String!
+}
+
+type ChatbotStandardModeConfig {
+  courseName: String
+  explainerEnabled: Boolean!
+  languageOfInstruction: LocaleType
+  scopeNote: String
+  subjectDomain: String
+  tutorEnabled: Boolean!
 }
 
 input ChatbotStandardModeConfigInput {
