@@ -38,7 +38,35 @@ export interface MCPServerWithConfig {
 }
 
 export interface MCPRequestOptions {
+  abortSignal?: AbortSignal
   requestTimeoutMs?: number
+}
+
+function getMCPRequestSignal(
+  options: MCPRequestOptions
+): AbortSignal | undefined {
+  const timeoutSignal = options.requestTimeoutMs
+    ? AbortSignal.timeout(options.requestTimeoutMs)
+    : undefined
+
+  if (options.abortSignal && timeoutSignal) {
+    return AbortSignal.any([options.abortSignal, timeoutSignal])
+  }
+
+  return options.abortSignal ?? timeoutSignal
+}
+
+function createMCPFetch(
+  requestSignal: AbortSignal | undefined
+): typeof fetch | undefined {
+  if (!requestSignal) return undefined
+
+  return (input, init = {}) => {
+    const signal = init.signal
+      ? AbortSignal.any([requestSignal, init.signal])
+      : requestSignal
+    return fetch(input, { ...init, signal })
+  }
 }
 
 function toToolNameHash(rawName: string): string {
@@ -193,6 +221,8 @@ export async function createMCPClient(
 
   try {
     const headers = createAuthHeaders(server, chatbotId)
+    const requestSignal = getMCPRequestSignal(options)
+    const requestFetch = createMCPFetch(requestSignal)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -200,10 +230,8 @@ export async function createMCPClient(
         requestInit: {
           headers,
           redirect: 'error',
-          ...(options.requestTimeoutMs
-            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
-            : {}),
         },
+        ...(requestFetch ? { fetch: requestFetch } : {}),
       }
     )
 
@@ -214,6 +242,7 @@ export async function createMCPClient(
     console.log(`MCP Client for ${server.name} initialized successfully`)
     return client
   } catch (error) {
+    options.abortSignal?.throwIfAborted()
     console.error('Failed to create MCP client', {
       server: server.name,
       errorType: error instanceof Error ? error.name : typeof error,
@@ -320,6 +349,7 @@ async function loadServerTools(
     )
     return filteredTools
   } catch (error) {
+    options.abortSignal?.throwIfAborted()
     if (
       error instanceof RequiredMCPUnavailableError ||
       runtimePolicy.required
@@ -359,6 +389,7 @@ export async function getAggregatedMCPTools(
 
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
+    options.abortSignal?.throwIfAborted()
     try {
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
@@ -377,6 +408,7 @@ export async function getAggregatedMCPTools(
         }
       }
     } catch (error) {
+      options.abortSignal?.throwIfAborted()
       if (error instanceof RequiredMCPUnavailableError) throw error
 
       console.error(
