@@ -30,6 +30,12 @@ Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setu
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
 
+The `create-audit-log-entry` task is the pre-existing free-form audit path. It is
+not the provider-neutral assessment evidence contract or its append-only store.
+The new contract and PostgreSQL outbox foundation are documented in
+[Assessment Audit Evidence](./assessment-audit-evidence.md); wiring Hatchet
+submission materialization into that outbox is a later stack layer.
+
 ## Worker task catalog
 
 `apps/hatchet-worker-response-processor` (`src/index.ts`):
