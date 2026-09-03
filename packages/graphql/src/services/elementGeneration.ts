@@ -1,11 +1,15 @@
+import { isDeepStrictEqual } from 'node:util'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementManipulationInput,
   GeneratedFlashcardEditable,
   GeneratedQuestionEditable,
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
+import { manipulateElement } from './elements.js'
 import {
   getFlashcardGenerationBuild,
   publishIncompleteFlashcardGeneration,
@@ -14,6 +18,7 @@ import {
   startFlashcardGeneration,
 } from './flashcardGeneration.js'
 import {
+  normalizeGeneratedFlashcardEditable,
   setGeneratedFlashcardDecision,
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
@@ -83,6 +88,21 @@ export type GeneratedElementEditableInput = {
   }> | null
   cardType?: 'definition' | 'formula' | 'calculation' | null
   tags?: string[] | null
+}
+
+export type KeepGeneratedElementDraftInput = {
+  draftId: string
+  expectedRevision: number
+  status: DB.ElementStatus
+  type: DB.ElementType
+  name: string
+  content: string
+  explanation?: string | null
+  basePoints: boolean
+  pointsMultiplier: number
+  tags?: string[] | null
+  choiceIds?: string[] | null
+  options?: ElementManipulationInput['options']
 }
 
 function serviceError(message: string): never {
@@ -227,6 +247,311 @@ export async function saveGeneratedElements(
   return elementType === DB.ElementType.FLASHCARD
     ? saveGeneratedFlashcards(buildId, ctx)
     : saveGeneratedQuestions(buildId, ctx)
+}
+
+function normalizedKeepPayload(
+  draft: DB.GeneratedElementDraft,
+  input: KeepGeneratedElementDraftInput
+) {
+  if (draft.elementType === DB.ElementType.FLASHCARD) {
+    if (input.type !== DB.ElementType.FLASHCARD) {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Generated element type cannot be changed'
+      )
+    }
+    const storedCurrent = draft.current as GeneratedFlashcardEditable
+    const current = normalizeGeneratedFlashcardEditable({
+      name: input.name,
+      front: input.content,
+      back: input.explanation ?? '',
+      cardType: storedCurrent.cardType,
+      tags: input.tags ?? [],
+    })
+    const elementInput: ElementManipulationInput = {
+      status: input.status,
+      type: DB.ElementType.FLASHCARD,
+      name: current.name,
+      content: current.front,
+      explanation: current.back,
+      // Flashcards never award points; the shared keep input still carries it.
+      basePoints: false,
+      pointsMultiplier: 1,
+      tags: current.tags,
+    }
+    return { current, elementInput }
+  }
+
+  if (!isQuestionElementType(input.type) || draft.elementType !== input.type) {
+    throw questionGenerationServiceError(
+      'DRAFT_INVALID',
+      'Generated element type cannot be changed'
+    )
+  }
+  if (!input.options?.choices?.length) {
+    throw questionGenerationServiceError(
+      'DRAFT_INVALID',
+      'A generated assessment element requires answer choices'
+    )
+  }
+  const choiceIds = input.choiceIds?.map((id) => id.trim())
+  if (
+    !choiceIds ||
+    choiceIds.length !== input.options.choices.length ||
+    choiceIds.some((id) => !id || id.length > 100) ||
+    new Set(choiceIds).size !== choiceIds.length
+  ) {
+    throw questionGenerationServiceError(
+      'DRAFT_INVALID',
+      'Generated assessment choice identities are invalid'
+    )
+  }
+  const choices = input.options.choices
+    .map((choice, index) => ({ choice, id: choiceIds[index]! }))
+    .sort((left, right) => left.choice.ix - right.choice.ix)
+    .map(({ choice, id }, index) => ({
+      id,
+      label: String.fromCharCode(65 + index),
+      text: choice.value,
+      correct: choice.correct ?? false,
+      feedback: choice.feedback ?? null,
+    }))
+  const questionType = input.type
+  const current: GeneratedQuestionEditable = {
+    itemType: questionType,
+    name: input.name,
+    stem: input.content,
+    context: null,
+    explanation: input.explanation ?? null,
+    choices,
+  }
+  const elementInput: ElementManipulationInput = {
+    status: input.status,
+    type: questionType,
+    name: current.name,
+    content: current.stem,
+    explanation: current.explanation,
+    difficultyLevel: draft.targetDifficulty,
+    options: {
+      displayMode: input.options.displayMode,
+      hasSampleSolution: input.options.hasSampleSolution,
+      hasAnswerFeedbacks: input.options.hasAnswerFeedbacks,
+      choices: current.choices.map((choice, index) => ({
+        ix: index,
+        value: choice.text,
+        correct: choice.correct,
+        feedback: choice.feedback,
+      })),
+    },
+    basePoints: input.basePoints,
+    pointsMultiplier: input.pointsMultiplier,
+    tags: input.tags ?? [],
+  }
+  return { current, elementInput }
+}
+
+type SavedElementForRetry = {
+  ownerId: string
+  status: DB.ElementStatus
+  type: DB.ElementType
+  name: string
+  content: string
+  explanation: string | null
+  basePoints: boolean
+  pointsMultiplier: number
+  difficultyLevel: number | null
+  options: unknown
+  tags: Array<{ name: string }>
+}
+
+function normalizedTagNames(tags: string[] | null | undefined) {
+  return [...new Set(tags ?? [])].sort((a, b) => a.localeCompare(b))
+}
+
+function savedElementMatchesKeepRequest(
+  savedElement: SavedElementForRetry,
+  elementInput: ElementManipulationInput,
+  ownerId: string
+) {
+  // manipulateElement persists this validator result for every Element type;
+  // optionless types therefore intentionally compare against an empty object.
+  const options = validateAndProcessElementOptions(
+    elementInput.type,
+    elementInput.options
+  )
+  if (options === null) return false
+
+  const persistedOptions = JSON.parse(JSON.stringify(options))
+  return (
+    savedElement.ownerId === ownerId &&
+    savedElement.status === elementInput.status &&
+    savedElement.type === elementInput.type &&
+    savedElement.name === elementInput.name &&
+    savedElement.content === elementInput.content &&
+    savedElement.explanation === (elementInput.explanation ?? null) &&
+    savedElement.basePoints === elementInput.basePoints &&
+    savedElement.pointsMultiplier === elementInput.pointsMultiplier &&
+    savedElement.difficultyLevel === (elementInput.difficultyLevel ?? null) &&
+    isDeepStrictEqual(savedElement.options, persistedOptions) &&
+    isDeepStrictEqual(
+      savedElement.tags
+        .map((tag) => tag.name)
+        .sort((a, b) => a.localeCompare(b)),
+      normalizedTagNames(elementInput.tags)
+    )
+  )
+}
+
+export async function keepGeneratedElementDraft(
+  input: KeepGeneratedElementDraftInput,
+  ctx: ContextWithUser
+) {
+  await assertQuestionGenerationPreviewAccess(ctx)
+  if (!Number.isInteger(input.expectedRevision) || input.expectedRevision < 0) {
+    throw questionGenerationServiceError(
+      'DRAFT_INVALID',
+      'Expected draft revision is invalid'
+    )
+  }
+
+  return ctx.prisma.$transaction(async (transaction) => {
+    const owned = await transaction.generatedElementDraft.findFirst({
+      where: {
+        id: input.draftId,
+        build: { is: { ownerId: ctx.user.sub } },
+      },
+      select: { buildId: true },
+    })
+    if (!owned) {
+      throw questionGenerationServiceError(
+        'GENERATED_QUESTION_DRAFT_NOT_FOUND',
+        'Generated element draft not found'
+      )
+    }
+    await transaction.$queryRaw`
+      SELECT "id"
+      FROM "ElementGenerationBuild"
+      WHERE "id" = ${owned.buildId}::uuid
+      FOR UPDATE
+    `
+    const draft = await transaction.generatedElementDraft.findFirst({
+      where: {
+        id: input.draftId,
+        build: { is: { ownerId: ctx.user.sub } },
+      },
+      include: {
+        build: { select: { status: true } },
+        savedElement: {
+          select: {
+            ownerId: true,
+            status: true,
+            type: true,
+            name: true,
+            content: true,
+            explanation: true,
+            basePoints: true,
+            pointsMultiplier: true,
+            difficultyLevel: true,
+            options: true,
+            tags: { select: { name: true } },
+          },
+        },
+      },
+    })
+    if (!draft) {
+      throw questionGenerationServiceError(
+        'GENERATED_QUESTION_DRAFT_NOT_FOUND',
+        'Generated element draft not found'
+      )
+    }
+    const validStatuses: DB.ElementGenerationBuildStatus[] =
+      draft.elementType === DB.ElementType.FLASHCARD
+        ? TERMINAL_EDITABLE_STATUSES
+        : [DB.ElementGenerationBuildStatus.COMPLETED]
+    if (!validStatuses.includes(draft.build.status)) {
+      throw questionGenerationServiceError(
+        'INVALID_STAGE',
+        'Generated elements can only be kept after terminal publication'
+      )
+    }
+
+    const { current, elementInput } = normalizedKeepPayload(draft, input)
+    if (draft.savedElementId !== null) {
+      if (
+        draft.decision === DB.GeneratedElementDecision.ACCEPTED &&
+        draft.revision === input.expectedRevision + 1 &&
+        draft.savedElement !== null &&
+        savedElementMatchesKeepRequest(
+          draft.savedElement,
+          elementInput,
+          ctx.user.sub
+        )
+      ) {
+        return draft
+      }
+      if (draft.revision === input.expectedRevision + 1) {
+        throw questionGenerationServiceError(
+          'CONCURRENT_MODIFICATION',
+          'The saved element does not match this retry request'
+        )
+      }
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'A saved generated element is immutable'
+      )
+    }
+    const canKeep =
+      draft.decision === DB.GeneratedElementDecision.OPEN ||
+      draft.decision === DB.GeneratedElementDecision.ACCEPTED
+    if (!canKeep) {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Only an open or accepted unsaved generated element can be kept'
+      )
+    }
+    if (draft.revision !== input.expectedRevision) {
+      throw questionGenerationServiceError(
+        'CONCURRENT_MODIFICATION',
+        'Generated element draft was changed by another request'
+      )
+    }
+
+    const element = await manipulateElement(elementInput, {
+      ...ctx,
+      prisma: transaction,
+    })
+    if (!element) {
+      throw questionGenerationServiceError(
+        'SAVE_VALIDATION_FAILED',
+        'Generated element is not a valid element'
+      )
+    }
+    const savedAt = new Date()
+    const linked = await transaction.generatedElementDraft.updateMany({
+      where: {
+        id: draft.id,
+        revision: input.expectedRevision,
+        decision: draft.decision,
+        savedElementId: null,
+      },
+      data: {
+        current,
+        revision: { increment: 1 },
+        decision: DB.GeneratedElementDecision.ACCEPTED,
+        savedElementId: element.id,
+        savedAt,
+      },
+    })
+    if (linked.count !== 1) {
+      throw questionGenerationServiceError(
+        'CONCURRENT_MODIFICATION',
+        'Generated element draft was changed by another request'
+      )
+    }
+    return transaction.generatedElementDraft.findUniqueOrThrow({
+      where: { id: draft.id },
+    })
+  })
 }
 
 export async function updateGeneratedElementDraft(

@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
 import {
+  buildGrowthBookCommand,
   buildStartCommand,
+  createTerminalAccounting,
   resolveRuntimePlan,
+  stopRunningChildren,
   validateRuntimePlan,
 } from './playwright-profile-runtime.mjs'
 
@@ -233,6 +243,79 @@ test('the start command passes validated filters as distinct argv entries', () =
   })
 })
 
+test('the runtime keeps the mock GrowthBook server running beside the apps', () => {
+  assert.deepEqual(buildGrowthBookCommand(), {
+    command: 'node',
+    args: ['./playwright/util/mockGrowthBookServer.mjs'],
+  })
+  statSync(
+    new URL('../playwright/util/mockGrowthBookServer.mjs', import.meta.url)
+  )
+})
+
+test('terminal accounting records each child once and keeps the first failure', () => {
+  const first = createTerminalAccounting(2)
+  assert.equal(first.record(0, null), undefined)
+  assert.equal(first.record(0, 1), undefined)
+  assert.equal(first.record(1, 3), 3)
+
+  const second = createTerminalAccounting(2)
+  assert.equal(second.record(0, 7), undefined)
+  assert.equal(second.record(0, 9), undefined)
+  assert.equal(second.record(1, null), 7)
+
+  const clean = createTerminalAccounting(2)
+  assert.equal(clean.record(0, null), undefined)
+  assert.equal(clean.record(1, null), 0)
+})
+
+test('stopping the runtime only marks children that are still running', () => {
+  const makeChild = (state) => ({
+    exitCode: null,
+    killed: false,
+    signalCode: null,
+    signals: [],
+    ...state,
+    kill(signal) {
+      this.signals.push(signal)
+      if (this.killFails) {
+        return false
+      }
+      this.killed = true
+      return true
+    },
+  })
+  const exited = makeChild({ exitCode: 1 })
+  const signaled = makeChild({ signalCode: 'SIGKILL' })
+  const alreadyKilled = makeChild({ killed: true })
+  const justExited = makeChild({ killFails: true })
+  const running = makeChild({})
+  const entries = [
+    { name: 'exited', child: exited, stoppedByUs: false },
+    { name: 'signaled', child: signaled, stoppedByUs: false },
+    { name: 'alreadyKilled', child: alreadyKilled, stoppedByUs: false },
+    { name: 'justExited', child: justExited, stoppedByUs: false },
+    { name: 'running', child: running, stoppedByUs: false },
+  ]
+
+  stopRunningChildren(entries, 'SIGTERM')
+
+  const byName = Object.fromEntries(entries.map((entry) => [entry.name, entry]))
+  assert.equal(byName.exited.stoppedByUs, false)
+  assert.deepEqual(exited.signals, [])
+  assert.equal(byName.signaled.stoppedByUs, false)
+  assert.deepEqual(signaled.signals, [])
+  assert.equal(byName.alreadyKilled.stoppedByUs, false)
+  assert.deepEqual(alreadyKilled.signals, [])
+  assert.equal(byName.justExited.stoppedByUs, false)
+  assert.deepEqual(justExited.signals, ['SIGTERM'])
+  assert.equal(byName.running.stoppedByUs, true)
+  assert.deepEqual(running.signals, ['SIGTERM'])
+
+  stopRunningChildren(entries, 'SIGTERM')
+  assert.deepEqual(running.signals, ['SIGTERM'])
+})
+
 test('workflow shard startup steps explicitly select Bash', () => {
   const action = readFileSync(
     new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
@@ -272,6 +355,50 @@ test('local full-stack startup stays independent from the CI runtime plan', () =
     packageJson.scripts['start:playwright:ci'],
     'node ./util/playwright-profile-runtime.mjs start'
   )
+})
+
+test('accepts equivalent runtime plans with different JSON property order', () => {
+  const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-order-'))
+  const output = join(outputDir, 'profile.json')
+  const devrouterBin = join(outputDir, 'devrouter')
+  const plan = profilePlan()
+
+  writeFileSync(
+    devrouterBin,
+    `#!/usr/bin/env node
+const { writeFileSync } = require('node:fs')
+const args = process.argv.slice(2)
+const output = args[args.indexOf('--output') + 1]
+const plan = ${JSON.stringify(plan)}
+const reorderedPlan = {
+  bindings: plan.bindings,
+  managedRuntime: plan.managedRuntime,
+  readiness: plan.readiness,
+  dependencies: plan.dependencies,
+  apps: plan.apps,
+  profile: plan.profile,
+  repoPath: plan.repoPath,
+  schemaVersion: plan.schemaVersion,
+  contractPath: plan.contractPath,
+}
+writeFileSync(output, JSON.stringify(plan))
+process.stdout.write(JSON.stringify(reorderedPlan))
+`
+  )
+  chmodSync(devrouterBin, 0o755)
+
+  try {
+    const runtime = resolveRuntimePlan({
+      profile: plan.profile,
+      output,
+      repo: plan.repoPath,
+      devrouterBin,
+    })
+    assert.equal(runtime.profile, plan.profile)
+    assert.deepEqual(runtime.apps, plan.apps)
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true })
+  }
 })
 
 test('installed Devrouter plans every shard profile union from the real contract', () => {

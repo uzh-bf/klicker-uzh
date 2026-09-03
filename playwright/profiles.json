@@ -3,7 +3,10 @@
   "groups": [
     {
       "profile": "manage",
-      "specs": ["T-chatbot-authoring.spec.ts"]
+      "specs": [
+        "T-chatbot-authoring.spec.ts",
+        "Y-question-generation-review.spec.ts"
+      ]
     },
     {
       "profile": "manage,pwa",

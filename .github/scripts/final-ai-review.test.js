@@ -1327,6 +1327,65 @@ test('requires exact resume coverage mappings, counts, and terminal outcomes', (
   )
 })
 
+test('rejects overlapping, unknown, and duplicate OCR coverage partitions', () => {
+  const parent = partialResumeResult()
+  const selected = parent.manifest.coverage.selected
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              failed: [selected[0]],
+            },
+          },
+        },
+        750_000
+      ),
+    /non-disjoint coverage partition/
+  )
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              failed: [{ ...selected[0], item_id: '9'.repeat(64) }],
+            },
+          },
+        },
+        750_000
+      ),
+    /non-disjoint coverage partition/
+  )
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              selected: [selected[0], selected[0]],
+            },
+          },
+        },
+        750_000
+      ),
+    /duplicate selected coverage/
+  )
+})
+
 function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
   return {
     baseRef: 'v3',

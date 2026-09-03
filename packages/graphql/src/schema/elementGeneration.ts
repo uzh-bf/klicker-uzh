@@ -15,6 +15,7 @@ import type {
   GeneratedElementEditableInput as GeneratedElementEditableInputValue,
   StartElementGenerationInput,
 } from '../services/elementGeneration.js'
+import { KBResourceType } from './knowledge.js'
 
 export type GeneratableElementType = 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
 type ElementGenerationLanguageValue = 'de' | 'en'
@@ -607,9 +608,29 @@ GeneratedElementDraftRef.implement({
   }),
 })
 
+type ElementGenerationBuildSourceView = {
+  resourceId: string
+  title: string
+  type: DB.KBResourceType
+  sourceUrl: string | null
+}
+const ElementGenerationBuildSourceRef =
+  builder.objectRef<ElementGenerationBuildSourceView>(
+    'ElementGenerationBuildSource'
+  )
+ElementGenerationBuildSourceRef.implement({
+  fields: (t) => ({
+    resourceId: t.exposeID('resourceId'),
+    title: t.exposeString('title'),
+    type: t.expose('type', { type: KBResourceType }),
+    sourceUrl: t.exposeString('sourceUrl', { nullable: true }),
+  }),
+})
+
 export type ElementGenerationBuildView = DB.ElementGenerationBuild & {
   reviews?: DB.ElementGenerationReview[]
   drafts: DB.GeneratedElementDraft[]
+  sourceGraphBuild: { sources: ElementGenerationBuildSourceView[] }
 }
 export const ElementGenerationBuildRef =
   builder.objectRef<ElementGenerationBuildView>('ElementGenerationBuild')
@@ -661,6 +682,10 @@ ElementGenerationBuildRef.implement({
       resolve: (build) => build.reviews ?? [],
     }),
     drafts: t.expose('drafts', { type: [GeneratedElementDraftRef] }),
+    sources: t.field({
+      type: [ElementGenerationBuildSourceRef],
+      resolve: (build) => build.sourceGraphBuild.sources,
+    }),
   }),
 })
 
