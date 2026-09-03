@@ -253,19 +253,12 @@ export async function POST(
         chatMode: selectedMode,
         role: 'included',
       })
-      if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
-        console.warn(
-          'Response-example skill name conflicts with an existing tool; continuing without response examples',
-          { chatbotId }
-        )
-      } else {
-        tools = {
-          ...tools,
-          [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
-            createResponseExampleSearchTool(responseExampleSkill),
-        }
-        responseExampleSummary = responseExampleSkill.summary
+      tools = {
+        ...tools,
+        [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
+          createResponseExampleSearchTool(responseExampleSkill),
       }
+      responseExampleSummary = responseExampleSkill.summary
     } catch (error) {
       console.warn(
         'Response-example skill loading failed; continuing without response examples',
