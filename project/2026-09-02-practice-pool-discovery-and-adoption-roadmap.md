@@ -434,7 +434,18 @@ planner then returned `DONE` with `Verdict: APPROVED`.
   `check:all` run remains non-green only because the unrelated analytics lint
   selected CPython 3.14 and could not build `pandas==2.2.2` without a C
   compiler.
-- [ ] Review W2 — Create a useful completion loop at its committed slice. The
-  simplifier is required; a slice-risk review is not required because the
-  package changes no security, data-integrity, architecture, cross-system, or
+- [x] Review W2 — Create a useful completion loop at its committed slice. The
+  simplifier found that the explicit round key duplicated the existing
+  Loader-driven unmount and remount. The correction removes that state and key;
+  the exact Node 24 PWA typecheck, focused Biome check, and `git diff --check`
+  pass afterward. A slice-risk review is not required because the package
+  changes no security, data-integrity, architecture, cross-system, or
   irreversible boundary.
+- [x] Recheck the simplifier correction in the browser. The authenticated run
+  started a new pool round and progressed through six stacks before the local
+  OrbStack runtime stopped its app containers unexpectedly. The earlier
+  complete browser run remains applicable to the completion behavior, and the
+  accepted correction only removes an extra React key after the Loader already
+  unmounts the quiz subtree.
+- [ ] Run the integrated final review for W2 — Create a useful completion loop
+  after committing the accepted simplifier correction and current evidence.

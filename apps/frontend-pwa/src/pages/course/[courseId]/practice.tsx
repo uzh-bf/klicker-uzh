@@ -25,7 +25,6 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
 
   const [currentIx, setCurrentIx] = useState(-1)
-  const [roundKey, setRoundKey] = useState(0)
   const [roundComplete, setRoundComplete] = useState(false)
   const [preparingNextRound, setPreparingNextRound] = useState(false)
   const [roundRefreshError, setRoundRefreshError] = useState(false)
@@ -80,7 +79,6 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
 
     try {
       await refetch()
-      setRoundKey((key) => key + 1)
       setRoundComplete(true)
     } catch {
       setRoundRefreshError(true)
@@ -106,7 +104,6 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
         <Loader />
       ) : (
         <PracticeQuiz
-          key={roundKey}
           quiz={{
             ...data?.coursePracticeQuiz,
             description: t('pwa.courses.coursePracticeArea', {
