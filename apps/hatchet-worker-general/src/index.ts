@@ -1,10 +1,12 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
+import EventEmitter from 'node:events'
+import { createServer } from 'node:http'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { renderAssessmentAuditPrometheusMetrics } from '@klicker-uzh/audit'
 import { handlers } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
-import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
@@ -14,10 +16,21 @@ const HATCHET_WORKER_NAME =
 
 function selectWorkflows(workflows: PreparedHatchetTasks) {
   // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically.
-  const defaultWorkflowKeys = Object.keys(workflows) as Array<
-    keyof PreparedHatchetTasks
-  >
+  // Privileged audit workflows require an explicit dedicated-worker opt-in.
+  const auditWorkflowKeys = new Set<keyof PreparedHatchetTasks>([
+    'dispatchAssessmentAuditOutbox',
+    'monitorAssessmentAudit',
+  ])
+  const auditWorkerEnabled =
+    process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
+  const allowedWorkflowKeys = new Set(
+    (Object.keys(workflows) as Array<keyof PreparedHatchetTasks>).filter(
+      (key) =>
+        auditWorkerEnabled
+          ? auditWorkflowKeys.has(key)
+          : !auditWorkflowKeys.has(key)
+    )
+  )
 
   // Parse requested keys; treat empty/whitespace as "unset" so we default to all
   const envRaw = process.env.HATCHET_WORKFLOWS
@@ -34,14 +47,21 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
   const validSelectedKeys = (
     hasRequested
       ? requestedKeysRaw.filter(
-          (k): k is keyof PreparedHatchetTasks => k in workflows
+          (k): k is keyof PreparedHatchetTasks =>
+            k in workflows &&
+            allowedWorkflowKeys.has(k as keyof PreparedHatchetTasks)
         )
-      : defaultWorkflowKeys
+      : [...allowedWorkflowKeys]
   ) as Array<keyof PreparedHatchetTasks>
 
   if (hasRequested) {
     const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
     if (unknown.length) {
+      if (auditWorkerEnabled) {
+        throw new Error(
+          `HATCHET_WORKFLOWS contains unknown tasks for the audit worker: ${unknown.join(', ')}`
+        )
+      }
       logger.warn(
         {
           unknownKeys: unknown,
@@ -52,13 +72,70 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
     }
   }
 
+  if (hasRequested) {
+    const forbidden = requestedKeysRaw.filter(
+      (key) =>
+        key in workflows &&
+        !allowedWorkflowKeys.has(key as keyof PreparedHatchetTasks)
+    )
+    if (forbidden.length > 0) {
+      throw new Error(
+        `HATCHET_WORKFLOWS contains tasks forbidden for this worker identity: ${forbidden.join(', ')}`
+      )
+    }
+  }
+
+  const selectedKeySet = new Set(validSelectedKeys)
+  if (
+    auditWorkerEnabled &&
+    (selectedKeySet.size !== auditWorkflowKeys.size ||
+      validSelectedKeys.length !== selectedKeySet.size ||
+      [...auditWorkflowKeys].some((key) => !selectedKeySet.has(key)))
+  ) {
+    throw new Error(
+      'The audit worker must select every required audit workflow exactly'
+    )
+  }
+
   const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
 
   return selectedWorkflows
 }
 
+function startAuditMetricsServer(): void {
+  const portValue = process.env.ASSESSMENT_AUDIT_METRICS_PORT
+  if (portValue === undefined || portValue === '') {
+    return
+  }
+  const port = Number(portValue)
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error('ASSESSMENT_AUDIT_METRICS_PORT must be a valid port')
+  }
+  const environment = process.env.ASSESSMENT_AUDIT_ENVIRONMENT ?? 'unknown'
+  const server = createServer((request, response) => {
+    if (request.url === '/healthz') {
+      response.writeHead(200, { 'content-type': 'text/plain' })
+      response.end('ok\n')
+      return
+    }
+    if (request.url === '/metrics') {
+      response.writeHead(200, {
+        'content-type': 'text/plain; version=0.0.4; charset=utf-8',
+      })
+      response.end(renderAssessmentAuditPrometheusMetrics(environment))
+      return
+    }
+    response.writeHead(404, { 'content-type': 'text/plain' })
+    response.end('not found\n')
+  })
+  server.listen(port, '0.0.0.0', () => {
+    logger.info({ port }, 'Assessment audit metrics server listening')
+  })
+}
+
 async function main() {
   logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
+  startAuditMetricsServer()
 
   const redisExec = new Redis({
     family: 4,
@@ -122,9 +199,9 @@ async function main() {
   })
 
   const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
-  )
+  const selectedKeys = (
+    Object.keys(preparedWorkflows) as Array<keyof PreparedHatchetTasks>
+  ).filter((key) => workflows.includes(preparedWorkflows[key]))
   logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(

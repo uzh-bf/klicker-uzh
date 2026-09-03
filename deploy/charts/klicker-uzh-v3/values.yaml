@@ -153,6 +153,37 @@ hatchet:
       tolerations: []
       affinity: {}
 
+assessmentAudit:
+  # Remains dormant until the Pulumi-provisioned identity, tables, and alert
+  # route have passed the staging permission matrix.
+  enabled: false
+  environment: ''
+  rollout: disabled
+  tableEndpoint: ''
+  blobEndpoint: ''
+  worker:
+    replicaCount: 1
+    serviceAccountName: ''
+    priorityClassName: production-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+      pullPolicy: IfNotPresent
+      tag: ''
+    resources:
+      requests:
+        cpu: 50m
+        memory: 96Mi
+      limits:
+        memory: 384Mi
+    podAnnotations: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+  monitoring:
+    enabled: false
+    interval: 30s
+    alertRoutingLabel: assessment-audit-owners
+
 auth:
   priorityClassName: production-workload
 

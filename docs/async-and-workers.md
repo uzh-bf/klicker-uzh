@@ -20,6 +20,9 @@ student answer → apps/response-api (HTTP) → Hatchet event
         apps/hatchet-worker-response-processor (consume + re-emit)
                                               ↓
         apps/hatchet-worker-general (aggregation + scheduled jobs)
+
+PostgreSQL audit outbox → dedicated general-worker image / audit identity
+                         → append-only Azure Table Storage
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
@@ -32,9 +35,10 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 The `create-audit-log-entry` task is the pre-existing free-form audit path. It is
 not the provider-neutral assessment evidence contract or its append-only store.
-The new contract and PostgreSQL outbox foundation are documented in
-[Assessment Audit Evidence](./assessment-audit-evidence.md); wiring Hatchet
-submission materialization into that outbox is a later stack layer.
+The new contract, PostgreSQL outbox, and Azure delivery path are documented in
+[Assessment Audit Evidence](./assessment-audit-evidence.md). The new dispatcher
+does not consume those legacy free-form events; later producer layers replace
+assessment uses with typed evidence events.
 
 ## Worker task catalog
 
@@ -45,7 +49,11 @@ submission materialization into that outbox is a later stack layer.
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
-`apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
+`apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the
+`HATCHET_WORKFLOWS` env var. Without an explicit selection it loads every
+ordinary workflow but deliberately excludes the privileged audit workflows;
+unknown keys are reported at startup. Selecting workflows outside the worker's
+identity class is a fatal configuration error:
 
 - `create-audit-log-entry` (event-driven)
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
@@ -61,6 +69,19 @@ Job state lives in Redis under three key families (all self-expiring): status re
 To correlate a user report ("my duplication vanished") with only a course name or approximate time: list their keys with `SCAN 0 MATCH "course-duplication:source:<userId>:*"` (keys carry the source course id), read the referenced job record with `GET course-duplication:job:<jobId>` while it exists, and check `prisma.course.findUnique({ where: { id: <jobId> } })` for the outcome. Permission `AuditLogEntry` rows written inside a successful copy transaction outlive the Redis record. Worker logs carry the job id.
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
+The same image runs as a separate `assessment-audit-worker` deployment when
+`ASSESSMENT_AUDIT_WORKER_ENABLED=true`, with an explicit workflow selection:
+
+- `dispatchAssessmentAuditOutbox` — every minute; leases canonical outbox rows,
+  delivers create-only Azure Table entities, and records retry/quarantine state.
+- `monitorAssessmentAudit` — every minute; emits a metadata-only health snapshot
+  and fails the Hatchet run on critical thresholds.
+
+That deployment uses a Pulumi-owned service account and Azure workload identity;
+the ordinary general worker has no audit-storage permission. Its `/healthz` and
+`/metrics` listener is enabled only when `ASSESSMENT_AUDIT_METRICS_PORT` is set.
+Chart resources stay disabled until staging endpoints, identity, permission
+matrix, ServiceMonitor, PrometheusRule, and owner-only alert routing are proven.
 
 ## Running locally (config-derived — verify on your machine)
 

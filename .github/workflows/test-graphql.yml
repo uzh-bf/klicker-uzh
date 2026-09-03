@@ -117,6 +117,11 @@ jobs:
         ports:
           - 6381:6379
 
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:3.36.0
+        ports:
+          - 10002:10002
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -160,6 +165,7 @@ jobs:
       - name: Run assessment audit tests
         run: pnpm --filter @klicker-uzh/audit test
         env:
+          AZURITE_TABLE_ENDPOINT: http://127.0.0.1:10002/devstoreaccount1
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           NODE_ENV: test
 
