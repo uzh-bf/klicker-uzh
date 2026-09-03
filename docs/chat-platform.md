@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-31'
+timestamp: '2026-09-01'
 tags:
   - frontend
   - chat
@@ -246,10 +246,29 @@ has a healthcheck, and is included in
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
-usage cost. A model call still requires the operator's local
+usage cost. A model call still requires a caller-injected
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
+
+For a local developer-Foundry run, map `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_BASE_URL` to the generic `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` variables with the approved secret manager while
+starting the exact devrouter worktree. The repository has no dependency on a
+personal secret operator. The VPN is required. Stop and restart an existing
+worktree when its LiteLLM container was started without those values; a warm
+ensure does not replace service-container environment. The direct
+`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+the fixed effort aliases remain internal router targets.
+
+The local target-evaluation adapter is a host loopback boundary, not another
+Chat product route. It authenticates a seeded participant against the
+namespaced API and Chat origins, sends only the question and resolved mode,
+drains the UI stream, and reads back the persisted assistant message. Expected
+answers remain in the evaluator, and raw tool arguments/results remain inside
+the target process. The committed KB_doc_query canary proves synthetic
+transport and persistence only; it must not be reported as FineCo quality or
+replace an authorized EXPERT_df_fineco_expert binding.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
@@ -527,6 +546,84 @@ when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
+
+## Lecturer authoring and publication contract
+
+The owner-facing GraphQL contract lives in
+`packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
+can create a course-bound `DRAFT` chatbot before their account is authorized to
+publish. The course is fixed after creation. Metadata and model policy are
+editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
+`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
+`DRAFT` and `REJECTED`.
+
+`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
+plus the disclaimer ID the client loaded. It normalizes line endings and outer
+whitespace, validates both fields, and rejects introduction Markdown outside
+paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
+uses transactional copy-on-write. The replacement retains the internal name,
+description, and media fields. A stale expected ID fails with
+`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
+This preserves the participant acceptance contract: acceptance and Manage's
+accepted count apply only when
+`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
+
+`requestChatbotPublication` still requires the live account capability from
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
+linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
+`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
+to Catalyst and full-access lecturers; it does not expose account budget data.
+Submission never publishes automatically; the existing administrator approval
+remains a separate transition.
+
+Manage exposes draft preparation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
+limited to the lecturer's owned, non-archived courses, and the newly created
+chatbot is selected immediately. The workspace keeps chatbot selection in a
+persistent desktop rail and a compact mobile selector. Its URL identifies the
+selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
+setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
+as the initial accordion section hint. Invalid deep links fall back to the
+first valid lifecycle view or section. Published chatbots preserve any valid
+setup-section hint while keeping their read-only Disclaimer and Review
+contracts.
+Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
+model-policy changes, and block while an affected mutation is pending.
+
+Draft and rejected chatbots use the setup view as one page with a multiple-open
+accordion containing Basics, Disclaimer, and Review and submit. Each section
+keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
+available while lecturers inspect another section. Basics saves the name and
+description, Disclaimer saves the lecturer-written introduction while showing
+the fixed participant preview, and Review and submit summarizes the saved
+configuration before showing the publication request form.
+The course remains read-only after creation. Publication inputs are preparation
+fields in the Review and submit section and persist only when the lecturer submits the existing
+publication mutation. A successful Basics or Disclaimer save opens the next
+accordion section after the refetched chatbot is complete. Edit actions in the
+review section open the relevant accordion section, while the workspace
+navigation guard still prevents dirty or pending changes from being discarded
+silently.
+
+The selected course is read-only. Name, description, and model settings follow
+the metadata lifecycle matrix above; the disclaimer title and introduction are
+editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
+toolbar by default and uses the `basic` preset for disclaimer introductions,
+retaining simple formatting while omitting media, video, math, code, and quote
+controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
+without participant actions, and its Slate editor remounts when either the
+chatbot or current disclaimer ID changes so a selection change cannot retain
+stale text.
+
+The publication section keeps `DRAFT` and `REJECTED` request details editable
+for preparation, but enables submission only when a complete disclaimer, the
+live account publication capability, and clean, settled Basics and Disclaimer
+forms are present. While publication is pending, those sibling forms are
+locked so late edits cannot be lost during the lifecycle transition.
+`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
+publication details, while a rejected request retains its review comment for
+correction and resubmission.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,

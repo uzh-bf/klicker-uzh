@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-31'
+timestamp: '2026-09-02'
 tags:
   - frontend
 ---
@@ -75,6 +75,14 @@ contract is unchanged.
 ## Data fetching
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+
+The course Practice Quiz overview is the shared participant and LTI entry point
+for the Practice Pool and individual quizzes. Keep it visible when exactly one
+quiz is published. Render the Practice Pool promotion as a semantic link only
+when `SelfDocument` identifies the current user as an authenticated
+`Participant`; loading, error, missing-self, anonymous, temporary, and lecturer
+states fail closed. Individual published quiz links remain available to every
+user state already permitted to access them.
 
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`

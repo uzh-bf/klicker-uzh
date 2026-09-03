@@ -80,7 +80,13 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     sub: string,
     role: UserRole,
     scope: UserLoginScope,
-    featureFlags: FeatureFlagEvaluator | null = flagEvaluator(true)
+    {
+      featureFlags = flagEvaluator(true),
+      catalyst = false,
+    }: {
+      featureFlags?: FeatureFlagEvaluator | null
+      catalyst?: boolean
+    } = {}
   ): ContextWithUser {
     return {
       prisma,
@@ -90,7 +96,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         sub,
         role,
         scope,
-        catalystInstitutional: false,
+        catalystInstitutional: catalyst,
         catalystIndividual: false,
       },
     } as ContextWithUser
@@ -684,7 +690,9 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       chatAccountUsage: { findFirst: vi.fn() },
     } as unknown as PrismaClient
     const result = await getChatAccountUsage({}, {
-      ...contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, null),
+      ...contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+        featureFlags: null,
+      }),
       prisma: prismaSpy,
     } as ContextWithUser)
 
@@ -697,12 +705,9 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const evaluator = flagEvaluator(false)
     const result = await getChatAccountUsage(
       {},
-      contextFor(
-        ownerId,
-        UserRole.USER,
-        UserLoginScope.ACCOUNT_OWNER,
-        evaluator
-      )
+      contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+        featureFlags: evaluator,
+      })
     )
 
     expect(result).toBeNull()
@@ -716,12 +721,9 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     await expect(
       getChatAccountUsage(
         { ownerId: otherOwnerId },
-        contextFor(
-          ownerId,
-          UserRole.USER,
-          UserLoginScope.ACCOUNT_OWNER,
-          flagEvaluator(false)
-        )
+        contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+          featureFlags: flagEvaluator(false),
+        })
       )
     ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
   })
@@ -731,7 +733,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       adminId,
       UserRole.ADMIN,
       UserLoginScope.FULL_ACCESS,
-      flagEvaluator(false)
+      { featureFlags: flagEvaluator(false) }
     )
     const overview = await setChatAccountUsageBudgets(
       { ownerId, baseBudgetCredits: 3, advancedBudgetCredits: 4 },
@@ -740,6 +742,42 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     expect(overview?.baseModelUsage.budgetCredits).toBe(3)
     expect(overview?.advancedModelUsage.budgetCredits).toBe(4)
+  })
+
+  it('exposes only the live publication capability to full-access lecturers', async () => {
+    const source = `query { getChatbotPublishingCapability }`
+
+    const ownerResult = await executeGraphql({ source })
+    expect(ownerResult.data).toBeNull()
+    expect(ownerResult.errors?.[0]?.message).toBe('Unauthorized')
+
+    const fullAccessContext = contextFor(
+      ownerId,
+      UserRole.USER,
+      UserLoginScope.FULL_ACCESS,
+      { catalyst: true }
+    )
+    const enabledResult = await executeGraphql({
+      source,
+      context: fullAccessContext,
+    })
+    expect(enabledResult.errors).toBeUndefined()
+    expect(enabledResult.data).toEqual({
+      getChatbotPublishingCapability: true,
+    })
+
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiChatbotPublishingEnabled: false },
+    })
+    const disabledResult = await executeGraphql({
+      source,
+      context: fullAccessContext,
+    })
+    expect(disabledResult.errors).toBeUndefined()
+    expect(disabledResult.data).toEqual({
+      getChatbotPublishingCapability: false,
+    })
   })
 })
 

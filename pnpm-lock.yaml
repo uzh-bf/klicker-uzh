@@ -1769,9 +1769,21 @@ importers:
       nodemailer:
         specifier: 6.9.15
         version: 6.9.15
+      remark-gfm:
+        specifier: 4.0.1
+        version: 4.0.1
+      remark-math:
+        specifier: 6.0.0
+        version: 6.0.0
+      remark-parse:
+        specifier: 11.0.0
+        version: 11.0.0
       remeda:
         specifier: 2.15.0
         version: 2.15.0
+      unified:
+        specifier: 11.0.5
+        version: 11.0.5
       unique-names-generator:
         specifier: 4.7.1
         version: 4.7.1
