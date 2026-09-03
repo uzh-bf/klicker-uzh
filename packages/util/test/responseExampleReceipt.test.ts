@@ -88,7 +88,7 @@ describe('response-example receipt contract', () => {
     expect(signed.expiresAt).toBe(claims.expiresAt)
   })
 
-  it('rejects a tampered receipt and the wrong audience', async () => {
+  it('rejects tampering and mismatched verifier identity', async () => {
     const signed = await signResponseExampleReceipt(signingInput())
     const segments = signed.token.split('.')
     const signature = segments[2]!
@@ -102,6 +102,24 @@ describe('response-example receipt contract', () => {
         publicKeyPem,
         keyId: KEY_ID,
         issuer: ISSUER,
+        audience: AUDIENCE,
+      })
+    ).rejects.toMatchObject({ code: 'INVALID' })
+    await expect(
+      verifyResponseExampleReceipt({
+        token: signed.token,
+        publicKeyPem,
+        keyId: 'another-key',
+        issuer: ISSUER,
+        audience: AUDIENCE,
+      })
+    ).rejects.toMatchObject({ code: 'INVALID' })
+    await expect(
+      verifyResponseExampleReceipt({
+        token: signed.token,
+        publicKeyPem,
+        keyId: KEY_ID,
+        issuer: 'https://another-issuer.test',
         audience: AUDIENCE,
       })
     ).rejects.toMatchObject({ code: 'INVALID' })
@@ -133,6 +151,20 @@ describe('response-example receipt contract', () => {
         audience: AUDIENCE,
       })
     ).rejects.toMatchObject({ code: 'EXPIRED' })
+  })
+
+  it('reports an invalid verification key as configuration', async () => {
+    const signed = await signResponseExampleReceipt(signingInput())
+
+    await expect(
+      verifyResponseExampleReceipt({
+        token: signed.token,
+        publicKeyPem: 'not-a-public-key',
+        keyId: KEY_ID,
+        issuer: ISSUER,
+        audience: AUDIENCE,
+      })
+    ).rejects.toMatchObject({ code: 'CONFIGURATION' })
   })
 
   it('rejects unbounded or incomplete claims before signing', async () => {

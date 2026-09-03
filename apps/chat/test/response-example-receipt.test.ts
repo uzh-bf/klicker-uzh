@@ -184,4 +184,21 @@ describe('issuePreviewResponseExampleReceipt', () => {
       })
     ).resolves.toBeNull()
   })
+
+  it('stays unavailable without dedicated signing configuration', async () => {
+    vi.stubEnv('RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY', '')
+
+    await expect(
+      issuePreviewResponseExampleReceipt({
+        requestMessages: [userMessage('user-1', 'Why?')],
+        responseMessage: assistantMessage(),
+        finishReason: 'stop',
+        isAborted: false,
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        kbId: KB_ID,
+        chatMode: 'tutor',
+      })
+    ).resolves.toBeNull()
+  })
 })

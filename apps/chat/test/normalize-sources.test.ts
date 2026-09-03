@@ -622,6 +622,37 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
   })
+
+  test('keeps display deduplication independent from capture lineage', () => {
+    const sharedLineage = {
+      source_id: '33ec1c89-f892-4ab6-97cb-27ed037ec33d',
+      chunk_id: 'chunk-7',
+      content_hash: 'b'.repeat(64),
+      citation_anchor: 'page=7',
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            ...sharedLineage,
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+          {
+            ...sharedLineage,
+            file_name: 'course-notes.html',
+            source_url: 'https://example.com/course-notes.html',
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id }) => id)).toEqual([
+      'url:https://example.com/lecture-01.pdf||',
+      'url:https://example.com/course-notes.html||',
+    ])
+  })
 })
 
 describe('normalizeResponseExampleEvidenceFromParts', () => {

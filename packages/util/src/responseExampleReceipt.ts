@@ -6,6 +6,7 @@ import {
   jwtVerify,
   SignJWT,
 } from 'jose'
+import type { ResponseExampleSearchEvidence } from './responseExampleRuntime.js'
 
 export const RESPONSE_EXAMPLE_RECEIPT_ALGORITHM = 'ES256'
 export const RESPONSE_EXAMPLE_RECEIPT_PURPOSE = 'response-example-capture'
@@ -38,13 +39,7 @@ export class ResponseExampleReceiptError extends Error {
   }
 }
 
-export interface ResponseExampleReceiptEvidence {
-  citationIndex: number
-  sourceId: string
-  chunkId: string
-  contentHash: string
-  citationAnchor: string
-}
+export type ResponseExampleReceiptEvidence = ResponseExampleSearchEvidence
 
 export interface ResponseExampleReceiptClaims {
   version: typeof RESPONSE_EXAMPLE_RECEIPT_VERSION
@@ -298,11 +293,20 @@ export async function verifyResponseExampleReceipt(
   const issuer = requireConfiguredValue(input.issuer, 'receipt issuer')
   const audience = requireConfiguredValue(input.audience, 'receipt audience')
 
+  let publicKey: Awaited<ReturnType<typeof importSPKI>>
   try {
-    const publicKey = await importSPKI(
+    publicKey = await importSPKI(
       publicKeyPem,
       RESPONSE_EXAMPLE_RECEIPT_ALGORITHM
     )
+  } catch {
+    throw new ResponseExampleReceiptError(
+      'CONFIGURATION',
+      'receipt verification key is invalid'
+    )
+  }
+
+  try {
     const verified = await jwtVerify(input.token, publicKey, {
       algorithms: [RESPONSE_EXAMPLE_RECEIPT_ALGORITHM],
       issuer,

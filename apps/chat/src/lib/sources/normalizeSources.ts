@@ -1,4 +1,5 @@
 import { extractCitationIndexes } from '@klicker-uzh/util/citations'
+import type { ResponseExampleSearchEvidence } from '@klicker-uzh/util/response-example-runtime'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import type { ChatSource, ChatSourceType } from './types'
 
@@ -44,13 +45,7 @@ interface SourceCandidate {
   evidence?: Omit<ResponseExampleSourceEvidence, 'citationIndex'>
 }
 
-export interface ResponseExampleSourceEvidence {
-  citationIndex: number
-  sourceId: string
-  chunkId: string
-  contentHash: string
-  citationAnchor: string
-}
+export type ResponseExampleSourceEvidence = ResponseExampleSearchEvidence
 
 export function isDocQueryToolName(toolName: string): boolean {
   return DOC_QUERY_TOOL_NAME_RE.test(toolName)
@@ -141,15 +136,7 @@ function normalizeSourceCandidatesFromParts(
 
     for (const candidate of payloadCandidates) {
       if (normalizedCandidates.length >= MAX_SOURCES) break
-      const dedupeKey = candidate.evidence
-        ? [
-            'evidence',
-            candidate.evidence.sourceId,
-            candidate.evidence.chunkId,
-            candidate.evidence.contentHash,
-            candidate.evidence.citationAnchor,
-          ].join('|')
-        : candidate.dedupeKey
+      const dedupeKey = candidate.dedupeKey
       if (seenDedupeKeys.has(dedupeKey)) continue
 
       seenDedupeKeys.add(dedupeKey)

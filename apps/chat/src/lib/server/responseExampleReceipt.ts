@@ -18,10 +18,13 @@ export interface PreviewResponseExampleReceiptData {
   expiresAt: number
 }
 
-function requireReceiptEnvironment(name: string): string {
-  const value = process.env[name]?.trim()
-  if (!value) throw new Error(`${name} is not configured`)
-  return value
+function getReceiptEnvironment() {
+  const privateKeyPem = process.env.RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY?.trim()
+  const keyId = process.env.RESPONSE_EXAMPLE_RECEIPT_KID?.trim()
+  const issuer = process.env.RESPONSE_EXAMPLE_RECEIPT_ISSUER?.trim()
+  const audience = process.env.RESPONSE_EXAMPLE_RECEIPT_AUDIENCE?.trim()
+  if (!privateKeyPem || !keyId || !issuer || !audience) return null
+  return { privateKeyPem, keyId, issuer, audience }
 }
 
 function messageText(message: UIMessage): string {
@@ -91,13 +94,11 @@ export async function issuePreviewResponseExampleReceipt({
   )
   if (!evidenceReferences) return null
 
+  const environment = getReceiptEnvironment()
+  if (!environment) return null
+
   return await signResponseExampleReceipt({
-    privateKeyPem: requireReceiptEnvironment(
-      'RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY'
-    ),
-    keyId: requireReceiptEnvironment('RESPONSE_EXAMPLE_RECEIPT_KID'),
-    issuer: requireReceiptEnvironment('RESPONSE_EXAMPLE_RECEIPT_ISSUER'),
-    audience: requireReceiptEnvironment('RESPONSE_EXAMPLE_RECEIPT_AUDIENCE'),
+    ...environment,
     ownerId,
     chatbotId,
     kbId,
