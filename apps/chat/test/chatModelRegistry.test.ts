@@ -112,7 +112,20 @@ describe('chat model registry provider protocol', () => {
     )
   })
 
-  test('selects participant fallback only within the primary class and allow-list', async () => {
+  test('uses Luna when an allow-list contains only retired models', async () => {
+    const { getAutomaticModelId, getModelsForChatbot } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+
+    expect(
+      getModelsForChatbot({ allowedModelIds: ['gpt-4.1-mini'] }).map(
+        (model) => model.id
+      )
+    ).toEqual(['gpt-5.6-luna'])
+    expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-5.6-luna')
+  })
+
+  test('always selects Luna as the participant fallback', async () => {
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'advanced-fallback')
     vi.stubEnv(
       'CHAT_MODEL_REGISTRY_JSON',
@@ -150,23 +163,9 @@ describe('chat model registry provider protocol', () => {
       '../src/lib/server/chatModelRegistry'
     )
 
-    expect(
-      getParticipantFallbackModelId('ADVANCED', [
-        'advanced-primary',
-        'advanced-fallback',
-        'gpt-5.6-luna',
-      ])
-    ).toBe('advanced-fallback')
-    expect(
-      getParticipantFallbackModelId('ADVANCED', [
-        'advanced-primary',
-        'gpt-5.6-luna',
-      ])
-    ).toBeNull()
+    expect(getParticipantFallbackModelId()).toBe('gpt-5.6-luna')
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'gpt-5.6-luna')
-    expect(getParticipantFallbackModelId('BASE', ['gpt-5.6-luna'])).toBe(
-      'gpt-5.6-luna'
-    )
+    expect(getParticipantFallbackModelId()).toBe('gpt-5.6-luna')
   })
 
   test('rejects a registry whose sole BASE model is not fallback Luna', async () => {

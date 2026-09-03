@@ -1,12 +1,13 @@
 import { useQuery } from '@apollo/client'
 import {
-  Course,
+  type Course,
   SelfDocument,
-  StudentCourse,
+  type StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
-import React, { Dispatch, SetStateAction } from 'react'
+import type React from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -18,6 +19,7 @@ interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
   embedded?: boolean
+  embeddedAutoResize?: boolean
   course?:
     | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
@@ -40,6 +42,7 @@ function Layout({
   children,
   displayName = 'KlickerUZH',
   embedded = false,
+  embeddedAutoResize = false,
   course,
   mobileMenuItems,
   setActiveMobilePage,
@@ -94,7 +97,9 @@ function Layout({
       <div
         id={LAYOUT_SCROLL_CONTAINER_ID}
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col overflow-y-auto',
+          embeddedAutoResize
+            ? 'flex flex-none flex-col overflow-visible'
+            : 'flex min-h-0 flex-1 flex-col overflow-y-auto',
           embedded ? 'p-0' : 'p-4',
           !embedded && pageInFrame && 'px-0',
           className?.body

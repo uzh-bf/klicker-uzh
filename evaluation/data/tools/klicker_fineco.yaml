@@ -1,0 +1,2 @@
+- name: EXPERT_df_fineco_expert
+  description: MUST USE for questions grounded in the synthetic Financial Economics course evaluation set, including portfolio theory, CAPM, market efficiency, return distributions, and investment strategies.
