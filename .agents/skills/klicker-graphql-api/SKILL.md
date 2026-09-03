@@ -26,7 +26,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
        (args) => ({ courseId: args.id }), // -> PermissionCheck key for the target object
        DB.PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
        async (_, args, ctx) => {
-         const request = await CourseDeletionService.requestCourseDeletion(args, ctx)
+         const request = await CourseDeletionService.requestCourseDeletion(
+           args,
+           ctx
+         )
          return { courseId: request.courseId }
        }
      ),
