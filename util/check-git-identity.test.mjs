@@ -35,16 +35,39 @@ function createRepository(t) {
 }
 
 function commit(root, name, email, ...paragraphs) {
+  return commitWithIdentities(root, name, email, name, email, ...paragraphs)
+}
+
+function commitWithIdentities(
+  root,
+  authorName,
+  authorEmail,
+  committerName,
+  committerEmail,
+  ...paragraphs
+) {
   const messageArguments = paragraphs.flatMap((paragraph) => ['-m', paragraph])
-  git(
-    root,
-    '-c',
-    `user.name=${name}`,
-    '-c',
-    `user.email=${email}`,
-    'commit',
-    '--allow-empty',
-    ...messageArguments
+  childProcess.execFileSync(
+    'git',
+    [
+      '-C',
+      root,
+      '-c',
+      `user.name=${committerName}`,
+      '-c',
+      `user.email=${committerEmail}`,
+      'commit',
+      '--allow-empty',
+      ...messageArguments,
+    ],
+    {
+      env: {
+        ...gitEnvironment,
+        GIT_AUTHOR_NAME: authorName,
+        GIT_AUTHOR_EMAIL: authorEmail,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }
   )
   return git(root, 'rev-parse', 'HEAD')
 }
@@ -70,7 +93,7 @@ test('current mode rejects the fixture repository identity', (t) => {
   assertRejected(runGuard(root, 'current'))
 })
 
-test('range mode rejects fixture authors and co-author trailers', (t) => {
+test('range mode rejects fixture authors, committers, and co-author trailers', (t) => {
   const root = createRepository(t)
   const base = commit(root, 'Developer', 'developer@example.com', 'base')
   const normal = commit(root, 'Developer', 'developer@example.com', 'normal')
@@ -87,6 +110,16 @@ test('range mode rejects fixture authors and co-author trailers', (t) => {
     `Co-authored-by: ${fixtureName} <${fixtureEmail}>`
   )
   assertRejected(runGuard(root, 'range', `${fixture}..${trailer}`))
+
+  const fixtureCommitter = commitWithIdentities(
+    root,
+    'Developer',
+    'developer@example.com',
+    fixtureName,
+    fixtureEmail,
+    'fixture committer'
+  )
+  assertRejected(runGuard(root, 'range', `${trailer}..${fixtureCommitter}`))
 })
 
 test('pre-push mode checks the exact outgoing range', (t) => {

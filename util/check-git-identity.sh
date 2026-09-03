@@ -27,6 +27,7 @@ check_range() {
   local bad
   bad=$({
     git log --format='%H %s' --author="$fixture_email" "$@"
+    git log --format='%H %s' --committer="$fixture_email" "$@"
     git log --format='%H %s' --fixed-strings --grep="$fixture_trailer" "$@"
   } | sort -u)
   if [[ -n "$bad" ]]; then

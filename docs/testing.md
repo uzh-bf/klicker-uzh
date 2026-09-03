@@ -232,15 +232,16 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commits. The pull-request check repeats the commit-range guard on
-GitHub, where local hooks cannot be assumed. The second pre-commit check catches
-any test that mutates Git configuration while `check:all` runs. The Prisma
-package check regenerates the raw Prisma 7 client before typechecking; no
-generated-source patch remains. Clean CI jobs therefore do not depend on
-generated files left by an earlier build or cache restore. The Auth adapter
-round-trip is intentionally separate because it writes and removes disposable
-local rows. The expectation before a PR: `check:all` + build + targeted tests
-for touched logic + browser evidence for UI changes; CI is the real e2e gate.
+outgoing commit authors, committers, or co-author trailers. The pull-request
+check repeats the commit-range guard on GitHub, where local hooks cannot be
+assumed. The second pre-commit check catches any test that mutates Git
+configuration while `check:all` runs. The Prisma package check regenerates the
+raw Prisma 7 client before typechecking; no generated-source patch remains.
+Clean CI jobs therefore do not depend on generated files left by an earlier
+build or cache restore. The Auth adapter round-trip is intentionally separate
+because it writes and removes disposable local rows. The expectation before a
+PR: `check:all` + build + targeted tests for touched logic + browser evidence
+for UI changes; CI is the real e2e gate.
 
 Root typecheck includes the Playwright compiler surface through its package `check` script. Compiler/toolchain upgrades also cover the test build and Docs production build; the exact commands live in `klicker-testing-verification`. Playwright uses strict TypeScript compilation.
 
