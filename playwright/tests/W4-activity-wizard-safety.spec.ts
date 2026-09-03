@@ -230,9 +230,36 @@ test.describe('W4 activity wizard safety', () => {
   }) => {
     await loginLecturer()
     await openLibrary(page, 'en')
+
+    const firstElement = page.locator('[data-cy^="element-item-"]').first()
+    const standardHeight = await firstElement.evaluate(
+      (element) => element.getBoundingClientRect().height
+    )
+    await expect(firstElement.locator('.line-clamp-2')).toBeVisible()
+    await expect
+      .poll(() =>
+        firstElement
+          .locator('[data-cy^="element-actions-"]')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('column')
+
     await openWizard(page, wizardTypes[0])
 
     await expect(page.getByTestId('activity-creation-choices')).toHaveCount(0)
+    await expect(firstElement.locator('.line-clamp-1')).toBeVisible()
+    const compactHeight = await firstElement.evaluate(
+      (element) => element.getBoundingClientRect().height
+    )
+    expect(compactHeight).toBeLessThan(standardHeight - 20)
+    await expect
+      .poll(() =>
+        firstElement
+          .locator('[data-cy^="element-actions-"]')
+          .evaluate((element) => getComputedStyle(element).flexDirection)
+      )
+      .toBe('row')
+
     const navigation = page.getByTestId('activity-wizard-navigation')
     const createElement = navigation.getByTestId('create-question')
     await expect(createElement).toBeVisible()

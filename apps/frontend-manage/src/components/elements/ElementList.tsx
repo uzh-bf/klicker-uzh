@@ -106,7 +106,9 @@ function ElementList({
   }
 
   return (
-    <div className="space-y-1 md:space-y-2">
+    <div
+      className={activityWizardOpen ? 'space-y-1' : 'space-y-1 md:space-y-2'}
+    >
       {filtersActive && (
         <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
           {t.rich('manage.questionPool.activeFiltersWarning', {
@@ -126,6 +128,7 @@ function ElementList({
           key={`question-list-element-${element.id}`}
           element={element}
           disabled={!element.isManager && activityWizardOpen}
+          compact={activityWizardOpen}
           checked={!!selectedElements[element.id]}
           tags={element.tags || []}
           handleTagClick={handleTagClick}

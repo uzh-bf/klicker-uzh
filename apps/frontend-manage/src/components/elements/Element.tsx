@@ -56,6 +56,7 @@ interface ElementProps {
   checked: boolean
   element: ElementObject
   disabled: boolean
+  compact?: boolean
   tags?: Tag[]
   handleTagClick: (tagId: number) => void
   onCheck: () => void
@@ -70,6 +71,7 @@ function Element({
   checked = false,
   element,
   disabled,
+  compact = false,
   tags = [],
   handleTagClick,
   onCheck,
@@ -166,16 +168,30 @@ function Element({
         <div
           className={twMerge(
             'flex w-full cursor-grab flex-col rounded-lg border border-solid px-3 py-2 hover:shadow-md md:flex-row',
+            compact && 'py-1.5',
             collectedProps.isDragging && 'opacity-50',
             disabled && 'cursor-not-allowed opacity-50 hover:shadow-none'
           )}
         >
-          <div className="flex flex-1 flex-row">
-            <div className="flex flex-1 flex-col gap-1">
-              <div className="flex flex-none flex-row items-center gap-2 text-lg">
+          <div
+            className={twMerge('flex flex-1 flex-row', compact && 'min-w-0')}
+          >
+            <div
+              className={twMerge(
+                'flex flex-1 flex-col gap-1',
+                compact && 'min-w-0 gap-0.5'
+              )}
+            >
+              <div
+                className={twMerge(
+                  'flex flex-none flex-row items-center gap-2 text-lg',
+                  compact && 'text-base'
+                )}
+              >
                 <a
                   className={twMerge(
                     'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
+                    compact && 'min-w-0 text-base',
                     disabled && 'hover:cursor-not-allowed hover:text-black'
                   )}
                   role="button"
@@ -207,9 +223,12 @@ function Element({
                 </a>
               </div>
 
-              <div className="flex-1 text-sm">
+              <div
+                className="flex-1 text-sm"
+                data-cy={`element-content-preview-${element.name}`}
+              >
                 <Ellipsis
-                  maxLines={2}
+                  maxLines={compact ? 1 : 2}
                   withMarkdown={false}
                   previewContent={markdownToPlainText(element.content)}
                   className={{ root: 'text-left' }}
@@ -276,7 +295,13 @@ function Element({
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
-          <div className="flex flex-row gap-1.5 md:flex-col">
+          <div
+            className={twMerge(
+              'flex flex-row gap-1.5 md:flex-col',
+              compact && 'md:flex-row'
+            )}
+            data-cy={`element-actions-${element.name}`}
+          >
             {availableActions
               .slice(0, availableActions.length > 3 ? 2 : 3)
               .map((action) => {
