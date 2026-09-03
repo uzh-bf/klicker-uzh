@@ -321,12 +321,13 @@ function GeneratedDraftEditor({
             return
           }
 
-          onClose()
           try {
             await onChanged()
           } catch {
             toast({ type: 'error', message: tShared('systemError') })
+            return
           }
+          onClose()
         },
       }}
       supplementaryContent={

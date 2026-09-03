@@ -4,6 +4,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isDeepStrictEqual } from 'node:util'
 
 const SCHEMA_VERSION = 1
 const REPOSITORY_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -212,7 +213,7 @@ export function resolveRuntimePlan({
   }
 
   const filePlan = readJson(output, 'Devrouter profile plan')
-  if (JSON.stringify(stdoutPlan) !== JSON.stringify(filePlan)) {
+  if (!isDeepStrictEqual(stdoutPlan, filePlan)) {
     fail('Devrouter stdout and output plans differ')
   }
   const runtime = validateRuntimePlan(filePlan)

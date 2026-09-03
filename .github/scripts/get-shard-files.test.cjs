@@ -78,6 +78,67 @@ test('eight shard plans preserve every spec and emit canonical profiles', () => 
   }
 })
 
+test('greedily balances synthetic shard plans by duration', () => {
+  const files = [
+    'A.spec.ts',
+    'B.spec.ts',
+    'C.spec.ts',
+    'D.spec.ts',
+    'E.spec.ts',
+    'F.spec.ts',
+  ]
+  const durations = new Map([
+    ['A.spec.ts', 10],
+    ['B.spec.ts', 9],
+    ['C.spec.ts', 8],
+    ['D.spec.ts', 7],
+    ['E.spec.ts', 6],
+    ['F.spec.ts', 5],
+  ])
+  const profiles = new Map(files.map((file) => [file, 'manage']))
+  const plans = buildShardPlans(files, durations, profiles, 2)
+
+  assert.deepEqual(
+    plans.map((plan) => plan.files),
+    [
+      ['tests/A.spec.ts', 'tests/D.spec.ts', 'tests/E.spec.ts'],
+      ['tests/B.spec.ts', 'tests/C.spec.ts', 'tests/F.spec.ts'],
+    ]
+  )
+  assert.deepEqual(
+    plans.map((plan) => plan.estimatedDuration),
+    [23, 22]
+  )
+})
+
+test('warns about stale and untimed specs and applies the fallback duration', () => {
+  const files = ['active.spec.ts', 'untimed.spec.ts']
+  const warnings = []
+  const durations = parseTimings(
+    {
+      version: 1,
+      durations: [
+        { spec: 'tests/active.spec.ts', duration: 10 },
+        { spec: 'tests/stale.spec.ts', duration: 20 },
+      ],
+    },
+    files,
+    (message) => warnings.push(message)
+  )
+  const profiles = new Map(files.map((file) => [file, 'manage']))
+  const plans = buildShardPlans(files, durations, profiles, 2)
+
+  assert.equal(durations.get('active.spec.ts'), 10)
+  assert.equal(durations.has('untimed.spec.ts'), false)
+  assert.match(warnings[0], /Ignoring stale timing entries: stale\.spec\.ts/)
+  assert.match(
+    warnings[1],
+    /Using 30s fallback for untimed specs: untimed\.spec\.ts/
+  )
+  assert.equal(plans[0].estimatedDuration, 30)
+  assert.deepEqual(plans[0].files, ['tests/untimed.spec.ts'])
+})
+
 test('missing, stale, and duplicate profile assignments fail closed', () => {
   assert.throws(
     () =>

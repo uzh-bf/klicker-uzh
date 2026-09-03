@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -348,6 +355,50 @@ test('local full-stack startup stays independent from the CI runtime plan', () =
     packageJson.scripts['start:playwright:ci'],
     'node ./util/playwright-profile-runtime.mjs start'
   )
+})
+
+test('accepts equivalent runtime plans with different JSON property order', () => {
+  const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-order-'))
+  const output = join(outputDir, 'profile.json')
+  const devrouterBin = join(outputDir, 'devrouter')
+  const plan = profilePlan()
+
+  writeFileSync(
+    devrouterBin,
+    `#!/usr/bin/env node
+const { writeFileSync } = require('node:fs')
+const args = process.argv.slice(2)
+const output = args[args.indexOf('--output') + 1]
+const plan = ${JSON.stringify(plan)}
+const reorderedPlan = {
+  bindings: plan.bindings,
+  managedRuntime: plan.managedRuntime,
+  readiness: plan.readiness,
+  dependencies: plan.dependencies,
+  apps: plan.apps,
+  profile: plan.profile,
+  repoPath: plan.repoPath,
+  schemaVersion: plan.schemaVersion,
+  contractPath: plan.contractPath,
+}
+writeFileSync(output, JSON.stringify(plan))
+process.stdout.write(JSON.stringify(reorderedPlan))
+`
+  )
+  chmodSync(devrouterBin, 0o755)
+
+  try {
+    const runtime = resolveRuntimePlan({
+      profile: plan.profile,
+      output,
+      repo: plan.repoPath,
+      devrouterBin,
+    })
+    assert.equal(runtime.profile, plan.profile)
+    assert.deepEqual(runtime.apps, plan.apps)
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true })
+  }
 })
 
 test('installed Devrouter plans every shard profile union from the real contract', () => {
