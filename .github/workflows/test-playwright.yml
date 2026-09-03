@@ -17,7 +17,7 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+    uses: ./.github/workflows/public-pr-playwright-shards.yml
     with:
       route_hint: auto
 
