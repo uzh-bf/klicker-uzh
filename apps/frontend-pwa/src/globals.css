@@ -10,7 +10,6 @@
 @import "driver.js/dist/driver.css" layer(components);
 
 @plugin "@tailwindcss/typography";
-@plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
 
 @source "../node_modules/@uzh-bf/design-system/src";

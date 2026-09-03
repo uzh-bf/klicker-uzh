@@ -271,6 +271,51 @@ describe('product update read state services', () => {
     ).resolves.toBe(0)
   })
 
+  // A first presentation and a first read can reach the backend at the same
+  // moment — the feed records the presentation while the actor already opens
+  // the card. Both then try to create the actor's very first row, and one of
+  // them loses the unique constraint, which the service has to absorb instead
+  // of failing the mutation.
+  it('survives a presentation and a read racing for the first row', async () => {
+    for (let iteration = 0; iteration < 5; iteration++) {
+      const asParticipant = iteration % 2 === 0
+      const actor = asParticipant
+        ? await createParticipant()
+        : await createLecturer()
+      const ctx = actorContext(
+        actor.id,
+        asParticipant ? UserRole.PARTICIPANT : UserRole.USER
+      )
+
+      await expect(
+        Promise.all([
+          recordProductUpdatePresentation({ updateId: UPDATE_ID }, ctx),
+          markProductUpdateRead({ updateId: UPDATE_ID }, ctx),
+        ])
+      ).resolves.toHaveLength(2)
+
+      // The returned rows can be mutually stale, so the outcome is asserted on
+      // the stored row: exactly one presentation counted and the read claimed.
+      const stored = asParticipant
+        ? await prisma.participantProductUpdateState.findUniqueOrThrow({
+            where: {
+              participantId_updateId: {
+                participantId: actor.id,
+                updateId: UPDATE_ID,
+              },
+            },
+          })
+        : await prisma.userProductUpdateState.findUniqueOrThrow({
+            where: {
+              userId_updateId: { userId: actor.id, updateId: UPDATE_ID },
+            },
+          })
+
+      expect(stored.presentationCount).toBe(1)
+      expect(stored.readAt).not.toBeNull()
+    }
+  })
+
   // A newer frontend may ask about catalog entries this backend does not carry
   // yet, so the read path has to answer for the ids it knows.
   it('ignores unknown update ids on read and returns the known-id states', async () => {

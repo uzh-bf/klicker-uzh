@@ -2,15 +2,16 @@ import { useQuery } from '@apollo/client'
 import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Course,
+  type Course,
   SelfDocument,
-  StudentCourse,
+  type StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import type React from 'react'
+import { type Dispatch, type SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 import MobileMenuBar from './common/MobileMenuBar'
@@ -24,6 +25,7 @@ interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
   embedded?: boolean
+  embeddedAutoResize?: boolean
   course?:
     | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
@@ -54,6 +56,7 @@ function Layout({
   children,
   displayName = 'KlickerUZH',
   embedded = false,
+  embeddedAutoResize = false,
   course,
   mobileMenuItems,
   setActiveMobilePage,
@@ -155,7 +158,9 @@ function Layout({
       <div
         id={LAYOUT_SCROLL_CONTAINER_ID}
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col overflow-y-auto',
+          embeddedAutoResize
+            ? 'flex flex-none flex-col overflow-visible'
+            : 'flex min-h-0 flex-1 flex-col overflow-y-auto',
           embedded ? 'p-0' : 'p-4',
           !embedded && pageInFrame && 'px-0',
           className?.body

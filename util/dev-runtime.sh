@@ -4,10 +4,14 @@ set -euo pipefail
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 ROOT="${KLICKER_DEV_RUNTIME_ROOT:-$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)}"
 STATE_DIR="${KLICKER_DEV_RUNTIME_STATE_DIR:-$ROOT/.devcontainer/.runtime}"
+BOOTSTRAP_STATE_DIR="${KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR:-/tmp/klicker-devcontainer}"
+BOOTSTRAP_MARKER_FILE="$BOOTSTRAP_STATE_DIR/bootstrap-complete"
+BOOTSTRAP_MARKER_TOKEN='klicker-devcontainer-bootstrap-v1'
 GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+RUNTIME_APPS=("${NEXT_APPS[@]}" response-api)
 # Authentication rejects this valid synthetic nested route before any database
 # lookup, so the handler must return JSON 401 even when no seed data exists.
 CHAT_PROBE_URL='http://localhost:3004/api/chatbots/00000000-0000-4000-8000-000000000000/threads'
@@ -126,6 +130,28 @@ write_atomic() {
   mv "$temporary" "$path"
 }
 
+# Bootstrap completion lives in the container's fixed /tmp state rather than
+# the mounted worktree. Tests may override this one directory for isolation.
+begin_bootstrap() {
+  rm -f -- "$BOOTSTRAP_MARKER_FILE"
+  echo '[dev-runtime] Invalidated the bootstrap completion marker.'
+}
+
+complete_bootstrap() {
+  write_atomic "$BOOTSTRAP_MARKER_FILE" "$BOOTSTRAP_MARKER_TOKEN"
+  echo '[dev-runtime] Published the bootstrap completion marker.'
+}
+
+require_bootstrap() {
+  require_tool cmp
+  [ -f "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker is missing.'
+  [ ! -L "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker must be a regular file.'
+  printf '%s\n' "$BOOTSTRAP_MARKER_TOKEN" | cmp -s - "$BOOTSTRAP_MARKER_FILE" ||
+    die 'Bootstrap completion marker is malformed or does not match the contract.'
+}
+
 read_generation() {
   local generation=0
 
@@ -153,6 +179,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
 }
@@ -167,6 +194,7 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
+    response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
 }
@@ -270,11 +298,17 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
+  elif [ "$mode" = 'health-json' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$status" = '404' ] && [[ "$content_type" == text/html* ]]; then
+  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+    [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"
   fi
@@ -356,8 +390,16 @@ wait_for_app() {
 doctor() {
   local app observation status=0 unhealthy=0
   local any_stale=false any_unexpected=false
+  local doctor_apps=("${RUNTIME_APPS[@]}")
 
-  for app in "${NEXT_APPS[@]}"; do
+  if [ "${READINESS_APPS+x}" = x ]; then
+    doctor_apps=()
+    if [ -n "$READINESS_APPS" ]; then
+      read -r -a doctor_apps <<<"$READINESS_APPS"
+    fi
+  fi
+
+  for app in "${doctor_apps[@]}"; do
     status=0
     observation="$(probe_app "$app")" || status=$?
     if [ "$status" -eq 0 ]; then
@@ -411,13 +453,16 @@ Usage:
   util/dev-runtime.sh fingerprint
   util/dev-runtime.sh dependency-fingerprint
   util/dev-runtime.sh generation
+  util/dev-runtime.sh begin-bootstrap
+  util/dev-runtime.sh complete-bootstrap
+  util/dev-runtime.sh require-bootstrap
   util/dev-runtime.sh stamp-dependencies
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell> <status> <content-type>
-  util/dev-runtime.sh probe-app <next-app>
-  util/dev-runtime.sh wait-app <next-app>
+  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh probe-app <runtime-app>
+  util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor
 EOF
 }
@@ -438,6 +483,18 @@ main() {
       ;;
     generation)
       read_generation
+      ;;
+    begin-bootstrap)
+      [ "$#" -eq 1 ] || die "begin-bootstrap takes no arguments."
+      begin_bootstrap
+      ;;
+    complete-bootstrap)
+      [ "$#" -eq 1 ] || die "complete-bootstrap takes no arguments."
+      complete_bootstrap
+      ;;
+    require-bootstrap)
+      [ "$#" -eq 1 ] || die "require-bootstrap takes no arguments."
+      require_bootstrap
       ;;
     stamp-dependencies)
       stamp_dependencies

@@ -68,42 +68,62 @@ export async function atomicDecrementCredits(
   amount: number
 ): Promise<{ current: number; total: number }> {
   return withTransaction(async (tx) => {
-    // Lock the record for update to prevent concurrent modifications
-    const credits = await tx.chatUsageCredits.findUnique({
-      where: {
-        participantId_chatbotId: {
-          participantId,
-          chatbotId,
-        },
-      },
-    })
-
-    if (!credits) {
-      throw new Error('Credits record not found')
-    }
-
-    const currentCredits = credits.current.toNumber()
-    const newCurrent = Math.max(0, currentCredits - amount)
-
-    // Update with optimistic concurrency check
-    const updated = await tx.chatUsageCredits.update({
-      where: {
-        participantId_chatbotId: {
-          participantId,
-          chatbotId,
-        },
-      },
-      data: {
-        current: newCurrent,
-        updatedAt: new Date(),
-      },
-    })
-
-    return {
-      current: updated.current.toNumber(),
-      total: updated.total.toNumber(),
-    }
+    return atomicDecrementCreditsInTransaction(
+      tx,
+      participantId,
+      chatbotId,
+      amount
+    )
   })
+}
+
+/**
+ * Atomically decrement credits using an existing transaction.
+ *
+ * The database expression prevents concurrent decrements from overwriting
+ * each other while keeping the balance at zero when the requested amount is
+ * larger than the remaining balance.
+ */
+export async function atomicDecrementCreditsInTransaction(
+  tx: Prisma.TransactionClient,
+  participantId: string,
+  chatbotId: string,
+  amount: number
+): Promise<{ current: number; total: number }> {
+  const updatedCount = await tx.$executeRaw(
+    Prisma.sql`
+      UPDATE "public"."ChatUsageCredits"
+      SET "current" = GREATEST(
+            "current" - CAST(${amount} AS DECIMAL(18, 6)),
+            0
+          ),
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "participantId" = CAST(${participantId} AS UUID)
+        AND "chatbotId" = CAST(${chatbotId} AS UUID)
+    `
+  )
+
+  if (updatedCount !== 1) {
+    throw new Error('Credits record not found')
+  }
+
+  const updated = await tx.chatUsageCredits.findUnique({
+    where: {
+      participantId_chatbotId: {
+        participantId,
+        chatbotId,
+      },
+    },
+  })
+
+  if (!updated) {
+    throw new Error('Credits record not found')
+  }
+
+  return {
+    current: updated.current.toNumber(),
+    total: updated.total.toNumber(),
+  }
 }
 
 /**

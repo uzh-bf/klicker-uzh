@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-23'
+timestamp: '2026-09-02'
 tags:
   - frontend
 ---
@@ -70,11 +70,19 @@ contract is unchanged.
 - **Plain-link trigger**: Any plain, unformatted markdown link labelled `video` or `embed` (case-insensitive, trimmed) with a supported URL is rendered as a responsive iframe. The player uses a block-styled phrasing wrapper so links keep the original interception behavior inside paragraphs, lists, headings, and tables without producing invalid `<p><div>` markup. Formatted labels, unsupported hosts, malformed IDs, and other link labels stay regular links.
 - **YouTube URLs**: Allowlisted `youtube.com/watch`, `youtu.be`, and `youtube.com/embed` links are supported. Video IDs must contain exactly 11 valid characters.
 - **Kaltura URLs**: MediaSpace, legacy `entryId` / `partner_id` / `uiConfId`, and PlayKit `/p/{partnerId}` / `/uiconf_id/{uiConfId}` forms are supported. Entry IDs require `0_` or `1_` plus 8 alphanumeric characters; partner/UI configuration defaults to `106` / `23449004`. Generic Kaltura origins intentionally normalize to the UZH SWITCHcast player for now.
-- **Player behavior**: YouTube and Kaltura render immediately with the original 16:9 responsive dimensions, accessible provider title, lazy loading, and fullscreen support.
+- **Player behavior**: YouTube and Kaltura render immediately with the original 16:9 responsive dimensions, accessible provider title, lazy loading, and fullscreen support. The ratio comes from Tailwind v4's native `aspect-video` utility; the legacy `@tailwindcss/aspect-ratio` plugin is not loaded in the PWA, Manage, or Control apps because it conflicts with the native utility.
 
 ## Data fetching
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+
+The course Practice Quiz overview is the shared participant and LTI entry point
+for the Practice Pool and individual quizzes. Keep it visible when exactly one
+quiz is published. Render the Practice Pool promotion as a semantic link only
+when `SelfDocument` identifies the current user as an authenticated
+`Participant`; loading, error, missing-self, anonymous, temporary, and lecturer
+states fail closed. Individual published quiz links remain available to every
+user state already permitted to access them.
 
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
@@ -110,9 +118,9 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
     - `privatePreview` (User-profile level): Gates advanced beta features such as element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`).
     - `publicPreview` (User-profile level): Retained in Prisma and the public GraphQL schema, but no longer selected by Manage's user-profile query or used for learning analytics.
   - `@klicker-uzh/feature-flags` is the shared GrowthBook integration. Manage's `learning-analytics` flag defaults to false and leaves analytics controls visible but disabled. Use stable internal actor IDs for targeting, and never treat a flag as authorization. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
-- **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
+- **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`) with environment-specific parent origins in `deploy/env-uzh-{stg,prd}/values.yaml`; local: Traefik `customResponseHeaders` (`util/traefik/rules_{docker,wsl}.yaml`). Use exact HTTPS origins for external LMS instances and reserve the PWA-only `*.localhost` wildcard for local development parents.
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.
-- **Local embed testing**: `util/embed-harness/` must target the branch-local PWA (`http://127.0.0.1:3101/...`), not the production PWA — production CSP blocks localhost embedding.
+- **Local embed testing**: deployed PWA CSP allows HTTPS parents under `*.localhost`; the `util/embed-harness/` origin is plain HTTP on `127.0.0.1`, so it must still target the branch-local PWA (`http://127.0.0.1:3101/...`) rather than production.
 
 ## Verification
 
