@@ -2,11 +2,11 @@
 
 Date: 2026-08-31
 
-Status: execution in progress — W1 acceptance and publication
+Status: W2 implementation reviewed — publication and runtime recovery pending
 
-Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-operations-w1`, branch `rs/kb-resource-operations-w1`
+Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-replacement-w2`, branch `rs/kb-resource-replacement-w2`
 
-PR: [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710), targeting `feat/kb-element-generation-followups`
+PR: W1 [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710) is merged; the W2 PR targets `v3-ai`
 
 Proposed delivery target: the current KB/KG feature stack, with the live PR base resolved again before implementation. The ultimate integration target remains `v3-ai` unless the user names another target. This roadmap does not include the `v3-ai` to `v3` promotion branch.
 
@@ -428,3 +428,12 @@ The package's final review must explicitly verify that source type and material 
 - A dispatch failure leaves the new source retryable through the ordinary row and bulk ingestion paths. Existing AI content remains active until normal settlement succeeds. The old source blob is deleted best-effort after confirmation and cannot be restored; this narrower source-file guarantee is explicit in the UI and docs.
 - The schema adds only nullable replacement target/version fields to `KBUploadTicket`, one relation/index, and one generated migration. No Hatchet workflow, data-ingestion, source-gateway, webhook, maintenance, graph, or question-generation code changes remain in the W2 diff.
 - The isolated devrouter workspace is retained as `rs-kb-resource-replacement-w2`. Source checks can run in its Node 24 container when OrbStack is healthy; the current host OrbStack VM RPC exits with `Post "http://vmrpc": EOF`, so browser handoff remains an environment recovery gate rather than source evidence.
+
+### 2026-09-03 — W2 implementation, integration, and review
+
+- W2 is committed on `rs/kb-resource-replacement-w2` and integrated once with `origin/v3-ai@fa7e707bdf76b8afadb2d640e2ad288991537660` at merge commit `722a5bb56d`. The 20-path package adds dedicated request/confirm replacement operations, target/version-fenced upload tickets, conservative byte quota accounting without a second resource slot, same-resource canonical source replacement, ordinary ingestion dispatch/retry, the BLOB-only Manage flow, focused tests, one generated migration, and the required wiki/skill updates.
+- Local source evidence before the integration pass is green: the six focused replacement and serving-cutover tests pass, the complete knowledge suite passes `63/63`, Prisma validation, GraphQL generation and checks, Knowledge Base management and Playwright TypeScript checks, repository `check:all`, build, migration reset/deploy/push, and diff/secret checks pass. The authenticated desktop browser flow covers BLOB replacement, URL action absence, explicit selection and confirmation, modal closure, and preservation of the active version while the replacement queues.
+- The simplifier and the source/data-integrity slice review found no blocking defect. The integrated final review at `722a5bb56d` passed with no findings across ownership, BLOB-only authorization, version fencing, concurrent confirmation, quota, migration, queue-failure retryability, old-blob cleanup, serving continuity, UI, tests, and docs.
+- A later `v3-ai` change at `7249e57eb7` adds chatbot owner preview. It overlaps only the shared English and German message files and merges without conflict; no repeated upstream integration is performed after the approved one-time pass. The PR interaction check and exact-head CI remain the publication gates.
+- Integrated runtime re-verification is blocked by environment state, not a reproduced W2 failure. Upstream moved Azurite into the boot-critical base service set; the existing managed runtime now requires exact delete-and-recreate recovery. The host also reports an unavailable OrbStack socket and insufficient free disk during analytics environment refresh. Recreating only `rs-kb-resource-replacement-w2` requires separate explicit deletion authority before the full stack can be left running for manual verification.
+- Push and draft PR creation against `v3-ai` are authorized next. Merge, deployment, live ingestion, graph generation, production action, secret access/write, cluster writes, and unrelated cleanup remain withheld.
