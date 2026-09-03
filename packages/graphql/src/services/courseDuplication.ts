@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { resolveOptionalRequestContext } from '@klicker-uzh/logging/request'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { HatchetHandlers, HatchetLoggingContext } from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -12,6 +14,7 @@ import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
+import { createTaskAppLogger } from '../lib/taskLogger.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -209,7 +212,8 @@ function parseCourseDuplicationDate(value: unknown) {
 }
 
 function parseCourseDuplicationJob(
-  rawJob: string | null
+  rawJob: string | null,
+  log?: AppLogger
 ): CourseDuplicationJob | null {
   if (!rawJob) return null
 
@@ -231,15 +235,26 @@ function parseCourseDuplicationJob(
           }
         : undefined,
     } satisfies CourseDuplicationJob
-  } catch (error) {
-    console.error('Failed to parse course duplication job status:', error)
+  } catch {
+    log?.warn(
+      {
+        event: 'course_duplication.status.parse_failed',
+        err: toSafeError('Failed to parse course duplication job status'),
+      },
+      'Failed to parse course duplication job status'
+    )
     return null
   }
 }
 
-async function getCourseDuplicationJob(redis: Redis, jobId: string) {
+async function getCourseDuplicationJob(
+  redis: Redis,
+  jobId: string,
+  log?: AppLogger
+) {
   return parseCourseDuplicationJob(
-    await redis.get(getCourseDuplicationStatusKey(jobId))
+    await redis.get(getCourseDuplicationStatusKey(jobId)),
+    log
   )
 }
 
@@ -287,16 +302,18 @@ async function deleteCourseDuplicationJob(redis: Redis, jobId: string) {
 
 async function publishCourseDuplicationEvent(
   hatchet: ContextWithUser['hatchet'],
-  jobId: string
+  jobId: string,
+  loggingContext?: HatchetLoggingContext
 ) {
+  const input = { jobId, ...(loggingContext ? { loggingContext } : {}) }
   try {
-    await hatchet.events.push('process-course-duplication', { jobId })
+    await hatchet.events.push('process-course-duplication', input)
   } catch (error) {
     // Hatchet may have accepted the event before the client observed an
     // acknowledgement. Retry the same job id so a lost acknowledgement cannot
     // create a second course.
     try {
-      await hatchet.events.push('process-course-duplication', { jobId })
+      await hatchet.events.push('process-course-duplication', input)
     } catch (retryError) {
       const publishError = new Error(
         `Initial publish failed: ${getErrorMessage(error)}; retry failed: ${getErrorMessage(retryError)}`,
@@ -404,7 +421,8 @@ function getPublicCourseDuplicationStatus(
 async function normalizeStaleCourseDuplicationJob(
   redis: Redis,
   prisma: PrismaClient,
-  job: CourseDuplicationJob
+  job: CourseDuplicationJob,
+  log?: AppLogger
 ) {
   if (
     isTerminalCourseDuplicationStatus(job.status) ||
@@ -420,8 +438,12 @@ async function normalizeStaleCourseDuplicationJob(
   })
 
   if (committedCourse) {
-    console.warn(
-      `Course duplication job ${job.id} went stale but its course is committed; marking COMPLETED.`
+    log?.warn(
+      {
+        event: 'course_duplication.status.reconciled',
+        outcome: 'committed_course',
+      },
+      'Course duplication job went stale but its course is committed; marking completed'
     )
     return await updateCourseDuplicationJob(redis, job, {
       status: 'COMPLETED',
@@ -429,8 +451,12 @@ async function normalizeStaleCourseDuplicationJob(
     })
   }
 
-  console.warn(
-    `Course duplication job ${job.id} went stale without a heartbeat; marking FAILED.`
+  log?.warn(
+    {
+      event: 'course_duplication.status.reconciled',
+      outcome: 'expired_heartbeat',
+    },
+    'Course duplication job went stale without a heartbeat; marking failed'
   )
   return await updateCourseDuplicationJob(redis, job, {
     status: 'FAILED',
@@ -453,8 +479,12 @@ export async function startCourseDuplication(
     ctx
   )
   if (!hasDuplicationAccess) {
-    console.warn(
-      `Course duplication denied: user ${ctx.user.sub} lacks ADMIN access to course ${args.sourceCourseId}.`
+    ctx.log.warn(
+      {
+        event: 'course_duplication.authorization.rejected',
+        outcome: 'missing_permission',
+      },
+      'Course duplication denied due to insufficient permission'
     )
     return null
   }
@@ -464,8 +494,12 @@ export async function startCourseDuplication(
     select: { name: true },
   })
   if (!sourceCourse) {
-    console.warn(
-      `Course duplication denied: source course ${args.sourceCourseId} no longer exists.`
+    ctx.log.warn(
+      {
+        event: 'course_duplication.authorization.rejected',
+        outcome: 'source_course_missing',
+      },
+      'Course duplication denied because the source course is missing'
     )
     return null
   }
@@ -476,21 +510,23 @@ export async function startCourseDuplication(
   })
   const existingJobId = await ctx.redisExec.get(lockKey)
   const existingJob = existingJobId
-    ? await getCourseDuplicationJob(ctx.redisExec, existingJobId)
+    ? await getCourseDuplicationJob(ctx.redisExec, existingJobId, ctx.log)
     : null
 
   if (existingJob && !isTerminalCourseDuplicationStatus(existingJob.status)) {
     const normalizedExistingJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
       ctx.prisma,
-      existingJob
+      existingJob,
+      ctx.log
     )
 
     if (!isTerminalCourseDuplicationStatus(normalizedExistingJob.status)) {
       if (normalizedExistingJob.status === 'PENDING') {
         await publishCourseDuplicationEvent(
           ctx.hatchet,
-          normalizedExistingJob.id
+          normalizedExistingJob.id,
+          ctx.requestContext
         )
       }
 
@@ -531,14 +567,18 @@ export async function startCourseDuplication(
   if (lockAcquired !== 'OK') {
     const lockedJobId = await ctx.redisExec.get(lockKey)
     const lockedJob = lockedJobId
-      ? await getCourseDuplicationJob(ctx.redisExec, lockedJobId)
+      ? await getCourseDuplicationJob(ctx.redisExec, lockedJobId, ctx.log)
       : null
 
     if (lockedJob && !isTerminalCourseDuplicationStatus(lockedJob.status)) {
       await deleteCourseDuplicationJob(ctx.redisExec, job.id)
 
       if (lockedJob.status === 'PENDING') {
-        await publishCourseDuplicationEvent(ctx.hatchet, lockedJob.id)
+        await publishCourseDuplicationEvent(
+          ctx.hatchet,
+          lockedJob.id,
+          ctx.requestContext
+        )
       }
 
       return getPublicCourseDuplicationStatus(lockedJob)
@@ -567,7 +607,7 @@ export async function startCourseDuplication(
   }
 
   try {
-    await publishCourseDuplicationEvent(ctx.hatchet, job.id)
+    await publishCourseDuplicationEvent(ctx.hatchet, job.id, ctx.requestContext)
   } catch (error) {
     try {
       await updateCourseDuplicationJob(ctx.redisExec, job, {
@@ -575,15 +615,27 @@ export async function startCourseDuplication(
         errorType: 'generic',
         errorMessage: 'Course duplication could not be started.',
       })
-    } catch (cleanupError) {
-      console.error(
-        `Failed to clean up course duplication job ${job.id} after publish failure: ${getErrorMessage(cleanupError)}`
+    } catch {
+      ctx.log.error(
+        {
+          event: 'course_duplication.cleanup_failed',
+          phase: 'job_status',
+          err: toSafeError('Failed to clean up course duplication job'),
+        },
+        'Failed to clean up course duplication job after publish failure'
       )
       try {
         await releaseCourseDuplicationSourceLock(ctx.redisExec, job)
-      } catch (releaseError) {
-        console.error(
-          `Failed to release course duplication source lock for job ${job.id}: ${getErrorMessage(releaseError)}`
+      } catch {
+        ctx.log.error(
+          {
+            event: 'course_duplication.cleanup_failed',
+            phase: 'source_lock',
+            err: toSafeError(
+              'Failed to release course duplication source lock'
+            ),
+          },
+          'Failed to release course duplication source lock'
         )
       }
     }
@@ -600,7 +652,9 @@ export async function getCourseDuplicationStatuses(
 ) {
   const uniqueIds = [...new Set(ids)].slice(0, 50)
   const jobs = await Promise.all(
-    uniqueIds.map((jobId) => getCourseDuplicationJob(ctx.redisExec, jobId))
+    uniqueIds.map((jobId) =>
+      getCourseDuplicationJob(ctx.redisExec, jobId, ctx.log)
+    )
   )
 
   const statuses: CourseDuplicationStatus[] = []
@@ -611,7 +665,8 @@ export async function getCourseDuplicationStatuses(
     const normalizedJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
       ctx.prisma,
-      job
+      job,
+      ctx.log
     )
     statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
   }
@@ -620,13 +675,16 @@ export async function getCourseDuplicationStatuses(
 }
 
 export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCourseDuplication'] =
-  async ({ jobId }, globalCtx, executionCtx) => {
+  async ({ jobId, loggingContext }, globalCtx, executionCtx) => {
+    const requestContext = resolveOptionalRequestContext(loggingContext ?? {})
+    const log = createTaskAppLogger(executionCtx, requestContext)
     const redis = globalCtx.redisExec
-    const pendingJob = await getCourseDuplicationJob(redis, jobId)
+    const pendingJob = await getCourseDuplicationJob(redis, jobId, log)
 
     if (!pendingJob) {
-      executionCtx.logger.warn(
-        `Course duplication job ${jobId} disappeared before processing.`
+      await log.warn(
+        { event: 'course_duplication.job_missing', jobId },
+        'Course duplication job disappeared before processing.'
       )
       return false
     }
@@ -640,8 +698,13 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     if (!pendingJob.args) {
-      executionCtx.logger.error(
-        `Course duplication job ${jobId} has no stored arguments; marking it as failed.`
+      await log.error(
+        {
+          event: 'course_duplication.job_invalid',
+          jobId,
+          reason: 'missing_arguments',
+        },
+        'Course duplication job has no stored arguments; marking it as failed.'
       )
 
       try {
@@ -651,14 +714,29 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           errorMessage: 'Course duplication failed.',
         })
       } catch (statusUpdateError) {
-        executionCtx.logger.error(
-          `Failed to mark course duplication job ${jobId} as FAILED: ${getErrorMessage(statusUpdateError)}`
+        await log.error(
+          {
+            event: 'course_duplication.status_update_failed',
+            jobId,
+            status: 'FAILED',
+            errorType:
+              statusUpdateError instanceof Error
+                ? statusUpdateError.name
+                : 'unknown',
+          },
+          'Failed to mark course duplication job as FAILED.'
         )
         try {
           await releaseCourseDuplicationSourceLock(redis, pendingJob)
         } catch (releaseError) {
-          executionCtx.logger.error(
-            `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+          await log.error(
+            {
+              event: 'course_duplication.lock_release_failed',
+              jobId,
+              errorType:
+                releaseError instanceof Error ? releaseError.name : 'unknown',
+            },
+            'Failed to release course duplication source lock.'
           )
         }
 
@@ -699,13 +777,23 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           processLockKey,
           processLockValue
         ).catch((error) => {
-          executionCtx.logger.warn(
-            `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
+          void log.warn(
+            {
+              event: 'course_duplication.process_lock_renewal_failed',
+              jobId,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Course duplication process lock renewal failed.'
           )
         })
         void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
-          executionCtx.logger.warn(
-            `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
+          void log.warn(
+            {
+              event: 'course_duplication.heartbeat_renewal_failed',
+              jobId,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Course duplication heartbeat renewal failed.'
           )
         })
       }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
@@ -738,6 +826,11 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           tasks: globalCtx.tasks,
           req: undefined as never,
           res: undefined as never,
+          // Legacy Hatchet jobs may have no diagnostic envelope. The
+          // duplication helpers do not read this field; keep it empty rather
+          // than fabricating a cross-service request ID for the type boundary.
+          requestContext: requestContext as ContextWithUser['requestContext'],
+          log,
           user: {
             sub: job.userId,
             role: job.userRole,
@@ -762,17 +855,29 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       return true
     } catch (error) {
-      executionCtx.logger.error(
-        `Course duplication job ${jobId} failed: ${getErrorMessage(error)}`
+      await log.error(
+        {
+          event: 'course_duplication.failed',
+          jobId,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Course duplication job failed.'
       )
 
       const errorType = getCourseDuplicationJobErrorType(error)
 
       if (committedCourseId || errorType === 'generic') {
-        executionCtx.logger.error(
+        await log.error(
+          {
+            event: 'course_duplication.retryable',
+            jobId,
+            ...(committedCourseId
+              ? { committedCourse: true }
+              : { reason: 'generic_error' }),
+          },
           committedCourseId
-            ? `Course duplication job ${jobId} committed course ${committedCourseId}; leaving the job retryable.`
-            : `Course duplication job ${jobId} encountered a retryable error.`
+            ? 'Course duplication committed a course; leaving the job retryable.'
+            : 'Course duplication encountered a retryable error.'
         )
         throw error
       }
@@ -784,14 +889,29 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           errorMessage: getCourseDuplicationJobErrorMessage(error),
         })
       } catch (statusUpdateError) {
-        executionCtx.logger.error(
-          `Failed to mark course duplication job ${jobId} as FAILED: ${getErrorMessage(statusUpdateError)}`
+        await log.error(
+          {
+            event: 'course_duplication.status_update_failed',
+            jobId,
+            status: 'FAILED',
+            errorType:
+              statusUpdateError instanceof Error
+                ? statusUpdateError.name
+                : 'unknown',
+          },
+          'Failed to mark course duplication job as FAILED.'
         )
         try {
           await releaseCourseDuplicationSourceLock(redis, job)
         } catch (releaseError) {
-          executionCtx.logger.error(
-            `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+          await log.error(
+            {
+              event: 'course_duplication.lock_release_failed',
+              jobId,
+              errorType:
+                releaseError instanceof Error ? releaseError.name : 'unknown',
+            },
+            'Failed to release course duplication source lock.'
           )
         }
 
@@ -817,6 +937,7 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
     let cursor = '0'
     let scannedJobs = 0
     let normalizedJobs = 0
+    const log = createTaskAppLogger(executionCtx)
 
     do {
       const [nextCursor, keys] = await redis.scan(
@@ -834,14 +955,15 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
           continue
         }
 
-        const job = parseCourseDuplicationJob(await redis.get(key))
+        const job = parseCourseDuplicationJob(await redis.get(key), log)
         if (!job || isTerminalCourseDuplicationStatus(job.status)) continue
 
         scannedJobs += 1
         const normalizedJob = await normalizeStaleCourseDuplicationJob(
           redis,
           globalCtx.prisma,
-          job
+          job,
+          log
         )
 
         if (isTerminalCourseDuplicationStatus(normalizedJob.status)) {
@@ -851,8 +973,13 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
     } while (cursor !== '0')
 
     if (scannedJobs > 0) {
-      executionCtx.logger.info(
-        `Course duplication sweep inspected ${scannedJobs} non-terminal jobs and normalized ${normalizedJobs}.`
+      await log.info(
+        {
+          event: 'course_duplication.sweep_completed',
+          scannedJobs,
+          normalizedJobs,
+        },
+        'Course duplication sweep completed.'
       )
     }
 

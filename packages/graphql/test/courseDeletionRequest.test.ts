@@ -1,3 +1,5 @@
+import { withHatchetTaskLogging } from '@klicker-uzh/hatchet'
+import type { CourseDeletionEvent } from '@klicker-uzh/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const courseMocks = vi.hoisted(() => ({
@@ -15,6 +17,8 @@ import {
 
 function executionContext(retryCount = 0) {
   return {
+    workflowRunId: () => 'workflow-1',
+    taskRunId: () => 'task-1',
     retryCount: () => retryCount,
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
   } as any
@@ -30,6 +34,8 @@ function requestContext(course: Record<string, unknown>) {
   const hatchet = { events: { push: vi.fn() } }
   const emitter = { emit: vi.fn() }
   const ctx = {
+    requestContext: { requestId: 'request-1', correlationId: 'correlation-1' },
+    log: { error: vi.fn() },
     prisma: {
       $transaction: vi.fn((callback: (client: any) => unknown) =>
         callback(transactionClient)
@@ -65,6 +71,7 @@ describe('course deletion requests', () => {
     expect(hatchet.events.push).toHaveBeenCalledWith(
       'process-course-deletion',
       {
+        loggingContext: ctx.requestContext,
         courseId: 'course-id',
         deletionRequestedAt: request.deletionRequestedAt.toISOString(),
         requestedById: 'requester-id',
@@ -127,7 +134,7 @@ describe('course deletion requests', () => {
 describe('course deletion worker', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  const event = {
+  const event: CourseDeletionEvent = {
     courseId: 'course-id',
     deletionRequestedAt: '2026-01-01T00:00:00.000Z',
     requestedById: 'requester-id',
@@ -150,9 +157,34 @@ describe('course deletion worker', () => {
           requestedById: 'requester-id',
         },
       },
-      globalContext
+      {
+        ...globalContext,
+        log: expect.objectContaining({ warn: expect.any(Function) }),
+      }
     )
     expect(courseMocks.cancelCourseDeletionRequest).not.toHaveBeenCalled()
+  })
+
+  it('forwards the event correlation to the existing task logger', async () => {
+    const context = executionContext()
+    courseMocks.deleteCourse.mockImplementationOnce(async (_args, ctx) => {
+      ctx.log.warn({ event: 'course.deletion.warning' }, 'Deletion warning')
+    })
+    const run = withHatchetTaskLogging({
+      taskName: 'process-course-deletion',
+      handler: (input: typeof event, taskContext: typeof context) =>
+        handleProcessCourseDeletion(input, {} as any, taskContext),
+    })
+    const loggingContext = {
+      requestId: 'request-1',
+      correlationId: 'correlation-1',
+    }
+
+    await run({ ...event, loggingContext }, context)
+
+    expect(context.logger.warn).toHaveBeenCalledWith('Deletion warning', {
+      extra: { ...loggingContext, event: 'course.deletion.warning' },
+    })
   })
 
   it('keeps the marker while retries remain', async () => {

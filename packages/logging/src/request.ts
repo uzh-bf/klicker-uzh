@@ -3,6 +3,7 @@ export const DIAGNOSTIC_ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/
 export type DiagnosticHeader = string | string[] | null | undefined
 
 export interface RequestContext {
+  [key: string]: string | undefined
   requestId: string
   correlationId: string
   traceId?: string

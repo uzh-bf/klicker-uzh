@@ -264,8 +264,6 @@ export async function getParticipation(
 //   { courseId, participantId, email }: RegisterParticipantFromLTIArgs,
 //   ctx: Context
 // ) {
-//   console.log('args', courseId, participantId)
-
 //   if (!courseId) return null
 
 //   if (!isEmail(email)) return null
@@ -355,7 +353,6 @@ export async function getParticipation(
 //         },
 //       })
 
-//       console.log('new participation', participation)
 //     }
 
 //     const jwt = await createParticipantToken(participant.participant.id)
@@ -368,7 +365,6 @@ export async function getParticipation(
 //       course: null,
 //     }
 //   } catch (e) {
-//     console.error(e)
 //     return null
 //   }
 // }

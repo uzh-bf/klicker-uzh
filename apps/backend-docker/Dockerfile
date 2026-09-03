@@ -37,6 +37,7 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
@@ -56,6 +57,7 @@ COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder /app/packages/logging/dist/ /app/packages/logging/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs
