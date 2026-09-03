@@ -822,10 +822,7 @@ test('plans a stack resume under the raised full-stack ceiling', () => {
     sessionId: '11111111-1111-4111-8111-111111111111',
     remainingTokens: 9_591_641,
   })
-  assert.throws(
-    () => planOCRResume(parent, 10_000_000),
-    /no token budget left/
-  )
+  assert.throws(() => planOCRResume(parent, 10_000_000), /no token budget left/)
 })
 
 test('rejects failed partial sessions with reused or waived coverage', () => {
