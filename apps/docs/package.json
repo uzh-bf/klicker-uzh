@@ -49,9 +49,11 @@
     "dev:docs": "docusaurus start --port 5500",
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
+    "generate:docs-manifest": "node scripts/generate-docs-manifest.mjs",
     "rename-version": "docusaurus-rename-version",
     "serve": "docusaurus serve",
     "swizzle": "docusaurus swizzle",
+    "test:run": "node --test scripts/",
     "version": "docusaurus-version",
     "write-translations": "docusaurus-write-translations"
   },
