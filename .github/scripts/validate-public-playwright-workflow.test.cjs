@@ -37,6 +37,7 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   assert.match(sources[1], /playwright-shard@refs\/heads\/v3/)
   assert.match(sources[2], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
+  assert.match(sources[2], /packages\/knowledge-graph\/dist/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
 
