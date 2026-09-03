@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `stack_b_b0_in_progress`
+- Status: `stack_b_b0_committed_local`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1143,3 +1143,14 @@ follow_up_stacks:
   covers the live catalogue). Media references are same-site `/img/...`
   paths plus `upload://` schemes, which the contract omits. B0 implements the
   deterministic manifest generator, drift guard, and tests next.
+- B0 (2026-09-03): Commit `3662ec22b3` adds the deterministic manifest
+  generator (`apps/docs/scripts/generate-docs-manifest.mjs`), 12 unit tests,
+  the checked-in 49-page / 11-use-case manifest, the `generate:docs-manifest`
+  and `test:run` package scripts, and a Biome ignore for the generated
+  artifact (repo convention for generated files; the byte-identity drift test
+  pins its exact content). Double-run equality, `--check` drift mode, and
+  duplicate-route/missing-media failures verified. Complete `check:all` passed
+  in the pre-commit hook. Simplifier disclosure: no subagent dispatch exists in
+  this session, so a main-session simplification pass covered the committed
+  scope; it removed one dead parameter and found no other reductions. Push and
+  draft-PR publication remain withheld pending explicit authority.
