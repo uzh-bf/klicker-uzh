@@ -346,7 +346,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
               the design-system navigation does not forward unknown attributes. */}
           <div
             className="flex"
-            {...spotlightTargetProps('manage-header-navigation')}
+            {...spotlightTargetProps('manage-header-main-nav')}
           >
             <Navigation
               items={leftNavigation}

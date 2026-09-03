@@ -42,7 +42,7 @@ export const PRODUCT_UPDATES: ProductUpdate[] = [
       ].join('\n'),
     },
     promotions: ['feed', 'spotlight'],
-    spotlightTarget: 'manage-header-navigation',
+    spotlightTarget: 'manage-header-main-nav',
     suppressInAssessment: true,
   },
 ]
