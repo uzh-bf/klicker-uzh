@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  consumeStream,
   convertToModelMessages,
   isStepCount,
   streamText,
@@ -28,6 +29,7 @@ import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
 import { DOC_QUERY_MCP_SERVER_NAME } from '@/src/services/mcpScope'
 import { createRateLimiter } from '@/src/services/rateLimiter'
@@ -199,15 +201,24 @@ export async function POST(
       },
     }))
 
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   let tools: ToolSet
   try {
-    tools = await getAggregatedMCPTools(kbConfigurations, {
+    mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
       kbId: chatbot.knowledgeBases[0]?.kbId,
       sessionId: randomUUID(),
     })
+    tools = mcpToolsHandle.tools
   } catch (error) {
+    await closeMcpTools()
     console.error('Owner preview MCP discovery failed:', {
       chatbotId,
       errorType: error instanceof Error ? error.name : typeof error,
@@ -218,39 +229,40 @@ export async function POST(
     )
   }
 
-  const toolNames = Object.keys(tools)
-  const systemPrompt = compileSystemPrompt(
-    chatbot.systemPrompts,
-    selectedMode,
-    toolNames
-  )
-  const baseModels = getModelsForChatbot(chatbot).filter(
-    (model) => model.usageClass === 'BASE'
-  )
-  const selectedModel =
-    baseModels.find((model) => model.fallback) ?? baseModels[0]
-  if (!selectedModel) {
-    return NextResponse.json(
-      { error: 'No base model is available for preview' },
-      { status: 503 }
-    )
-  }
-
-  const modelMessages = await convertToModelMessages(parsed.messages, {
-    ignoreIncompleteToolCalls: true,
-  })
-  const { model, routing } = getChatModel(chatbot, selectedModel)
-  const promptCacheRequest =
-    routing.source === 'default'
-      ? await buildPromptCacheRequest({
-          deploymentId: selectedModel.deploymentId,
-          transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
-          instructions: systemPrompt,
-          tools,
-        })
-      : null
-
   try {
+    const toolNames = Object.keys(tools)
+    const systemPrompt = compileSystemPrompt(
+      chatbot.systemPrompts,
+      selectedMode,
+      toolNames
+    )
+    const baseModels = getModelsForChatbot(chatbot).filter(
+      (model) => model.usageClass === 'BASE'
+    )
+    const selectedModel =
+      baseModels.find((model) => model.fallback) ?? baseModels[0]
+    if (!selectedModel) {
+      await closeMcpTools()
+      return NextResponse.json(
+        { error: 'No base model is available for preview' },
+        { status: 503 }
+      )
+    }
+
+    const modelMessages = await convertToModelMessages(parsed.messages, {
+      ignoreIncompleteToolCalls: true,
+    })
+    const { model, routing } = getChatModel(chatbot, selectedModel)
+    const promptCacheRequest =
+      routing.source === 'default'
+        ? await buildPromptCacheRequest({
+            deploymentId: selectedModel.deploymentId,
+            transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
+            instructions: systemPrompt,
+            tools,
+          })
+        : null
+
     const result = streamText({
       abortSignal: requestSignal,
       maxOutputTokens: selectedModel.maxOutputTokens,
@@ -274,7 +286,10 @@ export async function POST(
       toolChoice: 'auto',
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
-      onError: (error) => {
+      onEnd: closeMcpTools,
+      onAbort: closeMcpTools,
+      onError: async (error) => {
+        await closeMcpTools()
         console.error('Owner preview stream failed:', {
           chatbotId,
           errorType: error instanceof Error ? error.name : typeof error,
@@ -285,6 +300,15 @@ export async function POST(
     return result.toUIMessageStreamResponse({
       originalMessages: parsed.messages,
       sendReasoning: true,
+      consumeSseStream: consumeStream,
+      onError: (error) => {
+        void closeMcpTools()
+        console.error('Owner preview UI stream failed:', {
+          chatbotId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+        return 'Chatbot preview request failed'
+      },
       messageMetadata: ({ part }) =>
         part.type === 'finish'
           ? {
@@ -295,6 +319,7 @@ export async function POST(
           : undefined,
     })
   } catch (error) {
+    await closeMcpTools()
     console.error('Owner preview request failed:', {
       chatbotId,
       errorType: error instanceof Error ? error.name : typeof error,

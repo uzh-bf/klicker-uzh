@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   buildPromptCacheRequest: vi.fn(),
   compileSystemPrompt: vi.fn(),
   convertToModelMessages: vi.fn(),
+  closeMcpTools: vi.fn(),
   createChatMessage: vi.fn(),
   createChatThread: vi.fn(),
   createParticipant: vi.fn(),
@@ -144,7 +145,10 @@ describe('POST owner preview chat', () => {
       systemPrompts: { tutor: 'Tutor instructions' },
     })
     mocks.getAggregatedMCPTools.mockResolvedValue({
-      KB_doc_query: { description: 'Search course material' },
+      close: mocks.closeMcpTools,
+      tools: {
+        KB_doc_query: { description: 'Search course material' },
+      },
     })
     mocks.compileSystemPrompt.mockReturnValue('Compiled prompt')
     mocks.getModelsForChatbot.mockReturnValue([
@@ -231,9 +235,25 @@ describe('POST owner preview chat', () => {
       })
     )
     expect(mocks.streamText).toHaveBeenCalledOnce()
+    const streamOptions = mocks.streamText.mock.calls[0]![0]
+    await streamOptions.onEnd()
+    await streamOptions.onAbort()
+    expect(mocks.closeMcpTools).toHaveBeenCalledOnce()
     expect(mocks.createChatMessage).not.toHaveBeenCalled()
     expect(mocks.createChatThread).not.toHaveBeenCalled()
     expect(mocks.createParticipant).not.toHaveBeenCalled()
+  })
+
+  it('closes MCP tools when no base model is available', async () => {
+    mocks.getModelsForChatbot.mockReturnValue([])
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.closeMcpTools).toHaveBeenCalledOnce()
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   it('rejects attachments before model or MCP work', async () => {
