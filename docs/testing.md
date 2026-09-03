@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-30'
+timestamp: '2026-09-03'
 tags:
   - testing
   - ci
@@ -61,6 +61,35 @@ OpenAI-compatible SSE response whose first tool call uses a sparse provider
 index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
+
+For the local Klicker target evaluation adapter, run
+
+    bash util/test-klicker-eval-wrapper.sh
+
+before any credentialed run. Start the exact worktree with the developer
+Foundry values mapped to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. The repository
+wrapper does not require a personal operator or fetch secrets itself. Native
+Infisical and CI examples are documented in
+[`evaluation/README.md`](../evaluation/README.md).
+
+The VPN must be active. If the worktree runtime already exists with different
+upstream values, stop that exact checkout and run the command again; ensure
+does not replace environment values in an existing service container. The
+target adapter reads only namespaced local API/Chat origins and seeded
+participant credentials from the invoking shell, then removes those variables
+from the evaluator child. The wrapper pins a loopback Chat Completions target,
+one in-flight request, direct gpt-5.6-luna, and cleanup on every exit.
+
+The local KB_doc_query canary is a transport check for authentication, thread
+and message persistence, mode handling, and expected-tool evidence. It is not
+FineCo quality evidence. Run the 20-case query only when
+EXPERT_df_fineco_expert is already available through an authorized synthetic
+binding with a finite response bound; otherwise record delivery_pending and
+do not substitute the canary or establish a tunnel. Keep the existing
+judge-only path separate: caller-provided `LITELLM_API_BASE` and
+`LITELLM_API_KEY` (the wrapper fetches the key from Infisical when unset) are
+not the developer-Foundry values injected into the local Chat container.
 
 For OpenAI-compatible request-policy or prompt-cache changes, also run
 `apps/chat/test/openai-cache-policy.test.ts` and
@@ -247,7 +276,20 @@ introduce cross-file ordering assumptions.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
-**Git hooks run no application test suites** (pre-commit = `check:all`, pre-push = `build`). The Prisma package check regenerates the raw Prisma 7 client before typechecking; no generated-source patch remains. Clean CI jobs therefore do not depend on generated files left by an earlier build or cache restore. The Auth adapter round-trip is intentionally separate because it writes and removes disposable local rows. The expectation before a PR: `check:all` + build + targeted tests for touched logic + browser evidence for UI changes; CI is the real e2e gate.
+**Git hooks run no application test suites** (pre-commit = identity guard +
+`check:all` + identity guard, pre-push = outgoing-commit identity guard +
+`build`). `util/check-git-identity.sh` rejects the exact selector fixture
+identity in repository configuration, effective author/committer state, or
+outgoing commit authors, committers, or co-author trailers. The pull-request
+check repeats the commit-range guard on GitHub, where local hooks cannot be
+assumed. The second pre-commit check catches any test that mutates Git
+configuration while `check:all` runs. The Prisma package check regenerates the
+raw Prisma 7 client before typechecking; no generated-source patch remains.
+Clean CI jobs therefore do not depend on generated files left by an earlier
+build or cache restore. The Auth adapter round-trip is intentionally separate
+because it writes and removes disposable local rows. The expectation before a
+PR: `check:all` + build + targeted tests for touched logic + browser evidence
+for UI changes; CI is the real e2e gate.
 
 For the assistant release matrix, run the two targeted specs explicitly:
 

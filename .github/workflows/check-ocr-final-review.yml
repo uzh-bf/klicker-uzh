@@ -1048,9 +1048,9 @@ jobs:
             fi
           else
             run_ocr_attempt \
-              "${REVIEW_FROM}" "${HEAD_SHA}" 2000000 "${RESULT_PATH}"
+              "${REVIEW_FROM}" "${HEAD_SHA}" 20000000 "${RESULT_PATH}"
             resume_partial_result \
-              "${REVIEW_FROM}" "${HEAD_SHA}" 2000000 "${RESULT_PATH}"
+              "${REVIEW_FROM}" "${HEAD_SHA}" 20000000 "${RESULT_PATH}"
           fi
 
       - name: Summarize cumulative review failure output

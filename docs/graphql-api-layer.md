@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-25'
+timestamp: '2026-09-02'
 tags:
   - backend
   - graphql
@@ -36,15 +36,16 @@ never trusted for API access. See
 
 `PermissionCheck` has no KB key because knowledge bases are not shareable aggregates. KB schema fields use the appropriate `t.withAuth(...)` scope, then every service query or mutation resolves the KB through `ownerId: ctx.user.sub` or an equivalent persisted owner relation before reading or mutating it. Do not add a fake permission mapping or widen KB sharing to make its resolver look like a course resolver.
 
-Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on
-courseId, plus a nullable boolean that preserves the existing behavior when
-omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
+Worked examples: `requestCourseDeletion` in `mutation.ts` (asUser + ADMIN
+permission on courseId, plus a nullable boolean for optional draft live-quiz
+cleanup), `controlCourse` in `query.ts` (EXECUTE), and `getLiveQuizSummary`
+(READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
 ## Layering contract
 
-- `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
+- `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.duplicateCourse(args, ctx)`.
 - `services/*.ts` — all business logic, Prisma access, Redis, pubSub publishes. Import style: `import * as XService from '../services/x.js'`.
 - Context (`packages/graphql/src/lib/context.ts`): `Context` has optional `user`; `t.withAuth` narrows to `ContextWithUser` (`user.sub`, `role`, `scope`, catalyst flags) — services take `ctx` and rely on that narrowing.
 
