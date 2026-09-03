@@ -56,6 +56,51 @@ revision-history model. Deleting the chatbot cascades through the set, examples,
 and evidence references. Synthetic candidates and evidence-eligible fixtures
 are created only by local and test setup, not by a production caller.
 
+### Student-owned practice elements
+
+`PersonalElement` (`personalElement.prisma`) is a participant-owned,
+course-bound practice card. It is deliberately separate from the lecturer-owned
+`Element` table and currently stores only `FLASHCARD` content. A participant
+must have a `Participation` row for the course, and temporary participants are
+not eligible. Course and participant deletion cascade to the cards.
+
+The row keeps its own SM-2 state (`eFactor`, `interval`, streak and response
+counters, and `nextDueAt`). The GraphQL service caps a participant at 500 cards
+per course, validates source metadata (up to 32 chunk references, bounded IDs,
+titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
+The `origin` field records whether content was AI-generated or authored. Content
+revisions increment `version`; the revision and learning-state reset contract is
+defined by the service and does not create a lecturer trust state.
+
+The backend owns the card-plan and candidate lifecycle. prepareCardPlan
+authorizes course participation, returns the course language and the complete
+saved-title list as read-only model context, screens proposed titles against
+saved cards and within the proposal using the deterministic title-similarity
+policy, and assigns stable server-issued candidate identities.
+validateCardCandidate re-checks participation, source-message ownership, the
+structural Flashcard payload, source bounds, and current title similarity
+before a candidate can render. Generated content is validated structurally
+(non-empty, bounded, contains letters or digits), never by matching English or
+German sentences. The save transaction enforces candidate-ID uniqueness and
+the per-course card cap, and repeats the title-similarity check inside the
+serializable save transaction so two accepted candidates cannot pass a stale
+read.
+
+The full lifecycle is exposed through participant-authenticated GraphQL
+operations. claimCardGenerationLease atomically claims or reclaims the
+generation lease for an owned plan message; completeCardGenerationLease and
+abortCardGenerationLease settle only the caller's current attempt.
+createPersonalElements saves candidates idempotently with the final duplicate
+check in its transaction, discardPersonalElementCandidate persists the
+negative decision idempotently, and updatePersonalElement applies the
+expected-version and scheduling contract to a saved card. listPersonalElements
+returns the durable saved state for reload.
+
+`ChatGenerationApproval` is the durable claim for an approved Chat generation.
+Its participant, chatbot, thread, plan message, and optional generated message
+relations are separate from the card content, with a unique
+participant/plan-message/tool-call key and a lease expiry for retry recovery.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.

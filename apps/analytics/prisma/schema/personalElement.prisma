@@ -1,0 +1,86 @@
+enum PersonalElementOrigin {
+  AI_GENERATED
+  AUTHORED
+}
+
+model PersonalElement {
+  id String @id @default(uuid()) @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  version     Int        @default(1)
+  type        ElementType
+  name        String
+  content     String     @db.Text
+  explanation String     @db.Text
+
+  /// [PrismaPersonalElementSources]
+  sources Json?
+
+  origin PersonalElementOrigin @default(AI_GENERATED)
+
+  sourceMessageId  String? @db.Uuid
+  sourceToolCallId String?
+  candidateId      String
+
+  eFactor              Float              @default(2.5)
+  interval             Int                @default(0)
+  correctCountStreak   Int                @default(0)
+  correctCount         Int                @default(0)
+  partialCorrectCount  Int                @default(0)
+  wrongCount           Int                @default(0)
+  nextDueAt            DateTime?
+  lastAnsweredAt       DateTime?
+  lastCorrectAt        DateTime?
+  lastPartialCorrectAt DateTime?
+  lastWrongAt          DateTime?
+  lastResponseCorrectness ResponseCorrectness?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, courseId, candidateId])
+  @@index([participantId, courseId, nextDueAt])
+}
+
+model CardGenerationLease {
+  id String @id @default(uuid()) @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  planMessage   ChatMessage @relation(fields: [planMessageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  planMessageId String      @db.Uuid
+
+  planToolCallId String
+  attemptToken   String
+  leaseExpiresAt DateTime
+  completedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, planMessageId, planToolCallId])
+  @@index([leaseExpiresAt])
+}
+
+model PersonalElementDiscard {
+  id String @id @default(uuid()) @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  candidateId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, courseId, candidateId])
+}

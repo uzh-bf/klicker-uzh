@@ -1,0 +1,18 @@
+mutation MPrepareCardPlan($input: PrepareCardPlanInput!) {
+  prepareCardPlan(input: $input) {
+    courseLanguage
+    existingTitles
+    cards {
+      type
+      candidateId
+      title
+      intent
+      query
+    }
+    discardedDuplicates {
+      title
+      matchedTitle
+      similarity
+    }
+  }
+}

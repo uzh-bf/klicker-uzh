@@ -1,0 +1,6 @@
+mutation MClaimCardGenerationLease($input: CardGenerationLeaseInput!) {
+  claimCardGenerationLease(input: $input) {
+    id
+    attemptToken
+  }
+}

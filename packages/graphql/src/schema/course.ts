@@ -243,6 +243,8 @@ export interface ICourseOverview extends DB.Course {
   practiceQuizzes?: IReducedActivityInfo[] | null
   microLearnings?: IReducedActivityInfo[] | null
   groupActivities?: IReducedActivityInfo[] | null
+  personalElementCount?: number
+  personalDueCount?: number
 }
 
 export const CourseOverviewRef =
@@ -271,6 +273,10 @@ export const CourseOverview = builder.objectType(CourseOverviewRef, {
       type: [ReducedActivityInfo],
       nullable: true,
     }),
+    personalElementCount: t.exposeInt('personalElementCount', {
+      nullable: true,
+    }),
+    personalDueCount: t.exposeInt('personalDueCount', { nullable: true }),
   }),
 })
 

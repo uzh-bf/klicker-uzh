@@ -37,12 +37,18 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    or access control: it is only the participant's course-leaderboard opt-in.
    Student MCP practice additionally requires the exact chatbot/course pair.
 
-   Multi-object batch fields are the deliberate exception: `withPermission`
-   accepts one object selector and can only return one nullable field. Protect
-   the batch with the appropriate `t.withAuth(...)` scope, then have the service
-   load a bounded set of unique objects, check every object's permission, and
-   return explicit per-object outcomes. Never infer permission for the whole
-   batch from one selected object.
+   For participant-owned practice cards, keep the service importable from the
+   server-only GraphQL entry. GraphQL and Chat must establish the participant role
+   at their authentication boundaries before passing the participant ID into the
+   shared service. The service re-checks course participation and row ownership;
+   it does not receive or replace the boundary role check.
+
+Multi-object batch fields are the deliberate exception: `withPermission`
+accepts one object selector and can only return one nullable field. Protect
+the batch with the appropriate `t.withAuth(...)` scope, then have the service
+load a bounded set of unique objects, check every object's permission, and
+return explicit per-object outcomes. Never infer permission for the whole
+batch from one selected object.
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
