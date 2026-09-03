@@ -28,6 +28,13 @@ atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
+For Git fixture or hook changes, run the focused Node test that exercises the
+fixture plus `pnpm run check:git-identity` and
+`bash util/check-git-identity.sh current`. The guard test covers synthetic
+normal, fixture-author, and fixture-trailer commit ranges. The guard's explicit
+range mode is also the pull-request CI entry point. It must reject the exact
+fixture identity without rejecting ordinary GitHub or human commit identities.
+
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
 fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
