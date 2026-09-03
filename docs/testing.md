@@ -71,8 +71,8 @@ EXPERT_df_fineco_expert is already available through an authorized synthetic
 binding with a finite response bound; otherwise record delivery_pending and
 do not substitute the canary or establish a tunnel. Keep the existing
 judge-only path separate: caller-provided `LITELLM_API_BASE` and
-`LITELLM_API_KEY` are not the developer-Foundry values injected into the local
-Chat container.
+`LITELLM_API_KEY` (the wrapper fetches the key from Infisical when unset) are
+not the developer-Foundry values injected into the local Chat container.
 
 For OpenAI-compatible request-policy or prompt-cache changes, also run
 `apps/chat/test/openai-cache-policy.test.ts` and

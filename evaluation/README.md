@@ -18,47 +18,47 @@ UZH-internal users with GitLab access can materialize the framework explicitly:
 git submodule update --init --checkout evaluation/framework
 ```
 
-The root wrapper reads `LITELLM_API_BASE` and `LITELLM_API_KEY` from its
-invoking environment. It does not depend on a specific secret manager or local
-operator. The wrapper selects Klicker's namespaced Azure deployment and points
+The root wrapper reads `LITELLM_API_BASE` from its invoking environment and
+resolves the judge key itself: a caller-provided `LITELLM_API_KEY` wins as-is;
+otherwise the wrapper fetches `PIPELINES_LITELLM_API_KEY` with the standard
+Infisical CLI from the klicker-uzh project (environment `stg`) and exports the
+value only to the evaluator child. The fetch path targets Infisical CLI 0.43.x
+flag syntax and is covered by the wrapper test suite. The wrapper selects
+Klicker's namespaced Azure deployment and points
 the framework at the FineCo ground truth and tool catalogue. Caller-provided
 model and framework settings win over these defaults. Changing only
 `EVAL_MODEL` leaves the Luna capability mapping unset, so a different model
 uses its own metadata; set both variables when a different deployment alias
 needs explicit capability metadata. Set `LITELLM_API_BASE` to an approved
 reachable proxy route; the public repository does not store an internal
-hostname. The wrapper rejects a missing key before starting the evaluator and
-checks that the selected metrics, tool file, and ground-truth directories are
-readable.
+hostname. The wrapper fails fast when neither a caller-provided key nor the
+Infisical CLI can supply one — a missing CLI, a failed fetch, and an empty
+secret each name the missing piece — and it checks that the selected metrics,
+tool file, and ground-truth directories are readable before any credential
+fetch happens.
 
-Inject the two judge variables with the team's approved secret manager or as
-masked CI variables. For example, the native Infisical CLI can map the stored
-judge key in a short-lived child process without writing a dotenv file:
+After `infisical login` with access to the klicker-uzh project, the default
+fetch path needs no key in the invoking environment:
 
 ```bash
 export LITELLM_API_BASE="https://<approved-litellm-route>"
 
-infisical run \
-  --domain="https://<infisical-host>" \
-  --projectId="<project-id>" \
-  --env="<environment>" \
-  --path="<secret-path>" -- \
-  sh -c '
-    export LITELLM_API_KEY="${PIPELINES_LITELLM_API_KEY:?missing judge key}"
-    exec pnpm run eval:klicker -- "$@"
-  ' klicker-eval \
+pnpm run eval:klicker -- \
   --mode eval \
   --qa-file /absolute/path/to/synthetic-qa.json \
   --limit 1
 ```
 
-Use a read-only scope containing only the required evaluation secret where
-possible. Never print the key or place it in a command argument, dotenv file,
-or committed artifact.
+Callers with a LiteLLM virtual key or a CI-masked variable can still export
+`LITELLM_API_KEY` directly; the wrapper then uses it as-is and never invokes
+the Infisical CLI. Never print the key or place it in a command argument,
+dotenv file, or committed artifact.
 
-On GitLab, configure `LITELLM_API_BASE` and `LITELLM_API_KEY` as masked CI/CD
-variables and invoke `pnpm run eval:klicker` directly. The job does not need
-Infisical or `rs-infisical-operator` when those variables are already present.
+On GitLab, configure `LITELLM_API_BASE` as a masked CI/CD variable. Pre-setting
+`LITELLM_API_KEY` (for example a per-person LiteLLM virtual key) keeps the job
+free of any Infisical dependency; when it is unset, the job needs the Infisical
+CLI installed and authenticated against the klicker-uzh project so the wrapper
+can fetch `PIPELINES_LITELLM_API_KEY`.
 
 Eval mode judges an existing synthetic QA artifact; it does not query Klicker:
 
