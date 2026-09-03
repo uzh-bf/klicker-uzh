@@ -92,6 +92,10 @@ describe('issuePreviewResponseExampleReceipt', () => {
     })
 
     expect(receipt).not.toBeNull()
+    expect(receipt).toMatchObject({
+      question: 'Why?',
+      answer: 'The source explains this result. [1]',
+    })
     const claims = await verifyResponseExampleReceipt({
       token: receipt!.token,
       publicKeyPem,

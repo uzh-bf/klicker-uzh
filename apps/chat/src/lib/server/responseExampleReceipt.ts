@@ -16,6 +16,8 @@ export const RESPONSE_EXAMPLE_RECEIPT_DATA_PART =
 export interface PreviewResponseExampleReceiptData {
   token: string
   expiresAt: number
+  question: string
+  answer: string
 }
 
 function getReceiptEnvironment() {
@@ -97,7 +99,7 @@ export async function issuePreviewResponseExampleReceipt({
   const environment = getReceiptEnvironment()
   if (!environment) return null
 
-  return await signResponseExampleReceipt({
+  const signedReceipt = await signResponseExampleReceipt({
     ...environment,
     ownerId,
     chatbotId,
@@ -107,4 +109,10 @@ export async function issuePreviewResponseExampleReceipt({
     answer,
     evidenceReferences,
   })
+
+  // The signed token remains the authority at capture time. The normalized
+  // text travels alongside it only so the preview action can submit exactly
+  // the content that was checked before signing, without reconstructing it
+  // from rendered assistant-ui parts.
+  return { ...signedReceipt, question, answer }
 }
