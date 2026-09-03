@@ -1,15 +1,21 @@
 # Practice Pool Discovery and Adoption Roadmap
 
-- **Status:** Approved for local execution of W1 — Promote the Practice Pool at
-  the course entry point
+- **Status:** W1 — Promote the Practice Pool at the course entry point and
+  W3 — Help lecturers distribute the course entry point merged into `v3`;
+  W2 — Create a useful completion loop is in approved local execution
 - **Date:** 2026-09-02
 - **Approved branch baseline:** `origin/v3` at
   `72096fafe50827c3ea3f50465f0a76d492e0a4c2`
 - **Resolved target:** `origin/v3` at
   `7f55d17e03035a54d966f80655d90a6f2282f22a`, five commits ahead of the
   approved branch baseline
-- **Branch:** `rs/practice-pool-discovery`
-- **Worktree:** `trees/practice-pool-discovery`
+- **Current W2 branch baseline:** `origin/v3` at
+  `3c99fa26b913a9e8afa237ea1a01aa1583ff2d33`
+- **Current W2 target:** `origin/v3` at
+  `5906ef19c4fd80cc9beb86a618b517603d6a9b8c`, one non-overlapping skill-doc
+  commit ahead of the branch baseline
+- **Branch:** `rs/practice-pool-completion-loop`
+- **Worktree:** `trees/practice-pool-completion-loop`
 - **Execution owner:** Main session
 - **Delivery boundary:** Local implementation, verification, review, and commits
   are approved. Upstream integration, push, PR creation, merge, and deployment
@@ -45,11 +51,11 @@ spaced repetition.
   unavailable required verification environment, or evidence that the accepted
   behavior cannot be implemented safely on the approved baseline.
 
-The task branch is currently five commits behind the resolved `origin/v3`
-target. Those commits touch i18n but not the planned practice-pool source.
-Upstream integration is not authorized. Per the repository integration cadence,
-first make the package pass on the approved baseline, then report drift and
-request one integration pass.
+The current W2 task branch is one commit behind `origin/v3`. That commit changes
+only the `klicker-graphql-api` skill and does not overlap this package. Upstream
+integration is not authorized. Per the repository integration cadence, first
+make the package pass on its branch baseline, then report drift and request one
+integration pass.
 
 ## Primitive impact
 
@@ -247,14 +253,13 @@ pushed or a PR was created.
 - **Outcome:** Finishing a practice session leads back to a meaningful course
   practice choice instead of the generic application home.
 
-W2 — Create a useful completion loop is not executable until its session
-semantics are resolved. First establish whether a completed course pool can
-start a fresh selection immediately, how answered stacks affect that selection,
-and whether progress is reset or resumed. Then choose the completion action:
-
-- Recommended safe default: return to the course practice overview.
-- Add "Start another round" only if a fresh round and its progress behavior are
-  proven and clearly communicated.
+The session semantics are resolved. A completed course pool can start another
+round immediately because its GraphQL query reselects up to 25 stacks from the
+participant's recorded responses. Completion resets only the browser's
+per-round progress, keeps the recorded responses, waits for that query to
+refetch, and then returns to the pool overview with a round-complete notice and
+the existing Start action. A completed individual quiz returns to the course
+Practice Quiz overview. Embedded quizzes keep their in-place completion panel.
 
 Acceptance checks must cover individual-quiz and course-pool completion,
 reload and back navigation, repeated starts, mobile layout, and keyboard use.
@@ -406,4 +411,30 @@ planner then returned `DONE` with `Verdict: APPROVED`.
   approved the package. The serial E2E run passed the changed one-quiz,
   lecturer, and empty-state checks before an unrelated scheduled-status
   assertion stopped the remaining serial tests.
-- [ ] Request separate authority for push and PR creation if desired.
+- [x] Request separate authority for push and PR creation if desired. Authority
+  was granted in-session and PR #5733 was created targeting `v3`.
+- [x] W1 delivery recorded 2026-09-03: PR #5733 was squash-merged into
+  `origin/v3` as `afba912051` (`enhance(pwa): promote course practice pool
+  entry point`). W1 — Promote the Practice Pool at the course entry point
+  reached `merged`.
+- [x] W3 delivery recorded 2026-09-03: PR #5748 was squash-merged into
+  `origin/v3` as `3c99fa26b9` (`docs: add practice overview sharing
+  guidance`). W3 — Help lecturers distribute the course entry point reached
+  `merged`.
+- [x] Resolve W2 — Create a useful completion loop semantics. Course-pool
+  completion preserves recorded responses, resets only the completed round's
+  local UI state, and refetches before another round becomes available.
+- [x] Implement W2 — Create a useful completion loop for course-pool,
+  individual, and embedded completion contexts.
+- [x] Verify W2 — Create a useful completion loop. The PWA typecheck,
+  Playwright TypeScript check, focused Biome and Prettier checks, and
+  `git diff --check` pass. Authenticated browser checks cover individual and
+  pool completion, reload and back navigation, repeated pool starts, mobile
+  layout without horizontal overflow, and keyboard activation. The complete
+  `check:all` run remains non-green only because the unrelated analytics lint
+  selected CPython 3.14 and could not build `pandas==2.2.2` without a C
+  compiler.
+- [ ] Review W2 — Create a useful completion loop at its committed slice. The
+  simplifier is required; a slice-risk review is not required because the
+  package changes no security, data-integrity, architecture, cross-system, or
+  irreversible boundary.

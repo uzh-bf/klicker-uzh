@@ -845,6 +845,8 @@ export default {
       practicePoolPromotionDescription:
         'Bis zu 25 Fragensets aus allen Übungs-Quizzes. Deine bisherigen Antworten können die Reihenfolge beeinflussen.',
       startPracticePool: 'Übungspool starten',
+      practicePoolRoundComplete:
+        'Runde abgeschlossen! Starte eine weitere Runde, um weiter zu üben. Deine bisherigen Antworten können die Auswahl der Fragensets beeinflussen.',
       individualPracticeQuizzes: 'Einzelne Übungs-Quizzes',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
