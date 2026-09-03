@@ -932,7 +932,8 @@ export async function updateChatbotStandardModeConfig(
         status: { in: metadataAndModelEditableStatuses },
       },
       data: {
-        standardModeConfig: standardModeConfig as Prisma.InputJsonValue,
+        standardModeConfig:
+          standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig,
       },
     })
 
