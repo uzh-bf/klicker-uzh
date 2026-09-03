@@ -66,6 +66,45 @@ describe('effective chatbot modes', () => {
     ).toEqual({})
   })
 
+  test('uses valid typed standard-mode flags over legacy opt-outs', () => {
+    expect(
+      resolveEffectiveChatModeOptions(
+        {
+          tutor: { enabled: false },
+          explainer: { enabled: false },
+        },
+        [],
+        {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        }
+      )
+    ).toEqual({
+      tutor: 'Guides students with focused questions, hints, and feedback.',
+    })
+  })
+
+  test('falls back to legacy flags when typed standard-mode data is absent or malformed', () => {
+    const legacy = { tutor: { enabled: false } }
+
+    expect(resolveEffectiveChatModeOptions(legacy, [])).not.toHaveProperty(
+      'tutor'
+    )
+    expect(
+      resolveEffectiveChatModeOptions(legacy, [], { tutorEnabled: 'yes' })
+    ).not.toHaveProperty('tutor')
+    expect(
+      resolveEffectiveChatModeOptions({ tutor: { enabled: false } }, [], {
+        tutorEnabled: true,
+        explainerEnabled: false,
+      })
+    ).toHaveProperty('tutor')
+  })
+
   test('does not expose blank custom mode keys', () => {
     const modeOptions = resolveEffectiveChatModeOptions(
       {

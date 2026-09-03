@@ -1,3 +1,4 @@
+import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
@@ -172,6 +173,27 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
+function isTypedStandardMode(mode: string): mode is 'tutor' | 'explainer' {
+  return mode === 'tutor' || mode === 'explainer'
+}
+
+function isStandardModeEnabled(
+  standardModeConfig: unknown,
+  systemPrompts: unknown,
+  mode: string
+): boolean {
+  const normalizedConfig =
+    normalizeChatbotStandardModeConfig(standardModeConfig)
+
+  if (normalizedConfig && isTypedStandardMode(mode)) {
+    return mode === 'tutor'
+      ? normalizedConfig.tutorEnabled
+      : normalizedConfig.explainerEnabled
+  }
+
+  return !isModeExplicitlyDisabled(systemPrompts, mode)
+}
+
 function getModeDescription(systemPrompts: unknown, mode: string): string {
   const defaultDescription = (
     DEFAULT_MODE_DESCRIPTIONS as Record<string, string>
@@ -186,7 +208,8 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
 
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
-  mcpConfigurations: readonly ChatModeMCPConfiguration[]
+  mcpConfigurations: readonly ChatModeMCPConfiguration[],
+  standardModeConfig: unknown = null
 ): Record<string, string> {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
@@ -199,7 +222,9 @@ export function resolveEffectiveChatModeOptions(
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
-    if (isModeExplicitlyDisabled(systemPrompts, mode)) continue
+    if (!isStandardModeEnabled(standardModeConfig, systemPrompts, mode)) {
+      continue
+    }
 
     const effectiveConfigurations = resolveEffectiveMCPConfigurations(
       mcpConfigurations,

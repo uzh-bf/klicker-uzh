@@ -31,6 +31,7 @@ describe('chatbot bootstrap route', () => {
             description: 'Tutor description',
           },
         },
+        standardModeConfig: null,
         mcpConfigurations: [],
       },
     })
@@ -48,6 +49,40 @@ describe('chatbot bootstrap route', () => {
     expect(payload.modelSelection).toBe(true)
     expect(typeof payload.modeOptions.tutor).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
+    expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({
+      standardModeConfig: true,
+    })
+  })
+
+  test('honours typed mode availability in the participant bootstrap', async () => {
+    mocks.getChatbotOr404.mockResolvedValueOnce({
+      chatbot: {
+        modelSelection: true,
+        systemPrompts: null,
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+        mcpConfigurations: [],
+      },
+    })
+
+    const response = await GET(
+      new NextRequest(`http://localhost/api/chatbots/${CHATBOT_ID}`),
+      { params: Promise.resolve({ chatbotId: CHATBOT_ID }) }
+    )
+
+    const payload = await response.json()
+    expect(payload).toMatchObject({
+      modeOptions: {
+        explainer: expect.any(String),
+      },
+    })
+    expect(payload.modeOptions.tutor).toBeUndefined()
   })
 
   test('returns the authorization response without loading bootstrap data', async () => {

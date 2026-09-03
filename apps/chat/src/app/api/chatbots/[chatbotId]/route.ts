@@ -1,7 +1,6 @@
-import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
+import { type NextRequest, NextResponse } from 'next/server'
+import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
-import { NextRequest, NextResponse } from 'next/server'
-import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 
 /**
  * Retrieves model details for a specific chatbot.
@@ -21,6 +20,7 @@ export async function GET(
     const chatbotResult = await getChatbotOr404(chatbotId, {
       modelSelection: true,
       systemPrompts: true,
+      standardModeConfig: true,
       mcpConfigurations: {
         select: {
           allowedTools: true,
@@ -42,7 +42,8 @@ export async function GET(
       modelSelection: chatbot.modelSelection,
       modeOptions: resolveEffectiveChatModeOptions(
         chatbot.systemPrompts,
-        mcpConfigurations
+        mcpConfigurations,
+        chatbot.standardModeConfig
       ),
     })
   } catch (error) {

@@ -158,6 +158,21 @@ The per-chatbot approval that makes a chatbot reachable by students. It does
 not authorize model usage by itself.
 _Avoid_: usage approval, activation
 
+**Standard-mode configuration**:
+The nullable owner-controlled Tutor and Explainer settings stored on a
+chatbot. It contains explicit mode availability and bounded course context;
+the platform compiler treats valid values as lecturer context beneath its
+non-removable scaffolding. Missing or malformed values retain legacy/default
+behavior, and a new replacement must leave at least one standard mode enabled.
+_Avoid_: raw prompt, system prompt editor, custom-mode configuration
+
+**Effective mode set**:
+The server-resolved modes a participant may present or request for one
+chatbot. It combines standard-mode configuration, legacy custom-mode entries,
+and required MCP capability checks; a hidden mode is rejected before thread or
+provider work.
+_Avoid_: client mode list, available modes (when referring to server policy)
+
 ### Model classes and budgets
 
 **Usage class**:

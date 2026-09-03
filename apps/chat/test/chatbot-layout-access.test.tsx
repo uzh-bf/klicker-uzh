@@ -44,6 +44,7 @@ describe('chatbot layout access', () => {
         name: 'Course chatbot',
         avatar: null,
         systemPrompts: null,
+        standardModeConfig: null,
         mcpConfigurations: [],
       },
     })
@@ -65,6 +66,9 @@ describe('chatbot layout access', () => {
     expect(mocks.getChatbotOr404).toHaveBeenCalledAfter(
       mocks.withChatbotTokenAuth
     )
+    expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({
+      standardModeConfig: true,
+    })
   })
 
   test('does not load chatbot data when participant access fails', async () => {

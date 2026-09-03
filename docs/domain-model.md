@@ -41,6 +41,25 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 `ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
 
+## Course chatbots
+
+`Chatbot` belongs to one owning `User` and one `Course`. Its lifecycle is
+`DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
+can access only a published chatbot when a `Participation` exists for the
+owning course. Publication approval is separate from account-level AI usage
+authorization.
+
+The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
+Tutor and Explainer configuration: explicit mode flags plus course name,
+subject domain, language of instruction, and an optional scope note. The
+owner-only `updateChatbotStandardModeConfig` mutation accepts full replacements
+in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires at least one standard mode, and
+uses a status compare-and-set so a concurrent lifecycle transition cannot be
+overwritten. Missing or malformed legacy values fall back to the platform
+defaults and legacy mode opt-outs. Participant GraphQL projections expose only
+the resolved mode options, never this owner configuration or raw system
+prompts. The chat compiler keeps the platform scaffolding authoritative.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.

@@ -26,6 +26,14 @@ replacing:
   platform owns standard-mode labels and descriptions. A stored
   `enabled: false` explicitly opts a chatbot out of one mode without a schema
   migration.
+- Tutor and Explainer also accept the bounded lecturer-owned fields `courseName`,
+  `subjectDomain`, `languageOfInstruction`, and `scopeNote`, plus explicit
+  `tutorEnabled` and `explainerEnabled` flags, in the nullable typed
+  `Chatbot.standardModeConfig` value. A valid value is authoritative for those
+  two flags and must leave at least one enabled. Missing or malformed values
+  retain the legacy opt-out/default behavior, so existing rows need no
+  backfill. The owner-only replacement mutation trims and bounds the fields;
+  the participant projection never exposes the raw JSON.
 - Tutor and Explainer are general standard candidates. Quizzer is
   capability-gated: it appears only when the server can resolve a restricted
   course `doc_query` binding. An exact Quizzer MCP configuration takes
@@ -53,6 +61,11 @@ replacing:
   scope and evidence, privacy and safety, non-disclosure, epistemic integrity,
   Markdown/mathematics/code formatting, conditional citations, and the final
   language contract.
+- For Tutor and Explainer, the compiler places the normalized typed context
+  after legacy guidance and before the platform mode contract. It serializes
+  the context as one labelled JSON data value, so instruction-like field text
+  cannot gain prompt authority. Server course identity and the final
+  conversation-language policy remain authoritative.
 - Every compiled prompt identifies the owning course with the server-sourced
   `Course.displayName`. The compiler serializes it as JSON inside a labelled
   data section, so course text is context and never an instruction.

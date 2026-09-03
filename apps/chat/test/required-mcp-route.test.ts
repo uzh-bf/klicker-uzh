@@ -131,6 +131,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
+    standardModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
     ...overrides,
   }
@@ -293,8 +294,39 @@ describe('required MCP chat preflight', () => {
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       { tutor: { prompt: 'Use course material.' } },
       'tutor',
-      { courseDisplayName: displayName, toolNames: [] }
+      {
+        courseDisplayName: displayName,
+        toolNames: [],
+        standardModeConfig: null,
+      }
     )
+  })
+
+  test('rejects a request for a typed-disabled mode before MCP and thread work', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+        mcpConfigurations: [],
+      })
+    )
+
+    const response = await POST(createRequest('tutor'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: tutor',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
   test('hides a mode without its required MCP binding', async () => {
