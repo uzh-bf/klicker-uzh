@@ -16,6 +16,7 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import type { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useCallback, useEffect, useState } from 'react'
@@ -63,6 +64,7 @@ function PracticeQuizPage({
   focusedEmbedRequested: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [embedCapabilities, setEmbedCapabilities] = useState<EmbedCapabilities>(
@@ -404,7 +406,8 @@ function PracticeQuizPage({
                   setIsCompleted(true)
                   setCurrentIx(-1)
                 }
-              : undefined
+              : () =>
+                  router.push(`/course/${courseId}/practiceQuizzes/overview`)
           }
           previewOnly={data.practiceQuiz.isOwner ?? undefined}
         />
