@@ -1,3 +1,4 @@
+import { extractCitationIndexes } from '@klicker-uzh/util/citations'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import type { ChatSource, ChatSourceType } from './types'
 
@@ -40,6 +41,15 @@ interface SourceCandidate {
   url?: string
   excerpt?: string
   dedupeKey: string
+  evidence?: Omit<ResponseExampleSourceEvidence, 'citationIndex'>
+}
+
+export interface ResponseExampleSourceEvidence {
+  citationIndex: number
+  sourceId: string
+  chunkId: string
+  contentHash: string
+  citationAnchor: string
 }
 
 export function isDocQueryToolName(toolName: string): boolean {
@@ -75,44 +85,79 @@ export function resolveCitationSource(
 export function normalizeSourcesFromParts(
   parts: readonly ChatSourcePart[]
 ): ChatSource[] {
+  return normalizeSourceCandidatesFromParts(parts).map((candidate, index) => ({
+    id: candidate.dedupeKey,
+    index: index + 1,
+    type: candidate.type,
+    title: candidate.title,
+    page: candidate.page,
+    labeledPage: candidate.labeledPage,
+    startSec: candidate.startSec,
+    endSec: candidate.endSec,
+    url: candidate.url,
+    excerpt: candidate.excerpt,
+  }))
+}
+
+export function normalizeResponseExampleEvidenceFromParts(
+  parts: readonly ChatSourcePart[],
+  referenceAnswer: string
+): ResponseExampleSourceEvidence[] | null {
+  const citationIndexes = [
+    ...new Set(extractCitationIndexes(referenceAnswer)),
+  ].sort((left, right) => left - right)
+  if (citationIndexes.length === 0) return null
+
+  const candidates = normalizeSourceCandidatesFromParts(parts)
+  const evidence: ResponseExampleSourceEvidence[] = []
+  for (const citationIndex of citationIndexes) {
+    const candidate = candidates[citationIndex - 1]
+    if (!candidate?.evidence) return null
+    evidence.push({ citationIndex, ...candidate.evidence })
+  }
+
+  return evidence
+}
+
+function normalizeSourceCandidatesFromParts(
+  parts: readonly ChatSourcePart[]
+): SourceCandidate[] {
   if (!Array.isArray(parts)) return []
 
   const seenDedupeKeys = new Set<string>()
-  const sources: ChatSource[] = []
+  const normalizedCandidates: SourceCandidate[] = []
 
   for (const part of parts) {
-    if (sources.length >= MAX_SOURCES) break
+    if (normalizedCandidates.length >= MAX_SOURCES) break
     if (!isQualifyingPart(part)) continue
 
     const payload = parseDocQueryPayload(part.result)
     if (!payload || 'error' in payload) continue
 
-    const candidates =
+    const payloadCandidates =
       payload.mode === 'documents'
         ? normalizeDocumentsModeSources(payload)
         : normalizeAnswerModeSources(payload)
 
-    for (const candidate of candidates) {
-      if (sources.length >= MAX_SOURCES) break
-      if (seenDedupeKeys.has(candidate.dedupeKey)) continue
+    for (const candidate of payloadCandidates) {
+      if (normalizedCandidates.length >= MAX_SOURCES) break
+      const dedupeKey = candidate.evidence
+        ? [
+            'evidence',
+            candidate.evidence.sourceId,
+            candidate.evidence.chunkId,
+            candidate.evidence.contentHash,
+            candidate.evidence.citationAnchor,
+          ].join('|')
+        : candidate.dedupeKey
+      if (seenDedupeKeys.has(dedupeKey)) continue
 
-      seenDedupeKeys.add(candidate.dedupeKey)
-      sources.push({
-        id: candidate.dedupeKey,
-        index: sources.length + 1,
-        type: candidate.type,
-        title: candidate.title,
-        page: candidate.page,
-        labeledPage: candidate.labeledPage,
-        startSec: candidate.startSec,
-        endSec: candidate.endSec,
-        url: candidate.url,
-        excerpt: candidate.excerpt,
-      })
+      seenDedupeKeys.add(dedupeKey)
+      normalizedCandidates.push(candidate)
     }
   }
 
-  return sources
+  return normalizedCandidates
 }
 
 function isQualifyingPart(
@@ -203,6 +248,24 @@ function cleanString(value: unknown): string | undefined {
   if (typeof value !== 'string' || isNAValue(value)) return undefined
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+function cleanEvidence(
+  source: Record<string, unknown>,
+  chunk?: Record<string, unknown>
+): Omit<ResponseExampleSourceEvidence, 'citationIndex'> | undefined {
+  const sourceId =
+    cleanString(chunk?.source_id) ?? cleanString(source.source_id)
+  const chunkId = cleanString(chunk?.chunk_id) ?? cleanString(source.chunk_id)
+  const contentHash =
+    cleanString(chunk?.content_hash) ?? cleanString(source.content_hash)
+  const citationAnchor =
+    cleanString(chunk?.citation_anchor) ?? cleanString(source.citation_anchor)
+  if (!sourceId || !chunkId || !contentHash || !citationAnchor) {
+    return undefined
+  }
+
+  return { sourceId, chunkId, contentHash, citationAnchor }
 }
 
 // page_number may arrive as a number or a numeric string.
@@ -349,6 +412,7 @@ function normalizeAnswerModeSources(
       page,
       labeledPage,
       url,
+      evidence: cleanEvidence(source),
       dedupeKey: buildDedupeKey({ url, title, page, labeledPage }),
     })
   }
@@ -408,6 +472,7 @@ function normalizeDocumentsModeSources(
       excerpt,
       startSec,
       endSec,
+      evidence: cleanEvidence(source, firstChunk),
       dedupeKey: buildDedupeKey({
         url,
         title,

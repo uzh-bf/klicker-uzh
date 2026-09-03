@@ -3,9 +3,12 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   consumeStream,
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   isStepCount,
   streamText,
   type ToolSet,
+  type UIMessage,
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -25,6 +28,10 @@ import {
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  issuePreviewResponseExampleReceipt,
+  RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+} from '@/src/lib/server/responseExampleReceipt'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   getAggregatedMCPTools,
@@ -303,10 +310,13 @@ export async function POST(
       },
     })
 
-    return result.toUIMessageStreamResponse({
+    let completedResponse:
+      | { isAborted: boolean; responseMessage: UIMessage }
+      | undefined
+    const resultStream = result.toUIMessageStream<UIMessage>({
       originalMessages: parsed.messages,
       sendReasoning: true,
-      consumeSseStream: consumeStream,
+      sendFinish: false,
       onError: (error) => {
         void closeMcpTools()
         console.error('Owner preview UI stream failed:', {
@@ -315,14 +325,64 @@ export async function POST(
         })
         return 'Chatbot preview request failed'
       },
-      messageMetadata: ({ part }) =>
-        part.type === 'finish'
-          ? {
+      onEnd: ({ isAborted, responseMessage }) => {
+        completedResponse = { isAborted, responseMessage }
+      },
+    })
+    const stream = createUIMessageStream<UIMessage>({
+      execute: async ({ writer }) => {
+        for await (const part of resultStream) writer.write(part)
+
+        const finishReason = await result.finishReason
+        if (completedResponse) {
+          try {
+            const receipt = await issuePreviewResponseExampleReceipt({
+              requestMessages: parsed.messages,
+              responseMessage: completedResponse.responseMessage,
+              finishReason,
+              isAborted: completedResponse.isAborted,
+              ownerId: auth.userId,
+              chatbotId,
+              kbId: chatbot.knowledgeBases[0]?.kbId,
               chatMode: selectedMode,
-              modelId: selectedModel.id,
-              reasoningEffort: 'none',
+            })
+            if (receipt) {
+              writer.write({
+                type: RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+                data: receipt,
+              })
             }
-          : undefined,
+          } catch (error) {
+            console.error('Owner preview receipt issuance failed:', {
+              chatbotId,
+              errorType: error instanceof Error ? error.name : typeof error,
+            })
+          }
+        }
+
+        writer.write({
+          type: 'finish',
+          finishReason,
+          messageMetadata: {
+            chatMode: selectedMode,
+            modelId: selectedModel.id,
+            reasoningEffort: 'none',
+          },
+        })
+      },
+      onError: (error) => {
+        void closeMcpTools()
+        console.error('Owner preview response stream failed:', {
+          chatbotId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+        return 'Chatbot preview request failed'
+      },
+    })
+
+    return createUIMessageStreamResponse({
+      stream,
+      consumeSseStream: consumeStream,
     })
   } catch (error) {
     await closeMcpTools()
