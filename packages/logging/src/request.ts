@@ -9,6 +9,10 @@ export interface RequestContext {
   spanId?: string
 }
 
+export type OptionalRequestContext = Partial<
+  Pick<RequestContext, 'requestId' | 'correlationId' | 'traceId' | 'spanId'>
+>
+
 export function normalizeDiagnosticId(
   value: DiagnosticHeader
 ): string | undefined {
@@ -35,6 +39,29 @@ export function resolveRequestContext(
   return {
     requestId,
     correlationId,
+    ...(traceId ? { traceId } : {}),
+    ...(spanId ? { spanId } : {}),
+  }
+}
+
+/**
+ * Normalize already-propagated diagnostic IDs without inventing replacements.
+ * This is for asynchronous payloads that may predate the logging envelope.
+ */
+export function resolveOptionalRequestContext(headers: {
+  requestId?: DiagnosticHeader
+  correlationId?: DiagnosticHeader
+  traceId?: DiagnosticHeader
+  spanId?: DiagnosticHeader
+}): OptionalRequestContext {
+  const requestId = normalizeDiagnosticId(headers.requestId)
+  const correlationId = normalizeDiagnosticId(headers.correlationId)
+  const traceId = normalizeDiagnosticId(headers.traceId)
+  const spanId = normalizeDiagnosticId(headers.spanId)
+
+  return {
+    ...(requestId ? { requestId } : {}),
+    ...(correlationId ? { correlationId } : {}),
     ...(traceId ? { traceId } : {}),
     ...(spanId ? { spanId } : {}),
   }

@@ -3,6 +3,7 @@ import pino, {
   type Logger,
   type LoggerOptions,
 } from 'pino'
+import { normalizeLogLevel } from './levels.js'
 
 export type AppLogger = Logger
 
@@ -23,7 +24,7 @@ export function createLogger(
 ): AppLogger {
   const environment =
     options.environment ?? process.env.NODE_ENV ?? 'development'
-  const level =
+  const configuredLevel =
     options.level ??
     process.env.LOG_LEVEL ??
     (environment === 'test' ? 'silent' : 'info')
@@ -33,7 +34,7 @@ export function createLogger(
       environment !== 'test' &&
       process.env.PINO_PRETTY !== 'false')
   const loggerOptions: LoggerOptions = {
-    level: level.toLowerCase(),
+    level: normalizeLogLevel(configuredLevel),
     base: { service: options.service },
     formatters: {
       level(label) {

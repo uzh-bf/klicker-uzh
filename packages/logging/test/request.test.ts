@@ -1,6 +1,7 @@
 import {
   normalizeDiagnosticId,
   propagationHeaders,
+  resolveOptionalRequestContext,
   resolveRequestContext,
 } from '../src/request.js'
 
@@ -42,6 +43,17 @@ describe('resolveRequestContext', () => {
       'x-request-id': 'generated-request',
       'x-correlation-id': 'generated-request',
     })
+  })
+
+  it('normalizes optional context without generating identifiers', () => {
+    expect(
+      resolveOptionalRequestContext({
+        requestId: 'request-1',
+        correlationId: 'invalid correlation id',
+        traceId: 'trace-1',
+      })
+    ).toEqual({ requestId: 'request-1', traceId: 'trace-1' })
+    expect(resolveOptionalRequestContext({})).toEqual({})
   })
 
   it('preserves valid request, correlation, trace, and span IDs', () => {
