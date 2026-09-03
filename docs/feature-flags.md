@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-24'
+timestamp: '2026-09-03'
 tags:
   - architecture
   - frontend
@@ -13,9 +13,9 @@ tags:
 
 **Browser and backend consumers share one typed flag registry, but they must not
 share one network address.** Browsers need a public HTTPS SDK endpoint with
-CORS for the Klicker origin; Node.js services should use GrowthBook's
-cluster-internal service. The browser client key identifies an SDK connection
-and is not a GrowthBook management key.
+CORS for the Klicker origin; Node.js services should use an HTTPS endpoint for
+GrowthBook's cluster-internal service or proxy. The browser client key
+identifies an SDK connection and is not a GrowthBook management key.
 
 The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
 `packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`. Applications
@@ -155,7 +155,8 @@ authentication, API, and database are exercised.
 
 The adopting service maps server-only variables into one process-level client:
 
-- `GROWTHBOOK_API_HOST`: cluster-internal GrowthBook SDK service;
+- `GROWTHBOOK_API_HOST`: HTTPS GrowthBook SDK service or proxy reachable from
+  the cluster;
 - `GROWTHBOOK_CLIENT_KEY`: environment-specific server SDK key;
 - `GROWTHBOOK_ENV`: server deployment environment.
 
@@ -176,11 +177,16 @@ it fetches with an abortable two-second deadline, polls every 30 seconds
 and marks the client healthy only after a validated payload update. A payload
 becomes unusable 120 seconds after the last successful refresh; every
 evaluation fails closed before initialization, while stale, and after
-`destroy()`. `getStatus()` reports health, staleness, and the last successful
-refresh time without exposing keys or targeting data. Evaluations stay
-request-local: the adapter filters unknown attributes before calling GrowthBook,
-so direct identifiers cannot cross the boundary even when a JavaScript caller
-supplies a wider object. Never mutate global attributes with the current user.
+`destroy()`. Setting the refresh interval to zero disables polling, so the
+startup payload becomes stale after that same 120-second bound and evaluations
+then fail closed. Missing, malformed, or non-HTTPS API hosts are treated as
+unconfigured and cause no SDK request, and payload requests reject redirects to
+avoid transport downgrades. `getStatus()` reports health, staleness, and the
+last successful refresh time without exposing keys or targeting data.
+Evaluations stay request-local: the adapter filters unknown attributes before
+calling GrowthBook, so direct identifiers cannot cross the boundary even when a
+JavaScript caller supplies a wider object. Never mutate global attributes with
+the current user.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
@@ -195,7 +201,7 @@ The v3 chart makes the Kubernetes-deployed Node workloads configuration-ready:
   worker Deployments optionally import
   `<rendered-chart-fullname>-secret-growthbook`.
 - that externally provisioned Secret contains exactly
-  `GROWTHBOOK_API_HOST` (the reachable internal SDK/proxy endpoint) and
+  `GROWTHBOOK_API_HOST` (the reachable HTTPS SDK/proxy endpoint) and
   `GROWTHBOOK_CLIENT_KEY` (the environment's server SDK connection key).
 
 The Secret is deliberately optional at the Kubernetes reference boundary.
