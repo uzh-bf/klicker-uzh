@@ -150,15 +150,28 @@ For every entry, record the source blob at `523e085b61`, owning layer,
 extraction method, deliberate correction, and resulting layer blob before
 publication.
 
-| Source surface | Owner | Extraction | Allowed correction |
-| --- | --- | --- | --- |
-| Chat route, signer, MCP clients, scope resolver | Layer 1 | exact final-tree paths and reviewed hunks | effective Quizzer scope fix |
-| Runtime scope and route tests | Layer 1 | exact final-tree paths | inherited Quizzer regression |
-| Chat platform guide | Layer 1 | exact final-tree path | effective-mode wording |
-| Activation domain, adapter, runner, tests | Layer 2 | exact final-tree paths | verified dead retry/state checks only |
-| Proof script, support, tests | Layer 3 | exact final-tree paths | verified dead marker/helper and type corrections only |
-| Old source plan | replaced | omit | this shared stack plan supersedes it |
-| `turbo.json`, ADR 0021, shared stack plan | Layer 1 | stack-only | required contract alignment |
+| Source path | Layer | Source blob | Result blob | Disposition |
+| --- | --- | --- | --- | --- |
+| `apps/chat/scripts/prd-doc-query-proof.mjs` | 3 | `507f41ffd238711b9a9162bd281d62d91f561066` | `507f41ffd238711b9a9162bd281d62d91f561066` | exact extraction |
+| `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts` | 1 | `b1caf739e0c3b6e77fae41f26cedff9bd4440493` | `abb09cf3d60e6b8bebad0d200b256b1fb9819405` | use effective Tutor inheritance for Quizzer scope |
+| `apps/chat/src/lib/server/docQueryScopeToken.ts` | 1 | `d8fe5ec67a151ad93e47e0ff0791c63a0f8540f0` | `d8fe5ec67a151ad93e47e0ff0791c63a0f8540f0` | exact extraction |
+| `apps/chat/src/services/mcpClients.ts` | 1 | `60afae6eb041b95c68975b57263aa77185c741c5` | `803e86f93877dea3288de266721484150e70eaa0` | remove single-use helper churn and keep the test seam private |
+| `apps/chat/src/services/mcpScope.ts` | 1 | `57378417b7e7d8e3f296da5cdc8c2867754754cb` | `2e6e4ca2c404529bf91c7ce24c7bed03d935bcde` | require the authoritative effective configuration list and preserve Tutor inheritance |
+| `apps/chat/test/doc-query-proof-test-support.ts` | 3 | `16122099d8549b3491820f42ea2551e9f434f453` | `03b1508bb954f63d00d329542a32a7c1686a7b53` | type signer, lock, and environment seams; remove unused and duplicate helpers |
+| `apps/chat/test/doc-query-scope-token.test.ts` | 1 | `1391e39c167f42af829cd81f76d21b856b7a963e` | `1391e39c167f42af829cd81f76d21b856b7a963e` | exact extraction |
+| `apps/chat/test/mcp-clients-scope-token.test.ts` | 1 | `8a474c737f6e31181028708c9ab7934af03021b7` | `95c257f90e77184969f3becd4a6c562b8cfa6544` | test the public transport seam and pass the effective configuration list explicitly |
+| `apps/chat/test/prd-doc-query-proof.test.ts` | 3 | `4d61e5a6a1608723a34107ce4dd964d3a723e4b4` | `77ca3ce5bb24784450c0035954f7811a7228c90c` | use the shared duplicate-lock helper |
+| `apps/chat/test/required-mcp-route.test.ts` | 1 | `d1dfd17d02801e039ef13d3f7127045933282265` | `9cc4eec903630e7f3e66842b34e93815b6081684` | add inherited Quizzer regression coverage |
+| `docs/chat-platform.md` | 1 | `416794481a1a35f9ce629a9167dea9d79ce0f592` | `24ad9c31ddea5a654077507bf048ad920a3dc7c0` | clarify the effective-mode contract |
+| `packages/prisma-data/src/scripts/doc-query-cohort-activation-prisma.ts` | 2 | `b354e20d6b58a282ea0c6a1e9100bdc35529e2d2` | `b354e20d6b58a282ea0c6a1e9100bdc35529e2d2` | exact extraction |
+| `packages/prisma-data/src/scripts/doc-query-cohort-activation-run.ts` | 2 | `ef65d8ae2ecf90998c5a3e83d5c8eda003856acb` | `ef65d8ae2ecf90998c5a3e83d5c8eda003856acb` | exact extraction |
+| `packages/prisma-data/src/scripts/doc-query-cohort-activation.test.ts` | 2 | `0255878929f688dda010bb1df0c7df6e932328cd` | `0255878929f688dda010bb1df0c7df6e932328cd` | exact extraction |
+| `packages/prisma-data/src/scripts/doc-query-cohort-activation.ts` | 2 | `446bef6afbd790d5678c841032538761ac5e397e` | `446bef6afbd790d5678c841032538761ac5e397e` | exact extraction |
+| `project/2026-08-31-doc-query-scope-activation-source-plan.md` | replaced | `6c8086a8b316d79c7850d46077a382ac4398a0f3` | omitted | superseded by this stack plan |
+
+Layer 1 also adds the stack-only contract alignment in ADR 0021 at blob
+`350c7aceab90c2ec04d0cdae9a00df197826fed7`, `turbo.json` at blob
+`ee796b2b80999604a7d993bb2bf1c5e7d1cf5643`, and this self-referential ledger.
 
 An unexplained source-only implementation file or stack-only behavioral file is
 a blocker.
@@ -246,5 +259,10 @@ a blocker.
   unused test helper was removed and the signer and lock seams are now typed;
   the persistent marker remains because its replacement-lock test proves it is
   part of the concurrency contract.
-- [ ] Layer 3 proof implementation and review.
-- [ ] Draft publication, exact-head CI/reviews, and coverage-ledger completion.
+- [x] Layer 3 proof review passed with no security or operations defect. The
+  two behavior-preserving test reductions landed in `49de80b23`; the same
+  reviewer confirmed the production proof contract is unchanged and all 37
+  focused tests still pass.
+- [x] The source-to-stack coverage ledger accounts for every frozen source
+  file, deliberate correction, omission, and stack-only contract file.
+- [ ] Draft publication and exact-head CI/reviews.
