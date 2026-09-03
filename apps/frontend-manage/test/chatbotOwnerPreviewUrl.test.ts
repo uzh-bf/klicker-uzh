@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { buildChatbotOwnerPreviewUrl } from '../src/components/resources/chatbots/chatbotOwnerPreviewUrl'
+import { buildChatbotOwnerPreviewUrl } from '../src/components/resources/chatbots/chatbotOwnerPreviewUrl.ts'
 
 assert.equal(
   buildChatbotOwnerPreviewUrl({
