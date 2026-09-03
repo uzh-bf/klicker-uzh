@@ -28,7 +28,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/(backend-docker|hatchet-worker-general)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
+          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|packages/logging/|apps/(backend-docker|hatchet-worker-general)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
 
   test-graphql:
     needs: filter
