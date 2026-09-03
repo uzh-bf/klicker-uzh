@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
@@ -32,9 +32,12 @@ const VALID_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 describe('getChatbotOr404 publication gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('APP_SECRET', 'test-secret')
     mocks.jwtVerify.mockResolvedValue({ payload: { sub: 'participant-1' } })
-    mocks.participationFindUnique.mockResolvedValue({ isActive: false })
+    mocks.participationFindUnique.mockResolvedValue({ id: 'participation-1' })
   })
+
+  afterEach(() => vi.unstubAllEnvs())
 
   test('returns the chatbot when it is PUBLISHED', async () => {
     mocks.findUnique.mockResolvedValue({

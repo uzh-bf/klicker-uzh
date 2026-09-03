@@ -2298,6 +2298,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
     },
+    generationStatus: {
+      title: 'Background generation',
+      description:
+        'You can continue working while these operations run in the background.',
+      starting: 'Starting…',
+      graphQueued: 'Knowledge graph queued',
+      graphProcessing: 'Knowledge graph is being generated',
+      elementProgress:
+        '{generated} of {requested, plural, one {# element} other {# elements}} generated',
+      succeeded: '{label} is ready.',
+      failed: 'Background generation failed.',
+      open: 'Open result',
+    },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',
       title: 'Generate elements',
@@ -2319,19 +2332,35 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         staleGraphHelp:
           'This published graph is still usable, but the knowledge base has newer changes. Rebuild it first if those changes should be included.',
         sourceDetails: 'Included sources',
+        completeSource: 'The complete source will be used.',
         pageFrom: 'From page',
         pageTo: 'To page',
         elementTypeTitle: 'Klicker element type',
         elementTypeHelp:
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
-        bloomHelp: 'Select the cognitive levels to cover.',
+        bloomHelp:
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+        bloomLevel: 'Level {level}',
+        bloomSelected: 'Selected',
+        bloomSelect: 'Select level',
         settingsTitle: 'Generation settings',
         elementCount: 'Number of elements',
         language: 'Language',
-        difficulty: 'Difficulty distribution',
+        difficulty: 'Difficulty level',
+        difficultyHelp:
+          'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
         objectives: 'Learning objectives',
         objectivesHelp: 'Optional guidance for the generated elements.',
+        objectiveHint: 'Write observable, specific learning objectives.',
+        objectiveFormula:
+          'Useful pattern: action verb + subject matter + situation or constraint.',
+        objectiveExampleOne:
+          'Explain why diversification reduces idiosyncratic risk.',
+        objectiveExampleTwo:
+          'Apply the net-present-value rule to compare two investment projects.',
+        objectivePlaceholder:
+          'E.g. Analyze how a rate increase affects bond prices.',
         addObjective: 'Add objective',
         remove: 'Remove',
         start: 'Generate elements',
@@ -2369,7 +2398,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         analyze: 'Analyze',
         evaluate: 'Evaluate',
       },
+      bloomExamples: {
+        remember: 'Identify · define · recall',
+        understand: 'Explain · summarize · classify',
+        apply: 'Calculate · demonstrate · use',
+        analyze: 'Compare · distinguish · connect',
+        evaluate: 'Assess · justify · recommend',
+      },
       difficulty: {
+        D1: {
+          label: 'Very easy',
+          description: 'Direct recall or recognition.',
+        },
+        D2: {
+          label: 'Easy',
+          description: 'One routine application or interpretation.',
+        },
+        D3: {
+          label: 'Medium',
+          description: 'Two linked steps or a meaningful choice.',
+        },
+        D4: {
+          label: 'Difficult',
+          description: 'Several dependent steps or multi-concept analysis.',
+        },
+        D5: {
+          label: 'Very difficult',
+          description: 'Non-routine synthesis or evaluation under constraints.',
+        },
         EASY: 'Easy',
         MIXED: 'Mixed',
         HARD: 'Hard',

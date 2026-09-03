@@ -16,7 +16,15 @@ export type ElementGenerationBloomLevel =
   | 'apply'
   | 'analyze'
   | 'evaluate'
-export type ElementGenerationDifficultyPreset = 'EASY' | 'MIXED' | 'HARD'
+export type ElementGenerationDifficultyPreset =
+  | 'D1'
+  | 'D2'
+  | 'D3'
+  | 'D4'
+  | 'D5'
+  | 'EASY'
+  | 'MIXED'
+  | 'HARD'
 export type ElementGenerationDifficultyCounts = {
   d1: number
   d2: number
@@ -33,6 +41,11 @@ const ELEMENT_GENERATION_DIFFICULTY_KEYS = [
   'd5',
 ] as const
 const ELEMENT_GENERATION_DIFFICULTY_WEIGHTS = {
+  D1: [100, 0, 0, 0, 0],
+  D2: [0, 100, 0, 0, 0],
+  D3: [0, 0, 100, 0, 0],
+  D4: [0, 0, 0, 100, 0],
+  D5: [0, 0, 0, 0, 100],
   EASY: [40, 40, 20, 0, 0],
   MIXED: [10, 25, 30, 25, 10],
   HARD: [0, 0, 20, 40, 40],

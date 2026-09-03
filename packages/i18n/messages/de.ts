@@ -2322,6 +2322,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
     },
+    generationStatus: {
+      title: 'Generierung im Hintergrund',
+      description:
+        'Sie können weiterarbeiten, während diese Vorgänge im Hintergrund ausgeführt werden.',
+      starting: 'Wird gestartet…',
+      graphQueued: 'Wissensgraph ist eingereiht',
+      graphProcessing: 'Wissensgraph wird generiert',
+      elementProgress:
+        '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
+      succeeded: '{label} ist bereit.',
+      failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
+      open: 'Ergebnis öffnen',
+    },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',
       title: 'Elemente generieren',
@@ -2343,19 +2356,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         staleGraphHelp:
           'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
         sourceDetails: 'Enthaltene Quellen',
+        completeSource: 'Die vollständige Quelle wird verwendet.',
         pageFrom: 'Von Seite',
         pageTo: 'Bis Seite',
         elementTypeTitle: 'Klicker-Elementtyp',
         elementTypeHelp:
           'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
         bloomTitle: 'Blooms Taxonomie',
-        bloomHelp: 'Wählen Sie die abzudeckenden kognitiven Stufen.',
+        bloomHelp:
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+        bloomLevel: 'Stufe {level}',
+        bloomSelected: 'Ausgewählt',
+        bloomSelect: 'Stufe auswählen',
         settingsTitle: 'Einstellungen der Generierung',
         elementCount: 'Anzahl Elemente',
         language: 'Sprache',
-        difficulty: 'Schwierigkeitsverteilung',
+        difficulty: 'Schwierigkeitsstufe',
+        difficultyHelp:
+          'Wählen Sie den Denkaufwand für alle generierten Elemente. Die Schwierigkeit entsteht durch die Aufgabe, nicht durch verwirrende Formulierungen.',
         objectives: 'Lernziele',
         objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
+        objectiveHint: 'Formulieren Sie beobachtbare, konkrete Lernziele.',
+        objectiveFormula:
+          'Hilfreiches Muster: Handlungsverb + Lerngegenstand + Situation oder Bedingung.',
+        objectiveExampleOne:
+          'Erklären, warum Diversifikation das idiosynkratische Risiko reduziert.',
+        objectiveExampleTwo:
+          'Die Kapitalwertregel anwenden, um zwei Investitionsprojekte zu vergleichen.',
+        objectivePlaceholder:
+          'Z. B. Analysieren, wie ein Zinsanstieg Anleihenkurse beeinflusst.',
         addObjective: 'Lernziel hinzufügen',
         remove: 'Entfernen',
         start: 'Elemente generieren',
@@ -2395,7 +2424,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         analyze: 'Analysieren',
         evaluate: 'Bewerten',
       },
+      bloomExamples: {
+        remember: 'Nennen · definieren · wiedergeben',
+        understand: 'Erklären · zusammenfassen · einordnen',
+        apply: 'Berechnen · demonstrieren · anwenden',
+        analyze: 'Vergleichen · unterscheiden · verknüpfen',
+        evaluate: 'Beurteilen · begründen · empfehlen',
+      },
       difficulty: {
+        D1: {
+          label: 'Sehr leicht',
+          description: 'Direktes Erinnern oder Wiedererkennen.',
+        },
+        D2: {
+          label: 'Leicht',
+          description: 'Eine routinemässige Anwendung oder Interpretation.',
+        },
+        D3: {
+          label: 'Mittel',
+          description: 'Zwei verknüpfte Schritte oder eine relevante Auswahl.',
+        },
+        D4: {
+          label: 'Schwierig',
+          description:
+            'Mehrere abhängige Schritte oder eine Mehrkonzeptanalyse.',
+        },
+        D5: {
+          label: 'Sehr schwierig',
+          description:
+            'Nicht routinemässige Synthese oder Bewertung unter Bedingungen.',
+        },
         EASY: 'Leicht',
         MIXED: 'Gemischt',
         HARD: 'Schwer',
