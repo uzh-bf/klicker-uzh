@@ -1,14 +1,49 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
+
+export function getEvaluationQuestionLocation(
+  questionIx: string | null | undefined,
+  stacks: StackEvaluation[]
+) {
+  if (typeof questionIx !== 'string') return null
+
+  if (!/^\d+$/.test(questionIx)) return null
+
+  const questionIndex = Number(questionIx)
+  if (!Number.isSafeInteger(questionIndex)) return null
+
+  // questionOffset covers all instances, while resultOffset covers only
+  // instances with evaluation results; -1 marks hidden or unavailable results.
+  let questionOffset = 0
+  let resultOffset = 0
+
+  for (const [stackIx, stack] of stacks.entries()) {
+    const instanceCount = stack.instanceCount ?? stack.instances.length
+    if (questionIndex < questionOffset + instanceCount) {
+      const localInstanceIx = questionIndex - questionOffset
+      return {
+        stackIx,
+        instanceIx:
+          localInstanceIx < stack.instances.length
+            ? resultOffset + localInstanceIx
+            : -1,
+      }
+    }
+
+    questionOffset += instanceCount
+    resultOffset += stack.instances.length
+  }
+
+  return null
+}
 
 function useEvaluationInitialization({
   setActiveInstance,
   setActiveStack,
   questionIx,
-  results,
+  stacks,
   showLeaderboard,
-  missingInstanceResults,
   type,
 }: {
   setActiveInstance: Dispatch<SetStateAction<number>>
@@ -16,23 +51,28 @@ function useEvaluationInitialization({
     SetStateAction<number | 'feedbacks' | 'confusion' | 'leaderboard'>
   >
   questionIx?: string | null
-  results: (ElementInstanceEvaluation & { stackIx: number })[]
+  stacks: StackEvaluation[]
   showLeaderboard?: boolean
-  missingInstanceResults?: boolean
   type: ActivityEvaluationType
 }) {
   useEffect(() => {
     // initialize evaluation with correct element / leaderboard / confusion for live quiz
     if (type === 'LiveQuiz') {
       if (typeof questionIx === 'string' && questionIx !== null) {
-        setActiveInstance(parseInt(questionIx))
-        setActiveStack(results[parseInt(questionIx)]?.stackIx ?? 0)
-      } else if (showLeaderboard || missingInstanceResults) {
+        const location = getEvaluationQuestionLocation(questionIx, stacks)
+        if (location) {
+          setActiveStack(location.stackIx)
+          setActiveInstance(location.instanceIx)
+        } else {
+          setActiveInstance(-1)
+          setActiveStack(0)
+        }
+      } else if (showLeaderboard) {
         setActiveStack('leaderboard')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, results, questionIx, showLeaderboard, missingInstanceResults])
+  }, [type, stacks, questionIx, showLeaderboard])
 
   return null
 }

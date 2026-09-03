@@ -78,6 +78,12 @@ function StackNavigation({
     type,
   })
 
+  const selectStack = (stackIndex: number) => {
+    setActiveStack(stackIndex)
+    const firstInstance = stackInstanceMap[stackIndex]?.[0]
+    setActiveInstance(firstInstance?.value ?? -1)
+  }
+
   return (
     <div className="flex h-11 flex-row">
       {visibleStacks.length > 0 && (
@@ -86,8 +92,7 @@ function StackNavigation({
           onClick={() => {
             const newActiveStack =
               typeof activeStack === 'number' ? Math.max(activeStack - 1, 0) : 0
-            setActiveStack(newActiveStack)
-            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+            selectStack(newActiveStack)
           }}
           disabled={
             stacks.length <= 2 * width + 1 ||
@@ -104,8 +109,7 @@ function StackNavigation({
         <NavigationButton
           key={stack.value}
           onClick={() => {
-            setActiveStack(stack.value)
-            setActiveInstance(stackInstanceMap[stack.value][0].value)
+            selectStack(stack.value)
           }}
           data={{ cy: `evaluate-stack-${stack.value}` }}
           className="w-28"
@@ -123,8 +127,7 @@ function StackNavigation({
               typeof activeStack === 'number'
                 ? Math.min(activeStack + 1, stacks.length)
                 : 0
-            setActiveStack(newActiveStack)
-            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+            selectStack(newActiveStack)
           }}
           disabled={
             stacks.length <= 2 * width + 1 ||

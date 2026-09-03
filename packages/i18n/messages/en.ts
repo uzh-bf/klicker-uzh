@@ -3084,6 +3084,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      activityStatus: 'Activity Status',
+      linkActivityDetails: 'Open activity details',
+      instanceScheduled: 'Element is scheduled for execution',
+      instanceActive:
+        'Element is being executed and results are updated in real-time',
+      instanceExecuted: 'Element has been executed and results are finalized',
+      instanceLastRefetch: 'Last data refresh',
+      instanceExecutionDate: 'Element executed at',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:
@@ -3165,7 +3173,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
       wordCloudModeSentences: 'Full responses',
       wordCloudNoResponses:
-        'No participants have submitted responses for this question 😔.',
+        'No participants have submitted responses for this question.',
       wordCloudNoResponsesFiltered:
         'No responses match the current filter settings 🧐.',
       wordCloudNoResponsesDisplayed:

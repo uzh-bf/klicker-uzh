@@ -1,9 +1,25 @@
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import { HatchetLogger } from '@hatchet-dev/typescript-sdk/clients/hatchet-client/hatchet-logger.js'
 import type { LogLevel } from '@hatchet-dev/typescript-sdk/util/logger/logger.js'
 
 const globalForHatchet = global as unknown as { hatchetClient: HatchetClient }
 
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
+
+function createSafeLogger(context: string, logLevel?: LogLevel) {
+  const logger = new HatchetLogger(context, logLevel)
+
+  return new Proxy(logger, {
+    get(target, property, receiver) {
+      // HatchetLogger exposes debug but some SDK versions may dispatch trace-level logs.
+      if (property === 'trace' && !('trace' in target)) {
+        return target.debug.bind(target)
+      }
+
+      return Reflect.get(target, property, receiver)
+    },
+  })
+}
 
 function setupClient() {
   const hatchet = HatchetClient.init({
@@ -22,6 +38,7 @@ function setupClient() {
       )
         ? (process.env.HATCHET_LOG_LEVEL as LogLevel)
         : 'INFO',
+    logger: createSafeLogger,
   })
 
   return hatchet

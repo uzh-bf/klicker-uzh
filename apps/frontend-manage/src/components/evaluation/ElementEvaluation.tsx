@@ -1,10 +1,12 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   ElementBlockStatus,
   ElementInstanceEvaluation,
   ElementType,
   LocaleType,
+  PublicationStatus,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
@@ -15,6 +17,8 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from '../liveQuiz/cockpit/LiveQuizCountdown'
 import { ActivityEvaluationType } from './ActivityEvaluation'
+import BlockStatusIndicator from './BlockStatusIndicator'
+import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
@@ -27,7 +31,7 @@ import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
-  currentStack: StackEvaluation
+  currentStack?: StackEvaluation
   activeInstance: number
   activeStack: number
   courseLanguage?: LocaleType | null
@@ -36,11 +40,17 @@ interface ElementEvaluationProps {
   showSolution: boolean
   showExplanation: boolean
   type: ActivityEvaluationType
+  activityType?: ActivityType
   requireShowResultsConfirmation: boolean
   isStackActive?: boolean
   isAssessmentEnabled: boolean
   pinCode?: string | null
   className?: string
+  lastRefetchTime?: Date
+  courseName?: string | null
+  activityName: string
+  activityId: string
+  activityStatus?: PublicationStatus
 }
 
 function ElementEvaluation({
@@ -54,11 +64,17 @@ function ElementEvaluation({
   showSolution,
   showExplanation,
   type,
+  activityType,
   requireShowResultsConfirmation,
   isStackActive,
   isAssessmentEnabled,
   pinCode,
   className,
+  lastRefetchTime,
+  courseName,
+  activityName,
+  activityId,
+  activityStatus,
 }: ElementEvaluationProps) {
   const t = useTranslations()
   const [inCooldown, setInCooldown] = useState(false)
@@ -81,6 +97,34 @@ function ElementEvaluation({
       setShowResults(true)
     }
   }, [currentInstance.id, requireShowResultsConfirmation])
+
+  const currentStackStatus = currentStack?.status
+
+  // if the entire block is scheduled and not yet executed, display the unavailable notification without element body
+  if (!currentStack || currentStackStatus === ElementBlockStatus.Scheduled) {
+    return (
+      <div className={twMerge('relative flex h-full flex-col', className)}>
+        {type === 'LiveQuiz' && currentStack && currentStackStatus && (
+          <div className="absolute bottom-4 left-4 z-10">
+            <BlockStatusIndicator
+              status={currentStackStatus}
+              lastRefetchTime={lastRefetchTime}
+              closedAt={currentStack.closedAt}
+            />
+          </div>
+        )}
+        <EvaluationUnavailableNotification
+          courseName={courseName}
+          activityName={activityName}
+          activityId={activityId}
+          activityType={activityType}
+          elementName={currentInstance.name}
+          elementType={currentInstance.type}
+          activityStatus={activityStatus}
+        />
+      </div>
+    )
+  }
 
   if (!showResults && currentInstance.type !== ElementType.Content) {
     return (
@@ -123,7 +167,16 @@ function ElementEvaluation({
   }
 
   return (
-    <div className={twMerge('flex h-full flex-col', className)}>
+    <div className={twMerge('relative flex h-full flex-col', className)}>
+      {type === 'LiveQuiz' && currentStack.status && (
+        <div className="absolute bottom-4 left-4 z-10">
+          <BlockStatusIndicator
+            status={currentStack.status}
+            lastRefetchTime={lastRefetchTime}
+            closedAt={currentStack.closedAt}
+          />
+        </div>
+      )}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {(currentInstance.__typename === 'ChoicesActivityEvaluationData' ||
           currentInstance.__typename === 'NumericalActivityEvaluationData' ||
@@ -141,7 +194,7 @@ function ElementEvaluation({
                 }
               />
             </div>
-            <div className="min-h-0 flex-1">
+            <div className="relative min-h-0 flex-1">
               {currentInstance.__typename ===
                 'ChoicesActivityEvaluationData' && (
                 <ChoicesEvaluation

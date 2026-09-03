@@ -3131,6 +3131,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
+      activityStatus: 'Aktivitätsstatus',
+      linkActivityDetails: 'Aktivitätsdetails anzeigen',
+      instanceScheduled: 'Element ist zur Durchführung geplant',
+      instanceActive:
+        'Element ist aktuell aktiv und die Resultate aktualisieren sich laufend',
+      instanceExecuted:
+        'Element wurde durchgeführt und Resultate sind finalisiert',
+      instanceLastRefetch: 'Letztes Daten-Update',
+      instanceExecutionDate: 'Element durchgeführt am',
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:
@@ -3213,7 +3222,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
       wordCloudModeSentences: 'Vollständige Antworten',
       wordCloudNoResponses:
-        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert.',
       wordCloudNoResponsesFiltered:
         'Keine Antworten entsprechen den aktuellen Filtereinstellungen 🧐.',
       wordCloudNoResponsesDisplayed:
