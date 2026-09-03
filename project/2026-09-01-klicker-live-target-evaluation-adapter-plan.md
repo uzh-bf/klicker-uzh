@@ -44,6 +44,11 @@ judge transport, source delivery, and deployment.
 - Pause: a non-local adapter URL, missing seeded participation, unavailable
   direct developer Foundry route, missing FineCo retrieval binding, forecast
   cost above USD 1, any real-data requirement, or a need for cluster access.
+- Follow-up authority (2026-09-03): branch the completed local package into
+  `rs/evaluation-native-infisical`, remove the repository's dependency on the
+  personal `rs-infisical-operator`, run offline verification, commit, push the
+  branch, and open a PR against `v3`. Upstream integration, merge, deployment,
+  secret or permission mutation, and paid or live evaluation remain withheld.
 
 ## Research
 
@@ -243,6 +248,29 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   review over the complete committed package.
 - Commit: only source/docs/progress updates; generated QA and result artifacts
   stay ignored and local.
+
+## Slice D: portable credential injection
+
+- Route: main. Side-conversation isolation prevents child review dispatch, so
+  the follow-up PR remains draft until an eligible independent final review is
+  completed.
+- Do: make `LITELLM_API_KEY` and `LITELLM_API_BASE` explicit caller-provided
+  runtime inputs. Remove all executable and documented dependencies on
+  `rs-infisical-operator`; do not add another secret client to application or
+  evaluator code.
+- Do: document native Infisical CLI examples as optional launchers for local
+  developers. Keep secret-store project, environment, path, and domain values
+  caller-supplied, and retain GitLab masked-variable compatibility.
+- Do: preserve the target/judge boundary. Local adapter and target helpers must
+  not receive the judge key or Azure target credentials. The evaluator receives
+  only the judge key and must not receive participant or Azure target values.
+- Check: wrapper fake-runtime tests pass with no operator executable, reject a
+  missing judge key before invoking `uv`, preserve target cleanup and child exit
+  status, and assert the existing credential-isolation markers.
+- Commit: `fix(evaluation): remove personal operator dependency`.
+- Risk gate: secret injection and public developer workflow. Independent final
+  review is unavailable in this side conversation and remains blocking before
+  the draft PR can be marked ready.
 
 ## Planning-stage specialist
 
