@@ -67,7 +67,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
     const graphqlOperations: string[] = []
     page.on('request', (request) => {
-      if (!request.url().endsWith('/api/graphql')) return
+      const requestUrl = new URL(request.url())
+      if (!requestUrl.pathname.endsWith('/api/graphql')) return
 
       if (request.method() === 'POST') {
         const postData = request.postData()
@@ -78,10 +79,13 @@ test.describe('Tests the availability of standard activity creation formats', ()
         return
       }
 
-      const extensions = new URL(request.url()).searchParams.get('extensions')
+      const extensions = requestUrl.searchParams.get('extensions')
       const hash = extensions
-        ? (JSON.parse(extensions) as { persistedQuery?: { hash?: string } })
-            .persistedQuery?.hash
+        ? (
+            JSON.parse(extensions) as {
+              persistedQuery?: { sha256Hash?: string }
+            }
+          ).persistedQuery?.sha256Hash
         : undefined
       if (hash) {
         graphqlOperations.push(persistedNames[hash] ?? `persisted:${hash}`)
