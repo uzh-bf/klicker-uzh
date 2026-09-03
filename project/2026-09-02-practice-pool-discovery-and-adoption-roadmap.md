@@ -2,7 +2,8 @@
 
 - **Status:** W1 — Promote the Practice Pool at the course entry point and
   W3 — Help lecturers distribute the course entry point merged into `v3`;
-  W2 — Create a useful completion loop is in approved local execution
+  W2 — Create a useful completion loop is locally reviewed and ready for one
+  upstream integration pass
 - **Date:** 2026-09-02
 - **Approved branch baseline:** `origin/v3` at
   `72096fafe50827c3ea3f50465f0a76d492e0a4c2`
@@ -447,5 +448,13 @@ planner then returned `DONE` with `Verdict: APPROVED`.
   complete browser run remains applicable to the completion behavior, and the
   accepted correction only removes an extra React key after the Loader already
   unmounts the quiz subtree.
-- [ ] Run the integrated final review for W2 — Create a useful completion loop
-  after committing the accepted simplifier correction and current evidence.
+- [x] Run the integrated final review for W2 — Create a useful completion loop.
+  The final reviewer approved the complete eight-file range through
+  `79a255ffdd` with no findings. The report is stored under the ignored local
+  review directory.
+- [x] Stop the exact W2 — Create a useful completion loop runtime and verify no
+  task routes remain active. Devrouter's explicit stop returned non-zero after
+  OrbStack had already exited, and the final status readback confirmed the
+  router, services, processes, and task routes were not running.
+- [ ] Obtain separate authority for one upstream integration pass, push, and
+  draft PR creation for W2 — Create a useful completion loop.
