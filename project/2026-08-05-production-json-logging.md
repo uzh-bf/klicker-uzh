@@ -422,7 +422,7 @@ pnpm run check:syncpack
 
 Expected: all pass and `pnpm-lock.yaml` contains Pino 9.14.0.
 
-- [ ] **Step 7: Commit the contract**
+- [x] **Step 7: Commit the contract**
 
 ```bash
 git add packages/logging turbo.json pnpm-lock.yaml
@@ -509,7 +509,7 @@ Add `src/edge.ts` to the Rollup inputs and add this package export:
 }
 ```
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```bash
 pnpm --filter @klicker-uzh/logging test
@@ -596,7 +596,7 @@ logging, and examples:
 
 Link the page and ADR from their indexes and add a dated `docs/log.md` entry.
 
-- [ ] **Step 4: Verify layer 1 and commit**
+- [x] **Step 4: Verify layer 1 and commit**
 
 ```bash
 pnpm install
@@ -611,6 +611,10 @@ git commit -m "feat(logging): adopt shared logger in general worker"
 
 Expected: layer 1 is independently green and emits valid NDJSON when built with
 `NODE_ENV=production`.
+
+Execution note: the contract, Edge adapter, and canary were committed together
+as the single reviewable layer-one work package (`0e623fbe6`) after all three
+verification sets passed.
 
 ### Task 4: Add optional Hatchet correlation and a task-boundary wrapper
 
