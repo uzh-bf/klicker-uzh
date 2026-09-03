@@ -23,6 +23,8 @@ must reach long-running backend processes without a restart.
 - Backend flag data refreshes through bounded polling with the existing
   GrowthBook dependency. Do not add an EventSource dependency or a production
   force-on escape hatch.
+- The Node evaluator accepts only a valid HTTPS SDK host. Missing, malformed,
+  or cleartext hosts are unconfigured and cause no feature-payload request.
 - The default refresh interval is 30 seconds and a payload becomes unusable
   after 120 seconds without a successful refresh.
 
@@ -196,14 +198,28 @@ Check:
 
 ## Rollout contract
 
-1. Merge and deploy source with `chat-account-usage` absent or false.
-2. Prove backend evaluator health and that the UI/query remain hidden.
-3. Create the GrowthBook flag and target a bounded internal cohort through a
+1. Before deployment, have the secret owner confirm without exposing values
+   that `GROWTHBOOK_API_HOST` is a valid HTTPS SDK endpoint, the environment and
+   client key match, and `GROWTHBOOK_REFRESH_INTERVAL_MS` is not zero unless
+   expiry to a fail-closed state is intentional.
+2. Merge and deploy source with `chat-account-usage` absent or false. This PR
+   has no Prisma schema or migration and needs no database rollout step.
+3. Prove backend evaluator health and that the UI/query remain hidden. Treat an
+   unconfigured, unhealthy, or stale evaluator as a release hold for enabling
+   the flag, while the default-off source deployment remains safe.
+4. Create the GrowthBook flag and target a bounded internal cohort through a
    separately approved configuration change.
-4. Prove browser visibility and GraphQL access for the cohort, and fail-closed
+5. Prove browser visibility and GraphQL access for the cohort, and fail-closed
    behavior outside it.
-5. Expand targeting only after usage data, support ownership, and rollback are
+6. Expand targeting only after usage data, support ownership, and rollback are
    confirmed. Turning the flag off is the first rollback.
+
+The current staging environment is not release evidence for this package
+because it carries a newer `v3-ai` state. Use exact-head CI for source proof and
+reserve environment smoke tests for a separately approved deployment whose
+deployed revision can be read back. The inherited GitGuardian finding in the
+unchanged upstream GraphQL fixture remains a security-owner dashboard
+disposition; branch-range Gitleaks is the source-content gate for this PR.
 
 ## Beta-signup follow-up
 
@@ -275,7 +291,29 @@ does not present a UI whose backend state transition is not yet settled.
   `v3` defects: its two evaluation-target files were not Biome-formatted, and
   its `.test.mjs` suite registered tests with `node:test` while the Chat package
   runs Vitest. Formatting the two files and registering the ten tests with
-  Vitest makes both focused reproducers and the full 505-test Chat suite pass.
+  Vitest makes both focused reproducers and the full Chat suite pass with 484
+  tests passing and 21 database-backed integration tests intentionally skipped.
+- [x] Diagnosed the eight Playwright shard failures before test execution. The
+  build compiled the feature-flag package, but the public route executed the
+  trusted `v3` composite action, whose artifact omitted that new runtime path.
+  The backend test process then failed with `ERR_MODULE_NOT_FOUND`; later
+  Hatchet and PostgreSQL messages were teardown noise. The backend bundle now
+  embeds the feature-flag adapter and GrowthBook runtime inside the existing
+  transferred service artifact, so the candidate no longer depends on changing
+  its own trusted artifact allowlist.
+- [x] Accepted the transport-integrity part of CodeRabbit's review while
+  rejecting its credential-leak framing: SDK client keys are public
+  identifiers, but cleartext transport can still alter rollout definitions.
+  The Node evaluator now rejects malformed and non-HTTPS hosts without fetching.
+- [x] Documented the final reviewer's low-severity operational finding: a zero
+  refresh interval disables polling, so the one startup payload expires after
+  120 seconds and all evaluations then fail closed.
+- [x] Passed the corrected local gate: 38 feature-flag tests, full repository
+  `check:all`, the 21-task test build, the 23-task production build, and static
+  inspection of the generated backend entry. The entry contains the
+  feature-flag and GrowthBook runtimes and retains no import of those packages.
+  The documentation validator still reports only the repository's existing
+  26 conformance errors and 41 warnings; the new solution page adds none.
 - [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
   suite and the new browser test before merge. Three supported Devrouter starts
   were blocked before runtime startup because Docker could not resolve
