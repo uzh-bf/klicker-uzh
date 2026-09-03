@@ -12,6 +12,8 @@ const config = defineConfig([
       'src/clientAuth.ts',
       'src/publicUrl.ts',
       'src/responseExampleDigest.ts',
+      'src/responseExampleEligibility.ts',
+      'src/responseExampleRuntime.ts',
     ],
     output: {
       dir: 'dist',

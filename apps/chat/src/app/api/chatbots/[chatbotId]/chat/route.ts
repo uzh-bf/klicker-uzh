@@ -51,6 +51,11 @@ import {
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
+import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
@@ -1131,6 +1136,43 @@ export async function POST(
       throw error
     }
 
+    let responseExampleSummary = ''
+    let responseExampleSetDigest: string | null = null
+    let responseExampleProjectionDigest: string | null = null
+    const responseExampleTools: Record<string, any> = {}
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      if (
+        Object.prototype.hasOwnProperty.call(
+          mcpTools,
+          RESPONSE_EXAMPLE_SEARCH_TOOL_NAME
+        )
+      ) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { requestId, chatbotId }
+        )
+      } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
+          responseExampleTool
+        responseExampleSummary = responseExampleSkill.summary
+        responseExampleSetDigest = responseExampleSkill.setDigest
+        responseExampleProjectionDigest = responseExampleSkill.projectionDigest
+      }
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        { requestId, chatbotId, error }
+      )
+    }
+
     let practiceCandidatePrompt = ''
     let practiceCandidateCount = 0
     const practiceCandidateRefs = new Map<string, string>()
@@ -1216,6 +1258,7 @@ export async function POST(
 
     const chatTools: Record<string, any> = {
       ...(mcpTools || {}),
+      ...responseExampleTools,
       ...studentPracticeTools,
     }
     const toolNames = Object.keys(chatTools)
@@ -1252,9 +1295,12 @@ export async function POST(
     const contextAwareSystemPrompt = chatContextPrompt
       ? `${systemPrompt}\n\n${chatContextPrompt}`
       : systemPrompt
-    const effectiveSystemPrompt = practiceCandidatePrompt
+    const practiceAwareSystemPrompt = practiceCandidatePrompt
       ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
       : contextAwareSystemPrompt
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
+      : practiceAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1409,6 +1455,11 @@ export async function POST(
       toolCount: toolNames.length,
       toolNames,
       practiceCandidateCount,
+      hasResponseExampleSkill: Boolean(
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+      ),
+      responseExampleSetDigest,
+      responseExampleProjectionDigest,
       hasChatContext: Boolean(chatContextPrompt),
       systemPromptLength: effectiveSystemPrompt.length,
       systemPromptHash: effectiveSystemPrompt
@@ -1675,7 +1726,24 @@ export async function POST(
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: Boolean(
+            responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+          ),
+          responseExampleSetDigest: responseExampleSetDigest ?? 'unavailable',
+          responseExampleProjectionDigest:
+            responseExampleProjectionDigest ?? 'unavailable',
+        },
+        telemetry: {
+          isEnabled: isAiTelemetryEnabled,
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: true,
+            responseExampleProjectionDigest: true,
+          },
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest

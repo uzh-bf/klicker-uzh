@@ -32,11 +32,14 @@ export function parseCitationHref(
 
 export function splitCitationMarkers(
   value: string,
-  scope?: string
+  scope?: string,
+  sourceOffset?: number,
+  sourceValue?: string
 ): MarkdownAstNode[] {
   const nodes: MarkdownAstNode[] = []
   let lastIndex = 0
   let searchFrom = 0
+  let sourceSearchFrom = 0
 
   while (searchFrom < value.length) {
     const start = value.indexOf('[', searchFrom)
@@ -59,10 +62,25 @@ export function splitCitationMarkers(
     if (before.length > 0) nodes.push({ type: 'text', value: before })
 
     const citationIndex = value.slice(start + 1, end)
+    const marker = `[${citationIndex}]`
+    const sourceRange = findCitationMarkerSourceRange(
+      marker,
+      start,
+      sourceOffset,
+      sourceValue,
+      sourceSearchFrom
+    )
+    if (sourceRange && sourceOffset !== undefined) {
+      sourceSearchFrom = sourceRange.sourceEnd - sourceOffset
+    }
     nodes.push({
       type: 'link',
       url: citationHrefFor(Number(citationIndex), scope),
       children: [{ type: 'text', value: citationIndex }],
+      data: {
+        responseExampleCitationMarker: true,
+        ...(sourceRange ?? {}),
+      },
     })
     lastIndex = end + 1
     searchFrom = lastIndex
@@ -76,9 +94,27 @@ export function splitCitationMarkers(
   return nodes
 }
 
+function findCitationMarkerSourceRange(
+  marker: string,
+  valueStart: number,
+  sourceOffset: number | undefined,
+  sourceValue: string | undefined,
+  searchFrom: number
+) {
+  if (sourceOffset === undefined) return null
+  const markerStart = sourceValue?.indexOf(marker, searchFrom) ?? valueStart
+  return markerStart >= 0
+    ? {
+        sourceStart: sourceOffset + markerStart,
+        sourceEnd: sourceOffset + markerStart + marker.length,
+      }
+    : null
+}
+
 export function transformCitationMarkers<T extends MarkdownAstNode>(
   tree: T,
-  scope?: string
+  scope?: string,
+  source?: string
 ): T {
   const pending: Array<{
     node: MarkdownAstNode
@@ -100,7 +136,23 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
         !skipped &&
         child.value.includes('[')
       ) {
-        nextChildren.push(...splitCitationMarkers(child.value, scope))
+        const position = child.position as
+          | { start?: { offset?: number }; end?: { offset?: number } }
+          | undefined
+        const sourceStart = position?.start?.offset
+        const sourceEnd = position?.end?.offset
+        nextChildren.push(
+          ...splitCitationMarkers(
+            child.value,
+            scope,
+            sourceStart,
+            source !== undefined &&
+              sourceStart !== undefined &&
+              sourceEnd !== undefined
+              ? source.slice(sourceStart, sourceEnd)
+              : undefined
+          )
+        )
         continue
       }
 
@@ -119,9 +171,9 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
   return tree
 }
 
-export function remarkCitationMarkers(scope?: string) {
+export function remarkCitationMarkers(scope?: string, source?: string) {
   return (tree: MarkdownAstNode) => {
-    transformCitationMarkers(tree, scope)
+    transformCitationMarkers(tree, scope, source)
   }
 }
 
@@ -147,7 +199,7 @@ export interface CitationParserOptions {
 }
 
 /** Parse the Markdown dialect and math setting used by the renderer. */
-export function parseMarkdownForCitations(
+function parseNormalizedMarkdownForCitations(
   source: string,
   options: CitationParserOptions = {}
 ): MarkdownAstNode {
@@ -156,10 +208,18 @@ export function parseMarkdownForCitations(
     .use(remarkMath, {
       singleDollarTextMath: options.singleDollarTextMath ?? false,
     })
-    .use(remarkCitationMarkers)
-  return processor.runSync(
-    processor.parse(normalizeMarkdownContent(source))
-  ) as MarkdownAstNode
+    .use(remarkCitationMarkers, undefined, source)
+  return processor.runSync(processor.parse(source)) as MarkdownAstNode
+}
+
+export function parseMarkdownForCitations(
+  source: string,
+  options: CitationParserOptions = {}
+): MarkdownAstNode {
+  return parseNormalizedMarkdownForCitations(
+    normalizeMarkdownContent(source),
+    options
+  )
 }
 
 /** Return citation markers that become citation links in the renderer. */
@@ -192,6 +252,70 @@ export function extractCitationIndexes(
   }
 
   return indexes
+}
+
+export interface CitationMarkerSpan {
+  citationIndex: number
+  start: number
+  end: number
+}
+
+function citationMarkerSpanFromNode(
+  node: MarkdownAstNode,
+  source: string
+): CitationMarkerSpan | null {
+  if (node.type !== 'link' || !node.data || typeof node.data !== 'object') {
+    return null
+  }
+  const data = node.data as {
+    responseExampleCitationMarker?: unknown
+    sourceStart?: unknown
+    sourceEnd?: unknown
+  }
+  if (data.responseExampleCitationMarker !== true) return null
+
+  const citationIndex = parseCitationHref(
+    typeof node.url === 'string' ? node.url : null
+  )
+  const start = data.sourceStart
+  const end = data.sourceEnd
+  return citationIndex !== null &&
+    typeof start === 'number' &&
+    typeof end === 'number' &&
+    source.slice(start, end) === `[${citationIndex}]`
+    ? { citationIndex, start, end }
+    : null
+}
+
+function enqueueChildren(pending: MarkdownAstNode[], node: MarkdownAstNode) {
+  for (
+    let childIndex = (node.children?.length ?? 0) - 1;
+    childIndex >= 0;
+    childIndex -= 1
+  ) {
+    pending.push(node.children![childIndex]!)
+  }
+}
+
+/** Return normalized source spans for markers created by the citation renderer. */
+export function extractCitationMarkerSpans(
+  source: string,
+  options: CitationParserOptions = {}
+): CitationMarkerSpan[] {
+  const spans: CitationMarkerSpan[] = []
+  const normalizedSource = normalizeMarkdownContent(source)
+  const tree = parseNormalizedMarkdownForCitations(normalizedSource, options)
+  const pending: MarkdownAstNode[] = [tree]
+
+  while (pending.length > 0) {
+    const node = pending.pop()
+    if (!node) continue
+    const span = citationMarkerSpanFromNode(node, normalizedSource)
+    if (span) spans.push(span)
+    enqueueChildren(pending, node)
+  }
+
+  return spans.sort((left, right) => left.start - right.start)
 }
 
 /** Require a non-empty exact set of rendered citation indexes. */

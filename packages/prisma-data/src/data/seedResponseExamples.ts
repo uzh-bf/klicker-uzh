@@ -5,6 +5,10 @@ import { CHATBOT_ID_TEST } from './seedChatbots.js'
 
 // Development-only synthetic data for exercising the owner review UI.
 const RESPONSE_EXAMPLE_SET_ID = '7f8f2d21-5b7e-4d6b-9c42-1c0e6e4d7a01'
+const RESPONSE_EXAMPLE_KB_ID = '7f8f2d21-5b7e-4d6b-9c42-1c0e6e4d7a02'
+const RESPONSE_EXAMPLE_SOURCE_ID = '7f8f2d21-5b7e-4d6b-9c42-1c0e6e4d7a03'
+const RESPONSE_EXAMPLE_KB_CHATBOT_ID = '7f8f2d21-5b7e-4d6b-9c42-1c0e6e4d7a04'
+const RESPONSE_EXAMPLE_SOURCE_HASH = '1'.repeat(64)
 
 const REVIEWED_AT = new Date('2026-08-21T12:00:00.000Z')
 
@@ -31,9 +35,9 @@ const SEEDED_RESPONSE_EXAMPLES = [
     evidenceReferences: [
       {
         id: 'b1111111-1111-4111-8111-111111111111',
-        sourceId: 'seed-source-finance-01',
+        sourceId: RESPONSE_EXAMPLE_SOURCE_ID,
         chunkId: 'seed-chunk-time-value-01',
-        contentHash: 'seed-hash-time-value-01',
+        contentHash: RESPONSE_EXAMPLE_SOURCE_HASH,
         citationIndex: 1,
         citationAnchor: 'Time value of money, section 2',
         evidenceEligible: true,
@@ -57,7 +61,7 @@ const SEEDED_RESPONSE_EXAMPLES = [
     evidenceReferences: [
       {
         id: 'b2222222-2222-4222-8222-222222222222',
-        sourceId: 'seed-source-finance-01',
+        sourceId: RESPONSE_EXAMPLE_SOURCE_ID,
         chunkId: 'seed-chunk-time-value-01',
         contentHash: 'seed-hash-time-value-changed',
         citationIndex: 1,
@@ -86,9 +90,9 @@ const SEEDED_RESPONSE_EXAMPLES = [
     evidenceReferences: [
       {
         id: 'b3333333-3333-4333-8333-333333333333',
-        sourceId: 'seed-source-finance-01',
+        sourceId: RESPONSE_EXAMPLE_SOURCE_ID,
         chunkId: 'seed-chunk-time-value-01',
-        contentHash: 'seed-hash-time-value-01',
+        contentHash: RESPONSE_EXAMPLE_SOURCE_HASH,
         citationIndex: 1,
         citationAnchor: 'Time value of money, section 2',
         evidenceEligible: true,
@@ -112,9 +116,9 @@ const SEEDED_RESPONSE_EXAMPLES = [
     evidenceReferences: [
       {
         id: 'b4444444-4444-4444-8444-444444444444',
-        sourceId: 'seed-source-finance-01',
+        sourceId: RESPONSE_EXAMPLE_SOURCE_ID,
         chunkId: 'seed-chunk-time-value-01',
-        contentHash: 'seed-hash-time-value-01',
+        contentHash: RESPONSE_EXAMPLE_SOURCE_HASH,
         citationIndex: 1,
         citationAnchor: 'Time value of money, section 2',
         evidenceEligible: true,
@@ -135,6 +139,62 @@ function reviewMetadata(status: Prisma.ResponseExampleStatus) {
 }
 
 export async function seedResponseExamples(prisma: Prisma.PrismaClient) {
+  await prisma.kB.upsert({
+    where: { id: RESPONSE_EXAMPLE_KB_ID },
+    create: {
+      id: RESPONSE_EXAMPLE_KB_ID,
+      name: 'Response example test knowledge base',
+      description: 'Synthetic sources for the response-example review fixture.',
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      deletedAt: null,
+      deletedById: null,
+    },
+  })
+
+  await prisma.kBResource.upsert({
+    where: { id: RESPONSE_EXAMPLE_SOURCE_ID },
+    create: {
+      id: RESPONSE_EXAMPLE_SOURCE_ID,
+      kbId: RESPONSE_EXAMPLE_KB_ID,
+      type: Prisma.KBResourceType.URL,
+      title: 'Time value of money',
+      sourceUrl: 'https://example.invalid/time-value-of-money',
+      status: Prisma.KBResourceStatus.READY,
+      activeResourceVersion: 1,
+      activeContentSha256: RESPONSE_EXAMPLE_SOURCE_HASH,
+    },
+    update: {
+      kbId: RESPONSE_EXAMPLE_KB_ID,
+      status: Prisma.KBResourceStatus.READY,
+      activeResourceVersion: 1,
+      activeContentSha256: RESPONSE_EXAMPLE_SOURCE_HASH,
+      deletedAt: null,
+      deletedById: null,
+    },
+  })
+
+  await prisma.kBChatbot.updateMany({
+    where: { chatbotId: CHATBOT_ID_TEST },
+    data: { isEnabled: false },
+  })
+  await prisma.kBChatbot.upsert({
+    where: {
+      kbId_chatbotId: {
+        kbId: RESPONSE_EXAMPLE_KB_ID,
+        chatbotId: CHATBOT_ID_TEST,
+      },
+    },
+    create: {
+      id: RESPONSE_EXAMPLE_KB_CHATBOT_ID,
+      kbId: RESPONSE_EXAMPLE_KB_ID,
+      chatbotId: CHATBOT_ID_TEST,
+      isEnabled: true,
+    },
+    update: { isEnabled: true },
+  })
+
   const set = await prisma.responseExampleSet.upsert({
     where: { chatbotId: CHATBOT_ID_TEST },
     create: {
