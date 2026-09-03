@@ -19,6 +19,11 @@ export interface HatchetHandlerGlobalContext {
   tasks: PreparedHatchetTasks
 }
 
+export type HatchetLoggingContext = {
+  requestId?: string
+  correlationId?: string
+}
+
 // Shared contract for Hatchet task handler injections.
 // Payload of the `process-course-deletion` event. The request marker on the
 // course is the only persisted state; requester and options travel here.
@@ -101,7 +106,10 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleProcessCourseDuplication: (
-    { jobId }: { jobId: string },
+    {
+      jobId,
+      loggingContext,
+    }: { jobId: string; loggingContext?: HatchetLoggingContext },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -121,51 +129,60 @@ export interface HatchetHandlers {
 export interface PreparedHatchetTasks {
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
-      message: Record<string, string | undefined> & {
+      message: Record<string, string | HatchetLoggingContext | undefined> & {
         correlationId?: string
         info: string
+        loggingContext?: HatchetLoggingContext
       }
     },
     { success: boolean }
   >
   publishScheduledMicroLearning: TaskWorkflowDeclaration<
-    { microLearningId: string },
+    { microLearningId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledPracticeQuiz: TaskWorkflowDeclaration<
-    { practiceQuizId: string },
+    { practiceQuizId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledGroupActivity: TaskWorkflowDeclaration<
-    { groupActivityId: string },
+    { groupActivityId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledLiveQuiz: TaskWorkflowDeclaration<
-    { liveQuizId: string },
+    { liveQuizId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   endExpiredMicroLearning: TaskWorkflowDeclaration<
-    { microLearningId: string },
+    { microLearningId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   endExpiredGroupActivity: TaskWorkflowDeclaration<
-    { groupActivityId: string },
+    { groupActivityId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsStandard: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    {
+      liveQuizId: string
+      blockId: number
+      loggingContext?: HatchetLoggingContext
+    },
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    {
+      liveQuizId: string
+      blockId: number
+      loggingContext?: HatchetLoggingContext
+    },
     { success: boolean }
   >
   processCourseDuplication: TaskWorkflowDeclaration<
-    { jobId: string },
+    { jobId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   sweepStaleCourseDuplications: TaskWorkflowDeclaration<
-    Record<string, never>,
+    { loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   processCourseDeletion: TaskWorkflowDeclaration<

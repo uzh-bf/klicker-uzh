@@ -4,11 +4,13 @@ import EventEmitter from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { createHatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
+
+const hatchetClient = createHatchetClient({ logger })
 
 const HATCHET_WORKER_NAME =
   process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
