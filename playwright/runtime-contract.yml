@@ -1,0 +1,47 @@
+version: 1
+apps:
+  requireNonEmpty: true
+  mappings:
+    api:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/backend-docker']
+        serviceEndpoints: ['http://127.0.0.1:3000/healthz']
+    auth:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/auth']
+        serviceEndpoints: ['http://127.0.0.1:3010']
+    chat:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/chat']
+        serviceEndpoints: ['http://127.0.0.1:3004/noLogin']
+    control:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/frontend-control']
+        serviceEndpoints: ['http://127.0.0.1:3003']
+    manage:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/frontend-manage']
+        serviceEndpoints: ['http://127.0.0.1:3002']
+    pwa:
+      bindings:
+        turboFilters: ['--filter=@klicker-uzh/frontend-pwa']
+        serviceEndpoints: ['http://127.0.0.1:3001']
+    response-api:
+      bindings:
+        turboFilters:
+          - '--filter=@klicker-uzh/hatchet-worker-general'
+          - '--filter=@klicker-uzh/hatchet-worker-response-processor'
+          - '--filter=@klicker-uzh/response-api'
+        serviceEndpoints: ['http://127.0.0.1:7078/healthz']
+dependencies:
+  allowed: []
+managedRuntime:
+  services:
+    allowed:
+      - hatchet
+      - postgres
+      - redis_assessment
+      - redis_cache
+      - redis_exec
+  processes:
+    exact: [klicker-dev]

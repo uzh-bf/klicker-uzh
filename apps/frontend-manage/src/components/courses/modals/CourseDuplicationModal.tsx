@@ -39,8 +39,8 @@ export interface CourseDuplicationFormData {
   displayName: string
   description: string
   color: string
-  startDate: Date
-  endDate: Date
+  startDate?: Date
+  endDate?: Date
   language: LocaleType
   notificationEmail: string
   isGamificationEnabled: boolean
@@ -87,6 +87,7 @@ export function CourseDuplicationProgress({
 export type CourseDuplicationErrorType =
   | 'access'
   | 'generic'
+  | 'invalidDates'
   | 'inProgress'
   | 'partial'
 
@@ -98,6 +99,7 @@ type CourseDuplicationTranslationKey =
   | 'manage.courseList.courseDisplayNameReq'
   | 'manage.courseList.courseDuplicationAlreadyInProgress'
   | 'manage.courseList.courseDuplicationEndDateInPast'
+  | 'manage.courseList.courseDuplicationDatesRequired'
   | 'manage.courseList.courseDuplicationFailed'
   | 'manage.courseList.courseDuplicationBackgroundInfo'
   | 'manage.courseList.courseDuplicationNoAccess'
@@ -141,29 +143,33 @@ function getCourseDuplicationDateDefaults(initialValues?: Course) {
       today.getMonth() + 7
     )
   )
-  const startDate = initialValues?.startDate
+  const sourceStartDate = initialValues?.startDate
     ? dayjs(initialValues.startDate).local().toDate()
     : defaultStartDate
-  const endDate = initialValues?.endDate
+  const sourceEndDate = initialValues?.endDate
     ? dayjs(initialValues.endDate).local().toDate()
     : defaultEndDate
   const groupDeadlineDate = initialValues?.groupDeadlineDate
     ? dayjs(initialValues.groupDeadlineDate).local().toDate()
-    : endDate
+    : sourceEndDate
 
-  return { startDate, endDate, groupDeadlineDate }
+  return {
+    startDate: initialValues ? undefined : sourceStartDate,
+    endDate: initialValues ? undefined : sourceEndDate,
+    sourceStartDate,
+    sourceEndDate,
+    groupDeadlineDate,
+  }
 }
 
 function getCourseDuplicationDurationParts(startDate: Date, endDate: Date) {
-  const years = dayjs(endDate).diff(dayjs(startDate), 'year')
-  const months = dayjs(endDate).diff(
-    dayjs(startDate).add(years, 'year'),
-    'month'
-  )
-  const days = dayjs(endDate).diff(
-    dayjs(startDate).add(years, 'year').add(months, 'month'),
-    'day'
-  )
+  const start = dayjs(startDate).startOf('day')
+  const end = dayjs(endDate).startOf('day')
+  const years = end.diff(start, 'year')
+  const afterYears = start.add(years, 'year')
+  const months = end.diff(afterYears, 'month')
+  const afterMonths = afterYears.add(months, 'month')
+  const days = getCalendarDayDelta(end.toDate(), afterMonths.toDate())
 
   return { years, months, days }
 }
@@ -186,24 +192,35 @@ function getNativeDateInputDate(value: string) {
   return parsedDate.isValid() ? parsedDate.toDate() : undefined
 }
 
+function getCalendarDayDelta(laterDate: Date, earlierDate: Date) {
+  const laterDateUTC = Date.UTC(
+    laterDate.getFullYear(),
+    laterDate.getMonth(),
+    laterDate.getDate()
+  )
+  const earlierDateUTC = Date.UTC(
+    earlierDate.getFullYear(),
+    earlierDate.getMonth(),
+    earlierDate.getDate()
+  )
+
+  return Math.round((laterDateUTC - earlierDateUTC) / (24 * 60 * 60 * 1000))
+}
+
 function isValidHexColor(value?: string) {
   return Boolean(value?.match(/^#[\da-f]{6}$/i))
 }
 
-function getCourseDuplicationEndDateSchema(
-  t: TranslationFn,
-  endDatePast: boolean
-) {
-  if (endDatePast)
-    return yup.date().required(t('manage.courseList.courseEndReq'))
-
+function getCourseDuplicationEndDateSchema(t: TranslationFn) {
   return yup
     .date()
     .test('checkDateInPast', t('manage.courseList.endDateFuture'), (d) => {
       return !!(d && d > new Date())
     })
-    .when('startDate', (startDate, schema) =>
-      schema.min(startDate, t('manage.courseList.endAfterStart'))
+    .when('startDate', ([startDate], schema) =>
+      startDate
+        ? schema.min(startDate, t('manage.courseList.endAfterStart'))
+        : schema
     )
     .required(t('manage.courseList.courseEndReq'))
 }
@@ -252,11 +269,9 @@ function getCourseDuplicationGroupDeadlineSchema({
 function getCourseDuplicationSchema({
   t,
   initialValues,
-  endDatePast,
 }: {
   t: TranslationFn
   initialValues?: Course
-  endDatePast: boolean
 }) {
   return yup.object().shape({
     name: yup.string().required(t('manage.courseList.courseNameReq')),
@@ -267,7 +282,7 @@ function getCourseDuplicationSchema({
     language: yup.string().required(),
     color: yup.string().required(t('manage.courseList.courseColorReq')),
     startDate: yup.date().required(t('manage.courseList.courseStartReq')),
-    endDate: getCourseDuplicationEndDateSchema(t, endDatePast),
+    endDate: getCourseDuplicationEndDateSchema(t),
     notificationEmail: yup
       .string()
       .email(t('manage.courseList.notificationEmailInvalid'))
@@ -311,6 +326,10 @@ export function getCourseDuplicationErrorMessage(
 
   if (errorType === 'inProgress') {
     return t('manage.courseList.courseDuplicationAlreadyInProgress')
+  }
+
+  if (errorType === 'invalidDates') {
+    return t('manage.courseList.courseDuplicationDatesRequired')
   }
 
   return t('manage.courseList.courseDuplicationFailed')
@@ -369,7 +388,7 @@ function getCourseDuplicationWarningNotifications({
     warnings.push(t('manage.courseList.groupDeadlineChangedToPast'))
   }
 
-  if (dayjs(values.endDate).isBefore(dayjs())) {
+  if (values.endDate && dayjs(values.endDate).isBefore(dayjs())) {
     warnings.push(t('manage.courseList.courseDuplicationEndDateInPast'))
   }
 
@@ -381,6 +400,7 @@ function FormikNativeDateInput({
   label,
   tooltip,
   required = false,
+  disabled = false,
   data,
   onDateChange,
 }: Readonly<{
@@ -391,6 +411,7 @@ function FormikNativeDateInput({
   label: string
   tooltip?: string
   required?: boolean
+  disabled?: boolean
   data?: FormikNativeInputData
   onDateChange?: (date?: Date) => Promise<void> | void
 }>) {
@@ -412,15 +433,16 @@ function FormikNativeDateInput({
         id={inputId}
         aria-describedby={showError ? errorId : undefined}
         aria-invalid={showError}
-        className="border-input focus:border-primary-80 w-36 rounded-md border px-3 py-2 text-base"
+        className="border-input focus:border-primary-80 w-36 rounded-md border px-3 py-2 text-base disabled:cursor-not-allowed disabled:bg-gray-100"
         data-cy={data?.cy}
         data-test={data?.test}
+        disabled={disabled}
         name={field.name}
         onBlur={() => helpers.setTouched(true)}
         onChange={async (e) => {
           const date = getNativeDateInputDate(e.target.value)
-          await helpers.setValue(date)
-          await helpers.setTouched(true)
+          await helpers.setValue(date, !onDateChange)
+          await helpers.setTouched(true, false)
           await onDateChange?.(date)
         }}
         required={required}
@@ -606,8 +628,8 @@ function FormikNativeSwitch({
         onBlur={() => helpers.setTouched(true)}
         onChange={async (e) => {
           const checked = e.target.checked
-          await helpers.setValue(checked)
-          await helpers.setTouched(true)
+          await helpers.setValue(checked, !onCheckedChange)
+          await helpers.setTouched(true, false)
           await onCheckedChange?.(checked)
         }}
         type="checkbox"
@@ -636,33 +658,30 @@ function CourseDuplicationModal({
     }
   )
 
-  // keep past source courses duplicatable without forcing the old end date forward
-  const endDatePast =
-    initialValues?.endDate && new Date(initialValues.endDate) < new Date()
-
   const schema = getCourseDuplicationSchema({
     t,
     initialValues,
-    endDatePast: Boolean(endDatePast),
   })
 
   const {
     startDate: startDateInit,
     endDate: endDateInit,
+    sourceStartDate,
+    sourceEndDate,
     groupDeadlineDate: groupDeadlineDateDefault,
   } = getCourseDuplicationDateDefaults(initialValues)
 
   const [groupDeadlineDateInit] = useState(groupDeadlineDateDefault)
 
-  const deltaCourseDates = dayjs(endDateInit).diff(dayjs(startDateInit), 'day')
+  const deltaCourseDates = getCalendarDayDelta(sourceEndDate, sourceStartDate)
   const courseDuration = getCourseDuplicationDurationParts(
-    startDateInit,
-    endDateInit
+    sourceStartDate,
+    sourceEndDate
   )
 
-  const deltaGroupCreationDeadline = dayjs(groupDeadlineDateInit).diff(
-    dayjs(startDateInit),
-    'day'
+  const deltaGroupCreationDeadline = getCalendarDayDelta(
+    groupDeadlineDateInit,
+    sourceStartDate
   )
 
   const nameCopy = getCourseDuplicationCopyName(t, initialValues?.name)
@@ -732,7 +751,7 @@ function CourseDuplicationModal({
         }}
         validationSchema={schema}
       >
-        {({ values, isValid, isSubmitting, setFieldValue }) => {
+        {({ values, isValid, isSubmitting, setValues }) => {
           const infoNotifications = getCourseDuplicationInfoNotifications({
             values,
             t,
@@ -749,60 +768,55 @@ function CourseDuplicationModal({
             dayjs(startDate).add(deltaGroupCreationDeadline, 'day').toDate()
 
           const updateDatesFromStartDate = async (startDate?: Date) => {
-            if (!startDate) return
+            await setValues((currentValues) => {
+              if (!startDate) {
+                return {
+                  ...currentValues,
+                  startDate: undefined,
+                  endDate: undefined,
+                  groupCreationDeadline: groupDeadlineDateInit,
+                }
+              }
 
-            const endDate = dayjs(startDate)
-              .add(deltaCourseDates, 'day')
-              .toDate()
+              const endDate = dayjs(startDate)
+                .add(deltaCourseDates, 'day')
+                .toDate()
 
-            await setFieldValue('endDate', endDate)
-            await setFieldValue(
-              'groupCreationDeadline',
-              values.isGroupCreationEnabled
-                ? getGroupCreationDeadline(startDate)
-                : endDate
-            )
-          }
-
-          const updateDatesFromEndDate = async (endDate?: Date) => {
-            if (!endDate) return
-
-            const startDate = dayjs(endDate)
-              .subtract(deltaCourseDates, 'day')
-              .toDate()
-
-            await setFieldValue('startDate', startDate)
-            await setFieldValue(
-              'groupCreationDeadline',
-              values.isGroupCreationEnabled
-                ? getGroupCreationDeadline(startDate)
-                : endDate
-            )
+              return {
+                ...currentValues,
+                startDate,
+                endDate,
+                groupCreationDeadline: currentValues.isGroupCreationEnabled
+                  ? getGroupCreationDeadline(startDate)
+                  : endDate,
+              }
+            })
           }
 
           const updateGroupCreation = async (isEnabled: boolean) => {
-            if (isEnabled) {
-              await setFieldValue(
-                'groupCreationDeadline',
-                getGroupCreationDeadline(values.startDate)
-              )
-            } else {
-              await setFieldValue('copyGroupActivities', false)
-              await setFieldValue('groupCreationDeadline', values.endDate)
-            }
-
-            await setFieldValue('maxGroupSize', values.maxGroupSize ?? 5)
-            await setFieldValue(
-              'preferredGroupSize',
-              values.preferredGroupSize ?? 3
-            )
+            await setValues((currentValues) => ({
+              ...currentValues,
+              isGroupCreationEnabled: isEnabled,
+              copyGroupActivities: isEnabled
+                ? currentValues.copyGroupActivities
+                : false,
+              groupCreationDeadline: isEnabled
+                ? currentValues.startDate
+                  ? getGroupCreationDeadline(currentValues.startDate)
+                  : currentValues.groupCreationDeadline
+                : (currentValues.endDate ?? groupDeadlineDateInit),
+              maxGroupSize: currentValues.maxGroupSize ?? 5,
+              preferredGroupSize: currentValues.preferredGroupSize ?? 3,
+            }))
           }
 
-          const submitDisabled = isSubmitting || isDuplicating
+          const formDisabled = isSubmitting || isDuplicating
+          const submitDisabled =
+            formDisabled || !values.startDate || !values.endDate
 
           return (
             <Form className="relative">
-              {submitDisabled && (
+              {formDisabled && (
                 <div
                   aria-live="polite"
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 px-4 text-center"
@@ -812,7 +826,7 @@ function CourseDuplicationModal({
                   <CourseDuplicationProgress />
                 </div>
               )}
-              <fieldset disabled={submitDisabled}>
+              <fieldset disabled={formDisabled}>
                 <div className="flex flex-col gap-2">
                   <CourseInformationFields />
                   <div className="mt-2 flex flex-col gap-6">
@@ -821,7 +835,9 @@ function CourseDuplicationModal({
                         required
                         name="startDate"
                         label={t('manage.courseList.startDate')}
-                        tooltip={t('manage.courseList.startDateTooltip')}
+                        tooltip={t(
+                          'manage.courseList.courseDuplicationStartDateTooltip'
+                        )}
                         data={{ cy: 'course-start-date' }}
                         onDateChange={updateDatesFromStartDate}
                       />
@@ -830,15 +846,11 @@ function CourseDuplicationModal({
                           required
                           name="endDate"
                           label={t('manage.courseList.endDate')}
-                          tooltip={
-                            t('manage.courseList.endDateTooltip') +
-                            ' ' +
-                            t(
-                              'manage.courseList.courseDatesForCourseDuplicationTooltip'
-                            )
-                          }
+                          tooltip={t(
+                            'manage.courseList.courseDuplicationEndDateTooltip'
+                          )}
+                          disabled
                           data={{ cy: 'course-end-date' }}
-                          onDateChange={updateDatesFromEndDate}
                         />
                         <span className="text-uzh-darkgreen-100 mt-1 w-full">
                           {t('manage.courseList.fixedDateInterval', {
@@ -1026,10 +1038,10 @@ function CourseDuplicationModal({
                   className={{ root: 'float-right mt-3' }}
                   data={{ cy: 'manipulate-course-submit' }}
                   disabled={!isValid || submitDisabled}
-                  loading={submitDisabled}
+                  loading={formDisabled}
                   type="submit"
                 >
-                  <Button.Icon icon={faCopy} loading={submitDisabled} />
+                  <Button.Icon icon={faCopy} loading={formDisabled} />
                   <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
                 </Button>
               </fieldset>
