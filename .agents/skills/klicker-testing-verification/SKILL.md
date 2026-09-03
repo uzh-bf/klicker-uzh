@@ -55,6 +55,28 @@ For OpenAI-compatible request-policy or prompt-cache changes, run
 see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
 for contract details and evidence boundaries.
 
+For the external synthetic evaluation wrapper, run
+`bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
+Then validate all FineCo Markdown cases against
+`evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
+restricted `klicker-uzh-stg` operator profile for live judge checks and stop
+unless `LITELLM_API_BASE` names an approved reachable route and the namespaced
+model is visible first. Require the wrapper to reject a missing or empty mapped
+`LITELLM_API_KEY` before starting the evaluator, and require its metrics, tools,
+and ground-truth preflights to fail before secret retrieval. Eval mode judges an
+existing QA artifact; it does not query Klicker's authenticated AI-SDK chat route
+and is not live product-quality evidence.
+
+For course-chat prompt compiler or fixed-policy changes, use
+`apps/chat/test/system-prompt-compiler.test.ts` as the primary composition
+seam. Also run `language-instructions.test.ts` or
+`citation-instructions.test.ts` when those contracts change, and the focused
+chat-route test when its selected chatbot data or compiler context changes.
+These static tests prove section ownership, ordering, and required text; they
+do not prove model obedience. Pure prompt-source changes do not by themselves
+require a runtime or browser, but the normal package check, formatting, lint,
+build, and focused tests remain required before merge.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
@@ -103,6 +125,12 @@ withdraw a user-facing surface.
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
 The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
+
+Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
+cache action. They must not spend post-job time uploading pnpm or Turbo caches
+from public PR code. Keep the build at four concurrent Turbo tasks for the
+four-runner, 16-vCPU host layout, and keep service health polling at five
+seconds so container readiness is detected promptly.
 
 ## Decide whether e2e is warranted locally
 

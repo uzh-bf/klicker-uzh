@@ -13,6 +13,7 @@ import {
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
+import { MANAGE_ASSISTANT_CAPABILITY_HEADER } from '@/src/services/manageAssistantCapabilities'
 import {
   buildManageAssistantSystemPrompt,
   getManageAssistantOpenAIProviderOptions,
@@ -155,8 +156,8 @@ export async function POST(req: NextRequest) {
     // tools, so loading them needs no second check. A load failure still
     // leaves a toolless but usable assistant rather than ending the turn.
     const noLecturerMcpTools = {
+      capabilityState: 'unavailable' as const,
       close: async () => {},
-      hasDraftScope: false,
       sentinel: createFenceSentinel(),
       tools: {},
     }
@@ -169,7 +170,6 @@ export async function POST(req: NextRequest) {
       console.warn('Failed to load lecturer MCP tools:', error)
       return noLecturerMcpTools
     })
-    const toolCount = Object.keys(lecturerMcp.tools).length
     const selectedModel = selectManageAssistantModel(getChatModelRegistry())
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,
@@ -192,8 +192,8 @@ export async function POST(req: NextRequest) {
         stopWhen: isStepCount(5),
         system: buildManageAssistantSystemPrompt(
           context,
-          toolCount > 0,
-          lecturerMcp.hasDraftScope,
+          lecturerMcp.capabilityState !== 'unavailable',
+          lecturerMcp.capabilityState === 'draft-and-read',
           lecturerMcp.sentinel,
           previousProposal
         ),
@@ -207,7 +207,12 @@ export async function POST(req: NextRequest) {
         onFinish: closeTools,
       })
 
-      const response = result.toUIMessageStreamResponse({ sendReasoning: true })
+      const response = result.toUIMessageStreamResponse({
+        headers: {
+          [MANAGE_ASSISTANT_CAPABILITY_HEADER]: lecturerMcp.capabilityState,
+        },
+        sendReasoning: true,
+      })
       releaseRequestInFinally = false
       return releaseWhenResponseCompletes(
         response,

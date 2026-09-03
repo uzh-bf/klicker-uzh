@@ -6,6 +6,12 @@ enum KBResourceType {
   URL // external web resource (e.g., website, Kaltura MediaSpace video) fetched during ingestion
 }
 
+enum KBResourceMaterialType {
+  UNCLASSIFIED
+  COURSE_CONTENT
+  ADMINISTRATIVE
+}
+
 enum KBResourceStatus {
   ADDED // resource registered (blob uploaded or URL added), not yet queued for ingestion
   QUEUED
@@ -121,8 +127,9 @@ model KB {
 model KBResource {
   id String @id @default(uuid()) @db.Uuid
 
-  type  KBResourceType
-  title String
+  type         KBResourceType
+  materialType KBResourceMaterialType @default(UNCLASSIFIED)
+  title        String
 
   // URL resources: location of the external web resource
   sourceUrl String?

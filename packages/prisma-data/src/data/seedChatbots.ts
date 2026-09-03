@@ -13,7 +13,6 @@ const SEEDED_CHATBOT_MODEL_IDS = [
   'gpt-5.4',
   'gpt-5.1',
   'gpt-4.1',
-  'gpt-4.1-mini',
 ]
 
 const tutorPrompt = readFileSync(

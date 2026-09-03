@@ -1,5 +1,15 @@
-mutation CreateKbUrlResource($kbId: ID!, $url: String!, $title: String!) {
-  createKbUrlResource(kbId: $kbId, url: $url, title: $title) {
+mutation CreateKbUrlResource(
+  $kbId: ID!
+  $url: String!
+  $title: String!
+  $materialType: KBResourceMaterialType
+) {
+  createKbUrlResource(
+    kbId: $kbId
+    url: $url
+    title: $title
+    materialType: $materialType
+  ) {
     id
   }
 }

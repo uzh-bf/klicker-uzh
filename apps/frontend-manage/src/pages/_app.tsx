@@ -15,9 +15,11 @@ import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import LearningAnalyticsRouteGuard from '~/components/featureFlags/LearningAnalyticsRouteGuard'
+import { MANAGE_ASSISTANT_APP_CONTENT_ID } from '../components/assistant/manageAssistantConfig'
 import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
+import { GenerationStatusProvider } from '../components/generation/GenerationStatusProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 import { isPublicLiveQuizEvaluationRoute } from '../lib/isPublicLiveQuizEvaluationRoute'
@@ -48,6 +50,26 @@ function App({ Component, pageProps }: AppProps) {
     ? (locale as (typeof routing.locales)[number])
     : routing.defaultLocale
 
+  const appContent = (
+    <>
+      <Toaster closeButton position="top-right" />
+      <div id={MANAGE_ASSISTANT_APP_CONTENT_ID} className="contents">
+        {pathname.startsWith('/analytics') ? (
+          <LearningAnalyticsRouteGuard>
+            <Component {...pageProps} />
+          </LearningAnalyticsRouteGuard>
+        ) : (
+          <Component {...pageProps} />
+        )}
+      </div>
+      {/* Mounted here rather than in Layout so that navigating between
+        authenticated Manage pages does not tear down the assistant
+        and reload its iframe mid-conversation. Public HMAC
+        evaluations must not issue the assistant's identity query. */}
+      {isPublicEvaluation ? null : <ManageAssistantWidget />}
+    </>
+  )
+
   return (
     <div
       id="__app"
@@ -64,19 +86,13 @@ function App({ Component, pageProps }: AppProps) {
           >
             <DndProvider backend={HTML5Backend}>
               <CourseDuplicationProvider>
-                <Toaster closeButton position="top-right" />
-                {pathname.startsWith('/analytics') ? (
-                  <LearningAnalyticsRouteGuard>
-                    <Component {...pageProps} />
-                  </LearningAnalyticsRouteGuard>
+                {isPublicEvaluation ? (
+                  appContent
                 ) : (
-                  <Component {...pageProps} />
+                  <GenerationStatusProvider>
+                    {appContent}
+                  </GenerationStatusProvider>
                 )}
-                {/* Mounted here rather than in Layout so that navigating between
-                    authenticated Manage pages does not tear down the assistant
-                    and reload its iframe mid-conversation. Public HMAC
-                    evaluations must not issue the assistant's identity query. */}
-                {isPublicEvaluation ? null : <ManageAssistantWidget />}
               </CourseDuplicationProvider>
             </DndProvider>
           </NextIntlClientProvider>

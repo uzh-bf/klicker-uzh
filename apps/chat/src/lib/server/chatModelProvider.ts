@@ -24,56 +24,34 @@ export function getChatModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
     typeof chatbot.openaiBaseUrl === 'string' &&
     chatbot.openaiBaseUrl.length > 0
   const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
+  const source: ChatModelRouting['source'] = hasCustomConfig
+    ? 'custom'
+    : 'default'
+  let apiKey = process.env.OPENAI_API_KEY
 
-  if (hasCustomConfig) {
-    let apiKey: string | undefined
-    if (hasCustomKey) {
-      try {
-        apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
-        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
-      }
-    } else {
-      apiKey = process.env.OPENAI_API_KEY
+  if (hasCustomKey) {
+    try {
+      apiKey = safeDecrypt(chatbot.openaiApiKey!)
+    } catch (error) {
+      console.error('Failed to decrypt API key for chatbot:', {
+        chatbotId: chatbot.id,
+        error,
+      })
+      throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
     }
-    const baseUrl = hasCustomBaseUrl
-      ? chatbot.openaiBaseUrl!
-      : process.env.OPENAI_BASE_URL
-
-    const routing: ChatModelRouting = {
-      source: 'custom',
-    }
-
-    return {
-      model: getOpenAIModel(
-        createOpenAI({
-          baseURL: baseUrl,
-          apiKey: apiKey || 'no-key',
-          fetch: createOpenAIFetch('custom'),
-        }),
-        modelConfig
-      ),
-      routing,
-    }
-  }
-
-  const routing: ChatModelRouting = {
-    source: 'default',
   }
 
   return {
     model: getOpenAIModel(
       createOpenAI({
-        baseURL: process.env.OPENAI_BASE_URL,
-        apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: createOpenAIFetch('default'),
+        baseURL: hasCustomBaseUrl
+          ? chatbot.openaiBaseUrl!
+          : process.env.OPENAI_BASE_URL,
+        apiKey: apiKey || 'no-key',
+        fetch: createOpenAIFetch(source),
       }),
       modelConfig
     ),
-    routing,
+    routing: { source },
   }
 }

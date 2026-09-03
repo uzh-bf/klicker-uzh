@@ -1,6 +1,15 @@
 import { useMutation } from '@apollo/client'
-import { CreateKbUrlResourceDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, TextField, toast } from '@uzh-bf/design-system'
+import {
+  CreateKbUrlResourceDocument,
+  KbResourceMaterialType,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  Button,
+  H3,
+  SelectField,
+  TextField,
+  toast,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { type FormEvent, useState } from 'react'
 import { getGraphQLErrorCode } from '../graphqlError'
@@ -28,6 +37,9 @@ function KnowledgeBaseUrlForm({
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [urlTouched, setUrlTouched] = useState(false)
+  const [materialType, setMaterialType] = useState(
+    KbResourceMaterialType.CourseContent
+  )
   const [createUrlResource, { loading }] = useMutation(
     CreateKbUrlResourceDocument
   )
@@ -41,7 +53,12 @@ function KnowledgeBaseUrlForm({
 
     try {
       await createUrlResource({
-        variables: { kbId, title: title.trim(), url: url.trim() },
+        variables: {
+          kbId,
+          title: title.trim(),
+          url: url.trim(),
+          materialType,
+        },
       })
     } catch (error) {
       console.error('Failed to create KB URL resource', error)
@@ -65,6 +82,7 @@ function KnowledgeBaseUrlForm({
     setTitle('')
     setUrl('')
     setUrlTouched(false)
+    setMaterialType(KbResourceMaterialType.CourseContent)
     toast({ type: 'success', message: t('kb.linkSuccess') })
   }
 
@@ -98,6 +116,28 @@ function KnowledgeBaseUrlForm({
           aria-invalid={urlInvalid}
           aria-describedby={urlInvalid ? 'kb-url-error' : undefined}
           data={{ cy: 'kb-url' }}
+        />
+        <SelectField
+          id="kb-url-material-type"
+          label={t('kb.materialType')}
+          value={materialType}
+          onChange={(value) => setMaterialType(value as KbResourceMaterialType)}
+          items={[
+            {
+              value: KbResourceMaterialType.Unclassified,
+              label: t('kb.materialTypeUnclassified'),
+            },
+            {
+              value: KbResourceMaterialType.CourseContent,
+              label: t('kb.materialTypeCourseContent'),
+            },
+            {
+              value: KbResourceMaterialType.Administrative,
+              label: t('kb.materialTypeAdministrative'),
+            },
+          ]}
+          disabled={loading}
+          data={{ cy: 'kb-url-material-type' }}
         />
         {urlInvalid ? (
           <p

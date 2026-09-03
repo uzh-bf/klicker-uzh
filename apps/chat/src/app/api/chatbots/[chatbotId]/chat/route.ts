@@ -1,40 +1,68 @@
-import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  tool,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getModelsForChatbot,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
+} from '@/src/lib/server/effectiveChatModes'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import {
@@ -46,6 +74,7 @@ import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
 import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import {
@@ -56,22 +85,6 @@ import {
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
 import { ThreadService } from '@/src/services/threads'
-import { prisma } from '@klicker-uzh/prisma'
-import { type Prisma } from '@klicker-uzh/prisma/client'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  tool,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -135,12 +148,6 @@ const HASH_DIGEST_LENGTH = 12
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
-}
-
-function getSupportedChatModes(systemPrompts: unknown): Set<string> {
-  const configuredModes = asObject(systemPrompts)
-  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
-  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -582,15 +589,12 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
+    selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
     chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
+    allowRegeneration: z.boolean().optional().default(false),
     images: z
       .array(
         z.union([
@@ -615,10 +619,11 @@ export async function POST(
   const {
     messages,
     threadId,
-    selectedMode,
+    selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
+    allowRegeneration,
     images,
     chatContext: rawChatContext,
   } = parsed
@@ -659,7 +664,7 @@ export async function POST(
     threadId,
     assistantMessageId,
     selectedModel: parsed.selectedModel,
-    selectedMode,
+    selectedMode: requestedMode,
     messageCount: messages.length,
     hasChatContext: Boolean(chatContext),
   })
@@ -669,8 +674,9 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch the chatbot with its enabled MCP configurations (its stored
-  // systemPrompts feed compileSystemPrompt once the tool set is known below)
+  // Fetch every MCP configuration so an explicitly disabled Quizzer row can
+  // block inheritance from the matching Tutor server. Only effective enabled
+  // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
   let enabledKnowledgeBaseId: string | undefined
@@ -679,10 +685,10 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        course: {
+          select: { displayName: true },
+        },
         mcpConfigurations: {
-          where: {
-            isEnabled: true,
-          },
           include: {
             mcpServer: true,
           },
@@ -707,9 +713,14 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
-  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
+  )
+  const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${selectedMode}` },
+      { error: `Unsupported chat mode: ${requestedMode}` },
       { status: 400 }
     )
   }
@@ -719,11 +730,13 @@ export async function POST(
     chatbot.allowedModelIds.length > 0
       ? new Set(chatbot.allowedModelIds as string[])
       : null
+  const hasActiveAllowedModel =
+    allowedIds === null ||
+    modelRegistry.some((model) => allowedIds.has(model.id))
+  let automaticModelId: string | null = null
 
   if (!chatbot.modelSelection) {
-    const automaticModelId = getAutomaticModelId(
-      chatbot.allowedModelIds as string[]
-    )
+    automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
     if (!automaticModelId) {
       return NextResponse.json(
         { error: 'No model is available for this chatbot' },
@@ -733,20 +746,44 @@ export async function POST(
     selectedModel = automaticModelId
   }
 
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
+  const initialModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!initialModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
       { status: 400 }
     )
   }
+  // Declared non-optional so closures that swap the fallback model cannot
+  // widen later uses back to `undefined`; every assignment below is checked.
+  let selectedModelConfig: ChatModelConfig = initialModelConfig
 
   // Enforce per-chatbot model allow-list
-  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+  // Automatic selection is authoritative when a persisted allow-list contains
+  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // unconditional base fallback, so the stale list must not reject the turn.
+  if (
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    selectedModelConfig.id !== automaticModelId &&
+    (hasActiveAllowedModel ||
+      selectedModelConfig.id !== getParticipantFallbackModelId())
+  ) {
     return NextResponse.json(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
     )
+  }
+
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
+    )
+    if (!fallbackModelId || !fallbackModelConfig) return false
+
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    return true
   }
 
   // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
@@ -766,10 +803,19 @@ export async function POST(
     selectedModelConfig = guestFallback
   }
 
-  if (isChatAccountUsageEnforcementEnabled()) {
-    let accountUsageAvailable = false
+  if (!selectedModelConfig.fallback) {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  }
+
+  const accountUsageAvailableForSelectedModel = async () => {
     try {
-      accountUsageAvailable = await isChatAccountUsageAvailable({
+      return await isChatAccountUsageAvailable({
         ownerId: chatbot.ownerId,
         usageClass: selectedModelConfig.usageClass,
       })
@@ -778,31 +824,38 @@ export async function POST(
         requestId,
         error,
       })
+      return false
     }
-    if (!accountUsageAvailable) {
+  }
+
+  if (isChatAccountUsageEnforcementEnabled()) {
+    if (!(await accountUsageAvailableForSelectedModel())) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
     }
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
-  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
-    (config) => config.chatMode === selectedMode
-  )
-  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
-    return NextResponse.json(
-      {
-        error: 'Required MCP tool unavailable',
-        code: REQUIRED_MCP_UNAVAILABLE_CODE,
-      },
-      { status: 503 }
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
     )
+    if (userCredits.current <= 0) {
+      if (!selectParticipantFallback()) {
+        return chatModelUnavailableResponse('BASE')
+      }
+      if (
+        isChatAccountUsageEnforcementEnabled() &&
+        !(await accountUsageAvailableForSelectedModel())
+      ) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
+    }
   }
+
+  const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations ?? [],
+    selectedMode
+  )
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -823,46 +876,9 @@ export async function POST(
     },
   }))
 
-  if (!selectedModelConfig.fallback) {
-    const creditPreview = await CreditsService.previewUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (
-      creditPreview.current <= 0 &&
-      !getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-    ) {
-      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-    }
-  }
-
-  if (!selectedModelConfig.fallback) {
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (userCredits.current <= 0) {
-      const fallbackModelId = getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-      if (!fallbackModelId) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
-
-      selectedModel = fallbackModelId
-      selectedModelConfig = modelRegistry.find(
-        (modelConfig) => modelConfig.id === fallbackModelId
-      )!
-    }
-  }
-
-  // Resolve the participant-owned thread before acquiring the provider-work
-  // claim. The claim must exist before MCP discovery, image description, or
-  // model streaming can begin.
+  // Resolve the participant-owned thread before the provider-work boundary.
+  // Lifecycle-enabled deployments claim the assistant key here; the initial
+  // mixed-version rollout performs only the same ownership validation.
   let createdThreadId: string | null = null
   if (!currentThreadId && messages.length > 0) {
     try {
@@ -915,7 +931,7 @@ export async function POST(
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -942,7 +958,7 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
@@ -950,6 +966,7 @@ export async function POST(
       threadId: owningThread.id,
       assistantMessageId,
       parentId: userMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
@@ -994,6 +1011,13 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
     const mcpScopeSessionId = resolveMcpScopeSessionId({
@@ -1008,13 +1032,14 @@ export async function POST(
 
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
+      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
         participantId,
         authMode,
         kbId: enabledKnowledgeBaseId,
         sessionId: mcpScopeSessionId,
       })
+      mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1027,6 +1052,43 @@ export async function POST(
         )
       }
       throw error
+    }
+
+    let responseExampleSummary = ''
+    let responseExampleSetDigest: string | null = null
+    let responseExampleProjectionDigest: string | null = null
+    const responseExampleTools: Record<string, any> = {}
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      if (
+        Object.prototype.hasOwnProperty.call(
+          mcpTools,
+          RESPONSE_EXAMPLE_SEARCH_TOOL_NAME
+        )
+      ) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { requestId, chatbotId }
+        )
+      } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
+          responseExampleTool
+        responseExampleSummary = responseExampleSkill.summary
+        responseExampleSetDigest = responseExampleSkill.setDigest
+        responseExampleProjectionDigest = responseExampleSkill.projectionDigest
+      }
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        { requestId, chatbotId, error }
+      )
     }
 
     let practiceCandidatePrompt = ''
@@ -1114,28 +1176,49 @@ export async function POST(
 
     const chatTools: Record<string, any> = {
       ...(mcpTools || {}),
+      ...responseExampleTools,
       ...studentPracticeTools,
     }
     const toolNames = Object.keys(chatTools)
+    const quizzerDocQueryToolName =
+      selectedMode === 'quizzer'
+        ? toolNames.find(isDocQueryToolName)
+        : undefined
 
-    // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (course policy, conditional
-    // citations, then unconditional language policy — see compileSystemPrompt).
+    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
+    // Compile the full system prompt only after course metadata and effective
+    // tool names are known. The compiler owns the fixed authority order.
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      toolNames
+      {
+        courseDisplayName: chatbot.course.displayName,
+        toolNames,
+      }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
     const contextAwareSystemPrompt = chatContextPrompt
       ? `${systemPrompt}\n\n${chatContextPrompt}`
       : systemPrompt
-    const effectiveSystemPrompt = practiceCandidatePrompt
+    const practiceAwareSystemPrompt = practiceCandidatePrompt
       ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
       : contextAwareSystemPrompt
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
+      : practiceAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1290,6 +1373,11 @@ export async function POST(
       toolCount: toolNames.length,
       toolNames,
       practiceCandidateCount,
+      hasResponseExampleSkill: Boolean(
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+      ),
+      responseExampleSetDigest,
+      responseExampleProjectionDigest,
       hasChatContext: Boolean(chatContextPrompt),
       systemPromptLength: effectiveSystemPrompt.length,
       systemPromptHash: effectiveSystemPrompt
@@ -1496,13 +1584,11 @@ export async function POST(
       rawCreditsUsed: number | null
       phase: 'complete' | 'abort'
     }) => {
-      let finalizationOutcome: 'completed' | 'duplicate' | 'failed' = 'failed'
-      let participantCreditsUsed: number | null = null
-
       try {
-        const result = await finalizeChatTurn({
+        await finalizeChatTurn({
           ownerId: chatbot.ownerId,
           chatbotId,
+          participantId,
           usageClass: selectedModelConfig.usageClass,
           threadId: owningThread.id,
           assistantMessageId,
@@ -1515,10 +1601,6 @@ export async function POST(
           reasoningContent,
           rawCreditsUsed,
         })
-        finalizationOutcome = result.outcome
-        if (result.outcome === 'completed') {
-          participantCreditsUsed = result.creditsUsed
-        }
       } catch (error) {
         console.error(
           'Failed to finalize assistant message and account usage:',
@@ -1529,26 +1611,6 @@ export async function POST(
           }
         )
         await failAssistantClaim(`finalize.${phase}`)
-      }
-
-      if (
-        finalizationOutcome === 'completed' &&
-        participantCreditsUsed !== null &&
-        participantCreditsUsed > 0
-      ) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            participantCreditsUsed
-          )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
       }
     }
 
@@ -1582,7 +1644,24 @@ export async function POST(
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: Boolean(
+            responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+          ),
+          responseExampleSetDigest: responseExampleSetDigest ?? 'unavailable',
+          responseExampleProjectionDigest:
+            responseExampleProjectionDigest ?? 'unavailable',
+        },
+        telemetry: {
+          isEnabled: isAiTelemetryEnabled,
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: true,
+            responseExampleProjectionDigest: true,
+          },
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest
@@ -1601,6 +1680,17 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
+        prepareStep: quizzerDocQueryToolName
+          ? ({ stepNumber }) =>
+              stepNumber === 0
+                ? {
+                    toolChoice: {
+                      type: 'tool' as const,
+                      toolName: quizzerDocQueryToolName,
+                    },
+                  }
+                : {}
+          : undefined,
         stopWhen: isStepCount(5),
         instructions: effectiveSystemPrompt,
 
@@ -1639,6 +1729,7 @@ export async function POST(
         },
 
         onEnd: async (result) => {
+          await closeMcpTools()
           sawFinish = true
           // ai@7 still flushes onEnd after an abort once at least one step
           // completed. onAbort already persisted the partial answer and charged
@@ -1729,6 +1820,7 @@ export async function POST(
         },
 
         onAbort: async (steps) => {
+          await closeMcpTools()
           sawAbort = true
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
@@ -1822,6 +1914,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -1870,6 +1963,7 @@ export async function POST(
       sendReasoning: true,
       consumeSseStream: consumeStream,
       onError: (error) => {
+        void closeMcpTools()
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
@@ -1912,6 +2006,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    await closeMcpTools()
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

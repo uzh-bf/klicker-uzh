@@ -5,6 +5,7 @@ query GetKbResources(
   $search: String
   $type: KBResourceType
   $status: KBIngestionStatus
+  $materialType: KBResourceMaterialType
 ) {
   getKbResources(
     kbId: $kbId
@@ -13,10 +14,12 @@ query GetKbResources(
     search: $search
     type: $type
     status: $status
+    materialType: $materialType
   ) {
     items {
       id
       type
+      materialType
       title
       sourceUrl
       originalFilename
@@ -39,5 +42,8 @@ query GetKbResources(
       endCursor
     }
     totalCount
+    needsIngestionCount
+    failedIngestionCount
+    inProgressCount
   }
 }

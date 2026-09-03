@@ -26,6 +26,9 @@ export default async function OwnerPreviewPage({
     if (access.error === 'UNAUTHORIZED') {
       return <PreviewLoginRequired chatbotId={chatbotId} />
     }
+    if (access.error === 'INTERNAL_ERROR') {
+      throw new Error('Owner preview authorization unavailable')
+    }
     notFound()
   }
 

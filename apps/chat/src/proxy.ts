@@ -1,12 +1,14 @@
+import { routing } from '@klicker-uzh/i18n'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
+import { jwtVerify } from 'jose'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { hasLocale } from 'next-intl'
 import {
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
-import { extractBearerToken } from '@klicker-uzh/util/auth'
-import { jwtVerify } from 'jose'
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -110,6 +112,29 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // The embedded Manage assistant receives its locale as a query parameter,
+  // but Chat's root layout resolves the active locale from the
+  // NEXT_LOCALE cookie. Promote only a narrowly validated locale so iframe
+  // requests render in the same language without broadening the cookie scope.
+  if (pathname === '/manage') {
+    const requestedLocale = request.nextUrl.searchParams.get('locale')
+    if (hasLocale(routing.locales, requestedLocale)) {
+      request.cookies.set({
+        name: 'NEXT_LOCALE',
+        value: requestedLocale,
+      })
+      const response = NextResponse.next({
+        request: { headers: request.headers },
+      })
+      response.cookies.set({
+        name: 'NEXT_LOCALE',
+        value: requestedLocale,
+        path: '/manage',
+      })
+      return applyFrameAncestorsCSP(response)
+    }
+  }
 
   if (
     pathname === '/noLogin' ||

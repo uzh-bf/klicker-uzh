@@ -20,6 +20,13 @@ export const KBResourceType = builder.enumType('KBResourceType', {
   values: Object.values(DB.KBResourceType),
 })
 
+export const KBResourceMaterialType = builder.enumType(
+  'KBResourceMaterialType',
+  {
+    values: Object.values(DB.KBResourceMaterialType),
+  }
+)
+
 export const KBResourceStatus = builder.enumType('KBResourceStatus', {
   values: Object.values(DB.KBResourceStatus),
 })
@@ -54,6 +61,7 @@ export const KBResource = KBResourceRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     type: t.expose('type', { type: KBResourceType }),
+    materialType: t.expose('materialType', { type: KBResourceMaterialType }),
     title: t.exposeString('title'),
     sourceUrl: t.exposeString('sourceUrl', { nullable: true }),
     originalFilename: t.exposeString('originalFilename', { nullable: true }),
@@ -165,6 +173,9 @@ interface IKBResourceConnection {
   items: IKBResource[]
   pageInfo: IKBPageInfo
   totalCount: number
+  needsIngestionCount: number
+  failedIngestionCount: number
+  inProgressCount: number
 }
 
 export const KBResourceConnectionRef = builder.objectRef<IKBResourceConnection>(
@@ -175,6 +186,29 @@ export const KBResourceConnection = KBResourceConnectionRef.implement({
     items: t.expose('items', { type: [KBResourceRef] }),
     pageInfo: t.expose('pageInfo', { type: KBPageInfoRef }),
     totalCount: t.exposeInt('totalCount'),
+    needsIngestionCount: t.exposeInt('needsIngestionCount'),
+    failedIngestionCount: t.exposeInt('failedIngestionCount'),
+    inProgressCount: t.exposeInt('inProgressCount'),
+  }),
+})
+
+interface IKBIngestAllResult {
+  queuedCount: number
+  retriedFailedCount: number
+  alreadyCurrentCount: number
+  alreadyInProgressCount: number
+  queueFailureCount: number
+}
+
+export const KBIngestAllResultRef =
+  builder.objectRef<IKBIngestAllResult>('KBIngestAllResult')
+export const KBIngestAllResult = KBIngestAllResultRef.implement({
+  fields: (t) => ({
+    queuedCount: t.exposeInt('queuedCount'),
+    retriedFailedCount: t.exposeInt('retriedFailedCount'),
+    alreadyCurrentCount: t.exposeInt('alreadyCurrentCount'),
+    alreadyInProgressCount: t.exposeInt('alreadyInProgressCount'),
+    queueFailureCount: t.exposeInt('queueFailureCount'),
   }),
 })
 

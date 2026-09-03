@@ -1,12 +1,20 @@
+import { randomUUID } from 'node:crypto'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { KBResourceType, PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  KBIngestionOperation,
+  KBIngestionStatus,
+  KBResourceStatus,
+  KBResourceType,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createKb,
   createKbUrlResource,
+  ingestAllKbResources,
   ingestKbResource,
 } from '../src/services/knowledge.js'
 import { testCleanup, testInitialization } from './helpers.js'
@@ -25,6 +33,37 @@ const previousManageAiEnvironment = vi.hoisted(() => {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
+}
+
+function withKbResourceSnapshotPause(
+  ctx: ContextWithUser,
+  kbId: string,
+  onSnapshot: () => void,
+  continueSnapshot: Promise<void>
+): ContextWithUser {
+  const prisma = ctx.prisma.$extends({
+    query: {
+      kBResource: {
+        async findMany({ args, query }) {
+          const resources = await query(args)
+          if (args.where?.kbId === kbId) {
+            onSnapshot()
+            await continueSnapshot
+          }
+          return resources
+        },
+      },
+    },
+  })
+  return { ...ctx, prisma: prisma as unknown as PrismaClient }
+}
 
 describe('Integration tests for knowledge base ingestion', () => {
   let prisma: PrismaClient
@@ -499,5 +538,326 @@ describe('Integration tests for knowledge base ingestion', () => {
       externalOperationId: 'newer-operation-id',
       externalOperationStartedAt: newerStartedAt,
     })
+  })
+
+  it('queues only resources that need the current version', async () => {
+    const created = await createKb({ name: 'Bulk ingestion' }, userOneCtx)
+    const resources = await Promise.all(
+      ['added', 'failed', 'current', 'processing', 'stale'].map((name) =>
+        createKbUrlResource(
+          {
+            kbId: created.id,
+            title: name,
+            url: `https://example.com/${name}`,
+          },
+          userOneCtx
+        )
+      )
+    )
+    const [added, failed, current, processing, stale] = resources as [
+      (typeof resources)[number],
+      (typeof resources)[number],
+      (typeof resources)[number],
+      (typeof resources)[number],
+      (typeof resources)[number],
+    ]
+    await expect(
+      ingestAllKbResources({ kbId: created.id }, userTwoCtx)
+    ).rejects.toThrow('KB not found')
+    const failedAttemptId = randomUUID()
+    const currentAttemptId = randomUUID()
+    const processingAttemptId = randomUUID()
+
+    await prisma.kBResource.update({
+      where: { id: failed.id },
+      data: {
+        status: KBResourceStatus.FAILED,
+        ingestionAttemptId: failedAttemptId,
+        resourceVersion: 1,
+      },
+    })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: failedAttemptId,
+        resourceId: failed.id,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
+        status: KBIngestionStatus.FAILED,
+      },
+    })
+    await prisma.kBResource.update({
+      where: { id: current.id },
+      data: {
+        status: KBResourceStatus.READY,
+        ingestionAttemptId: currentAttemptId,
+        resourceVersion: 1,
+        contentSha256: 'a'.repeat(64),
+        activeResourceVersion: 1,
+        activeContentSha256: 'a'.repeat(64),
+        ingestedAt: new Date(),
+      },
+    })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: currentAttemptId,
+        resourceId: current.id,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
+        status: KBIngestionStatus.SUCCEEDED,
+      },
+    })
+    await prisma.kBResource.update({
+      where: { id: processing.id },
+      data: {
+        status: KBResourceStatus.PROCESSING,
+        ingestionAttemptId: processingAttemptId,
+      },
+    })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: processingAttemptId,
+        resourceId: processing.id,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
+        status: KBIngestionStatus.PROCESSING,
+      },
+    })
+    await prisma.kBResource.update({
+      where: { id: stale.id },
+      data: {
+        status: KBResourceStatus.READY,
+        resourceVersion: 2,
+        contentSha256: 'b'.repeat(64),
+        activeResourceVersion: 1,
+        activeContentSha256: 'a'.repeat(64),
+      },
+    })
+
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    await expect(
+      ingestAllKbResources({ kbId: created.id }, userOneCtx)
+    ).resolves.toEqual({
+      queuedCount: 3,
+      retriedFailedCount: 1,
+      alreadyCurrentCount: 1,
+      alreadyInProgressCount: 1,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(3)
+    expect(
+      runNoWait.mock.calls.map(
+        ([payload]) => (payload as unknown as { resourceId: string }).resourceId
+      )
+    ).toEqual(expect.arrayContaining([added.id, failed.id, stale.id]))
+
+    await expect(
+      prisma.kBResource.findMany({
+        where: { id: { in: [added.id, failed.id, stale.id] } },
+      })
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: KBResourceStatus.QUEUED }),
+      ])
+    )
+
+    await expect(
+      ingestAllKbResources({ kbId: created.id }, userOneCtx)
+    ).resolves.toEqual({
+      queuedCount: 0,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 1,
+      alreadyInProgressCount: 4,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not downgrade a newer provider-served revision', async () => {
+    const created = await createKb({ name: 'Provider refresh' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Provider refresh',
+        url: 'https://example.com/provider-refresh',
+      },
+      userOneCtx
+    )
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: {
+        status: KBResourceStatus.READY,
+        resourceVersion: 1,
+        activeResourceVersion: 2,
+        activeContentSha256: 'a'.repeat(64),
+      },
+    })
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    await expect(
+      ingestAllKbResources({ kbId: created.id }, userOneCtx)
+    ).resolves.toEqual({
+      queuedCount: 0,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 1,
+      alreadyInProgressCount: 0,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('converges concurrent bulk requests on one claim per resource', async () => {
+    const created = await createKb(
+      { name: 'Concurrent bulk ingestion' },
+      userOneCtx
+    )
+    const resources = await Promise.all(
+      ['first', 'second'].map((name) =>
+        createKbUrlResource(
+          {
+            kbId: created.id,
+            title: name,
+            url: `https://example.com/concurrent-${name}`,
+          },
+          userOneCtx
+        )
+      )
+    )
+    const dispatchStarted = createDeferred<void>()
+    const releaseDispatch = createDeferred<void>()
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockImplementation(async () => {
+        dispatchStarted.resolve()
+        await releaseDispatch.promise
+        return {} as never
+      })
+
+    const first = ingestAllKbResources({ kbId: created.id }, userOneCtx)
+    await dispatchStarted.promise
+    const second = ingestAllKbResources({ kbId: created.id }, userOneCtx)
+
+    await expect(second).resolves.toEqual({
+      queuedCount: 0,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 0,
+      alreadyInProgressCount: 2,
+      queueFailureCount: 0,
+    })
+    releaseDispatch.resolve()
+    await expect(first).resolves.toEqual({
+      queuedCount: 2,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 0,
+      alreadyInProgressCount: 0,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(resources.length)
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: { resourceId: { in: resources.map(({ id }) => id) } },
+      })
+    ).resolves.toBe(2)
+  })
+
+  it('counts a concurrent single-resource claim in the bulk result', async () => {
+    const created = await createKb(
+      { name: 'Concurrent single-resource ingestion' },
+      userOneCtx
+    )
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Concurrent resource',
+        url: 'https://example.com/concurrent-resource',
+      },
+      userOneCtx
+    )
+    const snapshotRead = createDeferred<void>()
+    const releaseSnapshot = createDeferred<void>()
+    const bulkCtx = withKbResourceSnapshotPause(
+      userOneCtx,
+      created.id,
+      snapshotRead.resolve,
+      releaseSnapshot.promise
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const bulk = ingestAllKbResources({ kbId: created.id }, bulkCtx)
+    await snapshotRead.promise
+    try {
+      await ingestKbResource({ id: resource.id }, userOneCtx)
+    } finally {
+      releaseSnapshot.resolve()
+    }
+
+    await expect(bulk).resolves.toEqual({
+      queuedCount: 0,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 0,
+      alreadyInProgressCount: 1,
+      queueFailureCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(1)
+    await expect(
+      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+    ).resolves.toBe(1)
+  })
+
+  it('compensates only failed bulk dispatches', async () => {
+    const created = await createKb(
+      { name: 'Bulk dispatch failures' },
+      userOneCtx
+    )
+    const resources = await Promise.all(
+      ['first', 'second'].map((name) =>
+        createKbUrlResource(
+          {
+            kbId: created.id,
+            title: name,
+            url: `https://example.com/${name}`,
+          },
+          userOneCtx
+        )
+      )
+    )
+    const failingId = resources[0]!.id
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockImplementation(async (payload) => {
+        if (
+          (payload as unknown as { resourceId: string }).resourceId ===
+          failingId
+        ) {
+          throw new Error('Hatchet unavailable')
+        }
+        return {} as never
+      })
+
+    await expect(
+      ingestAllKbResources({ kbId: created.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      queuedCount: 1,
+      retriedFailedCount: 0,
+      alreadyCurrentCount: 0,
+      alreadyInProgressCount: 0,
+      queueFailureCount: 1,
+    })
+    expect(runNoWait).toHaveBeenCalledTimes(2)
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: failingId } })
+    ).resolves.toMatchObject({
+      status: KBResourceStatus.FAILED,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: resources[1]!.id } })
+    ).resolves.toMatchObject({ status: KBResourceStatus.QUEUED })
   })
 })

@@ -86,6 +86,34 @@ describe('withOwnerPreviewAuth', () => {
     expect('response' in result && result.response.status).toBe(403)
   })
 
+  it('allows an owner to repair and preview a rejected chatbot', async () => {
+    await expect(
+      withOwnerPreviewAuth(
+        'chatbot-id',
+        dependencies({ chatbotStatus: ChatbotStatus.REJECTED })
+      )
+    ).resolves.toEqual({
+      userId: owner.sub,
+      scope: owner.scope,
+    })
+  })
+
+  it.each(['session', 'chatbot lookup'])(
+    'returns a JSON server error when the %s dependency fails',
+    async (dependency) => {
+      const deps = dependencies()
+      if (dependency === 'session') {
+        deps.getManageUser.mockRejectedValue(new Error('unavailable'))
+      } else {
+        deps.findChatbot.mockRejectedValue(new Error('unavailable'))
+      }
+
+      const result = await withOwnerPreviewAuth('chatbot-id', deps)
+
+      expect('response' in result && result.response.status).toBe(500)
+    }
+  )
+
   it('exposes a page-safe unauthorized result without a response object', async () => {
     await expect(
       getOwnerPreviewAccess('chatbot-id', dependencies({ user: null }))

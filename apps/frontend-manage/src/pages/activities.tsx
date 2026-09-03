@@ -320,7 +320,7 @@ function Activities() {
                     pageSize={pageSize}
                     setPageSize={setPageSize}
                     showAll
-                    className="flex-none"
+                    className="flex-none pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 md:pr-56"
                   />
                 )}
               </div>

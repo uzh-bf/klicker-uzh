@@ -31,36 +31,51 @@ export type OwnerPreviewAuthResult =
 export type OwnerPreviewAccessResult =
   | { userId: string; scope: string }
   | {
-      error: 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'UNAVAILABLE'
+      error:
+        | 'UNAUTHORIZED'
+        | 'FORBIDDEN'
+        | 'NOT_FOUND'
+        | 'UNAVAILABLE'
+        | 'INTERNAL_ERROR'
     }
 
 export async function getOwnerPreviewAccess(
   chatbotId: string,
   dependencies: OwnerPreviewAuthDependencies = defaultDependencies
 ): Promise<OwnerPreviewAccessResult> {
-  const manageUser = await dependencies.getManageUser()
-  if (!manageUser) {
-    return { error: 'UNAUTHORIZED' }
-  }
+  try {
+    const manageUser = await dependencies.getManageUser()
+    if (!manageUser) {
+      return { error: 'UNAUTHORIZED' }
+    }
 
-  if (!manageUser.scope || !OWNER_PREVIEW_SCOPES.has(manageUser.scope)) {
-    return { error: 'FORBIDDEN' }
-  }
+    if (!manageUser.scope || !OWNER_PREVIEW_SCOPES.has(manageUser.scope)) {
+      return { error: 'FORBIDDEN' }
+    }
 
-  const chatbot = await dependencies.findChatbot(chatbotId)
-  if (!chatbot) {
-    return { error: 'NOT_FOUND' }
-  }
+    const chatbot = await dependencies.findChatbot(chatbotId)
+    if (!chatbot) {
+      return { error: 'NOT_FOUND' }
+    }
 
-  if (chatbot.ownerId !== manageUser.sub) {
-    return { error: 'FORBIDDEN' }
-  }
+    if (chatbot.ownerId !== manageUser.sub) {
+      return { error: 'FORBIDDEN' }
+    }
 
-  if (chatbot.status === ChatbotStatus.PAUSED) {
-    return { error: 'UNAVAILABLE' }
-  }
+    // PAUSED is the operator-only serving stop. REJECTED remains an
+    // owner-editable pre-publication state and can still be previewed.
+    if (chatbot.status === ChatbotStatus.PAUSED) {
+      return { error: 'UNAVAILABLE' }
+    }
 
-  return { userId: manageUser.sub, scope: manageUser.scope }
+    return { userId: manageUser.sub, scope: manageUser.scope }
+  } catch (error) {
+    console.error('Owner preview authorization unavailable:', {
+      chatbotId,
+      errorType: error instanceof Error ? error.name : typeof error,
+    })
+    return { error: 'INTERNAL_ERROR' }
+  }
 }
 
 export async function withOwnerPreviewAuth(
@@ -92,6 +107,13 @@ export async function withOwnerPreviewAuth(
     case 'FORBIDDEN':
       return {
         response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+      }
+    case 'INTERNAL_ERROR':
+      return {
+        response: NextResponse.json(
+          { error: 'Owner preview authorization unavailable' },
+          { status: 500 }
+        ),
       }
   }
 }

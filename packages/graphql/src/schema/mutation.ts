@@ -9,9 +9,8 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
@@ -21,6 +20,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
@@ -30,6 +30,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
+import { asChatbotAuthor } from './authScopes.js'
 import { Course, CourseDuplicationStatus } from './course.js'
 import {
   Element,
@@ -42,10 +43,12 @@ import {
   Tag,
   TemplateBlockInput,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildInputRef,
   ElementGenerationBuildRef,
   ElementGenerationSaveResultRef,
+  GeneratableElementType,
   GeneratedElementDraftInputRef,
   GeneratedElementDraftRef,
   PublishIncompleteElementGenerationInputRef,
@@ -54,7 +57,6 @@ import {
   StartElementGenerationInputRef,
   UpdateGeneratedElementDraftInputRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -66,7 +68,14 @@ import {
   KBGraphQualityTier,
   KBKnowledgeGraphConfigType,
 } from './kbKnowledgeGraph.js'
-import { KB, KBChatbotBinding, KBFileUpload, KBResource } from './knowledge.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBFileUpload,
+  KBIngestAllResult,
+  KBResource,
+  KBResourceMaterialType,
+} from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -1406,9 +1415,23 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
-          } else {
-            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
+
+          return await withPermission<
+            unknown,
+            typeof args,
+            Awaited<ReturnType<typeof CourseDuplicationService.duplicateCourse>>
+          >(
+            (duplicationArgs) => ({
+              courseId: duplicationArgs.sourceCourseId!,
+            }),
+            DB.PermissionLevel.ADMIN,
+            async (_root, duplicationArgs, duplicationCtx) =>
+              CourseDuplicationService.duplicateCourse(
+                duplicationArgs,
+                duplicationCtx
+              )
+          )(_, args, ctx)
         },
       }),
 
@@ -1465,7 +1488,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asUser).field({
+      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
@@ -1498,67 +1521,75 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createChatbot: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          type: Chatbot,
-          args: {
-            name: t.arg.string({
-              required: true,
-              validate: { minLength: 1 },
-            }),
-            description: t.arg.string({ required: false }),
-            avatar: t.arg.string({ required: false }),
-            courseId: t.arg.string({ required: true }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.createChatbot(args, ctx)
-          },
-        }),
+      createChatbot: t.withAuth(asChatbotAuthor).field({
+        type: Chatbot,
+        args: {
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.createChatbot(args, ctx)
+        },
+      }),
 
-      updateChatbot: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: Chatbot,
-          args: {
-            id: t.arg.string({ required: true }),
-            name: t.arg.string({
-              required: false,
-              validate: { minLength: 1 },
-            }),
-            description: t.arg.string({ required: false }),
-            avatar: t.arg.string({ required: false }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.updateChatbot(args, ctx)
-          },
-        }),
+      updateChatbot: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({
+            required: false,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
 
-      requestChatbotPublication: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: Chatbot,
-          args: {
-            id: t.arg.string({ required: true }),
-            useCase: t.arg.string({
-              required: true,
-              validate: { minLength: 1, maxLength: 2000 },
-            }),
-            expectedStudentCount: t.arg.int({
-              required: true,
-              validate: { min: 1 },
-            }),
-            proposedCredits: t.arg.int({
-              required: true,
-              validate: { min: 1 },
-            }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.requestChatbotPublication(args, ctx)
-          },
-        }),
+      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedDisclaimerId: t.arg.string({ required: false }),
+          title: t.arg.string({ required: true }),
+          introText: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
+        },
+      }),
+
+      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          proposedCredits: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({
         nullable: true,
@@ -1984,6 +2015,10 @@ export const Mutation = builder.mutationType({
           originalFilename: t.arg.string({ required: true }),
           mimeType: t.arg.string({ required: true }),
           sizeBytes: t.arg.int({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.confirmKbFileUpload(args, ctx)
@@ -1997,6 +2032,10 @@ export const Mutation = builder.mutationType({
           kbId: t.arg.id({ required: true }),
           url: t.arg.string({ required: true }),
           title: t.arg.string({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.createKbUrlResource(args, ctx)
@@ -2030,6 +2069,30 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
+      ingestAllKbResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBIngestAllResult,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.ingestAllKbResources(args, ctx)
+        },
+      }),
+
+      updateKbResourceMaterialType: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          id: t.arg.id({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKbResourceMaterialType(args, ctx)
         },
       }),
 
@@ -2144,6 +2207,51 @@ export const Mutation = builder.mutationType({
               input.decision,
               ctx
             )
+          )
+        },
+      }),
+
+      keepGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          draftId: t.arg.id({ required: true, validate: { uuid: true } }),
+          expectedRevision: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          status: t.arg({ type: ElementStatus, required: true }),
+          type: t.arg({ type: GeneratableElementType, required: true }),
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 500 },
+          }),
+          content: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 20_000 },
+          }),
+          explanation: t.arg.string({
+            required: false,
+            validate: { maxLength: 20_000 },
+          }),
+          basePoints: t.arg.boolean({ required: true }),
+          pointsMultiplier: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          tags: t.arg.stringList({
+            required: false,
+            validate: { maxLength: 20 },
+          }),
+          choiceIds: t.arg.idList({
+            required: false,
+            validate: { maxLength: 10 },
+          }),
+          options: t.arg({ type: OptionsChoicesInput, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.keepGeneratedElementDraft(args, ctx)
           )
         },
       }),

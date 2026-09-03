@@ -41,7 +41,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '09da961233ce'
+        rollout.klicker.uzh.ch/release: 'dc2b932e3319'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
@@ -66,7 +66,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '09da961233ce'
+        rollout.klicker.uzh.ch/release: 'dc2b932e3319'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -88,7 +88,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '09da961233ce'
+        rollout.klicker.uzh.ch/release: 'dc2b932e3319'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -122,7 +122,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -177,7 +177,7 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -296,18 +296,6 @@ chat:
       cost:
         input: 5.0
         output: 30.0
-    - id: gpt-4.1-mini
-      deploymentId: klickeruzh/azure/gpt-4.1-mini
-      name: GPT-4.1 Mini
-      description: Small OpenAI model
-      supportsImageAttachments: true
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 0.4
-        output: 1.6
-
   replicaCount: 1
 
   autoscaling:
@@ -360,7 +348,7 @@ chat:
 mcpStudent:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -434,10 +422,10 @@ mcpLecturer:
       memory: 200Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -490,7 +478,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -544,7 +532,7 @@ frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -598,7 +586,7 @@ backendGraphql:
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -698,7 +686,7 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -751,7 +739,7 @@ olatApi:
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
   replicaCount: 1
 
   affinity:
@@ -800,7 +788,7 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '09da961233ce'
+    rollout.klicker.uzh.ch/release: 'dc2b932e3319'
 
   replicaCount: 1
 
@@ -854,7 +842,7 @@ assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '09da961233ce'
+      rollout.klicker.uzh.ch/release: 'dc2b932e3319'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -918,7 +906,7 @@ assessment:
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '09da961233ce'
+      rollout.klicker.uzh.ch/release: 'dc2b932e3319'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -996,7 +984,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '09da961233ce'
+      rollout.klicker.uzh.ch/release: 'dc2b932e3319'
     replicaCount: 1
 
     autoscaling:

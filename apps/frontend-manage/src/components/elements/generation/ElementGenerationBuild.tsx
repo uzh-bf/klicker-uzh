@@ -3,7 +3,7 @@ import {
   ElementGenerationBuildDocument,
   ElementGenerationBuildStatus,
   ElementGenerationCapabilitiesDocument,
-  type ElementGenerationReviewDecision,
+  ElementGenerationReviewDecision,
   PublishIncompleteElementGenerationDocument,
   RetryElementGenerationDocument,
   ReviewElementGenerationDocument,
@@ -13,6 +13,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { GENERATION_STARTED_EVENT } from '../../generation/GenerationStatusProvider'
 import ElementGenerationReviewGatePanel from './ElementGenerationReviewGate'
 import {
   elementGenerationErrorCode,
@@ -100,15 +101,39 @@ export default function ElementGenerationBuild({
   const mutationLoading =
     reviewState.loading || retryState.loading || publishState.loading
   const currentBuildId = build.id
+  const currentElementType = build.elementType
 
   async function refresh() {
     await query.refetch()
   }
 
-  async function runAction(action: () => Promise<unknown>) {
+  async function runAction(
+    action: () => Promise<unknown>,
+    resumeInBackground = false
+  ) {
     setActionError(undefined)
     try {
       await action()
+    } catch (error) {
+      const code = elementGenerationErrorCode(error)
+      setActionError(code ? t('errors.withCode', { code }) : t('errors.action'))
+      return
+    }
+
+    if (resumeInBackground) {
+      window.dispatchEvent(
+        new CustomEvent(GENERATION_STARTED_EVENT, {
+          detail: {
+            kind: 'element',
+            id: currentBuildId,
+            label: t(`elementTypes.${currentElementType}.label`),
+            startedAt: Date.now(),
+          },
+        })
+      )
+    }
+
+    try {
       await refresh()
     } catch (error) {
       const code = elementGenerationErrorCode(error)
@@ -121,17 +146,19 @@ export default function ElementGenerationBuild({
     decision: ElementGenerationReviewDecision,
     acknowledged: boolean
   ) {
-    await runAction(() =>
-      reviewGeneration({
-        variables: {
-          input: {
-            buildId: currentBuildId,
-            gate,
-            decision,
-            warningsAcknowledged: acknowledged,
+    await runAction(
+      () =>
+        reviewGeneration({
+          variables: {
+            input: {
+              buildId: currentBuildId,
+              gate,
+              decision,
+              warningsAcknowledged: acknowledged,
+            },
           },
-        },
-      })
+        }),
+      decision === ElementGenerationReviewDecision.Approve
     )
   }
 
@@ -262,10 +289,12 @@ export default function ElementGenerationBuild({
               type="button"
               disabled={mutationLoading}
               onClick={() =>
-                runAction(() =>
-                  retryGeneration({
-                    variables: { input: { buildId: build.id } },
-                  })
+                runAction(
+                  () =>
+                    retryGeneration({
+                      variables: { input: { buildId: build.id } },
+                    }),
+                  true
                 )
               }
               className={{ root: 'mt-4' }}
@@ -307,10 +336,12 @@ export default function ElementGenerationBuild({
                 type="button"
                 disabled={mutationLoading}
                 onClick={() =>
-                  runAction(() =>
-                    retryGeneration({
-                      variables: { input: { buildId: build.id } },
-                    })
+                  runAction(
+                    () =>
+                      retryGeneration({
+                        variables: { input: { buildId: build.id } },
+                      }),
+                    true
                   )
                 }
                 data={{ cy: 'element-generation-retry-incomplete' }}
@@ -324,15 +355,17 @@ export default function ElementGenerationBuild({
                 type="button"
                 disabled={mutationLoading || !warningsAcknowledged}
                 onClick={() =>
-                  runAction(() =>
-                    publishIncomplete({
-                      variables: {
-                        input: {
-                          buildId: build.id,
-                          warningsAcknowledged,
+                  runAction(
+                    () =>
+                      publishIncomplete({
+                        variables: {
+                          input: {
+                            buildId: build.id,
+                            warningsAcknowledged,
+                          },
                         },
-                      },
-                    })
+                      }),
+                    true
                   )
                 }
                 data={{ cy: 'element-generation-publish-incomplete' }}

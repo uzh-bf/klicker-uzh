@@ -53,7 +53,7 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
-  readonly initialModeOptionsAreFallback: boolean
+  readonly initialModeOptionsAreFallback?: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -74,7 +74,7 @@ interface DisclaimerDeclinedProps {
 export function Assistant({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
+  initialModeOptionsAreFallback = false,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -138,7 +138,6 @@ export function Assistant({
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         >
           <AssistantLayout
             chatbot={chatbot}

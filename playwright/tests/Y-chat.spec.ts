@@ -459,7 +459,10 @@ test.describe('Chatbot Messaging Interface', () => {
       'You are chatting with E2E Chatbot.'
     )
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
-      'Tutor mode.'
+      'Selected mode: Tutor'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
   })
@@ -1679,12 +1682,14 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await page.getByTestId('chat-mode-switcher').click()
-    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
-      'patient'
+    await expect(page.getByTestId('chat-mode-description-tutor')).toHaveText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(
       page.getByTestId('chat-mode-description-explainer')
-    ).toContainText('difficult concepts')
+    ).toHaveText(
+      'Get direct explanations with definitions and course-based examples.'
+    )
   })
 
   test('AI model section displays current model (automatic mode)', async ({
@@ -1771,8 +1776,8 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1 Mini')
-    await expect(modelSection).toContainText('GPT-4.1 Mini')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
+    await expect(modelSection).toContainText('GPT-4.1')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1783,7 +1788,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1-mini')
+    expect(payload.selectedModel).toBe('gpt-4.1')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -2490,6 +2495,71 @@ test.describe('Chatbot Source Citations', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('[9]')
+  })
+
+  test('A compact citation range renders one citation chip per source number', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Citation ranges',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the sources' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-range',
+              sources: [
+                {
+                  file_name: 'Range One.pdf',
+                  source_url: 'https://example.com/range-one.pdf',
+                  source_type: 'document',
+                  page_number: 1,
+                },
+                {
+                  file_name: 'Range Two.pdf',
+                  source_url: 'https://example.com/range-two.pdf',
+                  source_type: 'document',
+                  page_number: 2,
+                },
+                {
+                  file_name: 'Range Three.pdf',
+                  source_url: 'https://example.com/range-three.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+            { type: 'text', text: 'Compare the evidence in [1–3].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const citations = page.getByTestId('chat-citation')
+    await expect(citations).toHaveCount(3)
+    await expect(citations.nth(0)).toHaveAccessibleName(
+      'Source 1: Range One.pdf'
+    )
+    await expect(citations.nth(1)).toHaveAccessibleName(
+      'Source 2: Range Two.pdf'
+    )
+    await expect(citations.nth(2)).toHaveAccessibleName(
+      'Source 3: Range Three.pdf'
+    )
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).not.toContainText('[1–3]')
+    await expect(
+      page
+        .getByTestId('chat-assistant-message-content')
+        .locator('a[href="#cite-range-separator"]')
+    ).toHaveCount(0)
   })
 
   test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({

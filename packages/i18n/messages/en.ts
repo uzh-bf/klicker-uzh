@@ -9,9 +9,14 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
-      tutorDescription: 'Get patient, step-by-step help with your questions.',
+      tutorDescription:
+        'Get step-by-step guidance with focused questions, hints, and feedback.',
       explainer: 'Explainer',
-      explainerDescription: 'Get clear explanations of difficult concepts.',
+      explainerDescription:
+        'Get direct explanations with definitions and course-based examples.',
+      quizzer: 'Quizzer',
+      quizzerDescription:
+        'Practise with exam-style course questions, one at a time, with formative feedback.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -85,14 +90,65 @@ export default {
     manageAssistant: {
       welcome: 'Hello! How can I help you?',
       manageContext: 'Manage',
+      context: {
+        surface: {
+          questionPool: 'Question pool',
+          elementEditor: 'Question editor',
+          courseDashboard: 'Course dashboard',
+          activityCreation: 'Activity setup',
+          evaluation: 'Evaluation',
+          general: 'Manage',
+        },
+        course: 'Course {id}',
+        activity: 'Activity {id}',
+        question: 'Question {id}',
+        changed: 'Manage context changed to {context}',
+        cleared: 'The current Manage context is no longer available',
+      },
       capabilitySearch: 'Search your courses and question pool',
       capabilityDraft:
         'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+      capabilityNoSaveDraft: 'Prepare question drafts without saving them',
       capabilityFeedback: 'Suggest improvements to question feedback',
       capabilityDocumentation:
-        'Explain KlickerUZH features using its documentation and tutorials',
+        'Explain common KlickerUZH workflows using a curated index of documentation and tutorials',
+      capabilityChecking: 'Checking live data and draft availability…',
+      capabilityReadOnly:
+        'Live lookups are available, but this session cannot save draft proposals. No-save drafting and documentation help remain available.',
+      capabilityUnavailable:
+        'Live course and question-pool tools are temporarily unavailable. No-save drafting and documentation help remain available.',
+      capabilityRetry: 'Retry',
+      suggestions: {
+        'question-pool-draft': 'Draft a question',
+        'question-pool-find': 'Find questions',
+        'question-pool-feedback': 'Improve feedback',
+        'element-editor-improve': 'Improve this question',
+        'element-editor-variant': 'Draft a variant',
+        'element-editor-feedback': 'Better feedback',
+        'course-dashboard-summarize': 'Summarize this course',
+        'course-dashboard-draft': 'Draft course question',
+        'course-dashboard-find': 'Find course material',
+        'activity-creation-draft': 'Draft quiz questions',
+        'activity-creation-reuse': 'Reuse questions',
+        'activity-creation-balance': 'Balance difficulty',
+        'evaluation-explain': 'Explain results',
+        'evaluation-followup': 'Follow-up question',
+        'evaluation-similar': 'Similar questions',
+        'general-draft': 'Draft question',
+        'general-find': 'Find questions',
+        'general-feedback': 'Improve feedback',
+        planQuestion: 'Plan a question',
+        planQuizQuestions: 'Plan quiz questions',
+        planCourseQuestion: 'Plan course question',
+        planVariant: 'Plan a variant',
+        planFollowUp: 'Plan follow-up',
+        improveFeedback: 'Improve feedback',
+        documentation: 'KlickerUZH help',
+      },
       limitsNote:
-        'Read-only for everything else — it never publishes or edits existing content.',
+        'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.',
+      degradedLimitsNote:
+        'Provide missing content directly when live lookup is unavailable. Nothing is saved without a proposal card and your confirmation.',
       proposalReview: {
         reviewLabel: 'Question draft review',
         draftQuestion: 'Draft question',
@@ -110,6 +166,18 @@ export default {
         singleChoice: 'Single choice',
         multipleChoice: 'Multiple choice',
         freeText: 'Free text',
+      },
+      proposal: {
+        dismissed: 'Dismissed: {summary}',
+        draftCreated: 'Draft created',
+        confirmationRequired: 'Confirmation required',
+        draft: 'Draft',
+        createDraft: 'Create draft',
+        dismiss: 'Dismiss',
+        draftCreatedInQuestionPool: 'Draft created in the question pool',
+        openDraft: 'Open draft',
+        confirmationFailed: 'The draft could not be created. Please try again.',
+        showRawJson: 'Show raw JSON',
       },
     },
     ownerPreview: {
@@ -236,6 +304,12 @@ export default {
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
         'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+      startPracticeQuiz: 'Start a practice quiz',
+      startPracticeQuizPrompt:
+        'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
+      practiceWeakSpot: 'Practise a weak spot',
+      practiceWeakSpotPrompt:
+        'Help me practise a topic I find difficult. First ask which topic, then give me one exam-style question at a time based on the course materials.',
     },
     message: {
       creditsUsed:
@@ -257,6 +331,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      modeUnavailable:
+        'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
       stop: 'Stop response',
       disclaimerHint:
@@ -775,6 +851,8 @@ export default {
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
         'Select this setting to include a LaTeX formula centered on a separate line.',
+      undo: 'Undo the last formatting change.',
+      redo: 'Redo the last formatting change.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -1606,6 +1684,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     linkTitle: 'Add a link',
     linkDescription: 'Register a website or media resource for ingestion.',
     resourceTitleLabel: 'Title',
+    materialType: 'Material category',
+    materialTypeUnclassified: 'Unclassified',
+    materialTypeCourseContent: 'Course content',
+    materialTypeAdministrative: 'Administrative',
     urlLabel: 'URL',
     invalidUrl: 'Enter a valid URL starting with http:// or https://.',
     linkSuccess: 'Link added to the knowledge base.',
@@ -1618,6 +1700,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     searchResourcesPlaceholder: 'Search title, filename or URL',
     filterType: 'Type',
     filterStatus: 'Latest ingestion',
+    filterMaterialType: 'Category',
     filterAll: 'All',
     typeFile: 'File',
     typeUrl: 'Link',
@@ -1669,6 +1752,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     reingestResource: 'Re-ingest',
     ingestResourceSuccess: 'Resource queued for ingestion.',
     ingestResourceError: 'The resource could not be queued for ingestion.',
+    ingestAll: 'Ingest all',
+    ingestAllTitle: 'Ingest all resources',
+    ingestAllDescription:
+      '{count, plural, one {The server will queue # resource that is not available in its current form. Resources that are already current or in progress will stay unchanged.} other {The server will queue # resources that are not available in their current form. Resources that are already current or in progress will stay unchanged.}}',
+    ingestAllConfirm: 'Start ingestion',
+    ingestAllNeeds: 'Need ingestion',
+    ingestAllFailed: 'Failed attempts',
+    ingestAllInProgress: 'In progress',
+    ingestAllSummary:
+      '{needs} need ingestion · {failed} failed attempts · {inProgress} already in progress',
+    ingestAllSuccess:
+      'Queued {queued} resources. Retried {retried} failed resources. {current} were already current and {inProgress} already in progress. {failed} could not be queued.',
+    ingestAllError: 'The resources could not be queued for ingestion.',
+    updateMaterialTypeSuccess: 'Material category updated.',
+    updateMaterialTypeError: 'The material category could not be updated.',
     operationStatus: 'Latest ingestion',
     operationInProgress:
       'This operation is running in the background. You can leave this page.',
@@ -1782,10 +1880,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
       subtitle: 'AI assistant for your courses and question pool',
-      openInNewTab: 'Open assistant in a new tab',
+      openInNewTab:
+        'Start a new conversation in a new tab without this page context',
+      openFreshConversation: 'Start a separate conversation',
       loading: 'Loading assistant…',
+      retrying: 'Reloading assistant…',
+      retry: 'Reload assistant',
+      delayedTitle: 'The assistant is taking longer than expected',
+      delayedDescription:
+        'You can keep waiting, reload the embedded assistant, or start a separate conversation without this page context.',
+      failedTitle: 'The assistant could not be loaded',
+      failedDescription:
+        'Reload the embedded assistant or start a separate conversation without this page context.',
       resize: 'Resize assistant',
       resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
+      panelSize: 'Assistant panel size',
+      panelSizeCustom: 'Custom size',
+      panelSizeDefault: 'Default',
+      panelSizeWide: 'Wide',
+      panelSizeMax: 'Max',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
     ai: {
@@ -2294,6 +2407,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
     },
+    generationStatus: {
+      title: 'Background generation',
+      description:
+        'You can continue working while these operations run in the background.',
+      starting: 'Starting…',
+      graphQueued: 'Knowledge graph queued',
+      graphProcessing: 'Knowledge graph is being generated',
+      elementProgress:
+        '{generated} of {requested, plural, one {# element} other {# elements}} generated',
+      succeeded: '{label} is ready.',
+      failed: 'Background generation failed.',
+      open: 'Open result',
+    },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',
       title: 'Generate elements',
@@ -2315,19 +2441,35 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         staleGraphHelp:
           'This published graph is still usable, but the knowledge base has newer changes. Rebuild it first if those changes should be included.',
         sourceDetails: 'Included sources',
+        completeSource: 'The complete source will be used.',
         pageFrom: 'From page',
         pageTo: 'To page',
         elementTypeTitle: 'Klicker element type',
         elementTypeHelp:
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
-        bloomHelp: 'Select the cognitive levels to cover.',
+        bloomHelp:
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+        bloomLevel: 'Level {level}',
+        bloomSelected: 'Selected',
+        bloomSelect: 'Select level',
         settingsTitle: 'Generation settings',
         elementCount: 'Number of elements',
         language: 'Language',
-        difficulty: 'Difficulty distribution',
+        difficulty: 'Difficulty level',
+        difficultyHelp:
+          'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
         objectives: 'Learning objectives',
         objectivesHelp: 'Optional guidance for the generated elements.',
+        objectiveHint: 'Write observable, specific learning objectives.',
+        objectiveFormula:
+          'Useful pattern: action verb + subject matter + situation or constraint.',
+        objectiveExampleOne:
+          'Explain why diversification reduces idiosyncratic risk.',
+        objectiveExampleTwo:
+          'Apply the net-present-value rule to compare two investment projects.',
+        objectivePlaceholder:
+          'E.g. Analyze how a rate increase affects bond prices.',
         addObjective: 'Add objective',
         remove: 'Remove',
         start: 'Generate elements',
@@ -2365,7 +2507,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         analyze: 'Analyze',
         evaluate: 'Evaluate',
       },
+      bloomExamples: {
+        remember: 'Identify · define · recall',
+        understand: 'Explain · summarize · classify',
+        apply: 'Calculate · demonstrate · use',
+        analyze: 'Compare · distinguish · connect',
+        evaluate: 'Assess · justify · recommend',
+      },
       difficulty: {
+        D1: {
+          label: 'Very easy',
+          description: 'Direct recall or recognition.',
+        },
+        D2: {
+          label: 'Easy',
+          description: 'One routine application or interpretation.',
+        },
+        D3: {
+          label: 'Medium',
+          description: 'Two linked steps or a meaningful choice.',
+        },
+        D4: {
+          label: 'Difficult',
+          description: 'Several dependent steps or multi-concept analysis.',
+        },
+        D5: {
+          label: 'Very difficult',
+          description: 'Non-routine synthesis or evaluation under constraints.',
+        },
         EASY: 'Easy',
         MIXED: 'Mixed',
         HARD: 'Hard',
@@ -2442,6 +2611,55 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       },
       review: {
         title: 'Review generated elements',
+        editTitle: 'Review generated element',
+        countSummary:
+          '{all} total · {open} to review · {attention, plural, one {# needs attention} other {# need attention}} · {kept} kept · {discarded} discarded',
+        filterLabel: 'Filter generated elements',
+        filters: {
+          all: 'All ({count})',
+          open: 'Needs review ({count})',
+          attention: 'Needs attention ({count})',
+          kept: 'Kept ({count})',
+          discarded: 'Discarded ({count})',
+        },
+        columns: {
+          element: 'Element',
+          type: 'Type',
+          source: 'Original source',
+          learningDesign: 'Learning design',
+          status: 'Status',
+          updated: 'Updated',
+          actions: 'Actions',
+        },
+        bloomLevel: 'Bloom: {level}',
+        difficultyLevel: 'Difficulty: {level}',
+        qualityAttention: 'Quality review recommended',
+        notApplicable: 'Not applicable',
+        sourceUnavailable: 'Source unavailable',
+        sourcesTitle: 'Sources',
+        sourceTypes: {
+          URL: 'Website',
+          BLOB: 'Document',
+        },
+        sourcePage: 'Page {page}',
+        sourcePages: 'Pages {from}–{to}',
+        open: 'Open',
+        openSaved: 'Open saved element',
+        restore: 'Restore',
+        keep: 'Keep element',
+        discard: 'Discard',
+        discardChangesTitle: 'Discard unsaved changes?',
+        discardChangesMessage:
+          'Your edits to this generated element have not been kept.',
+        discardChangesConfirm: 'Discard changes',
+        emptyFilter: 'No generated elements match this filter.',
+        states: {
+          OPEN: 'Needs review',
+          ATTENTION: 'Needs attention',
+          ACCEPTED: 'Kept',
+          REJECTED: 'Discarded',
+        },
+        recoverLegacy: 'Recover accepted elements',
         summary: '{total} total · {accepted} accepted · {open} still undecided',
         elementNumber: 'Element {number}',
         copy: 'Copy {number}',
@@ -3723,8 +3941,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
-      courseDatesForCourseDuplicationTooltip:
-        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      courseDuplicationStartDateTooltip:
+        'Select a start date for the duplicated course. The end date is calculated automatically using the original course duration.',
+      courseDuplicationEndDateTooltip:
+        'The end date is calculated automatically using the original course duration and cannot be changed here. You can change the dates for the duplicated course afterwards.',
       fixedDateInterval:
         'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3742,6 +3962,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCopySuffix: 'Copy',
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationDatesRequired:
+        'Select a start date before duplicating the course.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationAlreadyInProgress:
         'This course is already being duplicated.',
@@ -3800,6 +4022,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
+      startDatePastTooltip:
+        'The start date is in the past and cannot be changed.',
       endDate: 'End date',
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
@@ -4238,7 +4462,142 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This chatbot could not be found or you do not have access to it.',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
+      createChatbot: 'Create chatbot',
+      createChatbotAndContinue: 'Create draft and continue',
+      createChatbotShort: 'New',
+      createChatbotDescription:
+        'Create a course-bound draft chatbot and configure it before requesting publication.',
+      chatbotMobileSelector: 'Current chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot workspace',
+      chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceSetup: 'Setup',
+      chatbotWorkspaceAdvanced: 'Advanced',
+      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceOverviewDescription:
+        'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotSetupTitle: 'Set up your chatbot',
+      chatbotSetupDescription:
+        'Use the sections below to complete and save your chatbot setup before requesting publication.',
+      chatbotSetupBasics: 'Basics',
+      chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
+      chatbotSetupReview: 'Review and submit',
+      chatbotSetupReviewDescription:
+        'Confirm saved details and request publication',
+      chatbotSetupBasicsTitle: 'Chatbot basics',
+      chatbotSetupBasicsDescriptionLong:
+        'Give the chatbot a clear name and description. Save this section when you are ready. The linked course is fixed after creation.',
+      chatbotSetupSave: 'Save changes',
+      chatbotSetupSaving: 'Saving…',
+      chatbotSetupDisclaimerTitle: 'Participant disclaimer',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
+      chatbotSetupReviewTitle: 'Review and submit',
+      chatbotSetupReviewDescriptionLong:
+        'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
+      chatbotSetupEdit: 'Edit',
+      chatbotSetupPublicationNote:
+        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
+      chatbotDiscardChangesConfirmation:
+        'Discard your unsaved chatbot changes?',
+      chatbotNavigationPending:
+        'Please wait until the current chatbot change has finished saving.',
+      chatbotCreatedAt: 'Created',
+      chatbotUpdatedAt: 'Last updated',
+      chatbotName: 'Name',
+      chatbotDescription: 'Description',
+      chatbotCourse: 'Course',
+      chatbotCourseRequired: 'Select a course.',
+      chatbotNoOwnedCourses:
+        'You need to own at least one course before creating a chatbot.',
+      chatbotNameRequired: 'Enter a chatbot name.',
+      chatbotCreateError: 'Could not create the chatbot. Please try again.',
+      chatbotErrorNotEditable: 'This chatbot can no longer be edited.',
+      chatbotErrorEditConflict:
+        'This chatbot changed elsewhere. Reload and try again.',
+      chatbotErrorDisclaimerConflict:
+        'The disclaimer changed elsewhere. Reload and try again.',
+      chatbotErrorBadUserInput: 'Check the chatbot details and try again.',
+      chatbotErrorForbidden:
+        'You do not have permission to change this chatbot.',
+      chatbotPublication: 'Publication request',
+      chatbotPublicationDescription:
+        'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationUseCase: 'Use case',
+      chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
+      chatbotPublicationUseCaseTooLong:
+        'The use case must be 2,000 characters or fewer.',
+      chatbotPublicationUseCaseInvalid:
+        'The use case must be between 1 and 2,000 characters long.',
+      chatbotPublicationExpectedStudentCount: 'Expected student count',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Enter the expected student count.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Enter a positive whole number for the expected student count.',
+      chatbotPublicationProposedCredits: 'Proposed credits',
+      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Enter a positive whole number for the proposed credits.',
+      requestChatbotPublication: 'Request publication',
+      resubmitChatbotPublication: 'Resubmit for approval',
+      chatbotPublicationSubmitted: 'Publication request submitted for review.',
+      chatbotPublicationRequestError:
+        'Could not submit the publication request. Please try again.',
+      chatbotPublicationDisclaimerRequired:
+        'Save a complete disclaimer before requesting publication.',
+      chatbotPublicationUnsavedSetup:
+        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
+      chatbotPublicationAuthorizationChecking:
+        'Checking whether this account can request publication...',
+      chatbotPublicationAuthorizationUnavailable:
+        'The account publication approval could not be checked. Try again later.',
+      chatbotPublicationUnauthorized:
+        'This account is not approved to request chatbot publication.',
+      chatbotPublicationPending:
+        'This chatbot is awaiting publication review. Its publication details are locked until the review is complete.',
+      chatbotPublicationPaused:
+        'Publication is paused for this chatbot. Its publication details are locked while it is paused.',
+      chatbotPublicationReadonly:
+        'Publication details cannot be edited in this status.',
+      chatbotPublicationPublished:
+        'This chatbot is published. Its publication details are read-only.',
+      chatbotPublicationPublishedAt: 'Published on {date}.',
+      chatbotPublicationReviewComment: 'Review comment:',
       chatbotDetails: 'Chatbot Details',
+      chatbotMetadata: 'Chatbot Metadata',
+      chatbotCourseReadonly: 'The course cannot be changed after creation.',
+      saveChatbotMetadata: 'Save metadata',
+      chatbotMetadataSaveSuccess: 'Chatbot metadata saved.',
+      chatbotMetadataSaveError:
+        'Could not save chatbot metadata. Please try again.',
+      chatbotMetadataReadonly:
+        'Metadata cannot be edited while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
+      chatbotDisclaimerReadonly:
+        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerTitle: 'Disclaimer title',
+      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitleTooLong:
+        'The disclaimer title must be 160 characters or fewer.',
+      chatbotDisclaimerIntro: 'Disclaimer introduction',
+      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntroTooLong:
+        'The disclaimer introduction must be 10,000 characters or fewer.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Explain what participants should know before using this chatbot.',
+      saveChatbotDisclaimer: 'Save disclaimer',
+      chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
+      chatbotDisclaimerSaveError:
+        'Could not save the chatbot disclaimer. Please try again.',
+      chatbotDisclaimerPreview: 'Participant disclaimer preview',
+      chatbotDisclaimerPreviewDescription:
+        'This preview includes the platform text that participants will see.',
+      chatbotDisclaimerTitlePlaceholder: 'Your disclaimer title',
+      chatbotDisclaimerIntroPlaceholder:
+        'Add an introduction to show participants here.',
+      chatbotModelSettingsReadonly:
+        'Model settings cannot be edited while the chatbot is awaiting review or paused.',
       overview: 'Overview',
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',

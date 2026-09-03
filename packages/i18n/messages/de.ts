@@ -10,10 +10,13 @@ export default {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
       tutorDescription:
-        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
+        'Erhalte schrittweise Begleitung mit gezielten Fragen, Hinweisen und Rückmeldungen.',
       explainer: 'Erklärer',
       explainerDescription:
-        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
+        'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      quizzer: 'Quiz',
+      quizzerDescription:
+        'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -88,14 +91,67 @@ export default {
     manageAssistant: {
       welcome: 'Hallo! Wie kann ich helfen?',
       manageContext: 'Verwalten',
+      context: {
+        surface: {
+          questionPool: 'Fragepool',
+          elementEditor: 'Frageneditor',
+          courseDashboard: 'Kursübersicht',
+          activityCreation: 'Aktivität einrichten',
+          evaluation: 'Auswertung',
+          general: 'Verwalten',
+        },
+        course: 'Kurs {id}',
+        activity: 'Aktivität {id}',
+        question: 'Frage {id}',
+        changed: 'Der Manage-Kontext wurde zu {context} geändert',
+        cleared: 'Der aktuelle Manage-Kontext ist nicht mehr verfügbar',
+      },
       capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
       capabilityDraft:
         'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityNoSaveDraft:
+        'Fragenentwürfe vorbereiten, ohne sie zu speichern',
       capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
       capabilityDocumentation:
-        'Funktionen von KlickerUZH anhand der Dokumentation und Anleitungen erklären',
+        'Gängige KlickerUZH-Abläufe anhand eines kuratierten Verzeichnisses der Dokumentation und Anleitungen erklären',
+      capabilityChecking:
+        'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
+      capabilityReadOnly:
+        'Live-Abfragen sind verfügbar, aber in dieser Sitzung können keine Entwurfsvorschläge gespeichert werden. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityUnavailable:
+        'Live-Werkzeuge für Kurse und die Fragensammlung sind vorübergehend nicht verfügbar. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityRetry: 'Erneut versuchen',
+      suggestions: {
+        'question-pool-draft': 'Frage entwerfen',
+        'question-pool-find': 'Fragen finden',
+        'question-pool-feedback': 'Feedback verbessern',
+        'element-editor-improve': 'Diese Frage verbessern',
+        'element-editor-variant': 'Variante entwerfen',
+        'element-editor-feedback': 'Besseres Feedback',
+        'course-dashboard-summarize': 'Diesen Kurs zusammenfassen',
+        'course-dashboard-draft': 'Kursfrage entwerfen',
+        'course-dashboard-find': 'Kursmaterial finden',
+        'activity-creation-draft': 'Quizfragen entwerfen',
+        'activity-creation-reuse': 'Fragen wiederverwenden',
+        'activity-creation-balance': 'Schwierigkeit ausgleichen',
+        'evaluation-explain': 'Resultate erklären',
+        'evaluation-followup': 'Vertiefungsfrage',
+        'evaluation-similar': 'Ähnliche Fragen',
+        'general-draft': 'Frage entwerfen',
+        'general-find': 'Fragen finden',
+        'general-feedback': 'Feedback verbessern',
+        planQuestion: 'Frage planen',
+        planQuizQuestions: 'Quizfragen planen',
+        planCourseQuestion: 'Kursfrage planen',
+        planVariant: 'Variante planen',
+        planFollowUp: 'Vertiefungsfrage planen',
+        improveFeedback: 'Feedback verbessern',
+        documentation: 'KlickerUZH Hilfe',
+      },
       limitsNote:
-        'Alles andere ist schreibgeschützt — der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+        'Die Dokumentationshilfe nutzt ein kuratiertes Verzeichnis und keine vollständige Suche. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      degradedLimitsNote:
+        'Gib fehlende Inhalte direkt an, wenn die Live-Abfrage nicht verfügbar ist. Ohne Vorschlagskarte und Deine Bestätigung wird nichts gespeichert.',
       proposalReview: {
         reviewLabel: 'Fragenentwurf prüfen',
         draftQuestion: 'Fragenentwurf',
@@ -112,6 +168,19 @@ export default {
         singleChoice: 'Single Choice',
         multipleChoice: 'Multiple Choice',
         freeText: 'Freitext',
+      },
+      proposal: {
+        dismissed: 'Verworfen: {summary}',
+        draftCreated: 'Entwurf erstellt',
+        confirmationRequired: 'Bestätigung erforderlich',
+        draft: 'Entwurf',
+        createDraft: 'Entwurf erstellen',
+        dismiss: 'Verwerfen',
+        draftCreatedInQuestionPool: 'Entwurf im Fragepool erstellt',
+        openDraft: 'Entwurf öffnen',
+        confirmationFailed:
+          'Der Entwurf konnte nicht erstellt werden. Versuche es erneut.',
+        showRawJson: 'Rohes JSON anzeigen',
       },
     },
     ownerPreview: {
@@ -240,6 +309,12 @@ export default {
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
         'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+      startPracticeQuiz: 'Übungsquiz starten',
+      startPracticeQuizPrompt:
+        'Starte ein Übungsquiz auf Basis der Kursunterlagen. Wähle ein passendes Thema und stelle mir jeweils eine Frage.',
+      practiceWeakSpot: 'Unsicheres Thema üben',
+      practiceWeakSpotPrompt:
+        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und stelle mir danach jeweils eine prüfungsnahe Frage auf Basis der Kursunterlagen.',
     },
     message: {
       creditsUsed:
@@ -261,6 +336,8 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      modeUnavailable:
+        'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
       stop: 'Antwort stoppen',
       disclaimerHint:
@@ -783,6 +860,8 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
+      undo: 'Letzte Formatierungsänderung rückgängig machen.',
+      redo: 'Letzte Formatierungsänderung wiederholen.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -1617,6 +1696,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     linkDescription:
       'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
     resourceTitleLabel: 'Titel',
+    materialType: 'Materialkategorie',
+    materialTypeUnclassified: 'Nicht klassifiziert',
+    materialTypeCourseContent: 'Kursinhalt',
+    materialTypeAdministrative: 'Administrativ',
     urlLabel: 'URL',
     invalidUrl:
       'Geben Sie eine gültige URL ein, die mit http:// oder https:// beginnt.',
@@ -1630,6 +1713,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
     filterType: 'Typ',
     filterStatus: 'Letzte Verarbeitung',
+    filterMaterialType: 'Kategorie',
     filterAll: 'Alle',
     typeFile: 'Datei',
     typeUrl: 'Link',
@@ -1684,6 +1768,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
     ingestResourceError:
       'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
+    ingestAll: 'Alle verarbeiten',
+    ingestAllTitle: 'Alle Ressourcen verarbeiten',
+    ingestAllDescription:
+      '{count, plural, one {Der Server plant # Ressource ein, die in ihrer aktuellen Form noch nicht verfügbar ist. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.} other {Der Server plant # Ressourcen ein, die in ihrer aktuellen Form noch nicht verfügbar sind. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.}}',
+    ingestAllConfirm: 'Verarbeitung starten',
+    ingestAllNeeds: 'Verarbeitung nötig',
+    ingestAllFailed: 'Fehlgeschlagene Versuche',
+    ingestAllInProgress: 'In Verarbeitung',
+    ingestAllSummary:
+      '{needs} benötigen Verarbeitung · {failed} fehlgeschlagene Versuche · {inProgress} bereits in Verarbeitung',
+    ingestAllSuccess:
+      '{queued} Ressourcen eingeplant. {retried} fehlgeschlagene Ressourcen erneut versucht. {current} waren bereits aktuell und {inProgress} bereits in Verarbeitung. {failed} konnten nicht eingeplant werden.',
+    ingestAllError:
+      'Die Ressourcen konnten nicht zur Verarbeitung eingeplant werden.',
+    updateMaterialTypeSuccess: 'Materialkategorie aktualisiert.',
+    updateMaterialTypeError:
+      'Die Materialkategorie konnte nicht aktualisiert werden.',
     operationStatus: 'Letzte Verarbeitung',
     operationInProgress:
       'Dieser Vorgang läuft im Hintergrund. Sie können diese Seite verlassen.',
@@ -1801,11 +1902,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       open: 'Assistent',
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
-      openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      openInNewTab:
+        'Neue Unterhaltung in einem neuen Tab ohne Kontext dieser Seite starten',
+      openFreshConversation: 'Separate Unterhaltung starten',
       loading: 'Assistent wird geladen…',
+      retrying: 'Assistent wird neu geladen…',
+      retry: 'Assistent neu laden',
+      delayedTitle: 'Der Assistent benötigt länger als erwartet',
+      delayedDescription:
+        'Sie können weiter warten, den eingebetteten Assistenten neu laden oder eine separate Unterhaltung ohne Kontext dieser Seite starten.',
+      failedTitle: 'Der Assistent konnte nicht geladen werden',
+      failedDescription:
+        'Laden Sie den eingebetteten Assistenten neu oder starten Sie eine separate Unterhaltung ohne Kontext dieser Seite.',
       resize: 'Grösse des Assistenten ändern',
       resizeHint:
         'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      panelSize: 'Grösse des Assistentenfensters',
+      panelSizeCustom: 'Benutzerdefiniert',
+      panelSizeDefault: 'Standard',
+      panelSizeWide: 'Breit',
+      panelSizeMax: 'Maximal',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     ai: {
@@ -2321,6 +2437,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
     },
+    generationStatus: {
+      title: 'Generierung im Hintergrund',
+      description:
+        'Sie können weiterarbeiten, während diese Vorgänge im Hintergrund ausgeführt werden.',
+      starting: 'Wird gestartet…',
+      graphQueued: 'Wissensgraph ist eingereiht',
+      graphProcessing: 'Wissensgraph wird generiert',
+      elementProgress:
+        '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
+      succeeded: '{label} ist bereit.',
+      failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
+      open: 'Ergebnis öffnen',
+    },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',
       title: 'Elemente generieren',
@@ -2342,19 +2471,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         staleGraphHelp:
           'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
         sourceDetails: 'Enthaltene Quellen',
+        completeSource: 'Die vollständige Quelle wird verwendet.',
         pageFrom: 'Von Seite',
         pageTo: 'Bis Seite',
         elementTypeTitle: 'Klicker-Elementtyp',
         elementTypeHelp:
           'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
         bloomTitle: 'Blooms Taxonomie',
-        bloomHelp: 'Wählen Sie die abzudeckenden kognitiven Stufen.',
+        bloomHelp:
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+        bloomLevel: 'Stufe {level}',
+        bloomSelected: 'Ausgewählt',
+        bloomSelect: 'Stufe auswählen',
         settingsTitle: 'Einstellungen der Generierung',
         elementCount: 'Anzahl Elemente',
         language: 'Sprache',
-        difficulty: 'Schwierigkeitsverteilung',
+        difficulty: 'Schwierigkeitsstufe',
+        difficultyHelp:
+          'Wählen Sie den Denkaufwand für alle generierten Elemente. Die Schwierigkeit entsteht durch die Aufgabe, nicht durch verwirrende Formulierungen.',
         objectives: 'Lernziele',
         objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
+        objectiveHint: 'Formulieren Sie beobachtbare, konkrete Lernziele.',
+        objectiveFormula:
+          'Hilfreiches Muster: Handlungsverb + Lerngegenstand + Situation oder Bedingung.',
+        objectiveExampleOne:
+          'Erklären, warum Diversifikation das idiosynkratische Risiko reduziert.',
+        objectiveExampleTwo:
+          'Die Kapitalwertregel anwenden, um zwei Investitionsprojekte zu vergleichen.',
+        objectivePlaceholder:
+          'Z. B. Analysieren, wie ein Zinsanstieg Anleihenkurse beeinflusst.',
         addObjective: 'Lernziel hinzufügen',
         remove: 'Entfernen',
         start: 'Elemente generieren',
@@ -2394,7 +2539,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         analyze: 'Analysieren',
         evaluate: 'Bewerten',
       },
+      bloomExamples: {
+        remember: 'Nennen · definieren · wiedergeben',
+        understand: 'Erklären · zusammenfassen · einordnen',
+        apply: 'Berechnen · demonstrieren · anwenden',
+        analyze: 'Vergleichen · unterscheiden · verknüpfen',
+        evaluate: 'Beurteilen · begründen · empfehlen',
+      },
       difficulty: {
+        D1: {
+          label: 'Sehr leicht',
+          description: 'Direktes Erinnern oder Wiedererkennen.',
+        },
+        D2: {
+          label: 'Leicht',
+          description: 'Eine routinemässige Anwendung oder Interpretation.',
+        },
+        D3: {
+          label: 'Mittel',
+          description: 'Zwei verknüpfte Schritte oder eine relevante Auswahl.',
+        },
+        D4: {
+          label: 'Schwierig',
+          description:
+            'Mehrere abhängige Schritte oder eine Mehrkonzeptanalyse.',
+        },
+        D5: {
+          label: 'Sehr schwierig',
+          description:
+            'Nicht routinemässige Synthese oder Bewertung unter Bedingungen.',
+        },
         EASY: 'Leicht',
         MIXED: 'Gemischt',
         HARD: 'Schwer',
@@ -2472,6 +2646,55 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       },
       review: {
         title: 'Generierte Elemente prüfen',
+        editTitle: 'Generiertes Element prüfen',
+        countSummary:
+          '{all} insgesamt · {open} zu prüfen · {attention, plural, one {# benötigt Aufmerksamkeit} other {# benötigen Aufmerksamkeit}} · {kept} behalten · {discarded} verworfen',
+        filterLabel: 'Generierte Elemente filtern',
+        filters: {
+          all: 'Alle ({count})',
+          open: 'Zu prüfen ({count})',
+          attention: 'Aufmerksamkeit nötig ({count})',
+          kept: 'Behalten ({count})',
+          discarded: 'Verworfen ({count})',
+        },
+        columns: {
+          element: 'Element',
+          type: 'Typ',
+          source: 'Ursprüngliche Quelle',
+          learningDesign: 'Lerndesign',
+          status: 'Status',
+          updated: 'Aktualisiert',
+          actions: 'Aktionen',
+        },
+        bloomLevel: 'Bloom: {level}',
+        difficultyLevel: 'Schwierigkeit: {level}',
+        qualityAttention: 'Qualitätsprüfung empfohlen',
+        notApplicable: 'Nicht anwendbar',
+        sourceUnavailable: 'Quelle nicht verfügbar',
+        sourcesTitle: 'Quellen',
+        sourceTypes: {
+          URL: 'Webseite',
+          BLOB: 'Dokument',
+        },
+        sourcePage: 'Seite {page}',
+        sourcePages: 'Seiten {from}–{to}',
+        open: 'Öffnen',
+        openSaved: 'Gespeichertes Element öffnen',
+        restore: 'Wiederherstellen',
+        keep: 'Element behalten',
+        discard: 'Verwerfen',
+        discardChangesTitle: 'Ungespeicherte Änderungen verwerfen?',
+        discardChangesMessage:
+          'Ihre Änderungen an diesem generierten Element wurden noch nicht behalten.',
+        discardChangesConfirm: 'Änderungen verwerfen',
+        emptyFilter: 'Keine generierten Elemente entsprechen diesem Filter.',
+        states: {
+          OPEN: 'Zu prüfen',
+          ATTENTION: 'Aufmerksamkeit nötig',
+          ACCEPTED: 'Behalten',
+          REJECTED: 'Verworfen',
+        },
+        recoverLegacy: 'Angenommene Elemente wiederherstellen',
         summary:
           '{total} insgesamt · {accepted} angenommen · {open} noch offen',
         elementNumber: 'Element {number}',
@@ -3795,8 +4018,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       changeAvailabilityDateGroupActivities:
         'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
-      courseDatesForCourseDuplicationTooltip:
-        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
+      courseDuplicationStartDateTooltip:
+        'Wählen Sie ein Startdatum für den duplizierten Kurs. Das Enddatum wird automatisch anhand der ursprünglichen Kursdauer berechnet.',
+      courseDuplicationEndDateTooltip:
+        'Das Enddatum wird automatisch anhand der ursprünglichen Kursdauer berechnet und kann hier nicht geändert werden. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
       fixedDateInterval:
         'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3814,6 +4039,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseCopySuffix: 'Kopie',
       courseDuplicationEndDateInPast:
         'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationDatesRequired:
+        'Wählen Sie vor dem Duplizieren des Kurses ein Startdatum aus.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
       courseDuplicationAlreadyInProgress:
         'Dieser Kurs wird bereits dupliziert.',
@@ -3874,6 +4101,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startDate: 'Startdatum',
       startDateTooltip:
         'Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.',
+      startDatePastTooltip:
+        'Das Startdatum liegt in der Vergangenheit und kann nicht geändert werden.',
       endDate: 'Enddatum',
       endDateTooltip:
         'Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.',
@@ -4322,7 +4551,151 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Chatbot wurde nicht gefunden oder Ihnen fehlt der Zugriff.',
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
+      createChatbot: 'Chatbot erstellen',
+      createChatbotAndContinue: 'Entwurf erstellen und fortfahren',
+      createChatbotShort: 'Neu',
+      createChatbotDescription:
+        'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
+      chatbotMobileSelector: 'Aktueller Chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
+      chatbotWorkspaceOverview: 'Übersicht',
+      chatbotWorkspaceSetup: 'Einrichtung',
+      chatbotWorkspaceAdvanced: 'Erweitert',
+      chatbotWorkspaceUsage: 'Nutzung & Integrationen',
+      chatbotWorkspaceOverviewDescription:
+        'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotSetupTitle: 'Chatbot einrichten',
+      chatbotSetupDescription:
+        'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
+      chatbotSetupBasics: 'Grundangaben',
+      chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
+      chatbotSetupReview: 'Prüfen und einreichen',
+      chatbotSetupReviewDescription:
+        'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
+      chatbotSetupBasicsTitle: 'Grundangaben des Chatbots',
+      chatbotSetupBasicsDescriptionLong:
+        'Geben Sie dem Chatbot einen klaren Namen und eine Beschreibung. Speichern Sie diesen Bereich, wenn Sie fertig sind. Der verknüpfte Kurs ist nach der Erstellung festgelegt.',
+      chatbotSetupSave: 'Änderungen speichern',
+      chatbotSetupSaving: 'Wird gespeichert ...',
+      chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
+      chatbotSetupReviewTitle: 'Prüfen und einreichen',
+      chatbotSetupReviewDescriptionLong:
+        'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
+      chatbotSetupEdit: 'Bearbeiten',
+      chatbotSetupPublicationNote:
+        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und nicht separat gespeichert. Bis zum Einreichen können Sie sie bearbeiten.',
+      chatbotDiscardChangesConfirmation:
+        'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
+      chatbotNavigationPending:
+        'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
+      chatbotCreatedAt: 'Erstellt',
+      chatbotUpdatedAt: 'Zuletzt aktualisiert',
+      chatbotName: 'Name',
+      chatbotDescription: 'Beschreibung',
+      chatbotCourse: 'Kurs',
+      chatbotCourseRequired: 'Bitte wählen Sie einen Kurs aus.',
+      chatbotNoOwnedCourses:
+        'Sie müssen mindestens einen Kurs besitzen, bevor Sie einen Chatbot erstellen können.',
+      chatbotNameRequired: 'Bitte geben Sie einen Chatbot-Namen ein.',
+      chatbotCreateError:
+        'Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      chatbotErrorNotEditable:
+        'Dieser Chatbot kann nicht mehr bearbeitet werden.',
+      chatbotErrorEditConflict:
+        'Dieser Chatbot wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorDisclaimerConflict:
+        'Der Disclaimer wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorBadUserInput:
+        'Bitte prüfen Sie die Chatbot-Angaben und versuchen Sie es erneut.',
+      chatbotErrorForbidden:
+        'Sie haben keine Berechtigung, diesen Chatbot zu ändern.',
+      chatbotPublication: 'Veröffentlichungsantrag',
+      chatbotPublicationDescription:
+        'Geben Sie die Informationen an, die das Team für die Prüfung dieses Chatbots vor der Veröffentlichung benötigt.',
+      chatbotPublicationUseCase: 'Einsatzbereich',
+      chatbotPublicationUseCaseRequired:
+        'Bitte beschreiben Sie den vorgesehenen Einsatzbereich.',
+      chatbotPublicationUseCaseTooLong:
+        'Der Einsatzbereich darf höchstens 2 000 Zeichen enthalten.',
+      chatbotPublicationUseCaseInvalid:
+        'Der Einsatzbereich muss zwischen 1 und 2 000 Zeichen lang sein.',
+      chatbotPublicationExpectedStudentCount: 'Erwartete Anzahl Studierender',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Bitte geben Sie die erwartete Anzahl Studierender ein.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
+      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
+      chatbotPublicationProposedCreditsRequired:
+        'Bitte geben Sie die vorgeschlagenen Credits ein.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
+      requestChatbotPublication: 'Veröffentlichung beantragen',
+      resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
+      chatbotPublicationSubmitted:
+        'Der Veröffentlichungsantrag wurde zur Prüfung eingereicht.',
+      chatbotPublicationRequestError:
+        'Der Veröffentlichungsantrag konnte nicht eingereicht werden. Bitte versuchen Sie es erneut.',
+      chatbotPublicationDisclaimerRequired:
+        'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
+      chatbotPublicationUnsavedSetup:
+        'Speichern Sie Änderungen in den Grundangaben und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+      chatbotPublicationAuthorizationChecking:
+        'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
+      chatbotPublicationAuthorizationUnavailable:
+        'Die Freigabe des Kontos für Veröffentlichungen konnte nicht geprüft werden. Bitte versuchen Sie es später erneut.',
+      chatbotPublicationUnauthorized:
+        'Dieses Konto ist nicht für die Veröffentlichung von Chatbots freigeschaltet.',
+      chatbotPublicationPending:
+        'Dieser Chatbot wartet auf die Prüfung des Veröffentlichungsantrags. Die Veröffentlichungsangaben sind bis zum Abschluss der Prüfung gesperrt.',
+      chatbotPublicationPaused:
+        'Die Veröffentlichung dieses Chatbots ist pausiert. Die Veröffentlichungsangaben sind während der Pause gesperrt.',
+      chatbotPublicationReadonly:
+        'Die Veröffentlichungsangaben können in diesem Status nicht bearbeitet werden.',
+      chatbotPublicationPublished:
+        'Dieser Chatbot ist veröffentlicht. Die Veröffentlichungsangaben können nur gelesen werden.',
+      chatbotPublicationPublishedAt: 'Veröffentlicht am {date}.',
+      chatbotPublicationReviewComment: 'Rückmeldung zur Prüfung:',
       chatbotDetails: 'Chatbot-Details',
+      chatbotMetadata: 'Chatbot-Metadaten',
+      chatbotCourseReadonly:
+        'Der Kurs kann nach der Erstellung nicht geändert werden.',
+      saveChatbotMetadata: 'Metadaten speichern',
+      chatbotMetadataSaveSuccess: 'Chatbot-Metadaten gespeichert.',
+      chatbotMetadataSaveError:
+        'Die Chatbot-Metadaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotMetadataReadonly:
+        'Die Metadaten können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
+      chatbotDisclaimerReadonly:
+        'Der Disclaimer kann nach der Veröffentlichung, während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerTitle: 'Disclaimer-Titel',
+      chatbotDisclaimerTitleRequired:
+        'Bitte geben Sie einen Disclaimer-Titel ein.',
+      chatbotDisclaimerTitleTooLong:
+        'Der Disclaimer-Titel darf höchstens 160 Zeichen enthalten.',
+      chatbotDisclaimerIntro: 'Disclaimer-Einleitung',
+      chatbotDisclaimerIntroRequired:
+        'Bitte geben Sie eine Disclaimer-Einleitung ein.',
+      chatbotDisclaimerIntroTooLong:
+        'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+      saveChatbotDisclaimer: 'Disclaimer speichern',
+      chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
+      chatbotDisclaimerSaveError:
+        'Der Chatbot-Disclaimer konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotDisclaimerPreview: 'Vorschau des Teilnehmer-Disclaimers',
+      chatbotDisclaimerPreviewDescription:
+        'Diese Vorschau enthält den Plattformtext, den Teilnehmende sehen werden.',
+      chatbotDisclaimerTitlePlaceholder: 'Titel Ihres Disclaimers',
+      chatbotDisclaimerIntroPlaceholder:
+        'Fügen Sie hier eine Einleitung für die Teilnehmenden hinzu.',
+      chatbotModelSettingsReadonly:
+        'Die Modelleinstellungen können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       overview: 'Überblick',
       chatbotId: 'Chatbot-ID',
       avatarUrl: 'Avatar-URL',

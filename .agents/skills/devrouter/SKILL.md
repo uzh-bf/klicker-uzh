@@ -183,6 +183,10 @@ profiles:
 - Inspect managed desired, active, and drift state with `devrouter status` and
   `devrouter doctor`; values such as credentials and environment contents are
   never written to managed runtime state.
+- A managed adapter paired with `postCreateCommand` requires `waitFor` exactly
+  `postCreateCommand` or `postStartCommand` before provider mutation. Generated
+  selective configuration preserves lifecycle fields and changes only
+  `runServices`.
 
 ## Env var injection
 
@@ -201,13 +205,13 @@ Config-level `envMap` on dependency references aliases per-dep vars to app-expec
 
 ## Workspace isolation (parallel git worktrees / agents)
 
-Run several worktrees of one repo in parallel without host/route collisions. A **workspace token** spans the DevPod id, devrouter routes, `${WORKSPACE}` proxy upstreams, and devcontainer aliases.
+Run several worktrees of one repo in parallel without host/route collisions. A **workspace token** spans the workspace-runtime id, devrouter routes, `${WORKSPACE}` proxy upstreams, and devcontainer aliases.
 
-- **Identity**: each managed linked worktree stores a local token in Git metadata plus a durable owner record in the repository's Git common directory. The record survives linked-worktree removal and binds the exact path to its DevPod ID. First use reuses an exact-path DevPod or derives a sanitized branch/path slug. Later flags or `DEVROUTER_WORKSPACE` may repeat the identity but cannot rename it. Ambiguous identities fail closed. The primary checkout remains non-namespaced.
+- **Identity**: each managed linked worktree stores a local token in Git metadata plus a durable owner record in the repository's Git common directory. The record survives linked-worktree removal and binds the exact path to its workspace-runtime ID. First use reconciles persisted metadata, the exact-path owner record, and both DevPod and Devsy registries. It reuses an established agreement, keeps the readable sanitized branch/path slug when free, or claims a deterministic hash-suffixed fallback on collision before provider or route mutation. Later flags or `DEVROUTER_WORKSPACE` may repeat the identity but cannot rename it. Unreadable or conflicting evidence fails closed. The primary checkout remains non-namespaced.
 - **When active**: hosts auto-namespace (`web.localhost` → `web.<ws>.localhost`), `${WORKSPACE}` in `upstream` is substituted with the token, and the docker `router` key is suffixed per workspace. Managed `ensure` rejects every HTTP/TCP proxy upstream outside that exact alias namespace before it mutates DevPod or routes. The runtime config is computed in memory only — the committed `.devrouter.yml` is never rewritten.
 - **TLS**: namespaced hosts (`web.<ws>.localhost`) are not covered by the `*.localhost` wildcard; devrouter auto-extends the mkcert cert SANs for active hosts when TLS is enabled.
 - **devcontainer integration**: managed scaffolds list the base compose file, then `${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.default.yml}`; custom repositories may keep another default overlay. Selecting `.devcontainer/docker-compose.devrouter.yml` for linked worktrees must pass `WORKSPACE` and `DEVROUTER_WORKSPACE` across the combined base/overlay config and bind-mount `${DEVROUTER_GIT_COMMON_DIR}` to the same absolute app-container path. The app exposes `${WORKSPACE}-app`; the proxy uses `upstream: ${WORKSPACE}-app:<port>`.
-- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running workspace runtime (DevPod or Devsy). Never substitute raw `devpod up`, `stop`, `delete`, or the Devsy equivalents: they bypass devrouter's machine-global ownership lock. Runtime selection is path-aware: `DEVROUTER_WORKSPACE_RUNTIME=devpod|devsy` forces one runtime, an exact-path registry owner wins next, then the machine preference from `devrouter setup --workspace-runtime`, then installed-CLI auto-detection. `workspace up` creates linked worktrees; destructive worktree removal and GC remain ledger-scoped. Dirty or locked full down fails before side effects.
+- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running workspace runtime (DevPod or Devsy). Never substitute raw `devpod up`, `stop`, `delete`, or the Devsy equivalents: they bypass devrouter's machine-global ownership lock, which serializes provider mutations in a fair arrival-order queue and lets contenders wait up to thirty minutes with throttled stderr progress before failing with the queue position or holder PID and true durations. Runtime selection is path-aware: `DEVROUTER_WORKSPACE_RUNTIME=devpod|devsy` forces one runtime, an exact-path registry owner wins next, then the machine preference from `devrouter setup --workspace-runtime`, then installed-CLI auto-detection. `workspace up` creates linked worktrees; destructive worktree removal and GC remain ledger-scoped. Dirty or locked full down fails before side effects. For Devsy, run `devrouter setup --yes --workspace-runtime devsy` once so Devrouter acquires and verifies the pinned agent in its own machine cache. `doctor` reports `ready`, `missing`, `stale`, or `invalid` without network access, and `ensure` fails before the provider queue when readiness is not `ready`. An explicit `DEVSY_AGENT_BINARY` remains authoritative and must match a pinned official asset.
 - **Managed process identity**: `ensure` executes an exact captured adapter snapshot. Default reuse includes command argv, workspace, and adapter SHA-256. Set `DEVROUTER_PROCESS_FINGERPRINT_ENV` only to comma-separated non-secret environment names whose values affect runtime identity; secret-like names are rejected and raw values are never persisted.
 - **Route state**: the versioned Traefik dynamic file is authoritative for both metadata and rendering. JSON is a compatibility mirror; valid headerless generations migrate automatically, while corrupt canonical metadata fails closed.
 - **Cleanup**: `workspace cleanup --repo . --inactive-for 30d --json` is a report-only, no-`--yes` report for managed linked workspaces. It joins ownership (`present|missing|locked|conflict`), workspace runtime registration, runtime state (`running|stopped|busy|not-found|absent|unknown`), checkout, route, advisory activity, and integration evidence without mutating the workspace runtime, routes, ownership, Git, Docker, applications, worktrees, or branches. Local DevPod/Devsy list/status checks always run; `--check-merged` alone enables read-only origin and matching GitHub/GitLab checks. Treat `not-found` as stale runtime after Docker pruning; busy, unavailable, or conflicting evidence suppresses destructive suggestions. Explicit `gc`/`down` can remove exact stale registration only after expected-ID `NotFound` proof and ownership revalidation. GC never removes Git worktrees, branches, or prune state. Git has no worktree-removal hook.
@@ -261,8 +265,9 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter init [--write-agents] [--write-skill]`: print AI onboarding prompt (non-mutating by default)
 - `devrouter -V [--repo .]`: show installed CLI version, local repo version, and next upgrade target
 - `devrouter upgrade [version] [--repo .]`: list upgrade targets or print target Agent Adaptation Prompt
-- `devrouter setup --yes [--repo .] [--json]`: first-run machine setup plus structured diagnostics
+- `devrouter setup --yes [--repo .] [--json] [--workspace-runtime <devpod|devsy>]`: first-run machine setup plus structured diagnostics; explicit Devsy selection acquires its verified agent
 - `devrouter ensure [path] [--profile <name>] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; a managed profile selects its independent resource dimensions
+- `devrouter profile resolve --repo <path> [--profile <selection>] [--json]`: resolve exact profile resources for automation without starting or inspecting a runtime
 - `devrouter stop [path] [--delete] [--json]`: stop the exact workspace runtime and remove exact routes; `--delete` explicitly deletes its ownership-proven data without removing the checkout
 - `devrouter exec [path] -- <command...>`: literal one-shot command inside the exact running workspace runtime
 - `devrouter up` / `devrouter down`: start/stop shared Traefik router
@@ -296,6 +301,9 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 
 For devcontainer onboarding:
 
+When Devsy owns the workspace, first run
+`devrouter setup --repo . --yes --workspace-runtime devsy --json`.
+
 1. `devrouter setup --repo . --yes --json`
 2. `devrouter doctor --repo . --json`
 3. `devrouter repo inspect --repo . --json`
@@ -318,6 +326,7 @@ For host/docker runtime apps only:
 ## Runtime behavior notes
 
 - Managed devcontainer images contain no devrouter package or helper. `devrouter ensure` delivers its matching process helper to the exact running container and invokes the repository-owned `.devcontainer/post-start.sh`; keep `.devrouter.yml` as the only consumer-side devrouter version pin.
+- Repository lifecycle hooks must canonicalize `KLICKER_DEVCONTAINER_ROOT` once and use that root for every repository-local path. Post-create must invalidate its completion marker before validating the configured root, and post-start must gate and start the same root.
 - `devrouter app run` auto-starts Docker dependencies and waits for health. Host app runs stop auto-started docker deps on exit; docker app runs leave target services running until explicit cleanup.
 - Host-runtime dependencies are NOT auto-started (v1).
 - `kind=dependency` entries do not create routes and cannot be direct targets for `devrouter app run`, `devrouter app exec`, or `devrouter open`.

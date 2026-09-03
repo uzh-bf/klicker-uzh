@@ -23,6 +23,7 @@
     "litellm"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "waitFor": "postCreateCommand",
   "customizations": {
     "vscode": {
       "extensions": [

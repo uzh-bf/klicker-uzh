@@ -1,12 +1,12 @@
+import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import type { ToolSet } from 'ai'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   getLecturerMcpUrl,
   loadLecturerMcpTools,
 } from '@/src/services/lecturerMcp'
 import { fenceToolResultText } from '@/src/services/toolOutputFencing'
-import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import type { ToolSet } from 'ai'
-import { afterEach, describe, expect, test, vi } from 'vitest'
 
 // Mocks the seam between `loadLecturerMcpTools` and the outside world (the
 // MCP transport/client and JWT minting), so the regression test below
@@ -22,7 +22,6 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
 
 vi.mock('@/src/lib/server/mcpAuthMint', () => ({
   mintLecturerMcpJwt: vi.fn().mockResolvedValue('mock-lecturer-jwt'),
-  resolveLecturerMcpScope: vi.fn().mockReturnValue('manage:read manage:draft'),
 }))
 
 describe('lecturer MCP adapter', () => {
@@ -78,7 +77,7 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
     vi.mocked(StreamableHTTPClientTransport).mockReset()
   })
 
-  test('fences raw MCP tool-call results with the request sentinel before they reach the model', async () => {
+  test('filters tools to the advertised capability and fences their results', async () => {
     vi.stubEnv('MCP_LECTURER_URL', 'https://mock-lecturer-mcp.test/mcp')
 
     const injectedText = JSON.stringify({
@@ -87,6 +86,7 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
     const rawExecute = vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: injectedText }],
     })
+    const hiddenExecute = vi.fn()
 
     vi.mocked(createSDKMCPClient).mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -95,10 +95,20 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
           description: 'Get one element',
           execute: rawExecute,
         },
+        klicker_lecturer_future_write: {
+          description: 'Unknown future write',
+          execute: hiddenExecute,
+        },
+        klicker_lecturer_question_draft: {
+          description: 'Draft a question',
+          execute: hiddenExecute,
+        },
       } as unknown as ToolSet),
     } as unknown as Awaited<ReturnType<typeof createSDKMCPClient>>)
 
     const bundle = await loadLecturerMcpTools('user-1', 'FULL_ACCESS')
+    expect(bundle.capabilityState).toBe('read-only')
+    expect(Object.keys(bundle.tools)).toEqual(['klicker_lecturer_element_get'])
     const tool = bundle.tools.klicker_lecturer_element_get
     expect(tool).toBeDefined()
 
@@ -109,6 +119,7 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
     // The MCP client's own execute ran exactly once; its raw result never
     // reaches the caller — it is fenced with this request's sentinel first.
     expect(rawExecute).toHaveBeenCalledTimes(1)
+    expect(hiddenExecute).not.toHaveBeenCalled()
     expect(fencedResult).toEqual({
       content: [
         {

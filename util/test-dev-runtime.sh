@@ -62,6 +62,9 @@ if [ "${1:-}" = "--version" ]; then
   echo "11.5.0"
   exit 0
 fi
+if [ -n "${KLICKER_TEST_PNPM_FAIL_MATCH:-}" ] && [[ "$*" == *"$KLICKER_TEST_PNPM_FAIL_MATCH"* ]]; then
+  exit 17
+fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
 write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
 exit 0'
@@ -70,6 +73,7 @@ url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
   */api/chatbots/*) printf "401\tapplication/json" ;;
+  http://localhost:7081/healthz) printf "200\ttext/plain; charset=utf-8" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
 esac'
@@ -121,6 +125,7 @@ export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
+export KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR="$TEST_ROOT/bootstrap-state"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
@@ -129,6 +134,120 @@ mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
+
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'missing bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+assert_equal \
+  "$(cat "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete")" \
+  'klicker-devcontainer-bootstrap-v1'
+write_file "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete" 'wrong-bootstrap-token'
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'malformed bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'invalidated bootstrap completion marker was accepted'
+fi
+write_file "$TEST_ROOT/outside-bootstrap-marker" 'klicker-devcontainer-bootstrap-v1'
+ln -s "$TEST_ROOT/outside-bootstrap-marker" \
+  "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'symlinked bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+
+assert_before() {
+  local file="$1" earlier="$2" later="$3" earlier_line later_line
+
+  earlier_line="$(grep -nF -m1 "$earlier" "$file" | cut -d: -f1 || true)"
+  later_line="$(grep -nF -m1 "$later" "$file" | cut -d: -f1 || true)"
+  [ -n "$earlier_line" ] || fail "expected line in $file: $earlier"
+  [ -n "$later_line" ] || fail "expected line in $file: $later"
+  [ "$earlier_line" -lt "$later_line" ] || \
+    fail "expected '$earlier' before '$later' in $file"
+}
+
+last_semantic_line() {
+  awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
+}
+
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-create.sh" \
+  'bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap' \
+  'ROOT="$(cd "$ROOT" && pwd)"'
+assert_equal \
+  "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
+  'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-start.sh" \
+  'ROOT="$(cd "$ROOT" && pwd)"' \
+  'bash "$ROOT/util/dev-runtime.sh" require-bootstrap'
+assert_equal \
+  "$(grep -Fc '/workspaces/klicker-uzh' "$REPO_ROOT/.devcontainer/post-start.sh")" \
+  '1'
+grep -Fq '"waitFor": "postCreateCommand"' \
+  "$REPO_ROOT/.devcontainer/devcontainer.json" || \
+  fail 'devcontainer does not wait for postCreateCommand'
+
+mkdir -p \
+  "$ROOT/.devcontainer" \
+  "$ROOT/apps/response-api" \
+  "$ROOT/apps/hatchet-worker-general" \
+  "$ROOT/apps/hatchet-worker-response-processor" \
+  "$ROOT/packages/graphql" \
+  "$ROOT/util"
+write_file "$ROOT/.devcontainer/devcontainer.env" ''
+cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create accepted a missing configured root'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create ignored a failing middle bootstrap step'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+write_file "$TEST_ROOT/hatchet-token" 'synthetic-test-token'
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/hatchet-token" \
+    bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+assert_exists "$ROOT/.devcontainer/.hatchet.env"
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'relative post-create root wrote the Hatchet environment incorrectly'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+
+post_start_status=0
+post_start_output="$(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || post_start_status=$?
+[ "$post_start_status" -ne 0 ] || fail 'post-start bypassed the process-helper gate'
+process_helper_error='Run devrouter ensure to start this managed application process.'
+[[ "$post_start_output" == *"$process_helper_error"* ]] || \
+  fail 'post-start did not use the configured root before its process-helper gate'
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
@@ -286,6 +405,19 @@ classification_output="$(
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-text 200 'text/plain; charset=utf-8')" \
+  'ready: HTTP 200 text/plain; charset=utf-8'
+
+# The stale Next.js classification must not apply to text probes: a 404
+# from the lecturer MCP health endpoint is unexpected, not stale.
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-text 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response html-shell 404 'text/html'
@@ -317,6 +449,10 @@ fi
 : >"$CURL_LOG"
 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
+
+: >"$CURL_LOG"
+READINESS_APPS='response-api mcp-lecturer' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" $'http://localhost:7078/healthz\nhttp://localhost:7081/healthz'
 
 : >"$CURL_LOG"
 READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null

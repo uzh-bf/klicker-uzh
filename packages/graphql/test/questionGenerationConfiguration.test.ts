@@ -43,6 +43,11 @@ function configurationInput(
 
 describe('question generation configuration', () => {
   it.each([
+    'D1',
+    'D2',
+    'D3',
+    'D4',
+    'D5',
     'EASY',
     'MIXED',
     'HARD',
@@ -61,6 +66,10 @@ describe('question generation configuration', () => {
       if (preset === 'HARD') {
         expect(allocation.d1).toBe(0)
         expect(allocation.d2).toBe(0)
+      }
+      if (preset.startsWith('D')) {
+        expect(values.filter((value) => value > 0)).toEqual([count])
+        expect(values[Number(preset.slice(1)) - 1]).toBe(count)
       }
     }
   })

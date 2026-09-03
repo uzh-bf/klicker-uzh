@@ -1,4 +1,4 @@
-import { hasExactCitationIndexes } from '@klicker-uzh/util/citations'
+import { hasCompleteResponseExampleCitationParity } from '@klicker-uzh/util/response-example-eligibility'
 import { ResponseExampleStyle as DBResponseExampleStyle } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 
@@ -71,20 +71,12 @@ export function hasCompleteEligibleCitationParity(
     evidenceEligible: boolean
   }>
 ): boolean {
-  if (
-    evidenceReferences.length === 0 ||
-    evidenceReferences.some(
-      (reference) =>
-        !reference.evidenceEligible ||
-        !Number.isInteger(reference.citationIndex) ||
-        reference.citationIndex < 1
-    )
-  ) {
+  if (evidenceReferences.some((reference) => !reference.evidenceEligible)) {
     return false
   }
 
-  return hasExactCitationIndexes(
+  return hasCompleteResponseExampleCitationParity({
     referenceAnswer,
-    evidenceReferences.map((reference) => reference.citationIndex)
-  )
+    evidenceReferences,
+  })
 }
