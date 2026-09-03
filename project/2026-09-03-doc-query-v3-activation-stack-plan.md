@@ -278,3 +278,18 @@ a blocker.
   OpenCodeReview passed on #5736 and timed out with zero findings on #5737 and
   #5738. Required repository final reviews remain intentionally untriggered
   until the stack receives separate ready-for-review approval.
+- [x] Post-publication integration (2026-09-03): the isolated baseline repair
+  pull request #5740 (restore Vitest discovery for the evaluation target) was
+  merged as `9d26b7499`, and the three-layer stack was rebased onto current
+  `v3@86e9e0625d` in one approved pass with recovery refs recorded under
+  `refs/stack-backup/20260903-pr5709/`.
+- [x] Authority update: the user replaced this plan's no-merge boundary with
+  explicit merge approvals for pull requests #5736, #5737, and #5738 in stack
+  order, plus closure of superseded source pull request #5709. Deployment,
+  production data, secrets, and live-proof boundaries remain withheld.
+- [x] Identity-guard repair: `v3`'s new commit-identity guard rejected the
+  fixture-authored stack commits. All ten commits across the three branches
+  were rewritten to the user's author identity with byte-identical trees
+  verified against the recorded pre-rewrite tree SHAs, and the rewritten heads
+  `b1a4184d7` (#5736), `05dfa197f` (#5737), and `481afe95c` (#5738) were
+  force-pushed under exact-head leases. Merged history was not rewritten.
