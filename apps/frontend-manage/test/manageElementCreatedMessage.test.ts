@@ -3,6 +3,10 @@ import {
   isManageElementCreatedMessage,
   sanitizeManageElementCreatedPayload,
 } from '../src/components/assistant/manageElementCreatedMessage.ts'
+import {
+  isManageElementOpenRequestMessage,
+  sanitizeManageElementOpenRequestPayload,
+} from '../src/components/assistant/manageElementOpenRequestMessage.ts'
 
 assert.equal(
   isManageElementCreatedMessage({
@@ -22,6 +26,10 @@ assert.deepEqual(
   sanitizeManageElementCreatedPayload({ id: 42, name: 'Draft question' }),
   { id: 42, name: 'Draft question' }
 )
+assert.deepEqual(
+  sanitizeManageElementCreatedPayload({ id: 42, name: 'x'.repeat(201) }),
+  { id: 42, name: 'x'.repeat(201) }
+)
 
 // Rejects malformed or out-of-bounds payloads instead of trusting the
 // postMessage sender.
@@ -32,10 +40,6 @@ assert.equal(
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42, name: 123 }), null)
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42, name: '' }), null)
 assert.equal(
-  sanitizeManageElementCreatedPayload({ id: 42, name: 'x'.repeat(201) }),
-  null
-)
-assert.equal(
   sanitizeManageElementCreatedPayload({
     id: Number.POSITIVE_INFINITY,
     name: 'Draft question',
@@ -44,3 +48,21 @@ assert.equal(
 )
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42 }), null)
 assert.equal(sanitizeManageElementCreatedPayload(null), null)
+
+assert.equal(
+  isManageElementOpenRequestMessage({
+    type: 'klicker:manage-element-open-request',
+    payload: { id: 42 },
+  }),
+  true
+)
+assert.equal(
+  isManageElementOpenRequestMessage({ type: 'klicker:manage-element-created' }),
+  false
+)
+assert.deepEqual(sanitizeManageElementOpenRequestPayload({ id: 42 }), {
+  id: 42,
+})
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: 0 }), null)
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: 1.5 }), null)
+assert.equal(sanitizeManageElementOpenRequestPayload({ id: '42' }), null)

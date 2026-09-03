@@ -1,9 +1,16 @@
-import { MANAGE_ELEMENT_CREATED_MESSAGE_TYPE } from '@klicker-uzh/types'
+import {
+  MANAGE_ELEMENT_CREATED_MESSAGE_TYPE,
+  MANAGE_ELEMENT_OPEN_REQUEST_MESSAGE_TYPE,
+} from '@klicker-uzh/types'
 import { useManageParentStore } from '../stores/manageParentStore'
 
 export type ManageElementCreatedPayload = {
   id: number
   name: string
+}
+
+export type ManageElementOpenRequestPayload = {
+  id: number
 }
 
 // Tells the embedding Manage parent that a proposal was confirmed into a new
@@ -19,6 +26,21 @@ export function notifyManageParent(payload: ManageElementCreatedPayload) {
 
   window.parent.postMessage(
     { type: MANAGE_ELEMENT_CREATED_MESSAGE_TYPE, payload },
+    manageParentOrigin
+  )
+}
+
+// Asks the embedding Manage page to open the just-created draft. The parent
+// owns the route so the iframe never receives or constructs a same-origin
+// editor URL. Silently no-ops for standalone Chat sessions.
+export function requestManageParentOpen(
+  payload: ManageElementOpenRequestPayload
+) {
+  const manageParentOrigin = useManageParentStore.getState().manageParentOrigin
+  if (!manageParentOrigin) return
+
+  window.parent.postMessage(
+    { type: MANAGE_ELEMENT_OPEN_REQUEST_MESSAGE_TYPE, payload },
     manageParentOrigin
   )
 }

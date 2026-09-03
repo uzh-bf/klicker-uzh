@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
-import { buildManageAssistantUrl } from '../src/components/assistant/manageAssistantConfig.ts'
+import {
+  buildManageAssistantElementEditRoute,
+  buildManageAssistantUrl,
+} from '../src/components/assistant/manageAssistantConfig.ts'
 
 assert.equal(
   buildManageAssistantUrl({
@@ -48,3 +51,10 @@ assert.equal(
   }),
   'https://chat.klicker.com/manage'
 )
+
+assert.deepEqual(buildManageAssistantElementEditRoute(42), {
+  pathname: '/',
+  query: { editElementId: '42' },
+})
+assert.equal(buildManageAssistantElementEditRoute(0), null)
+assert.equal(buildManageAssistantElementEditRoute(1.5), null)

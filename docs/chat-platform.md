@@ -198,6 +198,20 @@ Signed question proposals render as static lecturer reviews rather than interact
 
 The Manage embed is an in-session assistant dock, not a history surface. Closing and reopening the dock preserves its mounted runtime, while **Start a new conversation** clears the current assistant-ui thread plus unsent text and attachments after an inline confirmation when content exists. Reloading the page still starts a fresh runtime; there is no durable lecturer chat history, thread list, database model, or retention contract. The composer is an in-flow sibling of the transcript so a long proposal can scroll fully above it instead of being clipped by an overlay.
 
+The embedded Manage context is shown in persistent localized chrome above the
+conversation, so it remains available after the welcome message scrolls away.
+The first validated context establishes the session silently; later
+JSON-distinct route or identifier changes are announced politely. The payload
+remains the same sanitized route metadata and identifiers used by the Manage
+chat request.
+
+After a signed draft proposal is confirmed, the embedded card offers **Open
+draft**. That action sends only the positive integer element id to the
+validated Manage parent, which closes the dock and owns navigation to the
+question editor. Standalone Chat does not expose this Manage-only action, and
+confirmation failures use a localized generic message rather than displaying
+server or provider error details.
+
 The parent Manage shell treats the validated context-ready message as the only
 readiness signal. A bounded deadline changes an unanswered load into an honest
 “taking longer” state while keeping the iframe alive so a late valid handshake

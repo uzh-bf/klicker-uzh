@@ -90,6 +90,21 @@ export default {
     manageAssistant: {
       welcome: 'Hello! How can I help you?',
       manageContext: 'Manage',
+      context: {
+        surface: {
+          questionPool: 'Question pool',
+          elementEditor: 'Question editor',
+          courseDashboard: 'Course dashboard',
+          activityCreation: 'Activity setup',
+          evaluation: 'Evaluation',
+          general: 'Manage',
+        },
+        course: 'Course {id}',
+        activity: 'Activity {id}',
+        question: 'Question {id}',
+        changed: 'Manage context changed to {context}',
+        cleared: 'The current Manage context is no longer available',
+      },
       capabilitySearch: 'Search your courses and question pool',
       capabilityDraft:
         'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
@@ -151,6 +166,18 @@ export default {
         singleChoice: 'Single choice',
         multipleChoice: 'Multiple choice',
         freeText: 'Free text',
+      },
+      proposal: {
+        dismissed: 'Dismissed: {summary}',
+        draftCreated: 'Draft created',
+        confirmationRequired: 'Confirmation required',
+        draft: 'Draft',
+        createDraft: 'Create draft',
+        dismiss: 'Dismiss',
+        draftCreatedInQuestionPool: 'Draft created in the question pool',
+        openDraft: 'Open draft',
+        confirmationFailed: 'The draft could not be created. Please try again.',
+        showRawJson: 'Show raw JSON',
       },
     },
     recovery: {
