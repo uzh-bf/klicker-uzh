@@ -14,7 +14,7 @@ serialization. Framework adapters stay with their apps; callers pass child
 loggers and request context explicitly. The work ships as five independently
 green branches in one native GitHub stack.
 
-**Tech Stack:** Node.js 24, TypeScript 6, Pino 9.14.0, pino-pretty 13.1.3,
+**Tech Stack:** Node.js 24, TypeScript 6, Pino 9.14.0, pino-pretty ~13.1.3,
 Vitest 3.2.4, Next.js 16, Express, GraphQL Yoga, Hatchet SDK 1.9.4, pnpm 11,
 Turborepo, native `gh stack`.
 
@@ -22,7 +22,7 @@ Turborepo, native `gh stack`.
 
 - Production writes newline-delimited JSON to stdout; applications never send
   logs directly to Loki.
-- Pin `pino` to `9.14.0` and `pino-pretty` to `13.1.3`; do not introduce Pino
+- Pin `pino` to `9.14.0` and constrain `pino-pretty` to `~13.1.3`; do not introduce Pino
   10 in this feature.
 - Required record fields are Unix-millisecond `time`, string `level`, stable
   `service`, dot-separated `event`, and conventional `msg`.
@@ -96,7 +96,7 @@ Turborepo, native `gh stack`.
 - Produces: one topology-owned worktree at `trees/logging-stack` with all five
   branches registered against `v3`.
 
-- [ ] **Step 1: Verify branch, worktree, and ignore state**
+- [x] **Step 1: Verify branch, worktree, and ignore state**
 
 Run from the current workspace:
 
@@ -110,7 +110,7 @@ rg -n '^trees/$' .gitignore
 Expected: clean status, branch `feat/logging-foundation`, the current worktree
 listed once, and `.gitignore` containing `trees/`.
 
-- [ ] **Step 2: Relocate branch ownership without changing commits**
+- [x] **Step 2: Relocate branch ownership without changing commits**
 
 ```bash
 git switch --detach
@@ -124,7 +124,7 @@ Expected: clean repository-local worktree whose tip contains the approved
 logging design commit. If the initial status is not clean, stop and report the
 files instead of detaching.
 
-- [ ] **Step 3: Initialize the native stack**
+- [x] **Step 3: Initialize the native stack**
 
 ```bash
 gh stack init --base v3 \
@@ -164,7 +164,7 @@ publish the stack in this task.
 - Consumes: Pino 9.14.0 and global Web Crypto UUID generation available in
   Node 24 and Edge runtimes.
 
-- [ ] **Step 1: Create the package manifest and build configuration**
+- [x] **Step 1: Create the package manifest and build configuration**
 
 Use these public exports:
 
@@ -194,7 +194,7 @@ Use these public exports:
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "npm-run-all": "~4.1.5",
-    "pino-pretty": "13.1.3",
+    "pino-pretty": "~13.1.3",
     "rollup": "~4.34.9",
     "typescript": "~6.0.3",
     "vitest": "~3.2.4"
@@ -216,7 +216,7 @@ declarations enabled, `entryFileNames: '[name].js'`, and `pino`, `pino-pretty`,
 Node built-ins, and workspace packages external. Task 2 adds the Edge input and
 export in the same commit as its implementation.
 
-- [ ] **Step 2: Write failing request-context tests**
+- [x] **Step 2: Write failing request-context tests**
 
 Cover exact pass-through, missing IDs, invalid characters, arrays, length 129,
 correlation fallback, and propagation headers:
@@ -248,7 +248,7 @@ pnpm --filter @klicker-uzh/logging test -- request.test.ts
 
 Expected: failure because the request entry point does not exist.
 
-- [ ] **Step 3: Implement the runtime-neutral request contract**
+- [x] **Step 3: Implement the runtime-neutral request contract**
 
 Use this signature and behavior:
 
@@ -304,7 +304,7 @@ export function propagationHeaders(context: RequestContext) {
 
 Run the request test again; expected: pass.
 
-- [ ] **Step 4: Write failing Pino contract and privacy tests**
+- [x] **Step 4: Write failing Pino contract and privacy tests**
 
 Capture a writable stream and assert one parsed record has string `level`,
 `service`, `event`, `msg`, child IDs, serialized `err`, and no `pid` or
@@ -320,7 +320,7 @@ pnpm --filter @klicker-uzh/logging test -- node.test.ts
 
 Expected: failure because `createLogger` does not exist.
 
-- [ ] **Step 5: Implement the Node factory**
+- [x] **Step 5: Implement the Node factory**
 
 The public surface is:
 
@@ -408,7 +408,7 @@ export function createLogger(
 Pino's default timestamp supplies Unix milliseconds. Supplying only
 `{ service }` as `base` suppresses default `pid` and `hostname`.
 
-- [ ] **Step 6: Add `LOG_LEVEL` to Turborepo and sync the lockfile**
+- [x] **Step 6: Add `LOG_LEVEL` to Turborepo and sync the lockfile**
 
 Add `LOG_LEVEL` and `PINO_PRETTY` once to `turbo.json` `globalEnv`, then run:
 
@@ -445,7 +445,7 @@ git commit -m "feat(logging): add shared record contract"
 - Produces: `createEdgeLogger({ service, level?, sink? })` with
   `trace/debug/info/warn/error/fatal` methods and `child(bindings)`.
 
-- [ ] **Step 1: Write failing Node/Edge parity tests**
+- [x] **Step 1: Write failing Node/Edge parity tests**
 
 Use an injected `sink(level, line)` and assert that every call receives exactly
 one complete JSON string with `time`, string `level`, `service`, `event`, `msg`,
@@ -461,7 +461,7 @@ pnpm --filter @klicker-uzh/logging test -- edge.test.ts
 
 Expected: failure because the Edge entry point does not exist.
 
-- [ ] **Step 2: Implement the Edge adapter without Node imports**
+- [x] **Step 2: Implement the Edge adapter without Node imports**
 
 Use an explicit numeric level table, immutable child bindings, and this call
 shape:
@@ -539,7 +539,7 @@ git commit -m "feat(logging): add edge-compatible logger"
 - Produces: the first production canary using the shared defaults and stable
   event names.
 
-- [ ] **Step 1: Replace the local Pino configuration**
+- [x] **Step 1: Replace the local Pino configuration**
 
 Keep `src/logger.ts` as the application-owned root and reduce it to:
 
@@ -556,7 +556,7 @@ export default logger
 Move `pino` and `pino-pretty` out of the app manifest and add
 `@klicker-uzh/logging: workspace:*`.
 
-- [ ] **Step 2: Give lifecycle calls stable events**
+- [x] **Step 2: Give lifecycle calls stable events**
 
 Convert startup, workflow selection, readiness, and fatal process-owner calls
 to the Pino object-first form. For example:
@@ -579,7 +579,7 @@ new `toSafeError('Unhandled rejection')` or
 third-party error, rejection object, URL, or client configuration is not
 serialized.
 
-- [ ] **Step 3: Document the architectural decision and operating contract**
+- [x] **Step 3: Document the architectural decision and operating contract**
 
 ADR 0002 records: shared Pino package, stdout-only production delivery,
 explicit context instead of `AsyncLocalStorage`, Edge adapter exception, and
