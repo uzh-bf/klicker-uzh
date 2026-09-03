@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ConfirmKbFileUploadDocument,
   KbResourceMaterialType,
+  ReplaceKbResourceFileDocument,
   RequestKbFileUploadDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H3, SelectField, toast } from '@uzh-bf/design-system'
@@ -26,11 +27,13 @@ const ACCEPTED_FILES = {
 function KnowledgeBaseFileDropzone({
   kbId,
   embedded = false,
+  replaceResource,
   onUploadStateChange,
   onResourceCreated,
 }: {
   kbId: string
   embedded?: boolean
+  replaceResource?: { id: string; title: string }
   onUploadStateChange?: (uploading: boolean) => void
   onResourceCreated: () => Promise<unknown>
 }) {
@@ -41,6 +44,7 @@ function KnowledgeBaseFileDropzone({
   )
   const [requestUpload] = useMutation(RequestKbFileUploadDocument)
   const [confirmUpload] = useMutation(ConfirmKbFileUploadDocument)
+  const [replaceFile] = useMutation(ReplaceKbResourceFileDocument)
 
   useEffect(() => {
     onUploadStateChange?.(uploading)
@@ -80,17 +84,30 @@ function KnowledgeBaseFileDropzone({
           blobHTTPHeaders: { blobContentType: contentType },
         })
 
-        await confirmUpload({
-          variables: {
-            kbId,
-            blobName: ticket.blobName,
-            title: file.name,
-            originalFilename: file.name,
-            mimeType: contentType,
-            sizeBytes: file.size,
-            materialType,
-          },
-        })
+        if (replaceResource) {
+          await replaceFile({
+            variables: {
+              kbId,
+              resourceId: replaceResource.id,
+              blobName: ticket.blobName,
+              originalFilename: file.name,
+              mimeType: contentType,
+              sizeBytes: file.size,
+            },
+          })
+        } else {
+          await confirmUpload({
+            variables: {
+              kbId,
+              blobName: ticket.blobName,
+              title: file.name,
+              originalFilename: file.name,
+              mimeType: contentType,
+              sizeBytes: file.size,
+              materialType,
+            },
+          })
+        }
       } catch (error) {
         console.error('Failed to upload KB file', error)
         const code = getGraphQLErrorCode(error)
@@ -109,8 +126,15 @@ function KnowledgeBaseFileDropzone({
       }
 
       await refreshAfterMutation(onResourceCreated, 'KB resources after upload')
-      setMaterialType(KbResourceMaterialType.CourseContent)
-      toast({ type: 'success', message: t('kb.fileUploadSuccess') })
+      if (!replaceResource) {
+        setMaterialType(KbResourceMaterialType.CourseContent)
+      }
+      toast({
+        type: 'success',
+        message: replaceResource
+          ? t('kb.replaceFileSuccess')
+          : t('kb.fileUploadSuccess'),
+      })
     } finally {
       setUploading(false)
     }
@@ -129,31 +153,41 @@ function KnowledgeBaseFileDropzone({
   const content = (
     <>
       {!embedded ? <H3>{t('kb.fileUploadTitle')}</H3> : null}
-      <p className="mt-1 text-sm text-slate-600">
-        {t('kb.fileUploadDescription')}
-      </p>
-      <SelectField
-        id="kb-file-material-type"
-        label={t('kb.materialType')}
-        value={materialType}
-        onChange={(value) => setMaterialType(value as KbResourceMaterialType)}
-        items={[
-          {
-            value: KbResourceMaterialType.Unclassified,
-            label: t('kb.materialTypeUnclassified'),
-          },
-          {
-            value: KbResourceMaterialType.CourseContent,
-            label: t('kb.materialTypeCourseContent'),
-          },
-          {
-            value: KbResourceMaterialType.Administrative,
-            label: t('kb.materialTypeAdministrative'),
-          },
-        ]}
-        disabled={uploading}
-        data={{ cy: 'kb-file-material-type' }}
-      />
+      {replaceResource ? (
+        <p className="mt-1 text-sm text-slate-600">
+          {t('kb.replaceFileDescription', { title: replaceResource.title })}
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-slate-600">
+            {t('kb.fileUploadDescription')}
+          </p>
+          <SelectField
+            id="kb-file-material-type"
+            label={t('kb.materialType')}
+            value={materialType}
+            onChange={(value) =>
+              setMaterialType(value as KbResourceMaterialType)
+            }
+            items={[
+              {
+                value: KbResourceMaterialType.Unclassified,
+                label: t('kb.materialTypeUnclassified'),
+              },
+              {
+                value: KbResourceMaterialType.CourseContent,
+                label: t('kb.materialTypeCourseContent'),
+              },
+              {
+                value: KbResourceMaterialType.Administrative,
+                label: t('kb.materialTypeAdministrative'),
+              },
+            ]}
+            disabled={uploading}
+            data={{ cy: 'kb-file-material-type' }}
+          />
+        </>
+      )}
       <div
         {...getRootProps({
           role: 'button',
