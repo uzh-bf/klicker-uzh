@@ -281,18 +281,6 @@ chat:
       cost:
         input: 5.0
         output: 30.0
-    - id: gpt-4.1-mini
-      deploymentId: klickeruzh/azure/gpt-4.1-mini
-      name: GPT-4.1 Mini
-      description: Small OpenAI model
-      supportsImageAttachments: true
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 0.4
-        output: 1.6
-
   replicaCount: 1
 
   autoscaling:
