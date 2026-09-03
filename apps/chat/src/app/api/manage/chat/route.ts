@@ -12,6 +12,11 @@ import {
   tryAcquireManageChatRequest,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
+import {
+  createKlickerDocsSearchTool,
+  KLICKER_DOCS_SEARCH_TOOL_NAME,
+  mergeManageAssistantToolSets,
+} from '@/src/services/docsSearchTool'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import { MANAGE_ASSISTANT_CAPABILITY_HEADER } from '@/src/services/manageAssistantCapabilities'
 import {
@@ -22,7 +27,10 @@ import {
 import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
 import { resolveLatestManageProposalContext } from '@/src/services/manageProposalContext'
 import { createRateLimiter } from '@/src/services/rateLimiter'
-import { createFenceSentinel } from '@/src/services/toolOutputFencing'
+import {
+  createFenceSentinel,
+  fenceToolSetResults,
+} from '@/src/services/toolOutputFencing'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -170,6 +178,17 @@ export async function POST(req: NextRequest) {
       console.warn('Failed to load lecturer MCP tools:', error)
       return noLecturerMcpTools
     })
+    // The docs search tool rides on every request — including degraded
+    // lecturer-MCP requests — fenced with the same per-request sentinel so
+    // docs text reaches the model as data, never instructions.
+    const docsTools = fenceToolSetResults(
+      { [KLICKER_DOCS_SEARCH_TOOL_NAME]: createKlickerDocsSearchTool() },
+      lecturerMcp.sentinel
+    )
+    const requestTools = mergeManageAssistantToolSets(
+      lecturerMcp.tools,
+      docsTools
+    )
     const selectedModel = selectManageAssistantModel(getChatModelRegistry())
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,
@@ -198,7 +217,7 @@ export async function POST(req: NextRequest) {
           previousProposal
         ),
         toolChoice: 'auto',
-        tools: lecturerMcp.tools,
+        tools: requestTools,
         onAbort: closeTools,
         onError: async (error) => {
           console.error('Manage assistant stream failed:', error)
