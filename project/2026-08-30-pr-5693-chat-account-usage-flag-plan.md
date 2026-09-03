@@ -271,6 +271,11 @@ does not present a UI whose backend state transition is not yet settled.
   23-task production build, and a Gitleaks scan over the full branch range.
   The approved normal push and current hosted CI state are recorded on PR
   #5693 because they occur after this committed plan snapshot.
+- [x] Diagnosed two failures on the first integrated CI run as newly inherited
+  `v3` defects: its two evaluation-target files were not Biome-formatted, and
+  its `.test.mjs` suite registered tests with `node:test` while the Chat package
+  runs Vitest. Formatting the two files and registering the ten tests with
+  Vitest makes both focused reproducers and the full 505-test Chat suite pass.
 - [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
   suite and the new browser test before merge. Three supported Devrouter starts
   were blocked before runtime startup because Docker could not resolve
