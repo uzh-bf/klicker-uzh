@@ -195,6 +195,7 @@ auth:
 chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
+  lifecycleWritersEnabled: false
 
   replicaCount: 1
 

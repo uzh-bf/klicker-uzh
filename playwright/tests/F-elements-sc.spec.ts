@@ -10,6 +10,7 @@ import { cleanupTest } from '../util/cleanup.js'
 import { SC_DATA as SC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  clearEditorField,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -186,11 +187,9 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing feedbacks re-disables save
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await clearEditorField(page, 'insert-answer-feedback-1')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await page.getByTestId('insert-answer-feedback-0').click()
-    await page.getByTestId('insert-answer-feedback-0').clear()
+    await clearEditorField(page, 'insert-answer-feedback-0')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 0, SC.choicesFeedbacks[0])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()

@@ -9,9 +9,14 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
-      tutorDescription: 'Get patient, step-by-step help with your questions.',
+      tutorDescription:
+        'Get step-by-step guidance with focused questions, hints, and feedback.',
       explainer: 'Explainer',
-      explainerDescription: 'Get clear explanations of difficult concepts.',
+      explainerDescription:
+        'Get direct explanations with definitions and course-based examples.',
+      quizzer: 'Quizzer',
+      quizzerDescription:
+        'Practise with exam-style course questions, one at a time, with formative feedback.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -189,6 +194,12 @@ export default {
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
         'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+      startPracticeQuiz: 'Start a practice quiz',
+      startPracticeQuizPrompt:
+        'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
+      practiceWeakSpot: 'Practise a weak spot',
+      practiceWeakSpotPrompt:
+        'Help me practise a topic I find difficult. First ask which topic, then give me one exam-style question at a time based on the course materials.',
     },
     message: {
       creditsUsed:
@@ -210,6 +221,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      modeUnavailable:
+        'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
       stop: 'Stop response',
       disclaimerHint:
@@ -728,6 +741,8 @@ export default {
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
         'Select this setting to include a LaTeX formula centered on a separate line.',
+      undo: 'Undo the last formatting change.',
+      redo: 'Redo the last formatting change.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -821,6 +836,11 @@ export default {
       activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
       noPracticeQuizzesActive: 'No practice quizzes active.',
       activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      practicePoolPromotionTitle: 'Practice with spaced repetition',
+      practicePoolPromotionDescription:
+        'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
+      startPracticePool: 'Start Practice Pool',
+      individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -1057,7 +1077,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microLearningEndedToast:
         'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
-        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
+        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetition, up to 25 question sets are selected according to our spaced repetition logic. Your previous answers can influence the order.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -3225,8 +3245,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
-      courseDatesForCourseDuplicationTooltip:
-        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      courseDuplicationStartDateTooltip:
+        'Select a start date for the duplicated course. The end date is calculated automatically using the original course duration.',
+      courseDuplicationEndDateTooltip:
+        'The end date is calculated automatically using the original course duration and cannot be changed here. You can change the dates for the duplicated course afterwards.',
       fixedDateInterval:
         'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3244,6 +3266,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCopySuffix: 'Copy',
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationDatesRequired:
+        'Select a start date before duplicating the course.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationAlreadyInProgress:
         'This course is already being duplicated.',
@@ -3302,6 +3326,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
+      startDatePastTooltip:
+        'The start date is in the past and cannot be changed.',
       endDate: 'End date',
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
@@ -3348,6 +3374,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
       noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
+      courseDeletionActiveLiveQuiz:
+        'This course cannot be deleted while it contains a published live quiz. Please end or unpublish the live quiz first.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -3471,7 +3499,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
-      practiceQuizList: 'Practice Quiz List',
+      practiceQuizList: 'Practice Pool & Practice Quizzes',
       microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
@@ -3482,7 +3510,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Practice Pool & Practice Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit Microlearning',
@@ -3736,7 +3764,142 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbots: 'Chatbots',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
+      createChatbot: 'Create chatbot',
+      createChatbotAndContinue: 'Create draft and continue',
+      createChatbotShort: 'New',
+      createChatbotDescription:
+        'Create a course-bound draft chatbot and configure it before requesting publication.',
+      chatbotMobileSelector: 'Current chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot workspace',
+      chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceSetup: 'Setup',
+      chatbotWorkspaceAdvanced: 'Advanced',
+      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceOverviewDescription:
+        'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotSetupTitle: 'Set up your chatbot',
+      chatbotSetupDescription:
+        'Use the sections below to complete and save your chatbot setup before requesting publication.',
+      chatbotSetupBasics: 'Basics',
+      chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
+      chatbotSetupReview: 'Review and submit',
+      chatbotSetupReviewDescription:
+        'Confirm saved details and request publication',
+      chatbotSetupBasicsTitle: 'Chatbot basics',
+      chatbotSetupBasicsDescriptionLong:
+        'Give the chatbot a clear name and description. Save this section when you are ready. The linked course is fixed after creation.',
+      chatbotSetupSave: 'Save changes',
+      chatbotSetupSaving: 'Saving…',
+      chatbotSetupDisclaimerTitle: 'Participant disclaimer',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
+      chatbotSetupReviewTitle: 'Review and submit',
+      chatbotSetupReviewDescriptionLong:
+        'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
+      chatbotSetupEdit: 'Edit',
+      chatbotSetupPublicationNote:
+        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
+      chatbotDiscardChangesConfirmation:
+        'Discard your unsaved chatbot changes?',
+      chatbotNavigationPending:
+        'Please wait until the current chatbot change has finished saving.',
+      chatbotCreatedAt: 'Created',
+      chatbotUpdatedAt: 'Last updated',
+      chatbotName: 'Name',
+      chatbotDescription: 'Description',
+      chatbotCourse: 'Course',
+      chatbotCourseRequired: 'Select a course.',
+      chatbotNoOwnedCourses:
+        'You need to own at least one course before creating a chatbot.',
+      chatbotNameRequired: 'Enter a chatbot name.',
+      chatbotCreateError: 'Could not create the chatbot. Please try again.',
+      chatbotErrorNotEditable: 'This chatbot can no longer be edited.',
+      chatbotErrorEditConflict:
+        'This chatbot changed elsewhere. Reload and try again.',
+      chatbotErrorDisclaimerConflict:
+        'The disclaimer changed elsewhere. Reload and try again.',
+      chatbotErrorBadUserInput: 'Check the chatbot details and try again.',
+      chatbotErrorForbidden:
+        'You do not have permission to change this chatbot.',
+      chatbotPublication: 'Publication request',
+      chatbotPublicationDescription:
+        'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationUseCase: 'Use case',
+      chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
+      chatbotPublicationUseCaseTooLong:
+        'The use case must be 2,000 characters or fewer.',
+      chatbotPublicationUseCaseInvalid:
+        'The use case must be between 1 and 2,000 characters long.',
+      chatbotPublicationExpectedStudentCount: 'Expected student count',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Enter the expected student count.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Enter a positive whole number for the expected student count.',
+      chatbotPublicationProposedCredits: 'Proposed credits',
+      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Enter a positive whole number for the proposed credits.',
+      requestChatbotPublication: 'Request publication',
+      resubmitChatbotPublication: 'Resubmit for approval',
+      chatbotPublicationSubmitted: 'Publication request submitted for review.',
+      chatbotPublicationRequestError:
+        'Could not submit the publication request. Please try again.',
+      chatbotPublicationDisclaimerRequired:
+        'Save a complete disclaimer before requesting publication.',
+      chatbotPublicationUnsavedSetup:
+        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
+      chatbotPublicationAuthorizationChecking:
+        'Checking whether this account can request publication...',
+      chatbotPublicationAuthorizationUnavailable:
+        'The account publication approval could not be checked. Try again later.',
+      chatbotPublicationUnauthorized:
+        'This account is not approved to request chatbot publication.',
+      chatbotPublicationPending:
+        'This chatbot is awaiting publication review. Its publication details are locked until the review is complete.',
+      chatbotPublicationPaused:
+        'Publication is paused for this chatbot. Its publication details are locked while it is paused.',
+      chatbotPublicationReadonly:
+        'Publication details cannot be edited in this status.',
+      chatbotPublicationPublished:
+        'This chatbot is published. Its publication details are read-only.',
+      chatbotPublicationPublishedAt: 'Published on {date}.',
+      chatbotPublicationReviewComment: 'Review comment:',
       chatbotDetails: 'Chatbot Details',
+      chatbotMetadata: 'Chatbot Metadata',
+      chatbotCourseReadonly: 'The course cannot be changed after creation.',
+      saveChatbotMetadata: 'Save metadata',
+      chatbotMetadataSaveSuccess: 'Chatbot metadata saved.',
+      chatbotMetadataSaveError:
+        'Could not save chatbot metadata. Please try again.',
+      chatbotMetadataReadonly:
+        'Metadata cannot be edited while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
+      chatbotDisclaimerReadonly:
+        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerTitle: 'Disclaimer title',
+      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitleTooLong:
+        'The disclaimer title must be 160 characters or fewer.',
+      chatbotDisclaimerIntro: 'Disclaimer introduction',
+      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntroTooLong:
+        'The disclaimer introduction must be 10,000 characters or fewer.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Explain what participants should know before using this chatbot.',
+      saveChatbotDisclaimer: 'Save disclaimer',
+      chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
+      chatbotDisclaimerSaveError:
+        'Could not save the chatbot disclaimer. Please try again.',
+      chatbotDisclaimerPreview: 'Participant disclaimer preview',
+      chatbotDisclaimerPreviewDescription:
+        'This preview includes the platform text that participants will see.',
+      chatbotDisclaimerTitlePlaceholder: 'Your disclaimer title',
+      chatbotDisclaimerIntroPlaceholder:
+        'Add an introduction to show participants here.',
+      chatbotModelSettingsReadonly:
+        'Model settings cannot be edited while the chatbot is awaiting review or paused.',
       overview: 'Overview',
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',

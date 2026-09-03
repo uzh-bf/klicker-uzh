@@ -21,7 +21,7 @@ http:
         - 'websecure'
       service: 'pwa'
       middlewares:
-        - 'csp-frame-ancestors'
+        - 'csp-frame-ancestors-pwa'
 
     assessment:
       rule: 'Host(`assessment.klicker.com`)'
@@ -30,7 +30,7 @@ http:
         - 'websecure'
       service: 'pwa'
       middlewares:
-        - 'csp-frame-ancestors'
+        - 'csp-frame-ancestors-pwa'
 
     manage:
       rule: 'Host(`manage.klicker.com`)'
@@ -83,6 +83,10 @@ http:
       headers:
         customResponseHeaders:
           Content-Security-Policy: "frame-ancestors 'self' *.uzh.ch"
+    csp-frame-ancestors-pwa:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: "frame-ancestors 'self' *.uzh.ch *.localhost"
 
   services:
     api:
