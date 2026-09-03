@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import pino, {
   type DestinationStream,
   type Logger,
@@ -70,15 +71,17 @@ export function createLogger(
   if (destination) return pino(loggerOptions, destination)
   if (!pretty) return pino(loggerOptions)
 
+  // Load the development-only dependency only when pretty output is selected.
+  // An in-process stream avoids tsx watch messages colliding with the
+  // thread-stream worker protocol. Production still writes NDJSON directly.
+  const prettyStream = createRequire(import.meta.url)('pino-pretty')
   return pino(
     loggerOptions,
-    pino.transport({
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        singleLine: true,
-        translateTime: 'SYS:standard',
-      },
+    prettyStream({
+      colorize: true,
+      singleLine: true,
+      translateTime: 'SYS:standard',
+      sync: true,
     })
   )
 }

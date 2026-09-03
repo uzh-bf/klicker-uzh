@@ -249,7 +249,7 @@ jobs:
           retention-days: 7
 
       - name: Build shared Playwright artifact
-        uses: ./.github/actions/playwright-build
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
         with:
           route: hosted
           mode: ${{ needs.prepare.outputs.mode }}
@@ -273,7 +273,7 @@ jobs:
           persist-credentials: false
 
       - name: Build shared Playwright artifact
-        uses: ./.github/actions/playwright-build
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
         with:
           route: public-pr
           mode: ${{ needs.prepare.outputs.mode }}
@@ -369,7 +369,7 @@ jobs:
           persist-credentials: false
 
       - name: Run shared Playwright shard
-        uses: ./.github/actions/playwright-shard
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
         with:
           route: hosted
           mode: ${{ needs.prepare.outputs.mode }}
@@ -469,7 +469,7 @@ jobs:
           persist-credentials: false
 
       - name: Run shared Playwright shard
-        uses: ./.github/actions/playwright-shard
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
         with:
           route: public-pr
           mode: ${{ needs.prepare.outputs.mode }}

@@ -42,7 +42,7 @@ jobs:
       contents: read
       actions: read
       pull-requests: read
-    uses: ./.github/workflows/public-pr-playwright-shards.yml
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
 
