@@ -69,6 +69,8 @@ output/
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
 .devcontainer/.runtime/
+# Devrouter-generated selective Dev Container config (runtime state, not source)
+.devcontainer/devcontainer.devrouter.json
 playwright/playwright-report/
 playwright/test-results/
 
