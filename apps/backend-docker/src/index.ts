@@ -21,13 +21,28 @@ import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
+
+function parseRefreshInterval(value: string | undefined): number | undefined {
+  if (value === undefined) return undefined
+
+  const interval = Number(value)
+  if (value.trim() === '' || !Number.isFinite(interval) || interval < 0) {
+    console.warn(
+      '[feature-flags] GROWTHBOOK_REFRESH_INTERVAL_MS must be a non-negative number; using the default refresh interval.'
+    )
+    return undefined
+  }
+
+  return interval
+}
+
 const featureFlags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
-  refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
-    ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
-    : undefined,
+  refreshIntervalMs: parseRefreshInterval(
+    process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+  ),
 })
 process.once('exit', () => featureFlags.destroy())
 
@@ -120,11 +135,16 @@ getChatModelRegistry()
 
 migrate(prisma).then(async () => {
   // Fail-closed feature flag evaluation must be ready before serving.
-  await featureFlags.initialize()
-  console.log(
-    '[feature-flags] Backend evaluator ready.',
-    featureFlags.getStatus()
-  )
+  const initialized = await featureFlags.initialize()
+  const featureFlagStatus = featureFlags.getStatus()
+  if (initialized) {
+    console.log('[feature-flags] Backend evaluator ready.', featureFlagStatus)
+  } else {
+    console.warn(
+      '[feature-flags] Backend evaluator unavailable; false fallbacks are active.',
+      featureFlagStatus
+    )
+  }
 
   // initialize tasks to be able to call / schedule them inside service functions
   const tasks = prepareHatchetTasks({
