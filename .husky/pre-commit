@@ -7,4 +7,6 @@ else
   echo "⚠ gitleaks not installed — skipping local secret scan (CI enforces it). Install: brew install gitleaks"
 fi
 
+bash util/check-git-identity.sh current
 pnpm run check:all
+bash util/check-git-identity.sh current
