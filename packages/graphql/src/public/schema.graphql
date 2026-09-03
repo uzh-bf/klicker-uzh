@@ -2663,6 +2663,7 @@ type Mutation {
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
+  replaceKbResourceFile(blobName: String!, kbId: ID!, mimeType: String!, originalFilename: String!, resourceId: ID!, sizeBytes: Int!): KBResource!
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!

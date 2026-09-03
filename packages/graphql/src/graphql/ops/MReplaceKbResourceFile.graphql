@@ -1,0 +1,21 @@
+mutation ReplaceKbResourceFile(
+  $kbId: ID!
+  $resourceId: ID!
+  $blobName: String!
+  $originalFilename: String!
+  $mimeType: String!
+  $sizeBytes: Int!
+) {
+  replaceKbResourceFile(
+    kbId: $kbId
+    resourceId: $resourceId
+    blobName: $blobName
+    originalFilename: $originalFilename
+    mimeType: $mimeType
+    sizeBytes: $sizeBytes
+  ) {
+    id
+    status
+    activeResourceVersion
+  }
+}

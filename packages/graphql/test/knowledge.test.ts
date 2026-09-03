@@ -5,8 +5,8 @@ import {
   KBGraphBuildStatus,
   KBIngestionOperation,
   KBIngestionStatus,
-  KBResourceStatus,
   KBResourceMaterialType,
+  KBResourceStatus,
   KBResourceType,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
@@ -45,11 +45,12 @@ import {
   getUserKbsConnection,
   ingestAllKbResources,
   ingestKbResource,
-  updateKbResourceMaterialType,
   rebuildKbKnowledgeGraph,
+  replaceKbResourceFile,
   requestKbFileUpload,
   searchKbKnowledgeGraph,
   setKbKnowledgeGraphEnabled,
+  updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
@@ -1662,6 +1663,217 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.count({ where: { kbId: created.id } })
     ).resolves.toBe(0)
+  })
+
+  it('validates URL resources and denies foreign knowledge bases', async () => {
+    const created = await createKb({ name: 'Replaceable notes' }, userOneCtx)
+    process.env.BLOB_STORAGE_ACCOUNT_URL =
+      'https://blob.klicker.localhost/kbtestaccount'
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
+      'http://kb-poc-azurite:10000/kbtestaccount'
+    const originalTicket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const resource = await confirmKbFileUpload(
+      {
+        kbId: created.id,
+        blobName: originalTicket.blobName,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+      },
+      userOneCtx
+    )
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: {
+        status: KBResourceStatus.READY,
+        resourceVersion: 1,
+        contentSha256: 'a'.repeat(64),
+        activeResourceVersion: 1,
+        activeContentSha256: 'a'.repeat(64),
+        ingestedAt: new Date(),
+      },
+    })
+
+    const replacementTicket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'updated.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 2048,
+      },
+      userOneCtx
+    )
+    getBlobProperties.mockResolvedValue({
+      contentLength: 2048,
+      contentType: 'application/pdf',
+    })
+    const replaced = await replaceKbResourceFile(
+      {
+        kbId: created.id,
+        resourceId: resource.id,
+        blobName: replacementTicket.blobName,
+        originalFilename: 'updated.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 2048,
+      },
+      userOneCtx
+    )
+
+    expect(replaced.id).toBe(resource.id)
+    expect(replaced).toMatchObject({
+      blobName: replacementTicket.blobName,
+      originalFilename: 'updated.pdf',
+      sizeBytes: 2048,
+      status: KBResourceStatus.ADDED,
+      title: 'Finance notes',
+      materialType: KBResourceMaterialType.COURSE_CONTENT,
+      resourceVersion: 1,
+      activeResourceVersion: 1,
+      activeContentSha256: 'a'.repeat(64),
+      contentSha256: null,
+      ingestionAttemptId: null,
+    })
+    expect(replaced.blobHref).toBe(
+      `https://blob.klicker.localhost/kbtestaccount/${containerName}/${replacementTicket.blobName}`
+    )
+    await expect(
+      prisma.kBUploadTicket.findUnique({ where: { id: replaced.id } })
+    ).resolves.toBeNull()
+    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    expect(requestedBlobName).toBe(originalTicket.blobName)
+
+    const foreignKb = await createKb({ name: 'Foreign notes' }, userTwoCtx)
+    await expect(
+      replaceKbResourceFile(
+        {
+          kbId: foreignKb.id,
+          resourceId: resource.id,
+          blobName: replacementTicket.blobName,
+          originalFilename: 'updated.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB not found')
+
+    const urlResource = await createKbUrlResource(
+      { kbId: created.id, title: 'Linked notes', url: 'https://example.com' },
+      userOneCtx
+    )
+    await expect(
+      replaceKbResourceFile(
+        {
+          kbId: created.id,
+          resourceId: urlResource.id,
+          blobName: replacementTicket.blobName,
+          originalFilename: 'updated.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource is not a file')
+
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.PROCESSING },
+    })
+    await expect(
+      replaceKbResourceFile(
+        {
+          kbId: created.id,
+          resourceId: resource.id,
+          blobName: replacementTicket.blobName,
+          originalFilename: 'updated.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource cannot be replaced')
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.ADDED },
+    })
+  })
+
+  it('rejects a replacement with an expired upload ticket while preserving the resource', async () => {
+    const created = await createKb({ name: 'Replaceable notes' }, userOneCtx)
+    process.env.BLOB_STORAGE_ACCOUNT_URL =
+      'https://blob.klicker.localhost/kbtestaccount'
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
+      'http://kb-poc-azurite:10000/kbtestaccount'
+    const originalTicket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const resource = await confirmKbFileUpload(
+      {
+        kbId: created.id,
+        blobName: originalTicket.blobName,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const replacementTicket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'updated.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 2048,
+      },
+      userOneCtx
+    )
+    getBlobProperties.mockResolvedValue({
+      contentLength: 2048,
+      contentType: 'application/pdf',
+    })
+    await prisma.kBUploadTicket.update({
+      where: { id: replacementTicket.blobName.slice(0, -4) },
+      data: { expiresAt: new Date(Date.now() - 1) },
+    })
+
+    await expect(
+      replaceKbResourceFile(
+        {
+          kbId: created.id,
+          resourceId: resource.id,
+          blobName: replacementTicket.blobName,
+          originalFilename: 'updated.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      blobName: originalTicket.blobName,
+      sizeBytes: 1024,
+      status: KBResourceStatus.ADDED,
+    })
   })
 
   it('validates URL resources and denies foreign knowledge bases', async () => {

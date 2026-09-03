@@ -1578,6 +1578,151 @@ export async function confirmKbFileUpload(
   })
 }
 
+export async function replaceKbResourceFile(
+  {
+    kbId,
+    resourceId,
+    blobName,
+    originalFilename,
+    mimeType,
+    sizeBytes,
+  }: {
+    kbId: string
+    resourceId: string
+    blobName: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+  },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  const validated = validateKbFile({
+    fileName: originalFilename,
+    contentType: mimeType,
+    sizeBytes,
+  })
+  const separator = blobName.lastIndexOf('.')
+  const blobId = blobName.slice(0, separator)
+  const blobExtension = blobName.slice(separator + 1).toLowerCase()
+  if (
+    separator <= 0 ||
+    !validateUuid(blobId) ||
+    blobExtension !== validated.extension
+  ) {
+    throw new GraphQLError('KB blob name is invalid')
+  }
+
+  const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
+  const blobClient = containerClient.getBlobClient(blobName)
+  if (!(await blobClient.exists())) {
+    throw new GraphQLError('KB blob was not found')
+  }
+
+  const properties = await blobClient.getProperties()
+  if (
+    properties.contentLength !== sizeBytes ||
+    properties.contentType?.trim().toLowerCase() !== validated.contentType
+  ) {
+    await blobClient.deleteIfExists()
+    throw new GraphQLError('KB blob metadata is invalid')
+  }
+
+  const { replaced, previousBlobName } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+      const resource = await prisma.kBResource.findFirst({
+        where: {
+          id: resourceId,
+          kbId,
+          deletedAt: null,
+          kb: { ownerId: ctx.user.sub, deletedAt: null },
+        },
+      })
+      if (!resource) {
+        throw new GraphQLError('KB resource not found')
+      }
+      if (resource.type !== DB.KBResourceType.BLOB) {
+        throw new GraphQLError('KB resource is not a file')
+      }
+      if (
+        resource.status === DB.KBResourceStatus.QUEUED ||
+        resource.status === DB.KBResourceStatus.PROCESSING
+      ) {
+        throw new GraphQLError('KB resource cannot be replaced')
+      }
+      if (resource.resourceVersion >= 2_147_483_647) {
+        throw new GraphQLError('KB resource version limit reached')
+      }
+
+      const claim = await prisma.kBResource.updateMany({
+        where: {
+          id: resource.id,
+          status: resource.status,
+          ingestionAttemptId: resource.ingestionAttemptId,
+          deletedAt: null,
+        },
+        data: {
+          blobName,
+          blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
+          originalFilename,
+          mimeType: validated.contentType,
+          sizeBytes,
+          status: DB.KBResourceStatus.ADDED,
+          statusMessage: null,
+          errorCode: null,
+          contentSha256: null,
+          externalOperationId: null,
+          externalOperationStartedAt: null,
+          ingestionAttemptId: null,
+        },
+      })
+      if (claim.count !== 1) {
+        throw new GraphQLError('KB resource cannot be replaced')
+      }
+
+      const ticket = await prisma.kBUploadTicket.findUnique({
+        where: { id: blobId },
+        select: {
+          id: true,
+          kbId: true,
+          blobName: true,
+          sizeBytes: true,
+          expiresAt: true,
+        },
+      })
+      if (
+        !ticket ||
+        ticket.kbId !== kbId ||
+        ticket.blobName !== blobName ||
+        ticket.expiresAt.getTime() <= Date.now() ||
+        (ticket.sizeBytes !== 0 && ticket.sizeBytes !== sizeBytes)
+      ) {
+        throw new GraphQLError('KB upload ticket is invalid', {
+          extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+        })
+      }
+      await prisma.kBUploadTicket.delete({ where: { id: ticket.id } })
+
+      const replaced = await prisma.kBResource.findUniqueOrThrow({
+        where: { id: resource.id },
+      })
+      return { replaced, previousBlobName: resource.blobName }
+    }
+  )
+
+  if (previousBlobName && previousBlobName !== blobName) {
+    try {
+      await containerClient.getBlobClient(previousBlobName).deleteIfExists()
+    } catch {
+      // The superseded blob is orphaned when its deletion fails; cleanup is
+      // best-effort and must not fail the confirmed replacement.
+    }
+  }
+
+  return replaced
+}
+
 export async function createKbUrlResource(
   {
     kbId,

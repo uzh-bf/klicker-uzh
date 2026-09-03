@@ -2025,6 +2025,22 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      replaceKbResourceFile: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.replaceKbResourceFile(args, ctx)
+        },
+      }),
+
       createKbUrlResource: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBResource,
