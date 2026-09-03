@@ -295,12 +295,12 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   contract via PR #5747 (merge `fa41086f`). Post-merge, the paid FineCo
   20-case capture ran live on the local target: 20/20 structural passes, every
   case with `EXPERT_df_fineco_expert`, 20/20 tool-match, non-empty answers,
-  direct `gpt-5.6-luna` via local LiteLLM at concurrency 1. The semantic
-  judge phase has not run; the wrapper's Infisical fetch of
-  `PIPELINES_LITELLM_API_KEY` is unauthenticated locally. That judge phase
-  and its evidence packet are owned by the follow-up roadmap, which records
-  W2 — twenty-case FineCo capture and semantic judge — as `delivery_pending`
-  on the judge credential boundary.
+  direct `gpt-5.6-luna` via local LiteLLM at concurrency 1. The follow-up
+  roadmap now records W2 — twenty-case FineCo capture and semantic judge — as
+  `live_proven`: the dedicated semantic judge produced 20/20 metric records
+  through Dockerized local LiteLLM and the developer Foundry, with zero judge
+  errors or skips and 18/20 cases meeting the 0.5 threshold. The two failures
+  remain quality findings; they do not weaken the metric or ground truth.
 
 - 2026-09-03 PR integration: merged `origin/v3@de7138715f` once into draft
   PR #5734. The only manual conflict was the `docs/chat-platform.md` timestamp;
@@ -326,8 +326,8 @@ injection, process ownership, and runtime evidence are critical-path coupled.
   so publication is draft and human review remains blocking before readiness.
 - Status: merged to `v3`; the three-round planning review deadlock remains
   disclosed and is not represented as an approved planner verdict. The
-  follow-up roadmap owns the remaining semantic judge phase of W2 —
-  twenty-case FineCo capture and semantic judge.
+  follow-up roadmap records W2 — twenty-case FineCo capture and semantic
+  judge — as `live_proven` with two retained quality findings.
 - Completed: plan commit `67f0a3b16`; authenticated adapter and canary fixture
   commit `9ca296884`; boundary correction `33f132da4`; stream-lifecycle
   correction `a01409a14`; Slice B commit `32ef5182a9`; evaluator-launch and
