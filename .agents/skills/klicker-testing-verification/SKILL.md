@@ -28,6 +28,13 @@ atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
+For Git fixture or hook changes, run the focused Node test that exercises the
+fixture plus `pnpm run check:git-identity` and
+`bash util/check-git-identity.sh current`. The guard test covers synthetic
+normal, fixture-author, and fixture-trailer commit ranges. The guard's explicit
+range mode is also the pull-request CI entry point. It must reject the exact
+fixture identity without rejecting ordinary GitHub or human commit identities.
+
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
 fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
@@ -44,19 +51,24 @@ For the external synthetic evaluation wrapper, run
 `bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
 Then validate all FineCo Markdown cases against
 `evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
-approved secret manager or masked CI variables for live judge checks and stop
-unless caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` are present and
-the namespaced model is visible first. Require the wrapper to reject a missing
-or empty key before starting the evaluator, and require its metrics, tools, and
-ground-truth preflights to fail before invoking the evaluator. Eval mode judges
-an existing QA artifact; it does not query Klicker's authenticated AI-SDK chat
-route and is not live product-quality evidence.
+approved secret manager or masked CI variables for live judge checks. Require
+caller-provided `LITELLM_API_BASE` and a visible namespaced model first;
+`LITELLM_API_KEY` is optional because the wrapper fetches
+`PIPELINES_LITELLM_API_KEY` with the standard Infisical CLI (klicker-uzh
+project, `stg` environment; targets CLI 0.43.x flags) when it is unset, and the
+wrapper test suite covers that fetch path. Require the wrapper to fail fast on
+a missing CLI, a failed fetch, or an empty key before starting the evaluator,
+and require its metrics, tools, and ground-truth preflights to fail before
+invoking the evaluator. Eval mode judges an existing QA artifact; it does not
+query Klicker's authenticated AI-SDK chat route and is not live
+product-quality evidence.
 
 For local Klicker target evaluation, start the exact worktree after the VPN is
 active. Map the developer Foundry values to `UPSTREAM_OPENAI_API_KEY` and
-`UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The repository
-wrapper does not depend on a personal operator or fetch secrets itself. Native
-Infisical and CI examples are documented in `evaluation/README.md`.
+`UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The wrapper
+fetches its own judge key via the standard Infisical CLI when
+`LITELLM_API_KEY` is unset, so no personal operator is needed; the Infisical
+and CI examples are documented in `evaluation/README.md`.
 
 If the LiteLLM container already exists with different upstream values, stop
 the exact checkout and rerun this command. Run the wrapper fake-runtime test
