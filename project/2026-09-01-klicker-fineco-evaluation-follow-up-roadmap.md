@@ -36,11 +36,13 @@ Infisical example in `evaluation/README.md` when applicable; the repository
 does not require a personal operator.
 
 Set namespaced API and Chat origins plus seeded participant credentials in the
-invoking shell only. Provide the approved judge proxy and key as
-`LITELLM_API_BASE` and optionally `LITELLM_API_KEY`; when the key is unset,
-the wrapper fetches `PIPELINES_LITELLM_API_KEY` with the Infisical CLI (PR
-#5747). The developer Foundry values are for the local Chat target and must
-not enter the evaluator child. Run
+invoking shell only. For the developer Foundry path, start Dockerized local
+LiteLLM with the upstream values injected into that container, then provide
+only its URL and local access value to the evaluator as `LITELLM_API_BASE`
+and `LITELLM_API_KEY`. The wrapper also supports the staging judge proxy: when
+the key is unset, it fetches `PIPELINES_LITELLM_API_KEY` with the Infisical
+CLI from PR `#5747`. Developer Foundry and participant values must not enter
+the evaluator child. Run
 `bash util/test-klicker-eval-wrapper.sh` before any credentialed traffic. Stop
 the exact worktree with `devrouter stop` after the run and verify that its
 provider is stopped and no route remains.
@@ -71,9 +73,11 @@ provider is stopped and no route remains.
   response ceiling; tool inputs are harness-controlled because the service
   imposes no input cap. Observed or average retrieval size is not a
   pre-call bound.
-- Keep target and judge boundaries separate. The local Chat target uses the
-  developer Azure Foundry through local LiteLLM; the semantic judge uses the
-  separately approved judge proxy and restricted judge credential.
+- Keep target and judge execution boundaries separate. The local Chat target
+  and semantic judge may use the same Dockerized local LiteLLM against the
+  developer Azure Foundry, but they run as separate phases. The evaluator child
+  receives only the local proxy URL and access value, never participant or
+  developer Foundry credentials.
 - Keep concurrency at one, target retries disabled through the pinned local
   LiteLLM deployment, and judge retries disabled. Do not weaken metrics,
   thresholds, or goldens to make a run pass.
@@ -167,8 +171,9 @@ shared evaluator.
    truth still contains exactly 20 FineCo cases.
 2. Activate the VPN and start the exact worktree with the restricted
    `klicker-dev` mapping in [How to work on this](#how-to-work-on-this). Verify
-   the local LiteLLM model path is direct developer Foundry and that the
-   approved judge proxy is separate.
+   that Dockerized local LiteLLM is healthy, its model path reaches the
+   developer Foundry, and the evaluator process receives no upstream or
+   participant credentials.
 3. Run the synthetic transport canary once. Label it `source=canary` and keep
    it outside the FineCo query and evaluation artifacts.
 4. After W1 — FineCo expert-binding readiness and its A1 evidence pass, run
@@ -212,7 +217,8 @@ shared evaluator.
 **Working context.** Reuse the current adapter worktree and the unchanged
    evaluator submodule. The target is local loopback to the adapter; the
    adapter reaches only the exact namespaced Klicker routes; local LiteLLM
-   reaches developer Foundry; the judge uses its separately approved proxy.
+   reaches developer Foundry; and the judge is a separate evaluator phase that
+   may use the same local proxy without receiving its upstream credentials.
 
 **Authority and terminal.** A bounded synthetic local run and sanitized local
    receipts are granted after W1 — FineCo expert-binding readiness. A missing
@@ -296,9 +302,10 @@ proof.
   `origin/main@748b5a2`) behaves identically.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain secret-manager-injected and never enter Git.
-- Secret-manager scopes: the developer scope feeds only the local Chat runtime,
-  while the separately approved judge scope feeds only `LITELLM_API_KEY` to the
-  evaluator.
+- Secret-manager scopes: the developer scope feeds only Dockerized local
+  LiteLLM. The evaluator receives the local proxy URL and access value but no
+  developer Foundry or participant credentials. The wrapper's separate staging
+  judge-key fallback remains supported but was not used for this run.
 - Evaluation framework submodule: remains at merged commit `2a75632`; any
   framework change is a separate package and review.
 - Lena's original `docs/chatbot-hitl-config-roadmap` ref: not a dependency for
@@ -342,20 +349,18 @@ auth flow, cookies, or other browser-only behavior.
 
 - 2026-09-03 — Close-out reconciliation. W1 — FineCo expert-binding readiness
   is complete on the recorded values-free runtime evidence. The paid W2 —
-  twenty-case FineCo capture and semantic judge capture phase ran live: after
-  one failed attempt (`participant_login_rejected`, HTTP 502) and a runtime
-  restart with valid seeded-participant credentials, the 20-case query capture
-  passed 20/20 with every case calling `EXPERT_df_fineco_expert`, 20/20
-  tool-match, and non-empty answers at concurrency 1 on direct
-  `gpt-5.6-luna`; an earlier same-day capture that failed the tool-policy
-  gate on all 20 cases was superseded by this green rerun. The semantic judge
-  phase did not run: the wrapper's Infisical-CLI fetch of
-  `PIPELINES_LITELLM_API_KEY` fails locally because the plain CLI has no
-  login session, and no judge metric records exist. W2 therefore remains
-  `delivery_pending` on the judge credential boundary (`infisical login`
-  with klicker-uzh access, or an exported `LITELLM_API_KEY`); it is not
-  `live_proven`. PR #5747 (merge `fa41086f`) made the Infisical-CLI fetch
-  the `v3` default judge-key contract.
+  twenty-case FineCo capture and semantic judge — is `live_proven`. After one
+  failed login attempt and one superseded tool-policy failure, the query
+  capture passed 20/20 with every case calling
+  `EXPERT_df_fineco_expert`, 20/20 tool-match, and non-empty answers at
+  concurrency 1 on direct `gpt-5.6-luna`. The authoritative judge rerun used
+  the dedicated semantic-similarity profile through Dockerized local LiteLLM
+  and the developer Foundry: 20/20 metric records, zero judge errors or skips,
+  and 18/20 cases meeting the 0.5 threshold in 73.6 seconds. Two tutor cases
+  remain quality findings at 0.3 and 0.0. Exact cost telemetry was unavailable
+  through the local proxy; the run stayed within the approved USD 1 reserve.
+  PR #5747 (merge `fa41086f`) separately preserves the staging judge-key
+  fallback.
 
 - 2026-09-03 — The portability follow-up removes the evaluator's executable
   dependency on `rs-infisical-operator`. Judge credentials are now explicit
