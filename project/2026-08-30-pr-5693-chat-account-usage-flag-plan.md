@@ -260,12 +260,19 @@ does not present a UI whose backend state transition is not yet settled.
   full repository pre-commit checks, 57 Playwright policy tests, 9 Playwright
   host tests, and staged Gitleaks scans. Host checks used Node 26.8.1 while the
   repository pins Node 24, so CI remains the authoritative toolchain check.
-- [ ] Re-run the database-backed GraphQL suite on the integrated head. Two
-  supported `devrouter ensure` attempts were blocked before startup because
-  Docker could not resolve `index.docker.io` and the required Node 24 image is
-  not cached. Each attempt ended with a successful exact-workspace stop.
-- [ ] Complete the corrective-slice simplifier and integrated final review,
-  then disposition any verified findings.
-- [ ] Run the final clean-tree suite and production build, normally push the
-  exact passing head, and reconcile the PR body and GitHub status. Do not merge
-  or deploy.
+- [x] Added a Playwright regression in commit `64362ce22` that proves the
+  default-false settings page does not mount the account-usage section or send
+  `GetChatAccountUsage`. Static Playwright checks pass; browser execution stays
+  delegated to CI because the local runtime cannot start.
+- [x] Completed the corrective-slice simplifier and integrated final review.
+  The final reviewer closed its one low frontend-test finding after the
+  correction pass and reported no new or remaining findings.
+- [x] Passed the final clean-tree checks, the 36-test feature-flag suite, the
+  23-task production build, and a Gitleaks scan over the full branch range.
+  The approved normal push and current hosted CI state are recorded on PR
+  #5693 because they occur after this committed plan snapshot.
+- [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
+  suite and the new browser test before merge. Three supported Devrouter starts
+  were blocked before runtime startup because Docker could not resolve
+  `index.docker.io` and the required Node image is not cached. The exact
+  workspace is stopped. This is a merge gate, not a normal-push blocker.
