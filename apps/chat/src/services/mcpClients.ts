@@ -146,42 +146,10 @@ async function applyDocQueryAuthHeaders(
   return true
 }
 
-function applyCustomAuthHeaders(
-  headers: Record<string, string>,
-  decryptedSecret: string
-): void {
-  const parsed: unknown = JSON.parse(decryptedSecret)
-  if (
-    !parsed ||
-    typeof parsed !== 'object' ||
-    Array.isArray(parsed) ||
-    !('headers' in parsed) ||
-    !parsed.headers ||
-    typeof parsed.headers !== 'object' ||
-    Array.isArray(parsed.headers)
-  ) {
-    throw new Error('Invalid custom MCP headers')
-  }
-
-  for (const [name, value] of Object.entries(parsed.headers)) {
-    if (
-      !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
-      name === '__proto__' ||
-      name === 'constructor' ||
-      name === 'prototype' ||
-      typeof value !== 'string' ||
-      /[\r\n]/.test(value)
-    ) {
-      throw new Error('Invalid custom MCP header value')
-    }
-    headers[name] = value
-  }
-}
-
 /**
  * Creates authentication headers based on server auth type
  */
-export async function createAuthHeaders(
+async function createAuthHeaders(
   server: MCPServerConfig,
   chatbotId: string,
   options: MCPRequestOptions = {}
@@ -220,7 +188,34 @@ export async function createAuthHeaders(
   switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
-      applyCustomAuthHeaders(baseHeaders, decryptedSecret)
+      {
+        const parsed: unknown = JSON.parse(decryptedSecret)
+        if (
+          !parsed ||
+          typeof parsed !== 'object' ||
+          Array.isArray(parsed) ||
+          !('headers' in parsed) ||
+          !parsed.headers ||
+          typeof parsed.headers !== 'object' ||
+          Array.isArray(parsed.headers)
+        ) {
+          throw new Error('Invalid custom MCP headers')
+        }
+
+        for (const [name, value] of Object.entries(parsed.headers)) {
+          if (
+            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+            name === '__proto__' ||
+            name === 'constructor' ||
+            name === 'prototype' ||
+            typeof value !== 'string' ||
+            /[\r\n]/.test(value)
+          ) {
+            throw new Error('Invalid custom MCP header value')
+          }
+          baseHeaders[name] = value
+        }
+      }
       break
     case 'bearer':
       baseHeaders.Authorization = `Bearer ${decryptedSecret}`
@@ -304,70 +299,6 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   })
 }
 
-function requiredToolName(
-  config: MCPConfigSettings,
-  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>
-): string | undefined {
-  if (!runtimePolicy.required) return undefined
-
-  const configuredTool = config.allowedTools?.[0]
-  if (
-    !Array.isArray(config.allowedTools) ||
-    config.allowedTools.length !== 1 ||
-    typeof configuredTool !== 'string' ||
-    configuredTool.length === 0 ||
-    /[*?]/.test(configuredTool)
-  ) {
-    throw new RequiredMCPUnavailableError()
-  }
-  return configuredTool
-}
-
-function assertRequiredToolAvailable(
-  rawTools: Record<string, any>,
-  requiredRawToolName: string,
-  runtimePolicy: Extract<
-    ReturnType<typeof parseMCPRuntimePolicy>,
-    { required: true }
-  >
-): void {
-  if (
-    !Object.hasOwn(rawTools, requiredRawToolName) ||
-    (requiredRawToolName !== runtimePolicy.toolAlias &&
-      Object.hasOwn(rawTools, runtimePolicy.toolAlias))
-  ) {
-    throw new RequiredMCPUnavailableError()
-  }
-}
-
-function filterServerTools(
-  rawTools: Record<string, any>,
-  serverName: string,
-  config: MCPConfigSettings,
-  runtimePolicy: ReturnType<typeof parseMCPRuntimePolicy>,
-  requiredRawToolName: string | undefined
-): Record<string, any> {
-  const filteredTools: Record<string, any> = {}
-  const usedNames = new Set<string>()
-
-  for (const [toolName, toolDefinition] of Object.entries(rawTools)) {
-    const allowed = runtimePolicy.required
-      ? toolName === requiredRawToolName
-      : isToolAllowed(toolName, config.allowedTools || [])
-    if (!allowed) continue
-
-    const modelToolName = runtimePolicy.required
-      ? runtimePolicy.toolAlias
-      : toolName
-    // Keep tool names in OpenAI-compatible format and make them deterministic.
-    const namespacedName = toSafeToolName(serverName, modelToolName, usedNames)
-    filteredTools[namespacedName] = toolDefinition
-    usedNames.add(namespacedName)
-  }
-
-  return filteredTools
-}
-
 /**
  * Loads tools from a single MCP server and applies filtering
  */
@@ -378,7 +309,21 @@ async function loadServerTools(
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
-  const requiredRawToolName = requiredToolName(config, runtimePolicy)
+  let requiredRawToolName: string | undefined
+
+  if (runtimePolicy.required) {
+    const configuredTool = config.allowedTools?.[0]
+    if (
+      !Array.isArray(config.allowedTools) ||
+      config.allowedTools.length !== 1 ||
+      typeof configuredTool !== 'string' ||
+      configuredTool.length === 0 ||
+      /[*?]/.test(configuredTool)
+    ) {
+      throw new RequiredMCPUnavailableError()
+    }
+    requiredRawToolName = configuredTool
+  }
 
   if (server.isActive === false) {
     if (runtimePolicy.required) {
@@ -392,16 +337,39 @@ async function loadServerTools(
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
-      assertRequiredToolAvailable(rawTools, requiredRawToolName, runtimePolicy)
+      const rawToolName = requiredRawToolName
+      if (
+        !Object.hasOwn(rawTools, rawToolName) ||
+        (rawToolName !== runtimePolicy.toolAlias &&
+          Object.hasOwn(rawTools, runtimePolicy.toolAlias))
+      ) {
+        throw new RequiredMCPUnavailableError()
+      }
     }
 
-    const filteredTools = filterServerTools(
-      rawTools,
-      server.name,
-      config,
-      runtimePolicy,
-      requiredRawToolName
-    )
+    // Apply tool filtering
+    const filteredTools: Record<string, any> = {}
+    const usedNames = new Set<string>()
+
+    Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
+      const allowed = runtimePolicy.required
+        ? toolName === requiredRawToolName
+        : isToolAllowed(toolName, config.allowedTools || [])
+
+      if (allowed) {
+        const modelToolName = runtimePolicy.required
+          ? runtimePolicy.toolAlias
+          : toolName
+        // Keep tool names in OpenAI-compatible format and make them deterministic.
+        const namespacedName = toSafeToolName(
+          server.name,
+          modelToolName,
+          usedNames
+        )
+        filteredTools[namespacedName] = toolDefinition
+        usedNames.add(namespacedName)
+      }
+    })
 
     console.log(
       `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
+const transportConstructorMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
@@ -20,12 +21,13 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
     constructor(
       readonly url: URL,
       readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {}
+    ) {
+      transportConstructorMock(url, options)
+    }
   },
 }))
 
 import {
-  createAuthHeaders,
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
@@ -74,19 +76,30 @@ describe('current-v3 Doc Query scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+    createSDKMCPClientMock.mockResolvedValue({
+      tools: vi.fn().mockResolvedValue({ doc_query: {} }),
+    })
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
-    const headers = await createAuthHeaders(createServer().server, CHATBOT_ID, {
+    await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
       kbId: KB_ID,
       sessionId: SESSION_ID,
     })
 
-    expect(headers).toEqual({
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer opaque-transport-token',
-      [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
-    })
+    expect(transportConstructorMock).toHaveBeenCalledWith(
+      new URL('https://mcp.example.test'),
+      {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer opaque-transport-token',
+            [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
+          },
+          redirect: 'error',
+        },
+      }
+    )
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbId: KB_ID,
       chatbotId: CHATBOT_ID,
@@ -125,23 +138,18 @@ describe('current-v3 Doc Query scope', () => {
       parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
       mcpServer: { id: 'kb-server', name: 'KB' },
     }
-    expect(resolveMcpScope([target], 'tutor')).toBe(KB_ID)
+    expect(resolveMcpScope([target], 'tutor', [target])).toBe(KB_ID)
+    const explainerTarget = {
+      ...target,
+      chatMode: 'explainer',
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: KB_ID.toUpperCase(),
+      },
+    }
     expect(
-      resolveMcpScope(
-        [
-          target,
-          {
-            ...target,
-            chatMode: 'explainer',
-            parameters: {
-              required: true,
-              toolAlias: 'doc_query',
-              kb_id: KB_ID.toUpperCase(),
-            },
-          },
-        ],
-        'explainer'
-      )
+      resolveMcpScope([target, explainerTarget], 'explainer', [explainerTarget])
     ).toBe(KB_ID)
   })
 
@@ -266,8 +274,14 @@ describe('current-v3 Doc Query scope', () => {
       ],
     },
   ])('$name fails closed', ({ configurations, selectedMode = 'tutor' }) => {
-    expect(() => resolveMcpScope(configurations, selectedMode)).toThrowError(
-      RequiredMCPUnavailableError
-    )
+    expect(() =>
+      resolveMcpScope(
+        configurations,
+        selectedMode,
+        configurations.filter(
+          (configuration) => configuration.chatMode === selectedMode
+        )
+      )
+    ).toThrowError(RequiredMCPUnavailableError)
   })
 })

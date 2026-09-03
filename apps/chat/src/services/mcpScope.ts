@@ -125,9 +125,7 @@ function assertEffectiveConfigurationMatchesScope(
 export function resolveMcpScope(
   configurations: readonly MCPScopedConfiguration[],
   selectedMode: string,
-  effectiveConfigurations: readonly MCPScopedConfiguration[] = configurations.filter(
-    (configuration) => configuration.chatMode === selectedMode
-  )
+  effectiveConfigurations: readonly MCPScopedConfiguration[]
 ): string | undefined {
   if (
     !Array.isArray(configurations) ||
