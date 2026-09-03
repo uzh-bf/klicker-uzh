@@ -465,3 +465,12 @@ auth flow, cookies, or other browser-only behavior.
   finite response bound still awaits the runtime owner's authorized
   values-free tool inventory; W1 — FineCo expert-binding readiness and W2 —
   twenty-case FineCo capture and semantic judge remain `delivery_pending`.
+- 2026-09-03 — Resumed the exact worktree with the restricted developer
+  Foundry-to-local-LiteLLM mapping and reached a ready `ai,chat,mcp` runtime,
+  but did not start a paid FineCo call. The required staging MCP tunnel could
+  not be opened: both macOS VPN services reported `Disconnected`, the
+  private AKS endpoint did not resolve locally, and a direct private-endpoint
+  readiness request timed out. The runtime was stopped afterward with all
+  providers and processes stopped and zero exact routes. W2 — twenty-case
+  FineCo capture and semantic judge remains `delivery_pending`; resume the
+  one-case paid probe after the VPN/private route is actually connected.
