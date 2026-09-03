@@ -265,4 +265,16 @@ a blocker.
   focused tests still pass.
 - [x] The source-to-stack coverage ledger accounts for every frozen source
   file, deliberate correction, omission, and stack-only contract file.
-- [ ] Draft publication and exact-head CI/reviews.
+- [x] Draft publication and exact-head CI/reviews completed. Pull requests
+  #5736 (`732f7b3ef`), #5737 (`831d01035`), and #5738 (proof source
+  `ce1351bfd`) form GitHub stack #5739 with the intended bases. This
+  evidence-only plan update follows the proof source; all three are open, draft,
+  mergeable, and have no review threads. Pull request #5709 remains unchanged.
+  Local layer reviews passed. Hosted Playwright passed completely on #5736;
+  #5738 ran every test successfully, but one shard and its aggregate are red
+  because GitHub's artifact service timed out after the shard reported 104
+  passing tests. Repository formatting is red on #5736 and #5738 only because
+  current `v3` contains two unformatted evaluation files outside this stack.
+  OpenCodeReview passed on #5736 and timed out with zero findings on #5737 and
+  #5738. Required repository final reviews remain intentionally untriggered
+  until the stack receives separate ready-for-review approval.
