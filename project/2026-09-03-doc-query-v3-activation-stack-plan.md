@@ -230,7 +230,10 @@ a blocker.
 - [x] Layer 1 runtime extraction and local verification: 29 focused tests,
   Chat typecheck, focused lint, formatting, and diff checks pass. The local
   Node 26 runtime is newer than the repository's pinned Node 24 runtime.
-- [ ] Layer 1 runtime review.
+- [x] Layer 1 runtime review: the simplifier's three behavior-preserving
+  reductions landed in `08af40bc8`; the security correction review passed.
+  Production preflight must still confirm the five-minute token lifetime is
+  sufficient for supported turns, and Layer 3 must prove the consumer contract.
 - [ ] Layer 2 activation implementation and review.
 - [ ] Layer 3 proof implementation and review.
 - [ ] Draft publication, exact-head CI/reviews, and coverage-ledger completion.
