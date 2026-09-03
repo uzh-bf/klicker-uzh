@@ -5,12 +5,12 @@
 - Date: 2026-09-01
 - Audience: junior developer or agent picking this up without session
   context. Read `AGENTS.md`, `docs/testing.md`, `evaluation/README.md`, and
-  the [parent execution plan](2026-09-01-klicker-live-target-evaluation-adapter-plan.md)
+  the [parent execution plan](2026-09-01-pr-5734-klicker-live-target-evaluation-adapter-plan.md)
   before starting.
 - Roadmap branch and worktree:
   `rs/klicker-live-target-evaluation` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/klicker-live-target-evaluation`.
-- Parent package: [Klicker live target evaluation adapter plan](2026-09-01-klicker-live-target-evaluation-adapter-plan.md).
+- Parent package: [Klicker live target evaluation adapter plan](2026-09-01-pr-5734-klicker-live-target-evaluation-adapter-plan.md).
 - Evaluation framework: private submodule `evaluation/framework` at
   `2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b`.
 - Audience contract: every work item below is independently checkable. The

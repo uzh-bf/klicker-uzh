@@ -13,7 +13,8 @@ judge transport, source delivery, and deployment.
 - Ceremony: full path; the package crosses authentication, a product/evaluator
   seam, model cost, and a local-to-Azure data boundary.
 - Plan artifact:
-  `project/2026-09-01-klicker-live-target-evaluation-adapter-plan.md`.
+  `project/2026-09-01-pr-5734-klicker-live-target-evaluation-adapter-plan.md`.
+- Draft PR: `#5734`, branch `rs/evaluation-native-infisical`.
 - Klicker branch: `rs/klicker-live-target-evaluation` from merged `origin/v3`
   commit `72096fafe`.
 - Evaluation framework: consume the merged gitlink commit `2a75632`; do not
