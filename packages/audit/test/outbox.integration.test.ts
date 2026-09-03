@@ -269,14 +269,13 @@ describe('transactional assessment audit outbox', () => {
           ),
           [
             {
-              eventType: 'ASSESSMENT_PARTICIPANT_REMOVED',
+              eventType: 'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
               producerOperationId: `${correlationId}:0`,
               scope: { participantId: input.participantId },
               payload: {
-                participantId: input.participantId,
-                affectedResponseIds: [],
-                beforeAggregateHash: 'a'.repeat(64),
-                afterAggregateHash: null,
+                subjectType: 'PARTICIPANT',
+                subjectId: input.participantId,
+                change: 'REMOVED',
                 reasonCode: 'LECTURER_REMOVAL',
               },
             },

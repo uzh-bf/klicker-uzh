@@ -137,6 +137,45 @@ function mediaBaselineRecord() {
   )
 }
 
+function mediaCapturedRecord() {
+  const contentHash = 'd'.repeat(64)
+  const mediaId = '88888888-8888-4888-8888-888888888888'
+  return createCanonicalAuditEvent(
+    createTrustedAuditContext({
+      recordedVia: 'TRANSACTIONAL_OUTBOX',
+      receivedAt: '2026-08-12T01:00:00.000Z',
+      actor: { kind: 'USER', userId: USER_ID },
+      authorization: {
+        decision: 'ALLOWED',
+        authScope: 'LECTURER',
+        requiredPermission: 'LIVE_QUIZ_WRITE',
+      },
+      scope: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: 2 },
+      correlationId: CORRELATION_ID,
+    }),
+    {
+      eventType: 'ASSESSMENT_MEDIA_CAPTURED',
+      producerOperationId: `${CORRELATION_ID}:captured-media`,
+      payload: {
+        entityType: 'MEDIA',
+        entityId: mediaId,
+        before: null,
+        after: {
+          mediaId,
+          sourceUrl:
+            'https://media.blob.core.windows.net/77777777-7777-4777-8777-777777777777/new.png',
+          contentHash,
+          byteLength: 64,
+          mimeType: 'image/png',
+          blobName: `sha256/${contentHash}`,
+          sourceReferenceHash: 'e'.repeat(64),
+        },
+        reasonCode: 'ASSESSMENT_SOURCE_MEDIA_MUTATION',
+      },
+    }
+  )
+}
+
 describe('Azure Table audit mapping', () => {
   it('derives deterministic sharded keys without participant identifiers in keys', () => {
     const record = recordWithPayload('NOT_AUTHORIZED')
@@ -207,6 +246,20 @@ describe('Azure Table audit mapping', () => {
         rowKey: `${LIVE_QUIZ_ID}|0000000002|${record.envelope.eventId}`,
         resourceKind: 'MEDIA',
         blobName: `sha256/${'a'.repeat(64)}`,
+      }),
+    ])
+  })
+
+  it('adds a reverse retention index for media captured after activation', () => {
+    const record = mediaCapturedRecord()
+    const mapped = mapAuditRecordToTableEntities(record)
+
+    expect(mapped.reverseRetentionIndexes).toEqual([
+      expect.objectContaining({
+        partitionKey: `media|d|${'d'.repeat(64)}`,
+        rowKey: `${LIVE_QUIZ_ID}|0000000002|${record.envelope.eventId}`,
+        resourceKind: 'MEDIA',
+        blobName: `sha256/${'d'.repeat(64)}`,
       }),
     ])
   })

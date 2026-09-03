@@ -1,5 +1,5 @@
-import { hashCanonicalValue } from '@klicker-uzh/audit'
 import type { AssessmentBaselineContent } from '@klicker-uzh/audit'
+import { hashCanonicalValue } from '@klicker-uzh/audit'
 import type {
   ElementData,
   ElementInstanceOptions,
@@ -26,6 +26,7 @@ export type AssessmentBaselineSnapshot = {
   isModerationEnabled: boolean
   isGamificationEnabled: boolean
   isAssessmentEnabled: boolean
+  isDeleted?: boolean
   areInstancesOutdated: boolean
   pointsMultiplier: number
   defaultPoints: number
@@ -101,7 +102,7 @@ type BaselineLimitation = Extract<
   { kind: 'LIMITATION' }
 >
 
-function sourceElementVersion(elementData: ElementData): number {
+export function sourceElementVersion(elementData: ElementData): number {
   const match = elementData.id.match(/-v([1-9]\d*)$/u)
   if (
     match?.[1] === undefined ||
@@ -115,7 +116,7 @@ function sourceElementVersion(elementData: ElementData): number {
   return Number(match[1])
 }
 
-function mapContentOptions(elementData: ElementData) {
+export function mapContentOptions(elementData: ElementData) {
   switch (elementData.type) {
     case 'SC':
     case 'MC':
@@ -214,7 +215,7 @@ function mapContentOptions(elementData: ElementData) {
   }
 }
 
-function mapScoringRules(elementData: ElementData) {
+export function mapScoringRules(elementData: ElementData) {
   switch (elementData.type) {
     case 'SC':
     case 'MC':
@@ -334,6 +335,111 @@ function mapElementParts(
   ]
 }
 
+export function assessmentConfigurationState(
+  snapshot: AssessmentBaselineSnapshot
+) {
+  return {
+    name: snapshot.name,
+    displayName: snapshot.displayName,
+    description: snapshot.description,
+    accessMode: snapshot.accessMode,
+    publicationStatus: snapshot.status,
+    reviewStatus: snapshot.reviewStatus,
+    availableFrom: snapshot.availableFrom?.toISOString() ?? null,
+    isLiveQAEnabled: snapshot.isLiveQAEnabled,
+    isConfusionFeedbackEnabled: snapshot.isConfusionFeedbackEnabled,
+    isModerationEnabled: snapshot.isModerationEnabled,
+    isGamificationEnabled: snapshot.isGamificationEnabled,
+    isAssessmentEnabled: snapshot.isAssessmentEnabled,
+    areInstancesOutdated: snapshot.areInstancesOutdated,
+    pointsMultiplier: snapshot.pointsMultiplier,
+    defaultPoints: snapshot.defaultPoints,
+    defaultCorrectPoints: snapshot.defaultCorrectPoints,
+    maximumBonusPoints: snapshot.maxBonusPoints,
+    secondsToZeroBonus: snapshot.timeToZeroBonus,
+    activeBlockId: snapshot.activeBlockId,
+  }
+}
+
+export function assessmentBlockState(
+  block: AssessmentBaselineSnapshot['blocks'][number]
+) {
+  return {
+    blockId: block.id,
+    order: block.order,
+    timeLimitSeconds: block.timeLimit,
+    expiresAt: block.expiresAt?.toISOString() ?? null,
+    randomSelectionCount: block.randomSelection,
+    execution: block.execution,
+    status: block.status,
+    startedAt: block.startedAt?.toISOString() ?? null,
+    closedAt: block.closedAt?.toISOString() ?? null,
+  }
+}
+
+export function assessmentElementInstanceState(
+  blockId: number,
+  element: AssessmentBaselineSnapshot['blocks'][number]['elements'][number]
+) {
+  const [contentPart, scoringPart] = mapElementParts(blockId, element)
+  if (
+    contentPart?.kind !== 'ELEMENT_INSTANCE' ||
+    scoringPart?.kind !== 'SOLUTION_AND_SCORING'
+  ) {
+    throw new Error('Assessment element snapshot is incomplete')
+  }
+  return {
+    elementInstanceId: contentPart.elementInstanceId,
+    blockId: contentPart.blockId,
+    order: contentPart.order,
+    sourceElementId: contentPart.sourceElementId,
+    sourceElementVersion: contentPart.sourceElementVersion,
+    isVersionOutdated: contentPart.isVersionOutdated,
+    effectiveElement: {
+      content: contentPart.effectiveContent,
+      scoring: scoringPart.scoring,
+    },
+    effectiveContentHash: contentPart.effectiveContentHash,
+    effectiveSolutionHash: scoringPart.effectiveSolutionHash,
+  }
+}
+
+export function assessmentSourceElementState(
+  elementData: ElementData,
+  effectiveContentChanged: boolean
+) {
+  const sourceElement = {
+    content: {
+      elementType: elementData.type,
+      name: elementData.name,
+      content: elementData.content,
+      explanation: elementData.explanation ?? null,
+      hasSampleSolution:
+        'hasSampleSolution' in elementData.options
+          ? (elementData.options.hasSampleSolution ?? false)
+          : false,
+      hasAnswerFeedbacks:
+        'hasAnswerFeedbacks' in elementData.options
+          ? (elementData.options.hasAnswerFeedbacks ?? false)
+          : false,
+      contentOptions: mapContentOptions(elementData),
+    },
+    scoring: {
+      elementType: elementData.type,
+      basePointsEnabled: elementData.basePoints,
+      pointsMultiplier: elementData.pointsMultiplier,
+      scoringRules: mapScoringRules(elementData),
+    },
+  }
+  return {
+    sourceElementId: elementData.elementId,
+    sourceElementVersion: sourceElementVersion(elementData),
+    sourceElement,
+    sourceContentHash: hashCanonicalValue(sourceElement),
+    effectiveContentChanged,
+  }
+}
+
 export function buildAssessmentBaselineContents(input: {
   snapshot: AssessmentBaselineSnapshot
   capturedMedia: readonly CapturedMediaState[]
@@ -344,27 +450,7 @@ export function buildAssessmentBaselineContents(input: {
     {
       kind: 'ASSESSMENT_CONFIGURATION',
       courseId: snapshot.courseId,
-      configuration: {
-        name: snapshot.name,
-        displayName: snapshot.displayName,
-        description: snapshot.description,
-        accessMode: snapshot.accessMode,
-        publicationStatus: snapshot.status,
-        reviewStatus: snapshot.reviewStatus,
-        availableFrom: snapshot.availableFrom?.toISOString() ?? null,
-        isLiveQAEnabled: snapshot.isLiveQAEnabled,
-        isConfusionFeedbackEnabled: snapshot.isConfusionFeedbackEnabled,
-        isModerationEnabled: snapshot.isModerationEnabled,
-        isGamificationEnabled: snapshot.isGamificationEnabled,
-        isAssessmentEnabled: snapshot.isAssessmentEnabled,
-        areInstancesOutdated: snapshot.areInstancesOutdated,
-        pointsMultiplier: snapshot.pointsMultiplier,
-        defaultPoints: snapshot.defaultPoints,
-        defaultCorrectPoints: snapshot.defaultCorrectPoints,
-        maximumBonusPoints: snapshot.maxBonusPoints,
-        secondsToZeroBonus: snapshot.timeToZeroBonus,
-        activeBlockId: snapshot.activeBlockId,
-      },
+      configuration: assessmentConfigurationState(snapshot),
     },
   ]
 
@@ -373,17 +459,7 @@ export function buildAssessmentBaselineContents(input: {
   )) {
     contents.push({
       kind: 'BLOCK',
-      block: {
-        blockId: block.id,
-        order: block.order,
-        timeLimitSeconds: block.timeLimit,
-        expiresAt: block.expiresAt?.toISOString() ?? null,
-        randomSelectionCount: block.randomSelection,
-        execution: block.execution,
-        status: block.status,
-        startedAt: block.startedAt?.toISOString() ?? null,
-        closedAt: block.closedAt?.toISOString() ?? null,
-      },
+      block: assessmentBlockState(block),
     })
     for (const element of [...block.elements].sort(
       (left, right) => left.order - right.order || left.id - right.id

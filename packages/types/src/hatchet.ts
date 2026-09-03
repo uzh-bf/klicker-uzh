@@ -77,7 +77,10 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledLiveQuiz: (
-    { liveQuizId }: { liveQuizId: string },
+    {
+      liveQuizId,
+      initiatedByUserId,
+    }: { liveQuizId: string; initiatedByUserId?: string },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -150,7 +153,7 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   publishScheduledLiveQuiz: TaskWorkflowDeclaration<
-    { liveQuizId: string },
+    { liveQuizId: string; initiatedByUserId?: string },
     { success: boolean }
   >
   endExpiredMicroLearning: TaskWorkflowDeclaration<

@@ -210,4 +210,29 @@ describe('Azure Table audit reader', () => {
       )
     ).toBe(false)
   })
+
+  it('fails verification when the retention index entity is missing', async () => {
+    const { auditRecord, retentionIndex, reader } = readerFixture()
+    retentionIndex.rows.clear()
+
+    await expect(
+      reader.verifyEvent(auditRecord.envelope.eventId)
+    ).rejects.toThrow(/retention index/i)
+  })
+
+  it('collects retention-index failures without failing the whole export', async () => {
+    const { auditRecord, retentionIndex, reader } = readerFixture()
+    retentionIndex.rows.clear()
+
+    const result = await reader.exportQuizWithFailures({
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+
+    expect(result.verified).toHaveLength(0)
+    expect(result.failures).toHaveLength(1)
+    expect(result.failures[0]).toMatchObject({
+      eventId: auditRecord.envelope.eventId,
+      reason: 'RETENTION_INDEX_MISSING',
+    })
+  })
 })
