@@ -76,7 +76,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
   assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
-  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 2000000/)
+  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
     source.match(/steps:\n {6}- name: Record review job start/g)?.length,
@@ -807,6 +807,27 @@ test('plans one resume from a valid partial OCR session', () => {
   })
 })
 
+test('plans a stack resume under the raised full-stack ceiling', () => {
+  const parent = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  assert.deepEqual(planOCRResume(parent, 20_000_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 9_591_641,
+  })
+  assert.throws(
+    () => planOCRResume(parent, 10_000_000),
+    /no token budget left/
+  )
+})
+
 test('rejects failed partial sessions with reused or waived coverage', () => {
   const parent = partialResumeResult()
   const completed = parent.manifest.coverage.completed[0]
@@ -1187,6 +1208,46 @@ test('merges only validated complete resume usage within the original ceiling', 
   assert.equal(merged.summary.output_tokens, 110)
   assert.equal(merged.summary.total_tokens, 500)
   assert.equal(validateOCRResult(merged), merged)
+})
+
+test('merges stack resume usage below the raised ceiling only', () => {
+  const initial = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  const resumed = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_640,
+      input_tokens: 9_422_526,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  const merged = mergeOCRResumeResults(initial, resumed, 20_000_000)
+  assert.equal(merged.summary.total_tokens, 19_999_999)
+
+  const resumedOver = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_642,
+      input_tokens: 9_422_528,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  assert.throws(
+    () => mergeOCRResumeResults(initial, resumedOver, 20_000_000),
+    /exceeded the original token budget/
+  )
 })
 
 test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
