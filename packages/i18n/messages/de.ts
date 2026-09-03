@@ -183,6 +183,18 @@ export default {
         showRawJson: 'Rohes JSON anzeigen',
       },
     },
+    ownerPreview: {
+      badge: 'Eigentümer-Vorschau',
+      description:
+        'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
+      backToManage: 'Zurück zu den Chatbot-Einstellungen',
+      loginTitle: 'Anmeldung für Dozierende erforderlich',
+      loginMessage:
+        'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
+      loginButton: 'KlickerUZH Manage öffnen',
+      opensInNewTab:
+        '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
+    },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
       notFoundMessage:
@@ -4756,6 +4768,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpPriority: 'Priorität',
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
+      openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       responseExamples: 'Antwortbeispiele',
       responseExamplesDescription:
         'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',
