@@ -143,12 +143,15 @@ carry no scope claim, so the floor applies to lecturer sessions only.
 
 The write path comes in two shapes, both safe under two browser tabs touching
 the same entry at once. `recordProductUpdatePresentation` is a single upsert
-with a database-side increment, so no presentation is lost to a
+with a database-side increment; because that update has something to set,
+Prisma emits a native `INSERT ... ON CONFLICT`, so no presentation is lost to a
 read-modify-write race. `markProductUpdateRead` and `dismissProductUpdate`
 insert the row if it is absent and then claim the timestamp only while it is
-still unset: the insert is an upsert, so it cannot collide on the unique
-constraint, and the second statement keeps the first read and the first
-dismissal from moving.
+still unset. Their insert has an empty update, which Prisma runs as a
+find-then-create instead, so a concurrent first interaction can make one of the
+two inserts hit the unique constraint; the service treats that violation as
+proof that the row now exists and reads it back. The second statement then
+keeps the first read and the first dismissal from moving.
 
 ## Current consumers
 

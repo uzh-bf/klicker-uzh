@@ -74,15 +74,46 @@ function assertKnownUpdateIds(updateIds: string[]) {
   }
 }
 
+// Prisma reports a unique constraint violation as error code `P2002`. The check
+// is structural so that the service does not have to import the client runtime
+// error class.
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
+
+function readState(
+  actor: ProductUpdateActor,
+  updateId: string,
+  ctx: ContextWithUser
+): Promise<ProductUpdateState> {
+  if (actor.type === 'user') {
+    return ctx.prisma.userProductUpdateState.findUniqueOrThrow({
+      where: { userId_updateId: { userId: actor.id, updateId } },
+    })
+  }
+
+  return ctx.prisma.participantProductUpdateState.findUniqueOrThrow({
+    where: { participantId_updateId: { participantId: actor.id, updateId } },
+  })
+}
+
 // A row can be created by a read or a dismissal that arrives before any
 // presentation was recorded. The presentation timestamps are not nullable, so
 // they are filled with the moment the entry demonstrably reached the actor,
 // while `presentationCount` keeps counting explicit presentations only.
 //
-// The empty `update` makes this an insert-if-absent: Prisma delegates it to a
-// native database upsert, so two concurrent first interactions cannot collide
-// on the unique constraint.
-function insertStateIfAbsent(
+// The empty `update` makes this an insert-if-absent, but it also stops Prisma
+// from emitting a native `INSERT ... ON CONFLICT`: with nothing to set, the
+// upsert becomes a find-then-create, so a concurrent first interaction on the
+// same entry makes one of the two inserts violate the unique constraint. That
+// collision proves the row now exists, which is what insert-if-absent asks for,
+// so it is answered with a read of the row the other write created.
+async function insertStateIfAbsent(
   actor: ProductUpdateActor,
   updateId: string,
   data: { readAt?: Date; dismissedAt?: Date },
@@ -96,19 +127,27 @@ function insertStateIfAbsent(
     ...data,
   }
 
-  if (actor.type === 'user') {
-    return ctx.prisma.userProductUpdateState.upsert({
-      where: { userId_updateId: { userId: actor.id, updateId } },
-      create: { ...state, userId: actor.id },
+  try {
+    if (actor.type === 'user') {
+      return await ctx.prisma.userProductUpdateState.upsert({
+        where: { userId_updateId: { userId: actor.id, updateId } },
+        create: { ...state, userId: actor.id },
+        update: {},
+      })
+    }
+
+    return await ctx.prisma.participantProductUpdateState.upsert({
+      where: { participantId_updateId: { participantId: actor.id, updateId } },
+      create: { ...state, participantId: actor.id },
       update: {},
     })
-  }
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error
+    }
 
-  return ctx.prisma.participantProductUpdateState.upsert({
-    where: { participantId_updateId: { participantId: actor.id, updateId } },
-    create: { ...state, participantId: actor.id },
-    update: {},
-  })
+    return await readState(actor, updateId, ctx)
+  }
 }
 
 function updateState(
@@ -218,7 +257,9 @@ export async function recordProductUpdatePresentation(
 
   // The spotlight caps depend on this counter, so the increment has to survive
   // concurrent presentations in two tabs: upsert plus `increment` keeps it in
-  // one statement instead of read-modify-write.
+  // one statement instead of read-modify-write. Unlike the insert-if-absent
+  // above, the non-empty `update` gives Prisma something to set, so this stays
+  // a native `INSERT ... ON CONFLICT` that cannot lose a concurrent insert.
   if (actor.type === 'user') {
     return ctx.prisma.userProductUpdateState.upsert({
       where: { userId_updateId: { userId: actor.id, updateId } },

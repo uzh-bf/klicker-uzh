@@ -1,0 +1,9 @@
+mutation CreateChatbot(
+  $name: String!
+  $description: String
+  $courseId: String!
+) {
+  createChatbot(name: $name, description: $description, courseId: $courseId) {
+    id
+  }
+}

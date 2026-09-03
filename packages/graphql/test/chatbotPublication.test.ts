@@ -71,12 +71,24 @@ describe('Integration tests for the chatbot publication workflow', () => {
     extra: Record<string, unknown> = {}
   ) {
     const course = await seedCourse({}, userOneCtx)
+    const disclaimer =
+      extra.disclaimerId === null
+        ? null
+        : await prisma.chatbotDisclaimer.create({
+            data: {
+              name: 'Publication disclaimer',
+              title: 'Course chatbot disclaimer',
+              introText: 'Course-specific introduction',
+              ownerId: userOneCtx.user.sub,
+            },
+          })
     return prisma.chatbot.create({
       data: {
         name: 'Bot',
         courseId: course.id,
         ownerId: userOneCtx.user.sub,
         status,
+        disclaimerId: disclaimer?.id ?? null,
         ...extra,
       },
     })
@@ -105,6 +117,56 @@ describe('Integration tests for the chatbot publication workflow', () => {
         creditResetAmount: 50,
         creditMaxCredits: 50,
         reviewComment: null,
+      })
+    })
+
+    it('requires a linked, non-empty disclaimer before submission', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT, {
+        disclaimerId: null,
+      })
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 120,
+            proposedCredits: 50,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_DISCLAIMER_REQUIRED' },
+      })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true },
+        })
+      ).resolves.toEqual({ status: ChatbotStatus.DRAFT })
+    })
+
+    it('rejects a linked disclaimer with an empty introduction', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+      await prisma.chatbotDisclaimer.update({
+        where: { id: bot.disclaimerId! },
+        data: { introText: '  ' },
+      })
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 120,
+            proposedCredits: 50,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_DISCLAIMER_REQUIRED' },
       })
     })
 
