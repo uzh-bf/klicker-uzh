@@ -43,6 +43,50 @@ export function normalizeDocQueryKbId(value: unknown): string {
   return normalized
 }
 
+function isInternalTransportHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (
+    host === 'localhost' ||
+    host === '::1' ||
+    host.endsWith('.svc') ||
+    host.endsWith('.internal') ||
+    host.endsWith('.local')
+  ) {
+    return true
+  }
+  const parts = host.split('.')
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) {
+    return false
+  }
+  const [first, second] = parts.map((part) => Number(part))
+  return (
+    first === 10 ||
+    first === 127 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  )
+}
+
+/**
+ * Doc Query credentials must not traverse a public network in cleartext.
+ * Plain HTTP is accepted only for clearly internal endpoints such as
+ * loopback, cluster-local, or RFC1918 addresses; every other target must
+ * use HTTPS before any credential header is attached.
+ */
+export function assertDocQueryTransportSecurity(rawUrl: string): void {
+  let url: URL
+  try {
+    url = new URL(rawUrl)
+  } catch {
+    throw new Error('Doc Query transport URL is invalid')
+  }
+  if (url.protocol === 'https:') return
+  if (url.protocol === 'http:' && isInternalTransportHost(url.hostname)) {
+    return
+  }
+  throw new Error('Doc Query transport requires HTTPS')
+}
+
 function resolveKbConfiguration(
   configuration: MCPScopedConfiguration
 ): ResolvedMcpScope | undefined {

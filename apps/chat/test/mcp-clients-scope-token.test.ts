@@ -32,6 +32,7 @@ import {
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
 import {
+  assertDocQueryTransportSecurity,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   normalizeDocQueryKbId,
   resolveMcpScope,
@@ -117,6 +118,62 @@ describe('current-v3 Doc Query scope', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects credentials on a public cleartext endpoint', async () => {
+    await expect(
+      getAggregatedMCPTools(
+        [createServer({ url: 'http://mcp.example.test' })],
+        CHATBOT_ID,
+        { kbId: KB_ID, sessionId: SESSION_ID }
+      )
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    expect(transportConstructorMock).not.toHaveBeenCalled()
+  })
+
+  test('accepts HTTPS and internal cleartext endpoints', async () => {
+    const internalUrls = [
+      'https://mcp.example.test',
+      'http://doc-query.default.svc:8080',
+      'http://doc-query.internal',
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://10.1.2.3',
+      'http://172.16.0.9',
+      'http://192.168.1.5',
+    ]
+    for (const url of internalUrls) {
+      await getAggregatedMCPTools([createServer({ url })], CHATBOT_ID, {
+        kbId: KB_ID,
+        sessionId: SESSION_ID,
+      })
+      expect(transportConstructorMock).toHaveBeenCalledWith(
+        new URL(url),
+        expect.objectContaining({
+          requestInit: expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer opaque-transport-token',
+            }),
+          }),
+        })
+      )
+    }
+  })
+
+  test('transport guard boundary cases', () => {
+    expect(() =>
+      assertDocQueryTransportSecurity('http://172.32.0.1')
+    ).toThrowError(/HTTPS/)
+    expect(() =>
+      assertDocQueryTransportSecurity('ftp://mcp.example.test')
+    ).toThrowError(/HTTPS/)
+    expect(() => assertDocQueryTransportSecurity('not-a-url')).toThrowError(
+      /invalid/
+    )
+    expect(() =>
+      assertDocQueryTransportSecurity('http://[::1]:8080')
+    ).not.toThrowError()
   })
 
   test('fails a required target without both scope values', async () => {
