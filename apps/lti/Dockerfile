@@ -49,11 +49,13 @@ COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/ut
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ ./packages/types/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ ./packages/prisma/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/grading/dist/ ./packages/grading/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/logging/dist/ ./packages/logging/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
 
 USER nodejs
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 EXPOSE 4000
 

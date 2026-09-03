@@ -1,4 +1,7 @@
 import { PrismaAdapter } from '@auth/prisma-adapter'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
@@ -7,7 +10,6 @@ import {
   reduceCatalyst,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
 import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
@@ -27,11 +29,15 @@ import {
   getStudentHosts,
 } from '@/lib/helpers'
 import { isSameOriginRedirect } from '@/lib/redirect'
+import { logger } from '@/lib/server/logger'
 import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
-  console.error('APP_ORIGIN_AUTH is required but not defined')
+  logger.fatal(
+    { event: 'configuration.invalid', variable: 'APP_ORIGIN_AUTH' },
+    'Required configuration is missing'
+  )
   process.exit(1)
 }
 
@@ -75,11 +81,7 @@ const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   },
 }
 
-function getParticipantConfig({
-  requestId,
-}: {
-  requestId: string
-}): NextAuthOptions {
+function getParticipantConfig({ log }: { log: AppLogger }): NextAuthOptions {
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
@@ -131,7 +133,14 @@ function getParticipantConfig({
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile')
+              log.warn(
+                {
+                  event: 'auth.sign_in.rejected',
+                  audience: 'participant',
+                  outcome: 'missing_subject',
+                },
+                'Rejected authentication attempt'
+              )
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -167,45 +176,78 @@ function getParticipantConfig({
 
     callbacks: {
       async signIn({ user, account, profile, email }) {
-        console.log(`[AUTH ${requestId}] [participant] signIn`, {
-          provider: account?.provider,
-          hasProfile: Boolean(profile),
-        })
+        log.info(
+          {
+            event: 'auth.sign_in.started',
+            audience: 'participant',
+            providerKind: account?.provider,
+          },
+          'Participant sign-in started'
+        )
 
         if (!profile) {
-          console.error('No profile provided for participant sign-in')
+          log.warn(
+            {
+              event: 'auth.sign_in.rejected',
+              audience: 'participant',
+              outcome: 'missing_profile',
+            },
+            'Rejected authentication attempt'
+          )
           return false
         }
 
         try {
           const participant = await createOrLinkParticipant(
-            profile as ExtendedProfile
+            profile as ExtendedProfile,
+            log
           )
 
           if (!participant) {
-            console.error(
-              'Failed to create/link participant: no participant returned'
+            log.warn(
+              {
+                event: 'auth.sign_in.rejected',
+                audience: 'participant',
+                outcome: 'participant_unavailable',
+              },
+              'Rejected authentication attempt'
             )
             return false
           }
           // Store participantId for jwt callback
           ;(profile as any).participantId = participant.id
-          console.log(
-            `Participant ${participant.id} authenticated successfully`
+          log.info(
+            {
+              event: 'auth.sign_in.completed',
+              audience: 'participant',
+              outcome: 'success',
+            },
+            'Participant sign-in completed'
           )
           return true
-        } catch (error) {
-          console.error('Failed to create/link participant:', error)
+        } catch {
+          log.error(
+            {
+              event: 'auth.sign_in.failed',
+              audience: 'participant',
+              err: toSafeError('Failed to create or link participant'),
+            },
+            'Participant sign-in failed'
+          )
           return false
         }
       },
 
       async jwt({ token, profile }) {
         token.scope = UserLoginScope.EDUID
-        console.log(`[AUTH ${requestId}] [participant] jwt`, {
-          hasProfile: Boolean(profile),
-          role: token?.role,
-        })
+        log.debug(
+          {
+            event: 'auth.token.processed',
+            audience: 'participant',
+            hasProfile: Boolean(profile),
+          },
+          'Processed participant token'
+        )
 
         // Handle initial sign-in with participant profile
         if (profile && (profile as any).participantId) {
@@ -220,8 +262,13 @@ function getParticipantConfig({
 
           if (!participant) {
             // Participant doesn't exist in current database - invalidate token
-            console.warn(
-              `Participant ${token.sub} not found in database, invalidating token`
+            log.warn(
+              {
+                event: 'auth.token.rejected',
+                audience: 'participant',
+                outcome: 'participant_missing',
+              },
+              'Rejected participant token'
             )
             // Return empty token to force re-authentication
             return { sub: '', role: '', scope: '', email: '', name: '' }
@@ -236,10 +283,10 @@ function getParticipantConfig({
       },
 
       async redirect({ url, baseUrl }) {
-        console.log(`[AUTH ${requestId}] [participant] redirect check`, {
-          url,
-          baseUrl,
-        })
+        log.debug(
+          { event: 'auth.redirect.checked', audience: 'participant' },
+          'Checked participant redirect'
+        )
         if (isSameOriginRedirect(url, baseUrl)) {
           return url
         }
@@ -247,9 +294,9 @@ function getParticipantConfig({
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
-          console.log(
-            `[AUTH ${requestId}] [participant] redirect relative ->`,
-            out
+          log.debug(
+            { event: 'auth.redirect.accepted', audience: 'participant' },
+            'Accepted participant redirect'
           )
           return out
         }
@@ -263,9 +310,9 @@ function getParticipantConfig({
             allowedHosts.includes(parsedUrl.host) ||
             allowedHosts.includes(parsedUrl.hostname)
           ) {
-            console.log(
-              `[AUTH ${requestId}] [participant] redirect allow ->`,
-              url
+            log.debug(
+              { event: 'auth.redirect.accepted', audience: 'participant' },
+              'Accepted participant redirect'
             )
             return url
           }
@@ -273,9 +320,13 @@ function getParticipantConfig({
           // Invalid URL, fall through to baseUrl
         }
 
-        console.log(
-          `[AUTH ${requestId}] [participant] redirect fallback ->`,
-          baseUrl
+        log.warn(
+          {
+            event: 'auth.redirect.rejected',
+            audience: 'participant',
+            outcome: 'fallback',
+          },
+          'Rejected participant redirect'
         )
         return baseUrl
       },
@@ -283,11 +334,7 @@ function getParticipantConfig({
   }
 }
 
-function getLecturerConfig({
-  requestId,
-}: {
-  requestId: string
-}): NextAuthOptions {
+function getLecturerConfig({ log }: { log: AppLogger }): NextAuthOptions {
   // Derive shared cookie domain for NextAuth session cookies by removing the first
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
@@ -426,10 +473,14 @@ function getLecturerConfig({
 
     callbacks: {
       async signIn({ user, account, profile, email }) {
-        console.log(`[AUTH ${requestId}] [lecturer] signIn`, {
-          provider: account?.provider,
-          hasProfile: Boolean(profile),
-        })
+        log.info(
+          {
+            event: 'auth.sign_in.started',
+            audience: 'lecturer',
+            providerKind: account?.provider,
+          },
+          'Lecturer sign-in started'
+        )
 
         // Lecturer authentication flow (existing logic)
         const profileData = profile as ExtendedProfile
@@ -463,13 +514,15 @@ function getLecturerConfig({
             // upsert affiliations for existing user
             await createUserAffiliations(
               user.id,
-              profileData.swissEduIDLinkedAffiliationUniqueID
+              profileData.swissEduIDLinkedAffiliationUniqueID,
+              log
             )
 
             if (user.firstLogin) {
               await sendTeamsNotifications(
                 'eduId/signUp',
-                `User ${user.shortname} with email ${user.email} logged in for the first time.`
+                `User ${user.shortname} with email ${user.email} logged in for the first time.`,
+                log
               )
             }
           }
@@ -479,11 +532,15 @@ function getLecturerConfig({
       },
 
       async jwt({ token, user, profile }) {
-        console.log(`[AUTH ${requestId}] [lecturer] jwt`, {
-          hasProfile: Boolean(profile),
-          hasUser: Boolean(user),
-          role: token?.role,
-        })
+        log.debug(
+          {
+            event: 'auth.token.processed',
+            audience: 'lecturer',
+            hasProfile: Boolean(profile),
+            hasUser: Boolean(user),
+          },
+          'Processed lecturer token'
+        )
         // Lecturer JWT handling (existing logic)
         const profileData = profile as ExtendedProfile
         const userData = user as ExtendedUser
@@ -510,12 +567,16 @@ function getLecturerConfig({
             try {
               await createUserAffiliations(
                 userData.id,
-                profileData.swissEduIDLinkedAffiliationUniqueID
+                profileData.swissEduIDLinkedAffiliationUniqueID,
+                log
               )
-            } catch (error) {
-              console.error(
-                'Error creating user affiliations in JWT callback:',
-                error
+            } catch {
+              log.warn(
+                {
+                  event: 'auth.affiliation.upsert_failed',
+                  err: toSafeError('Failed to create user affiliations'),
+                },
+                'Failed to create user affiliations'
               )
             }
           }
@@ -525,10 +586,10 @@ function getLecturerConfig({
       },
 
       async redirect({ url, baseUrl }) {
-        console.log(`[AUTH ${requestId}] [lecturer] redirect check`, {
-          url,
-          baseUrl,
-        })
+        log.debug(
+          { event: 'auth.redirect.checked', audience: 'lecturer' },
+          'Checked lecturer redirect'
+        )
         if (isSameOriginRedirect(url, baseUrl)) {
           return url
         }
@@ -536,9 +597,9 @@ function getLecturerConfig({
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
-          console.log(
-            `[AUTH ${requestId}] [lecturer] redirect relative ->`,
-            out
+          log.debug(
+            { event: 'auth.redirect.accepted', audience: 'lecturer' },
+            'Accepted lecturer redirect'
           )
           return out
         }
@@ -552,16 +613,23 @@ function getLecturerConfig({
             allowedHosts.includes(parsedUrl.host) ||
             allowedHosts.includes(parsedUrl.hostname)
           ) {
-            console.log(`[AUTH ${requestId}] [lecturer] redirect allow ->`, url)
+            log.debug(
+              { event: 'auth.redirect.accepted', audience: 'lecturer' },
+              'Accepted lecturer redirect'
+            )
             return url
           }
         } catch {
           // Invalid URL, fall through to baseUrl
         }
 
-        console.log(
-          `[AUTH ${requestId}] [lecturer] redirect fallback ->`,
-          baseUrl
+        log.warn(
+          {
+            event: 'auth.redirect.rejected',
+            audience: 'lecturer',
+            outcome: 'fallback',
+          },
+          'Rejected lecturer redirect'
         )
         return baseUrl
       },
@@ -574,25 +642,33 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const headerRequestId = Array.isArray(req.headers['x-request-id'])
     ? req.headers['x-request-id'][0]
     : req.headers['x-request-id']
-  const requestId =
-    headerRequestId || `na-${crypto.randomBytes(6).toString('hex')}`
-
-  console.log(`[AUTH ${requestId}] Request start`, {
-    url: req.url,
-    method: req.method,
-    ua: req.headers['user-agent'],
+  const requestContext = resolveRequestContext({
+    requestId: headerRequestId,
+    correlationId: req.headers['x-correlation-id'],
   })
+  const requestId = requestContext.requestId
+  const log = logger.child(requestContext)
+  res.setHeader('x-request-id', requestId)
+  res.setHeader('x-correlation-id', requestContext.correlationId)
 
-  const context = getAuthContext(req, requestId)
-  console.log(`[AUTH ${requestId}] Using context: ${context}`)
+  log.info(
+    { event: 'http.request.started', route: '/api/auth' },
+    'Auth request started'
+  )
+
+  const context = getAuthContext(req, log)
+  log.info(
+    { event: 'auth.audience.selected', audience: context },
+    'Selected authentication audience'
+  )
 
   // Configure providers based on context
   let authOptions: NextAuthOptions
 
   if (context === 'participant') {
-    authOptions = getParticipantConfig({ requestId })
+    authOptions = getParticipantConfig({ log })
   } else {
-    authOptions = getLecturerConfig({ requestId })
+    authOptions = getLecturerConfig({ log })
   }
 
   const handler = NextAuth(authOptions)

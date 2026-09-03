@@ -1,6 +1,12 @@
 import axios from 'axios'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 
-export async function sendTeamsNotifications(scope: string, text: string) {
+export async function sendTeamsNotifications(
+  scope: string,
+  text: string,
+  log?: AppLogger
+) {
   if (process.env.TEAMS_WEBHOOK_URL) {
     try {
       return await axios.post(process.env.TEAMS_WEBHOOK_URL, {
@@ -10,8 +16,14 @@ export async function sendTeamsNotifications(scope: string, text: string) {
         title: scope,
         text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
       })
-    } catch (error) {
-      console.error('Failed to send Teams notification:', error)
+    } catch {
+      log?.warn(
+        {
+          event: 'auth.notification.send_failed',
+          err: toSafeError('Failed to send Teams notification'),
+        },
+        'Failed to send Teams notification'
+      )
       return null
     }
   }

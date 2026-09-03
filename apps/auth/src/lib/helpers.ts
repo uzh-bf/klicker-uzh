@@ -1,3 +1,6 @@
+import { sendTeamsNotifications } from '@/lib/util'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import type { CollectedInvitationEmails, JWTPayload } from '@klicker-uzh/util'
@@ -18,7 +21,6 @@ import { NextApiRequest } from 'next'
 import type { Profile } from 'next-auth'
 import { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
-import { sendTeamsNotifications } from '@/lib/util'
 import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
 import {
   DEFAULT_LECTURER_HOSTS,
@@ -90,7 +92,7 @@ function isManageHost(host: string): boolean {
 
 export function getAuthContext(
   req: NextApiRequest,
-  reqId: string
+  log: AppLogger
 ): 'lecturer' | 'participant' {
   const { participant, callbackUrl } = req.query as {
     participant?: string
@@ -115,45 +117,78 @@ export function getAuthContext(
     callback: hostFrom(callbackUrl),
   }
 
-  console.log(`[AUTH ${reqId}] Context detection input:`, {
-    url: req.url,
-    method: req.method,
-    participant,
-    hasStudentCookie: Boolean(studentRedirect),
-    hasLecturerCookie: Boolean(lecturerRedirect),
-    hosts,
-  })
-
   // 1) Explicit participant flag wins
   if (participant === 'true') {
-    console.log(`[AUTH ${reqId}] Context: participant (explicit param)`)
+    log.info(
+      {
+        event: 'auth.audience.selected',
+        audience: 'participant',
+        decisionSource: 'explicit_param',
+      },
+      'Selected authentication audience'
+    )
     return 'participant'
   }
 
   // 2) callbackUrl host is authoritative when present
   if (hosts.callback) {
     if (isAssessmentHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: participant (callbackUrl host)`)
+      log.info(
+        {
+          event: 'auth.audience.selected',
+          audience: 'participant',
+          decisionSource: 'callback_host',
+        },
+        'Selected authentication audience'
+      )
       return 'participant'
     }
     if (isManageHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: lecturer (callbackUrl host)`)
+      log.info(
+        {
+          event: 'auth.audience.selected',
+          audience: 'lecturer',
+          decisionSource: 'callback_host',
+        },
+        'Selected authentication audience'
+      )
       return 'lecturer'
     }
   }
 
   // 3) Specific cookies (student first)
   if (hosts.student && isAssessmentHost(hosts.student)) {
-    console.log(`[AUTH ${reqId}] Context: participant (student cookie host)`)
+    log.info(
+      {
+        event: 'auth.audience.selected',
+        audience: 'participant',
+        decisionSource: 'redirect_cookie',
+      },
+      'Selected authentication audience'
+    )
     return 'participant'
   }
   if (hosts.lecturer && isManageHost(hosts.lecturer)) {
-    console.log(`[AUTH ${reqId}] Context: lecturer (lecturer cookie host)`)
+    log.info(
+      {
+        event: 'auth.audience.selected',
+        audience: 'lecturer',
+        decisionSource: 'redirect_cookie',
+      },
+      'Selected authentication audience'
+    )
     return 'lecturer'
   }
 
   // 4) Default to lecturer
-  console.log(`[AUTH ${reqId}] Context: lecturer (default)`)
+  log.info(
+    {
+      event: 'auth.audience.selected',
+      audience: 'lecturer',
+      decisionSource: 'default',
+    },
+    'Selected authentication audience'
+  )
   return 'lecturer'
 }
 
@@ -161,7 +196,8 @@ export async function autoAcceptInvitations(
   tx: PrismaTransactionClient,
   emailCollection: CollectedInvitationEmails,
   participantId?: string,
-  invitationEmailMode: InvitationEmailMode = InvitationEmailMode.AffiliationsOnly
+  invitationEmailMode: InvitationEmailMode = InvitationEmailMode.AffiliationsOnly,
+  log?: AppLogger
 ) {
   let matchingParticipantId: string | undefined = participantId
 
@@ -183,7 +219,10 @@ export async function autoAcceptInvitations(
   try {
     if (!participantId) {
       if (normalizedLookupEmails.length === 0) {
-        console.log('No emails provided for participant lookup')
+        log?.info(
+          { event: 'auth.invitation.lookup_skipped', outcome: 'no_emails' },
+          'Skipped invitation lookup'
+        )
         return 0
       }
 
@@ -196,7 +235,10 @@ export async function autoAcceptInvitations(
       })
 
       if (!participant) {
-        console.log('No participant found for emails:', normalizedLookupEmails)
+        log?.info(
+          { event: 'auth.invitation.lookup_completed', outcome: 'no_match' },
+          'Completed invitation lookup'
+        )
         return 0
       }
 
@@ -204,12 +246,13 @@ export async function autoAcceptInvitations(
     }
 
     if (normalizedInvitationEmails.length === 0) {
-      console.log(
-        `Invitation mode ${invitationEmailMode} provided no eligible emails.`,
+      log?.info(
         {
-          profileEmails: emailCollection.profileEmails,
-          affiliationEmails: emailCollection.affiliationEmails,
-        }
+          event: 'auth.invitation.lookup_skipped',
+          outcome: 'no_eligible_emails',
+          invitationEmailMode,
+        },
+        'Skipped invitation lookup'
       )
       return 0
     }
@@ -222,9 +265,14 @@ export async function autoAcceptInvitations(
       },
     })
 
-    console.log(
-      `Found ${pendingInvitations.length} pending invitations for mode ${invitationEmailMode}:`,
-      normalizedInvitationEmails
+    log?.info(
+      {
+        event: 'auth.invitation.lookup_completed',
+        outcome: 'success',
+        invitationEmailMode,
+        invitationCount: pendingInvitations.length,
+      },
+      'Completed invitation lookup'
     )
 
     let acceptedCount = 0
@@ -257,21 +305,42 @@ export async function autoAcceptInvitations(
         })
 
         acceptedCount++
-      } catch (error) {
-        console.error(`Error accepting invitation ${invitation.id}:`, error)
+      } catch {
+        log?.warn(
+          {
+            event: 'auth.invitation.accept_failed',
+            err: toSafeError('Failed to accept invitation'),
+          },
+          'Failed to accept invitation'
+        )
       }
     }
 
     if (acceptedCount > 0) {
       await sendTeamsNotifications(
         'auth/invitationAutoAccept',
-        `User with emails [${normalizedLookupEmails.join(', ')}] was automatically enrolled in ${acceptedCount} course(s) via invitations.`
+        `User with emails [${normalizedLookupEmails.join(', ')}] was automatically enrolled in ${acceptedCount} course(s) via invitations.`,
+        log
+      )
+      log?.info(
+        {
+          event: 'auth.invitation.accepted',
+          outcome: 'success',
+          invitationCount: acceptedCount,
+        },
+        'Accepted invitations'
       )
     }
 
     return acceptedCount
-  } catch (error) {
-    console.error('Error in autoAcceptInvitations:', error)
+  } catch {
+    log?.warn(
+      {
+        event: 'auth.invitation.accept_failed',
+        err: toSafeError('Invitation auto-accept failed'),
+      },
+      'Invitation auto-accept failed'
+    )
     return 0
   }
 }
@@ -279,7 +348,8 @@ export async function autoAcceptInvitations(
 // Helper function to create user affiliations
 export async function createUserAffiliations(
   userId: string,
-  affiliationIds?: string[]
+  affiliationIds?: string[],
+  log?: AppLogger
 ) {
   // if affiliations are present, add corresponding accounts for the user
   if (affiliationIds && affiliationIds.length > 0) {
@@ -308,8 +378,14 @@ export async function createUserAffiliations(
             isVerified: true, // Update verification status for SSO
           },
         })
-      } catch (error) {
-        console.error(`Failed to add affiliation ${affiliationId}:`, error)
+      } catch {
+        log?.warn(
+          {
+            event: 'auth.affiliation.upsert_failed',
+            err: toSafeError('Failed to upsert user affiliation'),
+          },
+          'Failed to upsert user affiliation'
+        )
         // Continue with other affiliations
       }
     }
@@ -321,7 +397,8 @@ async function createParticipantAffiliations(
   tx: PrismaTransactionClient,
   participantId: string,
   affiliationIds: string[],
-  affiliationEmails?: string[] // Make emails optional
+  affiliationEmails?: string[], // Make emails optional
+  log?: AppLogger
 ) {
   let processedAffiliations = new Set<string>()
 
@@ -359,10 +436,13 @@ async function createParticipantAffiliations(
       })
 
       processedAffiliations.add(affiliationId)
-    } catch (error) {
-      console.error(
-        `Failed to add participant affiliation ${affiliationId}:`,
-        error
+    } catch {
+      log?.warn(
+        {
+          event: 'auth.affiliation.upsert_failed',
+          err: toSafeError('Failed to upsert participant affiliation'),
+        },
+        'Failed to upsert participant affiliation'
       )
     }
   }
@@ -370,7 +450,10 @@ async function createParticipantAffiliations(
 }
 
 // Enhanced participant authentication helper function
-export async function createOrLinkParticipant(profile: ExtendedProfile) {
+export async function createOrLinkParticipant(
+  profile: ExtendedProfile,
+  log: AppLogger
+) {
   const randomUsername = generateRandomString(10)
 
   const participant = await prisma.$transaction(async (tx) => {
@@ -387,7 +470,8 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
           tx,
           existing.participantId,
           profile.swissEduIDLinkedAffiliationUniqueID,
-          profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
+          profile.swissEduIDLinkedAffiliationMail, // Pass undefined if not available
+          log
         )
       }
 
@@ -402,16 +486,25 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         const acceptedCount = await autoAcceptInvitations(
           tx,
           emailCollection,
-          existing.participantId
+          existing.participantId,
+          InvitationEmailMode.AffiliationsOnly,
+          log
         )
-        console.log(
-          `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
-          emailCollection.allEmails
+        log.info(
+          {
+            event: 'auth.invitation.auto_accept_completed',
+            outcome: 'existing_participant',
+            invitationCount: acceptedCount,
+          },
+          'Completed invitation auto-accept'
         )
-      } catch (error) {
-        console.error(
-          'Error auto-accepting invitations for existing user:',
-          error
+      } catch {
+        log.warn(
+          {
+            event: 'auth.invitation.auto_accept_failed',
+            err: toSafeError('Invitation auto-accept failed'),
+          },
+          'Invitation auto-accept failed'
         )
       }
 
@@ -495,7 +588,8 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         tx,
         participant.id,
         profile.swissEduIDLinkedAffiliationUniqueID,
-        profile.swissEduIDLinkedAffiliationMail
+        profile.swissEduIDLinkedAffiliationMail,
+        log
       )
     }
 
@@ -510,16 +604,25 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
       const acceptedCount = await autoAcceptInvitations(
         tx,
         emailCollection,
-        participant.id
+        participant.id,
+        InvitationEmailMode.AffiliationsOnly,
+        log
       )
-      console.log(
-        `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
-        emailCollection.allEmails
+      log.info(
+        {
+          event: 'auth.invitation.auto_accept_completed',
+          outcome: 'new_participant',
+          invitationCount: acceptedCount,
+        },
+        'Completed invitation auto-accept'
       )
-    } catch (error) {
-      console.error(
-        'Error auto-accepting invitations for new participant:',
-        error
+    } catch {
+      log.warn(
+        {
+          event: 'auth.invitation.auto_accept_failed',
+          err: toSafeError('Invitation auto-accept failed'),
+        },
+        'Invitation auto-accept failed'
       )
     }
 
