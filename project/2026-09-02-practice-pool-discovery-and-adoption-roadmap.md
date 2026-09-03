@@ -1,7 +1,8 @@
 # Practice Pool Discovery and Adoption Roadmap
 
-- **Status:** Approved for local execution of W1 — Promote the Practice Pool at
-  the course entry point
+- **Status:** W1 — Promote the Practice Pool at the course entry point and
+  W3 — Help lecturers distribute the course entry point merged into `v3`;
+  remaining follow-up items pending a roadmap-shape ruling
 - **Date:** 2026-09-02
 - **Approved branch baseline:** `origin/v3` at
   `72096fafe50827c3ea3f50465f0a76d492e0a4c2`
@@ -406,4 +407,21 @@ planner then returned `DONE` with `Verdict: APPROVED`.
   approved the package. The serial E2E run passed the changed one-quiz,
   lecturer, and empty-state checks before an unrelated scheduled-status
   assertion stopped the remaining serial tests.
-- [ ] Request separate authority for push and PR creation if desired.
+- [x] Request separate authority for push and PR creation if desired. Authority
+  was granted in-session and PR #5733 was created targeting `v3`.
+- [x] W1 delivery recorded 2026-09-03: PR #5733 was squash-merged into
+  `origin/v3` as `afba912051` (`enhance(pwa): promote course practice pool
+  entry point`). W1 — Promote the Practice Pool at the course entry point
+  reached `merged`. Local branch `rs/practice-pool-discovery` and worktree
+  `trees/practice-pool-discovery` were removed after the package tip
+  (`feed5f6e7e`) was verified on the remote.
+- [x] W3 delivery recorded 2026-09-03: PR #5748 was squash-merged into
+  `origin/v3` as `3c99fa26b9` (`docs: add practice overview sharing
+  guidance`). W3 — Help lecturers distribute the course entry point reached
+  `merged` as a light-path documentation package in
+  `trees/practice-pool-lecturer-guidance`; docusaurus build and Prettier
+  passed at head `c208af391`. The worktree remains pending cleanup approval.
+  W2 — Create a useful completion loop, A1 — Approve aggregate adoption
+  measurement, A2 — Approve repeat-use measurement, and W4 — Run a bounded
+  adoption pilot and choose the next intervention remain proposed and
+  unlaunched.
