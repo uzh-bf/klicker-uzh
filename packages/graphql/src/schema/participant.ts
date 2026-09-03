@@ -103,7 +103,18 @@ export const AvatarSettings = AvatarSettingsRef.implement({
 })
 
 export interface IParticipant
-  extends Omit<DB.Participant, 'password' | 'xp' | 'locale'> {
+  extends Omit<
+    DB.Participant,
+    | 'password'
+    | 'xp'
+    | 'locale'
+    | 'researchConsent'
+    | 'researchConsentChoiceAt'
+    | 'researchConsentDisclosureVersion'
+    | 'learningAnalyticsConsent'
+    | 'learningAnalyticsChoiceAt'
+    | 'learningAnalyticsDisclosureVersion'
+  > {
   role?: DB.UserRole
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
   isCourseParticipant?: boolean | null // if a live quiz id is provided, flag if the user is participant of the course
