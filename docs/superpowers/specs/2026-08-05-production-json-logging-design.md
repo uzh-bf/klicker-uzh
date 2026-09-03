@@ -16,9 +16,11 @@ The milestone includes structured logging and request/correlation propagation.
 It does not introduce distributed tracing, a browser-log ingestion service, or
 a replacement exception-tracking system.
 
-The application work ships as one native GitHub stack of five PRs. A separate
-GitLab MR updates Alloy because collector configuration lives in another
-repository and has an independent deployment lifecycle.
+The application work ships as one native GitHub stack of five PRs. Collector
+configuration lives in the `azure-helpers` Git submodule of
+`df-cloud-klickeruzh`, so infrastructure ships as two linked GitLab MRs: the
+helper implementation first, then the parent-repository submodule pointer and
+staging preview. It has an independent deployment lifecycle from the app stack.
 
 ## Context
 
@@ -39,9 +41,10 @@ Two older draft PRs informed this design:
   should be retained.
 
 The current Alloy pipeline discovers Kubernetes pods and forwards their output
-directly to Loki. It does not parse application JSON, promote an application
-service name, or expose correlation fields as structured metadata. Therefore,
-application and collector changes are both required for the ClickUp outcome.
+directly to Loki. It already transports raw JSON records, so application output
+does not depend on a collector change. The companion collector change adds a
+stable service label and queryable structured metadata for the operational
+search experience required by this milestone.
 
 ## Goals
 
@@ -170,16 +173,25 @@ logger alongside them.
 
 ### Grafana Alloy
 
-The companion cloud MR adds a `loki.process` stage between Kubernetes log
-collection and Loki writing. It:
+The companion `azure-helpers` MR, deployed by the linked cloud-parent MR, adds a
+`loki.process` stage between Kubernetes log collection and Loki writing. It:
 
 - parses JSON without rewriting the original line;
-- maps `service` to the stable `service_name` label;
-- exposes `level`, `event`, `requestId`, `correlationId`, and real trace/span IDs
-  as structured metadata rather than high-cardinality labels;
+- derives the stable `service_name` label from the existing
+  `app.kubernetes.io/component` pod label, including assessment variants and
+  non-JSON workloads;
+- extracts `level`, `event`, `requestId`, `correlationId`, and real trace/span
+  IDs into structured metadata rather than high-cardinality labels;
 - uses the application `time` when valid and otherwise retains the container
   timestamp; and
 - forwards non-JSON lines unchanged.
+
+The application `service` field remains part of the portable record contract
+and should match the deployment component, but Alloy does not trust or promote
+it into a label. Loki's existing TSDB schema v13 already supports structured
+metadata; the MR makes `allow_structured_metadata` and `discover_log_levels`
+explicit without changing the schema, storage, retention, authentication, or
+capacity configuration.
 
 Existing Kubernetes labels are preserved during this rollout to avoid breaking
 queries. Their broader cardinality cleanup is a separate concern.
@@ -250,10 +262,18 @@ error only when they fully handle it or add a distinct operational event.
 
 ### Hatchet
 
-Shared event types gain an additive optional `correlationId`. Consumers are
-deployed before publishers. A task child logger binds correlation, workflow,
-task, and run identifiers. Already-queued payloads without correlation remain
-valid and use task/run context without inventing a false cross-service ID.
+Shared event types gain an additive optional
+`loggingContext: { requestId?: string; correlationId?: string }`. The envelope
+keeps diagnostic metadata separate from business payloads and avoids a collision
+with the assessment response payload's existing `correlationId`, which is an
+MD5-derived Redis deduplication key rather than an observability identifier.
+That legacy field keeps its existing meaning for rolling compatibility and is
+never bound to the log record's `correlationId`.
+
+Consumers are deployed before publishers. A task child logger binds diagnostic
+correlation from `loggingContext`, plus workflow, task, and run identifiers.
+Already-queued payloads without `loggingContext` remain valid and use task/run
+context without inventing a false cross-service ID.
 
 ## Error and level policy
 
@@ -326,14 +346,22 @@ user-visible UI changes.
 
 ## PR and MR topology
 
-### Infrastructure companion MR
+### Infrastructure companion MRs
+
+Repository: `azure-helpers`
+
+- Branch: `feat/klicker-structured-logging`
+- Target: `infra-2025`
+- Title: `feat(logging): process Klicker structured logs in Alloy`
 
 Repository: `df-cloud-klickeruzh`
 
 - Branch: `feat/klicker-structured-logging`
 - Target: `stg`
-- Title: `feat(logging): process Klicker structured logs in Alloy`
-- Production follows the repository's normal `stg` to `prd` promotion.
+- Title: `build(monitoring): adopt structured log processing`
+- Advances the `azure-helpers` submodule to the reviewed helper commit and runs
+  the authoritative GitLab staging preview.
+- Production follows the parent repository's normal `stg` to `prd` promotion.
 
 ### Klicker native GitHub stack
 
@@ -381,7 +409,8 @@ is attached to the affected PRs.
 
 ### Staging and Loki
 
-After the Alloy MR is deployed to staging:
+After the helper MR is merged and the parent infrastructure MR is deployed to
+staging:
 
 1. Confirm existing non-JSON and third-party logs remain queryable.
 2. Deploy the complete Klicker stack.
@@ -396,15 +425,17 @@ After the Alloy MR is deployed to staging:
 
 ## Rollout and rollback
 
-The Alloy MR reaches staging before the application stack's staging acceptance
-test. It is backward compatible with non-JSON output. Application layers then
-deploy bottom-up: consumers before correlation publishers, followed by the
-remaining ingress apps.
+The helper MR is merged first, then the parent infrastructure MR reaches staging
+before the application stack's staging acceptance test. The collector change is
+backward compatible with non-JSON output. Application layers then deploy
+bottom-up: consumers before correlation publishers, followed by the remaining
+ingress apps.
 
-Each application layer is independently revertible. Correlation fields are
-additive, so old queued work remains valid. `LOG_LEVEL` can reduce volume without
-a rebuild. If collector parsing is defective, the Alloy change can be reverted
-without changing application output because the raw NDJSON line remains valid.
+Each application layer is independently revertible. The optional
+`loggingContext` envelope is additive, so old queued work remains valid.
+`LOG_LEVEL` can reduce volume without a rebuild. If collector parsing is
+defective, the Alloy change can be reverted without changing application output
+because the raw NDJSON line remains valid.
 
 Production promotion follows the normal release paths only after staging
 acceptance. The rollout monitors log volume, error rate, and Loki stream
