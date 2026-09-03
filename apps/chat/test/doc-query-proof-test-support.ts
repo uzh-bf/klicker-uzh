@@ -65,7 +65,7 @@ export type RunProofMatrix = (options: {
 }) => Promise<ProofReceipt>
 
 export type SuperviseProof = (options: {
-  sourceEnvironment: NodeJS.ProcessEnv
+  sourceEnvironment: Record<string, string> | NodeJS.ProcessEnv
   childPath: string
   childArgs: string[]
   lockPath: string
@@ -534,7 +534,7 @@ export function defineProofSupervisorSuite(
     superviseProof: SuperviseProof
   },
   config: {
-    dummyEnvironment: () => Promise<Record<string, string>>
+    dummyEnvironment: () => Promise<Record<string, string> | NodeJS.ProcessEnv>
     writeDummy: (source: string) => Promise<{ path: string; lockPath: string }>
     prepareDuplicateLock?: (lockPath: string) => Promise<() => Promise<void>>
     passedReceiptSource: (extra?: string, preservation?: string) => string
@@ -596,8 +596,7 @@ export function defineProofSupervisorSuite(
         )
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -645,8 +644,7 @@ export function defineProofSupervisorSuite(
     >)('rejects %s', async (_name, source, expectedFailure) => {
       const dummy = await config.writeDummy(source())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -663,8 +661,7 @@ export function defineProofSupervisorSuite(
           .replaceAll('process.exit(1)', 'process.exit(0)')
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -685,8 +682,7 @@ export function defineProofSupervisorSuite(
         )
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -748,7 +744,7 @@ export function defineProofSupervisorSuite(
         sourceEnvironment: {
           ...(await config.dummyEnvironment()),
           LEAK_ME: 'must-not-pass',
-        } as unknown as NodeJS.ProcessEnv,
+        },
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -761,8 +757,7 @@ export function defineProofSupervisorSuite(
     test('preserves a values-free failure receipt from a failed child', async () => {
       const dummy = await config.writeDummy(config.failedReceiptSource())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -784,8 +779,7 @@ export function defineProofSupervisorSuite(
     ])('classifies %s without retrying', async (_name, source, expected) => {
       const dummy = await config.writeDummy(source)
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -801,8 +795,7 @@ export function defineProofSupervisorSuite(
         : await prepareDuplicateLock(dummy.lockPath)
       try {
         const receipt = await behaviors.superviseProof({
-          sourceEnvironment:
-            (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+          sourceEnvironment: await config.dummyEnvironment(),
           childPath: dummy.path,
           childArgs: [],
           lockPath: dummy.lockPath,

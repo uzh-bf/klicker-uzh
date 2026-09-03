@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
 import { stat, unlink, writeFile } from 'node:fs/promises'
-import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, test } from 'vitest'
 import {
   computeManifestFingerprint,
@@ -65,18 +64,6 @@ afterEach(() => proofRegistry.cleanup())
 
 async function proofProcessEnvironment(): Promise<NodeJS.ProcessEnv> {
   return { ...(await proofDummyEnvironmentWithPin()), NODE_ENV: 'test' }
-}
-
-async function prepareDuplicateLock(lockPath: string) {
-  const database = new DatabaseSync(`${lockPath}.guard.sqlite`, { timeout: 0 })
-  database.exec('BEGIN EXCLUSIVE')
-  return async () => {
-    try {
-      database.exec('ROLLBACK')
-    } finally {
-      database.close()
-    }
-  }
 }
 
 defineProofManifestSuite(
@@ -283,7 +270,6 @@ defineProofSupervisorSuite(
   {
     dummyEnvironment: proofDummyEnvironmentWithPin,
     writeDummy,
-    prepareDuplicateLock,
     passedReceiptSource: receiptSources.passedReceiptSource,
     failedReceiptSource: receiptSources.failedReceiptSource,
     expectProofManifestFingerprint: true,
