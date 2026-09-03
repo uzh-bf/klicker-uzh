@@ -53,8 +53,8 @@ without breaking queries.
 - Tests: silent by default. Contract tests inject a capture destination.
 - `LOG_LEVEL` controls the threshold and defaults to `info` outside tests.
 
-The package pins Pino 9.14.0 and constrains `pino-pretty` to `~13.1.3`. Pino 10 adoption is a
-separate dependency change.
+The package pins Pino 9.14.0 and constrains `pino-pretty` to `~13.1.3`. Pino 10
+adoption is a separate dependency change.
 
 ## Correlation contract
 
@@ -76,6 +76,81 @@ The envelope stays separate from business payloads. In particular, the
 assessment response pipeline already has an MD5-derived business field named
 `correlationId` for Redis deduplication. That existing field is not diagnostic
 context and must never be bound to application log correlation.
+
+Every wrapped Hatchet task emits `hatchet.task.started` and either
+`hatchet.task.completed` or `hatchet.task.failed`. These records bind the task
+name plus Hatchet workflow/task run IDs. Old queued inputs remain valid and do
+not receive invented request or correlation identifiers.
+
+Hatchet task code must use `ctx.logger` (the deprecated `ctx.log` alias is also
+SDK-owned), not a Pino child created for an individual response. The configured
+Hatchet logger factory forwards the same context call to the process Pino
+logger, while the SDK also persists the call in the Hatchet task-run log. Thus a
+single task log is visible in both destinations. Within the task attempt, the
+validated `loggingContext` is carried by a narrow async context bridge; task
+helpers merge it into `ctx.logger` metadata so it reaches Hatchet's UI and the
+Pino adapter without creating a per-response logger. The bridge is never used
+as implicit cross-process state. Hatchet's UI keeps its native task association
+and metadata, while the container line contains the full portable Pino record.
+
+The audit-entry task records only that an entry was received plus validated
+diagnostic context. Its historical `info` text and any business correlation
+identifier remain task payload data and are never emitted as Pino fields.
+
+Response-worker outcome events include `response.rejected`,
+`response.authentication.rejected`, `response.block_closed`,
+`response.processed`, `response.aggregation.completed`, and
+`dependency.unavailable`. The assessment payload's business `correlationId`
+and participant identifiers are deliberately excluded from diagnostic fields.
+
+The response API binds this context to every accepted Hatchet response event.
+The GraphQL backend binds it to HTTP and WebSocket contexts and passes the same
+envelope to activity publication, completion, and aggregation jobs scheduled by
+a request. Jobs started without a request omit the envelope.
+
+## Owned HTTP boundaries
+
+`response-api` and `backend-docker` each own one request-completion record. The
+adapter accepts a parameterized route from the matched route branch; it never
+derives a log field from the raw URL. It validates incoming diagnostic headers,
+echoes `x-request-id`, suppresses health-probe completion records, and records
+method, route, status, and duration only.
+
+The GraphQL request child logger is exposed internally as `ctx.log` together
+with `ctx.requestContext`. GraphQL Yoga's built-in logger is disabled to avoid a
+second, unowned record. Service-level recovery signals use stable events; normal
+validation failures remain return values and do not create log noise. Operator
+scripts under `packages/graphql/src/scripts/` keep their terminal output.
+
+Auth uses the same validated request context in both Next middleware and the
+NextAuth Node handler. Middleware logs only categorical audience, redirect, and
+cookie actions; NextAuth adds categorical sign-in, token, account, affiliation,
+and invitation outcomes. Responses echo `x-request-id`. Profiles, identities,
+URLs, referrers, query values, cookies, and raw provider errors are excluded.
+
+LTI records verified launch acceptance, target rejection/selection, platform
+registration, and lifecycle events without emitting the launch token, public
+key, user information, or redirect target. OLAT owns Express request records for
+an explicit route-template allowlist and suppresses `/health`; API keys,
+provider/course identifiers, bodies, response data, and raw dependency errors
+are excluded. Local configuration-file reads have separate
+`dependency.read_failed` events while the HTTP boundary owns
+`http.request.failed`.
+
+Chat's Edge proxy propagates validated diagnostic IDs and records categorical
+invalid-token outcomes; every Node API route uses a hard-coded parameterized
+template. It owns one immediate HTTP completion record and separate once-only
+stream outcome events. Prompts, messages, model output, model/deployment
+identifiers, MCP server and tool names, upstream URLs, API keys, and provider
+errors never become log fields. MCP and model milestones use counts and
+categorical outcomes only.
+
+Manage, PWA, assessment PWA, and control emit Node startup records. PWA
+`getServerSideProps` failures use a request child with a parameterized page
+route, and the same validated request/correlation context is propagated only to
+the internal server-side GraphQL call. Browser-side GraphQL requests and
+external providers do not receive these headers. Browser console behavior is
+outside this server logging contract.
 
 ## Privacy boundary
 
@@ -134,3 +209,40 @@ supports queries such as:
 The collector preserves the original JSON line and non-JSON third-party output.
 It stores level, event, request, correlation, and trace/span identifiers as
 structured metadata rather than indexed labels.
+
+Application deployment does not depend on the companion cloud MRs: the existing
+collector already forwards container stdout, so production NDJSON is available
+immediately as raw Loki lines. The cloud changes add Kubernetes-derived
+`service_name`, application timestamp parsing, and queryable structured
+metadata; they do not establish or replace log transport.
+
+## Server console guard
+
+`pnpm run check:server-console` rejects active
+`console.log/info/warn/error/debug` calls in the server-owned path allowlist. It
+strips comments with a deterministic scanner and reports `path:line`. Shared
+browser/server pages are deliberately excluded; operator scripts keep terminal
+output. The sole sink exception is `packages/logging/src/edge.ts`, where the
+Edge adapter serializes its already-allowlisted record to the runtime console.
+
+Add a new server-owned path to the guard when it adopts the shared logger. Do
+not add file exceptions for migrations; convert the call or keep truly
+interactive output under an operator `scripts/` directory.
+
+## Staging acceptance and rollback
+
+After both application and cloud changes reach staging:
+
+1. query every standard and assessment component by `service_name`;
+2. locate `logging-canary-20260805` across response API, GraphQL, and Hatchet
+   records using `correlation_id`;
+3. confirm `level` and `event` filtering without adding them as stream labels;
+4. verify existing non-JSON/third-party lines remain present and unchanged;
+5. send fake token, cookie, email, body, and URL canaries through test paths and
+   prove none appear in Loki;
+6. inspect stream cardinality and volume, confirming diagnostic IDs are
+   structured metadata rather than labels.
+
+Application rollback is an ordinary image rollback. Collector enrichment rolls
+back by reverting the `df-cloud-klickeruzh` submodule-pointer commit; raw NDJSON
+continues through the existing transport in either case.

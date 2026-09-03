@@ -1,3 +1,4 @@
+import { toSafeError } from '@klicker-uzh/logging/node'
 import {
   CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
@@ -5,6 +6,7 @@ import {
 } from '@klicker-uzh/util'
 import { z } from 'zod'
 import type { ReasoningEffort } from '../config/reasoning'
+import { logger } from './logger'
 
 const chatModelSchema = z
   .object({
@@ -225,8 +227,21 @@ export function getChatModelRegistry(): ChatModelConfig[] {
     return cachedRegistry
   }
 
-  cachedRegistry = parseRegistryValue(JSON.parse(raw))
-  return cachedRegistry
+  try {
+    cachedRegistry = parseRegistryValue(JSON.parse(raw))
+    return cachedRegistry
+  } catch {
+    logger.error(
+      {
+        event: 'chat.configuration.failed',
+        configuration: 'model_registry',
+        outcome: 'startup_rejected',
+        err: toSafeError('Invalid chat model registry'),
+      },
+      'Invalid chat configuration; refusing to start'
+    )
+    throw new Error('Invalid chat model registry configuration')
+  }
 }
 
 export function parseReasoningEffortByModel(
@@ -331,8 +346,13 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
     registry[0]
 
   if (configuredPrimary && primary.id !== configuredPrimary) {
-    console.warn(
-      `[chat] CHAT_PRIMARY_MODEL_ID="${configuredPrimary}" is not in the registry; using "${primary.id}".`
+    logger.warn(
+      {
+        event: 'chat.configuration.failed',
+        configuration: 'primary_model',
+        outcome: 'using_fallback',
+      },
+      'Configured primary model is not in the registry; using fallback'
     )
   }
 

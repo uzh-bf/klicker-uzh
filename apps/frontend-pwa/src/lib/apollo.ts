@@ -14,6 +14,10 @@ import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import { getStoredAuthToken } from '@klicker-uzh/util/client-auth'
+import {
+  propagationHeaders,
+  type RequestContext,
+} from '@klicker-uzh/logging/request'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
@@ -33,7 +37,10 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-function createIsomorphLink(ctx?: GetServerSidePropsContext) {
+function createIsomorphLink(
+  ctx?: GetServerSidePropsContext,
+  requestContext?: RequestContext
+) {
   const isBrowser = typeof window !== 'undefined'
 
   const persistedLink =
@@ -72,12 +79,13 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         ...(ctx?.req?.headers?.cookie
           ? { cookie: ctx.req.headers.cookie }
           : {}),
+        ...(requestContext ? propagationHeaders(requestContext) : {}),
       },
     }
   })
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
-    if (graphQLErrors)
+    if (isBrowser && graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
         console.log(
           `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
@@ -94,7 +102,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         )
 
         // redirect the user to the login page on errors
-        if (isBrowser && message === 'Unauthorized') {
+        if (message === 'Unauthorized') {
           Router.push(
             `/login?expired=true&redirect_to=${
               encodeURIComponent(
@@ -104,7 +112,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
           )
         }
       })
-    if (networkError) console.log(`[Network error]`, networkError)
+    if (isBrowser && networkError) console.log(`[Network error]`, networkError)
   })
 
   let link: ApolloLink = new HttpLink({
@@ -168,7 +176,10 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
 }
 
 // TODO: use the schema link when working on the server?
-function createApolloClient(ctx?: GetServerSidePropsContext) {
+function createApolloClient(
+  ctx?: GetServerSidePropsContext,
+  requestContext?: RequestContext
+) {
   // TODO: switch to yoga link
   // const yogaLink = new YogaLink({
   //   endpoint: publicRuntimeConfig.API_URL,
@@ -177,7 +188,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link: createIsomorphLink(ctx),
+    link: createIsomorphLink(ctx, requestContext),
     cache: new InMemoryCache(),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })
@@ -185,9 +196,10 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 
 export function initializeApollo(
   initialState?: NormalizedCacheObject,
-  ctx?: GetServerSidePropsContext
+  ctx?: GetServerSidePropsContext,
+  requestContext?: RequestContext
 ): ApolloClient<NormalizedCacheObject> {
-  const _apolloClient = apolloClient ?? createApolloClient(ctx)
+  const _apolloClient = apolloClient ?? createApolloClient(ctx, requestContext)
 
   // If your page has Next.js data fetching methods that use Apollo Client, the initial state
   // gets hydrated here

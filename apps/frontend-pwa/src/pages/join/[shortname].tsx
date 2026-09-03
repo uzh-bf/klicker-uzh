@@ -156,6 +156,12 @@ function Join({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/join/:shortname'
+  )
+
   try {
     if (typeof ctx.params?.shortname !== 'string') {
       return {
@@ -166,7 +172,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
     const result = await apolloClient.query({
       query: GetShortnameQuizzesDocument,
       variables: {
@@ -220,8 +226,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     })
-  } catch (error) {
-    console.error('Error in getServerSideProps on join page:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -229,8 +235,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page
