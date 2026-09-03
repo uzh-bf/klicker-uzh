@@ -390,6 +390,7 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('confirm-kb-file-replacement')
       ).toBeVisible()
+      failNextKbMetricsRefresh = true
       await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()
       expect(replaceCalls).toBe(1)

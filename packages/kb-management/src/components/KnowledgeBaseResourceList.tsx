@@ -317,16 +317,6 @@ function ResourceServingStatus({
       version: resource.activeResourceVersion,
     })
   }
-  if (
-    resource.activeResourceVersion < resource.resourceVersion &&
-    resource.status === KbResourceStatus.Added
-  ) {
-    // A replaced resource waits for its first ingestion while the previous
-    // version keeps serving.
-    return t('kb.servingPreviousVersion', {
-      version: resource.activeResourceVersion,
-    })
-  }
   return t('kb.servingPreviousVersion', {
     version: resource.activeResourceVersion,
   })
@@ -1157,6 +1147,9 @@ function KnowledgeBaseResourceList({
     }
   }, [polling, pollActivePages, refreshLoadedResources])
 
+  // These values are intentionally effect triggers: the reset clears state
+  // that belongs to the previous query context without otherwise reading them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when any query context dimension changes
   useEffect(() => {
     refreshRequestRef.current += 1
     setSelectedIds(new Set())

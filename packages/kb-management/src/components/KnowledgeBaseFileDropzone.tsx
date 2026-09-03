@@ -129,18 +129,24 @@ function KnowledgeBaseFileDropzone({
           )
           setReplacementFile(null)
         }
-        const message =
-          code === 'KB_RESOURCE_LIMIT_REACHED'
-            ? t('kb.resourceLimitError')
-            : code === 'KB_STORAGE_LIMIT_REACHED'
-              ? t('kb.storageLimitError')
-              : code === 'KB_UPLOAD_TICKET_MISMATCH'
-                ? t('kb.uploadMismatchError')
-                : code === 'KB_INGESTION_QUEUE_FAILED'
-                  ? t('kb.ingestResourceError')
-                  : code === 'KB_INGESTION_DISABLED'
-                    ? t('kb.ingestionDisabledError')
-                    : t('kb.fileUploadError')
+        let message = t('kb.fileUploadError')
+        switch (code) {
+          case 'KB_RESOURCE_LIMIT_REACHED':
+            message = t('kb.resourceLimitError')
+            break
+          case 'KB_STORAGE_LIMIT_REACHED':
+            message = t('kb.storageLimitError')
+            break
+          case 'KB_UPLOAD_TICKET_MISMATCH':
+            message = t('kb.uploadMismatchError')
+            break
+          case 'KB_INGESTION_QUEUE_FAILED':
+            message = t('kb.ingestResourceError')
+            break
+          case 'KB_INGESTION_DISABLED':
+            message = t('kb.ingestionDisabledError')
+            break
+        }
         toast({ type: 'error', message })
         return
       }

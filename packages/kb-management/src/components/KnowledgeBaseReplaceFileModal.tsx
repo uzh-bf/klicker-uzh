@@ -23,7 +23,11 @@ function KnowledgeBaseReplaceFileModal({
   }
 
   const handleResourceCreated = async () => {
-    await onResourceCreated()
+    try {
+      await onResourceCreated()
+    } catch (error) {
+      console.error('Failed to refresh KB resources after replacement', error)
+    }
     onClose()
   }
 
