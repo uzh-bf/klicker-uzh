@@ -126,6 +126,7 @@ function FilterList({
     NUMERICAL: [faQuestionRegular, faQuestionSolid],
     SELECTION: [faSquareCheckRegular, faSquareCheckSolid],
     CASE_STUDY: [faListCheck, faListCheck],
+    QR_SCAN: [faQuestionRegular, faQuestionSolid],
   }
 
   return (

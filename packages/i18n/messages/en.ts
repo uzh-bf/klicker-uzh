@@ -382,6 +382,12 @@ export default {
       richtext:
         'Please evaluate all options with respect to the given criteria.',
     },
+    QR_SCAN: {
+      short: 'QR',
+      typeLabel: 'QR Scan (QR)',
+      text: 'Please scan or enter the hidden code.',
+      richtext: 'Please <b>scan or enter</b> the hidden code.',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -711,6 +717,7 @@ export default {
       CASE_STUDY: 'Case Study',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
+      QR_SCAN: 'QR Scan Question',
     },
     short: {
       LIVE_QUIZ: 'LQ',
@@ -2164,6 +2171,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       tagNameUpdatedSuccessfully: 'The tag name has been updated successfully.',
     },
     elements: {
+      qrPrintOpen: 'Open QR print sheets',
+      qrPrintAction: 'Print sheets',
+      qrPrintDecoyCount: 'Number of decoys',
+      qrPrintSheet: 'QR station {number}',
+      qrPrintLegend: 'Lecturer-only answer code: {code}',
+      qrPrintUnauthorized:
+        'This QR print sheet is unavailable or you are not its owner.',
       CREATETitle: 'Create Element',
       EDITTitle: 'Edit Element',
       DUPLICATETitle: 'Duplicate Element',

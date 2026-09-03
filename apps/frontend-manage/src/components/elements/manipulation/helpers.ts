@@ -19,6 +19,7 @@ import {
   ElementFormTypesFlashcard,
   ElementFormTypesFreeText,
   ElementFormTypesNumerical,
+  ElementFormTypesQrScan,
   ElementFormTypesSelection,
 } from './types'
 
@@ -37,6 +38,28 @@ export function prepareContentArgs({
     name: values.name,
     status: values.status,
     content: values.content,
+    basePoints: values.basePoints,
+    pointsMultiplier: parseInt(values.pointsMultiplier),
+    tags: values.tags,
+  }
+}
+
+interface PrepareQrScanArgsProps {
+  elementId?: number
+  isDuplication: boolean
+  values: ElementFormTypesQrScan & { status: ElementStatus }
+}
+export function prepareQrScanArgs({
+  elementId,
+  isDuplication,
+  values,
+}: PrepareQrScanArgsProps) {
+  return {
+    id: isDuplication ? undefined : elementId,
+    name: values.name,
+    status: values.status,
+    content: values.content,
+    explanation: values.explanation,
     basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
     tags: values.tags,

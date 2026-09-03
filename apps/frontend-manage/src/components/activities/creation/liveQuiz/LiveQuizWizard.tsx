@@ -1,10 +1,10 @@
 import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
+  ActivityType,
   CreateLiveQuizDocument,
   EditLiveQuizDocument,
   Element,
-  ElementType,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
   PublicationStatus,
@@ -25,6 +25,7 @@ import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
+import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
@@ -34,16 +35,7 @@ import LiveQuizSettingsStep from './LiveQuizSettingsStep'
 import submitLiveQuizForm from './submitLiveQuizForm'
 
 // flashcards are not accepted in live quizzes -> only makes sense in combination with spaced repetition / async learning
-const acceptedTypes = [
-  ElementType.Sc,
-  ElementType.Mc,
-  ElementType.Kprim,
-  ElementType.Numerical,
-  ElementType.FreeText,
-  ElementType.Content,
-  ElementType.Selection,
-  ElementType.CaseStudy,
-]
+const acceptedTypes = getActivityAcceptedElementTypes(ActivityType.LiveQuiz)
 
 export interface LiveQuizWizardStepProps {
   editMode: boolean

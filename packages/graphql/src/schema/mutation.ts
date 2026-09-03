@@ -1039,6 +1039,40 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      manipulateQrScanElement: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          if (args.id != null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+          }
+
+          return await ElementService.manipulateElement(
+            { ...args, type: DB.ElementType.QR_SCAN },
+            ctx
+          )
+        },
+      }),
+
       manipulateFlashcardElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,

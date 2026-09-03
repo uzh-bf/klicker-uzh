@@ -1,6 +1,12 @@
 import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  type ElementBlockInput,
+  type ElementStackInput,
+  SharingType,
+  SortByType,
+} from '@klicker-uzh/types'
 import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -34,6 +40,39 @@ export async function deleteWithPublicationStatusGuard<T>(
     }
     throw error
   }
+}
+
+export function activityInputContainsElementType({
+  stacksOrBlocks,
+  persistentInstances,
+  duplicationInstances,
+  elementMap,
+  type,
+}: {
+  stacksOrBlocks: (ElementStackInput | ElementBlockInput)[]
+  persistentInstances: Pick<DB.ElementInstance, 'id' | 'elementType'>[]
+  duplicationInstances: Pick<DB.ElementInstance, 'id' | 'elementType'>[]
+  elementMap: Record<number, Pick<DB.Element, 'type'>>
+  type: DB.ElementType
+}) {
+  const existingInstances = [...persistentInstances, ...duplicationInstances]
+
+  return stacksOrBlocks.some((stackOrBlock) =>
+    stackOrBlock.elements.some((entry) => {
+      const source = entry.existingInstanceId
+        ? existingInstances.find(
+            (instance) => instance.id === entry.existingInstanceId
+          )
+        : elementMap[entry.elementId]
+      const elementType = source
+        ? 'elementType' in source
+          ? source.elementType
+          : source.type
+        : null
+
+      return elementType === type
+    })
+  )
 }
 
 export async function getUserActivitiesCourses(ctx: ContextWithUser) {

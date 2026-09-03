@@ -372,6 +372,17 @@ export const ContentElementData = builder
     }),
   })
 
+// QR_SCAN participant data intentionally contains no scan code. The opaque
+// code remains on the source Element and is accessed through owner-only APIs.
+export interface IQrScanElementData extends BaseElementData {}
+export const QrScanElementData = builder
+  .objectRef<IQrScanElementData>('QrScanElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+    }),
+  })
+
 export const ElementData = builder.unionType('ElementData', {
   types: [
     ChoicesElementData,
@@ -381,6 +392,7 @@ export const ElementData = builder.unionType('ElementData', {
     ContentElementData,
     SelectionElementData,
     CaseStudyElementData,
+    QrScanElementData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -400,6 +412,8 @@ export const ElementData = builder.unionType('ElementData', {
         return FlashcardElementData
       case DB.ElementType.CONTENT:
         return ContentElementData
+      case DB.ElementType.QR_SCAN:
+        return QrScanElementData
     }
   },
 })

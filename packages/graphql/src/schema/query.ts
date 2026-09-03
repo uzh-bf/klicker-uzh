@@ -62,6 +62,7 @@ import {
   ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
+  QrScanPrintData,
   SortByType,
   Tag,
   UserElementList,
@@ -268,6 +269,7 @@ export const Query = builder.queryType({
         args: {
           status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ type: ElementType, required: false }),
+          elementTypes: t.arg({ type: [ElementType], required: false }),
           hasSampleSolution: t.arg.boolean({ required: true }),
           hasAnswerFeedbacks: t.arg.boolean({ required: true }),
           searchString: t.arg.string({ required: false }),
@@ -846,6 +848,25 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await ElementService.getSingleElement(args, ctx)
+          }
+        ),
+      }),
+
+      qrScanPrintData: t.withAuth(asUser).field({
+        nullable: true,
+        type: QrScanPrintData,
+        args: {
+          elementId: t.arg.int({ required: true }),
+          decoyCount: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 20 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.OWNER,
+          async (_, args, ctx) => {
+            return await ElementService.getQrScanPrintData(args, ctx)
           }
         ),
       }),

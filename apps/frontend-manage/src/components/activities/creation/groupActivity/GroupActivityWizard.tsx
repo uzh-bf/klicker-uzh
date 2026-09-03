@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
+  ActivityType,
   CreateGroupActivityDocument,
   EditGroupActivityDocument,
   Element,
-  ElementType,
   GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,6 +16,7 @@ import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ActivityCreation'
+import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
   GroupActivityClueFormValues,
@@ -45,16 +46,9 @@ export interface GroupActivityWizardStepProps {
   closeWizard: () => void
 }
 
-const acceptedTypes = [
-  ElementType.Sc,
-  ElementType.Mc,
-  ElementType.Kprim,
-  ElementType.Numerical,
-  ElementType.FreeText,
-  ElementType.Content,
-  ElementType.Selection,
-  ElementType.CaseStudy,
-]
+const acceptedTypes = getActivityAcceptedElementTypes(
+  ActivityType.GroupActivity
+)
 
 interface GroupActivityWizardProps {
   title: string
