@@ -93,21 +93,21 @@ function PracticeQuizOverview({
           <Link
             href={`/course/${course.id}/practice`}
             data-cy="open-practice-pool"
-            className="flex min-h-24 w-full items-center gap-4 rounded bg-uzh-blue p-4 text-white transition-colors hover:bg-uzh-blue-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue"
+            className="border-uzh-blue flex min-h-24 w-full items-center gap-4 rounded border-l-4 bg-blue-50 p-4 text-slate-800 transition-colors hover:bg-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue"
           >
             <FontAwesomeIcon
               icon={faRepeat}
-              className="h-7 w-7 flex-none"
+              className="text-uzh-blue h-7 w-7 flex-none"
               aria-hidden="true"
             />
             <span className="min-w-0 flex-1">
-              <span className="block text-xl font-semibold leading-tight">
+              <span className="text-uzh-blue block text-xl font-semibold leading-tight">
                 {t('pwa.general.practicePoolPromotionTitle')}
               </span>
-              <span className="mt-1 block text-base leading-snug">
+              <span className="mt-1 block text-base leading-snug text-slate-700">
                 {t('pwa.general.practicePoolPromotionDescription')}
               </span>
-              <span className="mt-3 inline-block rounded border border-white px-3 py-1 font-semibold">
+              <span className="bg-uzh-blue hover:bg-uzh-blue-80 mt-3 inline-block rounded px-3 py-1 font-semibold text-white transition-colors">
                 {t('pwa.general.startPracticePool')}
               </span>
             </span>
