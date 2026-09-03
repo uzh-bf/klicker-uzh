@@ -1,13 +1,20 @@
+import type { ManageAssistantCapabilityState } from '@/src/services/manageAssistantCapabilities'
 import type { ManageAssistantContext } from '@/src/services/manageContext'
 
 export interface ThreadSuggestion {
   id: string
   text: string
+  /** i18n key under chat.manageAssistant.suggestions; text is the fallback. */
+  textKey?: ManageSuggestionTextKey
   prompt: string
 }
 
+type ManageAssistantSuggestionMessages =
+  typeof import('@klicker-uzh/i18n/messages/en').default['chat']['manageAssistant']['suggestions']
+export type ManageSuggestionTextKey = keyof ManageAssistantSuggestionMessages
+
 // Shown while browsing the question pool, with no single question or course in focus.
-const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
+const QUESTION_POOL_SUGGESTIONS = [
   {
     id: 'question-pool-draft',
     text: 'Draft a question',
@@ -26,10 +33,10 @@ const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Ask me which question to improve, then suggest clearer answer-specific feedback for it.',
   },
-]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown while a single question is open in the element editor (ids.elementId is set).
-const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
+const ELEMENT_EDITOR_SUGGESTIONS = [
   {
     id: 'element-editor-improve',
     text: 'Improve this question',
@@ -48,10 +55,10 @@ const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Suggest clearer, more specific answer feedback for the question I currently have open.',
   },
-]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown on a course dashboard (ids.courseId is set).
-const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
+const COURSE_DASHBOARD_SUGGESTIONS = [
   {
     id: 'course-dashboard-summarize',
     text: 'Summarize this course',
@@ -70,10 +77,10 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Search my question pool for material relevant to the course I currently have open.',
   },
-]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown while assembling a quiz or other activity.
-const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
+const ACTIVITY_CREATION_SUGGESTIONS = [
   {
     id: 'activity-creation-draft',
     text: 'Draft quiz questions',
@@ -92,10 +99,10 @@ const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Ask me to list the questions I am considering for this quiz, then suggest how to balance their difficulty.',
   },
-]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown on an evaluation/results view for a quiz.
-const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
+const EVALUATION_SUGGESTIONS = [
   {
     id: 'evaluation-explain',
     text: 'Explain results',
@@ -114,12 +121,12 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Search my question pool for questions similar to the ones used in this quiz.',
   },
-]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown for the general manage surface, or when no context is available at all
 // (e.g. the assistant opened in a new tab). Must never reference page context
 // that is not actually present.
-const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
+const GENERAL_SUGGESTIONS = [
   {
     id: 'general-draft',
     text: 'Draft question',
@@ -138,24 +145,157 @@ const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Create concise answer-specific feedback for a question. Ask me for the question details if needed.',
   },
+] satisfies ThreadSuggestion[]
+
+type ManageSuggestion =
+  | (typeof QUESTION_POOL_SUGGESTIONS)[number]
+  | (typeof ELEMENT_EDITOR_SUGGESTIONS)[number]
+  | (typeof COURSE_DASHBOARD_SUGGESTIONS)[number]
+  | (typeof ACTIVITY_CREATION_SUGGESTIONS)[number]
+  | (typeof EVALUATION_SUGGESTIONS)[number]
+  | (typeof GENERAL_SUGGESTIONS)[number]
+
+type ManageSuggestionId = ManageSuggestion['id']
+
+const NO_SAVE_SENTENCE = 'Please do not save anything.'
+
+function withNoSaveInstruction(prompt: string) {
+  if (prompt.toLowerCase().includes('do not save anything')) return prompt
+  return `${prompt} ${NO_SAVE_SENTENCE}`
+}
+
+const PLAN_QUESTION_NO_SAVE: Pick<
+  ThreadSuggestion,
+  'prompt' | 'text' | 'textKey'
+> = {
+  text: 'Plan a question',
+  textKey: 'planQuestion',
+  prompt:
+    'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed.',
+}
+
+const IMPROVE_FEEDBACK_NO_SAVE: Pick<
+  ThreadSuggestion,
+  'prompt' | 'text' | 'textKey'
+> = {
+  text: 'Improve feedback',
+  textKey: 'improveFeedback',
+  prompt:
+    'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback.',
+}
+
+const READ_ONLY_OVERRIDES: Partial<
+  Record<
+    ManageSuggestionId,
+    Pick<ThreadSuggestion, 'prompt' | 'text' | 'textKey'>
+  >
+> = {
+  'activity-creation-draft': {
+    text: 'Plan quiz questions',
+    textKey: 'planQuizQuestions',
+    prompt:
+      'Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear.',
+  },
+  'course-dashboard-draft': {
+    text: 'Plan course question',
+    textKey: 'planCourseQuestion',
+    prompt:
+      'Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear.',
+  },
+  'element-editor-variant': {
+    text: 'Plan a variant',
+    textKey: 'planVariant',
+    prompt:
+      'Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access.',
+  },
+  'evaluation-followup': {
+    text: 'Plan follow-up',
+    textKey: 'planFollowUp',
+    prompt:
+      'Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap.',
+  },
+  'general-draft': PLAN_QUESTION_NO_SAVE,
+  'general-feedback': IMPROVE_FEEDBACK_NO_SAVE,
+  'question-pool-draft': {
+    text: 'Plan a question',
+    textKey: 'planQuestion',
+    prompt:
+      'Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed.',
+  },
+}
+
+const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
+  {
+    id: 'unavailable-plan-question',
+    ...PLAN_QUESTION_NO_SAVE,
+  },
+  {
+    id: 'unavailable-feedback',
+    ...IMPROVE_FEEDBACK_NO_SAVE,
+  },
+  {
+    id: 'unavailable-documentation',
+    text: 'KlickerUZH help',
+    textKey: 'documentation',
+    prompt:
+      'Help me with a KlickerUZH how-to question using the curated documentation index. Link the closest documented source and say when it is not an exact match.',
+  },
 ]
 
+function withoutPersistenceIntent(
+  suggestion: ManageSuggestion
+): ThreadSuggestion {
+  const override = READ_ONLY_OVERRIDES[suggestion.id]
+  // Full overrides relabel starters whose base copy implies writing; the suffix
+  // safely constrains every other prompt without changing its original intent.
+  if (override) {
+    return {
+      ...suggestion,
+      ...override,
+      prompt: withNoSaveInstruction(override.prompt),
+    }
+  }
+
+  return {
+    ...suggestion,
+    prompt: withNoSaveInstruction(suggestion.prompt),
+  }
+}
+
 export function getManageSuggestions(
-  context: ManageAssistantContext | null
-): ThreadSuggestion[] {
+  context: ManageAssistantContext | null,
+  capability: ManageAssistantCapabilityState = 'draft-and-read'
+): readonly ThreadSuggestion[] {
+  if (capability === 'unavailable') {
+    // Without tools nothing can be saved; state the constraint uniformly.
+    return UNAVAILABLE_SUGGESTIONS.map((suggestion) => ({
+      ...suggestion,
+      prompt: withNoSaveInstruction(suggestion.prompt),
+    }))
+  }
+
+  let suggestions: readonly ManageSuggestion[]
   switch (context?.surface) {
     case 'question-pool':
-      return QUESTION_POOL_SUGGESTIONS
+      suggestions = QUESTION_POOL_SUGGESTIONS
+      break
     case 'element-editor':
-      return ELEMENT_EDITOR_SUGGESTIONS
+      suggestions = ELEMENT_EDITOR_SUGGESTIONS
+      break
     case 'course-dashboard':
-      return COURSE_DASHBOARD_SUGGESTIONS
+      suggestions = COURSE_DASHBOARD_SUGGESTIONS
+      break
     case 'activity-creation':
-      return ACTIVITY_CREATION_SUGGESTIONS
+      suggestions = ACTIVITY_CREATION_SUGGESTIONS
+      break
     case 'evaluation':
-      return EVALUATION_SUGGESTIONS
-    case 'general':
+      suggestions = EVALUATION_SUGGESTIONS
+      break
     default:
-      return GENERAL_SUGGESTIONS
+      suggestions = GENERAL_SUGGESTIONS
   }
+
+  return capability === 'read-only'
+    ? suggestions.map(withoutPersistenceIntent)
+    : suggestions
 }

@@ -8,6 +8,13 @@ type BuildManageAssistantUrlArgs = {
   embed?: boolean
 }
 
+export type ManageAssistantElementEditRoute = {
+  pathname: '/'
+  query: { editElementId: string }
+}
+
+export const MANAGE_ASSISTANT_APP_CONTENT_ID = 'manage-assistant-app-content'
+
 export function buildManageAssistantUrl({
   chatUrl,
   locale,
@@ -37,5 +44,16 @@ export function buildManageAssistantUrl({
     return url.toString()
   } catch {
     return null
+  }
+}
+
+export function buildManageAssistantElementEditRoute(
+  id: number
+): ManageAssistantElementEditRoute | null {
+  if (!Number.isInteger(id) || id <= 0) return null
+
+  return {
+    pathname: '/',
+    query: { editElementId: String(id) },
   }
 }

@@ -91,14 +91,67 @@ export default {
     manageAssistant: {
       welcome: 'Hallo! Wie kann ich helfen?',
       manageContext: 'Verwalten',
+      context: {
+        surface: {
+          questionPool: 'Fragepool',
+          elementEditor: 'Frageneditor',
+          courseDashboard: 'Kursübersicht',
+          activityCreation: 'Aktivität einrichten',
+          evaluation: 'Auswertung',
+          general: 'Verwalten',
+        },
+        course: 'Kurs {id}',
+        activity: 'Aktivität {id}',
+        question: 'Frage {id}',
+        changed: 'Der Manage-Kontext wurde zu {context} geändert',
+        cleared: 'Der aktuelle Manage-Kontext ist nicht mehr verfügbar',
+      },
       capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
       capabilityDraft:
         'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityNoSaveDraft:
+        'Fragenentwürfe vorbereiten, ohne sie zu speichern',
       capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
       capabilityDocumentation:
-        'Funktionen von KlickerUZH anhand der Dokumentation und Anleitungen erklären',
+        'Gängige KlickerUZH-Abläufe anhand eines kuratierten Verzeichnisses der Dokumentation und Anleitungen erklären',
+      capabilityChecking:
+        'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
+      capabilityReadOnly:
+        'Live-Abfragen sind verfügbar, aber in dieser Sitzung können keine Entwurfsvorschläge gespeichert werden. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityUnavailable:
+        'Live-Werkzeuge für Kurse und die Fragensammlung sind vorübergehend nicht verfügbar. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityRetry: 'Erneut versuchen',
+      suggestions: {
+        'question-pool-draft': 'Frage entwerfen',
+        'question-pool-find': 'Fragen finden',
+        'question-pool-feedback': 'Feedback verbessern',
+        'element-editor-improve': 'Diese Frage verbessern',
+        'element-editor-variant': 'Variante entwerfen',
+        'element-editor-feedback': 'Besseres Feedback',
+        'course-dashboard-summarize': 'Diesen Kurs zusammenfassen',
+        'course-dashboard-draft': 'Kursfrage entwerfen',
+        'course-dashboard-find': 'Kursmaterial finden',
+        'activity-creation-draft': 'Quizfragen entwerfen',
+        'activity-creation-reuse': 'Fragen wiederverwenden',
+        'activity-creation-balance': 'Schwierigkeit ausgleichen',
+        'evaluation-explain': 'Resultate erklären',
+        'evaluation-followup': 'Vertiefungsfrage',
+        'evaluation-similar': 'Ähnliche Fragen',
+        'general-draft': 'Frage entwerfen',
+        'general-find': 'Fragen finden',
+        'general-feedback': 'Feedback verbessern',
+        planQuestion: 'Frage planen',
+        planQuizQuestions: 'Quizfragen planen',
+        planCourseQuestion: 'Kursfrage planen',
+        planVariant: 'Variante planen',
+        planFollowUp: 'Vertiefungsfrage planen',
+        improveFeedback: 'Feedback verbessern',
+        documentation: 'KlickerUZH Hilfe',
+      },
       limitsNote:
-        'Alles andere ist schreibgeschützt — der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+        'Die Dokumentationshilfe nutzt ein kuratiertes Verzeichnis und keine vollständige Suche. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      degradedLimitsNote:
+        'Gib fehlende Inhalte direkt an, wenn die Live-Abfrage nicht verfügbar ist. Ohne Vorschlagskarte und Deine Bestätigung wird nichts gespeichert.',
       proposalReview: {
         reviewLabel: 'Fragenentwurf prüfen',
         draftQuestion: 'Fragenentwurf',
@@ -115,6 +168,19 @@ export default {
         singleChoice: 'Single Choice',
         multipleChoice: 'Multiple Choice',
         freeText: 'Freitext',
+      },
+      proposal: {
+        dismissed: 'Verworfen: {summary}',
+        draftCreated: 'Entwurf erstellt',
+        confirmationRequired: 'Bestätigung erforderlich',
+        draft: 'Entwurf',
+        createDraft: 'Entwurf erstellen',
+        dismiss: 'Verwerfen',
+        draftCreatedInQuestionPool: 'Entwurf im Fragepool erstellt',
+        openDraft: 'Entwurf öffnen',
+        confirmationFailed:
+          'Der Entwurf konnte nicht erstellt werden. Versuche es erneut.',
+        showRawJson: 'Rohes JSON anzeigen',
       },
     },
     recovery: {
@@ -1829,11 +1895,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       open: 'Assistent',
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
-      openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      openInNewTab:
+        'Neue Unterhaltung in einem neuen Tab ohne Kontext dieser Seite starten',
+      openFreshConversation: 'Separate Unterhaltung starten',
       loading: 'Assistent wird geladen…',
+      retrying: 'Assistent wird neu geladen…',
+      retry: 'Assistent neu laden',
+      delayedTitle: 'Der Assistent benötigt länger als erwartet',
+      delayedDescription:
+        'Sie können weiter warten, den eingebetteten Assistenten neu laden oder eine separate Unterhaltung ohne Kontext dieser Seite starten.',
+      failedTitle: 'Der Assistent konnte nicht geladen werden',
+      failedDescription:
+        'Laden Sie den eingebetteten Assistenten neu oder starten Sie eine separate Unterhaltung ohne Kontext dieser Seite.',
       resize: 'Grösse des Assistenten ändern',
       resizeHint:
         'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      panelSize: 'Grösse des Assistentenfensters',
+      panelSizeCustom: 'Benutzerdefiniert',
+      panelSizeDefault: 'Standard',
+      panelSizeWide: 'Breit',
+      panelSizeMax: 'Maximal',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     ai: {

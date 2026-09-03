@@ -62,6 +62,15 @@ function textStreamBody(text: string) {
 export const MANAGE_PROPOSAL_TOOL_NAME =
   'klicker_lecturer_element_create_draft_proposal'
 
+export type ManageAssistantCapabilityState =
+  | 'draft-and-read'
+  | 'read-only'
+  | 'unavailable'
+
+// Mirrors apps/chat/src/services/manageAssistantCapabilities.ts for the
+// browser mock boundary; keep the public states and response header aligned.
+const MANAGE_ASSISTANT_CAPABILITY_HEADER = 'X-Klicker-Manage-Capability'
+
 export type ManageProposalEnvelope = {
   kind: 'element.create.proposal'
   proposalToken?: string
@@ -276,12 +285,16 @@ export async function mockManageChatStream(
     envelope,
     errorMode,
     errorText = 'The assistant is temporarily unavailable. Please try again.',
+    capabilityState = 'draft-and-read',
+    onRequest,
   }: {
     mode?: 'text' | 'proposal'
     text?: string
     envelope?: ManageProposalEnvelope
     errorMode?: ManageChatStreamErrorMode
     errorText?: string
+    capabilityState?: ManageAssistantCapabilityState
+    onRequest?: (body: unknown) => void
   } = {}
 ) {
   let errorServed = false
@@ -291,6 +304,8 @@ export async function mockManageChatStream(
   // top-level manage page does not reliably intercept.
   await page.context().route('**/api/manage/chat', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
+
+    onRequest?.(route.request().postDataJSON())
 
     if (errorMode && !errorServed) {
       errorServed = true
@@ -310,6 +325,46 @@ export async function mockManageChatStream(
         // response as a UI message stream (set by toUIMessageStreamResponse on
         // the real route).
         'x-vercel-ai-ui-message-stream': 'v1',
+        [MANAGE_ASSISTANT_CAPABILITY_HEADER]: capabilityState,
+      },
+      status: 200,
+    })
+  })
+}
+
+export async function mockManageCapabilities(
+  page: Page,
+  {
+    states = ['draft-and-read'],
+    delayMs = 0,
+    delaysMs,
+  }: {
+    states?: ManageAssistantCapabilityState[]
+    delayMs?: number
+    delaysMs?: number[]
+  } = {}
+) {
+  let requestCount = 0
+
+  await page.context().route('**/api/manage/capabilities', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const requestIndex = requestCount
+    requestCount += 1
+    const requestDelay =
+      delaysMs && delaysMs.length > 0
+        ? (delaysMs[Math.min(requestIndex, delaysMs.length - 1)] ?? 0)
+        : delayMs
+    if (requestDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, requestDelay))
+    }
+    const state =
+      states[Math.min(requestIndex, states.length - 1)] ?? 'unavailable'
+
+    return route.fulfill({
+      body: JSON.stringify({ state }),
+      headers: {
+        'cache-control': 'private, no-store',
+        'content-type': 'application/json',
       },
       status: 200,
     })
@@ -324,9 +379,8 @@ export const DEFAULT_CONFIRMED_ELEMENT: ConfirmedManageElement = {
 }
 
 /** A rejected proposal confirmation, e.g. a tampered/expired token (403) or a
- * lost session (401). `error` is returned verbatim in the JSON body's
- * `error` field, which confirmProposal() in manage-proposal-card.tsx reads
- * and renders as-is on a non-ok response. */
+ * lost session (401). The assistant deliberately maps this server detail to
+ * a generic localized card message. */
 export type ManageProposalConfirmError = {
   status: number
   error: string

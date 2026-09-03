@@ -32,7 +32,7 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain('signed proposal card')
     expect(prompt).toContain('use the signed proposal tool')
     expect(prompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(prompt).toContain(
       'omit status and type filters unless the lecturer explicitly asks'
@@ -47,25 +47,33 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).not.toContain('secret')
   })
 
-  test('hardens the prompt so persistence intents always call the signed proposal tool', () => {
+  test('steers supported persistence intents to the signed proposal tool', () => {
     const prompt = buildManageAssistantSystemPrompt(SAMPLE_CONTEXT)
 
-    // Persistence intent -> mandatory tool call, naming the exact tool.
-    expect(prompt).toContain('is a persistence intent')
+    // Supported persistence intent -> direct tool call, naming the exact tool.
     expect(prompt).toContain(
-      'create, make, save, store, persist, or add a question'
+      'a request for a question draft is also a persistence intent'
     )
     expect(prompt).toContain('klicker_lecturer_element_create_draft_proposal')
-    expect(prompt).toContain('always use the signed proposal tool')
+    expect(prompt).toContain('use the signed proposal tool to handle it')
+    expect(prompt).toContain(
+      'Do not build the draft with the scaffolding tools first'
+    )
 
     // Never print proposal/question JSON as message text.
     expect(prompt).toContain(
       'never print a proposal or question as JSON in the chat message text'
     )
 
-    // Draft-only scaffolding tools are brainstorming-only, prose output.
+    // Unsupported or unavailable proposal flows keep the draft in prose.
     expect(prompt).toContain(
-      'Draft-only scaffolding tools are for brainstorming and non-persisted previews only'
+      'If the signed proposal tool is unavailable or the requested question type is not supported by it'
+    )
+    expect(prompt).toContain('cannot save it as a draft proposal')
+
+    // Draft-only scaffolding tools are proposal helpers / no-save previews.
+    expect(prompt).toContain(
+      'Draft-only scaffolding tools are intermediate helpers'
     )
     expect(prompt).toContain('never as JSON')
 
@@ -100,7 +108,10 @@ describe('Manage assistant runtime helpers', () => {
       'Lecturer MCP read tools are available for authorized course and question-pool lookups'
     )
     expect(toolsAvailablePrompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
+    )
+    expect(toolsAvailablePrompt).toContain(
+      'Use any advertised draft-only question, answer-choice, or feedback scaffolding tools only when helpful'
     )
     expect(toolsAvailablePrompt).not.toContain(
       'Lecturer MCP tools are currently unavailable'
@@ -130,8 +141,14 @@ describe('Manage assistant runtime helpers', () => {
     )
     expect(readOnlyPrompt).toContain('read-only Manage access')
     expect(readOnlyPrompt).toContain('Do not attempt to call them')
+    expect(readOnlyPrompt).toContain(
+      'You can still draft in prose as a no-save preview'
+    )
+    expect(readOnlyPrompt).toContain(
+      'If the signed proposal tool is unavailable or the requested question type is not supported by it'
+    )
     expect(readOnlyPrompt).not.toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(readOnlyPrompt).not.toContain(
       'Lecturer MCP tools are currently unavailable'
@@ -252,7 +269,7 @@ describe('Manage assistant runtime helpers', () => {
 
     // Draft-availability wording is unaffected by the new sentinel param.
     expect(draftPrompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(draftPrompt).toContain(`KLICKER_TOOL_DATA ${sentinel}`)
 
