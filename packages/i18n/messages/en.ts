@@ -1883,6 +1883,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Reload the embedded assistant or start a separate conversation without this page context.',
       resize: 'Resize assistant',
       resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
+      panelSize: 'Assistant panel size',
+      panelSizeCustom: 'Custom size',
+      panelSizeDefault: 'Default',
+      panelSizeWide: 'Wide',
+      panelSizeMax: 'Max',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
     ai: {

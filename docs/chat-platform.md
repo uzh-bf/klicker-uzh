@@ -221,6 +221,11 @@ close, Escape, retry, and a standalone fallback explicitly labelled as a new
 conversation without the current page context. The focused local
 `chat,manage` devrouter profile starts and probes `mcp-lecturer`; the separate
 `mcp` profile remains the deterministic read-only fixture.
+On desktop the parent shell is a resizable, non-modal complementary dock whose
+readable Chat content remains centred as the viewport grows. Below the desktop
+breakpoint it becomes a full-viewport modal sheet with contained focus and
+safe-area-aware composer spacing; crossing that breakpoint preserves the
+mounted conversation and restores Manage interaction.
 
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
 

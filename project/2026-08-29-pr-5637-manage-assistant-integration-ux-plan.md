@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a3_implementation`
+- Status: `a4_gate_3_ready`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1041,3 +1041,76 @@ follow_up_stacks:
 - Next: Create the A4 branch from the accepted A3 head, inspect the existing
   panel-size and Manage shell contracts, then implement and verify the
   responsive control slice before its review fan-out.
+- A4 implementation: The responsive control slice now uses a full-viewport
+  compact sheet with scoped modal isolation, a non-modal desktop dock with
+  viewport-clamped presets and a 44px resize target, and desktop-only size
+  persistence. The embedded Chat layout keeps readable content centred and
+  leaves safe-area space for the composer. Focused Manage tests (5/5), Chat
+  proposal/runtime tests (24/24), both affected typechecks, repository
+  `check:all`, Biome, Prettier, and diff checks pass on the current branch.
+- Next: Run the required simplifier and A4 slice-risk review on the committed
+  implementation, then publish the reviewed branch and require exact-head
+  hosted browser evidence at the desktop, compact, and breakpoint viewports.
+- A4 slice review: The responsive and storage paths were clear, but the risk
+  review found that compact isolation could remain active if an auth-expiry
+  route changed the widget to `/login` while it was open. The widget returned
+  no panel without changing the isolation effect's previous dependency set,
+  which could leave the login form inert.
+- A4 review correction: Both compact-only effects now guard the actual enabled
+  assistant render state and assistant URL, and clean up when either changes.
+  The affected Manage typecheck and diff checks pass after the correction.
+- A4 correction acceptance: Commit `636420d81` now guards both compact-only
+  effects with the enabled assistant render state and assistant URL. The
+  affected Manage typecheck, repository diff checks, complete commit hook, and
+  26-task pre-push build pass. The full local build was also attempted but its
+  GraphQL Rollup process remained asleep for more than 13 minutes without
+  children and was cancelled; hosted exact-head build remains authoritative.
+- A4 publication: The responsive-control branch is published as draft PR #5704
+  on top of `rs/manage-assistant-workflow-continuity` at `72826a259`. Its body
+  records the responsive dock, compact isolation, viewport clamp, desktop-only
+  persistence, route-exit cleanup, and required hosted browser acceptance.
+- A4 OCR correction: OpenCodeReview's low-severity readability observation was
+  verified in the pure preset helper and fixed in `745c78376` by replacing the
+  nested ternary with explicit branches. The focused Manage tests, typecheck,
+  complete commit hook, and pre-push build pass, and the correction is pushed
+  to PR #5704.
+- A4 final review: The integrated review found no source, accessibility,
+  responsive, persistence, or data-isolation defect. It found one low-severity
+  upkeep gap: the frontend UI skill still described the dock as always
+  non-modal and therefore contradicted the compact modal contract.
+- A4 skill correction: Update `.agents/skills/klicker-frontend-ui/SKILL.md`
+  to document the desktop complementary dock and compact full-viewport dialog,
+  scoped app-content isolation, cleanup transitions, and desktop-only sizing
+  persistence. Then rerun exact-head checks and the final review.
+- A4 preset correction: OpenCodeReview's medium finding about the desktop
+  preset selector was valid. The `Custom` option is now disabled while a named
+  preset is active, so the controlled select cannot accept a dead selection and
+  snap back. Manual resizing still selects `Custom`, where the option remains
+  available as the current value; the hosted journey pins the disabled state.
+- A4 final correction acceptance: The preset correction, skill upkeep, and
+  hosted-journey assertion are committed together after focused tests,
+  affected typechecks, repository checks, and the complete commit hook pass.
+  The next gate is to push this exact head, refresh PR #5704, resolve the
+  verified OCR thread with evidence, and rerun exact-head CI plus the final
+  review. Hosted Playwright remains a stack-layer acceptance limitation because
+  this PR targets the workflow-continuity branch.
+- A4 OCR round two: OpenCodeReview raised three additional medium findings on
+  the pushed correction. The cross-origin iframe could not participate in the
+  parent Tab listener, the document focus redirect treated ordinary blank-panel
+  clicks as escapes, and viewport or breakpoint changes could leave a named
+  preset displayed for a clamped custom size. Each finding is valid and is
+  corrected by an iframe blur boundary that follows frame generations,
+  pointer-aware body-focus handling (including iframe blur ordering), and
+  resetting the preset on viewport changes.
+- A4 Gate 3 acceptance: Final source head `10b347b57` contains the
+  iframe-blur ordering guard and the compact journey assertion that focuses the
+  embedded composer, clicks blank panel chrome, and confirms focus is not
+  stolen by Close. The focused Manage tests (5/5), affected typechecks,
+  repository `check:all`, complete commit hooks, and the 26-task pre-push build
+  pass. Exact-head hosted source checks and OCR pass, with no unresolved review
+  threads, and the exact-head final reviewer reports no actionable findings.
+  The final-review trusted-policy job is queued in the repository-wide final
+  review queue, while the manual final-review status remains expected. Hosted
+  browser execution remains deferred at this stacked layer, where the browser
+  jobs are filtered. This receipt is documentation-only; PR #5704 stays a
+  draft and no merge or deployment is included in this Gate 3 handoff.
