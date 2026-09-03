@@ -32,7 +32,7 @@ function ElementListSearch({
   }, [value, onApplySearch])
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="min-w-40 flex-1">
       <TextField
         placeholder={t('manage.general.searchPlaceholder')}
         value={value}
@@ -44,7 +44,7 @@ function ElementListSearch({
           }
         }}
         icon={faMagnifyingGlass}
-        className={{ input: 'h-9 pl-8', field: 'w-64 rounded-md' }}
+        className={{ input: 'h-9 pl-8', field: 'w-full rounded-md' }}
         onEnter={() => onApplySearch(value)}
         onReset={() => {
           onValueChange('')

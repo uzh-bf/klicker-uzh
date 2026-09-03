@@ -318,7 +318,7 @@ function Index() {
     <Layout
       displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
-      className={{ children: 'pb-2' }}
+      className={{ children: 'pb-2 sm:overflow-y-auto' }}
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
@@ -352,26 +352,23 @@ function Index() {
         />
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
-        <div
-          className="flex flex-col items-start gap-3"
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto sm:flex-row">
+        <aside
+          className="flex w-full shrink-0 flex-col items-start gap-3 sm:w-56"
           data-cy="element-library-sidebar"
+          aria-label={t('manage.questionPool.createElementaryLabel')}
         >
-          <div className="flex flex-col items-start gap-1">
-            <span className="text-sm font-bold text-slate-700">
-              {t('manage.questionPool.createElementaryLabel')}
-            </span>
-            <Button
-              primary={!creationMode}
-              onClick={handleCreateElement}
-              data={{ cy: 'create-question' }}
-              className={{ root: 'h-9 font-bold' }}
-            >
-              <Button.Label>
-                {t('manage.questionPool.createElement')}
-              </Button.Label>
-            </Button>
-          </div>
+          <Button
+            fluid
+            primary={!creationMode}
+            onClick={handleCreateElement}
+            data={{ cy: 'create-question' }}
+            className={{ root: 'h-9 font-bold' }}
+          >
+            <Button.Label>
+              {t('manage.questionPool.createElement')}
+            </Button.Label>
+          </Button>
           <FilterList
             key={creationMode}
             defaultValue={
@@ -392,12 +389,12 @@ function Index() {
             isArchiveActive={filters.archive}
             refetchElements={refetchElementsForChildren}
           />
-        </div>
+        </aside>
 
-        <div className="flex w-full flex-1 flex-col">
+        <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex flex-row items-center gap-1.5">
+              <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}

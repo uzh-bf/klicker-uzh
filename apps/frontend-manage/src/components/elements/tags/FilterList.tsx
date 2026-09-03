@@ -131,7 +131,7 @@ function FilterList({
   }
 
   return (
-    <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
+    <div className="flex h-max max-h-full w-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm">
       <Accordion
         type="multiple"
         defaultValue={[defaultValue]}
