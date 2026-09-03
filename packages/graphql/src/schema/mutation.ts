@@ -85,6 +85,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -1470,6 +1471,24 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
         },
       }),
 

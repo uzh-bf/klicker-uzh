@@ -243,5 +243,5 @@ behavior. Keep AGENTS.md high-level.
 | Date | Status | Evidence and next action |
 |---|---|---|
 | 2026-09-03 | Plan hardening complete | Refreshed v3 baseline is clean at the recorded SHA; planner round 1 findings were arbitrated and round 2 returned `VERDICT: APPROVED`. Claude advisor was unavailable due expired OAuth token. The next action is S0 after human approval. |
-| Pending | S0 — reviewed plan commit | Commit this plan, then implement S1 in the same dedicated worktree. |
-| Pending | S1/S2 and finish gate | Complete the named checks and review passes, then report a local `BOUNDARY_CANDIDATE` to `rs-roadmap-orchestrator`; keep external delivery withheld. |
+| 2026-09-03 | S0 — reviewed plan commit | Committed as `23c3d2d581a32aefd37860f755a835f746fa3066` on `rs/chatbot-c1-standard-modes`; implementation remains in this worktree and external delivery remains withheld. |
+| In progress | S1/S2 and finish gate | Complete the named checks and review passes, then report a local `BOUNDARY_CANDIDATE` to `rs-roadmap-orchestrator`; keep external delivery withheld. |

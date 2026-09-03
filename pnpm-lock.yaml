@@ -392,6 +392,9 @@ importers:
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util

@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
+import type {
+  ChatbotStandardModeConfigInput as ChatbotStandardModeConfigInputShape,
+  ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
+  SharingType as SharingTypeEnum,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import type {
   ChatAccountUsageLane,
@@ -7,6 +11,7 @@ import type {
 } from '../services/chatAccountUsage.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
+import { LocaleType } from './user.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -165,6 +170,46 @@ export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
   }),
 })
 
+export type ChatbotStandardModeConfigInputType =
+  ChatbotStandardModeConfigInputShape
+
+export const ChatbotStandardModeConfigInputRef =
+  builder.inputRef<ChatbotStandardModeConfigInputType>(
+    'ChatbotStandardModeConfigInput'
+  )
+export const ChatbotStandardModeConfigInput =
+  ChatbotStandardModeConfigInputRef.implement({
+    fields: (t) => ({
+      tutorEnabled: t.boolean({ required: true }),
+      explainerEnabled: t.boolean({ required: true }),
+      courseName: t.string({ required: false }),
+      subjectDomain: t.string({ required: false }),
+      languageOfInstruction: t.field({
+        type: LocaleType,
+        required: false,
+      }),
+      scopeNote: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotStandardModeConfigRef =
+  builder.objectRef<ChatbotStandardModeConfigShape>('ChatbotStandardModeConfig')
+export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
+  {
+    fields: (t) => ({
+      tutorEnabled: t.exposeBoolean('tutorEnabled'),
+      explainerEnabled: t.exposeBoolean('explainerEnabled'),
+      courseName: t.exposeString('courseName', { nullable: true }),
+      subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
+      languageOfInstruction: t.expose('languageOfInstruction', {
+        type: LocaleType,
+        nullable: true,
+      }),
+      scopeNote: t.exposeString('scopeNote', { nullable: true }),
+    }),
+  }
+)
+
 export interface IChatModelCapability {
   id: string
   name: string
@@ -193,6 +238,7 @@ export interface IChatbot {
   name: string
   description?: string | null
   avatar?: string | null
+  standardModeConfig?: ChatbotStandardModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
@@ -322,6 +368,11 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.standardModeConfig ?? null,
+    }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     allowedReasoningEffortsByModel: t.field({

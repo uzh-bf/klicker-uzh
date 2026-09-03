@@ -1,8 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import type { ChatbotStandardModeConfigInput } from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
   getChatModelBasePolicyIssues,
+  normalizeChatbotStandardModeConfig,
+  parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -392,6 +395,7 @@ const chatbotOwnerSelect = {
   name: true,
   description: true,
   avatar: true,
+  standardModeConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
@@ -409,6 +413,7 @@ const chatbotOwnerSelect = {
 } satisfies Prisma.ChatbotSelect
 
 type ChatbotWithOwnerCourse = {
+  standardModeConfig: unknown
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   course: { id: string; name: string } | null
@@ -435,6 +440,9 @@ function normalizeAllowedModelIds(allowedModelIds: string[]) {
 function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
   return {
     ...chatbot,
+    standardModeConfig: normalizeChatbotStandardModeConfig(
+      chatbot.standardModeConfig
+    ),
     allowedModelIds: normalizeAllowedModelIds(chatbot.allowedModelIds),
     allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
       chatbot.allowedReasoningEffortsByModel
@@ -874,6 +882,69 @@ export async function updateChatbot(
 
     return await tx.chatbot.findUniqueOrThrow({
       where: { id: existing.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
+type UpdateChatbotStandardModeConfigArgs = {
+  chatbotId: string
+  config: ChatbotStandardModeConfigInput
+}
+
+export async function updateChatbotStandardModeConfig(
+  args: UpdateChatbotStandardModeConfigArgs,
+  ctx: ContextWithUser
+) {
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.chatbotId, ownerId: ctx.user.sub },
+    select: { id: true, status: true },
+  })
+
+  if (!chatbot) {
+    return null
+  }
+
+  assertMetadataAndModelEditable(chatbot.status)
+
+  let standardModeConfig: ReturnType<typeof parseChatbotStandardModeConfigInput>
+  try {
+    standardModeConfig = parseChatbotStandardModeConfigInput(args.config)
+  } catch (error) {
+    throw chatbotError(
+      error instanceof Error
+        ? error.message
+        : 'Invalid standard mode configuration',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: chatbot.id,
+        ownerId: ctx.user.sub,
+        status: { in: metadataAndModelEditableStatuses },
+      },
+      data: {
+        standardModeConfig: standardModeConfig as Prisma.InputJsonValue,
+      },
+    })
+
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot standard mode settings could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
+
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
       select: {
         ...chatbotOwnerSelect,
         course: { select: { id: true, name: true } },

@@ -164,6 +164,9 @@ model Chatbot {
   // TODO: add JSON types
   systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
 
+  /// [PrismaChatbotStandardModeConfig]
+  standardModeConfig Json?
+
   // Credit configuration per chatbot
   creditInitialCredits Int               @default(1)
   creditResetPeriod    CreditResetPeriod @default(WEEKLY)
