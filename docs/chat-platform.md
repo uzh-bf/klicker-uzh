@@ -151,6 +151,37 @@ The embedded lecturer assistant is a separate route family under `src/app/api/ma
 
 The entitlement is read live from the database rather than from the session token, so withdrawing it takes effect on the next request instead of at the lecturer's next sign-in. It is administered by email on the Manage admin panel (`setAiFeatures`), separately from `privatePreview`: one decides which unreleased features an account may see, the other whether it may spend model budget.
 
+`GET /api/manage/capabilities` is an authenticated, private, no-store advisory
+preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
+classifies the actual session-filtered inventory as `draft-and-read`,
+`read-only`, or `unavailable`, then starts best-effort client teardown without
+letting a slow close extend the response deadline.
+The three-second server budget remains below the browser's five-second deadline,
+and a best-effort per-pod limit allows 30 preflights per lecturer in five minutes
+before returning a private, retryable `429`. The response exposes no tool names,
+scopes, configuration, or failure detail.
+The client starts in the conservative unavailable state. While the preflight is
+checking, the welcome stays neutral: it does not advertise persistence or flash
+degraded no-save limits. Once the preflight settles, curated-index documentation
+help and explicit no-save authoring remain available in degraded states, and the
+localized starter labels follow the active Manage locale. The client can retry
+without reloading the iframe. A client-side preflight deadline
+intentionally settles as retryable unavailable instead of auto-retrying in the
+background; its parent-cancellation and timeout signals are composed without
+requiring newer browser-only `AbortSignal.any` support. Every chat turn repeats
+the same inventory classification; its
+response header replaces stale preflight state, so the preflight never grants
+write authority or promises a missing proposal tool. Chat requests reserve a
+monotonic revision when they start, so only the latest-started response can
+replace capability state even when concurrent responses finish out of order. A
+latest chat response without a valid capability header, or a failed chat fetch,
+settles the client as retryable unavailable instead of leaving it checking.
+Canceling a chat request does not downgrade an already settled capability.
+Before the inventory is passed to the model, the adapter keeps only the known read tools for
+`read-only`, the known read and draft tools for `draft-and-read`, and no tools
+for `unavailable`; unknown or mismatched tools fail closed so service-version
+skew cannot contradict the advertised capability.
+
 Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 
 The two chat surfaces also differ in how they handle a missing model key. The participant route falls back to `apiKey: process.env.OPENAI_API_KEY || 'no-key'` (`src/app/api/chatbots/[chatbotId]/chat/route.ts`), which the local LiteLLM proxy accepts, while `createManageAssistantModel` (`src/app/api/manage/chat/route.ts`) throws `OPENAI_API_KEY is required for the Manage assistant`. The devcontainer sets `OPENAI_BASE_URL` but no `OPENAI_API_KEY`, so the Manage assistant returns 500 there until the variable is set ([Getting Started](./getting-started.md#failure-signatures-fresh-clone--wrong-state)).

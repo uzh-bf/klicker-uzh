@@ -94,11 +94,49 @@ export default {
       capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
       capabilityDraft:
         'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityNoSaveDraft:
+        'Fragenentwürfe vorbereiten, ohne sie zu speichern',
       capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
       capabilityDocumentation:
-        'Funktionen von KlickerUZH anhand der Dokumentation und Anleitungen erklären',
+        'Gängige KlickerUZH-Abläufe anhand eines kuratierten Verzeichnisses der Dokumentation und Anleitungen erklären',
+      capabilityChecking:
+        'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
+      capabilityReadOnly:
+        'Live-Abfragen sind verfügbar, aber in dieser Sitzung können keine Entwurfsvorschläge gespeichert werden. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityUnavailable:
+        'Live-Werkzeuge für Kurse und die Fragensammlung sind vorübergehend nicht verfügbar. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityRetry: 'Erneut versuchen',
+      suggestions: {
+        'question-pool-draft': 'Frage entwerfen',
+        'question-pool-find': 'Fragen finden',
+        'question-pool-feedback': 'Feedback verbessern',
+        'element-editor-improve': 'Diese Frage verbessern',
+        'element-editor-variant': 'Variante entwerfen',
+        'element-editor-feedback': 'Besseres Feedback',
+        'course-dashboard-summarize': 'Diesen Kurs zusammenfassen',
+        'course-dashboard-draft': 'Kursfrage entwerfen',
+        'course-dashboard-find': 'Kursmaterial finden',
+        'activity-creation-draft': 'Quizfragen entwerfen',
+        'activity-creation-reuse': 'Fragen wiederverwenden',
+        'activity-creation-balance': 'Schwierigkeit ausgleichen',
+        'evaluation-explain': 'Resultate erklären',
+        'evaluation-followup': 'Vertiefungsfrage',
+        'evaluation-similar': 'Ähnliche Fragen',
+        'general-draft': 'Frage entwerfen',
+        'general-find': 'Fragen finden',
+        'general-feedback': 'Feedback verbessern',
+        planQuestion: 'Frage planen',
+        planQuizQuestions: 'Quizfragen planen',
+        planCourseQuestion: 'Kursfrage planen',
+        planVariant: 'Variante planen',
+        planFollowUp: 'Vertiefungsfrage planen',
+        improveFeedback: 'Feedback verbessern',
+        documentation: 'KlickerUZH Hilfe',
+      },
       limitsNote:
-        'Alles andere ist schreibgeschützt — der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+        'Die Dokumentationshilfe nutzt ein kuratiertes Verzeichnis und keine vollständige Suche. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      degradedLimitsNote:
+        'Gib fehlende Inhalte direkt an, wenn die Live-Abfrage nicht verfügbar ist. Ohne Vorschlagskarte und Deine Bestätigung wird nichts gespeichert.',
       proposalReview: {
         reviewLabel: 'Fragenentwurf prüfen',
         draftQuestion: 'Fragenentwurf',

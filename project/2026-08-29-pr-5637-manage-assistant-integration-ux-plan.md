@@ -627,9 +627,9 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a2_preflight`
+- Status: `active_a3_implementation`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
-  and PR #5670 exact head `5115e2958f3dfd4896756432190517994015f40b`
+  and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
   applicable exact-head checks and all eight Playwright shards pass for both
   layers. The final-review aggregate remains red only because stack root #5637
@@ -845,3 +845,174 @@ follow_up_stacks:
 - Next: Commit and publish this A1 receipt to PR #5670, then create A2
   `rs/manage-assistant-capability-state` from the accepted A1 head and begin
   the authenticated advisory capability-state slice.
+- A1 receipt: Commit `c0d71a444` records the rebased acceptance evidence on
+  PR #5670. A2 branch `rs/manage-assistant-capability-state` starts from that
+  exact head without another upstream integration.
+- A2 implementation: The authenticated private no-store preflight now derives
+  one of three public states from the actual session-filtered lecturer-MCP tool
+  inventory and closes its bounded temporary client. Chat turns repeat the same
+  classification and return it in a response header. The conservative client
+  keeps no-save drafting and curated documentation help useful, relabels
+  persistence starters, supports in-place retry, and prevents a late preflight
+  from overriding newer request-time evidence.
+- A2 verification: Forty focused Chat tests, Chat and Playwright TypeScript
+  checks, focused Biome and Prettier checks, and the unchanged full Chat suite
+  pass under the pinned Node 24 toolchain. The wiki validator still reports its
+  35 pre-existing core errors and reports none in `docs/chat-platform.md`.
+- A2 runtime boundary: A focused local `chat,manage` start reached ready once,
+  but the installed devrouter then ignored the requested profile, fell back to
+  the full stack, terminated Turbo, and left unusable routes. The exact runtime
+  is stopped and reports zero routes. Hosted exact-head Playwright remains the
+  browser acceptance boundary; repeated local startup is not useful evidence.
+- Next: Commit the A2 slice, run the required simplification and risk reviews,
+  disposition any verified findings, then publish it as the next draft stack
+  layer and require exact-head hosted browser evidence.
+- A2 reviews: The authenticated API/MCP risk review found no actionable defect
+  or material evidence gap. The simplifier's redundant `draftIntent` finding is
+  accepted because the no-save override map already owns the same key set. Its
+  reducer-removal finding is rejected: the approved validation contract calls
+  for the pure reducer, and the proposed replacement changes retry from the
+  conservative unavailable state to the prior optimistic capability.
+- A2 build evidence: The repository build completed the generated GraphQL
+  output but its Rollup process then slept for eight minutes without children,
+  reproducing the existing host-only build stall. The process was interrupted.
+  Focused Chat build evidence and hosted exact-head build/browser checks remain
+  required after the simplification correction.
+- Next: Verify and commit the accepted simplification, publish A2 as a draft
+  stack layer, and require exact-head hosted build and browser evidence.
+- A2 publication and review: Draft PR #5679 publishes head `897263afdd8b` on
+  top of PR #5670. Its hosted compile, repository checks, package filters,
+  fallback build, and first OpenCodeReview pass completed successfully.
+  OpenCodeReview found three medium and two low issues. The valid corrections
+  distinguish transient preflight failures with HTTP 503, add a bounded
+  browser-side request signal plus non-OK handling, qualify every read-only
+  starter as no-save, and share the unavailable plan/feedback copy. The
+  review's claim that unavailable state has no retry was rejected because the
+  settled notice already renders an in-place retry and the browser regression
+  pins iframe preservation.
+- A2 review-correction verification: The complete Chat suite passes with 752
+  tests and 13 intentional skips; Chat and Playwright TypeScript checks and
+  focused Biome/Prettier checks pass. The corrected browser journey now covers
+  a stalled preflight timing out, retrying, and recovering without remounting
+  the iframe. Hosted exact-head build, browser, and follow-up review evidence
+  remain required after the correction is committed and pushed.
+- Next: Commit and push the A2 review correction, reply to and resolve all five
+  review findings with evidence, refresh PR #5679, and babysit the corrected
+  exact head through hosted browser acceptance before starting A3.
+- A2 exact-head review: Head `7ccd44ada` passes the hosted compile, repository
+  check, secret scan, GraphQL and lecturer-MCP status checks, trusted policy,
+  and OpenCodeReview. The follow-up review raised one valid nested-ternary style
+  finding and one question about timeout semantics. The notice now uses explicit
+  branches, and the platform documentation states the intentional contract: a
+  bounded client preflight settles as retryable unavailable rather than
+  starting an automatic background retry loop. The existing browser journey
+  pins timeout, manual retry, healthy recovery, and iframe preservation.
+- Next: Commit and push this review-only correction, resolve both follow-up
+  threads, then require all eight exact-head hosted Playwright shards before A2
+  is accepted and A3 starts.
+- A2 exact-head review round three: OpenCodeReview's three low-severity summary
+  findings were accepted. The capability notice now keeps its retry control
+  outside the live status region; the welcome stays neutral while advisory
+  readiness is checking, so it neither promises persistence nor flashes
+  degraded limits; and read-only override keys are derived from the actual
+  starter arrays so stale keys fail type checking. The focused 22 capability
+  and suggestion tests, Chat and Playwright type checks, Biome, Prettier, and
+  diff checks pass. The revised hosted journey pins the neutral checking state.
+- Next: Commit and push the final A2 review correction, post the summary
+  disposition, refresh PR #5679, and require all eight exact-head hosted
+  Playwright shards before accepting A2 and starting A3.
+- A2 review round four: The accepted low-severity findings replace reverse
+  array mutation with explicit capability-state layouts, align the preflight
+  request with the file's async/await style, centralize the no-save boundary,
+  and document why write-oriented starters use full copy overrides while other
+  prompts use a conservative suffix. The shared API-path suggestion is rejected
+  because the filesystem route is authoritative and a client constant would be
+  a second source of truth. Raw preflight error logging is rejected because this
+  public endpoint intentionally emits values-free diagnostics.
+- A2 capability-settle correction: OpenCodeReview correctly found that a
+  failed or headerless latest chat response could strand the client in the
+  checking phase with no visible recovery control. Commit `bb591019d` fixes
+  both sources: the route no longer lets best-effort MCP teardown extend the
+  bounded response, and every latest-started chat result (headerless or
+  rejected) settles retryable `unavailable` instead of leaving checking
+  active. Reducer checks return fresh state, impossible actions serialize
+  context, and the new preflight guards carry inline rationale.
+- A2 correction review evidence: The simplifier covered
+  `e6bc54856..bb591019d` natively with no net simplification. The native
+  slice-reviewer, the generic-continuity substitute, and the user-authorized
+  cross-provider fallback all failed before inspection on the same OpenRouter
+  budget cap (65,536 requested vs 50,454 affordable tokens). The documented
+  main-session substitute completed the required risk review on the full
+  one-commit diff plus call sites with fresh Node 24 exact-head evidence and
+  found no defect across abort/teardown, conservative settle, values-free
+  diagnostics, and reducer contracts; the fallback identity is recorded in
+  `project/_local/reviews/2026-08-30-a2-capability-correction-slice-review-fallback.md`.
+- A2 correction verification: The two affected Chat test files pass 17/17
+  fresh on Node 24 at the exact head; complete commit hooks and the 26-task
+  pre-push repository build pass; summary disposition is posted top-level and
+  the three OCR threads are replied to and resolved.
+- Next: Refresh PR #5679 for head `bb591019d`, wait for fresh exact-head
+  hosted CI including all eight Playwright shards, accept A2 when it settles
+  green with clear feedback, then start A3.
+- A2 review round five: Two inline and seven summary findings were verified.
+  Accepted corrections keep cancellation from downgrading a settled
+  capability, compose the browser preflight signal without
+  `AbortSignal.any`, make the neutral checking branch explicit, flatten the
+  runtime prompt selection, derive override ids as literal unions, normalize
+  no-save instructions, and localize EN/DE starter labels. Raw exception
+  logging remains rejected because the capability endpoint intentionally emits
+  values-free diagnostics. One content observation required no code change.
+  The hosted Playwright contract now pins German degraded-state labels.
+- A2 round-five verification: 56 focused Chat tests, Chat and Playwright
+  typechecks, Biome, Prettier, and diff checks pass. Local browser startup was
+  blocked before readiness because the managed DevPod could not resolve its
+  namespaced Azurite alias; the exact runtime was stopped with zero routes, so
+  browser acceptance remains an exact-head hosted Playwright gate. The prior
+  shard-three failure was an unrelated live-quiz deletion timeout and will be
+  re-executed on the corrected head.
+- A2 locale correction: Exact-head Playwright shard one found the German
+  degraded suggestions rendered in English. Manage already passed `locale=de`
+  in the iframe URL, but Chat only read `NEXT_LOCALE` from cookies. Commit
+  `b1c6d4a19` validates the shared locale set, forwards the valid locale to the
+  `/manage` request, and sets a path-scoped response cookie. The focused
+  locale tests cover valid German and English values plus invalid and missing
+  values. Chat typecheck, Biome, commit hooks, and the 26-task pre-push build
+  pass; the prior full Chat run also passed the new locale suite but hit its
+  known local loopback restriction in the unrelated MCP canary.
+- A2 proposal-layout correction: Exact-head hosted shard one showed the
+  proposal content and controls rendered correctly, but the strict geometry
+  assertion compared a clipped scroll-container layout box directly with the
+  separate composer. Commit `2b7ae887a` now settles the thread viewport and
+  checks the proposal against the viewport fold and composer boundary, matching
+  the existing chat layout contract.
+- A2 capability-meta correction: OpenCodeReview found that the registered
+  `klicker_lecturer_capabilities` `manage:read` tool was omitted from the
+  selected read-capable tool sets. Commit `82e92c1c2` preserves it in
+  `read-only` and `draft-and-read` while keeping a meta-only inventory
+  `unavailable`. The 30-per-lecturer/5-minute preflight burst guard was
+  verified as intentional and already documented as best-effort and per-pod;
+  that low-severity observation required no code change.
+- A2 latest verification: The focused capability tests pass 11/11; Chat and
+  Playwright typechecks, Biome, the complete commit hook, and the 26-task
+  pre-push build pass at `82e92c1c2`. Both new OCR findings have replies with
+  evidence. Local browser execution remains unavailable because the managed
+  DevPod exposes zero routes; hosted Playwright remains the acceptance gate.
+- Next: Refresh PR #5679 for `82e92c1c2`, wait for fresh exact-head hosted CI
+  including all eight Playwright shards, accept A2 when it settles green with
+  clear feedback, then start A3.
+- A2 acceptance: Exact-head hosted build, repository check, gitleaks,
+  GraphQL, MCP status, trusted policy, OCR review, and all eight Playwright
+  shards pass for `66d63923535a`. The expected stack-policy error remains
+  limited to the non-default `v3-ai` stack root, and the manual final-review
+  status remains pending by design. The final OCR finding about the general
+  suggestion literal union is already fixed in `5efb100a8` and now has a
+  disposition reply; all current review feedback has been checked.
+- A3 start: The approved A3 slice now begins from the accepted A2 head in the
+  existing stack worktree. It will keep the sanitized context payload,
+  localize visible EN/DE workflow copy, persist and announce genuine Manage
+  context changes, and add validated parent-owned navigation for confirmed
+  drafts. The A3 branch and draft PR remain to be created.
+- Next: Create `rs/manage-assistant-workflow-continuity` from
+  `66d63923535a`, implement the localized draft-revise-confirm-open journey,
+  and verify its message, context, route, proposal, toast, reset, and EN/DE
+  browser contracts before the A3 review fan-out.
