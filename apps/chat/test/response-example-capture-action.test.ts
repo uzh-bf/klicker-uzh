@@ -17,7 +17,6 @@ describe('owner-preview response-example capture action', () => {
     expect(
       resolveResponseExampleCapturePhase({
         hasReceipt: true,
-        isFirstAssistantAnswer: true,
         isComplete: true,
         phase,
       })
@@ -28,26 +27,17 @@ describe('owner-preview response-example capture action', () => {
     expect(
       resolveResponseExampleCapturePhase({
         hasReceipt: false,
-        isFirstAssistantAnswer: true,
         isComplete: true,
         phase: 'available',
       })
     ).toBe('unavailable')
   })
 
-  it.each([
-    [
-      'for a later answer',
-      { hasReceipt: true, isFirstAssistantAnswer: false, isComplete: true },
-    ],
-    [
-      'while the answer is still running',
-      { hasReceipt: true, isFirstAssistantAnswer: true, isComplete: false },
-    ],
-  ] as const)('hides the action %s', (_, input) => {
+  it('hides the action while the answer is still running', () => {
     expect(
       resolveResponseExampleCapturePhase({
-        ...input,
+        hasReceipt: true,
+        isComplete: false,
         phase: 'available',
       })
     ).toBe('hidden')
@@ -55,25 +45,19 @@ describe('owner-preview response-example capture action', () => {
 
   it('maps stale and expired server responses to their recovery states', () => {
     expect(
-      resolveResponseExampleCaptureErrorPhase(
-        409,
-        'RESPONSE_EXAMPLE_CAPTURE_STALE'
-      )
+      resolveResponseExampleCaptureErrorPhase('RESPONSE_EXAMPLE_CAPTURE_STALE')
     ).toBe('stale')
     expect(
       resolveResponseExampleCaptureErrorPhase(
-        410,
         'RESPONSE_EXAMPLE_RECEIPT_EXPIRED'
       )
     ).toBe('expired')
   })
 
   it('keeps unknown capture failures recoverable without exposing server details', () => {
-    expect(resolveResponseExampleCaptureErrorPhase(502, 'UPSTREAM_ERROR')).toBe(
+    expect(resolveResponseExampleCaptureErrorPhase('UPSTREAM_ERROR')).toBe(
       'failure'
     )
-    expect(resolveResponseExampleCaptureErrorPhase(500, undefined)).toBe(
-      'failure'
-    )
+    expect(resolveResponseExampleCaptureErrorPhase(undefined)).toBe('failure')
   })
 })

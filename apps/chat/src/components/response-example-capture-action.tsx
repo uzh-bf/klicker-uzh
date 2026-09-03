@@ -14,7 +14,6 @@ import { useChatUi } from './chat-ui-context'
 
 type ResponseExampleCaptureReceipt = {
   token: string
-  expiresAt: number
   question: string
   answer: string
 }
@@ -32,36 +31,31 @@ export type ResponseExampleCapturePhase =
 
 type CaptureActionStateInput = {
   hasReceipt: boolean
-  isFirstAssistantAnswer: boolean
   isComplete: boolean
   phase: Exclude<ResponseExampleCapturePhase, 'hidden'>
 }
 
 /**
  * Keeps the visibility rule independent from the assistant-ui rendering
- * primitives. The server only issues this part for a grounded first answer,
- * but the client repeats the boundary so a later or malformed part cannot
- * expose a capture control.
+ * primitives. The server only issues this part for a grounded first answer.
  */
 export function resolveResponseExampleCapturePhase({
   hasReceipt,
-  isFirstAssistantAnswer,
   isComplete,
   phase,
 }: CaptureActionStateInput): ResponseExampleCapturePhase {
-  if (!isFirstAssistantAnswer || !isComplete) return 'hidden'
+  if (!isComplete) return 'hidden'
   if (!hasReceipt) return 'unavailable'
   return phase
 }
 
 export function resolveResponseExampleCaptureErrorPhase(
-  status: number,
   code: unknown
 ): Extract<ResponseExampleCapturePhase, 'stale' | 'expired' | 'failure'> {
-  if (status === 410 || code === 'RESPONSE_EXAMPLE_RECEIPT_EXPIRED') {
+  if (code === 'RESPONSE_EXAMPLE_RECEIPT_EXPIRED') {
     return 'expired'
   }
-  if (status === 409 || code === 'RESPONSE_EXAMPLE_CAPTURE_STALE') {
+  if (code === 'RESPONSE_EXAMPLE_CAPTURE_STALE') {
     return 'stale'
   }
   return 'failure'
@@ -76,8 +70,6 @@ function parseReceiptData(
   if (
     typeof data.token !== 'string' ||
     data.token.length === 0 ||
-    typeof data.expiresAt !== 'number' ||
-    !Number.isInteger(data.expiresAt) ||
     typeof data.question !== 'string' ||
     data.question.length === 0 ||
     typeof data.answer !== 'string' ||
@@ -88,7 +80,6 @@ function parseReceiptData(
 
   return {
     token: data.token,
-    expiresAt: data.expiresAt,
     question: data.question,
     answer: data.answer,
   }
@@ -121,25 +112,8 @@ export function ResponseExampleCaptureAction({ data }: { data: unknown }) {
       state.message.role === 'assistant' &&
       state.message.status?.type === 'complete'
   )
-  const isFirstAssistantAnswer = useAuiState((state) => {
-    const currentMessage = state.message
-    if (
-      currentMessage.role !== 'assistant' ||
-      !currentMessage.content.some(
-        (part) => part.type === 'text' && part.text.trim().length > 0
-      )
-    ) {
-      return false
-    }
-
-    return (
-      state.thread.messages.find((message) => message.role === 'assistant')
-        ?.id === currentMessage.id
-    )
-  })
   const currentPhase = resolveResponseExampleCapturePhase({
     hasReceipt: receipt !== null,
-    isFirstAssistantAnswer,
     isComplete,
     phase,
   })
@@ -176,7 +150,6 @@ export function ResponseExampleCaptureAction({ data }: { data: unknown }) {
       if (!response.ok || !isRecord(payload)) {
         setPhase(
           resolveResponseExampleCaptureErrorPhase(
-            response.status,
             isRecord(payload) ? payload.code : undefined
           )
         )
