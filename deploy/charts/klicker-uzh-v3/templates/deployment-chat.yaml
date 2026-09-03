@@ -32,6 +32,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: chat
     spec:
+      terminationGracePeriodSeconds: {{ .Values.chat.terminationGracePeriodSeconds }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chat.priorityClassName }}
       {{- with .Values.chat.imagePullSecrets }}
       imagePullSecrets:

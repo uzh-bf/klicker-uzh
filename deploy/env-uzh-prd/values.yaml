@@ -216,6 +216,7 @@ chat:
 
   telemetry:
     enabled: false
+    environment: 'production'
 
   replicaCount: 1
 

@@ -196,6 +196,8 @@ chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false
+  # Leaves 35 seconds after the enforced 55-second turn deadline for draining.
+  terminationGracePeriodSeconds: 90
 
   replicaCount: 1
 
@@ -204,7 +206,9 @@ chat:
     storeResponses: false
 
   telemetry:
-    enabled: true
+    enabled: false
+    baseUrl: ''
+    environment: ''
 
   mcp:
     key: ''

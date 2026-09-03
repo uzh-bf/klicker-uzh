@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 
@@ -8,15 +8,6 @@ vi.mock('@ai-sdk/mcp', () => ({
 
 vi.mock('@klicker-uzh/util', () => ({
   safeDecrypt: (value: string) => value,
-}))
-
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: class {
-    constructor(
-      readonly url: URL,
-      readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {}
-  },
 }))
 
 import {
@@ -56,6 +47,10 @@ function setTools(rawTools: Record<string, unknown>) {
 }
 
 describe('MCP runtime policy', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -144,6 +139,49 @@ describe('MCP runtime policy', () => {
         'chatbot-1'
       )
     ).resolves.toEqual({ IW_search_docs: { description: 'search' } })
+  })
+
+  test('interrupts stalled discovery when the request is aborted', async () => {
+    const requestController = new AbortController()
+    const stalledFetch = vi.fn(
+      (_input: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
+    )
+    vi.stubGlobal('fetch', stalledFetch)
+    createSDKMCPClientMock.mockImplementationOnce(
+      ({
+        transport,
+      }: {
+        transport: {
+          send: (message: Record<string, unknown>) => Promise<void>
+          start: () => Promise<void>
+        }
+      }) => ({
+        tools: async () => {
+          await transport.start()
+          await transport.send({
+            id: 1,
+            jsonrpc: '2.0',
+            method: 'tools/list',
+          })
+          return {}
+        },
+      })
+    )
+
+    const discovery = getAggregatedMCPTools([createServer()], 'chatbot-1', {
+      abortSignal: requestController.signal,
+    })
+    await vi.waitFor(() => expect(stalledFetch).toHaveBeenCalledOnce())
+    requestController.abort(new Error('chat turn deadline exceeded'))
+
+    await expect(discovery).rejects.toThrow('chat turn deadline exceeded')
   })
 
   test('treats regex metacharacters as literals in optional allow lists', async () => {

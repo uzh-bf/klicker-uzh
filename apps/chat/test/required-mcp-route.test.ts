@@ -188,7 +188,8 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      'chatbot-1'
+      'chatbot-1',
+      { abortSignal: expect.any(AbortSignal) }
     )
     expect(mocks.getUserCredits).toHaveBeenCalledWith(
       'participant-1',
@@ -349,7 +350,8 @@ describe('required MCP chat preflight', () => {
           }),
         }),
       ],
-      'chatbot-1'
+      'chatbot-1',
+      { abortSignal: expect.any(AbortSignal) }
     )
   })
 
@@ -442,7 +444,8 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ id: 'server-1' }),
         }),
       ],
-      'chatbot-1'
+      'chatbot-1',
+      { abortSignal: expect.any(AbortSignal) }
     )
   })
 })
