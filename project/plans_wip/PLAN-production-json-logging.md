@@ -8,12 +8,12 @@ through HTTP and Hatchet boundaries, and make the resulting records efficiently
 queryable in Loki.
 
 The approved design is
-[`docs/superpowers/specs/2026-08-05-production-json-logging-design.md`](../../docs/superpowers/specs/2026-08-05-production-json-logging-design.md).
+[`project/2026-08-05-production-json-logging-design.md`](../2026-08-05-production-json-logging-design.md).
 Implementation is split into two independently deployable plans:
 
-- [`docs/superpowers/plans/2026-08-05-production-json-logging.md`](../../docs/superpowers/plans/2026-08-05-production-json-logging.md)
+- [`project/2026-08-05-production-json-logging.md`](../2026-08-05-production-json-logging.md)
   owns the five-layer native GitHub stack in `klicker-uzh`.
-- [`docs/superpowers/plans/2026-08-05-production-json-logging-infrastructure.md`](../../docs/superpowers/plans/2026-08-05-production-json-logging-infrastructure.md)
+- [`project/2026-08-05-production-json-logging-infrastructure.md`](../2026-08-05-production-json-logging-infrastructure.md)
   owns linked GitLab MRs in the `azure-helpers` submodule and its
   `df-cloud-klickeruzh` parent.
 
@@ -142,3 +142,9 @@ checkout's unrelated untracked files.
 - 2026-08-05: Plans self-reviewed against exact repository paths, current package
   contracts, and official Grafana Alloy/Loki behavior; formatting and diff checks
   pass.
+- 2026-08-05: Moved the design and detailed execution plans from the engineering
+  wiki tree into the repository's canonical `project/` planning area before
+  implementation.
+- 2026-08-05: The wiki skill's documented external OKF validator was unavailable
+  locally; repository formatting, AGENTS, link-reference, and diff checks are the
+  verification fallback for this move.
