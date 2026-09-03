@@ -1618,6 +1618,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     linkDescription:
       'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
     resourceTitleLabel: 'Titel',
+    materialType: 'Materialkategorie',
+    materialTypeUnclassified: 'Nicht klassifiziert',
+    materialTypeCourseContent: 'Kursinhalt',
+    materialTypeAdministrative: 'Administrativ',
     urlLabel: 'URL',
     invalidUrl:
       'Geben Sie eine gültige URL ein, die mit http:// oder https:// beginnt.',
@@ -1631,6 +1635,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
     filterType: 'Typ',
     filterStatus: 'Letzte Verarbeitung',
+    filterMaterialType: 'Kategorie',
     filterAll: 'Alle',
     typeFile: 'Datei',
     typeUrl: 'Link',
@@ -1685,6 +1690,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
     ingestResourceError:
       'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
+    ingestAll: 'Alle verarbeiten',
+    ingestAllTitle: 'Alle Ressourcen verarbeiten',
+    ingestAllDescription:
+      '{count, plural, one {Der Server plant # Ressource ein, die in ihrer aktuellen Form noch nicht verfügbar ist. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.} other {Der Server plant # Ressourcen ein, die in ihrer aktuellen Form noch nicht verfügbar sind. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.}}',
+    ingestAllConfirm: 'Verarbeitung starten',
+    ingestAllNeeds: 'Verarbeitung nötig',
+    ingestAllFailed: 'Fehlgeschlagene Versuche',
+    ingestAllInProgress: 'In Verarbeitung',
+    ingestAllSummary:
+      '{needs} benötigen Verarbeitung · {failed} fehlgeschlagene Versuche · {inProgress} bereits in Verarbeitung',
+    ingestAllSuccess:
+      '{queued} Ressourcen eingeplant. {retried} fehlgeschlagene Ressourcen erneut versucht. {current} waren bereits aktuell und {inProgress} bereits in Verarbeitung. {failed} konnten nicht eingeplant werden.',
+    ingestAllError:
+      'Die Ressourcen konnten nicht zur Verarbeitung eingeplant werden.',
+    updateMaterialTypeSuccess: 'Materialkategorie aktualisiert.',
+    updateMaterialTypeError:
+      'Die Materialkategorie konnte nicht aktualisiert werden.',
     operationStatus: 'Letzte Verarbeitung',
     operationInProgress:
       'Dieser Vorgang läuft im Hintergrund. Sie können diese Seite verlassen.',

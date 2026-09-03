@@ -19,10 +19,13 @@ import {
   GetKbResourcesDocument,
   type GetKbResourcesQuery,
   type GetKbResourcesQueryVariables,
+  IngestAllKbResourcesDocument,
   IngestKbResourceDocument,
   KbIngestionStatus,
+  KbResourceMaterialType,
   KbResourceStatus,
   KbResourceType,
+  UpdateKbResourceMaterialTypeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -311,6 +314,448 @@ function ResourceServingStatus({
   })
 }
 
+type KnowledgeBaseResourceConnection = NonNullable<
+  GetKbResourcesQuery['getKbResources']
+>
+
+function ResourceTableRow({
+  resource,
+  selectedIds,
+  ingestingId,
+  bulkIngesting,
+  formatFileSize,
+  getMaterialTypeLabel,
+  renderStatus,
+  onToggleSelection,
+  onInspect,
+  onDelete,
+}: Readonly<{
+  resource: KnowledgeBaseResource
+  selectedIds: Set<string>
+  ingestingId: string | null
+  bulkIngesting: boolean
+  formatFileSize: (sizeBytes: number | null | undefined) => string
+  getMaterialTypeLabel: (materialType: KbResourceMaterialType) => string
+  renderStatus: (resource: KnowledgeBaseResource) => React.ReactNode
+  onToggleSelection: (id: string) => void
+  onInspect: (id: string) => void
+  onDelete: (resource: KnowledgeBaseResource) => void
+}>) {
+  const t = useTranslations()
+  const format = useFormatter()
+  const active = isActiveResource(resource)
+
+  return (
+    <ShadcnTableRow
+      className="bg-white"
+      data-cy={`kb-resource-row-${resource.id}`}
+    >
+      <ShadcnTableCell className="w-10 px-2 align-top">
+        <label
+          className={`flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2 ${active ? 'cursor-not-allowed opacity-50' : ''}`}
+        >
+          <span className="sr-only">
+            {t('kb.selectResource', { title: resource.title })}
+          </span>
+          <input
+            type="checkbox"
+            checked={selectedIds.has(resource.id)}
+            disabled={
+              active ||
+              (!selectedIds.has(resource.id) &&
+                selectedIds.size >= MAX_BULK_SELECTION)
+            }
+            onChange={() => onToggleSelection(resource.id)}
+            className="h-4 w-4"
+            data-cy={`select-kb-resource-${resource.id}`}
+          />
+        </label>
+      </ShadcnTableCell>
+      <ShadcnTableCell className="whitespace-normal align-top">
+        <div className="flex min-w-0 items-start gap-3">
+          <FontAwesomeIcon
+            icon={resource.type === KbResourceType.Blob ? faFileLines : faLink}
+            className="text-primary-100 mt-1 h-4 w-4 shrink-0"
+            aria-hidden="true"
+          />
+          <div className="min-w-0">
+            <div className="break-words font-medium">{resource.title}</div>
+            <div className="mt-1 break-all text-xs text-slate-600">
+              <span className="sm:hidden">
+                {resource.type === KbResourceType.Blob
+                  ? t('kb.typeFile')
+                  : t('kb.typeUrl')}{' '}
+                ·{' '}
+              </span>
+              {resource.type === KbResourceType.Blob
+                ? formatFileSize(resource.sizeBytes)
+                : getUrlHost(resource.sourceUrl)}
+            </div>
+            <time
+              dateTime={new Date(resource.updatedAt).toISOString()}
+              className="mt-1 block text-xs text-slate-500 lg:hidden"
+            >
+              {t('kb.updatedAt', {
+                date: format.dateTime(new Date(resource.updatedAt), {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }),
+              })}
+            </time>
+          </div>
+        </div>
+      </ShadcnTableCell>
+      <ShadcnTableCell className="hidden whitespace-normal align-top sm:table-cell">
+        <Badge variant="outline">
+          {resource.type === KbResourceType.Blob
+            ? t('kb.typeFile')
+            : t('kb.typeUrl')}
+        </Badge>
+      </ShadcnTableCell>
+      <ShadcnTableCell className="hidden whitespace-normal align-top md:table-cell">
+        <Badge variant="outline">
+          {getMaterialTypeLabel(resource.materialType)}
+        </Badge>
+      </ShadcnTableCell>
+      <ShadcnTableCell
+        className="whitespace-normal align-top"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div
+          className="flex flex-wrap items-center gap-2 text-sm text-slate-600"
+          data-cy={`kb-resource-operation-${resource.id}`}
+        >
+          {renderStatus(resource)}
+          <span>
+            {t('kb.version', {
+              version: resource.resourceVersion,
+            })}
+          </span>
+        </div>
+        {resource.latestIngestionRun ? (
+          <RunStatusMessage
+            status={resource.latestIngestionRun.status}
+            errorCode={resource.latestIngestionRun.errorCode}
+            className="mt-1 text-sm text-slate-600"
+            dataCy={`kb-resource-status-message-${resource.id}`}
+          />
+        ) : null}
+        <OperationProgress resource={resource} />
+        <div className="mt-1 text-xs text-slate-600 md:hidden">
+          <span className="font-medium">{t('kb.servingStatus')}:</span>{' '}
+          <ResourceServingStatus resource={resource} />
+        </div>
+      </ShadcnTableCell>
+      <ShadcnTableCell
+        className="hidden whitespace-normal align-top md:table-cell"
+        data-cy={`kb-resource-serving-${resource.id}`}
+      >
+        <div className="text-sm font-medium text-slate-800">
+          <ResourceServingStatus resource={resource} />
+        </div>
+        {resource.ingestedAt ? (
+          <div className="mt-1 text-sm text-slate-600">
+            {t('kb.servingSince', {
+              date: format.dateTime(new Date(resource.ingestedAt), {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              }),
+            })}
+          </div>
+        ) : null}
+      </ShadcnTableCell>
+      <ShadcnTableCell className="hidden whitespace-normal align-top text-sm text-slate-600 lg:table-cell">
+        <time dateTime={new Date(resource.updatedAt).toISOString()}>
+          {format.dateTime(new Date(resource.updatedAt), {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })}
+        </time>
+      </ShadcnTableCell>
+      <ShadcnTableCell className="w-24 whitespace-normal align-top">
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            onClick={() => onInspect(resource.id)}
+            data={{ cy: `inspect-kb-resource-${resource.id}` }}
+            className={{ root: 'min-w-0 px-2 text-xs sm:px-3 sm:text-sm' }}
+          >
+            <Button.Label>{t('kb.inspectResource')}</Button.Label>
+          </Button>
+          <Dropdown
+            align="end"
+            items={[
+              {
+                id: `delete-kb-resource-${resource.id}`,
+                disabled: active || ingestingId !== null || bulkIngesting,
+                label: t('shared.generic.delete'),
+                onClick: () => onDelete(resource),
+                data: {
+                  cy: `delete-kb-resource-${resource.id}`,
+                },
+              },
+            ]}
+            trigger={
+              <>
+                <FontAwesomeIcon icon={faEllipsisVertical} aria-hidden="true" />
+                <span className="sr-only">{t('kb.resourceActions')}</span>
+              </>
+            }
+            data={{ cy: `kb-resource-actions-${resource.id}` }}
+            className={{
+              trigger: 'h-8 w-8 border-none bg-transparent p-0 text-slate-600',
+              item: 'py-0.5 text-sm',
+            }}
+          />
+        </div>
+      </ShadcnTableCell>
+    </ShadcnTableRow>
+  )
+}
+
+function ResourceTable({
+  connection,
+  resources,
+  selectedIds,
+  allPageSelected,
+  ingestingId,
+  bulkIngesting,
+  formatFileSize,
+  getMaterialTypeLabel,
+  renderStatus,
+  onTogglePageSelection,
+  onToggleSelection,
+  onInspect,
+  onDelete,
+  loadingMore,
+  onLoadMore,
+}: Readonly<{
+  connection: KnowledgeBaseResourceConnection
+  resources: KnowledgeBaseResource[]
+  selectedIds: Set<string>
+  allPageSelected: boolean
+  ingestingId: string | null
+  bulkIngesting: boolean
+  formatFileSize: (sizeBytes: number | null | undefined) => string
+  getMaterialTypeLabel: (materialType: KbResourceMaterialType) => string
+  renderStatus: (resource: KnowledgeBaseResource) => React.ReactNode
+  onTogglePageSelection: () => void
+  onToggleSelection: (id: string) => void
+  onInspect: (id: string) => void
+  onDelete: (resource: KnowledgeBaseResource) => void
+  loadingMore: boolean
+  onLoadMore: () => void
+}>) {
+  const t = useTranslations()
+
+  return (
+    <>
+      <div className="mt-4 text-sm text-slate-600">
+        <p aria-live="polite" data-cy="kb-resource-result-count">
+          {t('kb.resourceResultCount', {
+            count: connection.totalCount,
+          })}
+        </p>
+      </div>
+      <ShadcnTable
+        className="mt-3 table-fixed"
+        aria-label={t('kb.resourcesTitle')}
+      >
+        <ShadcnTableCaption className="sr-only">
+          {t('kb.resourcesTitle')}
+        </ShadcnTableCaption>
+        <ShadcnTableHeader className="bg-slate-50">
+          <ShadcnTableRow>
+            <ShadcnTableHead className="w-10 px-2" scope="col">
+              <label className="flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2">
+                <span className="sr-only">{t('kb.selectAllPage')}</span>
+                <input
+                  type="checkbox"
+                  checked={allPageSelected}
+                  onChange={onTogglePageSelection}
+                  className="h-4 w-4"
+                  data-cy="select-kb-resource-page"
+                />
+              </label>
+            </ShadcnTableHead>
+            <ShadcnTableHead scope="col">
+              {t('kb.resourceColumn')}
+            </ShadcnTableHead>
+            <ShadcnTableHead
+              className="hidden whitespace-normal sm:table-cell"
+              scope="col"
+            >
+              {t('kb.sourceType')}
+            </ShadcnTableHead>
+            <ShadcnTableHead
+              className="hidden whitespace-normal md:table-cell"
+              scope="col"
+            >
+              {t('kb.materialType')}
+            </ShadcnTableHead>
+            <ShadcnTableHead scope="col">
+              {t('kb.operationStatus')}
+            </ShadcnTableHead>
+            <ShadcnTableHead
+              className="hidden whitespace-normal md:table-cell"
+              scope="col"
+            >
+              {t('kb.servingStatus')}
+            </ShadcnTableHead>
+            <ShadcnTableHead
+              className="hidden whitespace-normal lg:table-cell"
+              scope="col"
+            >
+              {t('kb.updatedAtLabel')}
+            </ShadcnTableHead>
+            <ShadcnTableHead className="w-24" scope="col">
+              <span className="sr-only">{t('kb.resourceActions')}</span>
+            </ShadcnTableHead>
+          </ShadcnTableRow>
+        </ShadcnTableHeader>
+        <ShadcnTableBody>
+          {resources.map((resource) => (
+            <ResourceTableRow
+              key={resource.id}
+              resource={resource}
+              selectedIds={selectedIds}
+              ingestingId={ingestingId}
+              bulkIngesting={bulkIngesting}
+              formatFileSize={formatFileSize}
+              getMaterialTypeLabel={getMaterialTypeLabel}
+              renderStatus={renderStatus}
+              onToggleSelection={onToggleSelection}
+              onInspect={onInspect}
+              onDelete={onDelete}
+            />
+          ))}
+        </ShadcnTableBody>
+      </ShadcnTable>
+      {connection.pageInfo.hasNextPage ? (
+        <div className="mt-5 flex justify-center">
+          <Button
+            onClick={onLoadMore}
+            loading={loadingMore}
+            disabled={loadingMore}
+            data={{ cy: 'load-more-kb-resources' }}
+          >
+            <Button.Label>{t('kb.loadMoreResources')}</Button.Label>
+          </Button>
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+function ResourceListContent({
+  connection,
+  loading,
+  error,
+  resources,
+  hasFilters,
+  selectedIds,
+  allPageSelected,
+  ingestingId,
+  bulkIngesting,
+  formatFileSize,
+  getMaterialTypeLabel,
+  renderStatus,
+  onTogglePageSelection,
+  onToggleSelection,
+  onInspect,
+  onDelete,
+  loadingMore,
+  onLoadMore,
+}: Readonly<{
+  connection: KnowledgeBaseResourceConnection | undefined
+  loading: boolean
+  error: unknown
+  resources: KnowledgeBaseResource[]
+  hasFilters: boolean
+  selectedIds: Set<string>
+  allPageSelected: boolean
+  ingestingId: string | null
+  bulkIngesting: boolean
+  formatFileSize: (sizeBytes: number | null | undefined) => string
+  getMaterialTypeLabel: (materialType: KbResourceMaterialType) => string
+  renderStatus: (resource: KnowledgeBaseResource) => React.ReactNode
+  onTogglePageSelection: () => void
+  onToggleSelection: (id: string) => void
+  onInspect: (id: string) => void
+  onDelete: (resource: KnowledgeBaseResource) => void
+  loadingMore: boolean
+  onLoadMore: () => void
+}>) {
+  const t = useTranslations()
+
+  if (loading && !connection) {
+    return (
+      <output
+        className="mt-4 space-y-3"
+        aria-label={t('shared.generic.loading')}
+      >
+        <Skeleton
+          className="h-40 w-full motion-reduce:animate-none"
+          aria-hidden="true"
+        />
+        <Skeleton
+          className="h-40 w-full motion-reduce:animate-none"
+          aria-hidden="true"
+        />
+      </output>
+    )
+  }
+
+  if (error) {
+    return (
+      <UserNotification
+        type="error"
+        className={{ root: 'mt-4' }}
+        message={t('kb.resourcesLoadError')}
+        data={{ cy: 'kb-resources-error' }}
+      />
+    )
+  }
+
+  if (!connection || resources.length === 0) {
+    return (
+      <div
+        className="mt-4 rounded-md border border-dashed border-slate-300 p-6 text-center"
+        data-cy="kb-resources-empty"
+      >
+        <p className="text-slate-600">
+          {hasFilters ? t('kb.noResourceResults') : t('kb.noResources')}
+        </p>
+        {!hasFilters ? (
+          <p className="mt-2 text-sm text-slate-500">
+            {t('kb.emptyResourceHint')}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <ResourceTable
+      connection={connection}
+      resources={resources}
+      selectedIds={selectedIds}
+      allPageSelected={allPageSelected}
+      ingestingId={ingestingId}
+      bulkIngesting={bulkIngesting}
+      formatFileSize={formatFileSize}
+      getMaterialTypeLabel={getMaterialTypeLabel}
+      renderStatus={renderStatus}
+      onTogglePageSelection={onTogglePageSelection}
+      onToggleSelection={onToggleSelection}
+      onInspect={onInspect}
+      onDelete={onDelete}
+      loadingMore={loadingMore}
+      onLoadMore={onLoadMore}
+    />
+  )
+}
+
 function KnowledgeBaseResourceList({
   kbId,
   refreshKey,
@@ -328,12 +773,19 @@ function KnowledgeBaseResourceList({
   const deferredSearch = useDeferredValue(search.trim())
   const [typeFilter, setTypeFilter] = useState<KbResourceType | ''>('')
   const [statusFilter, setStatusFilter] = useState<KbIngestionStatus | ''>('')
+  const [materialTypeFilter, setMaterialTypeFilter] = useState<
+    KbResourceMaterialType | ''
+  >('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
   const [bulkDeletionOpen, setBulkDeletionOpen] = useState(false)
+  const [bulkIngestOpen, setBulkIngestOpen] = useState(false)
   const [inspectorId, setInspectorId] = useState<string | null>(null)
   const [ingestingId, setIngestingId] = useState<string | null>(null)
+  const [updatingMaterialTypeId, setUpdatingMaterialTypeId] = useState<
+    string | null
+  >(null)
   const [historyRefreshes, setHistoryRefreshes] = useState<
     Record<string, number>
   >({})
@@ -359,6 +811,7 @@ function KnowledgeBaseResourceList({
     search: deferredSearch || null,
     type: typeFilter || null,
     status: statusFilter || null,
+    materialType: materialTypeFilter || null,
   }
   const { data, loading, error, fetchMore, networkStatus, updateQuery } =
     useQuery(GetKbResourcesDocument, {
@@ -367,6 +820,10 @@ function KnowledgeBaseResourceList({
     })
   const apolloClient = useApolloClient()
   const [ingestResource] = useMutation(IngestKbResourceDocument)
+  const [ingestAllResources, { loading: bulkIngesting }] = useMutation(
+    IngestAllKbResourcesDocument
+  )
+  const [updateMaterialType] = useMutation(UpdateKbResourceMaterialTypeDocument)
   const connection = data?.getKbResources
   const resources = connection?.items ?? []
   const loadedResourceCountRef = useRef(resources.length)
@@ -385,6 +842,12 @@ function KnowledgeBaseResourceList({
     bulkSelectableIds.length > 0 &&
     bulkSelectableIds.every((id) => selectedIds.has(id))
   const selectedResources = resources.filter(({ id }) => selectedIds.has(id))
+  const hasFilters = [
+    deferredSearch,
+    typeFilter,
+    statusFilter,
+    materialTypeFilter,
+  ].some(Boolean)
 
   // The per-page fetch variables are identical at every poll site (full walk
   // and bounded poll alike) bar the cursor, so build them in one place.
@@ -396,8 +859,9 @@ function KnowledgeBaseResourceList({
       search: deferredSearch || null,
       type: typeFilter || null,
       status: statusFilter || null,
+      materialType: materialTypeFilter || null,
     }),
-    [deferredSearch, kbId, statusFilter, typeFilter]
+    [deferredSearch, kbId, materialTypeFilter, statusFilter, typeFilter]
   )
 
   const refreshLoadedResources = useCallback(async () => {
@@ -662,7 +1126,7 @@ function KnowledgeBaseResourceList({
     pageCursorsRef.current = [null]
     activePageIndexesRef.current = new Set()
     bookkeepingValidRef.current = false
-  }, [deferredSearch, kbId, statusFilter, typeFilter])
+  }, [deferredSearch, kbId, materialTypeFilter, statusFilter, typeFilter])
 
   useEffect(() => {
     if (refreshKey === 0) return
@@ -800,6 +1264,72 @@ function KnowledgeBaseResourceList({
     }
   }
 
+  const handleIngestAll = async () => {
+    if (bulkIngesting) return
+
+    try {
+      const { data: result } = await ingestAllResources({
+        variables: { kbId },
+      })
+      await refreshAfterMutation(
+        refreshWorkspace,
+        'KB resources after bulk ingestion'
+      )
+      setBulkIngestOpen(false)
+      const summary = result?.ingestAllKbResources
+      toast({
+        type: summary?.queueFailureCount ? 'error' : 'success',
+        message: summary
+          ? t('kb.ingestAllSuccess', {
+              queued: summary.queuedCount,
+              retried: summary.retriedFailedCount,
+              current: summary.alreadyCurrentCount,
+              inProgress: summary.alreadyInProgressCount,
+              failed: summary.queueFailureCount,
+            })
+          : t('kb.ingestAllError'),
+      })
+    } catch (error) {
+      console.error('Failed to queue all KB resources', error)
+      const code = getGraphQLErrorCode(error)
+      toast({
+        type: 'error',
+        message:
+          code === 'KB_INGESTION_DISABLED'
+            ? t('kb.ingestionDisabledError')
+            : t('kb.ingestAllError'),
+      })
+    }
+  }
+
+  const handleMaterialTypeChange = async (
+    resource: KnowledgeBaseResource,
+    materialType: KbResourceMaterialType
+  ) => {
+    if (
+      updatingMaterialTypeId !== null ||
+      resource.materialType === materialType
+    ) {
+      return
+    }
+    setUpdatingMaterialTypeId(resource.id)
+    try {
+      await updateMaterialType({
+        variables: { id: resource.id, materialType },
+      })
+      await refreshAfterMutation(
+        refreshWorkspace,
+        'KB resources after material classification'
+      )
+      toast({ type: 'success', message: t('kb.updateMaterialTypeSuccess') })
+    } catch (error) {
+      console.error('Failed to update KB resource material type', error)
+      toast({ type: 'error', message: t('kb.updateMaterialTypeError') })
+    } finally {
+      setUpdatingMaterialTypeId(null)
+    }
+  }
+
   const getIngestActionLabel = (resource: KnowledgeBaseResource) => {
     if (resource.status === KbResourceStatus.Added) {
       return t('kb.ingestResource')
@@ -808,6 +1338,17 @@ function KnowledgeBaseResourceList({
       return t('kb.retryIngestion')
     }
     return t('kb.reingestResource')
+  }
+
+  const getMaterialTypeLabel = (materialType: KbResourceMaterialType) => {
+    switch (materialType) {
+      case KbResourceMaterialType.CourseContent:
+        return t('kb.materialTypeCourseContent')
+      case KbResourceMaterialType.Administrative:
+        return t('kb.materialTypeAdministrative')
+      case KbResourceMaterialType.Unclassified:
+        return t('kb.materialTypeUnclassified')
+    }
   }
 
   const loadMore = async () => {
@@ -919,7 +1460,7 @@ function KnowledgeBaseResourceList({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+      <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem_14rem]">
         <TextField
           id="kb-resource-search"
           autoComplete="off"
@@ -978,7 +1519,61 @@ function KnowledgeBaseResourceList({
           data={{ cy: 'kb-resource-status-filter' }}
           className={{ root: 'w-full', select: { trigger: 'w-full' } }}
         />
+        <SelectField
+          id="kb-resource-material-type-filter"
+          label={t('kb.filterMaterialType')}
+          value={materialTypeFilter || FILTER_ALL_VALUE}
+          onChange={(newValue) =>
+            setMaterialTypeFilter(
+              newValue === FILTER_ALL_VALUE
+                ? ''
+                : (newValue as KbResourceMaterialType)
+            )
+          }
+          items={[
+            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+            {
+              value: KbResourceMaterialType.Unclassified,
+              label: t('kb.materialTypeUnclassified'),
+            },
+            {
+              value: KbResourceMaterialType.CourseContent,
+              label: t('kb.materialTypeCourseContent'),
+            },
+            {
+              value: KbResourceMaterialType.Administrative,
+              label: t('kb.materialTypeAdministrative'),
+            },
+          ]}
+          data={{ cy: 'kb-resource-material-type-filter' }}
+          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+        />
       </div>
+
+      {connection ? (
+        <div
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary-100/20 bg-primary-100/5 px-4 py-3 text-sm"
+          data-cy="kb-ingestion-summary"
+        >
+          <p className="text-slate-700" aria-live="polite">
+            {t('kb.ingestAllSummary', {
+              needs: connection.needsIngestionCount,
+              failed: connection.failedIngestionCount,
+              inProgress: connection.inProgressCount,
+            })}
+          </p>
+          {connection.needsIngestionCount > 0 ? (
+            <Button
+              onClick={() => setBulkIngestOpen(true)}
+              disabled={bulkIngesting || ingestingId !== null}
+              data={{ cy: 'ingest-all-kb-resources' }}
+              className={{ root: 'shrink-0 px-3 text-sm' }}
+            >
+              <Button.Label>{t('kb.ingestAll')}</Button.Label>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {polling ? (
         <UserNotification
@@ -988,313 +1583,77 @@ function KnowledgeBaseResourceList({
         />
       ) : null}
 
-      {loading && !connection ? (
-        <div
-          className="mt-4 space-y-3"
-          role="status"
-          aria-label={t('shared.generic.loading')}
+      <ResourceListContent
+        connection={connection}
+        loading={loading}
+        error={error}
+        resources={resources}
+        hasFilters={hasFilters}
+        selectedIds={selectedIds}
+        allPageSelected={allPageSelected}
+        ingestingId={ingestingId}
+        bulkIngesting={bulkIngesting}
+        formatFileSize={formatFileSize}
+        getMaterialTypeLabel={getMaterialTypeLabel}
+        renderStatus={renderStatus}
+        onTogglePageSelection={togglePageSelection}
+        onToggleSelection={toggleSelection}
+        onInspect={setInspectorId}
+        onDelete={setDeletionTarget}
+        loadingMore={loadingMore}
+        onLoadMore={loadMore}
+      />
+
+      {bulkIngestOpen && connection ? (
+        <Modal
+          open
+          onClose={() => {
+            if (!bulkIngesting) setBulkIngestOpen(false)
+          }}
+          escapeDisabled={bulkIngesting}
+          hideCloseButton={bulkIngesting}
+          title={t('kb.ingestAllTitle')}
+          primaryLabel={t('kb.ingestAllConfirm')}
+          primaryLoading={bulkIngesting}
+          primaryDisabled={bulkIngesting}
+          onPrimaryAction={handleIngestAll}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => {
+            if (!bulkIngesting) setBulkIngestOpen(false)
+          }}
+          dataContent={{ cy: 'ingest-all-kb-resources-modal' }}
+          dataCloseButton={{ cy: 'close-ingest-all-kb-resources' }}
+          dataPrimaryAction={{ cy: 'confirm-ingest-all-kb-resources' }}
+          dataSecondaryAction={{ cy: 'cancel-ingest-all-kb-resources' }}
+          className={{ content: 'max-w-xl' }}
         >
-          <Skeleton
-            className="h-40 w-full motion-reduce:animate-none"
-            aria-hidden="true"
-          />
-          <Skeleton
-            className="h-40 w-full motion-reduce:animate-none"
-            aria-hidden="true"
-          />
-        </div>
-      ) : error ? (
-        <UserNotification
-          type="error"
-          className={{ root: 'mt-4' }}
-          message={t('kb.resourcesLoadError')}
-          data={{ cy: 'kb-resources-error' }}
-        />
-      ) : resources.length === 0 ? (
-        <div
-          className="mt-4 rounded-md border border-dashed border-slate-300 p-6 text-center"
-          data-cy="kb-resources-empty"
-        >
-          <p className="text-slate-600">
-            {deferredSearch || typeFilter || statusFilter
-              ? t('kb.noResourceResults')
-              : t('kb.noResources')}
+          <p>
+            {t('kb.ingestAllDescription', {
+              count: connection.needsIngestionCount,
+            })}
           </p>
-          {!deferredSearch && !typeFilter && !statusFilter ? (
-            <p className="mt-2 text-sm text-slate-500">
-              {t('kb.emptyResourceHint')}
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <>
-          <div className="mt-4 text-sm text-slate-600">
-            <p aria-live="polite" data-cy="kb-resource-result-count">
-              {t('kb.resourceResultCount', {
-                count: connection?.totalCount ?? 0,
-              })}
-            </p>
-          </div>
-          <ShadcnTable
-            className="mt-3 table-fixed"
-            aria-label={t('kb.resourcesTitle')}
-          >
-            <ShadcnTableCaption className="sr-only">
-              {t('kb.resourcesTitle')}
-            </ShadcnTableCaption>
-            <ShadcnTableHeader className="bg-slate-50">
-              <ShadcnTableRow>
-                <ShadcnTableHead className="w-10 px-2" scope="col">
-                  <label className="flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2">
-                    <span className="sr-only">{t('kb.selectAllPage')}</span>
-                    <input
-                      type="checkbox"
-                      checked={allPageSelected}
-                      onChange={togglePageSelection}
-                      className="h-4 w-4"
-                      data-cy="select-kb-resource-page"
-                    />
-                  </label>
-                </ShadcnTableHead>
-                <ShadcnTableHead scope="col">
-                  {t('kb.resourceColumn')}
-                </ShadcnTableHead>
-                <ShadcnTableHead
-                  className="hidden whitespace-normal sm:table-cell"
-                  scope="col"
-                >
-                  {t('kb.sourceType')}
-                </ShadcnTableHead>
-                <ShadcnTableHead scope="col">
-                  {t('kb.operationStatus')}
-                </ShadcnTableHead>
-                <ShadcnTableHead
-                  className="hidden whitespace-normal md:table-cell"
-                  scope="col"
-                >
-                  {t('kb.servingStatus')}
-                </ShadcnTableHead>
-                <ShadcnTableHead
-                  className="hidden whitespace-normal lg:table-cell"
-                  scope="col"
-                >
-                  {t('kb.updatedAtLabel')}
-                </ShadcnTableHead>
-                <ShadcnTableHead className="w-24" scope="col">
-                  <span className="sr-only">{t('kb.resourceActions')}</span>
-                </ShadcnTableHead>
-              </ShadcnTableRow>
-            </ShadcnTableHeader>
-            <ShadcnTableBody>
-              {resources.map((resource) => {
-                const active = isActiveResource(resource)
-                return (
-                  <ShadcnTableRow
-                    key={resource.id}
-                    className="bg-white"
-                    data-cy={`kb-resource-row-${resource.id}`}
-                  >
-                    <ShadcnTableCell className="w-10 px-2 align-top">
-                      <label
-                        className={`flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2 ${active ? 'cursor-not-allowed opacity-50' : ''}`}
-                      >
-                        <span className="sr-only">
-                          {t('kb.selectResource', { title: resource.title })}
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(resource.id)}
-                          disabled={
-                            active ||
-                            (!selectedIds.has(resource.id) &&
-                              selectedIds.size >= MAX_BULK_SELECTION)
-                          }
-                          onChange={() => toggleSelection(resource.id)}
-                          className="h-4 w-4"
-                          data-cy={`select-kb-resource-${resource.id}`}
-                        />
-                      </label>
-                    </ShadcnTableCell>
-                    <ShadcnTableCell className="whitespace-normal align-top">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <FontAwesomeIcon
-                          icon={
-                            resource.type === KbResourceType.Blob
-                              ? faFileLines
-                              : faLink
-                          }
-                          className="text-primary-100 mt-1 h-4 w-4 shrink-0"
-                          aria-hidden="true"
-                        />
-                        <div className="min-w-0">
-                          <div className="break-words font-medium">
-                            {resource.title}
-                          </div>
-                          <div className="mt-1 break-all text-xs text-slate-600">
-                            <span className="sm:hidden">
-                              {resource.type === KbResourceType.Blob
-                                ? t('kb.typeFile')
-                                : t('kb.typeUrl')}{' '}
-                              ·{' '}
-                            </span>
-                            {resource.type === KbResourceType.Blob
-                              ? formatFileSize(resource.sizeBytes)
-                              : getUrlHost(resource.sourceUrl)}
-                          </div>
-                          <time
-                            dateTime={new Date(
-                              resource.updatedAt
-                            ).toISOString()}
-                            className="mt-1 block text-xs text-slate-500 lg:hidden"
-                          >
-                            {t('kb.updatedAt', {
-                              date: format.dateTime(
-                                new Date(resource.updatedAt),
-                                {
-                                  dateStyle: 'medium',
-                                  timeStyle: 'short',
-                                }
-                              ),
-                            })}
-                          </time>
-                        </div>
-                      </div>
-                    </ShadcnTableCell>
-                    <ShadcnTableCell className="hidden whitespace-normal align-top sm:table-cell">
-                      <Badge variant="outline">
-                        {resource.type === KbResourceType.Blob
-                          ? t('kb.typeFile')
-                          : t('kb.typeUrl')}
-                      </Badge>
-                    </ShadcnTableCell>
-                    <ShadcnTableCell
-                      className="whitespace-normal align-top"
-                      aria-live="polite"
-                      aria-atomic="true"
-                    >
-                      <div
-                        className="flex flex-wrap items-center gap-2 text-sm text-slate-600"
-                        data-cy={`kb-resource-operation-${resource.id}`}
-                      >
-                        {renderStatus(resource)}
-                        <span>
-                          {t('kb.version', {
-                            version: resource.resourceVersion,
-                          })}
-                        </span>
-                      </div>
-                      {resource.latestIngestionRun ? (
-                        <RunStatusMessage
-                          status={resource.latestIngestionRun.status}
-                          errorCode={resource.latestIngestionRun.errorCode}
-                          className="mt-1 text-sm text-slate-600"
-                          dataCy={`kb-resource-status-message-${resource.id}`}
-                        />
-                      ) : null}
-                      <OperationProgress resource={resource} />
-                      <div className="mt-1 text-xs text-slate-600 md:hidden">
-                        <span className="font-medium">
-                          {t('kb.servingStatus')}:
-                        </span>{' '}
-                        <ResourceServingStatus resource={resource} />
-                      </div>
-                    </ShadcnTableCell>
-                    <ShadcnTableCell
-                      className="hidden whitespace-normal align-top md:table-cell"
-                      data-cy={`kb-resource-serving-${resource.id}`}
-                    >
-                      <div className="text-sm font-medium text-slate-800">
-                        <ResourceServingStatus resource={resource} />
-                      </div>
-                      {resource.ingestedAt ? (
-                        <div className="mt-1 text-sm text-slate-600">
-                          {t('kb.servingSince', {
-                            date: format.dateTime(
-                              new Date(resource.ingestedAt),
-                              {
-                                dateStyle: 'medium',
-                                timeStyle: 'short',
-                              }
-                            ),
-                          })}
-                        </div>
-                      ) : null}
-                    </ShadcnTableCell>
-                    <ShadcnTableCell className="hidden whitespace-normal align-top text-sm text-slate-600 lg:table-cell">
-                      <time
-                        dateTime={new Date(resource.updatedAt).toISOString()}
-                      >
-                        {format.dateTime(new Date(resource.updatedAt), {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}
-                      </time>
-                    </ShadcnTableCell>
-                    <ShadcnTableCell className="w-24 whitespace-normal align-top">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          onClick={() => setInspectorId(resource.id)}
-                          data={{ cy: `inspect-kb-resource-${resource.id}` }}
-                          className={{
-                            root: 'min-w-0 px-2 text-xs sm:px-3 sm:text-sm',
-                          }}
-                        >
-                          <Button.Label>{t('kb.inspectResource')}</Button.Label>
-                        </Button>
-                        <Dropdown
-                          align="end"
-                          items={[
-                            {
-                              id: `delete-kb-resource-${resource.id}`,
-                              disabled: active || ingestingId !== null,
-                              label: t('shared.generic.delete'),
-                              onClick: () => setDeletionTarget(resource),
-                              data: {
-                                cy: `delete-kb-resource-${resource.id}`,
-                              },
-                            },
-                          ]}
-                          trigger={
-                            <>
-                              <FontAwesomeIcon
-                                icon={faEllipsisVertical}
-                                aria-hidden="true"
-                              />
-                              <span className="sr-only">
-                                {t('kb.resourceActions')}
-                              </span>
-                            </>
-                          }
-                          data={{
-                            cy: `kb-resource-actions-${resource.id}`,
-                          }}
-                          className={{
-                            trigger:
-                              'h-8 w-8 border-none bg-transparent p-0 text-slate-600',
-                            item: 'py-0.5 text-sm',
-                          }}
-                        />
-                      </div>
-                    </ShadcnTableCell>
-                  </ShadcnTableRow>
-                )
-              })}
-            </ShadcnTableBody>
-          </ShadcnTable>
-          {connection?.pageInfo.hasNextPage ? (
-            <div className="mt-5 flex justify-center">
-              <Button
-                onClick={loadMore}
-                loading={loadingMore}
-                disabled={loadingMore}
-                data={{ cy: 'load-more-kb-resources' }}
-              >
-                <Button.Label>{t('kb.loadMoreResources')}</Button.Label>
-              </Button>
+          <dl className="mt-4 grid gap-3 rounded-md bg-slate-50 p-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllNeeds')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.needsIngestionCount}
+              </dd>
             </div>
-          ) : null}
-        </>
-      )}
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllFailed')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.failedIngestionCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-600">{t('kb.ingestAllInProgress')}</dt>
+              <dd className="mt-1 text-lg font-semibold text-slate-900">
+                {connection.inProgressCount}
+              </dd>
+            </div>
+          </dl>
+        </Modal>
+      ) : null}
 
       {inspectorResource ? (
         <Modal
@@ -1304,7 +1663,9 @@ function KnowledgeBaseResourceList({
           primaryLabel={getIngestActionLabel(inspectorResource)}
           primaryLoading={ingestingId === inspectorResource.id}
           primaryDisabled={
-            ingestingId !== null || isActiveResource(inspectorResource)
+            ingestingId !== null ||
+            bulkIngesting ||
+            isActiveResource(inspectorResource)
           }
           onPrimaryAction={() => handleIngest(inspectorResource)}
           secondaryLabel={t('shared.generic.close')}
@@ -1333,6 +1694,36 @@ function KnowledgeBaseResourceList({
                     ? t('kb.typeFile')
                     : t('kb.typeUrl')}
                 </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <SelectField
+                  id="kb-inspector-material-type"
+                  label={t('kb.materialType')}
+                  value={inspectorResource.materialType}
+                  onChange={(value) =>
+                    void handleMaterialTypeChange(
+                      inspectorResource,
+                      value as KbResourceMaterialType
+                    )
+                  }
+                  items={[
+                    {
+                      value: KbResourceMaterialType.Unclassified,
+                      label: t('kb.materialTypeUnclassified'),
+                    },
+                    {
+                      value: KbResourceMaterialType.CourseContent,
+                      label: t('kb.materialTypeCourseContent'),
+                    },
+                    {
+                      value: KbResourceMaterialType.Administrative,
+                      label: t('kb.materialTypeAdministrative'),
+                    },
+                  ]}
+                  disabled={updatingMaterialTypeId !== null || bulkIngesting}
+                  data={{ cy: 'kb-inspector-material-type' }}
+                  className={{ select: { trigger: 'w-full' } }}
+                />
               </div>
               <div>
                 <dt className="font-medium text-slate-600">
@@ -1393,7 +1784,9 @@ function KnowledgeBaseResourceList({
             <Button
               destructive
               disabled={
-                isActiveResource(inspectorResource) || ingestingId !== null
+                isActiveResource(inspectorResource) ||
+                ingestingId !== null ||
+                bulkIngesting
               }
               onClick={() => {
                 setInspectorId(null)

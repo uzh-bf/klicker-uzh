@@ -6,6 +6,7 @@ import {
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
+  KBResourceMaterialType,
   KBResourceType,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
@@ -16,7 +17,13 @@ import {
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
-import { buildSchema, parse, validate } from 'graphql'
+import {
+  buildSchema,
+  GraphQLEnumType,
+  GraphQLObjectType,
+  parse,
+  validate,
+} from 'graphql'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -36,7 +43,9 @@ import {
   getKbResourceIngestionRuns,
   getKbResourcesConnection,
   getUserKbsConnection,
+  ingestAllKbResources,
   ingestKbResource,
+  updateKbResourceMaterialType,
   rebuildKbKnowledgeGraph,
   requestKbFileUpload,
   searchKbKnowledgeGraph,
@@ -161,6 +170,57 @@ describe('Knowledge base GraphQL contract', () => {
     expect(validate(schema, document).map(({ message }) => message)).toEqual([
       'Field "ingestKbResource" argument "id" of type "ID!" is required, but it was not provided.',
     ])
+  })
+
+  it('exposes complete-KB ingestion and material-category contracts', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const materialType = schema.getType('KBResourceMaterialType')
+    const resourceConnection = schema.getType('KBResourceConnection')
+    const ingestAll = schema.getMutationType()?.getFields().ingestAllKbResources
+    const updateMaterialType = schema
+      .getMutationType()
+      ?.getFields().updateKbResourceMaterialType
+
+    expect(materialType).toBeInstanceOf(GraphQLEnumType)
+    expect(
+      (materialType as GraphQLEnumType)
+        .getValues()
+        .map(({ name }) => name)
+        .sort()
+    ).toEqual(['ADMINISTRATIVE', 'COURSE_CONTENT', 'UNCLASSIFIED'])
+    expect(resourceConnection).toBeInstanceOf(GraphQLObjectType)
+    expect(
+      (resourceConnection as GraphQLObjectType)
+        .getFields()
+        .needsIngestionCount!.type.toString()
+    ).toBe('Int!')
+    expect(
+      (resourceConnection as GraphQLObjectType)
+        .getFields()
+        .failedIngestionCount!.type.toString()
+    ).toBe('Int!')
+    expect(
+      (resourceConnection as GraphQLObjectType)
+        .getFields()
+        .inProgressCount!.type.toString()
+    ).toBe('Int!')
+    expect(
+      ingestAll?.args.find(({ name }) => name === 'kbId')?.type.toString()
+    ).toBe('ID!')
+    expect(updateMaterialType?.args.map(({ name }) => name)).toEqual([
+      'id',
+      'materialType',
+    ])
+    expect(
+      updateMaterialType?.args
+        .find(({ name }) => name === 'materialType')
+        ?.type.toString()
+    ).toBe('KBResourceMaterialType!')
   })
 })
 
@@ -2483,6 +2543,15 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deleteKbResource({ id: resourceId }, nonAiCtx),
       () => deleteKbResources({ kbId, ids: [resourceId] }, nonAiCtx),
       () => ingestKbResource({ id: resourceId }, nonAiCtx),
+      () => ingestAllKbResources({ kbId }, nonAiCtx),
+      () =>
+        updateKbResourceMaterialType(
+          {
+            id: resourceId,
+            materialType: KBResourceMaterialType.ADMINISTRATIVE,
+          },
+          nonAiCtx
+        ),
       () =>
         requestKbFileUpload(
           {
@@ -2520,7 +2589,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => rebuildKbKnowledgeGraph({ kbId }, nonAiCtx),
     ]
 
-    expect(entryPoints).toHaveLength(21)
+    expect(entryPoints).toHaveLength(23)
     for (const callEntryPoint of entryPoints) {
       await expect(callEntryPoint()).rejects.toMatchObject({
         extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
@@ -2558,6 +2627,7 @@ describe('Integration tests for knowledge base CRUD', () => {
             userOneCtx
           ),
         () => ingestKbResource({ id: existingResource.id }, userOneCtx),
+        () => ingestAllKbResources({ kbId: kb.id }, userOneCtx),
       ]
       for (const callBlockedEntryPoint of blockedCalls) {
         await expect(callBlockedEntryPoint()).rejects.toMatchObject({
@@ -2569,6 +2639,18 @@ describe('Integration tests for knowledge base CRUD', () => {
       await expect(getKb({ id: kb.id }, userOneCtx)).resolves.toMatchObject({
         id: kb.id,
       })
+      await expect(
+        updateKbResourceMaterialType(
+          {
+            id: existingResource.id,
+            materialType: KBResourceMaterialType.ADMINISTRATIVE,
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        id: existingResource.id,
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+      })
       const deleted = await deleteKbResource(
         { id: existingResource.id },
         userOneCtx
@@ -2577,5 +2659,88 @@ describe('Integration tests for knowledge base CRUD', () => {
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+
+  it('classifies resources and keeps complete-KB ingestion counts across filters', async () => {
+    const kb = await createKb({ name: 'Material categories' }, userOneCtx)
+    const resources = await Promise.all(
+      ['content', 'administrative', 'unclassified'].map((title) =>
+        createKbUrlResource(
+          {
+            kbId: kb.id,
+            title,
+            url: `https://example.com/${title}`,
+            materialType:
+              title === 'content'
+                ? KBResourceMaterialType.COURSE_CONTENT
+                : title === 'administrative'
+                  ? KBResourceMaterialType.ADMINISTRATIVE
+                  : undefined,
+          },
+          userOneCtx
+        )
+      )
+    )
+    const [content, administrative, unclassified] = resources as [
+      (typeof resources)[number],
+      (typeof resources)[number],
+      (typeof resources)[number],
+    ]
+
+    await expect(content.materialType).toBe(
+      KBResourceMaterialType.COURSE_CONTENT
+    )
+    await expect(administrative.materialType).toBe(
+      KBResourceMaterialType.ADMINISTRATIVE
+    )
+    await expect(unclassified.materialType).toBe(
+      KBResourceMaterialType.UNCLASSIFIED
+    )
+
+    const failedAttemptId = randomUUID()
+    await prisma.kBResource.update({
+      where: { id: administrative.id },
+      data: {
+        status: KBResourceStatus.FAILED,
+        ingestionAttemptId: failedAttemptId,
+        resourceVersion: 1,
+      },
+    })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: failedAttemptId,
+        resourceId: administrative.id,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
+        status: KBIngestionStatus.FAILED,
+      },
+    })
+
+    const filtered = await getKbResourcesConnection(
+      {
+        kbId: kb.id,
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+      },
+      userOneCtx
+    )
+    expect(filtered.items.map(({ id }) => id)).toEqual([content.id])
+    expect(filtered.totalCount).toBe(1)
+    expect(filtered.needsIngestionCount).toBe(3)
+    expect(filtered.failedIngestionCount).toBe(1)
+    expect(filtered.inProgressCount).toBe(0)
+
+    const changed = await updateKbResourceMaterialType(
+      {
+        id: unclassified.id,
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+      },
+      userOneCtx
+    )
+    expect(changed.materialType).toBe(KBResourceMaterialType.ADMINISTRATIVE)
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: unclassified.id } })
+    ).resolves.toMatchObject({
+      materialType: KBResourceMaterialType.ADMINISTRATIVE,
+    })
   })
 })

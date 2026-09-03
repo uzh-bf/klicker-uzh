@@ -68,7 +68,14 @@ import {
   KBGraphQualityTier,
   KBKnowledgeGraphConfigType,
 } from './kbKnowledgeGraph.js'
-import { KB, KBChatbotBinding, KBFileUpload, KBResource } from './knowledge.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBFileUpload,
+  KBIngestAllResult,
+  KBResource,
+  KBResourceMaterialType,
+} from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -2008,6 +2015,10 @@ export const Mutation = builder.mutationType({
           originalFilename: t.arg.string({ required: true }),
           mimeType: t.arg.string({ required: true }),
           sizeBytes: t.arg.int({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.confirmKbFileUpload(args, ctx)
@@ -2021,6 +2032,10 @@ export const Mutation = builder.mutationType({
           kbId: t.arg.id({ required: true }),
           url: t.arg.string({ required: true }),
           title: t.arg.string({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.createKbUrlResource(args, ctx)
@@ -2054,6 +2069,30 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
+      ingestAllKbResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBIngestAllResult,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.ingestAllKbResources(args, ctx)
+        },
+      }),
+
+      updateKbResourceMaterialType: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          id: t.arg.id({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKbResourceMaterialType(args, ctx)
         },
       }),
 
