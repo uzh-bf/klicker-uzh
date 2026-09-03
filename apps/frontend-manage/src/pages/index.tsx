@@ -14,7 +14,6 @@ import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import { WizardActionsProvider } from '../components/activities/creation/WizardLayout'
 import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
@@ -323,43 +322,56 @@ function Index() {
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
-          <SuspendedCreationButtons
-            setCreationMode={setCreationMode}
-            onCreateElement={handleCreateElement}
-          />
+          <SuspendedCreationButtons setCreationMode={setCreationMode} />
         </Suspense>
       )}
 
       {creationMode && (
-        <WizardActionsProvider onCreateElement={handleCreateElement}>
-          <ActivityCreation
-            creationMode={creationMode}
-            closeWizard={() => {
-              setSelectedElements({})
-              router.push('/')
-              setCreationMode(() => undefined)
-            }}
-            activityId={router.query.elementId as string}
-            editMode={router.query.editMode as ActivityType}
-            conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElements}
-            resetSelection={() => setSelectedElements({})}
-            restoreSelection={(selection) =>
-              setSelectedElements(
-                Object.fromEntries(
-                  Object.entries(selection).filter(
-                    ([, element]) => element.isManager ?? false
-                  )
+        <ActivityCreation
+          creationMode={creationMode}
+          closeWizard={() => {
+            setSelectedElements({})
+            router.push('/')
+            setCreationMode(() => undefined)
+          }}
+          activityId={router.query.elementId as string}
+          editMode={router.query.editMode as ActivityType}
+          conversionMode={router.query.conversionMode as string}
+          duplicationMode={router.query.duplicationMode as ActivityType}
+          selection={selectedElements}
+          resetSelection={() => setSelectedElements({})}
+          restoreSelection={(selection) =>
+            setSelectedElements(
+              Object.fromEntries(
+                Object.entries(selection).filter(
+                  ([, element]) => element.isManager ?? false
                 )
               )
-            }
-          />
-        </WizardActionsProvider>
+            )
+          }
+        />
       )}
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
-        <div>
+        <div
+          className="flex flex-col items-start gap-3"
+          data-cy="element-library-sidebar"
+        >
+          <div className="flex flex-col items-start gap-1">
+            <span className="text-sm font-bold text-slate-700">
+              {t('manage.questionPool.createElementaryLabel')}
+            </span>
+            <Button
+              primary={!creationMode}
+              onClick={handleCreateElement}
+              data={{ cy: 'create-question' }}
+              className={{ root: 'h-9 font-bold' }}
+            >
+              <Button.Label>
+                {t('manage.questionPool.createElement')}
+              </Button.Label>
+            </Button>
+          </div>
           <FilterList
             key={creationMode}
             defaultValue={

@@ -231,6 +231,18 @@ test.describe('W4 activity wizard safety', () => {
     await loginLecturer()
     await openLibrary(page, 'en')
 
+    const sidebar = page.getByTestId('element-library-sidebar')
+    const createElement = sidebar.getByTestId('create-question')
+    await expect(createElement).toBeVisible()
+    await expect(
+      page
+        .getByTestId('activity-creation-choices')
+        .getByTestId('create-question')
+    ).toHaveCount(0)
+    const standardCreateElementColor = await createElement.evaluate(
+      (element) => getComputedStyle(element).backgroundColor
+    )
+
     const firstElement = page.locator('[data-cy^="element-item-"]').first()
     const standardHeight = await firstElement.evaluate(
       (element) => element.getBoundingClientRect().height
@@ -247,6 +259,19 @@ test.describe('W4 activity wizard safety', () => {
     await openWizard(page, wizardTypes[0])
 
     await expect(page.getByTestId('activity-creation-choices')).toHaveCount(0)
+    await expect(
+      page
+        .getByTestId('activity-wizard-navigation')
+        .getByTestId('create-question')
+    ).toHaveCount(0)
+    await expect(createElement).toBeVisible()
+    await expect
+      .poll(() =>
+        createElement.evaluate(
+          (element) => getComputedStyle(element).backgroundColor
+        )
+      )
+      .not.toBe(standardCreateElementColor)
     await expect(firstElement.locator('.line-clamp-1')).toBeVisible()
     const compactHeight = await firstElement.evaluate(
       (element) => element.getBoundingClientRect().height
@@ -261,31 +286,9 @@ test.describe('W4 activity wizard safety', () => {
       .toBe('row')
 
     const navigation = page.getByTestId('activity-wizard-navigation')
-    const createElement = navigation.getByTestId('create-question')
-    await expect(createElement).toBeVisible()
-    await expect(createElement).toHaveAttribute(
-      'aria-describedby',
-      'create-element-during-activity-tooltip'
-    )
-    await createElement.focus()
-    await expect(
-      navigation.getByTestId('create-element-during-activity-tooltip')
-    ).toHaveText(en.createElementDuringActivityTooltip)
     await expect(navigation.getByTestId('next-or-submit')).toHaveText(
       en.continueToDescription
     )
-
-    const navigationBox = await navigation.boundingBox()
-    const createElementBox = await createElement.boundingBox()
-    expect(navigationBox).not.toBeNull()
-    expect(createElementBox).not.toBeNull()
-    expect(
-      Math.abs(
-        createElementBox!.x +
-          createElementBox!.width / 2 -
-          (navigationBox!.x + navigationBox!.width / 2)
-      )
-    ).toBeLessThan(2)
 
     await createElement.click()
     await expect(page.getByTestId('select-question-type')).toBeVisible()

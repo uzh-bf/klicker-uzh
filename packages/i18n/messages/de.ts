@@ -2436,8 +2436,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       continueToDescription: 'Weiter zur Beschreibung',
       continueToSettings: 'Weiter zu den Einstellungen',
       continueToQuestions: 'Weiter zu den Fragen',
-      createElementDuringActivityTooltip:
-        'Erstellen Sie ein wiederverwendbares Element und kehren Sie danach zu dieser Aktivität zurück.',
       temporaryStorageCreation:
         'Der Erstellungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
       temporaryStorageEditing:

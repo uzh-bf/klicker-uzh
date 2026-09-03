@@ -120,28 +120,6 @@ const WizardCloseGuardContext = createContext<{
   forceClean: boolean
 }>({ isDirty: () => false, forceClean: false })
 
-const WizardActionsContext = createContext<{
-  onCreateElement?: () => void
-}>({})
-
-export function WizardActionsProvider({
-  children,
-  onCreateElement,
-}: {
-  children: React.ReactNode
-  onCreateElement: () => void
-}) {
-  return (
-    <WizardActionsContext.Provider value={{ onCreateElement }}>
-      {children}
-    </WizardActionsContext.Provider>
-  )
-}
-
-export function useWizardActions() {
-  return useContext(WizardActionsContext)
-}
-
 export function useWizardCloseGuard() {
   return useContext(WizardCloseGuardContext)
 }

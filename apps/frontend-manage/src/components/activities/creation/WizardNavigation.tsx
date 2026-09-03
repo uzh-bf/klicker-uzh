@@ -2,13 +2,12 @@ import {
   faArrowLeft,
   faArrowRight,
   faCancel,
-  faPlus,
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
-import { useWizardActions, useWizardCloseGuard } from './WizardLayout'
+import { useWizardCloseGuard } from './WizardLayout'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -24,7 +23,6 @@ interface WizardNavigationProps {
 }
 
 const disabledReasonId = 'activity-creation-disabled-reason'
-const createElementTooltipId = 'create-element-during-activity-tooltip'
 
 function WizardNavigation({
   editMode,
@@ -41,7 +39,6 @@ function WizardNavigation({
   const t = useTranslations()
   const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
   const closeGuard = useWizardCloseGuard()
-  const { onCreateElement } = useWizardActions()
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
   const continueLabels = [
     t('manage.activityWizard.continueToDescription'),
@@ -75,7 +72,7 @@ function WizardNavigation({
 
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-2"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 pt-2"
       data-cy="activity-wizard-navigation"
     >
       <div className="flex flex-row items-center gap-2 justify-self-start">
@@ -104,32 +101,6 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
-      {onCreateElement ? (
-        <div className="group relative justify-self-center">
-          <Button
-            className={{ root: 'h-8 w-max' }}
-            onClick={onCreateElement}
-            data={{ cy: 'create-question' }}
-            type="button"
-            aria-describedby={createElementTooltipId}
-          >
-            <Button.Icon icon={faPlus} />
-            <Button.Label>
-              {t('manage.questionPool.createElement')}
-            </Button.Label>
-          </Button>
-          <span
-            id={createElementTooltipId}
-            role="tooltip"
-            data-cy={createElementTooltipId}
-            className="pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1.5 w-max max-w-64 -translate-x-1/2 rounded-md bg-slate-700 px-2 py-1 text-left text-xs whitespace-normal text-white opacity-0 shadow-md transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
-          >
-            {t('manage.activityWizard.createElementDuringActivityTooltip')}
-          </span>
-        </div>
-      ) : (
-        <span />
-      )}
       <div
         className={`flex flex-col items-end justify-self-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
