@@ -467,13 +467,21 @@ export function ManageAssistantWidget() {
   }, [])
 
   useEffect(() => {
-    if (!panelSizeInitialized || !isDesktop) return
+    if (
+      !panelSizeInitialized ||
+      !isDesktop ||
+      !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
+    ) {
+      return
+    }
     writeStoredPanelSize(panelSize)
   }, [isDesktop, panelSize, panelSizeInitialized])
 
   useEffect(() => {
     function handleResize() {
-      if (!isDesktop) return
+      if (!isDesktop || !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches) {
+        return
+      }
       setPanelPreset('custom')
       setPanelSize((currentSize) =>
         clampManageAssistantPanelSize(currentSize, {

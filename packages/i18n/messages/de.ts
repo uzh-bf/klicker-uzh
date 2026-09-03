@@ -183,6 +183,18 @@ export default {
         showRawJson: 'Rohes JSON anzeigen',
       },
     },
+    ownerPreview: {
+      badge: 'Eigentümer-Vorschau',
+      description:
+        'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
+      backToManage: 'Zurück zu den Chatbot-Einstellungen',
+      loginTitle: 'Anmeldung für Dozierende erforderlich',
+      loginMessage:
+        'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
+      loginButton: 'KlickerUZH Manage öffnen',
+      opensInNewTab:
+        '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
+    },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
       notFoundMessage:
@@ -943,6 +955,11 @@ export default {
       activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
       noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
       activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      practicePoolPromotionTitle: 'Gezielt mit Spaced Repetition üben',
+      practicePoolPromotionDescription:
+        'Bis zu 25 Fragensets aus allen Übungs-Quizzes. Deine bisherigen Antworten können die Reihenfolge beeinflussen.',
+      startPracticePool: 'Übungspool starten',
+      individualPracticeQuizzes: 'Einzelne Übungs-Quizzes',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -1195,7 +1212,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEndedToast:
         'Microlearning "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
       coursePracticeArea:
-        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
+        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden bis zu 25 Fragensets gemäss unserer Spaced-Repetition-Logik ausgewählt. Eure bisherigen Antworten können die Reihenfolge beeinflussen.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -4151,6 +4168,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur Kurse mit einem Enddatum in der Vergangenheit können archiviert werden.',
       noDeletionAssessment:
         'Kurse im Assessment-Modus können nicht gelöscht werden.',
+      courseDeletionActiveLiveQuiz:
+        'Dieser Kurs kann nicht gelöscht werden, solange er ein veröffentlichtes Live-Quiz enthält. Bitte beenden oder depublizieren Sie das Live-Quiz zuerst.',
       archiveCourse: 'Kurs archivieren',
       unarchiveCourse: 'Kurs wiederherstellen',
       confirmCourseArchive:
@@ -4275,7 +4294,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
-      practiceQuizList: 'Übungs-Quiz Liste',
+      practiceQuizList: 'Übungspool & Übungs-Quizzes',
       microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
@@ -4286,7 +4305,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Übungs-Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Übungspool & Übungs-Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
@@ -4764,6 +4783,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpPriority: 'Priorität',
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
+      openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       responseExamples: 'Antwortbeispiele',
       responseExamplesDescription:
         'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',

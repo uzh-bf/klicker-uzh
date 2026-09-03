@@ -326,7 +326,7 @@ test.describe('Manage Assistant — Messaging', () => {
       assistant.getByTestId('chat-assistant-message-content').last()
     ).toContainText('The current Manage context is available.')
     await expect(
-      assistant.getByText('The current Manage context is available.')
+      assistant.getByText('The current Manage context is available.').last()
     ).toBeVisible()
     await expect(async () => {
       const latestRequest = requestBodies.at(-1) as
@@ -726,6 +726,11 @@ test.describe('Manage Assistant — Messaging', () => {
     const assistant = page.frameLocator('[data-cy="manage-assistant-frame"]')
     const input = assistant.getByTestId('chat-composer-input')
     await input.waitFor({ state: 'visible' })
+    // The composer is server-rendered before the iframe's effects attach.
+    // Wait for the context handshake before exercising the Escape listener.
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Question pool')
     await input.focus()
     await input.press('Escape')
 

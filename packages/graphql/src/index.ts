@@ -56,6 +56,7 @@ import './schema/subscription.js'
 //   })
 // }
 
+import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
@@ -106,4 +107,5 @@ export const handlers: HatchetHandlers = {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
+  handleProcessCourseDeletion,
 }

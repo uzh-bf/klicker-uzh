@@ -1111,6 +1111,10 @@ type CourseAssessmentReportRecordPage {
   totalCount: Int!
 }
 
+type CourseDeletionRequestPayload {
+  courseId: ID!
+}
+
 enum CourseDuplicationJobStatus {
   COMPLETED
   FAILED
@@ -2577,7 +2581,6 @@ type Mutation {
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
-  deleteCourse(deleteDraftActivities: Boolean, id: String!): Course
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
@@ -2668,6 +2671,7 @@ type Mutation {
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   requestChatbotPublication(expectedStudentCount: Int!, id: String!, proposedCredits: Int!, useCase: String!): Chatbot
+  requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
   requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
