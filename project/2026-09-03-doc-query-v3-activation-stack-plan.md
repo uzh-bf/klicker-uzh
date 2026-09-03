@@ -241,5 +241,10 @@ a blocker.
   helper extractions were rejected because they add concepts without reducing
   the state machine. The final retry guard and exact expected-state comparison
   remain as fail-closed invariants rather than dead-code cleanup.
+- [x] Layer 3 proof extraction and local verification: all 37 focused tests,
+  Chat typecheck, focused lint, syntax, formatting, and diff checks pass. The
+  unused test helper was removed and the signer and lock seams are now typed;
+  the persistent marker remains because its replacement-lock test proves it is
+  part of the concurrency contract.
 - [ ] Layer 3 proof implementation and review.
 - [ ] Draft publication, exact-head CI/reviews, and coverage-ledger completion.
