@@ -98,4 +98,20 @@ describe('createLogger', () => {
 
     expect(capture.records()).toEqual([])
   })
+
+  it('safely defaults an invalid level to info', () => {
+    const capture = captureDestination()
+    const logger = createLogger(
+      { service: 'logging-test', environment: 'production', level: 'invalid' },
+      capture.destination
+    )
+
+    expect(() =>
+      logger.info({ event: 'logging.level.defaulted' }, 'Level defaulted')
+    ).not.toThrow()
+    expect(capture.records()[0]).toMatchObject({
+      level: 'info',
+      event: 'logging.level.defaulted',
+    })
+  })
 })

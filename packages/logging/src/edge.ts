@@ -1,11 +1,6 @@
-export type EdgeLogLevel =
-  | 'trace'
-  | 'debug'
-  | 'info'
-  | 'warn'
-  | 'error'
-  | 'fatal'
-  | 'silent'
+import { LOG_LEVEL_VALUES, type LogLevel, normalizeLogLevel } from './levels.js'
+
+export type EdgeLogLevel = LogLevel
 
 type EmittedEdgeLogLevel = Exclude<EdgeLogLevel, 'silent'>
 
@@ -48,21 +43,8 @@ export interface CreateEdgeLoggerOptions {
   sink?: EdgeSink
 }
 
-const LEVEL_VALUES: Record<EdgeLogLevel, number> = {
-  trace: 10,
-  debug: 20,
-  info: 30,
-  warn: 40,
-  error: 50,
-  fatal: 60,
-  silent: Number.POSITIVE_INFINITY,
-}
-
 function resolveLevel(level?: string): EdgeLogLevel {
-  const normalized = level?.toLowerCase()
-  return normalized && normalized in LEVEL_VALUES
-    ? (normalized as EdgeLogLevel)
-    : 'info'
+  return normalizeLogLevel(level)
 }
 
 function defaultSink(level: EmittedEdgeLogLevel, line: string): void {
@@ -132,7 +114,7 @@ function makeEdgeLogger({
     fields: EdgeLogFields,
     msg: string
   ) => {
-    if (LEVEL_VALUES[level] < LEVEL_VALUES[threshold]) return
+    if (LOG_LEVEL_VALUES[level] < LOG_LEVEL_VALUES[threshold]) return
 
     sink(
       level,
