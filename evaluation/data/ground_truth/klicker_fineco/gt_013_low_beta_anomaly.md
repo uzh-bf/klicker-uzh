@@ -13,11 +13,11 @@ $$
 \mu(R_k)=R_f+\beta_k\bigl(\mu(R_M)-R_f\bigr)
 $$
 
-Empirically, the Security Market Line is often flatter than this prediction. Low-beta securities tend to earn returns that are too high relative to their CAPM beta, while high-beta securities tend to earn returns that are too low. Equivalently, low-beta portfolios can have positive CAPM alpha and better risk-adjusted performance on average.
+The low-beta anomaly is the empirical finding that low-beta securities earn higher average returns than the classical CAPM predicts for their beta. Relative to the CAPM benchmark, they therefore have positive average CAPM alpha.
 
-This is an average empirical pattern, not a claim that every low-beta security always outperforms every high-beta security.
+This is a model-relative average pattern. It does not mean that every low-beta security has a higher absolute return than every high-beta security, nor does it guarantee future outperformance. The course discusses background risk as one possible explanation; that extension is not part of the classical CAPM itself.
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 5.3, empirical CAPM anomalies and the beta-return relation, pp. 65–66
-- FinEco FS26 Guide, Chapter 5, empirical evidence and the low-beta anomaly, pp. 62–66
+- Financial Economics script FS26, Chapter 5, empirical CAPM anomalies and the low-beta anomaly
+- Financial Economics script FS26, Chapter 6, background risk as a possible explanation for CAPM anomalies

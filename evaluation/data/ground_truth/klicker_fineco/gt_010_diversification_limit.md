@@ -7,21 +7,20 @@ expected_tools_by_profile:
 
 ## Diversification and the Remaining Risk
 
-Not necessarily. In the standard equal-weighted diversification example, adding securities that are not perfectly positively correlated reduces the firm-specific component of variance. For $N$ comparable securities:
+No. In the standard equal-weighted example with $N$ securities, portfolio variance can be written as
 
 $$
 \sigma_P^2 = \frac{1}{N}\bar{\sigma}^2 + \frac{N-1}{N}\overline{\operatorname{Cov}}
 $$
 
-As $N$ becomes large, the first term approaches zero, but the average covariance remains:
+Under the required boundedness and convergence assumptions, the first term approaches zero as $N$ grows, while the average covariance remains:
 
 $$
 \lim_{N\to\infty}\sigma_P^2 = \overline{\operatorname{Cov}}
 $$
 
-Diversification can therefore remove unsystematic risk, while systematic market risk normally remains. Correlation below one creates a diversification benefit, but it does not by itself guarantee zero variance or even a variance reduction for every arbitrarily weighted new security.
+Diversification can therefore remove the average individual-variance component while common covariance risk remains. Correlation below one is not enough to guarantee zero variance. It also does not guarantee that every newly added security lowers risk if its portfolio weight is chosen arbitrarily; the resulting covariance with the existing portfolio matters.
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 2.2, portfolio variance and naive diversification, p. 28
-- FinEco FS26 Guide, Chapter 2.2, systematic and unsystematic risk, p. 28
+- Financial Economics script FS26, Section 2.2, equal-weighted portfolio variance and the diversification limit, Equations 2.12–2.13

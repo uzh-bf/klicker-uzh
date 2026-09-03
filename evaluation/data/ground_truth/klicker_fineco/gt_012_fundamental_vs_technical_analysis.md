@@ -13,7 +13,9 @@ Technical analysis uses past prices, trading volume, trends, and chart patterns 
 
 Under weak-form market efficiency, past price and volume information is already reflected in prices, so technical analysis cannot systematically earn abnormal returns. Under semi-strong market efficiency, all public information is already reflected in prices, so public-data fundamental analysis cannot systematically earn abnormal returns either.
 
+Weak-form efficiency does not by itself rule out fundamental analysis based on public business information. Semi-strong efficiency does. In both cases, the claim concerns systematic **abnormal** returns, not whether an investment can have a positive return.
+
 ## Sources
 
-- Financial Economics script FS26, Chapter 1.2, Efficient Market Hypothesis and analysis methods, pp. 9–12
-- Financial Economics script FS26, Chapters 9.3–9.5, investment styles, pp. 81–82
+- Financial Economics script FS26, Chapter 1.2, weak, semi-strong, and strong market efficiency and the information sets used by technical and fundamental analysis
+- Financial Economics script FS26, Chapter 9, investment-strategy discussion
