@@ -6,8 +6,8 @@ import {
 describe('feature flag contracts', () => {
   it('registers product flags with fail-closed defaults', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
+      'ai-beta': false,
       'learning-analytics': false,
-      'chat-account-usage': false,
     })
   })
 

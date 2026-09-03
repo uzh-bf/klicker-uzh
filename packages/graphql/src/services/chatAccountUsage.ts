@@ -7,8 +7,8 @@ import {
   parseChatUsageCredits,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
-import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 export interface ChatAccountUsageLane {
   usageClass: DB.ChatUsageClass
@@ -133,8 +133,8 @@ export async function getChatAccountUsage(
 ): Promise<ChatAccountUsageOverview | null> {
   const ownerId = resolveTargetOwnerId(args.ownerId, ctx)
   // Visibility gate: callers keep their authorization errors, but the usage
-  // read stays hidden until the feature flag evaluates true for the caller.
-  if (!isFeatureFlagEnabled(ctx, 'chat-account-usage')) {
+  // read stays hidden until the AI beta evaluates true for the caller.
+  if (!isFeatureFlagEnabled(ctx, 'ai-beta')) {
     return null
   }
   const now = args.now ?? new Date()

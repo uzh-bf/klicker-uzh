@@ -16,7 +16,7 @@ import ShortnameSetting from '../../components/user/ShortnameSetting'
 function Settings() {
   const t = useTranslations()
   const { data: user } = useQuery(UserProfileDocument)
-  const chatAccountUsageEnabled = useFeatureFlag('chat-account-usage')
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
 
   if (!user?.userProfile) {
     return <Loader />
@@ -33,7 +33,7 @@ function Settings() {
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
 
-        {chatAccountUsageEnabled && (
+        {aiBetaEnabled && (
           <Suspense fallback={<Loader />}>
             <ChatAccountUsageSettings />
           </Suspense>

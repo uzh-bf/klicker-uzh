@@ -712,7 +712,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     expect(result).toBeNull()
     expect(evaluator.isEnabled).toHaveBeenCalledWith(
-      'chat-account-usage',
+      'ai-beta',
       expect.objectContaining({ id: ownerId, actorType: 'user' })
     )
   })

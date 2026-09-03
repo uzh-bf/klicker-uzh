@@ -1,4 +1,4 @@
-# Chat Account Usage Feature Flag Plan
+# Chat Account Usage AI Beta Gate Plan
 
 ## Goal
 
@@ -9,7 +9,8 @@ must reach long-running backend processes without a restart.
 
 ## Settled contracts
 
-- Feature key: `chat-account-usage`.
+- Feature key: `ai-beta`, shared with the established `v3-ai` lecturer AI
+  rollout contract instead of introducing a separate usage-only rollout.
 - The default is false in every environment.
 - When false, the settings page does not mount the account-usage component and
   sends neither of that component's login-scope or usage GraphQL queries.
@@ -20,6 +21,8 @@ must reach long-running backend processes without a restart.
   after the feature gate passes.
 - Administrative budget mutation, internal metering, and account enforcement
   are not disabled by this visibility flag.
+- The usage read does not spend model budget, so this PR does not port or
+  substitute for `v3-ai`'s separate `User.aiFeaturesEnabled` entitlement.
 - Backend flag data refreshes through bounded polling with the existing
   GrowthBook dependency. Do not add an EventSource dependency or a production
   force-on escape hatch.
@@ -115,7 +118,7 @@ Commit:
 
 Do:
 
-- Add the typed `chat-account-usage` contract with a false default.
+- Add the typed `ai-beta` contract with a false default.
 - Give the Node flag client a bounded polling lifecycle, a maximum payload age,
   request deduplication, and cleanup.
 - Retain the last successful payload only within the freshness bound; evaluate
@@ -141,7 +144,7 @@ Do:
 
 - Add one reusable fail-closed GraphQL feature-gate helper.
 - Preserve caller and owner/admin authorization, then evaluate
-  `chat-account-usage` before any account-usage data query. Return `null`
+  `ai-beta` before any account-usage data query. Return `null`
   when the gate is unavailable or false.
 - Gate the settings component before it mounts.
 - Keep administrative budget mutation, metering, and enforcement paths
@@ -201,7 +204,7 @@ Check:
 1. Before deployment, have the secret owner confirm without exposing values
    that `GROWTHBOOK_API_HOST` is a valid HTTPS SDK endpoint, the environment and
    client key match, and `GROWTHBOOK_REFRESH_INTERVAL_MS` is positive when set.
-2. Merge and deploy source with `chat-account-usage` absent or false. This PR
+2. Merge and deploy source with `ai-beta` absent or false. This PR
    has no Prisma schema or migration and needs no database rollout step.
 3. Prove backend evaluator health and that the UI/query remain hidden. Treat an
    unconfigured, unhealthy, or stale evaluator as a release hold for enabling
@@ -258,6 +261,9 @@ does not present a UI whose backend state transition is not yet settled.
   branch push and PR update.
 - [x] Committed the plan and completed the server, GraphQL, and Manage UI
   slices.
+- [x] Replaced the usage-only rollout key with the established `ai-beta` key
+  on both the Manage and GraphQL paths; kept `v3-ai`'s spending entitlement
+  outside this read-only visibility change.
 - [x] Captured the false browser state before upstream integration. A local
   true-state capture requires a GrowthBook instance and remains outside the
   approved mutation boundary; 19 GraphQL service and schema tests covered the
@@ -324,8 +330,13 @@ does not present a UI whose backend state transition is not yet settled.
   query strings or fragments could produce the wrong payload URL and keep an
   intended rollout disabled. They now fail closed without fetching, with 40
   feature-flag tests plus focused type and formatting checks passing locally.
-- [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
-  suite and the new browser test before merge. Three supported Devrouter starts
-  were blocked before runtime startup because Docker could not resolve
-  `index.docker.io` and the required Node image is not cached. The exact
-  workspace is stopped. This is a merge gate, not a normal-push blocker.
+- [x] Started the exact worktree with Devrouter 0.0.51 and passed the corrected
+  20-test GraphQL account-usage suite, the 40-test feature-flag suite, and the
+  focused feature-flag, GraphQL, and Manage type checks on Node 24.
+- [x] Passed the complete repository `check:all` after recreating Analytics'
+  generated virtualenv with its selected Python 3.12 interpreter; all 25 check
+  tasks, seven lint tasks, and repository policy checks pass.
+- [ ] Require exact-head CI to run the browser test before merge. Local
+  agent-browser reached and completed delegated login, then its daemon
+  relaunched and hung while navigating to settings, so it produced no valid
+  screenshot or network receipt for this correction.

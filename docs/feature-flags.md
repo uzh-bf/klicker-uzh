@@ -23,10 +23,10 @@ initialize GrowthBook only when they adopt their first flag.
 
 ## Active flags
 
-| Key                  | Consumer                               | Fallback | Disabled behavior                                                                          |
-| -------------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `learning-analytics` | Lecturer UI/Manage                     | `false`  | Analytics controls remain visible but are not usable                                       |
-| `chat-account-usage` | Manage settings + backend GraphQL read | `false`  | Settings section is not mounted; the usage query returns `null` without reading usage data |
+| Key                  | Consumer                                             | Fallback | Disabled behavior                                                                       |
+| -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
+| `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
