@@ -261,6 +261,8 @@ describe('NodeFeatureFlagClient', () => {
   it.each([
     'http://growthbook.test',
     'not-a-url',
+    'https://growthbook.test?source=invalid',
+    'https://growthbook.test/#invalid',
   ])('fails closed without fetching for invalid API host %s', async (apiHost) => {
     const client = createClient({ apiHost })
 

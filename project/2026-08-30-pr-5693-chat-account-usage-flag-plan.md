@@ -319,6 +319,10 @@ does not present a UI whose backend state transition is not yet settled.
   which Playwright resolved against the Student PWA base URL and rendered its
   404 page on both attempts. The test now opens the explicit Manage URL; its
   focused TypeScript and formatting checks pass.
+- [x] Accepted CodeRabbit's final API-host validation finding. HTTPS hosts with
+  query strings or fragments could produce the wrong payload URL and keep an
+  intended rollout disabled. They now fail closed without fetching, with 40
+  feature-flag tests plus focused type and formatting checks passing locally.
 - [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
   suite and the new browser test before merge. Three supported Devrouter starts
   were blocked before runtime startup because Docker could not resolve

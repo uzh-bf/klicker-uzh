@@ -179,10 +179,11 @@ becomes unusable 120 seconds after the last successful refresh; every
 evaluation fails closed before initialization, while stale, and after
 `destroy()`. Setting the refresh interval to zero disables polling, so the
 startup payload becomes stale after that same 120-second bound and evaluations
-then fail closed. Missing, malformed, or non-HTTPS API hosts are treated as
-unconfigured and cause no SDK request, and payload requests reject redirects to
-avoid transport downgrades. `getStatus()` reports health, staleness, and the
-last successful refresh time without exposing keys or targeting data.
+then fail closed. Missing, malformed, non-HTTPS, or query- or fragment-bearing
+API hosts are treated as unconfigured and cause no SDK request, and payload
+requests reject redirects to avoid transport downgrades. `getStatus()` reports
+health, staleness, and the last successful refresh time without exposing keys or
+targeting data.
 Evaluations stay request-local: the adapter filters unknown attributes before
 calling GrowthBook, so direct identifiers cannot cross the boundary even when a
 JavaScript caller supplies a wider object. Never mutate global attributes with

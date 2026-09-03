@@ -22,7 +22,7 @@ function normalizeApiHost(value: string | undefined): string | undefined {
 
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:') return undefined
+    if (url.protocol !== 'https:' || url.search || url.hash) return undefined
     return value.replace(/\/$/, '')
   } catch {
     return undefined
