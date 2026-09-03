@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@klicker-uzh/graphql/dist/client.json', () => ({
   default: { CaptureResponseExample: 'capture-hash' },
@@ -8,7 +8,6 @@ vi.mock('@klicker-uzh/graphql/dist/client.json', () => ({
 import {
   buildResponseExampleCaptureGraphqlRequest,
   captureResponseExampleThroughManage,
-  ResponseExampleCaptureRequestError,
 } from '../src/services/responseExampleCapture'
 
 describe('response-example capture GraphQL forwarding', () => {
@@ -96,7 +95,6 @@ describe('response-example capture GraphQL forwarding', () => {
 })
 
 const routeMocks = vi.hoisted(() => ({
-  capture: vi.fn(),
   cookies: vi.fn(),
   getManageOrigin: vi.fn(),
   rateLimitCheck: vi.fn(),
@@ -117,12 +115,6 @@ vi.mock('@/src/services/manageProposals', () => ({
   getRequiredManageOrigin: routeMocks.getManageOrigin,
 }))
 vi.mock('next/headers', () => ({ cookies: routeMocks.cookies }))
-vi.mock('@/src/services/responseExampleCapture', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('../src/services/responseExampleCapture')
-  >()),
-  captureResponseExampleThroughManage: routeMocks.capture,
-}))
 
 import { POST } from '../src/app/api/manage/chatbots/[chatbotId]/preview/capture/route'
 
@@ -160,11 +152,26 @@ describe('POST owner-preview response-example capture', () => {
       get: () => ({ value: 'session-token' }),
     })
     routeMocks.getManageOrigin.mockReturnValue('https://manage.test')
-    routeMocks.capture.mockResolvedValue({
-      exampleId: EXAMPLE_ID,
-      created: true,
-    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            captureResponseExample: {
+              exampleId: EXAMPLE_ID,
+              created: true,
+            },
+          },
+        }),
+      })
+    )
     vi.stubEnv('APP_ORIGIN_API', 'https://api.test')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('enforces owner authorization before reading the body', async () => {
@@ -178,7 +185,7 @@ describe('POST owner-preview response-example capture', () => {
 
     expect(response.status).toBe(403)
     expect(routeMocks.readBoundedJson).not.toHaveBeenCalled()
-    expect(routeMocks.capture).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('captures the candidate and returns its Manage review deep link', async () => {
@@ -190,13 +197,12 @@ describe('POST owner-preview response-example capture', () => {
     await expect(response.json()).resolves.toEqual({
       exampleId: EXAMPLE_ID,
       created: true,
-      reviewUrl: `https://manage.test/resources/chatbots/${CHATBOT_ID}?responseExampleId=${EXAMPLE_ID}`,
+      reviewUrl: `https://manage.test/resources/chatbots?chatbotId=${CHATBOT_ID}&view=advanced&responseExampleId=${EXAMPLE_ID}`,
     })
-    expect(routeMocks.capture).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.test/api/graphql',
       expect.objectContaining({
-        graphqlEndpoint: 'https://api.test/api/graphql',
-        manageOrigin: 'https://manage.test',
-        sessionToken: 'session-token',
+        method: 'POST',
       })
     )
   })
@@ -207,8 +213,20 @@ describe('POST owner-preview response-example capture', () => {
     ['RESPONSE_EXAMPLE_CAPTURE_STALE', 409],
     ['RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE', 503],
   ] as const)('maps %s to HTTP %s', async (code, status) => {
-    routeMocks.capture.mockRejectedValue(
-      new ResponseExampleCaptureRequestError(code, 'Capture failed')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          errors: [
+            {
+              message: 'Capture failed',
+              extensions: { code },
+            },
+          ],
+        }),
+      })
     )
 
     const response = await POST(captureRequest(), {

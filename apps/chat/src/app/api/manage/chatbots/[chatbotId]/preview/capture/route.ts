@@ -102,7 +102,7 @@ export async function POST(
     })
     return NextResponse.json({
       ...result,
-      reviewUrl: `${manageOrigin}/resources/chatbots/${chatbotId}?responseExampleId=${result.exampleId}`,
+      reviewUrl: `${manageOrigin}/resources/chatbots?chatbotId=${encodeURIComponent(chatbotId)}&view=advanced&responseExampleId=${encodeURIComponent(result.exampleId)}`,
     })
   } catch (error) {
     if (error instanceof ResponseExampleCaptureRequestError) {
