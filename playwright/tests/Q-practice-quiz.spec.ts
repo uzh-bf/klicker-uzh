@@ -39,6 +39,7 @@ import {
   loginStudent,
   loginStudentPassword,
   logoutUser,
+  openPracticeQuizByName,
   runTask,
   selectOption,
   setDatetime,
@@ -2085,10 +2086,7 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await page
-      .getByTestId(`practice-quiz-${data.running.displayNameNew}`)
-      .click()
+    await openPracticeQuizByName(page, data.running.nameNew)
     await expectByAssertion(
       page.getByText(data.running.descriptionNew).first(),
       'exist'
@@ -2105,10 +2103,7 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudentPassword(page, { username: env('STUDENT_USERNAME2') })
-    await page.getByTestId('quizzes').click()
-    await page
-      .getByTestId(`practice-quiz-${data.running.displayNameNew}`)
-      .click()
+    await openPracticeQuizByName(page, data.running.nameNew)
     await answerRunningPracticeQuizPartial(data)
   })
 
@@ -2187,19 +2182,13 @@ test.describe.serial('Different practice quiz workflows', () => {
     }
   })
 
-  test('Verify that the running practice quiz is no longer visible to students', async ({
-    page: testPage,
-  }, testInfo) => {
-    page = testPage
+  test('Verify that the deleted running practice quiz was removed', async ({}, testInfo) => {
     aliases.clear()
     testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await expectByAssertion(
-      page.getByTestId(`practice-quiz-${data.running.nameNew}`),
-      'not.exist'
-    )
+    const quiz = await runTask('getPracticeQuizInfo', {
+      quizName: data.running.nameNew,
+    })
+    expect(quiz).toBeNull()
   })
 
   test('Publish the future practice quiz and verify scheduled state', async ({
@@ -2267,9 +2256,9 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
+    await openPracticeQuizByName(page, data.scheduled.name)
     await expectByAssertion(
-      page.getByTestId(`practice-quiz-${data.scheduled.displayName}`),
+      page.getByTestId('start-practice-quiz'),
       'not.exist'
     )
   })
@@ -2374,11 +2363,8 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await expectByAssertion(
-      page.getByTestId(`practice-quiz-${data.scheduled.displayName}`),
-      'exist'
-    )
+    await openPracticeQuizByName(page, data.scheduled.name)
+    await expectByAssertion(page.getByTestId('start-practice-quiz'), 'exist')
   })
 
   test('Cleanup: Delete the scheduled practice quiz', async ({
@@ -2405,19 +2391,13 @@ test.describe.serial('Different practice quiz workflows', () => {
     )
   })
 
-  test('Verify that the scheduled practice quiz is not visible to students', async ({
-    page: testPage,
-  }, testInfo) => {
-    page = testPage
+  test('Verify that the deleted scheduled practice quiz was removed', async ({}, testInfo) => {
     aliases.clear()
     testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await expectByAssertion(
-      page.getByTestId(`practice-quiz-${data.scheduled.displayName}`),
-      'not.exist'
-    )
+    const quiz = await runTask('getPracticeQuizInfo', {
+      quizName: data.scheduled.name,
+    })
+    expect(quiz).toBeNull()
   })
 
   test('Create a numerical question and included it in a practice quiz', async ({
@@ -2721,10 +2701,7 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await page
-      .getByTestId(`practice-quiz-${data.manipulation.displayName}`)
-      .click()
+    await openPracticeQuizByName(page, data.manipulation.name)
     await page.getByTestId('start-practice-quiz').click()
     await expectByAssertion(page.getByText(data.FTML2.content).first(), 'exist')
     await typeInto(page.getByTestId('free-text-input-0'), 'Testinput')
@@ -2755,10 +2732,7 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await page
-      .getByTestId(`practice-quiz-${data.manipulation.duplicateDisplayName}`)
-      .click()
+    await openPracticeQuizByName(page, data.manipulation.duplicateName)
     await page.getByTestId('start-practice-quiz').click()
     await expectByAssertion(page.getByText(data.FTML2.content).first(), 'exist')
     await typeInto(page.getByTestId('free-text-input-0'), 'Testinput')

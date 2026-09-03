@@ -56,3 +56,12 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
 - Treat a KB mutation and its follow-up query refresh as separate outcomes. After mutation success, close/reset and show success even when a best-effort refresh fails; log the refresh failure without surfacing a mutation error or encouraging a duplicate retry.
 - KB metrics must distinguish visible data from quota usage, reservations, pending cleanup, unknown-size conservative claims, and linked consumers. Verify these states in EN/DE at desktop and 390 px widths.
 - **`apps/chat` is out of scope here** — app router, zustand, assistant-ui; read [docs/chat-platform.md](../../../docs/chat-platform.md) and follow its local conventions instead.
+
+For participant-owned practice cards, keep `/course/[courseId]/personal`
+directly reachable until the complete chatbot generation path is active. Use
+the generated `QPersonalElements` and personal-element mutations, the shared
+`Flashcard` adapter, and explicit `data-cy` hooks for runner, list, and delete
+states. Show source-linked origin and course-review wording while a card is
+being practised, and pass the content version with every response. Do not link
+personal cards into pooled practice; home Practice and `/repetition` provide
+separate lecturer-element and own-element actions for each course.
