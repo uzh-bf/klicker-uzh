@@ -1,4 +1,4 @@
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { createHatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
@@ -34,6 +34,7 @@ const DRY_RUN = false
 //    ongoing asynchronous activities with a defined completion date.
 
 async function run() {
+  const hatchetClient = createHatchetClient()
   const emitter = new EventEmitter()
   const redisExec = new Redis({
     family: 4,

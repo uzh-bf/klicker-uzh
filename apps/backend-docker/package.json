@@ -19,6 +19,7 @@
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
@@ -61,7 +62,8 @@
     "rollup": "~4.34.9",
     "source-map-support": "~0.5.21",
     "tsx": "~4.19.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm build:ts",
@@ -80,7 +82,10 @@
     "script": "../../util/_run_with_infisical.sh --env dev tsx",
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config dist/index.js"
+    "start:test": "nyc --silent node -r dotenv/config dist/index.js",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "test:watch": "vitest"
   },
   "engines": {
     "node": "=24"
