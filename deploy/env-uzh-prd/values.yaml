@@ -157,9 +157,14 @@ assessmentAudit:
   enabled: false
   environment: prd
   rollout: disabled
+  pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
+  backendMedia:
+    serviceAccountName: ''
   worker:
+    serviceAccountName: ''
+  mediaPolicyWorker:
     serviceAccountName: ''
     priorityClassName: production-workload
     image:

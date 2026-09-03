@@ -11,9 +11,30 @@ data:
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   HATCHET_WORKFLOWS: dispatchAssessmentAuditOutbox,monitorAssessmentAudit
   ASSESSMENT_AUDIT_WORKER_ENABLED: 'true'
+  ASSESSMENT_AUDIT_WORKER_ROLE: dispatcher
   ASSESSMENT_AUDIT_METRICS_PORT: '9464'
   ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
   ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
+  ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
+  ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
+  ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
+  AZURE_TOKEN_CREDENTIALS: WorkloadIdentityCredential
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-assessment-audit-media-policy-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-media-policy-worker
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKFLOWS: renewAssessmentAuditMediaPolicies
+  ASSESSMENT_AUDIT_WORKER_ENABLED: 'true'
+  ASSESSMENT_AUDIT_WORKER_ROLE: media-policy
+  ASSESSMENT_AUDIT_METRICS_PORT: '9464'
+  ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
   ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
   ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
   AZURE_TOKEN_CREDENTIALS: WorkloadIdentityCredential
