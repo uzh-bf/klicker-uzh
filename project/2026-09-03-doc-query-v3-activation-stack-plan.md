@@ -227,7 +227,10 @@ a blocker.
 - [x] Plan-hardening completed: native planner approved round 2; opposing
   provider unavailable due expired OAuth.
 - [x] User approved the three-layer simplification and draft publication.
-- [ ] Layer 1 runtime implementation and review.
+- [x] Layer 1 runtime extraction and local verification: 29 focused tests,
+  Chat typecheck, focused lint, formatting, and diff checks pass. The local
+  Node 26 runtime is newer than the repository's pinned Node 24 runtime.
+- [ ] Layer 1 runtime review.
 - [ ] Layer 2 activation implementation and review.
 - [ ] Layer 3 proof implementation and review.
 - [ ] Draft publication, exact-head CI/reviews, and coverage-ledger completion.
