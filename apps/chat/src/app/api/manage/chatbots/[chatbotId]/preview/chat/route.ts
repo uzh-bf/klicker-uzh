@@ -32,6 +32,11 @@ import {
   issuePreviewResponseExampleReceipt,
   RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
 } from '@/src/lib/server/responseExampleReceipt'
+import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   getAggregatedMCPTools,
@@ -240,6 +245,37 @@ export async function POST(
   }
 
   try {
+    let responseExampleSummary = ''
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { chatbotId }
+        )
+      } else {
+        tools = {
+          ...tools,
+          [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
+            createResponseExampleSearchTool(responseExampleSkill),
+        }
+        responseExampleSummary = responseExampleSkill.summary
+      }
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        {
+          chatbotId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        }
+      )
+    }
+
     const toolNames = Object.keys(tools)
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
@@ -249,6 +285,9 @@ export async function POST(
         toolNames,
       }
     )
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${systemPrompt}\n\n${responseExampleSummary}`
+      : systemPrompt
     const baseModels = getModelsForChatbot(chatbot).filter(
       (model) => model.usageClass === 'BASE'
     )
@@ -271,7 +310,7 @@ export async function POST(
         ? await buildPromptCacheRequest({
             deploymentId: selectedModel.deploymentId,
             transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
-            instructions: systemPrompt,
+            instructions: effectiveSystemPrompt,
             tools,
           })
         : null
@@ -281,7 +320,7 @@ export async function POST(
       maxOutputTokens: selectedModel.maxOutputTokens,
       messages: modelMessages,
       model,
-      instructions: systemPrompt,
+      instructions: effectiveSystemPrompt,
       providerOptions: {
         openai: {
           ...(promptCacheRequest
