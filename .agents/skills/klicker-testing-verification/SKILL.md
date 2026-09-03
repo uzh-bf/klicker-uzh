@@ -44,22 +44,19 @@ For the external synthetic evaluation wrapper, run
 `bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
 Then validate all FineCo Markdown cases against
 `evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
-restricted `klicker-uzh-stg` operator profile for live judge checks and stop
-unless `LITELLM_API_BASE` names an approved reachable route and the namespaced
-model is visible first. Require the wrapper to reject a missing or empty mapped
-`LITELLM_API_KEY` before starting the evaluator, and require its metrics, tools,
-and ground-truth preflights to fail before secret retrieval. Eval mode judges an
-existing QA artifact; it does not query Klicker's authenticated AI-SDK chat route
-and is not live product-quality evidence.
+approved secret manager or masked CI variables for live judge checks and stop
+unless caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` are present and
+the namespaced model is visible first. Require the wrapper to reject a missing
+or empty key before starting the evaluator, and require its metrics, tools, and
+ground-truth preflights to fail before invoking the evaluator. Eval mode judges
+an existing QA artifact; it does not query Klicker's authenticated AI-SDK chat
+route and is not live product-quality evidence.
 
-For local Klicker target evaluation, start the exact worktree through the
-restricted developer profile only after the VPN is active:
-
-    rs-infisical-operator --profile klicker-dev run \
-      --map AZURE_OPENAI_API_KEY=UPSTREAM_OPENAI_API_KEY \
-      --map AZURE_OPENAI_BASE_URL=UPSTREAM_OPENAI_BASE_URL -- \
-      devrouter ensure /absolute/path/to/klicker-uzh/trees/WORKSPACE \
-      --profile chat,ai,mcp --json
+For local Klicker target evaluation, start the exact worktree after the VPN is
+active. Map the developer Foundry values to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The repository
+wrapper does not depend on a personal operator or fetch secrets itself. Native
+Infisical and CI examples are documented in `evaluation/README.md`.
 
 If the LiteLLM container already exists with different upstream values, stop
 the exact checkout and rerun this command. Run the wrapper fake-runtime test
@@ -75,9 +72,9 @@ expected-tool gates, but it does not prove FineCo quality. Do not run the
 20-case FineCo phase unless EXPERT_df_fineco_expert is already reachable through
 an authorized synthetic binding with a finite response bound; otherwise record
 delivery_pending and do not establish a tunnel or substitute the canary. Keep
-LITELLM_API_BASE for the existing restricted judge path separate from the
-developer-Foundry values injected into the local Chat container. Stop and
-verify the exact devrouter checkout after the run.
+caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` for the judge path
+separate from the developer-Foundry values injected into the local Chat
+container. Stop and verify the exact devrouter checkout after the run.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser

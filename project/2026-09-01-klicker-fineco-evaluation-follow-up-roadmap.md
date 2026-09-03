@@ -30,22 +30,18 @@ recorded commit unless a separate evaluator change is approved.
 
 When the binding gate is satisfied and a live run is separately authorized,
 activate the VPN, then start the exact worktree with the developer Foundry
-values mapped only through the restricted operator:
-
-```bash
-rs-infisical-operator --profile klicker-dev run \
-  --map AZURE_OPENAI_API_KEY=UPSTREAM_OPENAI_API_KEY \
-  --map AZURE_OPENAI_BASE_URL=UPSTREAM_OPENAI_BASE_URL -- \
-  devrouter ensure /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/klicker-live-target-evaluation \
-  --profile chat,ai,mcp --json
-```
+values mapped to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. Use the native
+Infisical example in `evaluation/README.md` when applicable; the repository
+does not require a personal operator.
 
 Set namespaced API and Chat origins plus seeded participant credentials in the
-invoking shell only. Keep the approved judge proxy in `LITELLM_API_BASE`; the
-developer Foundry values are for the local Chat target and must not enter the
-evaluator child. Run `bash util/test-klicker-eval-wrapper.sh` before any
-credentialed traffic. Stop the exact worktree with `devrouter stop` after the
-run and verify that its provider is stopped and no route remains.
+invoking shell only. Provide the approved judge proxy and key as
+`LITELLM_API_BASE` and `LITELLM_API_KEY`; the developer Foundry values are for
+the local Chat target and must not enter the evaluator child. Run
+`bash util/test-klicker-eval-wrapper.sh` before any credentialed traffic. Stop
+the exact worktree with `devrouter stop` after the run and verify that its
+provider is stopped and no route remains.
 
 ## Current state
 
@@ -95,8 +91,8 @@ run and verify that its provider is stopped and no route remains.
 | Symptom | Cause | Remedy |
 | --- | --- | --- |
 | The local canary succeeds but FineCo cases fail the expected-tool gate | The seeded local MCP server exposes `KB_doc_query`, not the FineCo expert | Inspect the runtime tool inventory first; park at the binding gate and do not substitute the canary. |
-| LiteLLM appears healthy but calls use the wrong upstream | `devrouter ensure` does not replace environment values in an existing service container | Stop this exact worktree, then restart it through the restricted `klicker-dev` operator mapping. |
-| The target or judge receives credentials it should not see | Target and evaluator processes inherit different environment boundaries | Inspect only presence/absence markers; keep developer Foundry values in the Chat container and the judge key in the wrapper's restricted child. |
+| LiteLLM appears healthy but calls use the wrong upstream | `devrouter ensure` does not replace environment values in an existing service container | Stop this exact worktree, then restart it with the approved secret manager mapping the developer Foundry values. |
+| The target or judge receives credentials it should not see | Target and evaluator processes inherit different environment boundaries | Inspect only presence/absence markers; keep developer Foundry values in the Chat container and the caller-injected judge key in the evaluator child. |
 | A query-eval run starts judging incomplete data | Structural query failures are not a quality result | Run `query` first, require exactly 20 structural records, then run `eval` against the captured QA file. |
 | A cleanup check reports route-state drift | The route inspector can be unavailable even after the exact runtime stopped | Use the exact `devrouter stop` result, provider state, process state, and exact route count; do not restart the runtime merely to satisfy an unavailable inspector. |
 | The preserved Lena changes look ready to reapply onto the reconciled tree | The stash was made against the old branch tree, not the current `origin/v3` tree | Keep the primary checkout on its restored old ref for that user-owned work; use the isolated reconciliation branch for current-state inspection, and do not drop the safety stash. |
@@ -297,10 +293,10 @@ proof.
   versions. Newer source (`ai-buddy` `dev@344a6800a`,
   `origin/main@748b5a2`) behaves identically.
 - VPN and developer Azure Foundry: required for the local target's direct
-  LiteLLM path; values remain operator-injected and never enter Git.
-- Infisical profiles `klicker-dev` and the separately approved judge profile:
-  the first feeds only the local Chat runtime, while the second feeds only the
-  evaluator's judge credential.
+  LiteLLM path; values remain secret-manager-injected and never enter Git.
+- Secret-manager scopes: the developer scope feeds only the local Chat runtime,
+  while the separately approved judge scope feeds only `LITELLM_API_KEY` to the
+  evaluator.
 - Evaluation framework submodule: remains at merged commit `2a75632`; any
   framework change is a separate package and review.
 - Lena's original `docs/chatbot-hitl-config-roadmap` ref: not a dependency for
@@ -342,6 +338,12 @@ auth flow, cookies, or other browser-only behavior.
 
 ## Progress
 
+- 2026-09-03 — The portability follow-up removes the evaluator's executable
+  dependency on `rs-infisical-operator`. Judge credentials are now explicit
+  caller-injected environment inputs compatible with native Infisical and
+  masked GitLab variables. Offline wrapper and adapter tests pass without the
+  operator in `PATH`; no paid or live evaluation was run. The PR remains draft
+  until independent review and hosted CI cover the complete package.
 - 2026-09-01 — Roadmap opened after the user selected the FineCo follow-up.
   The parent package remains `delivery_pending`: the local direct-Foundry
   canary passed, but the expected expert binding and finite response bound are

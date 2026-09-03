@@ -196,10 +196,9 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 ## Slice C: bounded end-to-end proof
 
 - Route: main.
-- Do: use `rs-infisical-operator` with the existing `klicker-dev` profile to map
-  developer Azure key/base values only into the exact devrouter startup
-  process. Run `devrouter ensure` against the absolute worktree path with the
-  `chat,ai,mcp` profile, select direct
+- Do: use the approved secret manager to map developer Azure key/base values
+  only into the exact devrouter startup process. Run `devrouter ensure` against
+  the absolute worktree path with the `chat,ai,mcp` profile, select direct
   `gpt-5.6-luna`, and verify the local LiteLLM listener and exact provider path
   without printing values.
 - Do: if LiteLLM is already running without the approved upstream injection,
@@ -290,6 +289,18 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 
 ## Progress
 
+- 2026-09-03 portability follow-up: the evaluator wrapper now consumes
+  caller-injected `LITELLM_API_BASE` and `LITELLM_API_KEY` without invoking a
+  personal operator. Native Infisical and masked GitLab variable examples are
+  documented, while target, participant, and judge credentials remain isolated
+  in the wrapper fixture. Bash syntax, focused ShellCheck, wrapper fake-runtime
+  coverage, all 10 adapter tests on Node 24.16.0, Prettier, AGENTS.md policy,
+  removed-doc checks, and 57 Playwright CI contract tests pass. The root
+  `check:all` attempt is not green in this host-only worktree because `uv` is
+  absent from the restricted PATH and unbuilt workspace package outputs cause
+  existing import failures; no failure points to this shell/documentation
+  delta. Independent final review remains unavailable in this side conversation,
+  so publication is draft and human review remains blocking before readiness.
 - Status: `delivery_pending`; the three-round planning review deadlock remains
   disclosed and is not represented as an approved planner verdict.
 - Completed: plan commit `67f0a3b16`; authenticated adapter and canary fixture

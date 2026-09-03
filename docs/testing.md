@@ -50,13 +50,11 @@ For the local Klicker target evaluation adapter, run
     bash util/test-klicker-eval-wrapper.sh
 
 before any credentialed run. Start the exact worktree with the developer
-Foundry values mapped through the restricted klicker-dev Infisical operator:
-
-    rs-infisical-operator --profile klicker-dev run \
-      --map AZURE_OPENAI_API_KEY=UPSTREAM_OPENAI_API_KEY \
-      --map AZURE_OPENAI_BASE_URL=UPSTREAM_OPENAI_BASE_URL -- \
-      devrouter ensure /absolute/path/to/klicker-uzh/trees/WORKSPACE \
-      --profile chat,ai,mcp --json
+Foundry values mapped to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. The repository
+wrapper does not require a personal operator or fetch secrets itself. Native
+Infisical and CI examples are documented in
+[`evaluation/README.md`](../evaluation/README.md).
 
 The VPN must be active. If the worktree runtime already exists with different
 upstream values, stop that exact checkout and run the command again; ensure
@@ -72,8 +70,9 @@ FineCo quality evidence. Run the 20-case query only when
 EXPERT_df_fineco_expert is already available through an authorized synthetic
 binding with a finite response bound; otherwise record delivery_pending and
 do not substitute the canary or establish a tunnel. Keep the existing
-judge-only path separate: LITELLM_API_BASE and its restricted judge credential
-are not the developer-Foundry values injected into the local Chat container.
+judge-only path separate: caller-provided `LITELLM_API_BASE` and
+`LITELLM_API_KEY` are not the developer-Foundry values injected into the local
+Chat container.
 
 For OpenAI-compatible request-policy or prompt-cache changes, also run
 `apps/chat/test/openai-cache-policy.test.ts` and

@@ -236,20 +236,20 @@ has a healthcheck, and is included in
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
-usage cost. A model call still requires the operator's local
+usage cost. A model call still requires a caller-injected
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
 
-For a local developer-Foundry run, map the readable
-AZURE_OPENAI_API_KEY and AZURE_OPENAI_BASE_URL names to the generic
-UPSTREAM_OPENAI_API_KEY and UPSTREAM_OPENAI_BASE_URL variables through the
-restricted klicker-dev operator while starting the exact devrouter worktree.
-The VPN is required. Stop and restart an existing worktree when its LiteLLM
-container was started without those values; a warm ensure does not replace
-service-container environment. The direct gpt-5.6-luna entry pins num_retries
-to zero for bounded target evaluation; the fixed effort aliases remain
-internal router targets.
+For a local developer-Foundry run, map `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_BASE_URL` to the generic `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` variables with the approved secret manager while
+starting the exact devrouter worktree. The repository has no dependency on a
+personal secret operator. The VPN is required. Stop and restart an existing
+worktree when its LiteLLM container was started without those values; a warm
+ensure does not replace service-container environment. The direct
+`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+the fixed effort aliases remain internal router targets.
 
 The local target-evaluation adapter is a host loopback boundary, not another
 Chat product route. It authenticates a seeded participant against the

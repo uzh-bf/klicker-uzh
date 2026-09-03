@@ -29,36 +29,8 @@ assert_line() {
 
 FAKE_BIN="$TEST_ROOT/bin"
 FAKE_REPO="$TEST_ROOT/repo"
-OPERATOR_LOG="$TEST_ROOT/operator.log"
-OPERATOR_ENV_LOG="$TEST_ROOT/operator-env.log"
 CHILD_LOG="$TEST_ROOT/child.log"
 mkdir -p "$FAKE_BIN"
-
-write_file "$FAKE_BIN/rs-infisical-operator" '#!/usr/bin/env bash
-printf "%s\n" "$@" >"$KLICKER_TEST_OPERATOR_LOG"
-if [ -n "${KLICKER_TEST_OPERATOR_ENV_LOG:-}" ]; then
-  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY; do
-    printf "%s_PRESENT=%s\n" "$name" "${!name:+yes}" >>"$KLICKER_TEST_OPERATOR_ENV_LOG"
-  done
-fi
-if [ -n "${KLICKER_TEST_OPERATOR_STATUS:-}" ]; then
-  printf "%s\n" "synthetic operator stdout"
-  printf "%s\n" "synthetic operator stderr" >&2
-  exit "$KLICKER_TEST_OPERATOR_STATUS"
-fi
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = "--" ]; then
-    shift
-    if [ "${KLICKER_TEST_EMPTY_SECRET:-false}" = "true" ]; then
-      export LITELLM_API_KEY=""
-    else
-      export LITELLM_API_KEY="synthetic-test-key"
-    fi
-    exec "$@"
-  fi
-  shift
-done
-exit 2'
 
 write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
 if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
@@ -110,7 +82,11 @@ if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
   exec "$4"
 fi'
 
-chmod +x "$FAKE_BIN/node" "$FAKE_BIN/rs-infisical-operator" "$FAKE_BIN/uv"
+chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv"
+TEST_PATH="$FAKE_BIN:$(dirname "$(command -v bash)"):/usr/bin:/bin"
+if PATH="$TEST_PATH" command -v rs-infisical-operator >/dev/null 2>&1; then
+  fail 'portable wrapper test path must not contain rs-infisical-operator'
+fi
 write_file "$FAKE_REPO/evaluation/framework/scripts/_run_eval.sh" '#!/usr/bin/env bash
 printf "%s\n" "synthetic eval stdout"
 printf "%s\n" "synthetic eval stderr" >&2
@@ -128,18 +104,14 @@ WRAPPER="$FAKE_REPO/util/_run_klicker_eval.sh"
 
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" -- --mode eval --qa-file synthetic-qa.json
 
-assert_line '--profile' "$OPERATOR_LOG"
-assert_line 'klicker-uzh-stg' "$OPERATOR_LOG"
-assert_line 'PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY' "$OPERATOR_LOG"
-[ "$(grep -cx -- '--map' "$OPERATOR_LOG")" -eq 1 ] ||
-  fail 'operator must receive exactly one secret mapping'
 assert_line 'LITELLM_API_BASE=https://litellm.example.test' "$CHILD_LOG"
+assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 assert_line 'EVAL_MODEL=klickeruzh/azure/gpt-5.6-luna-high' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=gpt-5.6-luna' "$CHILD_LOG"
 assert_line 'EVAL_REASONING_EFFORT=high' "$CHILD_LOG"
@@ -165,10 +137,10 @@ env -i \
   GT_ROOT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   DEFAULT_GT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   LITELLM_API_BASE='https://caller.example.test' \
+  LITELLM_API_KEY='synthetic-test-key' \
   TOOL_PROFILE='caller-profile' \
-  PATH="$FAKE_BIN:$PATH" \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode query --tool-profile explicit-profile
 
@@ -189,9 +161,9 @@ env -i \
   EVAL_MODEL='caller/model-with-own-metadata' \
   EVAL_MODEL_CAPABILITY_MODEL='' \
   LITELLM_API_BASE='https://caller.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode eval --qa-file synthetic-qa.json
 
@@ -202,44 +174,24 @@ assert_line 'EVAL_MODEL_CAPABILITY_MODEL_STATE=unset' "$CHILD_LOG"
 : >"$CHILD_LOG"
 status=0
 env -i \
-  KLICKER_TEST_EMPTY_SECRET='true' \
   LITELLM_API_BASE='https://litellm.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode eval >"$TEST_ROOT/empty-key.out" 2>&1 || status=$?
 
-[ "$status" -eq 1 ] || fail "empty mapped key returned $status instead of 1"
-assert_line 'Error: mapped LITELLM_API_KEY is missing or empty' "$TEST_ROOT/empty-key.out"
-[ ! -s "$CHILD_LOG" ] || fail 'empty mapped key must not invoke uv'
-
-: >"$CHILD_LOG"
-status=0
-env -i \
-  KLICKER_TEST_OPERATOR_STATUS='73' \
-  LITELLM_API_BASE='https://litellm.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
-  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
-  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
-  "$WRAPPER" --mode eval \
-  >"$TEST_ROOT/operator-failure.stdout" \
-  2>"$TEST_ROOT/operator-failure.stderr" || status=$?
-
-[ "$status" -eq 73 ] || fail "operator failure returned $status instead of 73"
-assert_line 'synthetic operator stdout' "$TEST_ROOT/operator-failure.stdout"
-assert_line 'synthetic operator stderr' "$TEST_ROOT/operator-failure.stderr"
-[ ! -s "$CHILD_LOG" ] || fail 'operator failure must not invoke uv'
+[ "$status" -eq 1 ] || fail "missing judge key returned $status instead of 1"
+assert_line 'Error: LITELLM_API_KEY must be provided by the invoking environment' "$TEST_ROOT/empty-key.out"
+[ ! -s "$CHILD_LOG" ] || fail 'missing judge key must not invoke uv'
 
 status=0
 env -i \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='0' \
   LITELLM_API_BASE='https://litellm.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode eval \
   >"$TEST_ROOT/runner-success.stdout" \
@@ -254,9 +206,9 @@ env -i \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='74' \
   LITELLM_API_BASE='https://litellm.example.test' \
-  PATH="$FAKE_BIN:$PATH" \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode eval \
   >"$TEST_ROOT/runner-failure.stdout" \
@@ -276,9 +228,9 @@ assert_missing_input() {
   env -i \
     "$variable=$missing_path" \
     LITELLM_API_BASE='https://litellm.example.test' \
-    PATH="$FAKE_BIN:$PATH" \
+    LITELLM_API_KEY='synthetic-test-key' \
+    PATH="$TEST_PATH" \
     KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-    KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
     KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
     "$WRAPPER" --mode eval >"$TEST_ROOT/missing-input.out" 2>&1 || status=$?
 
@@ -301,8 +253,7 @@ cp "$SOURCE_WRAPPER" "$MISSING_REPO/util/_run_klicker_eval.sh"
 chmod +x "$MISSING_REPO/util/_run_klicker_eval.sh"
 status=0
 env -i \
-  PATH="$FAKE_BIN:$PATH" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$MISSING_REPO/util/_run_klicker_eval.sh" --mode eval >"$TEST_ROOT/missing.out" 2>&1 || status=$?
 
@@ -310,21 +261,10 @@ env -i \
 assert_line "Error: evaluation framework is not initialized at $MISSING_REPO/evaluation/framework" "$TEST_ROOT/missing.out"
 assert_line 'Run: git submodule update --init --checkout evaluation/framework' "$TEST_ROOT/missing.out"
 
-NO_OPERATOR_BIN="$TEST_ROOT/no-operator-bin"
-mkdir -p "$NO_OPERATOR_BIN"
 status=0
 env -i \
-  PATH="$NO_OPERATOR_BIN:/usr/bin:/bin" \
-  LITELLM_API_BASE='https://litellm.example.test' \
-  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  "$WRAPPER" --mode eval >"$TEST_ROOT/operator.out" 2>&1 || status=$?
-
-[ "$status" -eq 1 ] || fail "missing operator returned $status instead of 1"
-assert_line 'Error: rs-infisical-operator is required for the restricted Klicker evaluation profile' "$TEST_ROOT/operator.out"
-
-status=0
-env -i \
-  PATH="$FAKE_BIN:$PATH" \
+  LITELLM_API_KEY='synthetic-test-key' \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   "$WRAPPER" --mode eval >"$TEST_ROOT/base-url.out" 2>&1 || status=$?
 
@@ -338,6 +278,7 @@ env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \
   GIT_WORK_TREE="$TEST_ROOT/not-a-worktree" \
   LITELLM_API_BASE='https://litellm.example.test' \
+  LITELLM_API_KEY='synthetic-test-key' \
   KLICKER_EVAL_API_ORIGIN='https://api.klicker.localhost' \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
@@ -349,12 +290,10 @@ env -i \
   KLICKER_TEST_ADAPTER_SCRIPT="$FAKE_REPO/apps/chat/scripts/klicker-evaluation-target.mjs" \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
   KLICKER_TEST_HELPER_LOG="$TEST_ROOT/helper.log" \
-  KLICKER_TEST_OPERATOR_ENV_LOG="$OPERATOR_ENV_LOG" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='0' \
-  PATH="$FAKE_BIN:$PATH" \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --local-target --mode query --limit 1 \
   --gt-dir evaluation/data/ground_truth/klicker_fineco
@@ -373,15 +312,15 @@ assert_line 'AZURE_OPENAI_API_KEY_PRESENT=' "$CHILD_LOG"
 assert_line 'UPSTREAM_OPENAI_API_KEY_PRESENT=' "$CHILD_LOG"
 assert_line 'KEYGEN_AZURE_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'KEYGEN_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'KEYGEN_LITELLM_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'KEYGEN_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_AZURE_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_LITELLM_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=yes' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_TARGET_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
-assert_line 'AZURE_OPENAI_API_KEY_PRESENT=' "$OPERATOR_ENV_LOG"
-assert_line 'UPSTREAM_OPENAI_API_KEY_PRESENT=' "$OPERATOR_ENV_LOG"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a successful child run'
-if grep -Fq -- 'synthetic-target-key' "$OPERATOR_LOG" "$CHILD_LOG"; then
+if grep -Fq -- 'synthetic-target-key' "$CHILD_LOG"; then
   fail 'ephemeral target key must not be written to logs'
 fi
 
@@ -390,6 +329,7 @@ rm -f "$LOCAL_STOP_MARKER"
 status=0
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
+  LITELLM_API_KEY='synthetic-test-key' \
   KLICKER_EVAL_API_ORIGIN='https://api.klicker.localhost' \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
@@ -398,9 +338,8 @@ env -i \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='74' \
-  PATH="$FAKE_BIN:$PATH" \
+  PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --local-target --mode query --limit 1 \
   >"$TEST_ROOT/local-failure.stdout" \

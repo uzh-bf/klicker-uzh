@@ -27,13 +27,13 @@ if [ ! -x "$FRAMEWORK_RUNNER" ]; then
   exit 1
 fi
 
-if ! command -v rs-infisical-operator >/dev/null 2>&1; then
-  echo "Error: rs-infisical-operator is required for the restricted Klicker evaluation profile" >&2
+if [ -z "${LITELLM_API_BASE:-}" ]; then
+  echo "Error: LITELLM_API_BASE must point to the approved LiteLLM proxy" >&2
   exit 1
 fi
 
-if [ -z "${LITELLM_API_BASE:-}" ]; then
-  echo "Error: LITELLM_API_BASE must point to the approved LiteLLM proxy" >&2
+if [ -z "${LITELLM_API_KEY:-}" ]; then
+  echo "Error: LITELLM_API_KEY must be provided by the invoking environment" >&2
   exit 1
 fi
 
@@ -267,7 +267,6 @@ EVALUATOR_PREFIX=(
   -u UPSTREAM_OPENAI_API_KEY
   -u UPSTREAM_OPENAI_BASE_URL
   -u OPENAI_API_KEY
-  -u LITELLM_API_KEY
 )
 if [ "$LOCAL_TARGET" = true ]; then
   EVALUATOR_PREFIX+=(
@@ -283,31 +282,13 @@ fi
 
 EVALUATOR_COMMAND=(
   "${EVALUATOR_PREFIX[@]}"
-  rs-infisical-operator
-  --profile klicker-uzh-stg
-  run
-  --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY
-  --
   "${EVAL_ENV[@]}"
-  bash
-  -c
-  '
-    set -euo pipefail
-    if [ -z "${LITELLM_API_KEY:-}" ]; then
-      echo "Error: mapped LITELLM_API_KEY is missing or empty" >&2
-      exit 1
-    fi
-    framework_root="$1"
-    framework_runner="$2"
-    shift 2
-    exec uv run --project "$framework_root" \
-      "$framework_runner" \
-      --no-dotenv \
-      "$@"
-  '
-  klicker-eval
+  uv
+  run
+  --project
   "$FRAMEWORK_ROOT"
   "$FRAMEWORK_RUNNER"
+  --no-dotenv
 )
 
 if [ "$LOCAL_TARGET" = true ]; then
