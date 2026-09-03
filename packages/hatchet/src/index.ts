@@ -5,7 +5,11 @@ import {
   Priority,
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
+import type {
+  CourseDeletionEvent,
+  HatchetHandlers,
+  PreparedHatchetTasks,
+} from '@klicker-uzh/types'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
@@ -377,26 +381,9 @@ export function prepareHatchetTasks({
       limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     },
     onEvents: ['process-course-deletion'],
-    fn: async (
-      input: { courseId: string; deletionRequestedAt: string },
-      executionContext
-    ) => {
+    fn: async (input: CourseDeletionEvent, executionContext) => {
       const success = await handlers.handleProcessCourseDeletion(
         input,
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
-  })
-
-  const sweepCourseDeletions = hatchet.task({
-    name: 'sweep-course-deletions',
-    retries: 0,
-    onCrons: ['*/5 * * * *'],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleSweepCourseDeletions(
-        {},
         globalContext,
         executionContext
       )
@@ -422,7 +409,6 @@ export function prepareHatchetTasks({
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,
-    sweepCourseDeletions,
   }
 
   preparedTasks = tasks

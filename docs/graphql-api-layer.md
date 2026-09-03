@@ -22,8 +22,8 @@ tags:
 
 Worked examples: `requestCourseDeletion` in `mutation.ts` (asUser + ADMIN
 permission on courseId, plus a nullable boolean for optional draft live-quiz
-cleanup), the deprecated `deleteCourse` adapter, `controlCourse` in `query.ts`
-(EXECUTE), and `getLiveQuizSummary` (READ).
+cleanup), `controlCourse` in `query.ts` (EXECUTE), and `getLiveQuizSummary`
+(READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 

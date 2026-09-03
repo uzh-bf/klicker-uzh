@@ -19,6 +19,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  type CourseDeletionEvent,
   DisplayMode,
   type ElementData,
   type ElementInstanceOptions,
@@ -39,10 +40,7 @@ import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import {
-  handleProcessCourseDeletion,
-  handleSweepCourseDeletions,
-} from '@/services/courseDeletion.js'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -311,25 +309,9 @@ export async function testInitialization(
     }),
     processCourseDeletion: hatchet.task({
       name: 'process-course-deletion',
-      fn: vi.fn(
-        async (
-          input: { courseId: string; deletionRequestedAt: string },
-          executionCtx
-        ) => {
-          const success = await handleProcessCourseDeletion(
-            input,
-            hatchetCtx,
-            executionCtx
-          )
-          return { success }
-        }
-      ),
-    }),
-    sweepCourseDeletions: hatchet.task({
-      name: 'sweep-course-deletions',
-      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
-        const success = await handleSweepCourseDeletions(
-          {},
+      fn: vi.fn(async (input: CourseDeletionEvent, executionCtx) => {
+        const success = await handleProcessCourseDeletion(
+          input,
           hatchetCtx,
           executionCtx
         )

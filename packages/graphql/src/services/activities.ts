@@ -9,6 +9,12 @@ import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
+// live quizzes of a course with a pending deletion request are hidden until the
+// permanent deletion has detached or removed them
+export const liveQuizCourseVisibilityFilter = {
+  OR: [{ courseId: null }, { course: { deletionRequestedAt: null } }],
+} satisfies DB.Prisma.LiveQuizWhereInput
+
 export const UNPUBLISHED_ACTIVITY_STATUSES: DB.PublicationStatus[] = [
   DB.PublicationStatus.DRAFT,
   DB.PublicationStatus.SCHEDULED,
@@ -206,6 +212,14 @@ export async function getUserActivities(
   },
   ctx: ContextWithUser
 ) {
+  // the activities view has no course relation, so courses with a pending
+  // deletion request are excluded by id (there are rarely more than a few)
+  const coursesPendingDeletion = await ctx.prisma.course.findMany({
+    where: { deletionRequestedAt: { not: null } },
+    select: { id: true },
+  })
+  const courseIdsPendingDeletion = coursesPendingDeletion.map(({ id }) => id)
+
   const whereClause = {
     // filter out deleted activities where the user only has derived access
     NOT: { derived: true, isDeleted: true },
@@ -250,10 +264,10 @@ export async function getUserActivities(
     pinCode: isPinProtected ? { not: null } : undefined,
     // course filter
     courseId: courseId
-      ? { equals: courseId }
+      ? { equals: courseId, notIn: courseIdsPendingDeletion }
       : withoutCourse
         ? null
-        : undefined,
+        : { notIn: courseIdsPendingDeletion },
     // search string
     OR: searchString
       ? [
@@ -1103,19 +1117,7 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      OR: [
-        { courseId: null },
-        { course: { deletionRequestedAt: null } },
-        {
-          course: {
-            deletionRequestedAt: { not: null },
-          },
-          OR: [
-            { status: { not: DB.PublicationStatus.DRAFT } },
-            { course: { deleteDraftActivitiesOnDeletion: false } },
-          ],
-        },
-      ],
+      ...liveQuizCourseVisibilityFilter,
     },
     include: {
       owner: true,
@@ -1288,15 +1290,11 @@ export async function getLiveQuizDetails(
       }
 
   const isActivityManager = liveQuiz._count.permissions > 0
-  const visibleCourse = liveQuiz.course?.deletionRequestedAt
-    ? null
-    : liveQuiz.course
   return {
     ...liveQuiz,
-    course: visibleCourse,
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
-      (!!visibleCourse && visibleCourse._count.permissions > 0),
+      (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
     isActivityManager,
     ownerShortname: liveQuiz.owner.shortname,
     ownerEmail: isActivityManager ? liveQuiz.owner.email : null,
@@ -1829,20 +1827,7 @@ export async function getCourseActivityIds(
               liveQuiz: {
                 isDeleted: false,
                 courseId: courseId ?? null,
-                ...(courseId
-                  ? {
-                      OR: [
-                        { course: { deletionRequestedAt: null } },
-                        {
-                          status: DB.PublicationStatus.DRAFT,
-                          course: {
-                            deletionRequestedAt: { not: null },
-                            deleteDraftActivitiesOnDeletion: false,
-                          },
-                        },
-                      ],
-                    }
-                  : {}),
+                ...(courseId ? { course: { deletionRequestedAt: null } } : {}),
               },
             },
             ...(courseId

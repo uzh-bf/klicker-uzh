@@ -157,7 +157,6 @@ describe('deleteCourse', () => {
     const course = {
       id: 'course-id',
       deletionRequestedAt,
-      deletionRequestedById: 'requester-id',
       liveQuizzes: [],
       practiceQuizzes: [],
       microLearnings: [],
@@ -193,13 +192,57 @@ describe('deleteCourse', () => {
     } as unknown as ContextWithUser
 
     await expect(
-      deleteCourse({ id: course.id, deletionRequestedAt }, ctx)
+      deleteCourse(
+        {
+          id: course.id,
+          request: { deletionRequestedAt, requestedById: 'requester-id' },
+        },
+        ctx
+      )
     ).resolves.toBeNull()
 
     expect(transactionClient.course.delete).not.toHaveBeenCalled()
+    expect(transactionClient.course.updateMany).toHaveBeenLastCalledWith({
+      where: { id: course.id, deletionRequestedAt },
+      data: { deletionRequestedAt: null },
+    })
     expect(emitter.emit).toHaveBeenCalledWith('invalidate', {
       typename: 'Course',
       id: course.id,
+    })
+  })
+
+  it('clears a pending request when the course is no longer deletable', async () => {
+    const deletionRequestedAt = new Date('2026-01-01T00:00:00.000Z')
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 })
+    const emitter = { emit: vi.fn() }
+    const ctx = {
+      prisma: {
+        // e.g. the course switched to assessment mode after the request
+        course: { findUnique: vi.fn().mockResolvedValue(null), updateMany },
+        $transaction: vi.fn(),
+      },
+      emitter,
+      hatchet: { scheduled: { delete: vi.fn() } },
+    } as unknown as ContextWithUser
+
+    await expect(
+      deleteCourse(
+        {
+          id: 'course-id',
+          request: { deletionRequestedAt, requestedById: 'requester-id' },
+        },
+        ctx
+      )
+    ).resolves.toBeNull()
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'course-id', deletionRequestedAt },
+      data: { deletionRequestedAt: null },
+    })
+    expect(emitter.emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Course',
+      id: 'course-id',
     })
   })
 })

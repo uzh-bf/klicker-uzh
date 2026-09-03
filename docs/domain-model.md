@@ -72,14 +72,15 @@ activities already cascade with the course, while opting in additionally
 removes linked draft live quizzes
 (`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
 
-`requestCourseDeletion` accepts the deletion request in one transaction by
-storing a timestamp, requester, and draft-live-quiz option on the course. The
-marker immediately excludes the course and activities destined for deletion
-from user-facing reads; it is not a user-visible progress state. Retained live
-quizzes remain available as unassigned activities while the Hatchet worker
-performs the permanent deletion. Published live quizzes block acceptance, and
-the worker clears a matching request if publication or the requester's
-ADMIN/OWNER permission changes before deletion.
+`requestCourseDeletion` accepts the deletion request by setting
+`Course.deletionRequestedAt` and handing the requester id and draft-live-quiz
+option to the `process-course-deletion` Hatchet event. The marker immediately
+excludes the course and all of its activities from user-facing reads; it is not
+a user-visible progress state. Retained live quizzes reappear as unassigned
+activities once the worker has completed the permanent deletion. Published live
+quizzes block acceptance, and the worker clears the marker instead of deleting
+if a live quiz was published, the course switched to assessment mode, or the
+requester lost ADMIN/OWNER permission in the meantime.
 
 ## Course duplication
 

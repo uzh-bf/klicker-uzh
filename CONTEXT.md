@@ -37,8 +37,8 @@ numeric pin code, while an **SSO course** admits only people arriving through
 SWITCH edu-ID.
 
 **Course deletion request**: An accepted instruction to remove a course. The
-course immediately leaves user-facing course and activity collections, even
-though permanent course deletion may still be pending.
+course and its activities immediately leave user-facing collections and detail
+reads, even though permanent course deletion may still be pending.
 _Avoid_: Background deletion, soft deletion
 
 **Permanent course deletion**: The irreversible removal of a course and the

@@ -1,5 +1,24 @@
 # Background course deletion
 
+## Revision 2026-09-03 (supersedes the sections below where they differ)
+
+Review simplified the design before merge:
+
+- The data model is a single nullable `Course.deletionRequestedAt` column and a
+  one-line expand-only migration. The requester id and the draft-live-quiz
+  option are not persisted; they travel in the `process-course-deletion` event
+  payload. The `UserActivities` view is not changed; `getUserActivities`
+  excludes courses pending deletion by id instead.
+- All activities of a course pending deletion are hidden, including retained
+  live quizzes, which reappear as unassigned activities after permanent
+  deletion.
+- There is no `sweep-pending-course-deletions` task. A failed event publication
+  clears the marker and fails the mutation; a permanently failed worker run
+  (retries exhausted) clears the marker so the course reappears and the
+  lecturer can retry.
+- The deprecated `deleteCourse` mutation and its operations are removed;
+  `requestCourseDeletion` is the only deletion entry point.
+
 ## Goal
 
 Turn the existing permanent course deletion into a Hatchet-backed operation:

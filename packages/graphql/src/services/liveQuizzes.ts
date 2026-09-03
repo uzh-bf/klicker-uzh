@@ -35,6 +35,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import {
   getPermissionBooleans,
+  liveQuizCourseVisibilityFilter,
   persistActivityWithPermissions,
 } from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
@@ -43,22 +44,6 @@ import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
-
-const liveQuizCourseVisibilityFilter = {
-  OR: [
-    { courseId: null },
-    { course: { deletionRequestedAt: null } },
-    {
-      course: {
-        deletionRequestedAt: { not: null },
-      },
-      OR: [
-        { status: { not: DB.PublicationStatus.DRAFT } },
-        { course: { deleteDraftActivitiesOnDeletion: false } },
-      ],
-    },
-  ],
-} satisfies DB.Prisma.LiveQuizWhereInput
 
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
@@ -665,11 +650,6 @@ export async function getLiveQuizData(
   })
 
   return quiz
-    ? {
-        ...quiz,
-        course: quiz.course?.deletionRequestedAt ? null : quiz.course,
-      }
-    : null
 }
 
 export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
@@ -697,14 +677,7 @@ export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
     },
   })
 
-  return (
-    user?.objects.map((object) => ({
-      ...object.liveQuiz!,
-      course: object.liveQuiz!.course?.deletionRequestedAt
-        ? null
-        : object.liveQuiz!.course,
-    })) ?? []
-  )
+  return user?.objects.map((object) => object.liveQuiz!) ?? []
 }
 
 export async function getLecturerViewLiveQuiz(
@@ -764,10 +737,7 @@ export async function getControlLiveQuiz(
     return null
   }
 
-  return {
-    ...quiz,
-    course: quiz.course?.deletionRequestedAt ? null : quiz.course,
-  }
+  return quiz
 }
 
 export async function getShortnameQuizzes(
@@ -806,9 +776,6 @@ export async function getShortnameQuizzes(
       obj.liveQuiz
         ? {
             ...obj.liveQuiz,
-            course: obj.liveQuiz.course?.deletionRequestedAt
-              ? null
-              : obj.liveQuiz.course,
             isPinProtected: !!obj.liveQuiz.pinCode,
           }
         : []
@@ -824,6 +791,7 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
     include: {
       liveQuizzes: {
         where: {
+          courseId: null,
           status: {
             in: [
               DB.PublicationStatus.PUBLISHED,
@@ -831,29 +799,13 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
               DB.PublicationStatus.DRAFT,
             ],
           },
-          OR: [
-            { courseId: null },
-            {
-              course: {
-                deletionRequestedAt: { not: null },
-              },
-              OR: [
-                { status: { not: DB.PublicationStatus.DRAFT } },
-                { course: { deleteDraftActivitiesOnDeletion: false } },
-              ],
-            },
-          ],
         },
         orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
       },
     },
   })
 
-  return (
-    user?.liveQuizzes.map((liveQuiz) =>
-      liveQuiz.courseId ? { ...liveQuiz, courseId: null } : liveQuiz
-    ) ?? []
-  )
+  return user?.liveQuizzes ?? []
 }
 // #endregion
 
@@ -1093,7 +1045,6 @@ export async function getCockpitQuiz(
   // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
-    course: liveQuiz.course?.deletionRequestedAt ? null : liveQuiz.course,
     activeBlock: liveQuiz.activeBlock,
     blocks: liveQuiz.blocks.map((block) => {
       return {
@@ -3084,12 +3035,10 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     return quizWithoutSolutions
       ? {
           ...quizWithoutSolutions,
-          course: quiz.course?.deletionRequestedAt ? null : quiz.course,
           isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
         }
       : {
           ...quiz,
-          course: quiz.course?.deletionRequestedAt ? null : quiz.course,
           isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
           beforeFirstBlock,
         }

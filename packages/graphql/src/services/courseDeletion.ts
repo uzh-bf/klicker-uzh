@@ -1,18 +1,20 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { CourseDeletionEvent, HatchetHandlers } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
-import type { Context, ContextWithUser } from '../lib/context.js'
-import { deleteCourse as permanentlyDeleteCourse } from './courses.js'
+import type { ContextWithUser } from '../lib/context.js'
+import {
+  cancelCourseDeletionRequest,
+  deleteCourse as permanentlyDeleteCourse,
+} from './courses.js'
 
 const COURSE_DELETION_ACTIVE_LIVE_QUIZ_CODE = 'COURSE_DELETION_ACTIVE_LIVE_QUIZ'
-const COURSE_DELETION_STALE_AFTER_MS = 75 * 60 * 1000
 
-type CourseDeletionContext = Pick<Context, 'prisma' | 'hatchet' | 'emitter'>
+// must match the `retries` of the `process-course-deletion` Hatchet task
+export const COURSE_DELETION_MAX_RETRIES = 3
 
 export interface CourseDeletionRequest {
   courseId: string
   deletionRequestedAt: Date
-  course: DB.Course
 }
 
 function getCourseDeletionError() {
@@ -22,6 +24,10 @@ function getCourseDeletionError() {
   )
 }
 
+// Accept a course deletion request: mark the course so it disappears from all
+// user-facing reads, then hand the permanent deletion to the Hatchet worker.
+// If the worker cannot be reached, the marker is cleared again and the caller
+// receives an error, so a course never stays hidden without a scheduled job.
 export async function requestCourseDeletion(
   {
     id,
@@ -49,11 +55,12 @@ export async function requestCourseDeletion(
       })
     }
 
+    // a repeated request while the first one is pending is a no-op
     if (course.deletionRequestedAt) {
       return {
         courseId: course.id,
         deletionRequestedAt: course.deletionRequestedAt,
-        course,
+        alreadyRequested: true,
       }
     }
 
@@ -64,177 +71,93 @@ export async function requestCourseDeletion(
     const deletionRequestedAt = new Date()
     const updated = await prisma.course.updateMany({
       where: { id: course.id, deletionRequestedAt: null },
-      data: {
-        deletionRequestedAt,
-        deletionRequestedById: ctx.user.sub,
-        deleteDraftActivitiesOnDeletion: deleteDraftActivities ?? false,
-      },
+      data: { deletionRequestedAt },
     })
 
     if (updated.count === 0) {
-      const existingCourse = await prisma.course.findUnique({
-        where: { id: course.id },
-      })
-
-      if (!existingCourse?.deletionRequestedAt) {
-        throw new Error('Course deletion request could not be persisted')
-      }
-
-      return {
-        courseId: existingCourse.id,
-        deletionRequestedAt: existingCourse.deletionRequestedAt,
-        course: existingCourse,
-      }
+      throw new Error('Course deletion request could not be persisted')
     }
 
-    const { liveQuizzes: _liveQuizzes, ...courseWithoutLiveQuizzes } = course
-
-    return {
-      courseId: course.id,
-      deletionRequestedAt,
-      course: {
-        ...courseWithoutLiveQuizzes,
-        deletionRequestedAt,
-        deletionRequestedById: ctx.user.sub,
-        deleteDraftActivitiesOnDeletion: deleteDraftActivities ?? false,
-      },
-    }
+    return { courseId: course.id, deletionRequestedAt, alreadyRequested: false }
   })
 
-  try {
-    await ctx.hatchet.events.push('process-course-deletion', {
+  if (request.alreadyRequested) {
+    return {
       courseId: request.courseId,
-      deletionRequestedAt: request.deletionRequestedAt.toISOString(),
-    })
+      deletionRequestedAt: request.deletionRequestedAt,
+    }
+  }
+
+  const event: CourseDeletionEvent = {
+    courseId: request.courseId,
+    deletionRequestedAt: request.deletionRequestedAt.toISOString(),
+    requestedById: ctx.user.sub,
+    deleteDraftActivities: deleteDraftActivities ?? false,
+  }
+
+  try {
+    await ctx.hatchet.events.push('process-course-deletion', event)
   } catch (error) {
-    // The marker is a durable outbox. The scheduled sweep republishes requests
-    // when Hatchet was unavailable or the acknowledgement was lost.
     console.error(
       `Failed to publish course deletion for ${request.courseId}:`,
       error
     )
+    await cancelCourseDeletionRequest(
+      {
+        id: request.courseId,
+        deletionRequestedAt: request.deletionRequestedAt,
+      },
+      ctx
+    )
+    throw new GraphQLError('Course deletion could not be scheduled', {
+      extensions: { code: 'COURSE_DELETION_UNAVAILABLE' },
+    })
   }
 
-  return request
-}
+  ctx.emitter.emit('invalidate', { typename: 'Course', id: request.courseId })
 
-async function clearCourseDeletionRequest(
-  courseId: string,
-  deletionRequestedAt: Date,
-  ctx: CourseDeletionContext
-) {
-  const cleared = await ctx.prisma.course.updateMany({
-    where: { id: courseId, deletionRequestedAt },
-    data: {
-      deletionRequestedAt: null,
-      deletionRequestedById: null,
-      deleteDraftActivitiesOnDeletion: false,
-    },
-  })
-
-  if (cleared.count > 0) {
-    ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
+  return {
+    courseId: request.courseId,
+    deletionRequestedAt: request.deletionRequestedAt,
   }
 }
 
+// Hatchet handler for `process-course-deletion`. The deletion transaction
+// re-verifies the request marker, the requester's permission and the
+// published-live-quiz condition and cancels the request if they no longer
+// hold. When the last retry fails, the marker is cleared so the course
+// becomes visible again and the lecturer can retry.
 export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDeletion'] =
-  async ({ courseId, deletionRequestedAt }, globalCtx, executionCtx) => {
+  async (
+    { courseId, deletionRequestedAt, requestedById, deleteDraftActivities },
+    globalCtx,
+    executionCtx
+  ) => {
     const requestedAt = new Date(deletionRequestedAt)
     if (Number.isNaN(requestedAt.getTime())) {
       throw new Error(`Invalid deletion request timestamp for ${courseId}`)
     }
 
-    const course = await globalCtx.prisma.course.findUnique({
-      where: { id: courseId, deletionRequestedAt: requestedAt },
-      select: {
-        id: true,
-        deletionRequestedAt: true,
-        deletionRequestedById: true,
-        deleteDraftActivitiesOnDeletion: true,
-        liveQuizzes: {
-          where: {
-            isDeleted: false,
-            status: DB.PublicationStatus.PUBLISHED,
-          },
-          select: { id: true },
+    try {
+      await permanentlyDeleteCourse(
+        {
+          id: courseId,
+          deleteDraftActivities,
+          request: { deletionRequestedAt: requestedAt, requestedById },
         },
-      },
-    })
-
-    if (!course || !course.deletionRequestedAt) {
-      return true
-    }
-
-    const requesterPermission = course.deletionRequestedById
-      ? await globalCtx.prisma.derivedPermission.findFirst({
-          where: {
-            courseId: course.id,
-            userId: course.deletionRequestedById,
-          },
-          select: { permissionLevel: true },
-        })
-      : null
-
-    if (
-      !requesterPermission ||
-      (requesterPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
-        requesterPermission.permissionLevel !== DB.PermissionLevel.OWNER) ||
-      course.liveQuizzes.length > 0
-    ) {
-      await clearCourseDeletionRequest(course.id, course.deletionRequestedAt, {
-        prisma: globalCtx.prisma,
-        emitter: globalCtx.emitter,
-        hatchet: globalCtx.hatchet,
-      })
-      executionCtx.logger.warn(
-        `Course deletion request for ${course.id} was cancelled by a safety check.`
+        globalCtx
       )
-      return true
-    }
-
-    await permanentlyDeleteCourse(
-      {
-        id: course.id,
-        deleteDraftActivities: course.deleteDraftActivitiesOnDeletion,
-        deletionRequestedAt: course.deletionRequestedAt,
-      },
-      globalCtx
-    )
-
-    return true
-  }
-
-export const handleSweepCourseDeletions: HatchetHandlers['handleSweepCourseDeletions'] =
-  async (_, globalCtx, executionCtx) => {
-    const courses = await globalCtx.prisma.course.findMany({
-      where: { deletionRequestedAt: { not: null } },
-      select: { id: true, deletionRequestedAt: true },
-      orderBy: { deletionRequestedAt: 'asc' },
-      take: 100,
-    })
-
-    for (const course of courses) {
-      if (!course.deletionRequestedAt) continue
-
-      if (
-        Date.now() - course.deletionRequestedAt.getTime() >
-        COURSE_DELETION_STALE_AFTER_MS
-      ) {
-        executionCtx.logger.warn(
-          `Course deletion request for ${course.id} has been pending for more than 75 minutes.`
+    } catch (error) {
+      if (executionCtx.retryCount() >= COURSE_DELETION_MAX_RETRIES) {
+        executionCtx.logger.error(
+          `Course deletion for ${courseId} failed permanently; the course is visible again.`
+        )
+        await cancelCourseDeletionRequest(
+          { id: courseId, deletionRequestedAt: requestedAt },
+          globalCtx
         )
       }
-
-      try {
-        await globalCtx.hatchet.events.push('process-course-deletion', {
-          courseId: course.id,
-          deletionRequestedAt: course.deletionRequestedAt.toISOString(),
-        })
-      } catch (error) {
-        executionCtx.logger.warn(
-          `Failed to republish course deletion for ${course.id}: ${String(error)}`
-        )
-      }
+      throw error
     }
 
     return true

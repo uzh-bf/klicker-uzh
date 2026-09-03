@@ -20,6 +20,15 @@ export interface HatchetHandlerGlobalContext {
 }
 
 // Shared contract for Hatchet task handler injections.
+// Payload of the `process-course-deletion` event. The request marker on the
+// course is the only persisted state; requester and options travel here.
+export type CourseDeletionEvent = {
+  courseId: string
+  deletionRequestedAt: string
+  requestedById: string
+  deleteDraftActivities: boolean
+}
+
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
@@ -102,18 +111,7 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleProcessCourseDeletion: (
-    {
-      courseId,
-      deletionRequestedAt,
-    }: {
-      courseId: string
-      deletionRequestedAt: string
-    },
-    globalCtx: HatchetHandlerGlobalContext,
-    executionCtx: Context<unknown>
-  ) => Promise<boolean>
-  handleSweepCourseDeletions: (
-    _args: Record<string, never>,
+    input: CourseDeletionEvent,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -171,11 +169,7 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   processCourseDeletion: TaskWorkflowDeclaration<
-    { courseId: string; deletionRequestedAt: string },
-    { success: boolean }
-  >
-  sweepCourseDeletions: TaskWorkflowDeclaration<
-    Record<string, never>,
+    CourseDeletionEvent,
     { success: boolean }
   >
 }

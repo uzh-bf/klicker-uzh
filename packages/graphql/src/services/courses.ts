@@ -3157,18 +3157,46 @@ export async function getCourseSummary(
   }
 }
 
+export interface CourseDeletionRequestToken {
+  deletionRequestedAt: Date
+  requestedById: string
+}
+
+// Clear the deletion request marker so the course becomes visible again.
+// Only the request identified by `deletionRequestedAt` is cleared, so a
+// newer request on the same course is left untouched.
+export async function cancelCourseDeletionRequest(
+  { id, deletionRequestedAt }: { id: string; deletionRequestedAt: Date },
+  ctx: Pick<Context, 'prisma' | 'emitter'>
+) {
+  const cleared = await ctx.prisma.course.updateMany({
+    where: { id, deletionRequestedAt },
+    data: { deletionRequestedAt: null },
+  })
+
+  if (cleared.count > 0) {
+    ctx.emitter.emit('invalidate', { typename: 'Course', id })
+  }
+
+  return cleared.count > 0
+}
+
 export async function deleteCourse(
   {
     id,
     deleteDraftActivities,
-    deletionRequestedAt,
+    request,
   }: {
     id: string
     deleteDraftActivities?: boolean | null
-    deletionRequestedAt?: Date | null
+    // when set, the deletion only proceeds while this request is still the
+    // pending one on the course and its safety conditions still hold
+    request?: CourseDeletionRequestToken | null
   },
   ctx: Pick<Context, 'prisma' | 'hatchet' | 'emitter'>
 ) {
+  const deletionRequestedAt = request?.deletionRequestedAt
+
   // updates of derived permissions on the course and some cascaded objects are automatic (since course is hard-deleted)
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
@@ -3187,7 +3215,12 @@ export async function deleteCourse(
   })
 
   if (!course) {
-    if (deletionRequestedAt) return null
+    if (deletionRequestedAt) {
+      // the request is stale or the course switched to assessment mode; make
+      // sure the course is not left hidden
+      await cancelCourseDeletionRequest({ id, deletionRequestedAt }, ctx)
+      return null
+    }
     throw new Error('Course not found or permission denied')
   }
 
@@ -3206,16 +3239,16 @@ export async function deleteCourse(
 
   const deletedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
-      if (deletionRequestedAt) {
+      if (request) {
         // Claim the course row for this request. Besides rejecting stale events,
         // the update holds the row lock until the transaction completes.
         const claimed = await prisma.course.updateMany({
           where: {
             id,
             isAssessmentEnabled: false,
-            deletionRequestedAt,
+            deletionRequestedAt: request.deletionRequestedAt,
           },
-          data: { deletionRequestedAt },
+          data: { deletionRequestedAt: request.deletionRequestedAt },
         })
 
         if (claimed.count === 0) {
@@ -3241,27 +3274,21 @@ export async function deleteCourse(
           },
           select: { id: true },
         })
-        const requesterPermission = course.deletionRequestedById
-          ? await prisma.derivedPermission.findFirst({
-              where: {
-                courseId: id,
-                userId: course.deletionRequestedById,
-                permissionLevel: {
-                  in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-                },
-              },
-              select: { id: true },
-            })
-          : null
+        const requesterPermission = await prisma.derivedPermission.findFirst({
+          where: {
+            courseId: id,
+            userId: request.requestedById,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+          select: { id: true },
+        })
 
         if (!requesterPermission || publishedLiveQuiz) {
           await prisma.course.updateMany({
-            where: { id, deletionRequestedAt },
-            data: {
-              deletionRequestedAt: null,
-              deletionRequestedById: null,
-              deleteDraftActivitiesOnDeletion: false,
-            },
+            where: { id, deletionRequestedAt: request.deletionRequestedAt },
+            data: { deletionRequestedAt: null },
           })
           return { deleted: null, deletionCancelled: true }
         }
@@ -3327,10 +3354,8 @@ export async function deleteCourse(
   )
 
   if (!deletedCourse.deleted) {
-    if (deletionRequestedAt) {
-      if (deletedCourse.deletionCancelled) {
-        ctx.emitter.emit('invalidate', { typename: 'Course', id })
-      }
+    if (deletedCourse.deletionCancelled) {
+      ctx.emitter.emit('invalidate', { typename: 'Course', id })
     }
     return null
   }

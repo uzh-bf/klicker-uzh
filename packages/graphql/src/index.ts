@@ -40,10 +40,7 @@ import './schema/subscription.js'
 //   })
 // }
 
-import {
-  handleProcessCourseDeletion,
-  handleSweepCourseDeletions,
-} from './services/courseDeletion.js'
+import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
@@ -95,5 +92,4 @@ export const handlers: HatchetHandlers = {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
   handleProcessCourseDeletion,
-  handleSweepCourseDeletions,
 }
