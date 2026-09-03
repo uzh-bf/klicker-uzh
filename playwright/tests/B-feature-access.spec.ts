@@ -41,6 +41,38 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expect(page.getByTestId('homepage')).toBeVisible()
   })
 
+  test('Keep chat account usage hidden when its feature flag is absent', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await loginLecturer()
+
+    const graphqlOperations: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() !== 'POST' ||
+        !request.url().endsWith('/api/graphql')
+      ) {
+        return
+      }
+
+      const postData = request.postData()
+      const operationName = postData
+        ? (JSON.parse(postData) as { operationName?: string }).operationName
+        : undefined
+
+      if (operationName) graphqlOperations.push(operationName)
+    })
+
+    await page.goto('/user/settings')
+    await expect(page.getByTestId('create-delegated-login')).toBeVisible()
+    await expect(
+      page.getByTestId('chat-account-usage-boundary')
+    ).not.toBeAttached()
+    expect(graphqlOperations).toContain('GetUserLogins')
+    expect(graphqlOperations).not.toContain('GetChatAccountUsage')
+  })
+
   test('Test that all standard creation buttons open for free users', async ({
     page,
     loginFreeUser,
