@@ -1,4 +1,4 @@
-# 28. AI releases ship from a short-lived qualified RC branch with a clean-schema gate
+# 43. AI releases ship from a short-lived qualified RC branch with a clean-schema gate
 
 ## Status
 

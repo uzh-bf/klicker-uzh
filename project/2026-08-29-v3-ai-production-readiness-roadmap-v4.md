@@ -6,7 +6,7 @@
   and v2 ([previous file](./2026-08-28-v3-ai-production-readiness-roadmap.md)).
   Incorporates all eight v3-review corrections and the complete decision-grill
   rulings of 2026-08-29 (decision log, §4.2).
-- **Release model ADR:** [ADR-0028](../docs/adr/0028-short-lived-qualified-rc-branch-for-ai-releases.md)
+- **Release model ADR:** [ADR-0043](../docs/adr/0043-short-lived-qualified-rc-branch-for-ai-releases.md)
   records the branching, clean-schema, merge-hold, and forward-only-rollback
   decisions. This roadmap references it rather than restating rationale.
 - **Release-number correction (2026-08-29):** the first AI batch advances the
@@ -315,7 +315,7 @@ or chat.
 
 ### 3.3 Ship-clean-or-park rule
 
-Unchanged from v3 (and recorded in ADR-0028): every model, enum, constraint,
+Unchanged from v3 (and recorded in ADR-0043): every model, enum, constraint,
 and migration in the RC tree is an accepted production shape; flags gate
 exposure, never schema quality. Verdicts are Keep, Normalize, or Park — this
 release resolved every domain to Keep or Normalize, so the parking mechanics
@@ -369,7 +369,7 @@ cutover runbook).
 | D13 | Student generation | In the RC per the §3.4 package boundary, flag-gated per chatbot |
 | D14 | Incomplete publication | Keep as failure-driven audited lecturer action; rejections never trigger it; statuses fold into the coarse product enum |
 | D15 | Staging data at reset | Destroy; no staging updates needed during the freeze |
-| D16 | Documentation | This roadmap + ADR-0028 + glossary updates in `CONTEXT.md`; release evidence manifest in gitignored `project/_local/` (public repo); repo-only tracking until the ClickUp connector is re-authenticated |
+| D16 | Documentation | This roadmap + ADR-0043 + glossary updates in `CONTEXT.md`; release evidence manifest in gitignored `project/_local/` (public repo); repo-only tracking until the ClickUp connector is re-authenticated |
 
 ## 5. Repository controls
 
@@ -564,7 +564,7 @@ the immutable boundary before any rewrite; the required proofs (fresh DB,
 production-baseline snapshot, zero schema drift, codegen/sync/mirror clean,
 hand-written constraints validated, current production image smoke-tests
 against the migrated DB, rolling old-frontend/new-backend compatibility, old
-callbacks harmless). Rollback is forward-only (ADR-0028).
+callbacks harmless). Rollback is forward-only (ADR-0043).
 
 ## 9. G3 production-core integration
 
