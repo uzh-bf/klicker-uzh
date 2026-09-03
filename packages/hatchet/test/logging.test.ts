@@ -41,6 +41,25 @@ function fakeHatchetContext() {
 }
 
 describe('withHatchetTaskLogging', () => {
+  it.each([
+    null,
+    undefined,
+  ])('preserves empty cron input (%s) and logs its lifecycle', async (input) => {
+    const context = fakeHatchetContext()
+    const handler = vi.fn(async () => 'done')
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'cron-task',
+      handler,
+    })
+
+    // The SDK can deliver null at runtime despite its object-only input type.
+    await expect(wrapped(input as any, context)).resolves.toBe('done')
+    expect(handler).toHaveBeenCalledWith(input, context)
+    expect(
+      context.logger.info.mock.calls.map((call: any[]) => call[1].event)
+    ).toEqual(['hatchet.task.started', 'hatchet.task.completed'])
+  })
+
   it('logs correlated start and completion records around a successful task', async () => {
     const handler = vi.fn(async () => ({ success: true }))
     const context = fakeHatchetContext()

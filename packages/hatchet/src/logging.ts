@@ -155,9 +155,9 @@ export function withHatchetTaskLogging<
 }) {
   return (input: TInput, context: TContext): Promise<TOutput> =>
     taskDiagnosticContext.run(
-      diagnosticFields(input.loggingContext),
+      diagnosticFields(input?.loggingContext),
       async () => {
-        const diagnosticContext = diagnosticFields(input.loggingContext)
+        const diagnosticContext = diagnosticFields(input?.loggingContext)
         const taskContext = withTaskLoggingContext(context, diagnosticContext)
         const fields = {
           ...diagnosticContext,

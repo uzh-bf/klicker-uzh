@@ -606,14 +606,17 @@ export function prepareHatchetTasks({
       limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     },
     onEvents: ['process-course-deletion'],
-    fn: async (input: CourseDeletionEvent, executionContext) => {
-      const success = await handlers.handleProcessCourseDeletion(
-        input,
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'process-course-deletion',
+      async (input: CourseDeletionEvent, executionContext) => {
+        const success = await handlers.handleProcessCourseDeletion(
+          input,
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const tasks = {

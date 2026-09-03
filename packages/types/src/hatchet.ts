@@ -67,6 +67,7 @@ export type HatchetLoggingContext = {
 // Payload of the `process-course-deletion` event. The request marker on the
 // course is the only persisted state; requester and options travel here.
 export type CourseDeletionEvent = {
+  loggingContext?: HatchetLoggingContext
   courseId: string
   deletionRequestedAt: string
   requestedById: string
