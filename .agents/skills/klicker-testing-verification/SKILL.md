@@ -76,6 +76,16 @@ caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` for the judge path
 separate from the developer-Foundry values injected into the local Chat
 container. Stop and verify the exact devrouter checkout after the run.
 
+For course-chat prompt compiler or fixed-policy changes, use
+`apps/chat/test/system-prompt-compiler.test.ts` as the primary composition
+seam. Also run `language-instructions.test.ts` or
+`citation-instructions.test.ts` when those contracts change, and the focused
+chat-route test when its selected chatbot data or compiler context changes.
+These static tests prove section ownership, ordering, and required text; they
+do not prove model obedience. Pure prompt-source changes do not by themselves
+require a runtime or browser, but the normal package check, formatting, lint,
+build, and focused tests remain required before merge.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic

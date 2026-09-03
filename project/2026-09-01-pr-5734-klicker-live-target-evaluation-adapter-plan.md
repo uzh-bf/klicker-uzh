@@ -290,6 +290,16 @@ injection, process ownership, and runtime evidence are critical-path coupled.
 
 ## Progress
 
+- 2026-09-03 PR integration: merged `origin/v3@de7138715f` once into draft
+  PR #5734. The only manual conflict was the `docs/chat-platform.md` timestamp;
+  the resolution keeps the evaluation branch's later `2026-09-01` date while
+  retaining the upstream chatbot, testing, and LiteLLM changes. Bash syntax,
+  focused ShellCheck, the wrapper fixture, all 10 adapter tests, Prettier,
+  AGENTS.md policy, removed-doc checks, and all 57 Playwright CI contract tests
+  pass on the merged tree. Three focused Chat route suites could not collect
+  because this host-only worktree has no built `@klicker-uzh/prisma` package;
+  hosted CI remains the package-level integration gate. No runtime or paid
+  evaluation was started.
 - 2026-09-03 portability follow-up: the evaluator wrapper now consumes
   caller-injected `LITELLM_API_BASE` and `LITELLM_API_KEY` without invoking a
   personal operator. Native Infisical and masked GitLab variable examples are
