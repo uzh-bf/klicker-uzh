@@ -14,7 +14,8 @@ import {
 } from '../scripts/klicker-evaluation-target.mjs'
 
 test('frontmatter projection contains only target-safe question metadata', () => {
-  const metadata = parseGroundTruthFrontmatter(`---
+  const metadata = parseGroundTruthFrontmatter(
+    `---
 question: What is CAPM?
 mode: tutor
 expected_tools_by_profile:
@@ -22,7 +23,9 @@ expected_tools_by_profile:
 ---
 
 Expected answer must never be projected.
-`, 'fixture.md')
+`,
+    'fixture.md'
+  )
 
   assert.deepEqual(metadata, {
     question: 'What is CAPM?',
@@ -51,10 +54,9 @@ test('local origin validation rejects non-local target routes', () => {
     validateLocalOrigin('https://chat.klicker.worktree.localhost/', 'chat'),
     'https://chat.klicker.worktree.localhost'
   )
-  assert.throws(
-    () => validateLocalOrigin('https://example.test', 'chat'),
-    { code: 'chat_non_local' }
-  )
+  assert.throws(() => validateLocalOrigin('https://example.test', 'chat'), {
+    code: 'chat_non_local',
+  })
 })
 
 test('persisted assistant content converts to answer and tool names', () => {
@@ -138,7 +140,11 @@ test('target uses participant gates and reads back one persisted turn', async ()
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       return Response.json({
         disclaimer: { id: 'disclaimer-1' },
-        status: { required: true, accepted: false, disclaimerId: 'disclaimer-1' },
+        status: {
+          required: true,
+          accepted: false,
+          disclaimerId: 'disclaimer-1',
+        },
       })
     }
     if (requestUrl.endsWith('/disclaimer') && method === 'POST') {
@@ -229,7 +235,10 @@ test('target uses participant gates and reads back one persisted turn', async ()
       },
     ])
     assert.equal(requests[0].method, 'POST')
-    assert.equal(requests.filter(({ requestUrl }) => requestUrl.endsWith('/chat')).length, 1)
+    assert.equal(
+      requests.filter(({ requestUrl }) => requestUrl.endsWith('/chat')).length,
+      1
+    )
     assert.equal(
       requests.every(({ body }) => !body.includes(expectedAnswer)),
       true
@@ -237,7 +246,10 @@ test('target uses participant gates and reads back one persisted turn', async ()
     assert.equal(
       requests
         .filter(({ requestUrl }) => !requestUrl.endsWith('/api/graphql'))
-        .every(({ headers }) => headers.Cookie === 'participant_token=participant-jwt'),
+        .every(
+          ({ headers }) =>
+            headers.Cookie === 'participant_token=participant-jwt'
+        ),
       true
     )
   } finally {
@@ -458,7 +470,9 @@ test('adapter requires bearer auth and exposes only the configured model', async
     },
   }
   const server = createEvaluationServer({ target, apiKey: 'test-key' })
-  await new Promise((resolvePromise) => server.listen(0, '127.0.0.1', resolvePromise))
+  await new Promise((resolvePromise) =>
+    server.listen(0, '127.0.0.1', resolvePromise)
+  )
   const address = server.address()
   assert.notEqual(typeof address, 'string')
   const baseUrl = `http://127.0.0.1:${address.port}`
@@ -486,7 +500,10 @@ test('adapter requires bearer auth and exposes only the configured model', async
       }),
     })
     assert.equal(completion.status, 200)
-    assert.equal(completion.headers.get('x-klicker-evaluation-source'), 'canary')
+    assert.equal(
+      completion.headers.get('x-klicker-evaluation-source'),
+      'canary'
+    )
     assert.equal((await completion.json()).choices[0].message.content, 'ok')
   } finally {
     await new Promise((resolvePromise, rejectPromise) =>
