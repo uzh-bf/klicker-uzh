@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {
   isManageElementCreatedMessage,
   sanitizeManageElementCreatedPayload,
-} from '../src/components/assistant/manageElementCreatedMessage'
+} from '../src/components/assistant/manageElementCreatedMessage.ts'
 
 assert.equal(
   isManageElementCreatedMessage({

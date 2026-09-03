@@ -101,7 +101,8 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3002",
     "lint": "eslint .",
     "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:run": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

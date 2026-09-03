@@ -627,11 +627,13 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a0_s1`
-- Baseline: PR #5637 exact head `902af183d8018c79cadcefe46d4a7f17f395392a`;
-  all branch-executable checks and eight Playwright shards passed at that head;
-  one CodeRabbit thread is resolved. The `final-ai-review` status context is
-  red even though its trusted-policy jobs succeeded.
+- Status: `active_a2_preflight`
+- Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
+  and PR #5670 exact head `5115e2958f3dfd4896756432190517994015f40b`
+  are open, non-draft, and mergeable after the user-managed stack rebase. All
+  applicable exact-head checks and all eight Playwright shards pass for both
+  layers. The final-review aggregate remains red only because stack root #5637
+  targets `v3-ai` instead of the repository default branch.
 - Planning: Approved F1-F10 audit mapped into Stack A, Stack B, and R3. Native
   planner launch failed; generic-continuity GPT-5.6 Sol returned
   `DONE_WITH_CONCERNS`. Accepted contract corrections are recorded above; its
@@ -734,6 +736,112 @@ follow_up_stacks:
   template creation, and invitation pagination. The branch now keeps the
   launcher in the same corner as a 48 px icon-only target and pins that compact
   geometry in the focused assistant regression before rerunning exact-head CI.
-- Next: Commit this integration receipt, push the integrated draft layer,
-  require its focused browser regression and exact-head CI, then initialize
-  Stack A and begin A1.
+- A0 completion: Corrected head `4e41ec1054cc` passed the hosted build and all
+  eight Playwright shards in run `33258434945`. OpenCodeReview reported zero
+  findings, the only CodeRabbit thread remains resolved and outdated, and all
+  applicable exact-head checks passed. The Final AI review workflow completed
+  successfully; its draft-only review jobs stayed skipped and its aggregate
+  status remains pending while the PR is draft.
+- Stack A: The approved stack now records `v3-ai` →
+  `rs/manage-assistant-feedback-fixes` →
+  `rs/manage-assistant-shell-recovery` without a second upstream integration.
+- A1 runtime preflight: Current devrouter rejected the target configuration
+  before mutation because native `runServices` included Azurite without a
+  managed-runtime classification. The app container declares Azurite as a
+  healthy startup dependency, so A1 adds it to the managed base-service
+  registry alongside Postgres and Hatchet.
+- A1 local runtime evidence: The first focused start exposed the documented
+  fixed Azurite graph-worker port colliding with another workspace. Retrying
+  with the supported free `KB_GRAPH_BLOB_HOST_PORT=10013` override cleared that
+  collision, but both starts terminated in Devsy's agent-injection phase with
+  `inject agent: [inject] open binary: agent binary not found`. The exact
+  worktree runtime was stopped through devrouter and now reports no active or
+  present managed services, processes, or routes. Local browser and lecturer
+  MCP health proof therefore remain blocked by host runtime tooling; A1's
+  focused hosted Playwright regression and exact-head CI remain required before
+  the layer can be accepted.
+- A1 static runtime verification: `devrouter repo devcontainer verify --json`
+  reports five checks OK, no warnings, and no errors for the changed
+  devcontainer/devrouter configuration.
+- A1 review: Both configured specialist routes failed before launch because
+  the runtime applied unsupported `max` effort to `combo/glm-5.3-flash`.
+  Generic-continuity reviewers therefore covered both required gates: Luna at
+  medium effort for simplification and Sol at xhigh effort for the runtime,
+  iframe, and accessibility risk review. The simplifier's actionable test
+  finding is accepted by wiring all existing Manage assistant pure tests into
+  the package `test:run`. Its proposed removal of URL identity is accepted only
+  for redundant transition payloads: reducer state retains the current URL so
+  a ready phase cannot leak across locale/navigation changes. The risk review
+  correctly found that FastMCP 4.13.1 serves `/healthz` as `200 text/plain`,
+  while the first probe and fixture required JSON; the corrected dedicated
+  text-health contract now matches installed package documentation.
+- Next: A1's recoverable iframe shell, honest standalone boundary, focused
+  lecturer-MCP runtime contract, and independent reviews are complete at head
+  `97fea1a227c6`; all local checks pass. Stacked draft PR #5670 is published
+  on top of #5637. Exact-head hosted CI, including the focused Playwright
+  regression, remains required before the layer can be accepted.
+- A1 exact-head correction: OpenCodeReview's fourth round correctly identified
+  that a same-generation iframe error could regress an already delayed or ready
+  frame. Commit `64765b51c3ff` now limits failures to loading and retrying states,
+  adds delayed and ready regression cases, and makes the reducer's action union
+  exhaustive. The hosted shard-2 trace also confirmed that the document abort
+  occurred while the hand-written non-bubbling event failed to reach React;
+  the focused browser test now uses Playwright's composed, cancelable, bubbling
+  `dispatchEvent` seam. The unrelated shard-4 analytics navigation failure did
+  not touch this branch's files and remains classified as CI infrastructure
+  noise pending the exact-head rerun.
+- A1 correction verification: All five Frontend Manage pure test files pass,
+  the Frontend Manage and Playwright TypeScript checks pass, focused Biome and
+  Prettier checks pass, and the commit hook completed the repository-wide
+  check, format, lint, Syncpack, secret, wiki, Prisma-sync, and Playwright-host
+  checks. Local browser execution remains blocked by the unchanged Devsy agent
+  injection failure recorded above.
+- Next: Run the required post-correction simplification and risk reviews, then
+  push PR #5670 and require a clean exact-head hosted browser run before A1 is
+  accepted.
+- A1 correction reviews: The `slice-reviewer` found no actionable defect in
+  `5a2230218..359341e51` and retained exact-head hosted browser execution as the
+  only evidence gap. The `simplifier` proposed restoring the permissive final
+  reducer fallback to save two lines. That suggestion is rejected because it
+  would reintroduce OpenCodeReview's verified silent-action-swallowing defect;
+  the exhaustive `never` check is the intended compile-time state-machine
+  invariant. Reports are retained under `project/_local/reviews/`.
+- Next: Push PR #5670, reply to and resolve the verified OpenCodeReview thread,
+  refresh the whole-branch PR body, and require clean exact-head hosted CI
+  before A1 is accepted.
+- A1 native iframe-error correction: Exact-head run `33278326505` passed the
+  hosted build and seven Playwright shards, but shard 2 reproduced the failed
+  recovery journey on both attempts. Its trace proved that Playwright
+  dispatched `error` on the current iframe while React left the loading state
+  unchanged. Installed React 19 source wires a non-delegated `load` listener
+  for iframes, but not `error`; commit `f8b86fd59` therefore replaces the JSX
+  handler with a callback-ref-owned native listener while keeping the timeout
+  as Chromium's authoritative recovery path.
+- A1 native-listener verification: All five Frontend Manage pure test files,
+  the affected Frontend Manage and Playwright TypeScript checks, focused Biome
+  and ESLint, the complete commit hook, and the 26-task pre-push build pass.
+  The post-commit slice review found no actionable issue in listener cleanup,
+  retry-generation identity, stale-event protection, or accessibility. Exact-
+  head hosted shard 2 remains the final browser proof.
+- Next: Refresh PR #5670 for head `f8b86fd59`, then require a clean exact-head
+  hosted browser run before A1 is accepted.
+- A1 rebased reconciliation: The user rebased the stack remotely without
+  changing its reviewed behavior. A0 now ends at `85ffe927774b`, and A1 ends at
+  `5115e2958f3d`. PR #5670 covers 14 commits, 23 files, 658 additions, and 47
+  deletions; its whole-branch body reflects the rebased range.
+- A1 exact-head acceptance: Hosted build, codebase check, unit tests, gitleaks,
+  SonarCloud, CodeQL, trusted policy, and all eight Playwright shards pass at
+  `5115e2958f3d`. All four OpenCodeReview threads are resolved, no later review
+  feedback remains, and both stack layers are mergeable.
+- A1 stack-policy residual: `final-ai-review` and `final-ai-stack-review` stop
+  before review because the native stack root targets `v3-ai` rather than the
+  repository default branch. This is a workflow topology limitation, not an
+  A1 source failure. Changing PR bases remains outside the approved plan.
+- Local continuation: The pre-rebase local branch is preserved unchanged. The
+  existing stack worktree now uses local branch
+  `rs/manage-assistant-shell-recovery-resume`, based exactly on
+  `origin/rs/manage-assistant-shell-recovery`, so A2 can continue without a
+  reset, rebase, force-push, second worktree, or history rewrite.
+- Next: Commit and publish this A1 receipt to PR #5670, then create A2
+  `rs/manage-assistant-capability-state` from the accepted A1 head and begin
+  the authenticated advisory capability-state slice.

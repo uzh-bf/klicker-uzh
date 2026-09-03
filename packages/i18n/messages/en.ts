@@ -1806,8 +1806,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
       subtitle: 'AI assistant for your courses and question pool',
-      openInNewTab: 'Open assistant in a new tab',
+      openInNewTab:
+        'Start a new conversation in a new tab without this page context',
+      openFreshConversation: 'Start a separate conversation',
       loading: 'Loading assistant…',
+      retrying: 'Reloading assistant…',
+      retry: 'Reload assistant',
+      delayedTitle: 'The assistant is taking longer than expected',
+      delayedDescription:
+        'You can keep waiting, reload the embedded assistant, or start a separate conversation without this page context.',
+      failedTitle: 'The assistant could not be loaded',
+      failedDescription:
+        'Reload the embedded assistant or start a separate conversation without this page context.',
       resize: 'Resize assistant',
       resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
       elementCreatedToast: 'Draft "{name}" added to your question pool',

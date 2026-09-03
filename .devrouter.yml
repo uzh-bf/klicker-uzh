@@ -27,8 +27,9 @@ project:
 managedRuntime:
   devcontainer:
     # Managed base: the DevPod primary `app` is implicit; postgres serves
-    # post-create reset/push/seed; hatchet is boot-critical for the backend.
-    baseServices: [postgres, hatchet]
+    # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
+    # boot-critical for the backend.
+    baseServices: [postgres, azurite, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
     # creates all three. Azurite, LiteLLM, and MailHog are opt-in capabilities.

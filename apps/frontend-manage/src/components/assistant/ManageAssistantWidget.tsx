@@ -1,6 +1,7 @@
 import { useApolloClient } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
+  faRotateRight,
   faSpinner,
   faUpRightAndDownLeftFromCenter,
   faWandMagicSparkles,
@@ -13,7 +14,7 @@ import {
   MANAGE_CONTEXT_MESSAGE_TYPE,
   MANAGE_CONTEXT_READY_MESSAGE_TYPE,
 } from '@klicker-uzh/types'
-import { toast } from '@uzh-bf/design-system'
+import { Tooltip, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import {
@@ -23,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react'
@@ -35,6 +37,12 @@ import {
   buildManageAssistantContext,
   type ManageAssistantContext,
 } from './manageAssistantContext'
+import {
+  createManageAssistantFrameState,
+  MANAGE_ASSISTANT_LOADING_DEADLINE_MS,
+  type ManageAssistantFramePhase,
+  reduceManageAssistantFrameState,
+} from './manageAssistantFrameState'
 import {
   clampManageAssistantPanelSize,
   DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
@@ -51,6 +59,56 @@ import {
 const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
 const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
   'klicker-manage-assistant-panel-size-v1'
+type ManageAssistantOverlayContent =
+  | {
+      kind: 'spinner'
+      dataCy: string
+      labelKey: 'manage.assistant.loading' | 'manage.assistant.retrying'
+    }
+  | {
+      kind: 'error'
+      dataCy: string
+      titleKey: 'manage.assistant.delayedTitle' | 'manage.assistant.failedTitle'
+      descriptionKey:
+        | 'manage.assistant.delayedDescription'
+        | 'manage.assistant.failedDescription'
+    }
+
+const MANAGE_ASSISTANT_OVERLAY_CONTENT: Record<
+  ManageAssistantFramePhase,
+  ManageAssistantOverlayContent
+> = {
+  // `ready` never renders an error panel directly: the widget remaps it to
+  // the loading state below, which also covers the post-paint window while
+  // a URL switch to the next frame generation is in flight.
+  ready: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  loading: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  retrying: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.retrying',
+  },
+  delayed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-delayed',
+    titleKey: 'manage.assistant.delayedTitle',
+    descriptionKey: 'manage.assistant.delayedDescription',
+  },
+  failed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-failed',
+    titleKey: 'manage.assistant.failedTitle',
+    descriptionKey: 'manage.assistant.failedDescription',
+  },
+}
 const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
 
 export function ManageAssistantWidget() {
@@ -69,7 +127,6 @@ export function ManageAssistantWidget() {
   } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
-  const [frameReadyUrl, setFrameReadyUrl] = useState<string | null>(null)
   const [panelSize, setPanelSize] = useState(
     DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
   )
@@ -89,7 +146,38 @@ export function ManageAssistantWidget() {
       }),
     [router.locale]
   )
-  const frameReady = frameReadyUrl === assistantUrl
+  const [frameState, dispatchFrameState] = useReducer(
+    reduceManageAssistantFrameState,
+    assistantUrl,
+    createManageAssistantFrameState
+  )
+  const handleFrameError = useCallback(() => {
+    dispatchFrameState({
+      generation: frameState.generation,
+      type: 'error',
+    })
+  }, [frameState.generation])
+  // React wires an iframe load listener but not its non-bubbling error
+  // listener. Attach the latter directly as a best-effort early signal;
+  // Chromium still relies on the loading deadline when navigation fails.
+  const setIframeRef = useCallback(
+    (frame: HTMLIFrameElement | null) => {
+      iframeRef.current?.removeEventListener('error', handleFrameError)
+      iframeRef.current = frame
+      frame?.addEventListener('error', handleFrameError)
+    },
+    [handleFrameError]
+  )
+  const frameReady =
+    frameState.phase === 'ready' && frameState.url === assistantUrl
+  // The url-changed effect only runs after paint. Deriving the overlay
+  // phase from the URL keeps a navigation on the loading state instead of
+  // briefly painting the previous phase's error panel with retry actions.
+  const overlayPhase: ManageAssistantFramePhase =
+    frameState.url === assistantUrl ? frameState.phase : 'loading'
+  const overlay = frameReady
+    ? null
+    : MANAGE_ASSISTANT_OVERLAY_CONTENT[overlayPhase]
   // A clean, non-embedded URL for the "open in new tab" link: the embedded
   // URL hides the assistant's login CTA and other affordances that only make
   // sense when Manage itself provides the surrounding chrome.
@@ -120,6 +208,37 @@ export function ManageAssistantWidget() {
   useEffect(() => {
     assistantContextRef.current = assistantContext
   }, [assistantContext])
+
+  useEffect(() => {
+    dispatchFrameState({ type: 'url-changed', url: assistantUrl })
+  }, [assistantUrl])
+
+  useEffect(() => {
+    if (
+      !open ||
+      !assistantUrl ||
+      frameState.url !== assistantUrl ||
+      (frameState.phase !== 'loading' && frameState.phase !== 'retrying')
+    ) {
+      return
+    }
+
+    const generation = frameState.generation
+    const deadline = window.setTimeout(() => {
+      dispatchFrameState({
+        generation,
+        type: 'deadline',
+      })
+    }, MANAGE_ASSISTANT_LOADING_DEADLINE_MS)
+
+    return () => window.clearTimeout(deadline)
+  }, [
+    assistantUrl,
+    frameState.generation,
+    frameState.phase,
+    frameState.url,
+    open,
+  ])
 
   // Post the current context to the iframe. The call site already sits
   // behind an assistantOrigin guard; the check here is for type safety only.
@@ -260,7 +379,8 @@ export function ManageAssistantWidget() {
   )
 
   useEffect(() => {
-    if (!assistantOrigin) return
+    if (!assistantOrigin || !assistantUrl) return
+    const readyGeneration = frameState.generation
 
     function handleMessage(event: MessageEvent) {
       if (event.origin !== assistantOrigin) return
@@ -277,7 +397,10 @@ export function ManageAssistantWidget() {
       // current context then: this handshake alone is enough to deliver the
       // context to a slow-hydrating iframe, without a timed retry burst.
       if (isManageContextReadyMessage(event.data)) {
-        setFrameReadyUrl(assistantUrl)
+        dispatchFrameState({
+          generation: readyGeneration,
+          type: 'ready',
+        })
         sendCurrentContext()
         return
       }
@@ -307,6 +430,7 @@ export function ManageAssistantWidget() {
     assistantOrigin,
     assistantUrl,
     closeWidget,
+    frameState.generation,
     sendCurrentContext,
     t,
   ])
@@ -398,44 +522,98 @@ export function ManageAssistantWidget() {
                   </span>
                 </div>
               </div>
-              <a
-                href={assistantNewTabUrl ?? assistantUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                aria-label={t('manage.assistant.openInNewTab')}
+              <Tooltip
+                tooltip={t('manage.assistant.openInNewTab')}
+                delay={0}
+                className={{ tooltip: 'z-50 max-w-xs' }}
               >
-                <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden />
-              </a>
+                <a
+                  href={assistantNewTabUrl ?? assistantUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  aria-label={t('manage.assistant.openInNewTab')}
+                  data-cy="manage-assistant-new-tab"
+                >
+                  <FontAwesomeIcon
+                    icon={faArrowUpRightFromSquare}
+                    aria-hidden
+                  />
+                </a>
+              </Tooltip>
               <button
                 ref={closeButtonRef}
                 type="button"
                 onClick={closeWidget}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={t('shared.generic.close')}
+                data-cy="manage-assistant-close"
               >
                 <FontAwesomeIcon icon={faXmark} aria-hidden />
               </button>
             </div>
 
             <div className="relative min-h-0 flex-1 bg-white">
-              {!frameReady ? (
+              {overlay ? (
                 <div
-                  role="status"
-                  className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-white text-sm text-gray-600"
-                  data-cy="manage-assistant-loading"
+                  role={overlay.kind === 'error' ? 'alert' : 'status'}
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-white px-6 text-sm text-gray-600"
+                  data-cy={overlay.dataCy}
                 >
-                  <FontAwesomeIcon
-                    icon={faSpinner}
-                    spin
-                    aria-hidden
-                    className="text-uzh-blue size-5"
-                  />
-                  <span>{t('manage.assistant.loading')}</span>
+                  {overlay.kind === 'spinner' ? (
+                    <div className="flex items-center gap-3">
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        spin
+                        aria-hidden
+                        className="text-uzh-blue size-5"
+                      />
+                      <span>{t(overlay.labelKey)}</span>
+                    </div>
+                  ) : (
+                    <div className="max-w-md text-center">
+                      <div className="font-semibold text-gray-900">
+                        {t(overlay.titleKey)}
+                      </div>
+                      <p className="mt-2">{t(overlay.descriptionKey)}</p>
+                      <div className="mt-4 flex flex-col items-stretch justify-center gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Retry removes this button from the DOM, so move
+                            // focus to persistent widget chrome first.
+                            closeButtonRef.current?.focus()
+                            dispatchFrameState({
+                              type: 'retry',
+                            })
+                          }}
+                          className="bg-uzh-blue hover:bg-uzh-blue-80 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-retry"
+                        >
+                          <FontAwesomeIcon icon={faRotateRight} aria-hidden />
+                          {t('manage.assistant.retry')}
+                        </button>
+                        <a
+                          href={assistantNewTabUrl ?? assistantUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-uzh-blue inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-fallback"
+                        >
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            aria-hidden
+                          />
+                          {t('manage.assistant.openFreshConversation')}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : null}
               <iframe
-                ref={iframeRef}
+                key={`${assistantUrl}:${frameState.generation}`}
+                ref={setIframeRef}
                 src={assistantUrl}
                 title={t('manage.assistant.title')}
                 aria-hidden={!frameReady}

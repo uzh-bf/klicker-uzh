@@ -73,6 +73,7 @@ url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
   */api/chatbots/*) printf "401\tapplication/json" ;;
+  http://localhost:7081/healthz) printf "200\ttext/plain; charset=utf-8" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
 esac'
@@ -404,6 +405,19 @@ classification_output="$(
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-text 200 'text/plain; charset=utf-8')" \
+  'ready: HTTP 200 text/plain; charset=utf-8'
+
+# The stale Next.js classification must not apply to text probes: a 404
+# from the lecturer MCP health endpoint is unexpected, not stale.
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-text 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response html-shell 404 'text/html'
@@ -435,6 +449,10 @@ fi
 : >"$CURL_LOG"
 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
+
+: >"$CURL_LOG"
+READINESS_APPS='response-api mcp-lecturer' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" $'http://localhost:7078/healthz\nhttp://localhost:7081/healthz'
 
 : >"$CURL_LOG"
 READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null

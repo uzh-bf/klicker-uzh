@@ -167,6 +167,16 @@ Signed question proposals render as static lecturer reviews rather than interact
 
 The Manage embed is an in-session assistant dock, not a history surface. Closing and reopening the dock preserves its mounted runtime, while **Start a new conversation** clears the current assistant-ui thread plus unsent text and attachments after an inline confirmation when content exists. Reloading the page still starts a fresh runtime; there is no durable lecturer chat history, thread list, database model, or retention contract. The composer is an in-flow sibling of the transcript so a long proposal can scroll fully above it instead of being clipped by an overlay.
 
+The parent Manage shell treats the validated context-ready message as the only
+readiness signal. A bounded deadline changes an unanswered load into an honest
+“taking longer” state while keeping the iframe alive so a late valid handshake
+can recover it. Retry remounts exactly one embedded iframe generation; an
+actual iframe load error uses a separate failed state. Both states retain
+close, Escape, retry, and a standalone fallback explicitly labelled as a new
+conversation without the current page context. The focused local
+`chat,manage` devrouter profile starts and probes `mcp-lecturer`; the separate
+`mcp` profile remains the deterministic read-only fixture.
+
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
 
 The Manage assistant's response-quality guardrails are part of the system prompt:
@@ -981,7 +991,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
-- **Embedded Manage modal**: the Manage launcher portals its dialog to `document.body` and makes `#__app` inert and hidden from assistive technology while open. Keep the portal outside `#__app`; otherwise the dialog would hide itself together with the background.
+- **Embedded Manage dock**: the Manage launcher portals a labelled, non-modal complementary region to `document.body`. It leaves `#__app` interactive, moves focus to its close control on open, preserves close and Escape in loading/recovery states, and restores launcher focus on close. Keep the iframe mounted across ordinary close/reopen so the in-session conversation survives.
 - **Static assets need a middleware allowlist entry.** `src/middleware.ts` matches `/:path*` and passes through only `/noLogin`, `/KlickerLogo.png`, `/user-solid.svg`, `/_next…`, `/api…`, and `/favicon…`. Any other file added to `apps/chat/public/` is redirected to the login page for requests without a valid participant token (authenticated participants still get it served) — assets referenced from unauthenticated pages like `/noLogin` therefore break silently, so add new public files to that allowlist in the same change.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
