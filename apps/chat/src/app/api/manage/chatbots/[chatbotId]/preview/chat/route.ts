@@ -129,6 +129,9 @@ export async function POST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
+      course: {
+        select: { displayName: true },
+      },
       knowledgeBases: {
         where: { isEnabled: true },
         select: { kbId: true },
@@ -234,7 +237,10 @@ export async function POST(
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      toolNames
+      {
+        courseDisplayName: chatbot.course.displayName,
+        toolNames,
+      }
     )
     const baseModels = getModelsForChatbot(chatbot).filter(
       (model) => model.usageClass === 'BASE'

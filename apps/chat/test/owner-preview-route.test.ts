@@ -120,6 +120,7 @@ describe('POST owner preview chat', () => {
     mocks.validateManageChatRequest.mockResolvedValue({ messages: uiMessages })
     mocks.findChatbot.mockResolvedValue({
       id: 'chatbot-id',
+      course: { displayName: 'Test Course' },
       knowledgeBases: [{ kbId: 'kb-id' }],
       mcpConfigurations: [
         {
@@ -233,6 +234,14 @@ describe('POST owner preview chat', () => {
         chatbotId: 'chatbot-id',
         kbId: 'kb-id',
       })
+    )
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ tutor: 'Tutor instructions' }),
+      'tutor',
+      {
+        courseDisplayName: 'Test Course',
+        toolNames: ['KB_doc_query'],
+      }
     )
     expect(mocks.streamText).toHaveBeenCalledOnce()
     const streamOptions = mocks.streamText.mock.calls[0]![0]
