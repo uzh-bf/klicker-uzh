@@ -17,9 +17,11 @@ $$
 
 Repeating this problem for different values of $Z$ produces the frontier; only its upper branch above the global minimum-variance portfolio is efficient.
 
+The tangency portfolio is another distinct portfolio: after a risk-free asset is introduced, it maximizes the Sharpe ratio and determines the optimal Capital Allocation Line. The global minimum-variance portfolio need not be the tangency portfolio and need not lie on that line, except in a special case.
+
 Which additional constraint turns the single global minimum-variance problem into the problem for one particular point on the frontier?
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 2.3.2, minimum-variance portfolio and efficient frontier, pp. 31–34
-- FinEco FS26 Guide, Chapter 2, portfolio optimization and the efficient frontier, pp. 22–33
+- Financial Economics script FS26, Section 2.3.2, minimum-variance frontier with target-return and budget constraints, Equations 2.14–2.16
+- Financial Economics script FS26, Section 2.3.3, Sharpe-ratio maximization and the tangency portfolio, Equation 2.18
