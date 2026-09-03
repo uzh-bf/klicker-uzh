@@ -21,11 +21,13 @@ shape. Production writes newline-delimited JSON to stdout, development may use
 `pino-pretty`, and tests are silent unless they explicitly capture output.
 
 Request and correlation context is passed explicitly through request adapters,
-GraphQL context, and an additive Hatchet `loggingContext` envelope. We do not use
-`AsyncLocalStorage`. Applications retain ownership of framework adapters,
-lifecycle handlers, and process shutdown. The shared package owns only the
-record contract, diagnostic-ID validation, safe defaults, and defense-in-depth
-redaction.
+GraphQL context, and an additive Hatchet `loggingContext` envelope. Hatchet task
+execution uses a narrow in-process `AsyncLocalStorage` bridge only to carry that
+already-validated envelope into the Pino adapter; it is not used for
+cross-process propagation or request state. Applications retain ownership of
+framework adapters, lifecycle handlers, and process shutdown. The shared
+package owns only the record contract, diagnostic-ID validation, safe defaults,
+and defense-in-depth redaction.
 
 Grafana Alloy derives `service_name` from the trusted Kubernetes
 `app.kubernetes.io/component` label. It does not promote the application JSON
@@ -43,9 +45,11 @@ buffering, retry, and credential ownership to every process.
 configuration package. Framework-specific request handling remains local to the
 app so the shared module stays small and testable.
 
-**`AsyncLocalStorage` for implicit context.** Rejected because Klicker crosses
-HTTP, GraphQL, Edge, WebSocket, and Hatchet process boundaries. Explicit context
-makes propagation visible and keeps queued-message compatibility testable.
+**`AsyncLocalStorage` as the application-wide context mechanism.** Rejected
+because Klicker crosses HTTP, GraphQL, Edge, WebSocket, and Hatchet process
+boundaries. The one exception is the Hatchet task adapter: it carries the
+validated task envelope only within a single task attempt, while the envelope
+itself remains explicit at the process boundary.
 
 **Full OpenTelemetry tracing.** Deferred. Existing real trace/span identifiers
 may be carried, but this decision does not create spans or replace exception
