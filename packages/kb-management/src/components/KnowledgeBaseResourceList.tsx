@@ -310,6 +310,23 @@ function ResourceServingStatus({
       version: resource.activeResourceVersion,
     })
   }
+  if (resource.activeResourceVersion > resource.resourceVersion) {
+    // A platform refresh advanced the serving revision beyond the stored
+    // lecturer attempt without re-dispatching work.
+    return t('kb.servingNewerVersion', {
+      version: resource.activeResourceVersion,
+    })
+  }
+  if (
+    resource.activeResourceVersion < resource.resourceVersion &&
+    resource.status === KbResourceStatus.Added
+  ) {
+    // A replaced resource waits for its first ingestion while the previous
+    // version keeps serving.
+    return t('kb.servingPreviousVersion', {
+      version: resource.activeResourceVersion,
+    })
+  }
   return t('kb.servingPreviousVersion', {
     version: resource.activeResourceVersion,
   })

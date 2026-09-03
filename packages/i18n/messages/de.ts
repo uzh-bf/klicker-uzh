@@ -1614,6 +1614,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
     fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
     fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    replaceFile: 'Datei ersetzen',
+    replaceFileTitle: 'Datei ersetzen',
+    replaceFileDescription:
+      'Laden Sie eine neue Datei hoch, um den Inhalt von «{title}» zu ersetzen. Kategorie und Ressource bleiben gleich; die Verarbeitung läuft erneut und die bisherige Datei wird verworfen.',
+    replaceFileSuccess:
+      'Datei wurde ersetzt. Planen Sie die Verarbeitung ein, um die Wissensdatenbank zu aktualisieren.',
     linkTitle: 'Link hinzufügen',
     linkDescription:
       'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
@@ -1716,6 +1722,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     notServing: 'Noch nicht verfügbar',
     servingCurrentVersion: 'Aktuelle Version {version}',
     servingPreviousVersion: 'Version {version} bleibt verfügbar',
+    servingNewerVersion: 'Version {version} (extern aktualisiert)',
     servingSince: 'Verfügbar seit {date}',
     version: 'Version {version}',
     recentAttempts: 'Letzte Versuche',

@@ -1607,6 +1607,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadSuccess: 'File added to the knowledge base.',
     fileUploadError: 'The file could not be uploaded.',
     fileRejected: 'Choose a supported file of no more than 25 MB.',
+    replaceFile: 'Replace file',
+    replaceFileTitle: 'Replace file',
+    replaceFileDescription:
+      'Upload a new file to replace the contents of “{title}”. The category and resource stay the same; ingestion runs again and the previous file is discarded.',
+    replaceFileSuccess:
+      'File replaced. Queue it for ingestion to update the knowledge base.',
     linkTitle: 'Add a link',
     linkDescription: 'Register a website or media resource for ingestion.',
     resourceTitleLabel: 'Title',
@@ -1702,6 +1708,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     notServing: 'Not available yet',
     servingCurrentVersion: 'Current version {version}',
     servingPreviousVersion: 'Version {version} remains available',
+    servingNewerVersion: 'Version {version} (refreshed externally)',
     servingSince: 'Available since {date}',
     version: 'Version {version}',
     recentAttempts: 'Recent attempts',

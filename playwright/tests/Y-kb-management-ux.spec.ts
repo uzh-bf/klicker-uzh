@@ -83,6 +83,7 @@ test.describe('Knowledge base management workspace', () => {
       let signalUploadStarted = () => {}
       let failNextKbMetricsRefresh = false
       let bulkIngestCalls = 0
+      let replaceCalls = 0
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -122,6 +123,23 @@ test.describe('Knowledge base management workspace', () => {
             contentType: 'application/json',
             body: JSON.stringify({
               data: { confirmKbFileUpload: { id: 'synthetic-resource' } },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ReplaceKbResourceFile') {
+          replaceCalls += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                replaceKbResourceFile: {
+                  id: 'synthetic-resource',
+                  status: 'ADDED',
+                  activeResourceVersion: 1,
+                },
+              },
             }),
           })
           return
@@ -278,6 +296,21 @@ test.describe('Knowledge base management workspace', () => {
         page.getByTestId('ingest-kb-resource-inspector')
       ).toContainText(/Ingest|Verarbeiten/)
       await page.getByTestId('done-kb-resource-inspector').click()
+
+      await resourceRow.getByTestId(/kb-resource-actions-/).click()
+      await page.getByTestId(/replace-kb-resource-/).click()
+      const replaceModal = page.getByTestId('kb-replace-file-modal')
+      await expect(replaceModal).toBeVisible()
+      await expect(replaceModal).toContainText(
+        /replace the contents|Ressource zu ersetzen/
+      )
+      await page.getByTestId('kb-file-input').setInputFiles({
+        name: 'replaced.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('replaced content'),
+      })
+      await expect(replaceModal).toBeHidden()
+      expect(replaceCalls).toBe(1)
 
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
