@@ -43,5 +43,6 @@ managedRuntime:
       - redis_assessment
       - redis_cache
       - redis_exec
+      - azurite
   processes:
     exact: [klicker-dev]

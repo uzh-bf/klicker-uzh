@@ -27,8 +27,8 @@ import { twMerge } from 'tailwind-merge'
 import ChatbotAuthoring, { metadataEditableStatuses } from './ChatbotAuthoring'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
-import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import type {
   ChatbotNavigationState,
@@ -695,27 +695,6 @@ function ChatbotDetails({
               </div>
             )}
 
-            <div data-cy="chatbot-knowledge-base">
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                {t('manage.resources.knowledgeBase')}
-              </div>
-              {chatbot.enabledKnowledgeBase ? (
-                <Link
-                  href={`/resources/knowledgeBases/${chatbot.enabledKnowledgeBase.id}`}
-                  className="text-primary-100 hover:underline"
-                  data-cy="chatbot-enabled-knowledge-base"
-                >
-                  {chatbot.enabledKnowledgeBase.name}
-                </Link>
-              ) : (
-                <UserNotification
-                  type="warning"
-                  message={t('manage.resources.noEnabledKnowledgeBase')}
-                  data={{ cy: 'chatbot-no-enabled-knowledge-base' }}
-                />
-              )}
-            </div>
-
             {chatbot.mcpConfigurations &&
               chatbot.mcpConfigurations.length > 0 && (
                 <div>
@@ -793,6 +772,32 @@ function ChatbotDetails({
 
         {view === 'advanced' ? (
           <div className="space-y-6" data-cy="chatbot-advanced">
+            <div data-cy="chatbot-knowledge-base">
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                {t('manage.resources.knowledgeBase')}
+              </div>
+              {chatbot.enabledKnowledgeBase ? (
+                <Link
+                  href={`/resources/knowledgeBases/${chatbot.enabledKnowledgeBase.id}`}
+                  className="text-primary-100 hover:underline"
+                  data-cy="chatbot-enabled-knowledge-base"
+                >
+                  {chatbot.enabledKnowledgeBase.name}
+                </Link>
+              ) : (
+                <UserNotification
+                  type="warning"
+                  message={t('manage.resources.noEnabledKnowledgeBase')}
+                  data={{ cy: 'chatbot-no-enabled-knowledge-base' }}
+                />
+              )}
+            </div>
+
+            <ChatbotResponseExampleReview
+              key={chatbot.id}
+              chatbotId={chatbot.id}
+            />
+
             <div>
               <div className="mb-2 text-sm font-medium text-gray-700">
                 {t('manage.resources.chatbotModelSettings')}
@@ -993,11 +998,6 @@ function ChatbotDetails({
                 )}
               </div>
             </div>
-
-            <ChatbotResponseExampleReview
-              key={chatbot.id}
-              chatbotId={chatbot.id}
-            />
 
             <div className="mt-8 flex flex-wrap gap-4 border-t pt-4 text-xs text-gray-500">
               <div>

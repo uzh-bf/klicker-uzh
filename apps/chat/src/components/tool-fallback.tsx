@@ -10,14 +10,14 @@ import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { ManageProposalCard } from './manage-proposal-card'
+import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 import {
   isDocQueryToolName,
   normalizeSourcesFromParts,
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import { ManageProposalCard } from './manage-proposal-card'
-import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10
 

@@ -32,7 +32,18 @@
     },
     {
       "profile": "manage,chat",
-      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+      "specs": [
+        "A-login.spec.ts",
+        "Y-ai-beta-management-gate.spec.ts",
+        "Y-chat.spec.ts",
+        "Y-kb-management-ux.spec.ts",
+        "Y-manage-assistant.spec.ts",
+        "Y-response-examples.spec.ts"
+      ]
+    },
+    {
+      "profile": "pwa,chat",
+      "specs": ["Y-course-chat-drawer.spec.ts"]
     },
     {
       "profile": "manage,live-quiz",
@@ -47,22 +58,6 @@
         "R-bookmarking.spec.ts",
         "S-group-activity.spec.ts",
         "V-template.spec.ts"
-      ]
-    },
-    {
-      "profile": "chat,manage",
-      "specs": ["Y-manage-assistant.spec.ts"]
-    },
-    {
-      "profile": "chat,pwa",
-      "specs": ["Y-course-chat-drawer.spec.ts"]
-    },
-    {
-      "profile": "manage",
-      "specs": [
-        "Y-ai-beta-management-gate.spec.ts",
-        "Y-kb-management-ux.spec.ts",
-        "Y-response-examples.spec.ts"
       ]
     }
   ]

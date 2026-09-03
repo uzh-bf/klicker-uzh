@@ -10,13 +10,13 @@ function ChatbotList({
   selectedId,
   onSelect,
   onCreate,
-}: Readonly<{
+}: {
   chatbots?: Chatbot[]
   loading: boolean
   selectedId?: string
   onSelect: (chatbot: Chatbot) => void
   onCreate: () => void
-}>) {
+}) {
   const t = useTranslations()
 
   if (loading) {
@@ -42,7 +42,7 @@ function ChatbotList({
               key={`chatbot-${chatbot.id}`}
               chatbot={chatbot}
               selected={chatbot.id === selectedId}
-              onOpen={() => onSelect(chatbot)}
+              onSelect={() => onSelect(chatbot)}
             />
           ))}
         </div>

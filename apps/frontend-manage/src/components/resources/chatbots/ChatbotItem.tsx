@@ -1,6 +1,4 @@
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { type Chatbot } from '@klicker-uzh/graphql/dist/ops'
+import type { Chatbot } from '@klicker-uzh/graphql/dist/ops'
 import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -8,22 +6,22 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 function ChatbotItem({
   chatbot,
-  onOpen,
   selected,
-}: Readonly<{
+  onSelect,
+}: {
   chatbot: Chatbot
-  onOpen: () => void
   selected?: boolean
-}>) {
+  onSelect: () => void
+}) {
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
 
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={onSelect}
       className={twMerge(
-        'my-[0.2rem] flex w-full items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary hover:shadow-md',
+        'my-[0.2rem] flex w-full items-center justify-between rounded-md border border-solid px-4 py-3 text-left shadow-sm transition-all hover:shadow-md',
         selected && 'border-primary-100 bg-orange-50'
       )}
       data-cy={`chatbot-${chatbot.name}`}
@@ -46,10 +44,6 @@ function ChatbotItem({
             : t('manage.resources.noLinkedCourses')}
         </div>
       </div>
-      <FontAwesomeIcon
-        icon={faChevronRight}
-        className="h-4 w-4 shrink-0 text-gray-400"
-      />
     </button>
   )
 }
