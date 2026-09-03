@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,6 +7,7 @@ import {
   type ChatModelCapability,
   CreditResetPeriod,
   GetChatbotsInfoDocument,
+  QGetCatalystRequestAccessDocument,
   UpdateChatbotModelSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -28,6 +29,8 @@ import ChatbotAuthoring, { metadataEditableStatuses } from './ChatbotAuthoring'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import { canUseChatbotOwnerPreview } from './chatbotOwnerPreviewAccess'
+import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
 import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import type {
@@ -110,6 +113,7 @@ function ChatbotDetails({
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
+  const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
   const [updateChatbotModelSettings, { loading: isSaving }] = useMutation(
     UpdateChatbotModelSettingsDocument
   )
@@ -263,6 +267,10 @@ function ChatbotDetails({
   const localePrefix = locale ? `/${locale}` : ''
   const buildChatbotUrl = (courseId: string) =>
     `${pwaBaseUrl}${localePrefix}/course/${encodeURIComponent(courseId)}/chatbot/${encodeURIComponent(chatbot.id)}`
+  const ownerPreviewUrl = buildChatbotOwnerPreviewUrl({
+    chatbotId: chatbot.id,
+    chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+  })
   const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
   const modelSettingsEditable = metadataEditableStatuses.includes(
     chatbot.status
@@ -377,6 +385,28 @@ function ChatbotDetails({
                 {chatbotStatusLabel}
               </Badge>
             </div>
+            {canUseChatbotOwnerPreview(scopeData?.userScope) &&
+              ownerPreviewUrl &&
+              chatbot.status !== ChatbotStatus.Paused && (
+                <a
+                  href={ownerPreviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-primary-100 text-primary-100 hover:bg-primary-20 focus-visible:ring-primary-80 inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2"
+                  data-cy="chatbot-owner-preview-link"
+                >
+                  <span>{t('manage.resources.openOwnerPreview')}</span>
+                  <span className="sr-only">
+                    {' '}
+                    {t('chat.common.opensInNewTab')}
+                  </span>
+                  <FontAwesomeIcon
+                    icon={faExternalLinkAlt}
+                    className="h-3 w-3"
+                    aria-hidden="true"
+                  />
+                </a>
+              )}
           </div>
           {chatbot.description && (
             <div className="mt-1 text-sm text-gray-600">

@@ -180,6 +180,17 @@ export default {
         showRawJson: 'Show raw JSON',
       },
     },
+    ownerPreview: {
+      badge: 'Owner preview',
+      description:
+        'Test the current chatbot configuration. This conversation is not added to your saved conversations.',
+      backToManage: 'Back to chatbot settings',
+      loginTitle: 'Lecturer login required',
+      loginMessage:
+        'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
+      loginButton: 'Go to KlickerUZH Manage',
+      opensInNewTab: '(opens in a new tab; return here after signing in)',
+    },
     recovery: {
       notFoundTitle: 'Chatbot not found',
       notFoundMessage:
@@ -4665,6 +4676,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mcpPriority: 'Priority',
       mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
+      openOwnerPreview: 'Open owner preview',
       responseExamples: 'Response examples',
       responseExamplesDescription:
         'Review response examples before making them live.',
