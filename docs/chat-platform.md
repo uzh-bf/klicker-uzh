@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-31'
+timestamp: '2026-09-01'
 tags:
   - frontend
   - chat
@@ -246,10 +246,29 @@ has a healthcheck, and is included in
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
-usage cost. A model call still requires the operator's local
+usage cost. A model call still requires a caller-injected
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
+
+For a local developer-Foundry run, map `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_BASE_URL` to the generic `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` variables with the approved secret manager while
+starting the exact devrouter worktree. The repository has no dependency on a
+personal secret operator. The VPN is required. Stop and restart an existing
+worktree when its LiteLLM container was started without those values; a warm
+ensure does not replace service-container environment. The direct
+`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+the fixed effort aliases remain internal router targets.
+
+The local target-evaluation adapter is a host loopback boundary, not another
+Chat product route. It authenticates a seeded participant against the
+namespaced API and Chat origins, sends only the question and resolved mode,
+drains the UI stream, and reads back the persisted assistant message. Expected
+answers remain in the evaluator, and raw tool arguments/results remain inside
+the target process. The committed KB_doc_query canary proves synthetic
+transport and persistence only; it must not be reported as FineCo quality or
+replace an authorized EXPERT_df_fineco_expert binding.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary

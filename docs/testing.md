@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-30'
+timestamp: '2026-09-01'
 tags:
   - testing
   - ci
@@ -44,6 +44,35 @@ OpenAI-compatible SSE response whose first tool call uses a sparse provider
 index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
+
+For the local Klicker target evaluation adapter, run
+
+    bash util/test-klicker-eval-wrapper.sh
+
+before any credentialed run. Start the exact worktree with the developer
+Foundry values mapped to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. The repository
+wrapper does not require a personal operator or fetch secrets itself. Native
+Infisical and CI examples are documented in
+[`evaluation/README.md`](../evaluation/README.md).
+
+The VPN must be active. If the worktree runtime already exists with different
+upstream values, stop that exact checkout and run the command again; ensure
+does not replace environment values in an existing service container. The
+target adapter reads only namespaced local API/Chat origins and seeded
+participant credentials from the invoking shell, then removes those variables
+from the evaluator child. The wrapper pins a loopback Chat Completions target,
+one in-flight request, direct gpt-5.6-luna, and cleanup on every exit.
+
+The local KB_doc_query canary is a transport check for authentication, thread
+and message persistence, mode handling, and expected-tool evidence. It is not
+FineCo quality evidence. Run the 20-case query only when
+EXPERT_df_fineco_expert is already available through an authorized synthetic
+binding with a finite response bound; otherwise record delivery_pending and
+do not substitute the canary or establish a tunnel. Keep the existing
+judge-only path separate: caller-provided `LITELLM_API_BASE` and
+`LITELLM_API_KEY` are not the developer-Foundry values injected into the local
+Chat container.
 
 For OpenAI-compatible request-policy or prompt-cache changes, also run
 `apps/chat/test/openai-cache-policy.test.ts` and
