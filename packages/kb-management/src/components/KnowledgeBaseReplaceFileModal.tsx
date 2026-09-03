@@ -22,6 +22,11 @@ function KnowledgeBaseReplaceFileModal({
     onClose()
   }
 
+  const handleResourceCreated = async () => {
+    await onResourceCreated()
+    onClose()
+  }
+
   return (
     <Modal
       open
@@ -39,7 +44,7 @@ function KnowledgeBaseReplaceFileModal({
           embedded
           replaceResource={resource}
           onUploadStateChange={setUploading}
-          onResourceCreated={onResourceCreated}
+          onResourceCreated={handleResourceCreated}
         />
       </div>
     </Modal>

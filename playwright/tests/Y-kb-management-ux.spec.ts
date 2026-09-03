@@ -380,7 +380,7 @@ test.describe('Knowledge base management workspace', () => {
       const replaceModal = page.getByTestId('kb-replace-file-modal')
       await expect(replaceModal).toBeVisible()
       await expect(replaceModal).toContainText(
-        /replace the contents|Ressource zu ersetzen/
+        /Choose a new file|Wählen Sie eine neue Datei/
       )
       await page.getByTestId('kb-file-input').setInputFiles({
         name: 'replaced.txt',
