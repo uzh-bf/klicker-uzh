@@ -9,6 +9,8 @@
 export const SPOTLIGHT_TARGETS = {
   'manage-header-analytics':
     'The learning analytics menu in the manage header, present on every page',
+  'manage-header-navigation':
+    'The main navigation in the manage header (courses and resources, where the chatbots live), present on every page',
 } as const
 
 export type SpotlightTargetKey = keyof typeof SPOTLIGHT_TARGETS

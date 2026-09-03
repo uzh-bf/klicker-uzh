@@ -341,10 +341,18 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          <Navigation
-            items={leftNavigation}
-            className={{ root: 'shadow-none' }}
-          />
+          {/* The wrapper exists so a product update spotlight can point at the
+              main navigation, which holds the Resources menu with the chatbots:
+              the design-system navigation does not forward unknown attributes. */}
+          <div
+            className="flex"
+            {...spotlightTargetProps('manage-header-navigation')}
+          >
+            <Navigation
+              items={leftNavigation}
+              className={{ root: 'shadow-none' }}
+            />
+          </div>
           {/* The wrapper exists so a product update spotlight can find the
               analytics menu: the design-system navigation does not forward
               unknown attributes, and the menu itself renders in two branches. */}
