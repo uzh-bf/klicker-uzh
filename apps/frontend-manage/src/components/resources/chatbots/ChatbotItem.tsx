@@ -9,9 +9,11 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 function ChatbotItem({
   chatbot,
   onOpen,
+  selected,
 }: Readonly<{
   chatbot: Chatbot
   onOpen: () => void
+  selected?: boolean
 }>) {
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
@@ -21,7 +23,8 @@ function ChatbotItem({
       type="button"
       onClick={onOpen}
       className={twMerge(
-        'my-[0.2rem] flex w-full items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary hover:shadow-md'
+        'my-[0.2rem] flex w-full items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary hover:shadow-md',
+        selected && 'border-primary-100 bg-orange-50'
       )}
       data-cy={`chatbot-${chatbot.name}`}
     >

@@ -52,7 +52,7 @@
     "check:format": "lint-staged",
     "check:kb-ingestion-stg": "node ./util/check-kb-ingestion-stg.mjs",
     "check:lint": "turbo run lint --parallel --continue",
-    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./util/playwright-profile-runtime.test.mjs",
+    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./.github/scripts/playwright-cache-contract.test.cjs ./.github/scripts/playwright-telemetry.test.cjs ./.github/scripts/turbo-telemetry.test.cjs ./.github/scripts/playwright-selector.test.cjs ./.github/scripts/playwright-route.test.cjs ./.github/scripts/playwright-plan-metadata.test.cjs ./.github/scripts/validate-public-playwright-workflow.test.cjs ./util/playwright-profile-runtime.test.mjs",
     "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:removed-doc-artifacts": "node ./util/check-removed-doc-artifacts.mjs",

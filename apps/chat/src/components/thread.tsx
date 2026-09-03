@@ -65,6 +65,7 @@ import {
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
+  getComposerSubmitMode,
   getModeDescription,
   isKnownMode,
   resolveSelectedMode,
@@ -83,6 +84,10 @@ import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
+import {
+  useEffectiveModeOptions,
+  useHasAvailableChatMode,
+} from './mode-options-context'
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
@@ -321,6 +326,7 @@ export const Thread: FC<ThreadProps> = ({
     [activeThread?.messages]
   )
   const showHistoryRail = !embedded && historyEntries.length > 0
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <ThreadPrimitive.Root
@@ -395,11 +401,21 @@ export const Thread: FC<ThreadProps> = ({
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
-        <Composer maxImageAttachments={maxImageAttachments} />
+        {hasAvailableMode ? (
+          <Composer maxImageAttachments={maxImageAttachments} />
+        ) : (
+          <p
+            role="status"
+            data-cy="chat-mode-unavailable"
+            className="border-border bg-muted text-foreground w-full max-w-3xl rounded-xl border px-4 py-3 text-center text-sm"
+          >
+            {t('chat.composer.modeUnavailable')}
+          </p>
+        )}
         {/* S6: standalone-only, same as ThreadScrollToBottom above — an
             embedded widget has little vertical room and the embedding page
             already carries the disclaimer context. */}
-        {!embedded && <ComposerHint />}
+        {!embedded && hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
@@ -527,32 +543,6 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const useWelcomeModeOptions = (
-  initialModeOptions: Record<string, string>,
-  initialModeOptionsAreFallback = false
-) => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const modeOptions = useSettingsStore((state) => state.modeOptions)
-  const modeOptionsChatbotId = useSettingsStore(
-    (state) => state.modeOptionsChatbotId
-  )
-  const modeOptionsAreFallback = useSettingsStore(
-    (state) => state.modeOptionsAreFallback
-  )
-
-  const hasCurrentChatbotModeOptions =
-    modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
-
-  return {
-    modeOptions: hasCurrentChatbotModeOptions
-      ? modeOptions
-      : initialModeOptions,
-    modeOptionsAreFallback: hasCurrentChatbotModeOptions
-      ? modeOptionsAreFallback
-      : initialModeOptionsAreFallback,
-  }
-}
-
 const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
@@ -579,16 +569,11 @@ const ThreadWelcome: FC<{
   const t = useTranslations()
   const { embedded } = useChatUi()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? !modeOptionsAreFallback && Object.hasOwn(modeOptions, activeMode)
-      ? (modeOptions[activeMode]?.trim() ?? '')
-      : getModeDescription(t, activeMode, modeOptions)
+    ? getModeDescription(t, activeMode, modeOptions)
     : null
   return (
     <AuiIf condition={(s) => s.thread.isEmpty}>
@@ -696,17 +681,10 @@ const ThreadWelcomeSuggestions: FC<{
   suggestions?: ThreadSuggestion[]
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback?: boolean
-}> = ({
-  suggestions: customSuggestions,
-  initialModeOptions,
-  initialModeOptionsAreFallback,
-}) => {
+}> = ({ suggestions: customSuggestions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const modeOptions = useEffectiveModeOptions()
 
   if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
 
@@ -1372,6 +1350,17 @@ const getMessageAttachments = (
   return []
 }
 
+function getEditTooltip(
+  t: ReturnType<typeof useTranslations<never>>,
+  hasAvailableMode: boolean,
+  editDisabled: boolean
+): string {
+  if (!hasAvailableMode) return t('chat.composer.modeUnavailable')
+  return editDisabled
+    ? t('chat.message.editDisabledTooltip')
+    : t('chat.message.edit')
+}
+
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
@@ -1410,12 +1399,13 @@ const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
+  const hasAvailableMode = useHasAvailableChatMode()
 
   if (!showMessageActions) return null
 
   const attachments = getMessageAttachments(message)
   const hasImages = hasAnyImageAttachmentData(attachments)
-  const editDisabled = hasImages && !supportsImages
+  const editDisabled = !hasAvailableMode || (hasImages && !supportsImages)
 
   return (
     <ActionBarPrimitive.Root
@@ -1451,9 +1441,7 @@ const UserActionBar: FC = () => {
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {editDisabled
-            ? t('chat.message.editDisabledTooltip')
-            : t('chat.message.edit')}
+          {getEditTooltip(t, hasAvailableMode, editDisabled)}
         </TooltipContent>
       </Tooltip>
 
@@ -1504,6 +1492,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
   const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
   const aui = useAui()
+  const hasAvailableMode = useHasAvailableChatMode()
 
   useEffect(() => {
     return () => {
@@ -1530,6 +1519,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
     pendingAttachmentCount > 0 ||
     attachmentEntries.length !== visibleAttachmentEntries.length
   const canSubmit =
+    hasAvailableMode &&
     composerText.trim().length + totalAttachmentCount > 0 &&
     (textChanged || attachmentsChanged)
 
@@ -1574,6 +1564,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
         <ComposerPrimitive.Input
           data-cy="chat-edit-composer-input"
           autoFocus
+          submitMode={getComposerSubmitMode(hasAvailableMode)}
           className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
         />
 
@@ -1825,6 +1816,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const hasAvailableMode = useHasAvailableChatMode()
   if (!showMessageActions) return null
   // Failed and stopped-without-text callouts carry their own retry action,
   // and an incomplete turn has no answer to rate.
@@ -1861,7 +1853,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hideAnswerActions && (
+        {!hideAnswerActions && hasAvailableMode && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>

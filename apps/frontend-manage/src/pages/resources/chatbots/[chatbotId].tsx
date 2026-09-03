@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetChatbotsInfoDocument,
+  GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -17,16 +18,32 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useMemo, useState } from 'react'
 import AiBetaUnavailable from '../../../components/AiBetaUnavailable'
 import ChatbotDetails from '../../../components/resources/chatbots/ChatbotDetails'
+import {
+  type ChatbotNavigationState,
+  type ChatbotSetupStep,
+  type ChatbotWorkspaceState,
+  type ChatbotWorkspaceView,
+  normalizeWorkspaceState,
+} from '../../../components/resources/chatbots/chatbotWorkspace'
+import useChatbotNavigationGuard from '../../../components/resources/chatbots/useChatbotNavigationGuard'
 import Layout from '../../../components/Layout'
 import { useAiFeaturesEnabled } from '../../../lib/hooks/useAiFeaturesEnabled'
+
+const cleanNavigationState: ChatbotNavigationState = {
+  dirty: false,
+  pending: false,
+}
 
 function ChatbotDetailPage() {
   const t = useTranslations()
   const router = useRouter()
   const aiFeaturesEnabled = useAiFeaturesEnabled()
   const chatbotId = router.query.chatbotId
+  const [navigationState, setNavigationState] =
+    useState<ChatbotNavigationState>(cleanNavigationState)
 
   const { data, loading } = useQuery(GetChatbotsInfoDocument, {
     fetchPolicy: 'network-only',
@@ -36,12 +53,59 @@ function ChatbotDetailPage() {
     fetchPolicy: 'cache-first',
     skip: !aiFeaturesEnabled,
   })
+  const {
+    data: publishingCapabilityData,
+    loading: publishingCapabilityLoading,
+    error: publishingCapabilityError,
+  } = useQuery(GetChatbotPublishingCapabilityDocument, {
+    fetchPolicy: 'network-only',
+    skip: !aiFeaturesEnabled,
+  })
 
   const chatbots = data?.getChatbotsInfo ?? []
   const chatbot =
     typeof chatbotId === 'string'
       ? chatbots.find((candidate) => candidate.id === chatbotId)
       : undefined
+  const requestedView =
+    typeof router.query?.view === 'string' ? router.query.view : undefined
+  const requestedStep =
+    typeof router.query?.step === 'string' ? router.query.step : undefined
+  const workspaceState = useMemo<ChatbotWorkspaceState>(
+    () =>
+      chatbot
+        ? normalizeWorkspaceState(chatbot, requestedView, requestedStep)
+        : { view: 'overview' },
+    [chatbot, requestedStep, requestedView]
+  )
+
+  const { runInternalNavigation, runNavigation } = useChatbotNavigationGuard({
+    router,
+    state: navigationState,
+    discardMessage: t('manage.resources.chatbotDiscardChangesConfirmation'),
+    pendingMessage: t('manage.resources.chatbotNavigationPending'),
+  })
+
+  const navigateWorkspace = (
+    view: ChatbotWorkspaceView,
+    step?: ChatbotSetupStep,
+    internal = false
+  ) => {
+    if (!chatbot) return
+    const query: Record<string, string> = { chatbotId: chatbot.id, view }
+    if (step) {
+      query.step = step
+    }
+    const navigate = () =>
+      router.push({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+      })
+    if (internal) {
+      void runInternalNavigation(navigate)
+    } else {
+      void runNavigation(navigate)
+    }
+  }
 
   return (
     <Layout displayName={chatbot?.name ?? t('manage.resources.chatbots')}>
@@ -118,6 +182,18 @@ function ChatbotDetailPage() {
                 chatbot={chatbot}
                 modelRegistry={registryQuery.data?.getChatModelRegistry ?? []}
                 loading={loading || registryQuery.loading}
+                view={workspaceState.view}
+                step={workspaceState.step}
+                onNavigate={navigateWorkspace}
+                onNavigationStateChange={setNavigationState}
+                publishingAuthorized={
+                  publishingCapabilityData?.getChatbotPublishingCapability ??
+                  false
+                }
+                publishingAuthorizationLoading={publishingCapabilityLoading}
+                publishingAuthorizationError={Boolean(
+                  publishingCapabilityError
+                )}
               />
             </div>
           )}

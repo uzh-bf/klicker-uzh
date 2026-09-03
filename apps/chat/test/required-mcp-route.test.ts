@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageAvailable: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
+  compileSystemPrompt: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -70,6 +71,10 @@ vi.mock('@/src/services/accountUsage', () => ({
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
+vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+  compileSystemPrompt: mocks.compileSystemPrompt,
+}))
+
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -90,6 +95,47 @@ function createRequest(selectedMode?: string, threadId?: string) {
       assistantMessageId: 'assistant-1',
     }),
   })
+}
+
+function createMcpServer(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'server-1',
+    name: 'IW',
+    url: 'https://mcp.example.test',
+    authType: 'none',
+    authSecret: null,
+    parameters: null,
+    isActive: false,
+    passChatbotId: false,
+    chatbotIdHeader: null,
+    ...overrides,
+  }
+}
+
+function createMcpConfiguration(overrides: Record<string, unknown> = {}) {
+  return {
+    chatMode: 'tutor',
+    isEnabled: true,
+    priority: 0,
+    allowedTools: ['informatik_und_wirtschaft_video_expert'],
+    parameters: { required: true, toolAlias: 'doc_query' },
+    mcpServer: createMcpServer(),
+    ...overrides,
+  }
+}
+
+function createChatbot(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'chatbot-1',
+    ownerId: 'owner-1',
+    course: { displayName: 'Informatik und Wirtschaft' },
+    allowedModelIds: ['gpt-4.1'],
+    modelSelection: true,
+    systemPrompts: { tutor: { prompt: 'Use course material.' } },
+    knowledgeBases: [],
+    mcpConfigurations: [createMcpConfiguration()],
+    ...overrides,
+  }
 }
 
 describe('required MCP chat preflight', () => {
@@ -117,33 +163,8 @@ describe('required MCP chat preflight', () => {
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
-    mocks.findUnique.mockResolvedValue({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: { tutor: { prompt: 'Use course material.' } },
-      knowledgeBases: [],
-      mcpConfigurations: [
-        {
-          chatMode: 'tutor',
-          priority: 0,
-          allowedTools: ['informatik_und_wirtschaft_video_expert'],
-          parameters: { required: true, toolAlias: 'doc_query' },
-          mcpServer: {
-            id: 'server-1',
-            name: 'IW',
-            url: 'https://mcp.example.test',
-            authType: 'none',
-            authSecret: null,
-            parameters: null,
-            isActive: false,
-            passChatbotId: false,
-            chatbotIdHeader: null,
-          },
-        },
-      ],
-    })
+    mocks.compileSystemPrompt.mockReturnValue('COMPILED-SYSTEM-PROMPT')
+    mocks.findUnique.mockResolvedValue(createChatbot())
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
@@ -284,26 +305,119 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
-  test('rejects a mode without its required MCP binding', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: {
-        tutor: { prompt: 'Use course material.' },
-        explainer: { prompt: 'Explain course material.' },
-      },
-      knowledgeBases: [],
-      mcpConfigurations: [
-        {
-          chatMode: 'explainer',
-          parameters: { required: true, toolAlias: 'doc_query' },
-        },
-      ],
+  test('accepts legacy casing for a standard mode', async () => {
+    const response = await POST(createRequest('Tutor'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+  })
+
+  test('selects and passes the course display name to prompt compilation', async () => {
+    const displayName = 'Informatik und Wirtschaft'
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({ course: { displayName } })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.findUnique).toHaveBeenCalledWith({
+      where: { id: 'chatbot-1' },
+      include: {
+        course: { select: { displayName: true } },
+        mcpConfigurations: {
+          include: { mcpServer: true },
+          orderBy: { priority: 'asc' },
+        },
+      },
+    })
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      { tutor: { prompt: 'Use course material.' } },
+      'tutor',
+      { courseDisplayName: displayName, toolNames: [] }
+    )
+  })
+
+  test('hides a mode without its required MCP binding', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          explainer: { prompt: 'Explain course material.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            chatMode: 'explainer',
+            parameters: { required: true, toolAlias: 'doc_query' },
+          }),
+        ],
+      })
+    )
+
     const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: tutor',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('forwards an inherited required document-query binding for Quizzer', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
+        },
+      })
+    )
+
+    const response = await POST(createRequest('quizzer'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          config: expect.objectContaining({
+            allowedTools: ['informatik_und_wirtschaft_video_expert'],
+            parameters: { required: true, toolAlias: 'doc_query' },
+          }),
+        }),
+      ],
+      'chatbot-1'
+    )
+  })
+
+  test('fails Quizzer closed when optional MCP discovery returns no document-query tool', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['doc_query'],
+            parameters: null,
+            mcpServer: createMcpServer({ name: 'Course', isActive: true }),
+          }),
+        ],
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest('quizzer'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
@@ -312,7 +426,73 @@ describe('required MCP chat preflight', () => {
       error: 'Required MCP tool unavailable',
       code: REQUIRED_MCP_UNAVAILABLE_CODE,
     })
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-1',
+      'participant-1',
+      'chatbot-1'
+    )
+    expect(mocks.failChatTurn).not.toHaveBeenCalled()
+  })
+
+  test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['*'],
+            parameters: null,
+            mcpServer: { id: 'server-1' },
+          }),
+        ],
+      })
+    )
+
+    const response = await POST(createRequest('quizzer'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: quizzer',
+    })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('preserves the exact key for a mixed-case custom mode', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          QuickCheck: { prompt: 'Ask one brief question.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['course_search'],
+            chatMode: 'QuickCheck',
+            parameters: { required: true, toolAlias: 'doc_query' },
+            mcpServer: createMcpServer({ name: 'Course' }),
+          }),
+        ],
+      })
+    )
+
+    const response = await POST(createRequest('QuickCheck'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          server: expect.objectContaining({ id: 'server-1' }),
+        }),
+      ],
+      'chatbot-1'
+    )
   })
 })

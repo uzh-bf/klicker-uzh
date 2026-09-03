@@ -2,6 +2,10 @@
   "version": 1,
   "groups": [
     {
+      "profile": "manage",
+      "specs": ["T-chatbot-authoring.spec.ts"]
+    },
+    {
       "profile": "manage,pwa",
       "specs": [
         "0-baseline-ops.spec.ts",

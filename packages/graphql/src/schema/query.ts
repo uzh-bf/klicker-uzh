@@ -47,6 +47,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { asChatbotAuthor } from './authScopes.js'
 import {
   AssessmentParticipant,
   Course,
@@ -1658,6 +1659,12 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPublishingCapability: t.withAuth(asChatbotAuthor).boolean({
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotPublishingCapability(ctx)
         },
       }),
 

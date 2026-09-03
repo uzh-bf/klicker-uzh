@@ -234,39 +234,25 @@ test('the start command passes validated filters as distinct argv entries', () =
 })
 
 test('workflow shard startup steps explicitly select Bash', () => {
-  const workflowUrls = [
-    new URL('../.github/workflows/test-playwright.yml', import.meta.url),
-    new URL(
-      '../.github/workflows/public-pr-playwright-shards.yml',
-      import.meta.url
-    ),
-  ]
-
-  for (const workflowUrl of workflowUrls) {
-    const workflow = readFileSync(workflowUrl, 'utf8')
-    assert.match(
-      workflow,
-      /- name: Start services, wait for readiness, and run Playwright tests\n\s+timeout-minutes: 120\n\s+shell: bash\n\s+run: \|/
-    )
-  }
+  const action = readFileSync(
+    new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
+    'utf8'
+  )
+  assert.match(
+    action,
+    /- name: Start services, wait for readiness, and run Playwright tests\n\s+shell: bash\n\s+run: \|/
+  )
 })
 
 test('workflow shard startup supports only complete profile or legacy runtimes', () => {
-  const workflowUrls = [
-    new URL('../.github/workflows/test-playwright.yml', import.meta.url),
-    new URL(
-      '../.github/workflows/public-pr-playwright-shards.yml',
-      import.meta.url
-    ),
-  ]
-
-  for (const workflowUrl of workflowUrls) {
-    const workflow = readFileSync(workflowUrl, 'utf8')
-    assert.match(workflow, /PROFILE_RUNTIME_FILES=/)
-    assert.match(workflow, /profile_file_count/)
-    assert.match(workflow, /legacy full-stack Playwright startup/)
-    assert.match(workflow, /partially present/)
-  }
+  const action = readFileSync(
+    new URL('../.github/actions/playwright-shard/action.yml', import.meta.url),
+    'utf8'
+  )
+  assert.match(action, /PROFILE_RUNTIME_FILES=/)
+  assert.match(action, /profile_file_count/)
+  assert.match(action, /legacy full-stack Playwright startup/)
+  assert.match(action, /partially present/)
 })
 
 test('local full-stack startup stays independent from the CI runtime plan', () => {
@@ -290,7 +276,12 @@ test('local full-stack startup stays independent from the CI runtime plan', () =
 
 test('installed Devrouter plans every shard profile union from the real contract', () => {
   const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-plan-'))
-  const profiles = ['manage,pwa', 'live-quiz,manage,pwa', 'chat,manage,pwa']
+  const profiles = [
+    'manage,pwa',
+    'live-quiz,manage,pwa',
+    'chat,manage,pwa',
+    'full,live-quiz,manage,pwa',
+  ]
 
   try {
     const runtimes = profiles.map((profile, index) => {
@@ -302,7 +293,7 @@ test('installed Devrouter plans every shard profile union from the real contract
 
     assert.deepEqual(
       runtimes.map((runtime) => runtime.turboFilters.length),
-      [4, 8, 5]
+      [4, 8, 5, 9]
     )
     assert.ok(
       runtimes[1].turboFilters.includes(
@@ -311,6 +302,15 @@ test('installed Devrouter plans every shard profile union from the real contract
     )
     assert.ok(
       runtimes[2].serviceEndpoints.includes('http://127.0.0.1:3004/noLogin')
+    )
+    assert.equal(runtimes[3].profile, 'playwright')
+    assert.throws(
+      () =>
+        resolveRuntimePlan({
+          profile: 'full,does-not-exist',
+          output: join(outputDir, 'invalid-profile.json'),
+        }),
+      /does-not-exist/
     )
   } finally {
     rmSync(outputDir, { recursive: true, force: true })

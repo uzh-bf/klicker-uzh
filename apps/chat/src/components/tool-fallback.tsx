@@ -1,10 +1,4 @@
 import {
-  isDocQueryToolName,
-  normalizeSourcesFromParts,
-  parseDocQueryPayload,
-} from '@/src/lib/sources/normalizeSources'
-import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import {
   AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -12,10 +6,16 @@ import {
   SearchIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useState, type FC } from 'react'
+import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import {
+  isDocQueryToolName,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+} from '@/src/lib/sources/normalizeSources'
+import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -259,38 +259,37 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         : JSON.stringify(result, null, 2)
 
   return (
-    <div className="mb-1">
+    <div>
       <button
         type="button"
         data-cy="chat-tool-call-toggle"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
         className={twMerge(
-          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
+          'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
           isFailed
             ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
       >
-        {/* Every icon here sits next to the chip's own text label, so none of
-            them carry meaning of their own. */}
+        {/* Keep a fixed status slot so trace labels align across row types. */}
         {isCollapsed ? (
           <ChevronRightIcon className="size-3" aria-hidden />
         ) : (
           <ChevronDownIcon className="size-3" aria-hidden />
         )}
-        {isRunning && (
-          <LoaderCircleIcon
-            className="text-primary size-3 animate-spin"
-            aria-hidden
-          />
-        )}
-        {isFailed && (
-          <AlertCircleIcon className="text-destructive size-3" aria-hidden />
-        )}
-        {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
-          <SearchIcon className="size-3" aria-hidden />
-        )}
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {isRunning && (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          )}
+          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+          {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
+            <SearchIcon className="size-3" />
+          )}
+        </span>
         {docQueryState
           ? docQueryChipLabel(t, docQueryState)
           : isFailed

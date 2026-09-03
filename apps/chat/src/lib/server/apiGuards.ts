@@ -5,11 +5,11 @@ import {
 import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
 import { decodeJWT } from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 export type { AuthMode }
@@ -75,8 +75,12 @@ export async function getParticipantId(
     if (headerIdentity) return headerIdentity
   }
 
-  const participantToken = req.cookies.get('participant_token')?.value
+  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
+}
 
+export async function getParticipantIdFromToken(
+  participantToken: string | undefined
+): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (!participantToken) {
     return {
       response: NextResponse.json(
@@ -227,7 +231,20 @@ export async function withChatbotAuth(
   | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req)
+  return withChatbotTokenAuth(
+    req.cookies.get('participant_token')?.value,
+    chatbotId
+  )
+}
+
+export async function withChatbotTokenAuth(
+  participantToken: string | undefined,
+  chatbotId: string
+): Promise<
+  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
+  | { response: NextResponse }
+> {
+  const participantResult = await getParticipantIdFromToken(participantToken)
   if ('response' in participantResult) {
     return participantResult
   }
@@ -275,6 +292,7 @@ export async function requireParticipation(
           participantId,
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {

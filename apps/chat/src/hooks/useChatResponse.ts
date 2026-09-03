@@ -14,6 +14,10 @@ import {
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
+type GenerateChatResponseOptions = {
+  allowRegeneration?: boolean
+}
+
 /**
  * Hook for handling streaming chat responses from the backend.
  *
@@ -58,7 +62,11 @@ export function useChatResponse(
    * @param threadId - ID of the current chat thread
    */
   const generateChatResponse = useCallback(
-    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
+    async (
+      messagesToSend: ExtendedThreadMessageLike[],
+      threadId: string,
+      options: GenerateChatResponseOptions = {}
+    ) => {
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
@@ -213,6 +221,7 @@ export function useChatResponse(
             chatContext: chatContext ?? undefined,
             parentId: parentId || undefined,
             assistantMessageId,
+            ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
             images: (resolvedTriggerMessage?.imageAttachments ?? [])
               .filter(
                 (
