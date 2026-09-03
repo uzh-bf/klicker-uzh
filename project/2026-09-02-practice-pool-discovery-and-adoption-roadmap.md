@@ -2,8 +2,8 @@
 
 - **Status:** W1 — Promote the Practice Pool at the course entry point and
   W3 — Help lecturers distribute the course entry point merged into `v3`;
-  W2 — Create a useful completion loop is locally reviewed and ready for one
-  upstream integration pass
+  W2 — Create a useful completion loop is published in draft
+  [PR #5757](https://github.com/uzh-bf/klicker-uzh/pull/5757)
 - **Date:** 2026-09-02
 - **Approved branch baseline:** `origin/v3` at
   `72096fafe50827c3ea3f50465f0a76d492e0a4c2`
@@ -11,16 +11,21 @@
   `7f55d17e03035a54d966f80655d90a6f2282f22a`, five commits ahead of the
   approved branch baseline
 - **Current W2 branch baseline:** `origin/v3` at
-  `3c99fa26b913a9e8afa237ea1a01aa1583ff2d33`
+  `5906ef19c4fd80cc9beb86a618b517603d6a9b8c`
 - **Current W2 target:** `origin/v3` at
-  `5906ef19c4fd80cc9beb86a618b517603d6a9b8c`, one non-overlapping skill-doc
-  commit ahead of the branch baseline
+  `5906ef19c4fd80cc9beb86a618b517603d6a9b8c`
 - **Branch:** `rs/practice-pool-completion-loop`
 - **Worktree:** `trees/practice-pool-completion-loop`
+- **Plan identity:** This shared roadmap keeps its stable path because merged
+  [PR #5733](https://github.com/uzh-bf/klicker-uzh/pull/5733) and
+  [PR #5748](https://github.com/uzh-bf/klicker-uzh/pull/5748) already reference
+  it; the current delivery is draft
+  [PR #5757](https://github.com/uzh-bf/klicker-uzh/pull/5757)
 - **Execution owner:** Main session
-- **Delivery boundary:** Local implementation, verification, review, and commits
-  are approved. Upstream integration, push, PR creation, merge, and deployment
-  remain separately withheld.
+- **Delivery boundary:** Local implementation, verification, review, one
+  upstream integration pass, branch push, and draft PR creation are approved
+  and complete. Further upstream integration, ready-for-review transition,
+  merge, and deployment remain separately withheld.
 
 ## Goal
 
@@ -40,23 +45,23 @@ spaced repetition.
   public entry point.
 - **Authority:** Edit the task worktree, run repository-native checks, start and
   stop the exact local verification runtime, capture browser evidence, dispatch
-  required read-only reviews, update this plan, and create local commits.
-- **Terminal:** The exact local branch head is ready for a PR on its approved
-  baseline: planned behavior is implemented, checks and browser verification
-  pass, required reviews are resolved, the runtime is stopped, and Progress is
-  current.
+  required read-only reviews, update this plan, create local commits, perform
+  the approved one-time rebase, push the branch, and create its draft PR.
+- **Terminal:** The exact branch head is published to the draft PR on the
+  approved target: planned behavior is implemented, checks and browser
+  verification pass, required reviews are resolved, the runtime is stopped,
+  and Progress is current.
 - **Boundary owner:** `self`.
-- **Withheld:** Do not merge or rebase `origin/v3`, push, create or update a PR,
-  merge, deploy, write analytics, or touch production.
+- **Withheld:** Do not perform another upstream integration, mark the draft
+  ready, merge, deploy, write analytics, or touch production.
 - **Pause:** Stop only for a material product or authorization change, an
   unavailable required verification environment, or evidence that the accepted
   behavior cannot be implemented safely on the approved baseline.
 
-The current W2 task branch is one commit behind `origin/v3`. That commit changes
-only the `klicker-graphql-api` skill and does not overlap this package. Upstream
-integration is not authorized. Per the repository integration cadence, first
-make the package pass on its branch baseline, then report drift and request one
-integration pass.
+The approved one-time rebase integrated the non-overlapping
+`klicker-graphql-api` skill-formatting commit from `origin/v3`. `git range-diff`
+confirmed all three W2 package commits replayed unchanged. Completed review and
+browser evidence therefore remain applicable to the rebased package.
 
 ## Primitive impact
 
@@ -372,8 +377,9 @@ better.
 - Run the review gates required by the approved execution tier at the exact
   local head. Record planner and reviewer provenance, including any continuity
   fallback.
-- Stop before push, PR creation, merge, deployment, analytics writes, or any
-  production action unless the user authorizes that boundary explicitly.
+- Stop before another upstream integration, ready-for-review transition, merge,
+  deployment, analytics writes, or any production action unless the user
+  authorizes that boundary explicitly.
 
 ## Planner disposition
 
@@ -456,5 +462,11 @@ planner then returned `DONE` with `Verdict: APPROVED`.
   task routes remain active. Devrouter's explicit stop returned non-zero after
   OrbStack had already exited, and the final status readback confirmed the
   router, services, processes, and task routes were not running.
-- [ ] Obtain separate authority for one upstream integration pass, push, and
-  draft PR creation for W2 — Create a useful completion loop.
+- [x] Obtain separate authority for one upstream integration pass, push, and
+  draft PR creation for W2 — Create a useful completion loop. The approved
+  rebase onto `5906ef19c4` replayed all three commits unchanged, the branch was
+  pushed, and draft
+  [PR #5757](https://github.com/uzh-bf/klicker-uzh/pull/5757) targets `v3`.
+  The host pre-push hook stopped before its build because unsupported Node 26
+  triggered a noninteractive dependency-reinstall prompt; the reviewed Node 24
+  checks remain valid and hosted CI is blocking before merge.
