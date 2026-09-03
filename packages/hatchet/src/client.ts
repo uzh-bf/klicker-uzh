@@ -1,10 +1,15 @@
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { HatchetLogger } from '@hatchet-dev/typescript-sdk/clients/hatchet-client/index.js'
 import type { LogLevel } from '@hatchet-dev/typescript-sdk/util/logger/logger.js'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { createHatchetLoggerFactory } from './logging.js'
 
-const globalForHatchet = global as unknown as { hatchetClient: HatchetClient }
+const globalForHatchet = global as unknown as {
+  hatchetClient?: HatchetClient
+}
 
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
+let defaultClient = globalForHatchet.hatchetClient
 
 function createHatchetLogger(context: string, logLevel?: LogLevel) {
   const logger = new HatchetLogger(context, logLevel) as HatchetLogger & {
@@ -19,7 +24,7 @@ function createHatchetLogger(context: string, logLevel?: LogLevel) {
   return logger
 }
 
-function setupClient() {
+export function createHatchetClient(options: { logger?: AppLogger } = {}) {
   const hatchet = HatchetClient.init({
     token: process.env.HATCHET_CLIENT_TOKEN,
     // Use SDK-standard HATCHET_CLIENT_HOST_PORT, fallback to old HATCHET_HOST_PORT
@@ -36,16 +41,37 @@ function setupClient() {
       )
         ? (process.env.HATCHET_LOG_LEVEL as LogLevel)
         : 'INFO',
-    logger: createHatchetLogger,
+    logger: options.logger
+      ? createHatchetLoggerFactory(options.logger)
+      : createHatchetLogger,
   })
 
   return hatchet
 }
 
-export const hatchetClient = globalForHatchet.hatchetClient || setupClient()
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForHatchet.hatchetClient = hatchetClient
+function setupClient() {
+  if (defaultClient) return defaultClient
+  defaultClient = createHatchetClient()
+  if (process.env.NODE_ENV !== 'production') {
+    globalForHatchet.hatchetClient = defaultClient
+  }
+  return defaultClient
 }
+
+/**
+ * Backwards-compatible lazy facade for callers that still import the default
+ * client. Worker applications should use `createHatchetClient({ logger })` so
+ * their process logger is configured before the client is initialized.
+ */
+export const hatchetClient = new Proxy({} as HatchetClient, {
+  get(_target, property) {
+    const client = setupClient()
+    const value = Reflect.get(client, property, client)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+  set(_target, property, value) {
+    return Reflect.set(setupClient(), property, value)
+  },
+})
 
 export default hatchetClient

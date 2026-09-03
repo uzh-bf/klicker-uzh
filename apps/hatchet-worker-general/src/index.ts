@@ -6,7 +6,7 @@ import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
   createHatchetWorkerRuntime,
   getKBGraphTerminalResult,
-  hatchetClient,
+  createHatchetClient,
   prepareHatchetTasks,
   resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'
@@ -19,6 +19,8 @@ import {
   selectWorkflows,
   validateKBWorkerConfiguration,
 } from './workflowSelection.js'
+
+const hatchetClient = createHatchetClient({ logger })
 
 async function main() {
   const integrationState = validateKBWorkerConfiguration()

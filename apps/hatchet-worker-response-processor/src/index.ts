@@ -3,12 +3,14 @@ import {
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import {
+  createHatchetClient,
   createHatchetWorkerRuntime,
-  hatchetClient,
   resolveWorkerRuntimeConfig,
+  withHatchetTaskLogging,
 } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import { logger } from './logger.js'
 import {
+  type AssessmentResponseMessage,
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
@@ -19,12 +21,17 @@ import {
   selectResponseProcessorWorkflows,
 } from './mode.js'
 
+const hatchetClient = createHatchetClient({ logger })
+
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
   retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    taskName: 'process-anonymous-response',
+    handler: processResponseMessage,
+  }),
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -39,42 +46,47 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    taskName: 'process-authenticated-response',
+    handler: processResponseMessage,
+  }),
 })
 
-export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
-  correlationId: string
-  participantId: string
-  liveQuizId: string
-  instanceId: string
-  response: LiveQuizResponseInput
-  cookie?: string
-  responseTimestamp: number
-}>({
-  name: 'process-assessment-response-workflow',
-  defaultPriority: Priority.HIGH,
-  onEvents: ['response-received:assessment'],
-})
+export const processAssessmentResponseWorkflow =
+  hatchetClient.workflow<AssessmentResponseMessage>({
+    name: 'process-assessment-response-workflow',
+    defaultPriority: Priority.HIGH,
+    onEvents: ['response-received:assessment'],
+  })
 processAssessmentResponseWorkflow.durableTask({
   name: 'process-assessment-response',
   retries: 3,
-  fn: (input, ctx) => processAssessmentResponse(input, ctx),
+  fn: withHatchetTaskLogging({
+    taskName: 'process-assessment-response',
+    handler: processAssessmentResponse,
+  }),
 })
 processAssessmentResponseWorkflow.onFailure({
   name: 'log-assessment-response-failure',
-  fn: async (input, ctx) => {
-    const error = JSON.stringify(ctx.errors)
-    const message = `[ERROR] [AddResponse Assessment] ${error}.`
+  fn: withHatchetTaskLogging({
+    taskName: 'log-assessment-response-failure',
+    handler: async (input, ctx) => {
+      const message = '[ERROR] [AddResponse Assessment] Processing failed.'
 
-    // log the error
-    ctx.logger.error(message)
+      await ctx.logger.error('Assessment response processing failed', {
+        extra: { event: 'response.assessment.failed' },
+      })
 
-    // push the error to the audit log
-    ctx.v1.events.push('create-audit-log-entry', {
-      correlationId: input.correlationId,
-      info: message,
-    })
-  },
+      // push only an application-owned safe message to the audit log
+      ctx.v1.events.push('create-audit-log-entry', {
+        correlationId: input.correlationId,
+        info: message,
+        ...(input.loggingContext
+          ? { loggingContext: input.loggingContext }
+          : {}),
+      })
+    },
+  }),
 })
 
 export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
@@ -87,12 +99,13 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
     limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
   },
   onEvents: ['response-processed:aggregation'],
-  fn: aggregateAssessmentResponses,
+  fn: withHatchetTaskLogging({
+    taskName: 'aggregate-assessment-responses',
+    handler: aggregateAssessmentResponses,
+  }),
 })
 
 async function main() {
-  console.log('Starting response processor worker...')
-
   const mode = resolveResponseProcessorMode()
   const runtimeConfig = resolveWorkerRuntimeConfig(
     resolveResponseProcessorWorkerMode(mode)
@@ -111,20 +124,26 @@ async function main() {
     assessment: assessmentWorkflows,
   })
 
-  console.log(`Mode: ${mode}`)
-  console.log(`Workflows: ${workflows.length}`)
+  logger.info(
+    {
+      event: 'hatchet.worker.starting',
+      mode,
+      workflowCount: workflows.length,
+    },
+    'Starting response processor worker'
+  )
 
-  console.log('Creating worker...')
+  logger.info({ event: 'hatchet.worker.creating' }, 'Creating worker')
   const runtime = createHatchetWorkerRuntime({
     config: runtimeConfig,
     workflows,
     workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
-  console.log('▶Starting worker to process responses...')
+  logger.info({ event: 'hatchet.worker.starting_jobs' }, 'Starting response processing')
   await runtime.start()
 
-  console.log('Response processor worker runtime stopped after termination')
+  logger.info({ event: 'hatchet.worker.stopped', mode }, 'Response processor worker stopped')
   // The drain is complete here, but the Redis and Prisma clients opened above
   // keep the event loop alive and node runs as PID 1, so exit explicitly
   // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
