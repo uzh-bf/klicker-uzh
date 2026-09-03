@@ -60,4 +60,26 @@ describe('createEdgeLogger', () => {
       })
     )
   })
+
+  it('normalizes environment-style levels and safely defaults invalid values', () => {
+    const lines: string[] = []
+    const warnLogger = createEdgeLogger({
+      service: 'edge-test',
+      level: 'WARN',
+      sink: (_level, line) => lines.push(line),
+    })
+    const fallbackLogger = createEdgeLogger({
+      service: 'edge-test',
+      level: 'invalid',
+      sink: (_level, line) => lines.push(line),
+    })
+
+    warnLogger.info({ event: 'edge.info.suppressed' }, 'Suppressed')
+    fallbackLogger.info({ event: 'edge.info.defaulted' }, 'Defaulted')
+
+    expect(lines).toHaveLength(1)
+    expect(JSON.parse(lines[0]!)).toEqual(
+      expect.objectContaining({ event: 'edge.info.defaulted', level: 'info' })
+    )
+  })
 })

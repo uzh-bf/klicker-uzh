@@ -43,7 +43,7 @@ export interface EdgeLogger {
 
 export interface CreateEdgeLoggerOptions {
   service: string
-  level?: EdgeLogLevel
+  level?: string
   sink?: EdgeSink
 }
 
@@ -55,6 +55,13 @@ const LEVEL_VALUES: Record<EdgeLogLevel, number> = {
   error: 50,
   fatal: 60,
   silent: Number.POSITIVE_INFINITY,
+}
+
+function resolveLevel(level?: string): EdgeLogLevel {
+  const normalized = level?.toLowerCase()
+  return normalized && normalized in LEVEL_VALUES
+    ? (normalized as EdgeLogLevel)
+    : 'info'
 }
 
 function defaultSink(level: EmittedEdgeLogLevel, line: string): void {
@@ -163,7 +170,7 @@ function makeEdgeLogger({
 export function createEdgeLogger(options: CreateEdgeLoggerOptions): EdgeLogger {
   return makeEdgeLogger({
     service: options.service,
-    threshold: options.level ?? 'info',
+    threshold: resolveLevel(options.level),
     sink: options.sink ?? defaultSink,
     bindings: {},
   })
