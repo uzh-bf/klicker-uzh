@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-09-01'
+timestamp: '2026-09-03'
 tags:
   - testing
   - ci
@@ -228,7 +228,20 @@ introduce cross-file ordering assumptions.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
-**Git hooks run no application test suites** (pre-commit = `check:all`, pre-push = `build`). The Prisma package check regenerates the raw Prisma 7 client before typechecking; no generated-source patch remains. Clean CI jobs therefore do not depend on generated files left by an earlier build or cache restore. The Auth adapter round-trip is intentionally separate because it writes and removes disposable local rows. The expectation before a PR: `check:all` + build + targeted tests for touched logic + browser evidence for UI changes; CI is the real e2e gate.
+**Git hooks run no application test suites** (pre-commit = identity guard +
+`check:all` + identity guard, pre-push = outgoing-commit identity guard +
+`build`). `util/check-git-identity.sh` rejects the exact selector fixture
+identity in repository configuration, effective author/committer state, or
+outgoing commit authors, committers, or co-author trailers. The pull-request
+check repeats the commit-range guard on GitHub, where local hooks cannot be
+assumed. The second pre-commit check catches any test that mutates Git
+configuration while `check:all` runs. The Prisma package check regenerates the
+raw Prisma 7 client before typechecking; no generated-source patch remains.
+Clean CI jobs therefore do not depend on generated files left by an earlier
+build or cache restore. The Auth adapter round-trip is intentionally separate
+because it writes and removes disposable local rows. The expectation before a
+PR: `check:all` + build + targeted tests for touched logic + browser evidence
+for UI changes; CI is the real e2e gate.
 
 Root typecheck includes the Playwright compiler surface through its package `check` script. Compiler/toolchain upgrades also cover the test build and Docs production build; the exact commands live in `klicker-testing-verification`. Playwright uses strict TypeScript compilation.
 
