@@ -3,7 +3,10 @@
   "groups": [
     {
       "profile": "manage",
-      "specs": ["T-chatbot-authoring.spec.ts"]
+      "specs": [
+        "T-chatbot-authoring.spec.ts",
+        "Y-question-generation-review.spec.ts"
+      ]
     },
     {
       "profile": "manage,pwa",
@@ -58,23 +61,6 @@
         "R-bookmarking.spec.ts",
         "S-group-activity.spec.ts",
         "V-template.spec.ts"
-      ]
-    },
-    {
-      "profile": "chat,manage",
-      "specs": ["Y-manage-assistant.spec.ts"]
-    },
-    {
-      "profile": "chat,pwa",
-      "specs": ["Y-course-chat-drawer.spec.ts"]
-    },
-    {
-      "profile": "manage",
-      "specs": [
-        "Y-ai-beta-management-gate.spec.ts",
-        "Y-kb-management-ux.spec.ts",
-        "Y-question-generation-review.spec.ts",
-        "Y-response-examples.spec.ts"
       ]
     }
   ]

@@ -1358,7 +1358,7 @@ test('rejects overlapping, unknown, and duplicate OCR coverage partitions', () =
             ...parent.manifest,
             coverage: {
               ...parent.manifest.coverage,
-              failed: [{ ...selected[0], item_id: 'unknown' }],
+              failed: [{ ...selected[0], item_id: '9'.repeat(64) }],
             },
           },
         },
