@@ -2,13 +2,21 @@ import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
+import {
+  applyResponseExampleEligibilityReconciliation,
+  buildResponseExampleEligibilityReconciliation,
+  evaluateResponseExampleCurrentEligibility,
+  loadCurrentResponseExampleResources,
+  type ResponseExampleEligibilityInput,
+  type ResponseExampleEligibilityReconciliation,
+  type StoredResponseExampleEligibilityInput,
+} from '@klicker-uzh/util/response-example-eligibility'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 import {
   canApplyResponseExampleAction,
   extractChatbotModes,
-  hasCompleteEligibleCitationParity,
   RESPONSE_EXAMPLE_CHAT_MODE_MAX_LENGTH,
   RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH,
   RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH,
@@ -17,7 +25,10 @@ import {
 
 type ResponseExamplePrisma = Pick<
   Prisma.TransactionClient,
-  '$queryRaw' | 'responseExample' | 'responseExampleSet'
+  | '$queryRaw'
+  | 'responseExample'
+  | 'responseExampleEvidenceReference'
+  | 'responseExampleSet'
 >
 
 const responseExampleSetInclude = {
@@ -47,6 +58,10 @@ type ResponseExampleSetWithRelations = Prisma.ResponseExampleSetGetPayload<{
 
 type ResponseExampleSetWithModes = ResponseExampleSetWithRelations & {
   chatModes: string[]
+}
+
+type ResponseExampleEligibilityRecord = ResponseExampleEligibilityInput & {
+  id: string
 }
 
 function withChatbotModes(
@@ -85,6 +100,13 @@ async function refreshResponseExampleSetDigestInTransaction(
     `
   )
 
+  return await refreshResponseExampleSetDigestAfterLock(prisma, setId)
+}
+
+async function refreshResponseExampleSetDigestAfterLock(
+  prisma: ResponseExamplePrisma,
+  setId: string
+) {
   const set = await findResponseExampleSet(prisma, setId)
   if (!set) return null
 
@@ -95,6 +117,159 @@ async function refreshResponseExampleSetDigestInTransaction(
       include: responseExampleSetInclude,
     })
     .then(withChatbotModes)
+}
+
+async function loadCurrentEligibility(
+  prisma: ResponseExamplePrisma,
+  chatbotId: string,
+  examples: readonly StoredResponseExampleEligibilityInput[]
+) {
+  const sourceIds = [
+    ...new Set(
+      examples.flatMap((example) =>
+        example.evidenceReferences
+          .map((reference) => reference.sourceId)
+          .filter(
+            (sourceId) => responseExampleIdSchema.safeParse(sourceId).success
+          )
+      )
+    ),
+  ]
+  const resources = await loadCurrentResponseExampleResources(
+    prisma,
+    chatbotId,
+    sourceIds
+  )
+
+  return buildResponseExampleEligibilityReconciliation(examples, resources)
+}
+
+async function getCurrentEligibilityForExample(
+  prisma: ResponseExamplePrisma,
+  chatbotId: string,
+  example: ResponseExampleEligibilityRecord
+) {
+  const sourceIds = [
+    ...new Set(
+      example.evidenceReferences
+        .map((reference) => reference.sourceId)
+        .filter(
+          (sourceId) => responseExampleIdSchema.safeParse(sourceId).success
+        )
+    ),
+  ]
+  const resources = await loadCurrentResponseExampleResources(
+    prisma,
+    chatbotId,
+    sourceIds
+  )
+
+  return evaluateResponseExampleCurrentEligibility(example, resources)
+}
+
+async function updateStoredEvidenceEligibility(
+  prisma: ResponseExamplePrisma,
+  example: {
+    evidenceReferences: readonly {
+      id: string
+      evidenceEligible: boolean
+    }[]
+  },
+  current: ReturnType<typeof evaluateResponseExampleCurrentEligibility>
+) {
+  for (const [index, reference] of example.evidenceReferences.entries()) {
+    const evidenceEligible = current.evidenceEligibility[index] ?? false
+    if (reference.evidenceEligible !== evidenceEligible) {
+      await prisma.responseExampleEvidenceReference.update({
+        where: { id: reference.id },
+        data: { evidenceEligible },
+      })
+    }
+  }
+}
+
+function projectCurrentEligibility(
+  set: ResponseExampleSetWithRelations,
+  eligibility: ResponseExampleEligibilityReconciliation['currentEligibility']
+) {
+  return {
+    ...set,
+    examples: set.examples.map((example) => ({
+      ...example,
+      evidenceReferences: example.evidenceReferences.map(
+        (reference, index) => ({
+          ...reference,
+          evidenceEligible:
+            eligibility.get(example.id)?.evidenceEligibility[index] ?? false,
+        })
+      ),
+    })),
+  }
+}
+
+export async function reconcileCurrentResponseExampleEligibility(
+  prisma: PrismaClient,
+  chatbotId: string
+) {
+  const initialSet = await prisma.responseExampleSet.findUnique({
+    where: { chatbotId },
+    include: responseExampleSetInclude,
+  })
+  if (!initialSet) return null
+
+  const initialEligibility = await loadCurrentEligibility(
+    prisma,
+    chatbotId,
+    initialSet.examples
+  )
+  if (!initialEligibility.changed) {
+    return withChatbotModes(
+      projectCurrentEligibility(
+        initialSet,
+        initialEligibility.currentEligibility
+      )
+    )
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw<{ id: string }[]>(
+      PrismaRuntime.sql`
+        SELECT "id"
+        FROM "public"."Chatbot"
+        WHERE "id" = ${chatbotId}::uuid
+        FOR UPDATE
+      `
+    )
+    await tx.$queryRaw<{ id: string }[]>(
+      PrismaRuntime.sql`
+        SELECT "id"
+        FROM "public"."ResponseExampleSet"
+        WHERE "chatbotId" = ${chatbotId}::uuid
+        FOR UPDATE
+      `
+    )
+
+    const set = await tx.responseExampleSet.findUnique({
+      where: { chatbotId },
+      include: responseExampleSetInclude,
+    })
+    if (!set) return null
+
+    const currentEligibility = await loadCurrentEligibility(
+      tx,
+      chatbotId,
+      set.examples
+    )
+    if (!currentEligibility.changed) {
+      return withChatbotModes(
+        projectCurrentEligibility(set, currentEligibility.currentEligibility)
+      )
+    }
+
+    await applyResponseExampleEligibilityReconciliation(tx, currentEligibility)
+
+    return await refreshResponseExampleSetDigestAfterLock(tx, set.id)
+  })
 }
 
 export async function refreshResponseExampleSetDigest(
@@ -118,11 +293,11 @@ export async function getChatbotResponseExamples(
       chatbotId,
       chatbot: { ownerId: ctx.user.sub },
     },
-    include: responseExampleSetInclude,
+    select: { id: true },
   })
 
   if (!set) return null
-  return withChatbotModes(set)
+  return await reconcileCurrentResponseExampleEligibility(ctx.prisma, chatbotId)
 }
 
 export const RESPONSE_EXAMPLE_SOURCES_REQUIRED =
@@ -174,7 +349,13 @@ async function reviewResponseExample(
         chatMode: true,
         referenceAnswer: true,
         evidenceReferences: {
-          select: { citationIndex: true, evidenceEligible: true },
+          select: {
+            id: true,
+            sourceId: true,
+            contentHash: true,
+            citationIndex: true,
+            evidenceEligible: true,
+          },
         },
         set: {
           select: {
@@ -185,6 +366,12 @@ async function reviewResponseExample(
     })
 
     if (!example) return null
+
+    const currentEligibility = await getCurrentEligibilityForExample(
+      tx,
+      ownership.set.chatbot.id,
+      example
+    )
 
     let action: 'APPROVE' | 'REJECT' | null = null
     if (status === DB.ResponseExampleStatus.APPROVED) action = 'APPROVE'
@@ -210,15 +397,16 @@ async function reviewResponseExample(
 
     if (
       status === DB.ResponseExampleStatus.APPROVED &&
-      !hasCompleteEligibleCitationParity(
-        example.referenceAnswer,
-        example.evidenceReferences
-      )
+      !currentEligibility?.eligible
     ) {
       throw new GraphQLError(
         'An approved response example needs eligible sources and matching citation markers.',
         { extensions: { code: RESPONSE_EXAMPLE_SOURCES_REQUIRED } }
       )
+    }
+
+    if (currentEligibility) {
+      await updateStoredEvidenceEligibility(tx, example, currentEligibility)
     }
 
     const updated = await tx.responseExample.updateMany({
@@ -315,7 +503,13 @@ export async function editAndApproveResponseExample(
         status: true,
         updatedAt: true,
         evidenceReferences: {
-          select: { citationIndex: true, evidenceEligible: true },
+          select: {
+            id: true,
+            sourceId: true,
+            contentHash: true,
+            citationIndex: true,
+            evidenceEligible: true,
+          },
         },
         set: {
           select: {
@@ -326,6 +520,15 @@ export async function editAndApproveResponseExample(
     })
 
     if (!example) return null
+
+    const currentEligibility = await getCurrentEligibilityForExample(
+      tx,
+      ownership.set.chatbot.id,
+      {
+        ...example,
+        referenceAnswer: input.referenceAnswer,
+      }
+    )
 
     if (example.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()) {
       throw new GraphQLError(
@@ -352,17 +555,13 @@ export async function editAndApproveResponseExample(
       )
     }
 
-    if (
-      !hasCompleteEligibleCitationParity(
-        input.referenceAnswer,
-        example.evidenceReferences
-      )
-    ) {
+    if (!currentEligibility?.eligible) {
       throw new GraphQLError(
         'An approved response example needs eligible sources and matching citation markers.',
         { extensions: { code: RESPONSE_EXAMPLE_SOURCES_REQUIRED } }
       )
     }
+    await updateStoredEvidenceEligibility(tx, example, currentEligibility)
 
     let updated: { count: number }
     try {

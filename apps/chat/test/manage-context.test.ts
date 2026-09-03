@@ -64,6 +64,41 @@ describe('Manage assistant context', () => {
     ).toBe('Evaluation - Course 12')
   })
 
+  test('uses localized labels supplied by the Manage surface', () => {
+    expect(
+      getManageContextLabel(
+        {
+          version: 1,
+          source: 'manage',
+          surface: 'evaluation',
+          locale: 'de',
+          route: {
+            asPath: '/analytics/12/quizzes/34?tab=responses',
+            pathname: '/analytics/[courseId]/quizzes/[id]',
+          },
+          ids: {
+            courseId: '12',
+          },
+        },
+        {
+          surfaces: {
+            'activity-creation': 'Aktivität einrichten',
+            'course-dashboard': 'Kursübersicht',
+            'element-editor': 'Frageneditor',
+            evaluation: 'Auswertung',
+            general: 'Verwalten',
+            'question-pool': 'Fragepool',
+          },
+          entities: {
+            activity: (id) => `Aktivität ${id}`,
+            course: (id) => `Kurs ${id}`,
+            question: (id) => `Frage ${id}`,
+          },
+        }
+      )
+    ).toBe('Auswertung - Kurs 12')
+  })
+
   test('caps sanitized query keys', () => {
     const query = Object.fromEntries(
       Array.from({ length: 30 }, (_, index) => [`key${index}`, `${index}`])

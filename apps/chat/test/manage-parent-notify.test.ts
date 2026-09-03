@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { notifyManageParent } from '../src/services/manageParentNotify'
+import {
+  notifyManageParent,
+  requestManageParentOpen,
+} from '../src/services/manageParentNotify'
 import { useManageParentStore } from '../src/stores/manageParentStore'
 
 afterEach(() => {
@@ -37,5 +40,23 @@ describe('Manage parent notify', () => {
     expect(() =>
       notifyManageParent({ id: 1, name: 'Draft question' })
     ).not.toThrow()
+  })
+
+  test('posts an identity-only open request to the cached parent origin', () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal('window', { parent: { postMessage } })
+    useManageParentStore.setState({
+      manageParentOrigin: 'https://manage.example.com',
+    })
+
+    requestManageParentOpen({ id: 42 })
+
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith(
+      {
+        type: 'klicker:manage-element-open-request',
+        payload: { id: 42 },
+      },
+      'https://manage.example.com'
+    )
   })
 })

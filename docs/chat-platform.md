@@ -151,6 +151,37 @@ The embedded lecturer assistant is a separate route family under `src/app/api/ma
 
 The entitlement is read live from the database rather than from the session token, so withdrawing it takes effect on the next request instead of at the lecturer's next sign-in. It is administered by email on the Manage admin panel (`setAiFeatures`), separately from `privatePreview`: one decides which unreleased features an account may see, the other whether it may spend model budget.
 
+`GET /api/manage/capabilities` is an authenticated, private, no-store advisory
+preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
+classifies the actual session-filtered inventory as `draft-and-read`,
+`read-only`, or `unavailable`, then starts best-effort client teardown without
+letting a slow close extend the response deadline.
+The three-second server budget remains below the browser's five-second deadline,
+and a best-effort per-pod limit allows 30 preflights per lecturer in five minutes
+before returning a private, retryable `429`. The response exposes no tool names,
+scopes, configuration, or failure detail.
+The client starts in the conservative unavailable state. While the preflight is
+checking, the welcome stays neutral: it does not advertise persistence or flash
+degraded no-save limits. Once the preflight settles, curated-index documentation
+help and explicit no-save authoring remain available in degraded states, and the
+localized starter labels follow the active Manage locale. The client can retry
+without reloading the iframe. A client-side preflight deadline
+intentionally settles as retryable unavailable instead of auto-retrying in the
+background; its parent-cancellation and timeout signals are composed without
+requiring newer browser-only `AbortSignal.any` support. Every chat turn repeats
+the same inventory classification; its
+response header replaces stale preflight state, so the preflight never grants
+write authority or promises a missing proposal tool. Chat requests reserve a
+monotonic revision when they start, so only the latest-started response can
+replace capability state even when concurrent responses finish out of order. A
+latest chat response without a valid capability header, or a failed chat fetch,
+settles the client as retryable unavailable instead of leaving it checking.
+Canceling a chat request does not downgrade an already settled capability.
+Before the inventory is passed to the model, the adapter keeps only the known read tools for
+`read-only`, the known read and draft tools for `draft-and-read`, and no tools
+for `unavailable`; unknown or mismatched tools fail closed so service-version
+skew cannot contradict the advertised capability.
+
 Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 
 The two chat surfaces also differ in how they handle a missing model key. The participant route falls back to `apiKey: process.env.OPENAI_API_KEY || 'no-key'` (`src/app/api/chatbots/[chatbotId]/chat/route.ts`), which the local LiteLLM proxy accepts, while `createManageAssistantModel` (`src/app/api/manage/chat/route.ts`) throws `OPENAI_API_KEY is required for the Manage assistant`. The devcontainer sets `OPENAI_BASE_URL` but no `OPENAI_API_KEY`, so the Manage assistant returns 500 there until the variable is set ([Getting Started](./getting-started.md#failure-signatures-fresh-clone--wrong-state)).
@@ -166,6 +197,35 @@ A total 60-second abort deadline covers body parsing, the MCP transport's actual
 Signed question proposals render as static lecturer reviews rather than interactive student previews. Choice questions show every option with explicit “Correct” or “Incorrect” text and its answer feedback; free-text questions show sample solutions and response-length restrictions. Both forms show the general explanation and use the sanitized Markdown renderer. The raw canonical JSON remains available only as an optional disclosure for diagnosis.
 
 The Manage embed is an in-session assistant dock, not a history surface. Closing and reopening the dock preserves its mounted runtime, while **Start a new conversation** clears the current assistant-ui thread plus unsent text and attachments after an inline confirmation when content exists. Reloading the page still starts a fresh runtime; there is no durable lecturer chat history, thread list, database model, or retention contract. The composer is an in-flow sibling of the transcript so a long proposal can scroll fully above it instead of being clipped by an overlay.
+
+The embedded Manage context is shown in persistent localized chrome above the
+conversation, so it remains available after the welcome message scrolls away.
+The first validated context establishes the session silently; later
+JSON-distinct route or identifier changes are announced politely. The payload
+remains the same sanitized route metadata and identifiers used by the Manage
+chat request.
+
+After a signed draft proposal is confirmed, the embedded card offers **Open
+draft**. That action sends only the positive integer element id to the
+validated Manage parent, which closes the dock and owns navigation to the
+question editor. Standalone Chat does not expose this Manage-only action, and
+confirmation failures use a localized generic message rather than displaying
+server or provider error details.
+
+The parent Manage shell treats the validated context-ready message as the only
+readiness signal. A bounded deadline changes an unanswered load into an honest
+“taking longer” state while keeping the iframe alive so a late valid handshake
+can recover it. Retry remounts exactly one embedded iframe generation; an
+actual iframe load error uses a separate failed state. Both states retain
+close, Escape, retry, and a standalone fallback explicitly labelled as a new
+conversation without the current page context. The focused local
+`chat,manage` devrouter profile starts and probes `mcp-lecturer`; the separate
+`mcp` profile remains the deterministic read-only fixture.
+On desktop the parent shell is a resizable, non-modal complementary dock whose
+readable Chat content remains centred as the viewport grows. Below the desktop
+breakpoint it becomes a full-viewport modal sheet with contained focus and
+safe-area-aware composer spacing; crossing that breakpoint preserves the
+mounted conversation and restores Manage interaction.
 
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
 
@@ -981,7 +1041,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
-- **Embedded Manage modal**: the Manage launcher portals its dialog to `document.body` and makes `#__app` inert and hidden from assistive technology while open. Keep the portal outside `#__app`; otherwise the dialog would hide itself together with the background.
+- **Embedded Manage dock**: the Manage launcher portals a labelled, non-modal complementary region to `document.body`. It leaves `#__app` interactive, moves focus to its close control on open, preserves close and Escape in loading/recovery states, and restores launcher focus on close. Keep the iframe mounted across ordinary close/reopen so the in-session conversation survives.
 - **Static assets need a middleware allowlist entry.** `src/middleware.ts` matches `/:path*` and passes through only `/noLogin`, `/KlickerLogo.png`, `/user-solid.svg`, `/_next…`, `/api…`, and `/favicon…`. Any other file added to `apps/chat/public/` is redirected to the login page for requests without a valid participant token (authenticated participants still get it served) — assets referenced from unauthenticated pages like `/noLogin` therefore break silently, so add new public files to that allowlist in the same change.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.

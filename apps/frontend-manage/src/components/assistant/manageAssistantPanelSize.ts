@@ -3,6 +3,8 @@ export type ManageAssistantPanelSize = {
   width: number
 }
 
+export type ManageAssistantPanelPreset = 'default' | 'wide' | 'max'
+
 export const DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE: ManageAssistantPanelSize = {
   height: 672,
   width: 448,
@@ -10,9 +12,11 @@ export const DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE: ManageAssistantPanelSize = {
 
 const MIN_PANEL_HEIGHT = 448
 const MIN_PANEL_WIDTH = 360
-const MAX_PANEL_HEIGHT = 864
-const MAX_PANEL_WIDTH = 720
 const VIEWPORT_MARGIN = 48
+const WIDE_PANEL_SIZE: ManageAssistantPanelSize = {
+  height: 768,
+  width: 720,
+}
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum)
@@ -46,14 +50,8 @@ export function clampManageAssistantPanelSize(
   size: ManageAssistantPanelSize,
   viewport: { height: number; width: number }
 ): ManageAssistantPanelSize {
-  const maximumHeight = Math.max(
-    0,
-    Math.min(MAX_PANEL_HEIGHT, viewport.height - VIEWPORT_MARGIN)
-  )
-  const maximumWidth = Math.max(
-    0,
-    Math.min(MAX_PANEL_WIDTH, viewport.width - VIEWPORT_MARGIN)
-  )
+  const maximumHeight = Math.max(0, viewport.height - VIEWPORT_MARGIN)
+  const maximumWidth = Math.max(0, viewport.width - VIEWPORT_MARGIN)
   const minimumHeight = Math.min(MIN_PANEL_HEIGHT, maximumHeight)
   const minimumWidth = Math.min(MIN_PANEL_WIDTH, maximumWidth)
 
@@ -61,6 +59,22 @@ export function clampManageAssistantPanelSize(
     height: clamp(size.height, minimumHeight, maximumHeight),
     width: clamp(size.width, minimumWidth, maximumWidth),
   }
+}
+
+export function getManageAssistantPanelPresetSize(
+  preset: ManageAssistantPanelPreset,
+  viewport: { height: number; width: number }
+): ManageAssistantPanelSize {
+  let requestedSize: ManageAssistantPanelSize
+  if (preset === 'default') {
+    requestedSize = DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+  } else if (preset === 'wide') {
+    requestedSize = WIDE_PANEL_SIZE
+  } else {
+    requestedSize = { height: viewport.height, width: viewport.width }
+  }
+
+  return clampManageAssistantPanelSize(requestedSize, viewport)
 }
 
 export function resizeManageAssistantPanelFromTopLeft({

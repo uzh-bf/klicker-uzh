@@ -72,6 +72,14 @@
     "./response-example-digest": {
       "types": "./dist/responseExampleDigest.d.ts",
       "default": "./dist/responseExampleDigest.js"
+    },
+    "./response-example-eligibility": {
+      "types": "./dist/responseExampleEligibility.d.ts",
+      "default": "./dist/responseExampleEligibility.js"
+    },
+    "./response-example-runtime": {
+      "types": "./dist/responseExampleRuntime.d.ts",
+      "default": "./dist/responseExampleRuntime.js"
     }
   },
   "type": "module"

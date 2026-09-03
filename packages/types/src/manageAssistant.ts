@@ -25,3 +25,8 @@ export const MANAGE_CLOSE_REQUEST_MESSAGE_TYPE = 'klicker:manage-close-request'
 // question-pool element, so Manage can refresh its own data without a reload.
 export const MANAGE_ELEMENT_CREATED_MESSAGE_TYPE =
   'klicker:manage-element-created'
+
+// Chat iframe -> Manage: asks the parent to close the assistant dock and open
+// a confirmed draft in the Manage editor.
+export const MANAGE_ELEMENT_OPEN_REQUEST_MESSAGE_TYPE =
+  'klicker:manage-element-open-request'

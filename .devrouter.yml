@@ -27,20 +27,21 @@ project:
 managedRuntime:
   devcontainer:
     # Managed base: the DevPod primary `app` is implicit; postgres serves
-    # post-create reset/push/seed; hatchet is boot-critical for the backend.
-    baseServices: [postgres, hatchet]
+    # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
+    # boot-critical for the backend.
+    baseServices: [postgres, azurite, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
-    # creates all three. Azurite, LiteLLM, and MailHog are opt-in capabilities.
+    # creates all three. LiteLLM and MailHog are opt-in capabilities.
     profileServices:
-      [redis_exec, redis_assessment, redis_cache, azurite, litellm, mailhog]
+      [redis_exec, redis_assessment, redis_cache, litellm, mailhog]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
     apps: [manage, api, auth]
     readiness: [manage, api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, azurite]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # student PWA work: pwa + API and auth
   pwa:

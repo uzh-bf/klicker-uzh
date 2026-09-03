@@ -3,6 +3,8 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   type Prisma,
   type PrismaClient,
+  KBResourceStatus,
+  KBResourceType,
   ResponseExampleStatus,
   ResponseExampleStyle,
 } from '@klicker-uzh/prisma/client'
@@ -96,6 +98,26 @@ describe('response-example foundation', () => {
         },
       },
     })
+    const kb = await prisma.kB.create({
+      data: {
+        name: 'Response example test knowledge base',
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: true },
+    })
+    const currentResource = await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Current response-example source',
+        sourceUrl: 'https://example.invalid/current',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'hash-synthetic-1',
+      },
+    })
     const set = await prisma.responseExampleSet.create({
       data: {
         chatbotId: chatbot.id,
@@ -110,7 +132,7 @@ describe('response-example foundation', () => {
               evidenceReferences: {
                 create: {
                   citationIndex: 1,
-                  sourceId: 'source-synthetic-1',
+                  sourceId: currentResource.id,
                   chunkId: 'chunk-synthetic-1',
                   contentHash: 'hash-synthetic-1',
                   citationAnchor: 'page 1',
@@ -143,7 +165,7 @@ describe('response-example foundation', () => {
     const refreshedSet = await refreshResponseExampleSetDigest(prisma, set.id)
     if (!refreshedSet) throw new Error('Failed to refresh response-example set')
 
-    return { chatbot, set: refreshedSet }
+    return { chatbot, kb, currentResource, set: refreshedSet }
   }
 
   it('returns one exact-scope set only to its chatbot owner', async () => {
@@ -182,7 +204,7 @@ describe('response-example foundation', () => {
     ])
     expect(ownerSet?.examples[1]?.evidenceReferences[0]).toMatchObject({
       citationIndex: 1,
-      sourceId: 'source-synthetic-1',
+      sourceId: expect.any(String),
       chunkId: 'chunk-synthetic-1',
       contentHash: 'hash-synthetic-1',
       citationAnchor: 'page 1',
@@ -352,6 +374,223 @@ describe('response-example foundation', () => {
       approveResponseExample({ id: candidate.id }, userOneCtx)
     ).rejects.toMatchObject({
       extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+  })
+
+  it('reconciles changed evidence once under concurrent reads', async () => {
+    const { chatbot, currentResource, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    const approved = await approveResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    const approvedDigest = approved?.digest
+
+    await prisma.kBResource.update({
+      where: { id: currentResource.id },
+      data: { activeContentSha256: 'changed-content-hash' },
+    })
+
+    const [firstRead, secondRead] = await Promise.all([
+      getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx),
+      getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx),
+    ])
+    const reconciled = firstRead?.examples.find(
+      (example) => example.id === candidate.id
+    )
+
+    expect(reconciled).toMatchObject({
+      status: ResponseExampleStatus.NEEDS_REVIEW,
+      reviewedById: null,
+      reviewedAt: null,
+      evidenceReferences: [
+        expect.objectContaining({ evidenceEligible: false }),
+      ],
+    })
+    expect(firstRead?.digest).toBe(secondRead?.digest)
+    expect(firstRead?.updatedAt).toEqual(secondRead?.updatedAt)
+    expect(firstRead?.digest).not.toBe(approvedDigest)
+
+    const stableRead = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(stableRead?.digest).toBe(firstRead?.digest)
+    expect(stableRead?.updatedAt).toEqual(firstRead?.updatedAt)
+  })
+
+  it('keeps restored or rebound evidence behind lecturer re-approval', async () => {
+    const { chatbot, currentResource, kb, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await approveResponseExample({ id: candidate.id }, userOneCtx)
+
+    await prisma.kBResource.update({
+      where: { id: currentResource.id },
+      data: { activeContentSha256: 'changed-content-hash' },
+    })
+    await getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx)
+    await prisma.kBResource.update({
+      where: { id: currentResource.id },
+      data: { activeContentSha256: 'hash-synthetic-1' },
+    })
+
+    const restored = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      restored?.examples.find((example) => example.id === candidate.id)
+    ).toMatchObject({
+      status: ResponseExampleStatus.NEEDS_REVIEW,
+      evidenceReferences: [expect.objectContaining({ evidenceEligible: true })],
+    })
+
+    await prisma.kBChatbot.update({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      data: { isEnabled: false },
+    })
+    const replacementKb = await prisma.kB.create({
+      data: {
+        name: 'Replacement response example knowledge base',
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: {
+        kbId: replacementKb.id,
+        chatbotId: chatbot.id,
+        isEnabled: true,
+      },
+    })
+
+    const rebound = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      rebound?.examples.find((example) => example.id === candidate.id)
+    ).toMatchObject({
+      status: ResponseExampleStatus.NEEDS_REVIEW,
+      evidenceReferences: [
+        expect.objectContaining({ evidenceEligible: false }),
+      ],
+    })
+  })
+
+  it('fails approval closed when no knowledge base is enabled', async () => {
+    const { chatbot, kb, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.kBChatbot.update({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      data: { isEnabled: false },
+    })
+
+    await expect(
+      approveResponseExample({ id: candidate.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_SOURCES_REQUIRED },
+    })
+  })
+
+  it('rolls back eligibility and digest together, then retries cleanly', async () => {
+    const { chatbot, currentResource, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    const approved = await approveResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    await prisma.kBResource.update({
+      where: { id: currentResource.id },
+      data: { activeContentSha256: 'changed-content-hash' },
+    })
+
+    await prisma.$executeRawUnsafe(`
+      CREATE FUNCTION fail_response_example_digest_update()
+      RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'forced response-example digest failure';
+      END;
+      $$ LANGUAGE plpgsql
+    `)
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER fail_response_example_digest_update
+      BEFORE UPDATE ON "public"."ResponseExampleSet"
+      FOR EACH ROW EXECUTE FUNCTION fail_response_example_digest_update()
+    `)
+    try {
+      await expect(
+        getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx)
+      ).rejects.toThrow('forced response-example digest failure')
+    } finally {
+      await prisma.$executeRawUnsafe(`
+        DROP TRIGGER IF EXISTS fail_response_example_digest_update
+        ON "public"."ResponseExampleSet"
+      `)
+      await prisma.$executeRawUnsafe(
+        'DROP FUNCTION IF EXISTS fail_response_example_digest_update()'
+      )
+    }
+
+    await expect(
+      prisma.responseExample.findUniqueOrThrow({ where: { id: candidate.id } })
+    ).resolves.toMatchObject({
+      status: ResponseExampleStatus.APPROVED,
+      reviewedById: userOneCtx.user.sub,
+    })
+    expect(
+      await prisma.responseExampleSet.findUniqueOrThrow({
+        where: { id: set.id },
+      })
+    ).toMatchObject({ digest: approved?.digest })
+
+    const retried = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      retried?.examples.find((example) => example.id === candidate.id)
+    ).toMatchObject({
+      status: ResponseExampleStatus.NEEDS_REVIEW,
+      evidenceReferences: [
+        expect.objectContaining({ evidenceEligible: false }),
+      ],
+    })
+    expect(retried?.digest).not.toBe(approved?.digest)
+  })
+
+  it('withdraws an approved example when its source is deleted', async () => {
+    const { chatbot, currentResource, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await approveResponseExample({ id: candidate.id }, userOneCtx)
+
+    await prisma.kBResource.update({
+      where: { id: currentResource.id },
+      data: { deletedAt: new Date() },
+    })
+
+    const reconciled = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      reconciled?.examples.find((example) => example.id === candidate.id)
+    ).toMatchObject({
+      status: ResponseExampleStatus.NEEDS_REVIEW,
+      reviewedById: null,
+      reviewedAt: null,
+      evidenceReferences: [
+        expect.objectContaining({ evidenceEligible: false }),
+      ],
     })
   })
 

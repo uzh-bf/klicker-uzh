@@ -1,5 +1,13 @@
+import type { Page } from '@playwright/test'
+
 import { testImageUpload } from '../util/chat.js'
-import { COURSE_ID_TEST, URL_MANAGE } from '../util/constants.js'
+import {
+  COURSE_ID_TEST,
+  LECTURER_ID,
+  URL_CHAT,
+  URL_MANAGE,
+} from '../util/constants.js'
+import { createQuestionSC } from '../util/fixtures/elements.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   collectWindowMessages,
@@ -7,12 +15,46 @@ import {
   delayChatIframeScripts,
   getWindowMessages,
   makeProposalEnvelope,
+  mockManageCapabilities,
   mockManageChatStream,
   mockManageProposalConfirm,
   openManageAssistantWidget,
   sendManageAssistantMessage,
   trackProposalConfirmRequests,
 } from '../util/manageAssistant.js'
+
+async function expectLauncherClearOfListEnd(
+  page: Page,
+  pageRootTestId: string
+) {
+  const launcher = page.getByTestId('manage-assistant-open')
+  const pageSize = page.getByTestId('pagination-page-size')
+  await expect(launcher).toBeVisible()
+  await expect(pageSize).toBeVisible()
+  await pageSize.scrollIntoViewIfNeeded()
+
+  const rootPaddingBottom = await page
+    .getByTestId(pageRootTestId)
+    .evaluate((element) =>
+      Number.parseFloat(window.getComputedStyle(element).paddingBottom)
+    )
+  expect(rootPaddingBottom).toBeLessThanOrEqual(8)
+
+  const launcherBox = await launcher.boundingBox()
+  const pageSizeBox = await pageSize.boundingBox()
+  expect(launcherBox).not.toBeNull()
+  expect(pageSizeBox).not.toBeNull()
+
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    expect(
+      (pageSizeBox?.x ?? 0) + (pageSizeBox?.width ?? 0)
+    ).toBeLessThanOrEqual((launcherBox?.x ?? 0) - 8)
+  } else {
+    expect(
+      (pageSizeBox?.y ?? 0) + (pageSizeBox?.height ?? 0)
+    ).toBeLessThanOrEqual((launcherBox?.y ?? 0) - 8)
+  }
+}
 
 /**
  * Manage assistant (apps/chat `/manage`, embedded via
@@ -32,6 +74,7 @@ test.describe('Manage Assistant — Messaging', () => {
     // Must be registered before the first navigation (inside loginLecturer)
     // so it is present for every later page.
     await collectWindowMessages(page)
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -97,15 +140,32 @@ test.describe('Manage Assistant — Messaging', () => {
     const createDraft = assistant.getByRole('button', { name: 'Create draft' })
     await expect(createDraft).toBeEnabled()
 
-    const createDraftBox = await createDraft.boundingBox()
-    const composerBox = await assistant
-      .getByTestId('chat-composer')
-      .boundingBox()
-    expect(createDraftBox).not.toBeNull()
-    expect(composerBox).not.toBeNull()
-    expect(
-      (createDraftBox?.y ?? 0) + (createDraftBox?.height ?? 0)
-    ).toBeLessThanOrEqual(composerBox?.y ?? 0)
+    const viewport = assistant.getByTestId('chat-thread-viewport')
+    // The proposal card lives in a scrollable viewport. Disable smooth
+    // scrolling while settling at the end so the measurement reads the
+    // settled position, not a transient scroll position.
+    await viewport.evaluate((element) => {
+      element.style.scrollBehavior = 'auto'
+      element.scrollTop = element.scrollHeight
+      element.style.scrollBehavior = ''
+    })
+    await expect(createDraft).toBeInViewport()
+    await expect(async () => {
+      const [createDraftBox, viewportBox, composerBox] = await Promise.all([
+        createDraft.boundingBox(),
+        viewport.boundingBox(),
+        assistant.getByTestId('chat-composer').boundingBox(),
+      ])
+      expect(createDraftBox).not.toBeNull()
+      expect(viewportBox).not.toBeNull()
+      expect(composerBox).not.toBeNull()
+      expect(createDraftBox!.y + createDraftBox!.height).toBeLessThanOrEqual(
+        viewportBox!.y + viewportBox!.height - 8
+      )
+      expect(viewportBox!.y + viewportBox!.height).toBeLessThanOrEqual(
+        composerBox!.y + 1
+      )
+    }).toPass()
   })
 
   test('Confirming a proposal shows a success state and notifies the manage parent window', async ({
@@ -155,6 +215,163 @@ test.describe('Manage Assistant — Messaging', () => {
         `Draft "${DEFAULT_CONFIRMED_ELEMENT.name}" added to your question pool`
       )
     ).toBeVisible()
+
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    await page.evaluate(
+      ({ chatOrigin }) => {
+        const frame = document.querySelector(
+          '[data-cy="manage-assistant-frame"]'
+        ) as HTMLIFrameElement | null
+        const source = frame?.contentWindow ?? null
+        const validOrigin = new URL(chatOrigin).origin
+        const request = {
+          payload: { id: 4242 },
+          type: 'klicker:manage-element-open-request',
+        }
+
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: request,
+            origin: 'https://assistant-attacker.example',
+            source,
+          })
+        )
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: request,
+            origin: validOrigin,
+            source: window,
+          })
+        )
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: {
+              payload: { id: '4242' },
+              type: request.type,
+            },
+            origin: validOrigin,
+            source,
+          })
+        )
+      },
+      { chatOrigin }
+    )
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeVisible()
+    await expect(page).not.toHaveURL(/editElementId=/)
+
+    const openDraft = assistant.getByRole('button', { name: 'Open draft' })
+    await expect(openDraft).toBeVisible()
+    await openDraft.click()
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page).toHaveURL(/editElementId=4242/)
+  })
+
+  test('Manage context stays visible after a message and announces a changed context', async ({
+    page,
+  }) => {
+    const requestBodies: unknown[] = []
+    await mockManageChatStream(page, {
+      text: 'The current Manage context is available.',
+      onRequest: (body) => requestBodies.push(body),
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Question pool')
+    await sendManageAssistantMessage(assistant, 'Summarize this question pool')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The current Manage context is available.')
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Question pool')
+
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    await page.evaluate(
+      ({ chatOrigin, context }) => {
+        const frame = document.querySelector(
+          '[data-cy="manage-assistant-frame"]'
+        ) as HTMLIFrameElement | null
+        frame?.contentWindow?.postMessage(
+          { payload: context, type: 'klicker:manage-context' },
+          new URL(chatOrigin).origin
+        )
+      },
+      {
+        chatOrigin,
+        context: {
+          version: 1,
+          source: 'manage',
+          surface: 'course-dashboard',
+          locale: 'en',
+          route: {
+            asPath: '/courses/42',
+            pathname: '/courses/[id]',
+          },
+          ids: { courseId: '42' },
+        },
+      }
+    )
+
+    await expect(
+      assistant.getByTestId('manage-assistant-context-label')
+    ).toHaveText('Course dashboard - Course 42')
+    await expect(
+      assistant.getByTestId('manage-assistant-context-announcement')
+    ).toHaveText('Manage context changed to Course dashboard - Course 42')
+
+    await sendManageAssistantMessage(assistant, 'Summarize the current course')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content').last()
+    ).toContainText('The current Manage context is available.')
+    await expect(
+      assistant.getByText('The current Manage context is available.')
+    ).toBeVisible()
+    await expect(async () => {
+      const latestRequest = requestBodies.at(-1) as
+        | { manageContext?: unknown }
+        | undefined
+      expect(latestRequest?.manageContext).toEqual({
+        version: 1,
+        source: 'manage',
+        surface: 'course-dashboard',
+        locale: 'en',
+        route: {
+          asPath: '/courses/42',
+          pathname: '/courses/[id]',
+        },
+        ids: { courseId: '42' },
+      })
+    }).toPass()
+  })
+
+  test('German draft actions stay localized and open the confirmed draft in Manage', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, { mode: 'proposal' })
+    await mockManageProposalConfirm(page)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/de`)
+
+    const assistant = await openManageAssistantWidget(page)
+    await sendManageAssistantMessage(assistant, 'Entwirf eine Frage')
+
+    await expect(assistant.getByText('Bestätigung erforderlich')).toBeVisible()
+    const createDraft = assistant.getByRole('button', {
+      name: 'Entwurf erstellen',
+    })
+    await expect(createDraft).toBeEnabled()
+    await createDraft.click()
+
+    await expect(
+      assistant.getByText('Entwurf im Fragepool erstellt')
+    ).toBeVisible()
+    const openDraft = assistant.getByRole('button', { name: 'Entwurf öffnen' })
+    await expect(openDraft).toBeVisible()
+    await openDraft.click()
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page).toHaveURL(/editElementId=4242/)
   })
 
   test('Dismissing a proposal collapses the card into a muted note and fires no confirm request', async ({
@@ -207,12 +424,33 @@ test.describe('Manage Assistant — Messaging', () => {
       'Suggest improvements to question feedback'
     )
     await expect(welcome).toContainText(
-      'Explain KlickerUZH features using its documentation and tutorials'
+      'Explain common KlickerUZH workflows using a curated index of documentation and tutorials'
     )
-    await expect(welcome).toContainText('Read-only for everything else')
+    await expect(welcome).toContainText(
+      'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.'
+    )
     await expect(
-      welcome.getByText(/Read-only for everything else/)
+      welcome.getByText(
+        /Documentation help uses a curated index rather than a complete search/
+      )
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
+  })
+
+  test('Degraded suggestion labels follow the German Manage locale', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['unavailable'] })
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/de`)
+
+    const assistant = await openManageAssistantWidget(page)
+    const suggestions = assistant.getByTestId('chat-welcome-suggestion')
+
+    await expect(suggestions).toHaveText([
+      'Frage planen',
+      'Feedback verbessern',
+      'KlickerUZH Hilfe',
+    ])
   })
 
   test('Manage composer accepts at most two images without changing the participant limit', async ({
@@ -369,8 +607,8 @@ test.describe('Manage Assistant — Messaging', () => {
     const input = assistant.getByTestId('chat-composer-input')
 
     await assistant.getByText('Draft a question', { exact: true }).click()
+    await expect(input).not.toHaveValue('')
     const draftPrompt = await input.inputValue()
-    expect(draftPrompt).not.toBe('')
 
     const dialog = page.getByTestId('manage-assistant-drawer')
     await dialog.getByRole('button', { name: 'Close' }).click()
@@ -395,13 +633,15 @@ test.describe('Manage Assistant — Messaging', () => {
     const viewport = page.viewportSize()
     expect(triggerBox).not.toBeNull()
     expect(viewport).not.toBeNull()
+    // The launcher sits in the bottom-right corner region of the viewport:
+    // right-aligned within the fixed 24px md margin (plus rendering slack),
+    // and comfortably below mid-height.
     expect(
-      Math.abs(
-        (triggerBox?.x ?? 0) +
-          (triggerBox?.width ?? 0) / 2 -
-          (viewport?.width ?? 0) / 2
-      )
-    ).toBeLessThanOrEqual(1)
+      (viewport?.width ?? 0) - ((triggerBox?.x ?? 0) + (triggerBox?.width ?? 0))
+    ).toBeLessThanOrEqual(32)
+    expect(triggerBox?.y ?? 0).toBeGreaterThan((viewport?.height ?? 0) / 2)
+    expect(triggerBox?.width ?? 0).toBeLessThanOrEqual(48)
+    expect(triggerBox?.height ?? 0).toBeLessThanOrEqual(48)
 
     await openManageAssistantWidget(page)
 
@@ -431,6 +671,42 @@ test.describe('Manage Assistant — Messaging', () => {
       await panel.evaluate((element) => (element as HTMLElement).inert)
     ).toBe(true)
     await expect(trigger).toBeFocused()
+  })
+
+  test('Closed launcher clears list-ending controls without global page padding', async ({
+    createLiveQuiz,
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(120_000)
+    const questionTitle = `Assistant clearance question ${testInfo.retry}`
+    await createQuestionSC({
+      name: questionTitle,
+      content: 'Synthetic assistant launcher clearance content.',
+      choices: [{ value: 'Correct' }, { value: 'Incorrect' }],
+      userId: LECTURER_ID,
+    })
+    await page.reload()
+    await createLiveQuiz(page, {
+      name: `Assistant clearance quiz ${testInfo.retry}`,
+      displayName: 'Assistant clearance quiz',
+      questionTitle,
+    })
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    for (const viewport of [
+      { height: 800, width: 1280 },
+      { height: 700, width: 320 },
+    ]) {
+      await page.setViewportSize(viewport)
+
+      await page.goto(manageUrl)
+      await expect(page.getByTestId('homepage')).toBeVisible()
+      await expectLauncherClearOfListEnd(page, 'homepage')
+
+      await page.goto(`${manageUrl}/activities`)
+      await expect(page.getByTestId('activities-overview')).toBeVisible()
+      await expectLauncherClearOfListEnd(page, 'activities-overview')
+    }
   })
 
   test('Keyboard focus enters the dock and Escape closes it from inside the iframe', async ({
@@ -594,6 +870,34 @@ test.describe('Manage Assistant — Messaging', () => {
     expect(panelBox?.height).toBeLessThanOrEqual(390)
     await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
     await expect(page.getByTestId('manage-assistant-resize')).toBeHidden()
+    await expect(panel).toHaveRole('dialog')
+    await expect(panel).toHaveAttribute('aria-modal', 'true')
+    const appContent = page.locator('#manage-assistant-app-content')
+    await expect(appContent).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
+
+    const chatInput = page
+      .frameLocator('[data-cy="manage-assistant-frame"]')
+      .getByTestId('chat-composer-input')
+    await chatInput.focus()
+    // Clicking blank compact-panel chrome must not turn the iframe blur into
+    // an escape and steal focus for the persistent close control.
+    await panel.click({
+      position: { x: (panelBox?.width ?? 0) / 2, y: 8 },
+    })
+    await expect(panel.getByRole('button', { name: 'Close' })).not.toBeFocused()
+
+    await expect(page.locator('#__app')).not.toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(
+      await page
+        .locator('#__app')
+        .evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
     expect(
       await page.evaluate(() =>
         JSON.parse(
@@ -603,11 +907,102 @@ test.describe('Manage Assistant — Messaging', () => {
         )
       )
     ).toEqual(desktopSize)
+
+    await panel.getByRole('button', { name: 'Close' }).click()
+    await expect(panel).toBeHidden()
+    await expect(appContent).not.toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
+  })
+
+  test('Desktop size presets share the viewport clamp and remove the old hard maximum', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await page.setViewportSize({ height: 900, width: 1_440 })
+    await page.evaluate(() => {
+      window.localStorage.removeItem('klicker-manage-assistant-panel-size-v1')
+    })
+    await page.reload()
+
+    await openManageAssistantWidget(page)
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const preset = page.getByTestId('manage-assistant-panel-preset')
+    const resize = page.getByTestId('manage-assistant-resize')
+    await expect(preset).toHaveValue('custom')
+    await expect(resize).toHaveCSS('width', '44px')
+    await expect(resize).toHaveCSS('height', '44px')
+
+    await preset.selectOption('wide')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(720)
+      expect(box?.height).toBe(768)
+    }).toPass()
+    await expect(preset).toHaveValue('wide')
+    await expect(preset.locator('option[value="custom"]')).toBeDisabled()
+
+    await preset.selectOption('max')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(1_392)
+      expect(box?.height).toBe(852)
+    }).toPass()
+    await expect(preset).toHaveValue('max')
+
+    await preset.selectOption('default')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(448)
+      expect(box?.height).toBe(672)
+    }).toPass()
+    await expect(preset).toHaveValue('default')
+  })
+
+  test('Crossing the compact breakpoint keeps the conversation and releases modal isolation', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      text: 'The conversation survives the breakpoint change.',
+    })
+    await page.setViewportSize({ height: 900, width: 1_024 })
+    const assistant = await openManageAssistantWidget(page)
+    await sendManageAssistantMessage(assistant, 'Keep this conversation')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The conversation survives the breakpoint change.')
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const appContent = page.locator('#manage-assistant-app-content')
+    await page.setViewportSize({ height: 844, width: 390 })
+    await expect(panel).toHaveRole('dialog')
+    await expect(panel).toHaveAttribute('aria-modal', 'true')
+    await expect(appContent).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
+
+    await page.setViewportSize({ height: 900, width: 1_024 })
+    await expect(panel).toHaveRole('complementary')
+    await expect(panel).not.toHaveAttribute('aria-modal', 'true')
+    await expect(appContent).not.toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The conversation survives the breakpoint change.')
+
+    const search = page.getByPlaceholder('Search...')
+    await search.fill('Manage is interactive again')
+    await expect(search).toHaveValue('Manage is interactive again')
   })
 })
 
 test.describe('Manage Assistant — Per-surface suggestions', () => {
-  test.beforeEach(async ({ loginLecturer }) => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -666,8 +1061,151 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   })
 })
 
-test.describe('Manage Assistant — Slow hydration', () => {
+test.describe('Manage Assistant — Capability availability', () => {
   test.beforeEach(async ({ loginLecturer }) => {
+    await loginLecturer()
+  })
+
+  test('keeps the welcome neutral while capability preflight runs', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      delayMs: 2500,
+      states: ['draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Checking live data and draft availability'
+    )
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText('Plan a question', { exact: true })
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText(
+        'Prepare question drafts and save them only after your confirmation',
+        {
+          exact: true,
+        }
+      )
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText('Prepare question drafts without saving them', {
+        exact: true,
+      })
+    ).toHaveCount(0)
+
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('keeps live reads but relabels draft starters for a read-only inventory', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['read-only'] })
+    const assistant = await openManageAssistantWidget(page)
+
+    await expect(
+      assistant.getByTestId('manage-assistant-capability-status')
+    ).toContainText('this session cannot save draft proposals')
+    await expect(
+      assistant.getByText('Plan a question', { exact: true })
+    ).toBeVisible()
+    await expect(
+      assistant.getByText('Find questions', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('recovers unavailable tools without remounting the iframe', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      states: ['unavailable', 'draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+    const frame = page.locator('[data-cy="manage-assistant-frame"]')
+    await frame.evaluate((element) => {
+      element.setAttribute('data-capability-frame', 'preserved')
+    })
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Live course and question-pool tools are temporarily unavailable'
+    )
+    await expect(
+      assistant.getByText('KlickerUZH help', { exact: true })
+    ).toBeVisible()
+
+    await assistant.getByTestId('manage-assistant-capability-retry').click()
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(frame).toHaveAttribute('data-capability-frame', 'preserved')
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('bounds a stalled preflight and retries without remounting the iframe', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      delaysMs: [5500, 0],
+      states: ['draft-and-read', 'draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+    const frame = page.locator('[data-cy="manage-assistant-frame"]')
+    await frame.evaluate((element) => {
+      element.setAttribute('data-capability-frame', 'preserved')
+    })
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Checking live data and draft availability'
+    )
+    await expect(status).toContainText(
+      'Live course and question-pool tools are temporarily unavailable',
+      { timeout: 10_000 }
+    )
+
+    await assistant.getByTestId('manage-assistant-capability-retry').click()
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(frame).toHaveAttribute('data-capability-frame', 'preserved')
+  })
+
+  test('request-time inventory overrides an optimistic preflight', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['draft-and-read'] })
+    await mockManageChatStream(page, {
+      capabilityState: 'unavailable',
+      text: 'I can still help without live data.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+
+    await sendManageAssistantMessage(assistant, 'Help me plan a question')
+
+    await expect(
+      assistant.getByTestId('manage-assistant-capability-status')
+    ).toContainText(
+      'Live course and question-pool tools are temporarily unavailable'
+    )
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('I can still help without live data.')
+  })
+})
+
+test.describe('Manage Assistant — Slow hydration', () => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -714,10 +1252,98 @@ test.describe('Manage Assistant — Slow hydration', () => {
       suggestions.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
   })
+
+  test('A missing readiness handshake becomes a recoverable delayed state on compact screens', async ({
+    page,
+  }) => {
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    let servedBlankDocument = false
+
+    await page.context().route(`${chatOrigin}/manage**`, (route) => {
+      if (
+        route.request().resourceType() === 'document' &&
+        !servedBlankDocument
+      ) {
+        servedBlankDocument = true
+        return route.fulfill({
+          body: '<!doctype html><title>Delayed assistant</title>',
+          contentType: 'text/html',
+          status: 200,
+        })
+      }
+      return route.fallback()
+    })
+
+    await page.setViewportSize({ height: 844, width: 390 })
+    await page.goto(process.env.URL_MANAGE ?? URL_MANAGE)
+    await page.getByTestId('manage-assistant-open').click()
+
+    const delayed = page.getByTestId('manage-assistant-delayed')
+    await expect(delayed).toBeVisible({ timeout: 15_000 })
+    await expect(delayed).toContainText(
+      'The assistant is taking longer than expected'
+    )
+
+    const fallback = page.getByTestId('manage-assistant-fallback')
+    await expect(fallback).toContainText('Start a separate conversation')
+    const fallbackUrl = new URL((await fallback.getAttribute('href'))!)
+    expect(fallbackUrl.searchParams.has('embed')).toBe(false)
+    expect(fallbackUrl.searchParams.has('parentOrigin')).toBe(false)
+
+    await page.getByTestId('manage-assistant-retry').click()
+    await expect(page.getByTestId('manage-assistant-close')).toBeFocused()
+    await expect(page.getByTestId('manage-assistant-loading')).toContainText(
+      'Reloading assistant'
+    )
+    await page
+      .frameLocator('[data-cy="manage-assistant-frame"]')
+      .getByTestId('chat-composer')
+      .waitFor({ state: 'visible', timeout: 20_000 })
+    await expect(delayed).toBeHidden()
+  })
+
+  test('An iframe load error keeps close and the explicit fresh-conversation fallback available', async ({
+    page,
+  }) => {
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    let abortedDocument = false
+
+    await page.context().route(`${chatOrigin}/manage**`, (route) => {
+      if (route.request().resourceType() === 'document' && !abortedDocument) {
+        abortedDocument = true
+        return route.abort('failed')
+      }
+      return route.fallback()
+    })
+
+    await page.goto(process.env.URL_MANAGE ?? URL_MANAGE)
+    await page.getByTestId('manage-assistant-open').click()
+
+    // Chromium fires load, not error, on a failed iframe navigation, so the
+    // network abort alone never reaches the widget. Playwright dispatches a
+    // bubbling error event on the frame element to exercise the recovery path
+    // owned by the widget's iframe error handler.
+    await page
+      .locator('[data-cy="manage-assistant-frame"]')
+      .dispatchEvent('error')
+
+    await expect(page.getByTestId('manage-assistant-failed')).toBeVisible({
+      timeout: 5_000,
+    })
+    const newTab = page.getByTestId('manage-assistant-new-tab')
+    await expect(newTab).toHaveAccessibleName(
+      'Start a new conversation in a new tab without this page context'
+    )
+
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page.getByTestId('manage-assistant-open')).toBeFocused()
+  })
 })
 
 test.describe('Manage Assistant — Error paths', () => {
-  test.beforeEach(async ({ loginLecturer }) => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -742,11 +1368,14 @@ test.describe('Manage Assistant — Error paths', () => {
     await expect(confirmButton).toBeEnabled()
     await confirmButton.click()
 
-    // Card renders confirmation.type === 'error' with the server's message
-    // verbatim (manage-proposal-card.tsx confirmProposal()).
+    // The card keeps provider and server details out of the visible UI and
+    // maps the failed confirmation to a localized generic category.
+    await expect(
+      assistant.getByText('The draft could not be created. Please try again.')
+    ).toBeVisible()
     await expect(
       assistant.getByText('This proposal is no longer valid. Please ask again.')
-    ).toBeVisible()
+    ).toHaveCount(0)
 
     // No success state: the draft was never created.
     await expect(
@@ -786,8 +1415,11 @@ test.describe('Manage Assistant — Error paths', () => {
     await confirmButton.click()
 
     await expect(
-      assistant.getByText('Your session has expired. Please sign in again.')
+      assistant.getByText('The draft could not be created. Please try again.')
     ).toBeVisible()
+    await expect(
+      assistant.getByText('Your session has expired. Please sign in again.')
+    ).toHaveCount(0)
     await expect(
       assistant.getByText('Draft created in the question pool')
     ).toHaveCount(0)
