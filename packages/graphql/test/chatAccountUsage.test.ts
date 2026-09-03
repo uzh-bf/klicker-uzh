@@ -9,7 +9,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { getZurichMonthReset, getZurichMonthStart } from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
-import type { ContextWithUser } from '@/lib/context.js'
+import type { ContextWithUser, FeatureFlagEvaluator } from '@/lib/context.js'
 import {
   getChatAccountUsage,
   setChatAccountUsageBudgets,
@@ -80,10 +80,18 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     sub: string,
     role: UserRole,
     scope: UserLoginScope,
-    catalyst = false
+    {
+      featureFlags = flagEvaluator(true),
+      catalyst = false,
+    }: {
+      featureFlags?: FeatureFlagEvaluator | null
+      catalyst?: boolean
+    } = {}
   ): ContextWithUser {
     return {
       prisma,
+      // null models a backend that never received an evaluator.
+      featureFlags: featureFlags === null ? undefined : featureFlags,
       user: {
         sub,
         role,
@@ -92,6 +100,10 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         catalystIndividual: false,
       },
     } as ContextWithUser
+  }
+
+  function flagEvaluator(enabled: boolean): FeatureFlagEvaluator {
+    return { isEnabled: vi.fn(() => enabled) }
   }
 
   async function seedUsage({
@@ -671,6 +683,67 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(result.errors?.[0]?.message).toBe('Unauthorized')
   })
 
+  it('hides usage data when the feature evaluator is absent', async () => {
+    // A minimal client proves the absent-evaluator path reaches no query at all.
+    const prismaSpy = {
+      user: { findUnique: vi.fn() },
+      chatAccountUsage: { findFirst: vi.fn() },
+    } as unknown as PrismaClient
+    const result = await getChatAccountUsage({}, {
+      ...contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+        featureFlags: null,
+      }),
+      prisma: prismaSpy,
+    } as ContextWithUser)
+
+    expect(result).toBeNull()
+    expect(prismaSpy.user.findUnique).not.toHaveBeenCalled()
+    expect(prismaSpy.chatAccountUsage.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('hides usage data when the feature flag evaluates false', async () => {
+    const evaluator = flagEvaluator(false)
+    const result = await getChatAccountUsage(
+      {},
+      contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+        featureFlags: evaluator,
+      })
+    )
+
+    expect(result).toBeNull()
+    expect(evaluator.isEnabled).toHaveBeenCalledWith(
+      'ai-beta',
+      expect.objectContaining({ id: ownerId, actorType: 'user' })
+    )
+  })
+
+  it('keeps cross-owner access forbidden while the gate is false', async () => {
+    await expect(
+      getChatAccountUsage(
+        { ownerId: otherOwnerId },
+        contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER, {
+          featureFlags: flagEvaluator(false),
+        })
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+  })
+
+  it('keeps the admin budget mutation available while the read gate is false', async () => {
+    const adminCtx = contextFor(
+      adminId,
+      UserRole.ADMIN,
+      UserLoginScope.FULL_ACCESS,
+      { featureFlags: flagEvaluator(false) }
+    )
+    const overview = await setChatAccountUsageBudgets(
+      { ownerId, baseBudgetCredits: 3, advancedBudgetCredits: 4 },
+      adminCtx
+    )
+
+    expect(overview?.baseModelUsage.budgetCredits).toBe(3)
+    expect(overview?.advancedModelUsage.budgetCredits).toBe(4)
+  })
+
   it('exposes only the live publication capability to full-access lecturers', async () => {
     const source = `query { getChatbotPublishingCapability }`
 
@@ -682,7 +755,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       ownerId,
       UserRole.USER,
       UserLoginScope.FULL_ACCESS,
-      true
+      { catalyst: true }
     )
     const enabledResult = await executeGraphql({
       source,

@@ -17,6 +17,7 @@
     "@graphql-yoga/plugin-response-cache": "1.9.1",
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
@@ -80,7 +81,8 @@
     "script": "../../util/_run_with_infisical.sh --env dev tsx",
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config dist/index.js"
+    "start:test": "nyc --silent node -r dotenv/config dist/index.js",
+    "test:run": "tsx --test \"src/**/*.test.ts\""
   },
   "engines": {
     "node": "=24"

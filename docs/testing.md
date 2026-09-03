@@ -190,6 +190,13 @@ public route. The required status gate deliberately has no concurrency group,
 so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
+The public route executes composite build and shard actions from trusted `v3`,
+not from the pull-request checkout. A pull request therefore cannot make a new
+runtime package available to its own shards merely by adding that package to
+the artifact path. Bundle a new runtime dependency into an already transferred
+service artifact, or land the trusted artifact-contract change on `v3` first;
+inspect the downloaded artifact when a built package is missing at shard
+startup.
 
 Each CI shard also carries an explicit runtime profile from
 `playwright/profiles.json`. Every active spec must appear in that manifest
