@@ -1,4 +1,5 @@
 import { seedActivities } from '../global-setup.js'
+import { readFile } from 'node:fs/promises'
 import { URL_MANAGE } from '../util/constants.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
@@ -48,21 +49,43 @@ test.describe('Tests the availability of standard activity creation formats', ()
   }) => {
     await loginLecturer()
 
+    // Production builds send hashed queries as GET requests without an
+    // operationName, so decode the persisted hash back to the operation name.
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const persistedNames: Record<string, string> = {}
+    for (const [name, hash] of Object.entries(persistedOperations)) {
+      persistedNames[hash] = name
+    }
+
     const graphqlOperations: string[] = []
     page.on('request', (request) => {
-      if (
-        request.method() !== 'POST' ||
-        !request.url().endsWith('/api/graphql')
-      ) {
+      if (!request.url().endsWith('/api/graphql')) return
+
+      if (request.method() === 'POST') {
+        const postData = request.postData()
+        const operationName = postData
+          ? (JSON.parse(postData) as { operationName?: string }).operationName
+          : undefined
+        if (operationName) graphqlOperations.push(operationName)
         return
       }
 
-      const postData = request.postData()
-      const operationName = postData
-        ? (JSON.parse(postData) as { operationName?: string }).operationName
+      const extensions = new URL(request.url()).searchParams.get('extensions')
+      const hash = extensions
+        ? (JSON.parse(extensions) as { persistedQuery?: { hash?: string } })
+            .persistedQuery?.hash
         : undefined
-
-      if (operationName) graphqlOperations.push(operationName)
+      if (hash) {
+        graphqlOperations.push(persistedNames[hash] ?? `persisted:${hash}`)
+      }
     })
 
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
@@ -70,7 +93,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expect(
       page.getByTestId('chat-account-usage-boundary')
     ).not.toBeAttached()
-    expect(graphqlOperations).toContain('GetUserLogins')
+    await expect.poll(() => graphqlOperations).toContain('GetUserLogins')
     expect(graphqlOperations).not.toContain('GetChatAccountUsage')
   })
 
