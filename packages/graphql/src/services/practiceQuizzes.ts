@@ -489,7 +489,10 @@ export async function changePracticeQuizName(
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
     return true
   } catch (error) {
-    console.error('Error changing practice quiz name:', error)
+    ctx.log.error(
+      { event: 'practice-quiz.rename.failed' },
+      'Practice quiz rename failed'
+    )
     return false
   }
 }
@@ -542,6 +545,7 @@ export async function publishPracticeQuiz(
       const scheduledTask =
         await ctx.tasks.publishScheduledPracticeQuiz.schedule(availableFrom, {
           practiceQuizId: id,
+          loggingContext: ctx.requestContext,
         })
       const taskId = scheduledTask.metadata.id
 
@@ -558,7 +562,10 @@ export async function publishPracticeQuiz(
       ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
       return updatedQuiz
     } catch (error) {
-      console.error('Error scheduling practice quiz publication:', error)
+      ctx.log.error(
+        { event: 'hatchet.schedule.failed', task: 'practice-quiz-publish' },
+        'Hatchet task scheduling failed'
+      )
       return null
     }
   } else {
@@ -604,9 +611,12 @@ export async function unpublishPracticeQuiz(
         practiceQuiz.scheduledPublicationTaskId
       )
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for practice quiz ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'practice-quiz-publish',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -680,9 +690,12 @@ export async function deletePracticeQuiz(
           deletedItem.scheduledPublicationTaskId
         )
       } catch (error) {
-        console.error(
-          `Failed to delete scheduled task for practice quiz ${id}:`,
-          error
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'practice-quiz-publish',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -838,7 +851,6 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
 
       return true
     } catch (error) {
-      console.error('Error publishing scheduled practice quiz:', error)
       await sendTeamsNotification({
         scope: 'hatchet/practice-quiz-start',
         text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,

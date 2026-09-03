@@ -1,4 +1,6 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import type { RequestContext } from '@klicker-uzh/logging/request'
 import {
   PrismaClient,
   UserLoginScope,
@@ -11,7 +13,13 @@ import type { Redis } from 'ioredis'
 import type { EventEmitter } from 'node:events'
 
 interface BaseContext {
-  req: Request & { locals: { user?: any } }
+  req: Request & {
+    locals: {
+      user?: any
+      requestContext: RequestContext
+      log: AppLogger
+    }
+  }
   res: Response
 }
 
@@ -33,6 +41,8 @@ export interface Context extends BaseContext {
   hatchet: Hatchet
   // available hatchet tasks
   tasks: PreparedHatchetTasks
+  requestContext: RequestContext
+  log: AppLogger
 }
 
 export interface ContextWithUser extends Context {
@@ -60,6 +70,8 @@ function enhanceContext(args = {}) {
   return ({ req }: BaseContext) => ({
     ...args,
     user: req?.locals?.user,
+    requestContext: req.locals.requestContext,
+    log: req.locals.log,
   })
 }
 

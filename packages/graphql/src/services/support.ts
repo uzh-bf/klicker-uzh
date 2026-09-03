@@ -65,7 +65,10 @@ export async function requestCatalystAccess(
   })
 
   if (!sent) {
-    console.error('Failed to send Catalyst access request')
+    ctx.log.error(
+      { event: 'support.catalyst_access.email_failed' },
+      'Failed to send Catalyst access request'
+    )
     throw new GraphQLError('Internal server error', {
       extensions: { code: 'INTERNAL_SERVER_ERROR' },
     })

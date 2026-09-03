@@ -1786,7 +1786,10 @@ export async function setActivityReviewStatus(
       return !!groupActivity ? reviewStatus : null
     }
   } catch (error) {
-    console.error('Error setting activity review status:', error)
+    ctx.log.error(
+      { event: 'activity.review-status.update.failed' },
+      'Activity review status update failed'
+    )
     return null
   }
 

@@ -1,4 +1,4 @@
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { createHatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
@@ -34,6 +34,7 @@ import { handlePublishScheduledPracticeQuiz } from '../services/practiceQuizzes.
 const DRY_RUN = true
 
 async function run() {
+  const hatchetClient = createHatchetClient()
   const emitter = new EventEmitter()
 
   // connect to the assessment live quiz
