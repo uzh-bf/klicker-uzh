@@ -6,7 +6,8 @@ import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+export const DEFAULT_CHATBOT_ID =
+  '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 export const DEFAULT_MODEL_ID = 'gpt-5.6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
@@ -85,16 +86,12 @@ function yamlScalar(value) {
 export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   const normalized = text.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n')) {
-    throw evaluationError(
-      `ground_truth_frontmatter_missing:${basename(filePath)}`
-    )
+    throw evaluationError(`ground_truth_frontmatter_missing:${basename(filePath)}`)
   }
 
   const end = normalized.indexOf('\n---', 4)
   if (end < 0) {
-    throw evaluationError(
-      `ground_truth_frontmatter_unclosed:${basename(filePath)}`
-    )
+    throw evaluationError(`ground_truth_frontmatter_unclosed:${basename(filePath)}`)
   }
 
   const values = new Map()
@@ -102,9 +99,7 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
     const match = /^(question|mode):\s*(.*)$/.exec(line)
     if (!match) continue
     if (values.has(match[1])) {
-      throw evaluationError(
-        `ground_truth_duplicate_field:${basename(filePath)}`
-      )
+      throw evaluationError(`ground_truth_duplicate_field:${basename(filePath)}`)
     }
     values.set(match[1], yamlScalar(match[2]))
   }
@@ -153,10 +148,7 @@ export async function loadCanaryFixture(filePath) {
   ) {
     throw evaluationError('canary_fixture_invalid')
   }
-  if (
-    !Number.isInteger(fixture.maxStreamBytes) ||
-    fixture.maxStreamBytes <= 0
-  ) {
+  if (!Number.isInteger(fixture.maxStreamBytes) || fixture.maxStreamBytes <= 0) {
     throw evaluationError('canary_fixture_max_stream_invalid')
   }
   return {
@@ -295,11 +287,7 @@ async function drainResponse(response, maxBytes) {
       } catch {
         throw evaluationError('chat_stream_invalid')
       }
-      if (
-        !event ||
-        typeof event !== 'object' ||
-        typeof event.type !== 'string'
-      ) {
+      if (!event || typeof event !== 'object' || typeof event.type !== 'string') {
         throw evaluationError('chat_stream_invalid')
       }
       if (event.type === 'finish') streamState.finished = true
@@ -315,11 +303,7 @@ async function drainResponse(response, maxBytes) {
         if (done) {
           buffer += decoder.decode()
           if (buffer) inspectLine(buffer)
-          if (
-            !streamState.done ||
-            !streamState.finished ||
-            streamState.events === 0
-          ) {
+          if (!streamState.done || !streamState.finished || streamState.events === 0) {
             throw evaluationError('chat_stream_incomplete')
           }
           completed = true
@@ -552,14 +536,7 @@ export class KlickerEvaluationTarget {
     return body.id
   }
 
-  async submitTurn({
-    question,
-    mode,
-    threadId,
-    userMessageId,
-    assistantMessageId,
-    maxStreamBytes,
-  }) {
+  async submitTurn({ question, mode, threadId, userMessageId, assistantMessageId, maxStreamBytes }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
       {
@@ -608,8 +585,7 @@ export class KlickerEvaluationTarget {
         ? body.find((candidate) => candidate?.id === assistantMessageId)
         : null
       if (message) {
-        if (message.chatMode !== mode)
-          throw evaluationError('chat_mode_mismatch')
+        if (message.chatMode !== mode) throw evaluationError('chat_mode_mismatch')
         if (message.modelId !== this.modelId) {
           throw evaluationError('chat_model_mismatch')
         }
@@ -652,8 +628,7 @@ export class KlickerEvaluationTarget {
   }
 
   async complete(body) {
-    if (!body || typeof body !== 'object')
-      throw evaluationError('request_invalid')
+    if (!body || typeof body !== 'object') throw evaluationError('request_invalid')
     if (body.model !== this.modelId) throw evaluationError('model_mismatch')
     if (body.stream === true) throw evaluationError('stream_must_be_false')
     if (!Array.isArray(body.messages) || body.messages.length !== 1) {
@@ -799,14 +774,9 @@ export async function main() {
   })
 }
 
-if (
-  process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
-    process.stderr.write(
-      `klicker-evaluation-target: ${error?.code || 'startup_failed'}\n`
-    )
+    process.stderr.write(`klicker-evaluation-target: ${error?.code || 'startup_failed'}\n`)
     process.exitCode = 1
   })
 }
