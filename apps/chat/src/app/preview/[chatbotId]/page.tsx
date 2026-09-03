@@ -5,10 +5,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { z } from 'zod'
 import { OwnerPreviewAssistant } from '@/src/components/owner-preview-assistant'
-import {
-  hasConfiguredModeDescriptions,
-  resolveModeDescriptions,
-} from '@/src/lib/config/modes'
+import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
 import { getOwnerPreviewAccess } from '@/src/lib/server/ownerPreviewAuth'
 
 type OwnerPreviewPageProps = {
@@ -40,13 +37,23 @@ export default async function OwnerPreviewPage({
       name: true,
       status: true,
       systemPrompts: true,
+      mcpConfigurations: {
+        select: {
+          allowedTools: true,
+          chatMode: true,
+          isEnabled: true,
+          parameters: true,
+          priority: true,
+          mcpServer: { select: { id: true } },
+        },
+      },
     },
   })
   if (!chatbot || chatbot.status === ChatbotStatus.PAUSED) notFound()
 
-  const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
-  const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(
-    chatbot.systemPrompts
+  const initialModeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
   )
   const manageBaseUrl = (
     process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
@@ -60,7 +67,6 @@ export default async function OwnerPreviewPage({
         name: chatbot.name,
       }}
       initialModeOptions={initialModeOptions}
-      initialModeOptionsAreFallback={initialModeOptionsAreFallback}
       manageUrl={`${manageBaseUrl}/resources/chatbots/${encodeURIComponent(chatbot.id)}`}
     />
   )

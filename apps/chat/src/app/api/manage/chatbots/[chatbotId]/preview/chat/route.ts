@@ -11,6 +11,11 @@ import { z } from 'zod'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import { getModelsForChatbot } from '@/src/lib/server/chatModelRegistry'
 import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
+} from '@/src/lib/server/effectiveChatModes'
+import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
   readBoundedJson,
@@ -42,19 +47,6 @@ const previewOptionsSchema = z.object({
     .transform((value) => value.toLowerCase())
     .default('tutor'),
 })
-
-function chatbotModes(systemPrompts: unknown): Set<string> {
-  if (
-    !systemPrompts ||
-    typeof systemPrompts !== 'object' ||
-    Array.isArray(systemPrompts)
-  ) {
-    return new Set(['tutor'])
-  }
-
-  const modes = Object.keys(systemPrompts).filter((mode) => mode.trim())
-  return new Set(modes.length > 0 ? modes : ['tutor'])
-}
 
 function isRequiredMcp(parameters: unknown): boolean {
   return Boolean(
@@ -151,16 +143,24 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
-  const selectedMode = options.data.selectedMode
-  if (!chatbotModes(chatbot.systemPrompts).has(selectedMode)) {
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
+  )
+  const selectedMode = resolveRequestedChatMode(
+    modeOptions,
+    options.data.selectedMode
+  )
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
       { error: `Unsupported chat mode: ${selectedMode}` },
       { status: 400 }
     )
   }
 
-  const modeConfigurations = chatbot.mcpConfigurations.filter(
-    (configuration) => configuration.chatMode === selectedMode
+  const modeConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations,
+    selectedMode
   )
   if (
     modeConfigurations.some(

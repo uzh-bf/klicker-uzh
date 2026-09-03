@@ -20,14 +20,12 @@ type OwnerPreviewAssistantProps = {
     name: string
   }
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
   manageUrl: string
 }
 
 export function OwnerPreviewAssistant({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
   manageUrl,
 }: OwnerPreviewAssistantProps) {
   const t = useTranslations('chat.ownerPreview')
@@ -85,7 +83,6 @@ export function OwnerPreviewAssistant({
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
               maxImageAttachments={0}
             />
           </main>
