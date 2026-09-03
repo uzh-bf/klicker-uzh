@@ -170,11 +170,8 @@ export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
   }),
 })
 
-export type ChatbotStandardModeConfigInputType =
-  ChatbotStandardModeConfigInputShape
-
 export const ChatbotStandardModeConfigInputRef =
-  builder.inputRef<ChatbotStandardModeConfigInputType>(
+  builder.inputRef<ChatbotStandardModeConfigInputShape>(
     'ChatbotStandardModeConfigInput'
   )
 export const ChatbotStandardModeConfigInput =

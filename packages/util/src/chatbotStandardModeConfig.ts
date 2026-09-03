@@ -10,13 +10,6 @@ export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
 
 const supportedLocales = new Set<Locale>(['en', 'de'])
 
-export class ChatbotStandardModeConfigValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ChatbotStandardModeConfigValidationError'
-  }
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -30,21 +23,15 @@ function normalizeSingleLineText(
     return null
   }
   if (typeof value !== 'string') {
-    throw new ChatbotStandardModeConfigValidationError(
-      `${fieldName} must be a string or null`
-    )
+    throw new Error(`${fieldName} must be a string or null`)
   }
 
   const normalized = value.trim()
   if (normalized.includes('\n') || normalized.includes('\r')) {
-    throw new ChatbotStandardModeConfigValidationError(
-      `${fieldName} must be a single line`
-    )
+    throw new Error(`${fieldName} must be a single line`)
   }
   if (normalized.length > maxLength) {
-    throw new ChatbotStandardModeConfigValidationError(
-      `${fieldName} must be at most ${maxLength} characters long`
-    )
+    throw new Error(`${fieldName} must be at most ${maxLength} characters long`)
   }
 
   return normalized.length > 0 ? normalized : null
@@ -55,14 +42,12 @@ function normalizeScopeNote(value: unknown) {
     return null
   }
   if (typeof value !== 'string') {
-    throw new ChatbotStandardModeConfigValidationError(
-      'scopeNote must be a string or null'
-    )
+    throw new Error('scopeNote must be a string or null')
   }
 
   const normalized = value.replace(/\r\n?/g, '\n').trim()
   if (normalized.length > CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH) {
-    throw new ChatbotStandardModeConfigValidationError(
+    throw new Error(
       `scopeNote must be at most ${CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH} characters long`
     )
   }
@@ -75,9 +60,7 @@ function normalizeLocale(value: unknown) {
     return null
   }
   if (typeof value !== 'string' || !supportedLocales.has(value as Locale)) {
-    throw new ChatbotStandardModeConfigValidationError(
-      'languageOfInstruction must be en, de, or null'
-    )
+    throw new Error('languageOfInstruction must be en, de, or null')
   }
 
   return value as Locale
@@ -85,24 +68,16 @@ function normalizeLocale(value: unknown) {
 
 function parseConfig(value: unknown): ChatbotStandardModeConfig {
   if (!isRecord(value)) {
-    throw new ChatbotStandardModeConfigValidationError(
-      'standardModeConfig must be an object'
-    )
+    throw new Error('standardModeConfig must be an object')
   }
   if (typeof value.tutorEnabled !== 'boolean') {
-    throw new ChatbotStandardModeConfigValidationError(
-      'tutorEnabled must be a boolean'
-    )
+    throw new Error('tutorEnabled must be a boolean')
   }
   if (typeof value.explainerEnabled !== 'boolean') {
-    throw new ChatbotStandardModeConfigValidationError(
-      'explainerEnabled must be a boolean'
-    )
+    throw new Error('explainerEnabled must be a boolean')
   }
   if (!value.tutorEnabled && !value.explainerEnabled) {
-    throw new ChatbotStandardModeConfigValidationError(
-      'At least one standard mode must be enabled'
-    )
+    throw new Error('At least one standard mode must be enabled')
   }
 
   return {
