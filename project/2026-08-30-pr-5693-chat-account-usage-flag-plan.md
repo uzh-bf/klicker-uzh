@@ -38,18 +38,21 @@ must reach long-running backend processes without a restart.
 
 ## Plan identity and authority
 
-- Plan path: `project/2026-08-30-chat-account-usage-flag-plan.md`
+- Plan path: `project/2026-08-30-pr-5693-chat-account-usage-flag-plan.md`
 - Branch: `rs/chat-account-usage-flag`
 - Target branch: `v3`
 - Base: `origin/v3` at
-  `acf56b5331a24d4f53729046d9784d4aed006f65`
+  `afba9120512cdd6d6ba43cc87997520a3a0d0a1a`
 - Worktree: `trees/rs/chat-account-usage-flag`
-- Delivery: one independent draft PR targeting `v3`
-- Current authority: planning and reversible local preparation only
-- Approval terminal: in-scope edits, checks, browser evidence, required
-  reviews, conventional commits, push of this branch, and draft PR creation
-- Withheld actions: upstream integration, merge, deployment, GrowthBook
-  mutation, and feature activation
+- Delivery: update PR #5693 targeting `v3` at the exact passing branch head
+- Current authority: the approved implementation, one integration of current
+  `origin/v3`, in-scope corrections, checks, required reviews, conventional
+  commits, a normal push of this branch, and PR evidence reconciliation
+- Completed authority boundary: current `origin/v3` was integrated once in
+  merge commit `0c56eefb1adb6c91cba61f0cf10990f4145eb511`
+- Withheld actions: another upstream integration, force push, merge,
+  deployment, GrowthBook mutation or feature activation, and cluster or
+  staging changes
 
 ## Current findings
 
@@ -217,8 +220,9 @@ does not present a UI whose backend state transition is not yet settled.
 - Stop if direct GraphQL access can bypass the evaluator.
 - Stop if fresh flag evaluation requires a new runtime dependency, a force-on
   escape hatch, or unrelated `v3-ai` code.
-- Stop before upstream integration if `origin/v3` moves after implementation;
-  report drift and request the one integration approval.
+- Stop before another upstream integration if `origin/v3` moves again; report
+  drift and request a new integration approval only if the movement blocks the
+  normal push or materially overlaps this PR.
 
 ## Delegation and review ownership
 
@@ -235,7 +239,33 @@ does not present a UI whose backend state transition is not yet settled.
 - [x] Revalidated frontend, GraphQL, and feature-flag seams.
 - [x] Confirmed bounded polling avoids a new EventSource dependency.
 - [x] Disposition the independent planning review.
-+ [x] Receive one-time approval for this execution plan.
-+ [x] Commit the plan and complete Slices 2 and 3.
-+ [x] Run browser proof, checks, and reviews. (Browser true-state capture is not feasible locally without a GrowthBook instance; mutating GrowthBook is withheld. The true path is covered by the 19 GraphQL service/schema tests.)
-+ [x] Push and open the draft PR.
+- [x] Received one-time approval for this execution plan and its named normal
+  branch push and PR update.
+- [x] Committed the plan and completed the server, GraphQL, and Manage UI
+  slices.
+- [x] Captured the false browser state before upstream integration. A local
+  true-state capture requires a GrowthBook instance and remains outside the
+  approved mutation boundary; 19 GraphQL service and schema tests covered the
+  true path on the pre-integration head.
+- [x] Opened PR #5693 and pushed the pre-integration implementation.
+- [x] Integrated `origin/v3` at
+  `afba9120512cdd6d6ba43cc87997520a3a0d0a1a` once in merge commit
+  `0c56eefb1adb6c91cba61f0cf10990f4145eb511`. The only conflict was the shared
+  GraphQL test helper; the resolution preserves both feature-gate tests and the
+  upstream chatbot-publication test.
+- [x] Corrected valid PR review findings in commit `2a2e0b386`: malformed
+  refresh intervals now warn and use the default, failed initialization is no
+  longer logged as ready, and duplicate Turbo environment entries are removed.
+- [x] Passed the feature-flag package suite with 36 tests, backend typecheck,
+  full repository pre-commit checks, 57 Playwright policy tests, 9 Playwright
+  host tests, and staged Gitleaks scans. Host checks used Node 26.8.1 while the
+  repository pins Node 24, so CI remains the authoritative toolchain check.
+- [ ] Re-run the database-backed GraphQL suite on the integrated head. Two
+  supported `devrouter ensure` attempts were blocked before startup because
+  Docker could not resolve `index.docker.io` and the required Node 24 image is
+  not cached. Each attempt ended with a successful exact-workspace stop.
+- [ ] Complete the corrective-slice simplifier and integrated final review,
+  then disposition any verified findings.
+- [ ] Run the final clean-tree suite and production build, normally push the
+  exact passing head, and reconcile the PR body and GitHub status. Do not merge
+  or deploy.
