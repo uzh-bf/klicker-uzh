@@ -1,0 +1,53 @@
+{
+  "name": "@klicker-uzh/logging",
+  "version": "3.4.0-alpha.64",
+  "license": "AGPL-3.0",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "pino": "9.14.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/node": "^24.10.1",
+    "cross-env": "~7.0.3",
+    "npm-run-all": "~4.1.5",
+    "pino-pretty": "~13.1.3",
+    "rollup": "~4.34.9",
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
+  },
+  "scripts": {
+    "build": "run-s --npm-path pnpm build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
+    "dev": "cross-env NODE_ENV=development rollup -c --watch",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "exports": {
+    "./edge": {
+      "types": "./dist/edge.d.ts",
+      "default": "./dist/edge.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./request": {
+      "types": "./dist/request.d.ts",
+      "default": "./dist/request.js"
+    }
+  },
+  "type": "module"
+}

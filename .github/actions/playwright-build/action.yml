@@ -164,12 +164,22 @@ runs:
           apps/frontend-manage/.next \
           apps/frontend-pwa/.next
 
+    - name: Archive logging runtime output
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -s packages/logging/dist/node.js
+        test -s packages/logging/dist/edge.js
+        test -s packages/logging/dist/request.js
+        tar -cf playwright-logging-dist.tar -C packages/logging dist
+
     - name: Upload Playwright build outputs
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-artifact
         path: |
           playwright-next-builds.tar
+          playwright-logging-dist.tar
           apps/backend-docker/dist
           apps/hatchet-worker-general/dist
           apps/hatchet-worker-response-processor/dist
@@ -181,6 +191,7 @@ runs:
           packages/grading/dist
           packages/graphql/dist
           packages/hatchet/dist
+          packages/logging/dist
           packages/markdown/dist
           packages/prisma/dist
           packages/types/dist

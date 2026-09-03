@@ -1,10 +1,11 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
+import EventEmitter from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
-import EventEmitter from 'events'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
@@ -44,6 +45,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
     if (unknown.length) {
       logger.warn(
         {
+          event: 'hatchet.workflow.selection.invalid',
           unknownKeys: unknown,
           availableKeys: Object.keys(workflows),
         },
@@ -52,13 +54,20 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
     }
   }
 
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
+  return {
+    selectedKeys: validSelectedKeys,
+    workflows: validSelectedKeys.map((key) => workflows[key]),
+  }
 }
 
 async function main() {
-  logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
+  logger.info(
+    {
+      event: 'hatchet.worker.starting',
+      workerName: HATCHET_WORKER_NAME,
+    },
+    'Starting Hatchet worker'
+  )
 
   const redisExec = new Redis({
     family: 4,
@@ -109,7 +118,7 @@ async function main() {
 
   const emitter = new EventEmitter()
 
-  logger.info('Connecting to Hatchet...')
+  logger.info({ event: 'hatchet.client.connecting' }, 'Connecting to Hatchet')
 
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -121,14 +130,21 @@ async function main() {
     handlers,
   })
 
-  const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
+  const { selectedKeys, workflows } = selectWorkflows(preparedWorkflows)
+  logger.info(
+    {
+      event: 'hatchet.workflow.selected',
+      selectedKeys,
+    },
+    'Selected Hatchet workflows'
   )
-  logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    {
+      event: 'hatchet.worker.creating',
+      workerName: HATCHET_WORKER_NAME,
+      workflowCount: workflows.length,
+    },
     'Creating Hatchet worker'
   )
 
@@ -136,20 +152,38 @@ async function main() {
     workflows,
   })
 
-  logger.info('Starting worker to process jobs...')
   await worker.start()
 
-  logger.info('Worker started successfully and ready to process jobs')
+  logger.info(
+    {
+      event: 'hatchet.worker.started',
+      workerName: HATCHET_WORKER_NAME,
+      workflowCount: workflows.length,
+    },
+    'Hatchet worker is ready'
+  )
 }
 
-process.on('unhandledRejection', (reason) => {
-  logger.fatal({ err: reason }, 'Unhandled promise rejection')
+process.on('unhandledRejection', () => {
+  logger.fatal(
+    {
+      event: 'process.unhandled_rejection',
+      err: toSafeError('Unhandled rejection'),
+    },
+    'Unhandled promise rejection'
+  )
   // Let the process crash; orchestration should restart it
   process.exit(1)
 })
 
-process.on('uncaughtException', (err) => {
-  logger.fatal({ err }, 'Uncaught exception')
+process.on('uncaughtException', () => {
+  logger.fatal(
+    {
+      event: 'process.uncaught_exception',
+      err: toSafeError('Uncaught exception'),
+    },
+    'Uncaught exception'
+  )
   process.exit(1)
 })
 
