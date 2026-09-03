@@ -157,8 +157,11 @@ describe('assessment audit activation', () => {
       })
     ).rejects.toThrow('changed while its audit baseline was staged')
     expect(
-      await prisma.assessmentAuditScope.count({ where: { liveQuizId } })
-    ).toBe(0)
+      await prisma.assessmentAuditScope.findMany({
+        where: { liveQuizId },
+        select: { coverageState: true },
+      })
+    ).toEqual([{ coverageState: 'FAILED' }])
     expect(
       await prisma.assessmentAuditOutboxEvent.count({
         where: { liveQuizId },
@@ -255,8 +258,11 @@ describe('assessment audit activation', () => {
       await prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuizId } })
     ).toMatchObject({ status: 'ENDED', finishedAt })
     expect(
-      await prisma.assessmentAuditScope.count({ where: { liveQuizId } })
-    ).toBe(0)
+      await prisma.assessmentAuditScope.findMany({
+        where: { liveQuizId },
+        select: { coverageState: true },
+      })
+    ).toEqual([{ coverageState: 'ACTIVATING' }])
   })
 
   it('rolls back a covered business mutation when producer evidence is invalid', async () => {

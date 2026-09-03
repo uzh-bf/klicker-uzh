@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode, type ElementData } from '@klicker-uzh/types'
+import type { ContextWithUser } from '../src/lib/context.js'
 import type { AssessmentBaselineSnapshot } from '../src/services/assessmentAuditBaseline.js'
 import {
   assessmentAuditSystemOperation,
@@ -15,6 +16,7 @@ import {
   assessmentResponseSnapshot,
   buildAssessmentMutationAuditDrafts,
 } from '../src/services/assessmentAuditProducers.js'
+import { withPermission } from '../src/services/sharing.js'
 
 function snapshot(): AssessmentBaselineSnapshot {
   return {
@@ -213,6 +215,7 @@ describe('assessment lecturer and system producer snapshots', () => {
     const response = {
       id: 7,
       submittedAt: new Date('2026-08-12T08:00:00.123Z'),
+      submissionId: null,
       response: {
         choices: [
           { ix: 2, selected: true },
@@ -355,6 +358,62 @@ describe('assessment lecturer and system producer snapshots', () => {
       },
       correlationId: '44444444-4444-4444-8444-444444444444',
       occurredAt: new Date('2026-08-12T08:00:00.000Z'),
+    })
+  })
+
+  it('records an authenticated rejection at the permission boundary', async () => {
+    const liveQuizId = randomUUID()
+    const userId = randomUUID()
+    const courseId = randomUUID()
+    type StoredAuditRow = { canonicalEnvelope: string }
+    const rows: StoredAuditRow[] = []
+    const outbox = {
+      createMany: async ({ data }: { data: StoredAuditRow[] }) => {
+        rows.push(...data)
+      },
+      findMany: async () => rows,
+    }
+    const prisma = {
+      derivedPermission: { findUnique: async () => null },
+      assessmentAuditScope: {
+        findFirst: async () => ({ lifecycleEpoch: 3 }),
+      },
+      liveQuiz: { findUnique: async () => ({ courseId }) },
+      $transaction: async (
+        callback: (tx: {
+          assessmentAuditOutboxEvent: typeof outbox
+        }) => Promise<unknown>
+      ) => callback({ assessmentAuditOutboxEvent: outbox }),
+    }
+    const resolver = withPermission(
+      () => ({ liveQuizId }),
+      DB.PermissionLevel.ADMIN,
+      async () => {
+        throw new Error('the protected resolver must not run')
+      },
+      { actionType: 'ASSESSMENT_DELETE' }
+    )
+
+    const result = await resolver(undefined, {}, {
+      user: { sub: userId },
+      prisma,
+    } as unknown as ContextWithUser)
+
+    expect(result).toBeNull()
+    expect(rows).toHaveLength(1)
+    const envelope = JSON.parse(rows[0]!.canonicalEnvelope)
+    expect(envelope).toMatchObject({
+      eventType: 'ASSESSMENT_ACTION_REJECTED',
+      actor: { kind: 'USER', userId },
+      authorization: {
+        decision: 'DENIED',
+        resolvedObjectScope: { type: 'LIVE_QUIZ', id: liveQuizId },
+      },
+      scope: { liveQuizId, lifecycleEpoch: 3, courseId },
+      payload: {
+        actionType: 'ASSESSMENT_DELETE',
+        reasonCode: 'INSUFFICIENT_PERMISSION',
+      },
     })
   })
 })

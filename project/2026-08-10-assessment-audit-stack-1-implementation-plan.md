@@ -402,7 +402,9 @@ review required by decision 26.
   `packages/prisma/src/prisma/schema/migrations/<timestamp>_assessment_audit_core/migration.sql`.
 - Run the required Prisma analytics sync; modify generated analytics schema only
   through that workflow.
-- Create `docs/assessment-audit-evidence.md` and link it from `docs/index.md`.
+- Create `docs/assessment-audit-evidence.md`. The repository deliberately keeps
+  `docs/index.md` and `docs/log/` absent; discover the page through the docs
+  directory and the direct links in affected documentation.
 - Update `turbo.json` only for the two rollout variables; Azure endpoints are
   added with the deployment layer.
 
@@ -735,6 +737,9 @@ Branch: `feat/assessment-audit-submissions`, stacked on layer 4.
   `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts`,
   processor error handling, and tests.
 - Modify the existing assessment command types in `packages/types/src/hatchet.ts`.
+- Add the optional unique `LiveQuizResponse.submissionId` UUID and its
+  expand-contract migration so authoritative retries can be distinguished from
+  new duplicate commands.
 - Add focused Vitest configuration and `test` scripts to the Response API and
   response-processor packages; do not rely on untestable worker entry points.
 - Add the minimal stable submission ID/retry behavior to

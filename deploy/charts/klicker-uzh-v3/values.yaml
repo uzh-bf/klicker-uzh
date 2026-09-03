@@ -204,6 +204,11 @@ assessmentAudit:
     enabled: false
     interval: 30s
     alertRoutingLabel: assessment-audit-owners
+    # Forecast inputs for the launch capacity signal. The deployment injects
+    # these values into the audit worker; both must be set when monitoring is
+    # enabled in a real environment.
+    deliveredUnsealedCapacityBytes: 0
+    deliveredUnsealedGrowthBytesPerWeek: 0
 
 auth:
   priorityClassName: production-workload

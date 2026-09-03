@@ -653,7 +653,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.cancelLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CANCEL' }
         ),
       }),
 
@@ -729,7 +730,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.endLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_COMPLETE' }
         ),
       }),
 
@@ -742,7 +744,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.startLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_START' }
         ),
       }),
 
@@ -758,7 +761,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.scheduleLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_SCHEDULE' }
         ),
       }),
 
@@ -771,7 +775,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.unpublishLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_UNPUBLISH' }
         ),
       }),
 
@@ -787,7 +792,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_DELETE' }
         ),
       }),
 
@@ -803,7 +809,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedbackResponse(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPONSE_DELETE' }
         ),
       }),
 
@@ -820,7 +827,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.pinFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PIN' }
         ),
       }),
 
@@ -837,7 +845,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.publishFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PUBLISH' }
         ),
       }),
 
@@ -854,7 +863,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.resolveFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESOLVE' }
         ),
       }),
 
@@ -871,7 +881,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.respondToFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPOND' }
         ),
       }),
 
@@ -893,7 +904,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_CLOSE' }
         ),
       }),
 
@@ -911,7 +923,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.changeLiveQuizSettings(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -927,7 +940,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.activateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_ACTIVATE' }
         ),
       }),
 
@@ -984,7 +998,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
             return await LiveQuizService.manipulateLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -1637,7 +1652,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_DELETE' }
         ),
       }),
 
@@ -1650,7 +1666,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_RESET' }
         ),
       }),
 
@@ -1679,7 +1696,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_CREATE' }
           ),
         }),
 
@@ -1700,7 +1718,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_DELETE' }
           ),
         }),
 
@@ -1758,20 +1777,13 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           if (args.type === ActivityTypeEnum.LIVE_QUIZ) {
-            const validAccess = await checkAccess(
-              [
-                {
-                  liveQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await LiveQuizService.changeLiveQuizName(args, ctx)
+            return await withPermission<unknown, typeof args, boolean>(
+              (selectorArgs) => ({ liveQuizId: selectorArgs.id }),
+              DB.PermissionLevel.WRITE,
+              async (_, resolverArgs, resolverCtx) =>
+                LiveQuizService.changeLiveQuizName(resolverArgs, resolverCtx),
+              { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
+            )(_, args, ctx)
           } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
             const validAccess = await checkAccess(
               [

@@ -494,20 +494,25 @@ export function configurationChangePayloadSchema(
 }
 
 export function accessChangePayloadSchema(subjectType: 'PARTICIPANT' | 'USER') {
-  const changeSchema =
-    subjectType === 'PARTICIPANT'
-      ? z.enum(['ADDED', 'REMOVED'])
-      : z.enum(['GRANTED', 'REVOKED'])
-  return z
-    .object({
-      subjectType: z.literal(subjectType),
-      subjectId: uuidSchema,
-      change: changeSchema,
-      permission:
-        subjectType === 'USER' ? stableCodeSchema : z.undefined().optional(),
-      reasonCode: stableCodeSchema.optional(),
-    })
-    .strict()
+  const common = {
+    subjectType: z.literal(subjectType),
+    subjectId: uuidSchema,
+    reasonCode: stableCodeSchema.optional(),
+  }
+  return subjectType === 'USER'
+    ? z
+        .object({
+          ...common,
+          change: z.enum(['GRANTED', 'REVOKED']),
+          permission: stableCodeSchema,
+        })
+        .strict()
+    : z
+        .object({
+          ...common,
+          change: z.enum(['ADDED', 'REMOVED']),
+        })
+        .strict()
 }
 
 export function sessionPayloadSchema(

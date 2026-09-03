@@ -1,70 +1,109 @@
 import {
-  NonRetryableError,
-  type Context,
   type DurableContext,
-  type JsonObject,
+  NonRetryableError,
   type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
+import { hashCanonicalValue, runInAuditTransaction } from '@klicker-uzh/audit'
 import { prisma } from '@klicker-uzh/prisma'
-import {
-  ElementType,
-  ResponseCorrectness,
-  UserRole,
-} from '@klicker-uzh/prisma/client'
+import { ElementType, ResponseCorrectness } from '@klicker-uzh/prisma/client'
 import type {
+  AssessmentResponseCommand,
   FreeTextRestrictions,
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
+import {
+  ASSESSMENT_SCORING_ALGORITHM_VERSION,
+  ASSESSMENT_VALIDATION_RULES_VERSION,
+  assertTerminalStageAvailable,
+  type CoveredAssessmentScope,
+  commandHasRecordedFailure,
+  emitSubmissionAuditEvents,
+  findAcceptedSubmissionBindings,
+  findCoveredAssessmentScope,
+  getTerminalStageForCommand,
+  normalizeAssessmentAnswer,
+  recordSubmissionMetadataQuarantine,
+  submissionDraft,
+} from './assessmentAudit.js'
 import {
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
   getFreeTextQuestionPointsDetails,
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
-  updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
 
-const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
+type AssessmentCommand = AssessmentResponseCommand<LiveQuizResponseInput>
+type AssessmentContext = DurableContext<UnknownInputType, {}>
+
+type AssessmentProcessorDependencies = {
+  client: typeof prisma
+  redis: Pick<ReturnType<typeof getAssessmentRedis>, 'hgetall' | 'hsetnx'>
+  now: () => Date
+  resolveHatchetEventId: (
+    message: AssessmentCommand,
+    ctx: AssessmentContext
+  ) => Promise<string>
+}
+
+const sleep = (milliseconds: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
+
+export async function resolveTriggeringHatchetEventId(
+  message: AssessmentCommand,
+  ctx: AssessmentContext
+) {
+  const metadata = ctx.additionalMetadata()
+  if (metadata.submissionId !== message.submissionId) {
+    throw new NonRetryableError('SUBMISSION_METADATA_MISMATCH')
+  }
+  const workflowRunId = ctx.workflowRunId()
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const events = await ctx.v1.events.list({
+      limit: 10,
+      workflowIds: [workflowRunId],
+    })
+    const candidates = (events.rows ?? []).filter((event) =>
+      event.triggeredRuns?.some((run) => run.workflowRunId === workflowRunId)
+    )
+    if (candidates.length === 1) {
+      const eventId = candidates[0]?.metadata.id
+      if (typeof eventId === 'string' && eventId !== '') return eventId
+    }
+    if (candidates.length > 1) {
+      throw new Error('Hatchet workflow run has multiple triggering events')
+    }
+    await sleep(50 * (attempt + 1))
+  }
+  throw new Error('Hatchet triggering event is not yet available')
+}
+
+function defaultDependencies(): AssessmentProcessorDependencies {
+  return {
+    client: prisma,
+    redis: getAssessmentRedis(),
+    now: () => new Date(),
+    resolveHatchetEventId: resolveTriggeringHatchetEventId,
+  }
+}
+
+function correctnessFromScore(score: number | null) {
+  return score === null || score === 1
+    ? ResponseCorrectness.CORRECT
+    : score === 0
+      ? ResponseCorrectness.WRONG
+      : ResponseCorrectness.PARTIAL
+}
 
 export async function processAssessmentResponse(
-  message: {
-    correlationId: string
-    participantId: string
-    liveQuizId: string
-    instanceId: string
-    response: LiveQuizResponseInput
-    cookie?: string
-    responseTimestamp: number
-  },
-  ctx: DurableContext<UnknownInputType, {}>
+  message: AssessmentCommand,
+  ctx: AssessmentContext,
+  dependencies: AssessmentProcessorDependencies = defaultDependencies()
 ) {
-  const receivedMessage = `[INFO] [AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`
-  ctx.logger.info(receivedMessage)
-  ctx.v1.events.push('create-audit-log-entry', {
-    correlationId: message.correlationId,
-    info: receivedMessage,
-  })
-
-  try {
-    assert(!!redisExec)
-  } catch (e) {
-    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
-    throw new Error(`Redis connection error ${String(e)}`)
-  }
-
-  try {
-    assert(!!prisma)
-  } catch (e) {
-    ctx.logger.error(`Prisma client error: ${JSON.stringify(e)}`)
-    throw new Error(`Prisma client error ${String(e)}`)
-  }
-
   if (message.liveQuizId === 'ping') {
     if (process.env.FUNCTION_HEARTBEAT_URL) {
       await fetch(process.env.FUNCTION_HEARTBEAT_URL)
@@ -72,549 +111,696 @@ export async function processAssessmentResponse(
     return { status: 200 }
   }
 
-  // extract the relevant information from the redis cache
-  const liveQuizKey = `lq:${message.liveQuizId}`
-  const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
-  const responseTimestamp = message.responseTimestamp
-  const response = message.response
+  let coveredScope: CoveredAssessmentScope | null = null
+  let hatchetEventId: string | null = null
+  let courseId: string | undefined
 
-  // get live quiz and instance information from redis cache
-  const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+  const requireHatchetEventId = () => {
+    if (hatchetEventId === null) {
+      throw new Error('Covered submission has no Hatchet event ID')
+    }
+    return hatchetEventId
+  }
 
-  if (!response && instanceInfo.type !== ElementType.CONTENT) {
-    ctx.logger.error(
-      'Missing response ' +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
+  const emitStandalone = async (
+    drafts: Parameters<typeof emitSubmissionAuditEvents>[0]['drafts']
+  ) => {
+    const scope = coveredScope
+    if (scope === null) return
+    await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+      await emitSubmissionAuditEvents({
+        tx,
+        auditTx,
+        message,
+        scope,
+        hatchetEventId: requireHatchetEventId(),
+        courseId,
+        recordedAt: dependencies.now(),
+        drafts,
+      })
+    })
+  }
+
+  const rejectionDraft = (reasonCode: string) =>
+    submissionDraft(message, requireHatchetEventId(), {
+      eventType: 'SUBMISSION_REJECTED',
+      operationSuffix: 'rejected',
+      outcome: reasonCode,
+      payload: {
+        submissionId: message.submissionId,
+        stage: 'REJECTED',
+        reasonCode,
+      },
+    })
+
+  const recoveryDraft = () =>
+    submissionDraft(message, requireHatchetEventId(), {
+      eventType: 'SUBMISSION_PROCESSING_RECOVERED',
+      operationSuffix: 'processing-recovered',
+      payload: {
+        submissionId: message.submissionId,
+        stage: 'PROCESSING_RECOVERED',
+      },
+    })
+
+  const reject = async (reasonCode: string): Promise<never> => {
+    const scope = coveredScope
+    if (scope !== null) {
+      await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+        await assertTerminalStageAvailable({
+          tx,
+          message,
+          hatchetEventId: requireHatchetEventId(),
+          intendedEventType: 'SUBMISSION_REJECTED',
         })
-    )
-    throw new NonRetryableError('Missing response')
+        const recovered = await commandHasRecordedFailure({
+          tx,
+          message,
+          hatchetEventId: requireHatchetEventId(),
+        })
+        await emitSubmissionAuditEvents({
+          tx,
+          auditTx,
+          message,
+          scope,
+          hatchetEventId: requireHatchetEventId(),
+          courseId,
+          recordedAt: dependencies.now(),
+          drafts: [
+            rejectionDraft(reasonCode),
+            ...(recovered ? [recoveryDraft()] : []),
+          ],
+        })
+      })
+    }
+    throw new NonRetryableError(reasonCode)
   }
 
-  // ! Step 1: Validation of answer timestamp (from message before block closure)
-  // if the instance info is not available, return that the corresponding cache data is not available
-  if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-    throw new Error(
-      `Instance metadata for instance ${message.instanceId} not found.`
-    )
-  }
-
-  // verify that the student answer was submitted before the block was closed
-  const {
-    type,
-    solutions,
-    restrictions,
-    firstResponseReceivedAt,
-    sessionBlockId,
-    courseId,
-    choiceCount,
-    basePoints,
-    defaultPoints,
-    pointsMultiplier,
-    blockExecution,
-    blockClosedAt,
-  } = instanceInfo
-
-  // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
-  if (!type || !courseId || !sessionBlockId) {
-    throw new NonRetryableError(
-      `Instance ${message.instanceId} does not have a type (${type}) or is not linked to a course (${courseId}) or session block (${sessionBlockId}).`
-    )
-  }
-
-  if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-    ctx.logger.error(
-      `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
-    )
-    ctx.cancel()
-    return { status: 200 }
-  }
-
-  // ! Step 1.2 Validation of response format
-  let parsedRestrictions:
-    | NumericalRestrictions
-    | FreeTextRestrictions
-    | undefined
   try {
-    if (restrictions) {
+    coveredScope = await findCoveredAssessmentScope(
+      dependencies.client,
+      message.liveQuizId
+    )
+    if (coveredScope !== null) {
+      try {
+        hatchetEventId = await dependencies.resolveHatchetEventId(message, ctx)
+      } catch (error) {
+        if (error instanceof NonRetryableError) {
+          try {
+            await recordSubmissionMetadataQuarantine({
+              client: dependencies.client,
+              message,
+              scope: coveredScope,
+              reasonCode: error.message,
+              recordedAt: dependencies.now(),
+            })
+          } catch (quarantineError) {
+            ctx.logger.error(
+              'Assessment submission metadata quarantine was not recorded',
+              {
+                extra: {
+                  submissionId: message.submissionId,
+                  reasonCode: error.message,
+                  quarantineError,
+                },
+              }
+            )
+          }
+        }
+        throw error
+      }
+      const scope = coveredScope
+      let submissionReuseReasonCode:
+        | 'SUBMISSION_ID_ANSWER_MISMATCH'
+        | 'SUBMISSION_ID_SCOPE_MISMATCH'
+        | undefined
+      await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+        const answerStateHash = hashCanonicalValue(message.response)
+        const previousBindings = await findAcceptedSubmissionBindings({
+          tx,
+          message,
+        })
+        const scopeMismatch = previousBindings.some(
+          (binding) =>
+            binding.participantId !== message.participantId ||
+            binding.elementInstanceId !== Number(message.instanceId) ||
+            binding.lifecycleEpoch !== scope.lifecycleEpoch
+        )
+        const answerMismatch = previousBindings.some(
+          (binding) => binding.answerStateHash !== answerStateHash
+        )
+        submissionReuseReasonCode = scopeMismatch
+          ? 'SUBMISSION_ID_SCOPE_MISMATCH'
+          : answerMismatch
+            ? 'SUBMISSION_ID_ANSWER_MISMATCH'
+            : undefined
+        if (submissionReuseReasonCode === undefined) {
+          await emitSubmissionAuditEvents({
+            tx,
+            auditTx,
+            message,
+            scope,
+            hatchetEventId: requireHatchetEventId(),
+            recordedAt: dependencies.now(),
+            drafts: [
+              submissionDraft(message, requireHatchetEventId(), {
+                eventType: 'SUBMISSION_SERVER_ACCEPTED',
+                operationSuffix: 'server-accepted',
+                payload: {
+                  submissionId: message.submissionId,
+                  stage: 'SERVER_ACCEPTED',
+                  answerStateHash,
+                },
+              }),
+            ],
+          })
+        }
+      })
+      if (submissionReuseReasonCode !== undefined) {
+        await reject(submissionReuseReasonCode)
+      }
+    }
+
+    const liveQuizKey = `lq:${message.liveQuizId}`
+    const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
+    const instanceInfo = await dependencies.redis.hgetall(`${instanceKey}:info`)
+    if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
+      throw new Error('ASSESSMENT_INSTANCE_METADATA_UNAVAILABLE')
+    }
+
+    const {
+      type,
+      solutions,
+      restrictions,
+      firstResponseReceivedAt,
+      sessionBlockId,
+      courseId: instanceCourseId,
+      choiceCount,
+      basePoints,
+      defaultPoints,
+      pointsMultiplier,
+      blockExecution,
+      blockClosedAt,
+    } = instanceInfo
+    courseId = instanceCourseId
+
+    if (!message.response && type !== ElementType.CONTENT) {
+      await reject('RESPONSE_MISSING')
+    }
+    if (!type || !courseId || !sessionBlockId) {
+      await reject('INSTANCE_CONFIGURATION_INVALID')
+    }
+    if (
+      blockClosedAt &&
+      Number(message.responseTimestamp) > Number(blockClosedAt)
+    ) {
+      await reject('SUBMISSION_AFTER_BLOCK_CLOSE')
+    }
+
+    let parsedRestrictions:
+      | NumericalRestrictions
+      | FreeTextRestrictions
+      | undefined
+    try {
       parsedRestrictions = restrictions
         ? typeof restrictions === 'string'
           ? JSON.parse(restrictions)
           : restrictions
         : undefined
+    } catch {
+      await reject('RESTRICTIONS_CONFIGURATION_INVALID')
     }
-  } catch (e) {
-    throw new NonRetryableError(
-      `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
-    )
-  }
 
-  const { valid, message: validationError } = validateStudentResponse({
-    type: type as any,
-    response,
-    restrictions: parsedRestrictions,
-  })
-
-  if (!valid) {
-    throw new NonRetryableError(
-      `Response to question instance ${message.instanceId} is not valid: ${validationError}`
-    )
-  }
-
-  // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions = undefined
-  try {
-    if (solutions) {
-      parsedSolutions = JSON.parse(solutions)
+    const validation = validateStudentResponse({
+      type: type as
+        | 'SC'
+        | 'MC'
+        | 'KPRIM'
+        | 'NUMERICAL'
+        | 'FREE_TEXT'
+        | 'SELECTION'
+        | 'CASE_STUDY'
+        | 'CONTENT',
+      response: message.response,
+      restrictions: parsedRestrictions,
+    })
+    if (!validation.valid) {
+      await reject(validation.reasonCode)
     }
-  } catch (e) {
-    throw new Error(`Error parsing solutions: ${String(e)}`)
-  }
+    const normalizedAnswer = normalizeAssessmentAnswer({
+      type: type as ElementType,
+      response: message.response,
+      restrictions: parsedRestrictions,
+    })
+    if (coveredScope !== null) {
+      await emitStandalone([
+        submissionDraft(message, requireHatchetEventId(), {
+          eventType: 'SUBMISSION_VALIDATED',
+          operationSuffix: 'validated',
+          payload: {
+            submissionId: message.submissionId,
+            stage: 'VALIDATED',
+            validationRulesVersion: ASSESSMENT_VALIDATION_RULES_VERSION,
+          },
+        }),
+      ])
+    }
 
-  const awardedBasePoints =
-    basePoints === 'true'
-      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
-      : 0
-  let computedCorrectness: number | null = null
-  let awardedCorrectnessPoints = 0
-  let awardedBonusPoints = 0
-  let awardedXp = 0
+    let parsedSolutions: unknown
+    try {
+      parsedSolutions = solutions ? JSON.parse(solutions) : undefined
+    } catch {
+      await reject('SOLUTIONS_CONFIGURATION_INVALID')
+    }
 
-  switch (type) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM: {
-      // if response choices are not defined, return early
-      if (!response.choices) {
-        throw new NonRetryableError(
-          `Response to choices question (instance id ${message.instanceId}) does not contain choices.`
-        )
-      }
+    const awardedBasePoints =
+      basePoints === 'true'
+        ? Number.parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
+        : 0
+    let computedCorrectness: number | null = null
+    let awardedCorrectnessPoints = 0
+    let awardedBonusPoints = 0
+    let awardedXp = 0
 
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getChoicesQuestionPointsDetails({
+    switch (type) {
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM: {
+        if (!message.response.choices) await reject('CHOICES_MISSING')
+        const result = getChoicesQuestionPointsDetails({
           type,
           choiceCount,
-          response,
+          response: message.response,
           instanceInfo,
           firstResponseReceivedAt,
-          responseTimestamp,
+          responseTimestamp: message.responseTimestamp,
           pointsMultiplier,
           parsedSolutions,
         })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.NUMERICAL: {
-      // if response value is not defined, return early
-      if (typeof response.value === 'undefined' || response.value === null) {
-        throw new NonRetryableError(
-          `Response to numerical question (instance id ${message.instanceId}) does not contain value.`
-        )
+        computedCorrectness = result.pointsPercentage
+        awardedCorrectnessPoints = result.correctnessPoints
+        awardedBonusPoints = result.bonusPoints
+        awardedXp = result.xpAwarded
+        break
       }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getNumericalQuestionPointsDetails({
-          response,
+      case ElementType.NUMERICAL: {
+        if (message.response.value == null) await reject('VALUE_MISSING')
+        const result = getNumericalQuestionPointsDetails({
+          response: message.response,
           instanceInfo,
           firstResponseReceivedAt,
-          responseTimestamp,
+          responseTimestamp: message.responseTimestamp,
           pointsMultiplier,
           parsedSolutions,
         })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.FREE_TEXT: {
-      // if response value is not defined, return early
-      if (typeof response.value !== 'string') {
-        throw new NonRetryableError(
-          `Response to free text question (instance id ${message.instanceId}) does not contain value.`
-        )
+        computedCorrectness = result.pointsPercentage
+        awardedCorrectnessPoints = result.correctnessPoints
+        awardedBonusPoints = result.bonusPoints
+        awardedXp = result.xpAwarded
+        break
       }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getFreeTextQuestionPointsDetails({
-          response,
+      case ElementType.FREE_TEXT: {
+        if (typeof message.response.value !== 'string') {
+          await reject('VALUE_MISSING')
+        }
+        const result = getFreeTextQuestionPointsDetails({
+          response: message.response,
           instanceInfo,
           firstResponseReceivedAt,
-          responseTimestamp,
+          responseTimestamp: message.responseTimestamp,
           pointsMultiplier,
           parsedSolutions,
         })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.SELECTION: {
-      // if response selection is not defined, return early
-      if (!response.selection) {
-        throw new NonRetryableError(
-          `Response to selection question (instance id ${message.instanceId}) does not contain selection.`
-        )
+        computedCorrectness = result.pointsPercentage
+        awardedCorrectnessPoints = result.correctnessPoints
+        awardedBonusPoints = result.bonusPoints
+        awardedXp = result.xpAwarded
+        break
       }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getSelectionQuestionPointsDetails({
-          response,
+      case ElementType.SELECTION: {
+        if (!message.response.selection) await reject('SELECTION_MISSING')
+        const result = getSelectionQuestionPointsDetails({
+          response: message.response,
           instanceInfo,
           firstResponseReceivedAt,
-          responseTimestamp,
+          responseTimestamp: message.responseTimestamp,
           pointsMultiplier,
           parsedSolutions,
         })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.CASE_STUDY: {
-      // if response assessment is not defined, return early
-      if (!response.assessment) {
-        throw new NonRetryableError(
-          `Response to case study question (instance id ${message.instanceId}) does not contain assessments.`
-        )
+        computedCorrectness = result.pointsPercentage
+        awardedCorrectnessPoints = result.correctnessPoints
+        awardedBonusPoints = result.bonusPoints
+        awardedXp = result.xpAwarded
+        break
       }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getCaseStudyQuestionPointsDetails({
-          response,
+      case ElementType.CASE_STUDY: {
+        if (!message.response.assessment) await reject('ASSESSMENT_MISSING')
+        const result = getCaseStudyQuestionPointsDetails({
+          response: message.response,
           instanceInfo,
           firstResponseReceivedAt,
-          responseTimestamp,
+          responseTimestamp: message.responseTimestamp,
           pointsMultiplier,
           parsedSolutions,
         })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
+        computedCorrectness = result.pointsPercentage
+        awardedCorrectnessPoints = result.correctnessPoints
+        awardedBonusPoints = result.bonusPoints
+        awardedXp = result.xpAwarded
+        break
+      }
+      case ElementType.CONTENT:
+        break
+      default:
+        await reject('ELEMENT_TYPE_UNSUPPORTED')
     }
 
-    case ElementType.CONTENT: {
-      // content elements do not have a correct solution, award default points and 0 xp
-      computedCorrectness = null
-      awardedCorrectnessPoints = 0
-      awardedBonusPoints = 0
-      awardedXp = 0
-      break
-    }
-
-    default: {
-      throw new NonRetryableError(
-        `Element type ${type} not recognized for instance ${message.instanceId}.`
+    if (computedCorrectness === 1 && firstResponseReceivedAt === undefined) {
+      await dependencies.redis.hsetnx(
+        `${instanceKey}:info`,
+        'firstResponseReceivedAt',
+        message.responseTimestamp
       )
     }
-  }
 
-  // if the response was correct, set the corresponding timestamp on the instance
-  if (
-    computedCorrectness !== null &&
-    computedCorrectness === 1 &&
-    !firstResponseReceivedAt
-  ) {
-    // if we are processing a first response, set the timestamp on the instance
-    // this will allow us to award points for response timing
-    await redisExec.hsetnx(
-      `${instanceKey}:info`,
-      'firstResponseReceivedAt',
-      responseTimestamp
-    )
-  }
-
-  // send audit-log event for computed points and XP
-  const gradingLog = `[INFO] [AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`
-  ctx.logger.info(gradingLog)
-  ctx.v1.events.push('create-audit-log-entry', {
-    correlationId: message.correlationId,
-    info: gradingLog,
-  })
-
-  // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
-  const participation = await prisma.participation.findUnique({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: message.participantId,
-      },
-    },
-  })
-
-  if (!participation) {
-    throw new NonRetryableError(
-      `Participant ${message.participantId} does not have a participation in course ${courseId} linked to assessment live quiz ${message.liveQuizId}.`
-    )
-  }
-
-  // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
-  // verify that the participant has not votes on the same question before
-  const existingVote = await prisma.liveQuizResponse.findUnique({
-    where: {
-      instanceId_elementBlockExecution_participantId: {
-        instanceId: Number(message.instanceId),
-        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
-        participantId: message.participantId,
-      },
-    },
-  })
-
-  if (existingVote) {
-    ctx.logger.error(
-      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
-    )
-    ctx.cancel()
-    return { status: 208 }
-  }
-
-  try {
-    await prisma.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(responseTimestamp),
-        response,
-        timeSpent: -1, // TODO: set this in future improvements
-        correctness:
-          computedCorrectness === null || computedCorrectness === 1
-            ? ResponseCorrectness.CORRECT
-            : computedCorrectness === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL,
-        basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
-        correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
-          ? 0
-          : awardedCorrectnessPoints,
-        bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
-        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
-        instance: { connect: { id: Number(message.instanceId) } },
-        participant: { connect: { id: message.participantId } },
-      },
-    })
-  } catch (e) {
-    throw new Error(
-      `Failed to create live quiz response for instance ${message.instanceId} and participant ${message.participantId}.`
-    )
-  }
-
-  // add the participant to the list of participants that have answered this question instance
-  redisExec.hset(
-    `lq:${message.liveQuizId}:i:${message.instanceId}:votes`,
-    message.correlationId,
-    'true'
-  )
-
-  // ! Step 5: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
-  const quizInfo = await redisExec.hgetall(`${instanceKey}:info`)
-  ctx.v1.events.push('response-processed:aggregation', {
-    correlationId: message.correlationId,
-    participantId: message.participantId,
-    liveQuizId: message.liveQuizId,
-    blockId: sessionBlockId,
-    instanceId: message.instanceId,
-    elementType: type,
-    isGamificationEnabled: quizInfo?.isGamificationEnabled === 'true',
-    pointsAwarded: awardedBasePoints,
-    xpAwarded: awardedXp,
-    response,
-  })
-
-  return {
-    status: 200,
-    pointsAwarded: awardedBasePoints,
-    correctnessPoints: awardedCorrectnessPoints,
-    bonusPoints: awardedBonusPoints,
-    xpAwarded: awardedXp,
-  }
-}
-
-export async function aggregateAssessmentResponses(
-  message: {
-    correlationId: string
-    participantId: string
-    liveQuizId: string
-    blockId: string
-    instanceId: string
-    elementType: ElementType
-    isGamificationEnabled: boolean
-    pointsAwarded: number
-    xpAwarded: number
-    response: LiveQuizResponseInput
-  },
-  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
-) {
-  // destructure message into components required for results aggregation
-  const {
-    participantId,
-    liveQuizId,
-    blockId,
-    instanceId,
-    elementType,
-    isGamificationEnabled,
-    pointsAwarded,
-    xpAwarded,
-    response,
-  } = message
-
-  // set up redis pipeline for batched execution
-  const redis = redisExec.pipeline()
-
-  // compose cache keys
-  const liveQuizKey = `lq:${liveQuizId}`
-  const instanceKey = `${liveQuizKey}:i:${instanceId}`
-
-  // for gamified live quizzes, update the leaderboard and the participant xp
-  if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
-    updateLeaderboards({
-      redisMulti: redis,
-      participantId,
-      participantRole: UserRole.PARTICIPANT,
-      liveQuizKey,
-      sessionBlockId: blockId,
-      pointsAwarded,
-      xpAwarded,
-    })
-  }
-
-  // step through the different element types, responses do not need to be verified anymore, since this was done by preceding task
-  // aggregate the passed student response into the responses stored in the redis cache (for evaluation during quiz execution)
-  switch (elementType) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM: {
-      response
-        .choices!.filter((choice) => choice.selected)
-        .forEach((choice) => {
-          redis.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+    const storedCorrectness = correctnessFromScore(computedCorrectness)
+    const transactionResult = await runInAuditTransaction(
+      dependencies.client,
+      async (tx, auditTx) => {
+        const participation = await tx.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId: courseId!,
+              participantId: message.participantId,
+            },
+          },
         })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.NUMERICAL: {
-      const MD5 = createHash('md5')
-      MD5.update(response.value!)
-      const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(`${instanceKey}:responseHashes`, responseHash, response.value!)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.FREE_TEXT: {
-      const cleanResponseValue = response.value!.trim()
-      const MD5 = createHash('md5')
-      MD5.update(cleanResponseValue)
-      const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(
-        `${instanceKey}:responseHashes`,
-        responseHash,
-        cleanResponseValue
-      )
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.SELECTION: {
-      response.selection!.forEach((answerId: number) => {
-        if (
-          answerId === -1 ||
-          typeof answerId === 'undefined' ||
-          answerId === null
-        ) {
-          return // skipped input fields should not be considered
+        if (!participation) {
+          if (coveredScope !== null) {
+            await assertTerminalStageAvailable({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+              intendedEventType: 'SUBMISSION_REJECTED',
+            })
+            const recovered = await commandHasRecordedFailure({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+            })
+            await emitSubmissionAuditEvents({
+              tx,
+              auditTx,
+              message,
+              scope: coveredScope,
+              hatchetEventId: requireHatchetEventId(),
+              courseId,
+              recordedAt: dependencies.now(),
+              drafts: [
+                rejectionDraft('PARTICIPATION_NOT_FOUND'),
+                ...(recovered ? [recoveryDraft()] : []),
+              ],
+            })
+          }
+          return {
+            kind: 'rejected' as const,
+            reasonCode: 'PARTICIPATION_NOT_FOUND',
+          }
         }
 
-        redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
-      })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.CASE_STUDY: {
-      Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
-        Object.entries(caseData).forEach(([itemId, itemData]) => {
-          Object.entries(itemData).forEach(
-            ([criterionId, criterionResponse]) => {
-              if (
-                criterionResponse === null ||
-                typeof criterionResponse !== 'number'
-              ) {
-                return
+        const existingResponse = await tx.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId: Number(message.instanceId),
+              elementBlockExecution: Number.parseInt(blockExecution ?? '0', 10),
+              participantId: message.participantId,
+            },
+          },
+        })
+        const responseWithSubmissionId = await tx.liveQuizResponse.findUnique({
+          where: { submissionId: message.submissionId },
+        })
+        if (
+          responseWithSubmissionId !== null &&
+          (responseWithSubmissionId.participantId !== message.participantId ||
+            responseWithSubmissionId.instanceId !==
+              Number(message.instanceId) ||
+            responseWithSubmissionId.elementBlockExecution !==
+              Number.parseInt(blockExecution ?? '0', 10) ||
+            hashCanonicalValue(responseWithSubmissionId.response) !==
+              hashCanonicalValue(message.response))
+        ) {
+          if (coveredScope !== null) {
+            await assertTerminalStageAvailable({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+              intendedEventType: 'SUBMISSION_REJECTED',
+            })
+            const recovered = await commandHasRecordedFailure({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+            })
+            await emitSubmissionAuditEvents({
+              tx,
+              auditTx,
+              message,
+              scope: coveredScope,
+              hatchetEventId: requireHatchetEventId(),
+              courseId,
+              recordedAt: dependencies.now(),
+              drafts: [
+                rejectionDraft('SUBMISSION_ID_SCOPE_MISMATCH'),
+                ...(recovered ? [recoveryDraft()] : []),
+              ],
+            })
+          }
+          return {
+            kind: 'rejected' as const,
+            reasonCode: 'SUBMISSION_ID_SCOPE_MISMATCH',
+          }
+        }
+        if (existingResponse) {
+          const terminalStage =
+            coveredScope === null
+              ? undefined
+              : await getTerminalStageForCommand({
+                  tx,
+                  message,
+                  hatchetEventId: requireHatchetEventId(),
+                })
+          if (
+            existingResponse.submissionId === message.submissionId &&
+            hashCanonicalValue(existingResponse.response) ===
+              hashCanonicalValue(message.response) &&
+            (coveredScope === null || terminalStage === 'SUBMISSION_PERSISTED')
+          ) {
+            if (coveredScope !== null) {
+              const recovered = await commandHasRecordedFailure({
+                tx,
+                message,
+                hatchetEventId: requireHatchetEventId(),
+              })
+              if (recovered) {
+                await emitSubmissionAuditEvents({
+                  tx,
+                  auditTx,
+                  message,
+                  scope: coveredScope,
+                  hatchetEventId: requireHatchetEventId(),
+                  courseId,
+                  recordedAt: dependencies.now(),
+                  drafts: [recoveryDraft()],
+                })
               }
-
-              // compute the hash of the response
-              const MD5 = createHash('md5')
-              MD5.update(String(criterionResponse))
-              const responseHash = MD5.digest('hex')
-              const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
-
-              // add the response hash / valid combination and/or increment the corresponding count
-              redis.hincrby(`${instanceKey}:results`, combinedHash, 1)
-              redis.hset(
-                `${instanceKey}:responseHashes`,
-                combinedHash,
-                String(criterionResponse)
-              )
             }
-          )
+            return {
+              kind: 'persisted' as const,
+              responseId: existingResponse.id,
+            }
+          }
+          if (terminalStage === 'SUBMISSION_DUPLICATE') {
+            return { kind: 'duplicate' as const }
+          }
+          if (coveredScope !== null) {
+            await assertTerminalStageAvailable({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+              intendedEventType: 'SUBMISSION_DUPLICATE',
+            })
+            const recovered = await commandHasRecordedFailure({
+              tx,
+              message,
+              hatchetEventId: requireHatchetEventId(),
+            })
+            await emitSubmissionAuditEvents({
+              tx,
+              auditTx,
+              message,
+              scope: coveredScope,
+              hatchetEventId: requireHatchetEventId(),
+              courseId,
+              recordedAt: dependencies.now(),
+              drafts: [
+                submissionDraft(message, requireHatchetEventId(), {
+                  eventType: 'SUBMISSION_DUPLICATE',
+                  operationSuffix: 'duplicate',
+                  payload: {
+                    submissionId: message.submissionId,
+                    stage: 'DUPLICATE',
+                    duplicateOfResponseId: existingResponse.id,
+                  },
+                }),
+                ...(recovered ? [recoveryDraft()] : []),
+              ],
+            })
+          }
+          return { kind: 'duplicate' as const }
+        }
+
+        const createdResponse = await tx.liveQuizResponse.create({
+          data: {
+            submissionId: message.submissionId,
+            submittedAt: new Date(message.responseTimestamp),
+            response: message.response,
+            timeSpent: -1,
+            correctness: storedCorrectness,
+            basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
+            correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
+              ? 0
+              : awardedCorrectnessPoints,
+            bonusPoints: Number.isNaN(awardedBonusPoints)
+              ? 0
+              : awardedBonusPoints,
+            elementBlockExecution: Number.parseInt(blockExecution ?? '0', 10),
+            instance: { connect: { id: Number(message.instanceId) } },
+            participant: { connect: { id: message.participantId } },
+          },
         })
-      })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
+        if (coveredScope !== null) {
+          await assertTerminalStageAvailable({
+            tx,
+            message,
+            hatchetEventId: requireHatchetEventId(),
+            intendedEventType: 'SUBMISSION_PERSISTED',
+          })
+          const recovered = await commandHasRecordedFailure({
+            tx,
+            message,
+            hatchetEventId: requireHatchetEventId(),
+          })
+          await emitSubmissionAuditEvents({
+            tx,
+            auditTx,
+            message,
+            scope: coveredScope,
+            hatchetEventId: requireHatchetEventId(),
+            courseId,
+            recordedAt: dependencies.now(),
+            drafts: [
+              submissionDraft(message, requireHatchetEventId(), {
+                eventType: 'SUBMISSION_PERSISTED',
+                operationSuffix: 'persisted',
+                payload: {
+                  submissionId: message.submissionId,
+                  stage: 'PERSISTED',
+                  responseId: createdResponse.id,
+                  answer: normalizedAnswer,
+                },
+              }),
+              submissionDraft(message, requireHatchetEventId(), {
+                eventType: 'SUBMISSION_SCORED',
+                operationSuffix: 'scored',
+                payload: {
+                  submissionId: message.submissionId,
+                  stage: 'SCORED',
+                  responseId: createdResponse.id,
+                  answer: normalizedAnswer,
+                  scoringAlgorithmVersion: ASSESSMENT_SCORING_ALGORITHM_VERSION,
+                  correctness: storedCorrectness,
+                  basePoints: createdResponse.basePoints,
+                  correctnessPoints: createdResponse.correctnessPoints,
+                  bonusPoints: createdResponse.bonusPoints,
+                },
+              }),
+              ...(recovered ? [recoveryDraft()] : []),
+            ],
+          })
+        }
+        return { kind: 'persisted' as const, responseId: createdResponse.id }
+      }
+    )
+
+    if (transactionResult.kind === 'rejected') {
+      throw new NonRetryableError(transactionResult.reasonCode)
+    }
+    if (transactionResult.kind === 'duplicate') {
+      return { status: 208 }
     }
 
-    case ElementType.CONTENT: {
-      // increase number of participants on element (do not award points / ... for content elements)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-  }
-
-  try {
-    await redis.exec()
-    ctx.logger.info("Successfully aggregated a participant's results", {
+    await dependencies.redis.hsetnx(
+      `${instanceKey}:votes`,
+      message.correlationId,
+      'accepted'
+    )
+    const quizInfo = await dependencies.redis.hgetall(`${instanceKey}:info`)
+    await ctx.v1.events.push('response-processed:aggregation', {
       correlationId: message.correlationId,
+      participantId: message.participantId,
       liveQuizId: message.liveQuizId,
+      blockId: sessionBlockId,
       instanceId: message.instanceId,
+      elementType: type,
+      isGamificationEnabled: quizInfo.isGamificationEnabled === 'true',
+      pointsAwarded: awardedBasePoints,
+      xpAwarded: awardedXp,
+      response: message.response,
     })
-    return { status: 200 }
-  } catch (e) {
-    ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${String(e)}` +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
-    )
-    redis.discard()
-    throw new Error(
-      `Redis pipeline for results aggregation failed ${String(e)}`
-    )
+
+    return {
+      status: 200,
+      responseId: transactionResult.responseId,
+      pointsAwarded: awardedBasePoints,
+      correctnessPoints: awardedCorrectnessPoints,
+      bonusPoints: awardedBonusPoints,
+      xpAwarded: awardedXp,
+    }
+  } catch (error) {
+    if (error instanceof NonRetryableError) throw error
+    if (coveredScope !== null) {
+      try {
+        await emitStandalone([
+          submissionDraft(message, requireHatchetEventId(), {
+            eventType: 'SUBMISSION_PROCESSING_FAILED',
+            operationSuffix: `processing-failed:${ctx.retryCount()}`,
+            outcome: 'TRANSIENT_PROCESSING_FAILURE',
+            payload: {
+              submissionId: message.submissionId,
+              stage: 'PROCESSING_FAILED',
+              reasonCode: 'TRANSIENT_PROCESSING_FAILURE',
+            },
+          }),
+        ])
+      } catch {
+        ctx.logger.error(
+          'Assessment submission failure evidence was not recorded',
+          {
+            extra: {
+              submissionId: message.submissionId,
+              retryCount: ctx.retryCount(),
+            },
+          }
+        )
+      }
+    }
+    ctx.logger.error('Assessment submission processing will retry', {
+      extra: {
+        submissionId: message.submissionId,
+        retryCount: ctx.retryCount(),
+      },
+    })
+    throw error
   }
 }

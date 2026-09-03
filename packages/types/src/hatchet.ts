@@ -19,6 +19,25 @@ export interface HatchetHandlerGlobalContext {
   tasks: PreparedHatchetTasks
 }
 
+export interface AssessmentResponseCommand<TResponse = unknown> {
+  submissionId: string
+  correlationId: string
+  participantId: string
+  liveQuizId: string
+  instanceId: string
+  response: TResponse
+  responseTimestamp: number
+  receivedAt: string
+  transportAttemptedAt: string
+}
+
+export interface AssessmentResponseReceipt {
+  status: 'response_submitted'
+  submissionId: string
+  responseTimestamp: number
+  hatchetEventId: string
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
   handleDispatchAssessmentAuditOutbox: (
@@ -131,13 +150,8 @@ export interface PreparedHatchetTasks {
     Record<string, never>,
     { success: boolean }
   >
-  createAuditLogEntry: TaskWorkflowDeclaration<
-    {
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
-      }
-    },
+  renewAssessmentAuditMediaPolicies: TaskWorkflowDeclaration<
+    Record<string, never>,
     { success: boolean }
   >
   publishScheduledMicroLearning: TaskWorkflowDeclaration<

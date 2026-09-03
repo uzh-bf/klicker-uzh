@@ -21,30 +21,33 @@ and the delivery order lives in the
 ## Current implementation boundary
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
-path, Layer 3 baseline/media primitives, and the Layer 4 lecturer/system
-producer boundary. It validates and canonicalizes
-envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
+path, Layer 3 baseline/media primitives, the Layer 4 lecturer/system producer
+boundary, and Layer 5 Hatchet submission materialization. It validates and
+canonicalizes envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
 leased rows through a provider-neutral append-sink, and implements Azure Table,
 immutable-media, owner-CLI, and media-policy adapters. GraphQL owns assessment
 snapshot mapping, two-phase activation, rollout accounting, automatic
 `all`-mode creation coverage, atomic reopening, start-time readiness, and typed
-lecturer/system producer orchestration. The
+lecturer/system producer orchestration. Assessment scheduling, scheduled
+publication (with the scheduling lecturer retained as `initiatedBy`),
+unpublishing, cancellation, block activation/closure, and standalone quiz
+name/settings mutations use the same transactional producer boundary. The
 dedicated deployments remain dormant by default until their Pulumi-provisioned
-staging identities and endpoints are supplied. Hatchet submission
-materialization arrives in Layer 5; the manifest
-sealer and retention worker remain fast-follow work.
+staging identities and endpoints are supplied. The manifest sealer and
+retention worker remain fast-follow work.
 
-The older Hatchet `create-audit-log-entry` workflow and `AuditLog` model remain
-unchanged. They are not the new evidence store and must not be presented as
-providing the guarantees described here.
+The older Hatchet `create-audit-log-entry` workflow and its current call sites
+have been removed. Historical database or migration artifacts named `AuditLog`
+are not the evidence store and must not be presented as providing the
+guarantees described here.
 
 ## Data flow
 
 ```text
-authoritative mutation ─┐
-                       ├─ same Prisma transaction ─ emitAuditEvents
-Hatchet materializer ──┘                              │
-                                                     ▼
+authoritative mutation ── same Prisma transaction ─┐
+Hatchet command ── response processor transaction ─┤
+                                                   │
+                                                   ▼
                                   AssessmentAuditOutboxEvent
                                   (exact canonical JSON text)
                                                      │
@@ -72,6 +75,49 @@ critical or authoritative evidence must share the business transaction.
 Hatchet submission materialization remains a separate emission lane, but it
 ultimately writes the same event contract and outbox. The browser-observed
 Stack 2 lane uses the same registry later through the independent audit ingress.
+
+## Participant submission materialization
+
+The PWA creates one UUID `submissionId` for each submit action and reuses it for
+its bounded network/Hatchet-unavailable retry. The assessment response API
+validates that ID together with the existing correlation JWT and Participant
+session, records `receivedAt`, stamps `transportAttemptedAt` immediately before
+the existing `response-received:assessment` push, and acknowledges only after
+Hatchet returns an event ID. A failed push returns `503`; it never reports a
+successful submission. No raw answer, correlation token, cookie, or transport
+error is written to application logs.
+
+The response processor resolves the triggering Hatchet event through the
+workflow-run association exposed by Hatchet. It never substitutes the workflow
+run ID for the event ID. This provenance lookup occurs only after the quiz is
+confirmed as covered, so deliberately uncovered quizzes retain their existing
+processing path without an audit-only dependency. For covered assessments it
+records server acceptance and validation before terminal completion. Rejection
+and duplicate evidence use an audit-only transaction; response creation,
+persisted evidence, and scored evidence use one Prisma transaction. A transient
+failure remains retryable and is followed by append-only recovery evidence when
+processing later reaches a terminal outcome.
+
+PostgreSQL response persistence precedes the existing Redis/Hatchet live-result
+aggregation. A retry with the same `submissionId` therefore resumes this
+post-commit work both inside and outside audit coverage; it does not classify
+the already-persisted response as a new duplicate. The processor writes an
+`accepted` state with `HSETNX` in the existing per-instance `votes` hash and
+publishes the aggregation event on every same-command replay. The aggregation
+worker atomically applies all result and leaderboard increments together with
+the state transition to `aggregated`. Repeated events and a lost Redis command
+acknowledgement observe `aggregated` and become no-ops. These Redis states are
+operational idempotency markers, not audit evidence or a second source of
+authority.
+
+`LiveQuizResponse.submissionId` is an optional unique UUID. Existing and
+non-assessment responses remain valid with `NULL`; an assessment response stores
+the stable ID so a retry of the same Hatchet command can be distinguished from
+a second transport command or a genuinely different duplicate response. Audit
+idempotency for Lane 2 includes both `submissionId` and the actual Hatchet event
+ID. This matters after a lost HTTP response: a resend may create another Hatchet
+command with the same submission ID, which materializes as a durable duplicate
+without creating a second authoritative response.
 
 ## Contract and identity
 
@@ -213,6 +259,16 @@ concurrent change, and atomically writes the scope, baseline root and parts,
 activation event, and rollout-inventory outcome. Exact retries are idempotent;
 different evidence for an already activated scope fails closed.
 
+Before media capture, activation reserves the lifecycle scope as `ACTIVATING`.
+Capture or baseline failures transition that reservation to `FAILED`; an
+interrupted process leaves a durable `ACTIVATING` marker for reconciliation.
+The marker is never treated as covered evidence, and monitoring evaluates only
+the latest lifecycle per quiz so a repaired retry clears the active failure
+signal. Content-addressed Blob versions remain immutable until their retention
+policy permits cleanup; the reservation prevents a staged version from being
+an untracked evidence object while the cleanup/reconciliation worker is
+fast-follow work.
+
 The baseline includes effective quiz configuration, ordered blocks and element
 instances, effective element content and scoring, active participant UUIDs,
 effective permissions, immutable media references, and explicit limitations. It
@@ -322,14 +378,30 @@ accepts account-root Table and Blob HTTPS endpoints only; storage keys, SAS
 URLs, and connection strings are not options.
 
 The monitor logs a metadata-only snapshot and marks its Hatchet run failed for
-critical backlog, stale dispatcher heartbeat, quarantine, or different-hash
-conflict signals. `/metrics` exposes aggregate backlog, heartbeat, quarantine,
-conflict, unsealed-byte, media-policy success, and media-horizon gauges, all
-labeled by environment and worker role. Separate `ServiceMonitor` targets and
-role-filtered alerts detect unavailable workers, stale heartbeats, and a media
-policy horizon below 30 days. Owner-only alert routing remains an infrastructure
-exit gate. Hatchet-submission and projected-capacity signals arrive with their
-producer layers.
+critical backlog, stale dispatcher heartbeat, quarantine, different-hash
+conflict, durable rollout activation/media failure, or a covered submission
+that has not reached a terminal outbox outcome within the threshold. `/metrics`
+exposes aggregate backlog, heartbeat, monitor status, quarantine, conflict,
+unsealed-byte, media-policy success, media-horizon, activation-failure, and
+non-terminal-submission gauges, all labeled by environment and worker role.
+Separate `ServiceMonitor` targets and role-filtered alerts detect unavailable
+workers, stale heartbeats, monitor critical status, and a media policy horizon
+below 30 days. Owner-only alert routing remains an infrastructure exit gate.
+The monitor also forecasts the remaining weeks before the configured
+`DELIVERED_UNSEALED` byte budget is exhausted from the observed weekly growth
+rate; it raises a warning below eight weeks and a critical alert below four
+weeks. Production capacity and growth values are supplied through
+`ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES` and
+`ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK` and must be
+positive when monitoring is enabled.
+
+The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
+lifecycle epoch, and correlation ID. A migration-owned partial index covers
+`SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates
+terminal-event lookups; Prisma does not currently express the partial-index
+predicate in the schema. Before launch, staging must capture
+`EXPLAIN (ANALYZE, BUFFERS)` for this query at representative volume and keep
+the result with the rollout evidence.
 
 The staged rollout command is:
 
@@ -365,10 +437,22 @@ lease recovery, database checks, and the absence of audit-table foreign keys.
 GraphQL's database-backed tests additionally cover activation commit/rollback,
 exact retry versus changed snapshots, rollout resumption and gap accounting,
 automatic all-mode activation, and atomic reopening.
-Layer 4 adds a registry-to-production-source coverage test plus focused tests
-for exact configuration/block/instance snapshots, deterministic response/reset
-hashes, effective-permission filtering, media capture/replacement, and
-post-activation media retention indexes.
+Layer 4 adds registry metadata and producer-boundary coverage tests plus focused
+tests for exact configuration/block/instance snapshots, deterministic
+response/reset hashes, effective-permission filtering, media
+capture/replacement, and post-activation media retention indexes. The coverage
+test verifies that every launch event has an owner, emission path, durability
+point, and explicit delivery tier; it does not claim to statically prove every
+runtime call site.
+Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
+all supported response families, stable receipts, duplicate and changed-answer
+commands, late and missing-participation rejection, persistence/evidence
+rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
+The Playwright core workflow also proves that a PWA retry reuses the same
+submission UUID; the Response API tests prove the receipt contract itself.
+These local proofs do not replace the staging Azure conformance, owner export,
+full covered-assessment browser flow, or burst/RSS gates required before this
+draft layer can leave draft status.
 
 ```bash
 pnpm --filter @klicker-uzh/audit check
@@ -383,6 +467,8 @@ pnpm --filter @klicker-uzh/audit exec vitest run \
   test/producer-coverage.test.ts \
   test/event-registry.test.ts \
   test/table-mapping.test.ts
+pnpm --filter @klicker-uzh/response-api test
+pnpm --filter @klicker-uzh/hatchet-worker-response-processor test
 ```
 
 The test command needs a disposable local PostgreSQL database with all Prisma

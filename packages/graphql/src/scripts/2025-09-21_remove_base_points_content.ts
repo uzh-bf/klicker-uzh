@@ -1,20 +1,12 @@
-import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
+
 // ! IMPORTANT INFORMATION
 // This script sets the basePoints setting of all content elements and flashcards to false and updates corresponding instances
-// At the same time, live quiz responses where non-zero amounts of base points were awarded for content elements are updated (alongside the audit log)
+// At the same time, live quiz responses where non-zero amounts of base points were awarded for content elements are updated.
 
 const DRY_RUN = true
 
 async function run() {
-  const hatchetClient = HatchetClient.init({
-    token: process.env.HATCHET_CLIENT_TOKEN,
-    host_port: 'localhost:7070',
-    tls_config: {
-      tls_strategy: 'none',
-    },
-  })
-
   // fetch all elements that are of type content or flashcard and have their base points set to true
   const elements = await prisma.element.findMany({
     where: {
@@ -99,11 +91,7 @@ async function run() {
           data: { basePoints: 0 },
         })
 
-        // send audit log message to hatchet
         const logMessage = `[CORRECTION] [Base Points Content Elements] Removed base points from live quiz response ${response.id} by participant ${response.participantId} for content element instance ${response.instanceId} (was ${response.basePoints})`
-        await hatchetClient.events.push('create-audit-log-entry', {
-          info: logMessage,
-        })
         console.log(logMessage)
       })
     }
