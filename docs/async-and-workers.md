@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-26'
+timestamp: '2026-09-02'
 tags:
   - backend
   - hatchet
@@ -44,6 +44,7 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `create-audit-log-entry` (event-driven)
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
 - `sweep-stale-course-duplications` — cron task (every 5 minutes) scanning non-terminal duplication records and applying stale normalization with heartbeat + Postgres reconciliation.
+- `process-course-deletion` — event-driven permanent deletion of an accepted course deletion request, implemented by `packages/graphql/src/services/courseDeletion.ts`. `requestCourseDeletion` sets `Course.deletionRequestedAt` (the only persisted state, and the visibility boundary for every read path) and pushes the event carrying the requester id and the draft-live-quiz option; if the push fails, the marker is cleared again and the mutation errors, so a hidden course always has a scheduled job. A task-local concurrency bucket serializes deletion processing. The deletion transaction claims the row by its request timestamp and rechecks the requester's ADMIN/OWNER permission, assessment mode, and the published-live-quiz condition; a failed check clears the marker (the course reappears) instead of deleting. Ordinary failures are retried three times; when the last attempt fails, the handler clears the marker so the lecturer can retry.
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
@@ -55,6 +56,10 @@ Job state lives in Redis under three key families (all self-expiring): status re
 To correlate a user report ("my duplication vanished") with only a course name or approximate time: list their keys with `SCAN 0 MATCH "course-duplication:source:<userId>:*"` (keys carry the source course id), read the referenced job record with `GET course-duplication:job:<jobId>` while it exists, and check `prisma.course.findUnique({ where: { id: <jobId> } })` for the outcome. Permission `AuditLogEntry` rows written inside a successful copy transaction outlive the Redis record. Worker logs carry the job id.
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
+
+For course deletion, drain pending markers before rolling back. Old code ignores
+the marker and exposes the course again, while already-enqueued deletion events
+remain unprocessed until a feature-aware worker runs again.
 
 ## Running locally (config-derived — verify on your machine)
 

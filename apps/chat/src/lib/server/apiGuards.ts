@@ -1,20 +1,22 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotStatus,
+  type Prisma,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { type JWTPayload, jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 // Every participant guard starts from the same three questions: is there a
-// cookie, does its signature verify, and does the payload name a subject. The
+// token, does its signature verify, and does the payload name a subject. The
 // answers and their 401 responses are identical everywhere, so they live here
 // once; a guard that needs more adds its own checks to the verified payload.
 async function verifyParticipantToken(
-  req: NextRequest
+  participantToken: string | undefined
 ): Promise<
   { participantId: string; payload: JWTPayload } | { response: NextResponse }
 > {
-  const participantToken = req.cookies.get('participant_token')?.value
-
   if (!participantToken) {
     return {
       response: NextResponse.json(
@@ -54,15 +56,21 @@ async function verifyParticipantToken(
   }
 }
 
-export async function getParticipantId(
-  req: NextRequest
+export async function getParticipantIdFromToken(
+  participantToken: string | undefined
 ): Promise<{ participantId: string } | { response: NextResponse }> {
-  const result = await verifyParticipantToken(req)
+  const result = await verifyParticipantToken(participantToken)
   if ('response' in result) {
     return result
   }
 
   return { participantId: result.participantId }
+}
+
+export async function getParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
 }
 
 // Announcements and guided tours are addressed to people who own a persistent
@@ -78,7 +86,9 @@ async function getFullParticipantId(
   req: NextRequest,
   wrongAccountTypeMessage: string
 ): Promise<{ participantId: string } | { response: NextResponse }> {
-  const result = await verifyParticipantToken(req)
+  const result = await verifyParticipantToken(
+    req.cookies.get('participant_token')?.value
+  )
   if ('response' in result) {
     return result
   }
@@ -136,7 +146,10 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   }
 
   const row = (await prisma.chatbot.findUnique({
-    where: { id: parsedId.data },
+    where: {
+      id: parsedId.data,
+      course: { deletionRequestedAt: null },
+    },
     // `status` is always selected on top of the caller's projection so this one
     // guard can enforce publication for every participant route.
     select: { ...select, status: true },
@@ -175,7 +188,20 @@ export async function withChatbotAuth(
   | { participantId: string; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req)
+  return withChatbotTokenAuth(
+    req.cookies.get('participant_token')?.value,
+    chatbotId
+  )
+}
+
+export async function withChatbotTokenAuth(
+  participantToken: string | undefined,
+  chatbotId: string
+): Promise<
+  | { participantId: string; chatbot: { courseId: string } }
+  | { response: NextResponse }
+> {
+  const participantResult = await getParticipantIdFromToken(participantToken)
   if ('response' in participantResult) {
     return participantResult
   }
@@ -209,6 +235,7 @@ export async function requireParticipation(
           participantId,
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {

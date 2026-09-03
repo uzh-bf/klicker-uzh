@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-09-02'
 tags:
   - backend
   - prisma
@@ -25,7 +25,7 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
-`Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+`Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
 
 ### Assessment participant invitations
 
@@ -71,6 +71,16 @@ off by default and describes it in activity-level terms: the asynchronous
 activities already cascade with the course, while opting in additionally
 removes linked draft live quizzes
 (`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
+`requestCourseDeletion` accepts the deletion request by setting
+`Course.deletionRequestedAt` and handing the requester id and draft-live-quiz
+option to the `process-course-deletion` Hatchet event. The marker immediately
+excludes the course and all of its activities from user-facing reads; it is not
+a user-visible progress state. Retained live quizzes reappear as unassigned
+activities once the worker has completed the permanent deletion. Published live
+quizzes block acceptance, and the worker clears the marker instead of deleting
+if a live quiz was published, the course switched to assessment mode, or the
+requester lost ADMIN/OWNER permission in the meantime.
 
 ## Course duplication
 

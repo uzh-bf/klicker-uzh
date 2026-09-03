@@ -89,7 +89,9 @@
     "lint": "eslint .",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test": "pnpm run test:run",
+    "test:run": "tsx --test \"src/**/*.test.ts\""
   },
   "engines": {
     "node": "=24"

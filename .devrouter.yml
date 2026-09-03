@@ -21,7 +21,7 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.0.50
+  version: 0.0.51
 project:
   name: klicker-uzh
 managedRuntime:
@@ -58,6 +58,12 @@ profiles:
   live-quiz:
     apps: [pwa, control, api, auth, response-api]
     readiness: [pwa, api, response-api]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
+  # maximal application runtime for trusted Playwright fallback selection
+  playwright:
+    apps: [chat, pwa, control, manage, api, auth, response-api]
+    readiness: [chat, pwa, manage, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # pure capabilities: no routes, no app process

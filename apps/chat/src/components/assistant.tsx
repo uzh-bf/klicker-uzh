@@ -47,7 +47,6 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
-  readonly initialModeOptionsAreFallback: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -65,11 +64,7 @@ interface DisclaimerDeclinedProps {
   readonly onDecline: () => Promise<void>
 }
 
-export function Assistant({
-  chatbot,
-  initialModeOptions,
-  initialModeOptionsAreFallback,
-}: AssistantProps) {
+export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
   const t = useTranslations()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
@@ -134,13 +129,8 @@ export function Assistant({
           <RuntimeProvider
             chatbotId={chatbot.id}
             initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           >
-            <AssistantLayout
-              chatbot={chatbot}
-              initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-            />
+            <AssistantLayout chatbot={chatbot} />
           </RuntimeProvider>
         </ChatOnboardingProvider>
       </ChatUiProvider>
@@ -482,12 +472,8 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -573,8 +559,6 @@ function SidebarMain({
           <Thread
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </div>
       </div>
@@ -584,12 +568,8 @@ function SidebarMain({
 
 function AssistantLayout({
   chatbot,
-  initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
@@ -598,11 +578,7 @@ function AssistantLayout({
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
         <AppSidebar />
-        <SidebarMain
-          chatbot={chatbot}
-          initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-        />
+        <SidebarMain chatbot={chatbot} />
       </SidebarProvider>
     )
   }
@@ -629,8 +605,6 @@ function AssistantLayout({
           <Thread
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </div>
         <EmbeddedCreditsBar />
