@@ -267,7 +267,20 @@ export async function getUserActivities(
       ? { equals: courseId, notIn: courseIdsPendingDeletion }
       : withoutCourse
         ? null
-        : { notIn: courseIdsPendingDeletion },
+        : undefined,
+    // without a course filter, exclude activities of courses pending deletion;
+    // `notIn` alone would also drop unassigned activities (NULL NOT IN ...)
+    AND:
+      !courseId && !withoutCourse && courseIdsPendingDeletion.length > 0
+        ? [
+            {
+              OR: [
+                { courseId: null },
+                { courseId: { notIn: courseIdsPendingDeletion } },
+              ],
+            },
+          ]
+        : undefined,
     // search string
     OR: searchString
       ? [
