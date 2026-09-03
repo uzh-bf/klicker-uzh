@@ -98,21 +98,21 @@ describe('withOwnerPreviewAuth', () => {
     })
   })
 
-  it.each(['session', 'chatbot lookup'])(
-    'returns a JSON server error when the %s dependency fails',
-    async (dependency) => {
-      const deps = dependencies()
-      if (dependency === 'session') {
-        deps.getManageUser.mockRejectedValue(new Error('unavailable'))
-      } else {
-        deps.findChatbot.mockRejectedValue(new Error('unavailable'))
-      }
-
-      const result = await withOwnerPreviewAuth('chatbot-id', deps)
-
-      expect('response' in result && result.response.status).toBe(500)
+  it.each([
+    'session',
+    'chatbot lookup',
+  ])('returns a JSON server error when the %s dependency fails', async (dependency) => {
+    const deps = dependencies()
+    if (dependency === 'session') {
+      deps.getManageUser.mockRejectedValue(new Error('unavailable'))
+    } else {
+      deps.findChatbot.mockRejectedValue(new Error('unavailable'))
     }
-  )
+
+    const result = await withOwnerPreviewAuth('chatbot-id', deps)
+
+    expect('response' in result && result.response.status).toBe(500)
+  })
 
   it('exposes a page-safe unauthorized result without a response object', async () => {
     await expect(
