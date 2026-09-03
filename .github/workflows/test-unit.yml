@@ -5,6 +5,7 @@ on:
   push:
     branches: ['v3', 'v3*']
     paths:
+      - 'apps/frontend-pwa/**'
       - 'apps/chat/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
@@ -23,6 +24,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
+      - 'apps/frontend-pwa/**'
       - 'apps/chat/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
@@ -105,6 +107,10 @@ jobs:
           CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
           CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Test frontend PWA
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/frontend-pwa test:run
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

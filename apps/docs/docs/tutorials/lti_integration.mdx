@@ -28,7 +28,7 @@ Create a KlickerUZH structure with the following LTI pages:
 
 4. **Manage Account (required)**: This page allows students to create or update their profile and manage their KlickerUZH account. This is the first page students should visit if they have not used KlickerUZH before and want to participate with an account. After creating an account here, they will be automatically logged in on all other KlickerUZH pages within OLAT. If students have already signed up for KlickerUZH outside of OLAT with their university e-mail address, they should also visit this page to ensure that their account is linked correctly.
 
-5. **Self-Learning Area**: In the self-learning area of your OLAT course, it makes sense to embed Practice Quizzes created with KlickerUZH as one OLAT element per quiz. This allows you to integrate synchronous (live quizzes) and asynchronous activities within the same gamification framework.
+5. **Self-Learning Area**: In the self-learning area of your OLAT course, we recommend embedding the combined **Practice Pool & Practice Quizzes** overview as the primary entry point. It gives students access to spaced-repetition practice and to individual Practice Quizzes from one course page. You can additionally embed selected Practice Quizzes as separate OLAT elements when direct access is useful.
 
 ## How can I set the language for KlickerUZH activities embedded in OLAT?
 
@@ -109,7 +109,8 @@ The examples below focus on UZH OLAT. Moodle can also be integrated with a syste
 />
 
 - To integrate overview pages of all available activities of a certain type, create another "LTI Page" element in your OLAT course, select KlickerUZH as the LTI version, and add the correct URL for the activity list.
-- If only one activity of a certain type is available, this page will redirect students automatically to the activity itself. Accordingly, we recommend including the **Live Quiz List** using the LTI link shown on the right, so students can quickly access **Live Quiz and Live Q&A** during the lecture.
+- The **Practice Pool & Practice Quizzes** overview remains available when only one Practice Quiz is published, so students can still choose between spaced-repetition practice and the individual quiz.
+- Other activity lists may redirect students automatically when only one activity is available. We recommend including the **Live Quiz List** using the LTI link shown on the right, so students can quickly access **Live Quiz and Live Q&A** during the lecture.
 - Activate “Skip launch page”.
 
 ### Leaderboard
@@ -143,7 +144,7 @@ The examples below focus on UZH OLAT. Moodle can also be integrated with a syste
 
 ### Individual Activity Links
 
-- As with the previous elements, you can integrate all practice quizzes and microlearnings as individual LTI pages in your OLAT self-learning modules. Create an "LTI Page" element in your OLAT course for each activity, select KlickerUZH as the LTI version, and add the correct URL for the activity.
+- Individual Practice Quizzes and microlearnings can additionally be integrated as separate LTI pages in your OLAT self-learning modules. Create an "LTI Page" element for each activity, select KlickerUZH as the LTI version, and add the correct URL for the activity.
 - You can find the LTI access link for each individual asynchronous activity in the dropdown on the corresponding activity in the course overview or on the activities list, as shown below.
 - Activate “Skip launch page”.
 

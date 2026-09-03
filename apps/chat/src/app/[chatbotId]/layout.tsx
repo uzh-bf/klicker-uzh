@@ -1,9 +1,11 @@
-import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus } from '@klicker-uzh/prisma/client'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { z } from 'zod'
 import { Assistant } from '../../components/assistant'
 import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
+import {
+  getChatbotOr404,
+  withChatbotTokenAuth,
+} from '../../lib/server/apiGuards'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -16,32 +18,31 @@ export default async function ChatLayout({
 }: ChatLayoutProps) {
   const { chatbotId } = await params
 
-  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
+  const cookieStore = await cookies()
+  const authResult = await withChatbotTokenAuth(
+    cookieStore.get('participant_token')?.value,
+    chatbotId
+  )
+  if ('response' in authResult) notFound()
 
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: {
-      id: true,
-      name: true,
-      avatar: true,
-      systemPrompts: true,
-      status: true,
-      mcpConfigurations: {
-        select: {
-          allowedTools: true,
-          chatMode: true,
-          isEnabled: true,
-          parameters: true,
-          priority: true,
-          mcpServer: { select: { id: true } },
-        },
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    id: true,
+    name: true,
+    avatar: true,
+    systemPrompts: true,
+    mcpConfigurations: {
+      select: {
+        allowedTools: true,
+        chatMode: true,
+        isEnabled: true,
+        parameters: true,
+        priority: true,
+        mcpServer: { select: { id: true } },
       },
     },
   })
-
-  // Only a PUBLISHED chatbot is reachable by participants; anything else 404s
-  // exactly like a missing bot (mirrors the API guard in apiGuards.ts).
-  if (!chatbot || chatbot.status !== ChatbotStatus.PUBLISHED) notFound()
+  if ('response' in chatbotResult) notFound()
+  const { chatbot } = chatbotResult
 
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,

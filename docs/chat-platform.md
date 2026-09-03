@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-31'
+timestamp: '2026-09-01'
 tags:
   - frontend
   - chat
@@ -124,7 +124,7 @@ cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
-Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) verifies the participant JWT, checks the published chatbot, and confirms that a `Participation` row exists for its course. It covers the standard `{ courseId: true }` case — use it for new routes and fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Existence of a `Participation` authorizes access; `isActive` is the leaderboard opt-in and is never part of this guard ([Domain model](./domain-model.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
 ## Model registry and credits
 
@@ -159,12 +159,18 @@ with no history projects budget 0 / used 0. The Zurich month boundary
 (including DST) is derived deterministically in
 `packages/util/src/chatUsage.ts`.
 
-`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls the participant route's
-pre-provider budget rejection and defaults to `false`. While the switch is
-false, the route skips account authorization and budget-availability rejection,
-but turn lifecycle claims remain active and configured account usage is still
-recorded after a completed provider response. Enabling the switch is a separate
-operational cutover decision for a named environment and cohort.
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls only the participant route's
+pre-provider budget rejection and defaults to `false`. Turn lifecycle attempt
+tracking has an independent default-off switch,
+`CHAT_TURN_LIFECYCLE_WRITES_ENABLED` (`chat.lifecycleWritersEnabled`; see
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md)). The Helm template
+omits the runtime key while the writer gate is false, so an older chart cannot
+accidentally enable it after a newer application is rolled back. With the
+switch disabled, claims still create hidden markers with a null attempt token;
+complete-only readers keep those markers out of history. A configured account
+row is still recorded after a completed provider response even when neither
+switch is enabled. Enabling each switch is a separate operational cutover
+decision for a named environment and cohort.
 
 The lecturer-facing GraphQL API projects the effective account month through
 `getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
@@ -228,9 +234,10 @@ production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
-a direct comparison. The seeded Benibot fixture allow-lists all three of
-`auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
-strict model allow-list. Runtime fallback never bypasses that allow-list.
+a direct comparison. The seeded Benibot fixture allow-lists all three active
+options — `auto`, `gpt-5.6-luna` and `gpt-4.1` — explicitly, so it satisfies
+the strict model allow-list. The zero-credit safety fallback may use Luna even
+when that allow-list omits it.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
@@ -239,10 +246,29 @@ has a healthcheck, and is included in
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
-usage cost. A model call still requires the operator's local
+usage cost. A model call still requires a caller-injected
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
+
+For a local developer-Foundry run, map `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_BASE_URL` to the generic `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` variables with the approved secret manager while
+starting the exact devrouter worktree. The repository has no dependency on a
+personal secret operator. The VPN is required. Stop and restart an existing
+worktree when its LiteLLM container was started without those values; a warm
+ensure does not replace service-container environment. The direct
+`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+the fixed effort aliases remain internal router targets.
+
+The local target-evaluation adapter is a host loopback boundary, not another
+Chat product route. It authenticates a seeded participant against the
+namespaced API and Chat origins, sends only the question and resolved mode,
+drains the UI stream, and reads back the persisted assistant message. Expected
+answers remain in the evaluator, and raw tool arguments/results remain inside
+the target process. The committed KB_doc_query canary proves synthetic
+transport and persistence only; it must not be reported as FineCo quality or
+replace an authorized EXPERT_df_fineco_expert binding.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
@@ -280,45 +306,62 @@ settlement details. Exhausting one class neither disables the other nor invokes
 fallback. With the default-off setting, the route skips this rejection while
 retaining lifecycle claims and post-completion accounting for configured usage.
 
-The client-supplied assistant message ID is the turn lifecycle key.
-`apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
-`IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
-or provider work. Concurrent and completed claims return the same generic
-`409`; collision checks verify the assistant role, thread, chatbot, and owner
-without revealing foreign scope. Failed attempts may be reclaimed with a new
-UUID, while callbacks from an older attempt cannot complete or charge the
-turn. Claims have no timeout or automatic lease stealing.
+The client-supplied assistant message ID remains the lifecycle row key, and the
+user message ID scopes a normal turn. `apps/chat/src/services/accountUsage.ts:claimChatTurn`
+validates the thread, chatbot, and owner. In R2, when lifecycle writers are
+enabled, it inserts an `IN_PROGRESS` assistant placeholder with a per-attempt
+UUID before MCP, image, or provider work. In R1, when lifecycle writers are
+off, it inserts the same hidden placeholder with a `null` attempt ID.
+Complete-only history reads keep either placeholder away from participants, and
+failed or empty R1 attempts delete it. A PostgreSQL transaction advisory lock
+keyed by thread and parent serializes normal claims, so concurrent requests for
+one user turn cannot create multiple provider attempts. Explicit regeneration
+sends an opt-in flag and may create a sibling answer. Failed R2 attempts may be
+reclaimed with a new UUID. Both modes reject duplicate or in-progress keys with
+the generic `409` behavior described below.
 
-`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
-matching attempt to `COMPLETED`, stores the terminal assistant result,
-increments the owner/class/month counter by the same rounded six-decimal value,
-and updates the thread timestamp in one `ReadCommitted` transaction. A normal
-finish and an abort use this finalizer once, and a late `onEnd` after an abort
-is ignored. Missing reliable main-stream usage still closes the message key
-with `creditsUsed = null` and no account charge. History reads hide
+`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` is the single
+charging boundary. In R2, it updates the matching `IN_PROGRESS` or `FAILED`
+attempt to `COMPLETED`. In R1, it updates the matching hidden `IN_PROGRESS`
+placeholder to `COMPLETED` under the same thread-plus-parent lock. In either
+mode, one non-empty completed answer also increments the owner/class/month
+counter by its rounded six-decimal credit value and updates the thread timestamp
+in one `ReadCommitted` transaction. In R1, a successful empty completion deletes
+the hidden marker and is not charged; in R2, it closes the existing placeholder
+as an empty completed message and is not charged. Duplicate completion returns
+the stored result without charging again; a foreign or mismatched key conflicts.
+A normal finish and an abort use this finalizer once, and a late `onEnd` after an
+abort is ignored. Missing reliable main-stream usage still closes the message
+key with `creditsUsed = null` and no account charge. History reads hide
 `IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
 reservation, so the bounded final-turn and concurrent overrun accepted by
-[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
-request then fails its live check.
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the
+next request then fails its live check.
 
 The existing `ChatUsageCredits` balance remains a separate participant
-allowance. Its decrement runs after account finalization and is not part of the
-account transaction. At zero participant credits, fallback must intersect the
-selected usage class, `fallback: true`, and the chatbot allow-list. The current
-registry has a `BASE` fallback only, so a zero-credit `ADVANCED` turn is denied
-instead of switching to `BASE`. Automatic model selection retains Auto and is
-therefore attributed to `ADVANCED`; the credits response keeps allow-listed
-model capabilities visible independently of the participant balance. Strict
-reservations, immutable ledgers, automated refunds, invoices, per-chatbot
-allocation, and participant-credit migration remain deferred.
+allowance. Its decrement is part of the `finalizeChatTurn` transaction together
+with the completed message and account usage, so a failed debit rolls back the
+other two writes and a duplicate completion cannot debit twice. At zero
+participant credits, the route switches from any effective model to GPT-5.6
+Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
+therefore charged only through its `BASE` account lane and the participant
+allowance. This fallback intentionally does not require the chatbot allow-list
+to contain Luna. Automatic selection otherwise retains Auto and is attributed
+to `ADVANCED`; the credits response keeps allow-listed model capabilities
+visible independently of the participant balance. Strict reservations,
+immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
+participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` (default
-  `gpt-5.6-luna`) only when that model is marked as fallback, shares the
-  selected usage class, and appears in the chatbot's explicit
-  `allowedModelIds`. It stops when no allowed fallback exists in that class.
-  Audit configured chatbot allow-lists with
-  `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
+- The zero-credit participant path uses GPT-5.6 Luna as the base-lane fallback
+  even when the chatbot allow-list excludes it. The registry must contain a
+  `fallback` GPT-5.6 Luna `BASE` entry; the route denies the turn only if that
+  entry is absent. Retired model IDs in persisted allow-lists are ignored, and
+  an automatic chatbot with no current allowed model resolves to Luna. The
+  chart still emits `CHAT_FALLBACK_MODEL_ID` for mixed-version compatibility
+  and the one-off maintenance script, but the current Chat runtime ignores it.
+  `CHAT_PRIMARY_MODEL_ID` controls automatic primary selection; the participant
+  safety fallback is always Luna.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
@@ -503,6 +546,84 @@ when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
+
+## Lecturer authoring and publication contract
+
+The owner-facing GraphQL contract lives in
+`packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
+can create a course-bound `DRAFT` chatbot before their account is authorized to
+publish. The course is fixed after creation. Metadata and model policy are
+editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
+`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
+`DRAFT` and `REJECTED`.
+
+`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
+plus the disclaimer ID the client loaded. It normalizes line endings and outer
+whitespace, validates both fields, and rejects introduction Markdown outside
+paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
+uses transactional copy-on-write. The replacement retains the internal name,
+description, and media fields. A stale expected ID fails with
+`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
+This preserves the participant acceptance contract: acceptance and Manage's
+accepted count apply only when
+`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
+
+`requestChatbotPublication` still requires the live account capability from
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
+linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
+`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
+to Catalyst and full-access lecturers; it does not expose account budget data.
+Submission never publishes automatically; the existing administrator approval
+remains a separate transition.
+
+Manage exposes draft preparation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
+limited to the lecturer's owned, non-archived courses, and the newly created
+chatbot is selected immediately. The workspace keeps chatbot selection in a
+persistent desktop rail and a compact mobile selector. Its URL identifies the
+selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
+setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
+as the initial accordion section hint. Invalid deep links fall back to the
+first valid lifecycle view or section. Published chatbots preserve any valid
+setup-section hint while keeping their read-only Disclaimer and Review
+contracts.
+Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
+model-policy changes, and block while an affected mutation is pending.
+
+Draft and rejected chatbots use the setup view as one page with a multiple-open
+accordion containing Basics, Disclaimer, and Review and submit. Each section
+keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
+available while lecturers inspect another section. Basics saves the name and
+description, Disclaimer saves the lecturer-written introduction while showing
+the fixed participant preview, and Review and submit summarizes the saved
+configuration before showing the publication request form.
+The course remains read-only after creation. Publication inputs are preparation
+fields in the Review and submit section and persist only when the lecturer submits the existing
+publication mutation. A successful Basics or Disclaimer save opens the next
+accordion section after the refetched chatbot is complete. Edit actions in the
+review section open the relevant accordion section, while the workspace
+navigation guard still prevents dirty or pending changes from being discarded
+silently.
+
+The selected course is read-only. Name, description, and model settings follow
+the metadata lifecycle matrix above; the disclaimer title and introduction are
+editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
+toolbar by default and uses the `basic` preset for disclaimer introductions,
+retaining simple formatting while omitting media, video, math, code, and quote
+controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
+without participant actions, and its Slate editor remounts when either the
+chatbot or current disclaimer ID changes so a selection change cannot retain
+stale text.
+
+The publication section keeps `DRAFT` and `REJECTED` request details editable
+for preparation, but enables submission only when a complete disclaimer, the
+live account publication capability, and clean, settled Basics and Disclaimer
+forms are present. While publication is pending, those sibling forms are
+locked so late edits cannot be lost during the lifecycle transition.
+`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
+publication details, while a rejected request retains its review comment for
+correction and resubmission.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,

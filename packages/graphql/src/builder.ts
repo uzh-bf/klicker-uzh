@@ -1,8 +1,8 @@
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  type PrismaTypes,
   UserLoginScope,
   UserRole,
-  type PrismaTypes,
 } from '@klicker-uzh/prisma/client'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'

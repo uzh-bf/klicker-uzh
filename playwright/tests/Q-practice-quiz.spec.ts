@@ -54,6 +54,7 @@ function readFixture(name: string) {
 }
 
 let page: Page
+let runningCourseId: string
 const aliases = new Map<string, unknown>()
 const data = Object.assign(
   {},
@@ -2085,10 +2086,26 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await page
-      .getByTestId(`practice-quiz-${data.running.displayNameNew}`)
-      .click()
+    const quiz = await runTask('getPracticeQuizInfo', {
+      quizName: data.running.nameNew,
+    })
+    if (quiz === null) {
+      throw new Error('Practice quiz not found')
+    }
+    runningCourseId = quiz.courseId
+    await page.goto(
+      `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/overview`,
+      { waitUntil: 'commit' }
+    )
+    await expect(page.getByTestId('open-practice-pool')).toHaveAttribute(
+      'href',
+      `/course/${quiz.courseId}/practice`
+    )
+    await expect(page.getByTestId('practice-quiz-list')).toBeVisible()
+    await expect(
+      page.getByTestId(`open-practice-quiz-${data.running.nameNew}`)
+    ).toBeVisible()
+    await page.getByTestId(`open-practice-quiz-${data.running.nameNew}`).click()
     await expectByAssertion(
       page.getByText(data.running.descriptionNew).first(),
       'exist'
@@ -2128,6 +2145,14 @@ test.describe.serial('Different practice quiz workflows', () => {
       if (quiz === null) {
         throw new Error('Practice quiz not found')
       }
+      await page.goto(
+        `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/overview`,
+        { waitUntil: 'commit' }
+      )
+      await expect(page.getByTestId('open-practice-pool')).toHaveCount(0)
+      await expect(
+        page.getByTestId(`open-practice-quiz-${data.running.nameNew}`)
+      ).toBeVisible()
       await page.goto(
         `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`,
         { waitUntil: 'commit' }
@@ -2195,11 +2220,15 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
-    await expectByAssertion(
-      page.getByTestId(`practice-quiz-${data.running.nameNew}`),
-      'not.exist'
+    if (!runningCourseId) {
+      throw new Error('Running practice quiz course was not recorded')
+    }
+    await page.goto(
+      `${env('URL_STUDENT')}/course/${runningCourseId}/practiceQuizzes/overview`,
+      { waitUntil: 'commit' }
     )
+    await expect(page.getByTestId('practice-quiz-overview-empty')).toBeVisible()
+    await expect(page.getByTestId('open-practice-pool')).toHaveCount(0)
   })
 
   test('Publish the future practice quiz and verify scheduled state', async ({
@@ -2721,9 +2750,29 @@ test.describe.serial('Different practice quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
-    await page.getByTestId('quizzes').click()
+    const quiz = await runTask('getPracticeQuizInfo', {
+      quizName: data.manipulation.name,
+    })
+    if (quiz === null) {
+      throw new Error('Practice quiz not found')
+    }
+    await page.goto(
+      `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/overview`,
+      { waitUntil: 'commit' }
+    )
+    await expect(page.getByTestId('open-practice-pool')).toHaveAttribute(
+      'href',
+      `/course/${quiz.courseId}/practice`
+    )
+    await expect(page.getByTestId('practice-quiz-list')).toBeVisible()
+    await expect(
+      page.getByTestId(`open-practice-quiz-${data.manipulation.name}`)
+    ).toBeVisible()
+    await expect(
+      page.getByTestId(`open-practice-quiz-${data.manipulation.duplicateName}`)
+    ).toBeVisible()
     await page
-      .getByTestId(`practice-quiz-${data.manipulation.displayName}`)
+      .getByTestId(`open-practice-quiz-${data.manipulation.name}`)
       .click()
     await page.getByTestId('start-practice-quiz').click()
     await expectByAssertion(page.getByText(data.FTML2.content).first(), 'exist')

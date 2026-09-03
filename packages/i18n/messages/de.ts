@@ -746,6 +746,8 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
+      undo: 'Letzte Formatierungsänderung rückgängig machen.',
+      redo: 'Letzte Formatierungsänderung wiederholen.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -839,6 +841,11 @@ export default {
       activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
       noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
       activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      practicePoolPromotionTitle: 'Gezielt mit Spaced Repetition üben',
+      practicePoolPromotionDescription:
+        'Bis zu 25 Fragensets aus allen Übungs-Quizzes. Deine bisherigen Antworten können die Reihenfolge beeinflussen.',
+      startPracticePool: 'Übungspool starten',
+      individualPracticeQuizzes: 'Einzelne Übungs-Quizzes',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -1076,7 +1083,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEndedToast:
         'Microlearning "{activityName}" beendet, keine weiteren Abgaben sind möglich.',
       coursePracticeArea:
-        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden immer 25 Fragen gemäss unserer Spaced Repeitition Logik und basierend auf euren bisherigen Antworten ausgewählt.',
+        'Dies ist der Übungspool für den Kurs {courseName}. Hier stehen euch die Inhalte aus allen Übungs-Quizzes kombiniert zur Verfügung. Für gezielte Wiederholungen werden bis zu 25 Fragensets gemäss unserer Spaced-Repetition-Logik ausgewählt. Eure bisherigen Antworten können die Reihenfolge beeinflussen.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',
@@ -3526,7 +3533,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
       liveQuizList: 'Live Quiz Liste',
-      practiceQuizList: 'Übungs-Quiz Liste',
+      practiceQuizList: 'Übungspool & Übungs-Quizzes',
       microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
@@ -3537,7 +3544,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Übungs-Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Übungspool & Übungs-Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
@@ -3794,7 +3801,151 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbots: 'Chatbots',
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
+      createChatbot: 'Chatbot erstellen',
+      createChatbotAndContinue: 'Entwurf erstellen und fortfahren',
+      createChatbotShort: 'Neu',
+      createChatbotDescription:
+        'Erstellen Sie einen kursgebundenen Chatbot-Entwurf und konfigurieren Sie ihn, bevor Sie die Veröffentlichung beantragen.',
+      chatbotMobileSelector: 'Aktueller Chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
+      chatbotWorkspaceOverview: 'Übersicht',
+      chatbotWorkspaceSetup: 'Einrichtung',
+      chatbotWorkspaceAdvanced: 'Erweitert',
+      chatbotWorkspaceUsage: 'Nutzung & Integrationen',
+      chatbotWorkspaceOverviewDescription:
+        'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotSetupTitle: 'Chatbot einrichten',
+      chatbotSetupDescription:
+        'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
+      chatbotSetupBasics: 'Grundangaben',
+      chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
+      chatbotSetupReview: 'Prüfen und einreichen',
+      chatbotSetupReviewDescription:
+        'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
+      chatbotSetupBasicsTitle: 'Grundangaben des Chatbots',
+      chatbotSetupBasicsDescriptionLong:
+        'Geben Sie dem Chatbot einen klaren Namen und eine Beschreibung. Speichern Sie diesen Bereich, wenn Sie fertig sind. Der verknüpfte Kurs ist nach der Erstellung festgelegt.',
+      chatbotSetupSave: 'Änderungen speichern',
+      chatbotSetupSaving: 'Wird gespeichert ...',
+      chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
+      chatbotSetupReviewTitle: 'Prüfen und einreichen',
+      chatbotSetupReviewDescriptionLong:
+        'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
+      chatbotSetupEdit: 'Bearbeiten',
+      chatbotSetupPublicationNote:
+        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und nicht separat gespeichert. Bis zum Einreichen können Sie sie bearbeiten.',
+      chatbotDiscardChangesConfirmation:
+        'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
+      chatbotNavigationPending:
+        'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
+      chatbotCreatedAt: 'Erstellt',
+      chatbotUpdatedAt: 'Zuletzt aktualisiert',
+      chatbotName: 'Name',
+      chatbotDescription: 'Beschreibung',
+      chatbotCourse: 'Kurs',
+      chatbotCourseRequired: 'Bitte wählen Sie einen Kurs aus.',
+      chatbotNoOwnedCourses:
+        'Sie müssen mindestens einen Kurs besitzen, bevor Sie einen Chatbot erstellen können.',
+      chatbotNameRequired: 'Bitte geben Sie einen Chatbot-Namen ein.',
+      chatbotCreateError:
+        'Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      chatbotErrorNotEditable:
+        'Dieser Chatbot kann nicht mehr bearbeitet werden.',
+      chatbotErrorEditConflict:
+        'Dieser Chatbot wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorDisclaimerConflict:
+        'Der Disclaimer wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorBadUserInput:
+        'Bitte prüfen Sie die Chatbot-Angaben und versuchen Sie es erneut.',
+      chatbotErrorForbidden:
+        'Sie haben keine Berechtigung, diesen Chatbot zu ändern.',
+      chatbotPublication: 'Veröffentlichungsantrag',
+      chatbotPublicationDescription:
+        'Geben Sie die Informationen an, die das Team für die Prüfung dieses Chatbots vor der Veröffentlichung benötigt.',
+      chatbotPublicationUseCase: 'Einsatzbereich',
+      chatbotPublicationUseCaseRequired:
+        'Bitte beschreiben Sie den vorgesehenen Einsatzbereich.',
+      chatbotPublicationUseCaseTooLong:
+        'Der Einsatzbereich darf höchstens 2 000 Zeichen enthalten.',
+      chatbotPublicationUseCaseInvalid:
+        'Der Einsatzbereich muss zwischen 1 und 2 000 Zeichen lang sein.',
+      chatbotPublicationExpectedStudentCount: 'Erwartete Anzahl Studierender',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Bitte geben Sie die erwartete Anzahl Studierender ein.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
+      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
+      chatbotPublicationProposedCreditsRequired:
+        'Bitte geben Sie die vorgeschlagenen Credits ein.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
+      requestChatbotPublication: 'Veröffentlichung beantragen',
+      resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
+      chatbotPublicationSubmitted:
+        'Der Veröffentlichungsantrag wurde zur Prüfung eingereicht.',
+      chatbotPublicationRequestError:
+        'Der Veröffentlichungsantrag konnte nicht eingereicht werden. Bitte versuchen Sie es erneut.',
+      chatbotPublicationDisclaimerRequired:
+        'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
+      chatbotPublicationUnsavedSetup:
+        'Speichern Sie Änderungen in den Grundangaben und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+      chatbotPublicationAuthorizationChecking:
+        'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
+      chatbotPublicationAuthorizationUnavailable:
+        'Die Freigabe des Kontos für Veröffentlichungen konnte nicht geprüft werden. Bitte versuchen Sie es später erneut.',
+      chatbotPublicationUnauthorized:
+        'Dieses Konto ist nicht für die Veröffentlichung von Chatbots freigeschaltet.',
+      chatbotPublicationPending:
+        'Dieser Chatbot wartet auf die Prüfung des Veröffentlichungsantrags. Die Veröffentlichungsangaben sind bis zum Abschluss der Prüfung gesperrt.',
+      chatbotPublicationPaused:
+        'Die Veröffentlichung dieses Chatbots ist pausiert. Die Veröffentlichungsangaben sind während der Pause gesperrt.',
+      chatbotPublicationReadonly:
+        'Die Veröffentlichungsangaben können in diesem Status nicht bearbeitet werden.',
+      chatbotPublicationPublished:
+        'Dieser Chatbot ist veröffentlicht. Die Veröffentlichungsangaben können nur gelesen werden.',
+      chatbotPublicationPublishedAt: 'Veröffentlicht am {date}.',
+      chatbotPublicationReviewComment: 'Rückmeldung zur Prüfung:',
       chatbotDetails: 'Chatbot-Details',
+      chatbotMetadata: 'Chatbot-Metadaten',
+      chatbotCourseReadonly:
+        'Der Kurs kann nach der Erstellung nicht geändert werden.',
+      saveChatbotMetadata: 'Metadaten speichern',
+      chatbotMetadataSaveSuccess: 'Chatbot-Metadaten gespeichert.',
+      chatbotMetadataSaveError:
+        'Die Chatbot-Metadaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotMetadataReadonly:
+        'Die Metadaten können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
+      chatbotDisclaimerReadonly:
+        'Der Disclaimer kann nach der Veröffentlichung, während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+      chatbotDisclaimerTitle: 'Disclaimer-Titel',
+      chatbotDisclaimerTitleRequired:
+        'Bitte geben Sie einen Disclaimer-Titel ein.',
+      chatbotDisclaimerTitleTooLong:
+        'Der Disclaimer-Titel darf höchstens 160 Zeichen enthalten.',
+      chatbotDisclaimerIntro: 'Disclaimer-Einleitung',
+      chatbotDisclaimerIntroRequired:
+        'Bitte geben Sie eine Disclaimer-Einleitung ein.',
+      chatbotDisclaimerIntroTooLong:
+        'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+      saveChatbotDisclaimer: 'Disclaimer speichern',
+      chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
+      chatbotDisclaimerSaveError:
+        'Der Chatbot-Disclaimer konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotDisclaimerPreview: 'Vorschau des Teilnehmer-Disclaimers',
+      chatbotDisclaimerPreviewDescription:
+        'Diese Vorschau enthält den Plattformtext, den Teilnehmende sehen werden.',
+      chatbotDisclaimerTitlePlaceholder: 'Titel Ihres Disclaimers',
+      chatbotDisclaimerIntroPlaceholder:
+        'Fügen Sie hier eine Einleitung für die Teilnehmenden hinzu.',
+      chatbotModelSettingsReadonly:
+        'Die Modelleinstellungen können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       overview: 'Überblick',
       chatbotId: 'Chatbot-ID',
       avatarUrl: 'Avatar-URL',

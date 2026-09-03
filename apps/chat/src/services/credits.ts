@@ -1,8 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
+import { CreditResetPeriod, Prisma } from '@klicker-uzh/prisma/client'
 import { getCurrentPeriodStart, isPeriodExpired } from '../utils/creditPeriods'
 import {
   atomicDecrementCredits,
+  atomicDecrementCreditsInTransaction,
   atomicInitializeCredits,
   atomicResetCreditsIfNeeded,
 } from '../utils/transactions'
@@ -187,5 +188,109 @@ export class CreditsService {
 
     // Then atomically decrement
     return await atomicDecrementCredits(participantId, chatbotId, amount)
+  }
+
+  /**
+   * Decrements participant credits within a caller-owned transaction.
+   *
+   * Chat finalization uses this boundary so the participant debit, persisted
+   * assistant answer, and owner usage charge either all commit or all roll
+   * back together.
+   */
+  static async decrementCreditsInTransaction(
+    tx: Prisma.TransactionClient,
+    participantId: string,
+    chatbotId: string,
+    amount: number
+  ): Promise<UserCredits> {
+    const chatbot = await tx.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: {
+        creditInitialCredits: true,
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
+      },
+    })
+
+    const initialCredits = chatbot?.creditInitialCredits ?? 1
+    const maxCredits = chatbot?.creditMaxCredits ?? 1
+    const resetPeriod = chatbot?.creditResetPeriod ?? CreditResetPeriod.WEEKLY
+    const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
+    const where = {
+      participantId_chatbotId: { participantId, chatbotId },
+    }
+
+    // Lock an existing row before reading it. An upsert below obtains the
+    // equivalent row lock when the participant has not used this chatbot yet.
+    await tx.$queryRaw(
+      Prisma.sql`
+        SELECT 1
+        FROM "public"."ChatUsageCredits"
+        WHERE "participantId" = CAST(${participantId} AS UUID)
+          AND "chatbotId" = CAST(${chatbotId} AS UUID)
+        FOR UPDATE
+      `
+    )
+
+    let credits = await tx.chatUsageCredits.findUnique({ where })
+    if (!credits) {
+      await tx.chatUsageCredits.upsert({
+        where,
+        create: {
+          participantId,
+          chatbotId,
+          total: maxCredits,
+          current: initialCredits,
+          periodStartedAt: currentPeriodStart,
+          lastResetAt: new Date(),
+          resetCount: 0,
+        },
+        update: { participantId },
+      })
+
+      await tx.$queryRaw(
+        Prisma.sql`
+          SELECT 1
+          FROM "public"."ChatUsageCredits"
+          WHERE "participantId" = CAST(${participantId} AS UUID)
+            AND "chatbotId" = CAST(${chatbotId} AS UUID)
+          FOR UPDATE
+        `
+      )
+      credits = await tx.chatUsageCredits.findUnique({ where })
+    }
+
+    if (!credits) {
+      throw new Error('Credits record not found')
+    }
+
+    if (
+      chatbot &&
+      resetPeriod !== CreditResetPeriod.NONE &&
+      isPeriodExpired(credits.periodStartedAt || credits.createdAt, resetPeriod)
+    ) {
+      credits = await tx.chatUsageCredits.update({
+        where,
+        data: {
+          current: Math.min(
+            credits.current.toNumber() + chatbot.creditResetAmount,
+            maxCredits
+          ),
+          total: maxCredits,
+          periodStartedAt: currentPeriodStart,
+          lastResetAt: new Date(),
+          resetCount: credits.resetCount + 1,
+          updatedAt: new Date(),
+        },
+      })
+    }
+
+    return atomicDecrementCreditsInTransaction(
+      tx,
+      participantId,
+      chatbotId,
+      amount
+    )
   }
 }

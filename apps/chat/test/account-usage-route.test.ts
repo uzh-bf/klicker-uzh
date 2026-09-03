@@ -199,12 +199,14 @@ function createRequest({
   assistantMessageId = 'assistant-1',
   images = [],
   threadId = 'thread-1',
+  allowRegeneration = false,
 }: {
   selectedModel?: string
   selectedMode?: string
   assistantMessageId?: string
   images?: string[]
   threadId?: string | null
+  allowRegeneration?: boolean
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
@@ -215,6 +217,7 @@ function createRequest({
       selectedModel,
       selectedMode,
       assistantMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
       images,
     }),
   })
@@ -318,6 +321,29 @@ describe('account usage chat route', () => {
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('defaults omitted regeneration to a normal turn claim', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.calls[0]?.[0]).not.toHaveProperty(
+      'allowRegeneration'
+    )
+  })
+
+  test('passes explicit regeneration to the turn claim', async () => {
+    const response = await POST(createRequest({ allowRegeneration: true }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ allowRegeneration: true })
+    )
   })
 
   test('reuses a failed turn thread when a retry omits the thread ID', async () => {
@@ -455,7 +481,7 @@ describe('account usage chat route', () => {
     expect(prepareStep({ stepNumber: 1 })).toEqual({})
   })
 
-  test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
+  test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
@@ -467,21 +493,16 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Chat model usage is unavailable',
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('keeps automatic zero-credit usage in its ADVANCED class', async () => {
+  test('routes automatic zero-credit usage to Luna BASE', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
@@ -495,15 +516,12 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('does not use another class when the ADVANCED account budget is unavailable', async () => {
@@ -525,7 +543,7 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  test('does not cross to BASE when no ADVANCED fallback is allow-listed', async () => {
+  test('uses Luna when the chatbot allow-list excludes it', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({ allowedModelIds: ['gpt-4.1'] })
     )
@@ -535,11 +553,48 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('uses Luna when only a retired model remains in the automatic allow-list', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ modelSelection: false, allowedModelIds: ['gpt-4.1-mini'] })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-4.1-mini' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('allows Luna when model selection is enabled but only retired models remain', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ allowedModelIds: ['gpt-4.1-mini'] })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('finalizes the sole BASE model once and returns the rounded amount', async () => {
@@ -569,20 +624,13 @@ describe('account usage chat route', () => {
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'assistant-1',
+        participantId: 'participant-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         modelId: 'gpt-5.6-luna',
         rawCreditsUsed: 0.000008,
       })
     )
-    expect(mocks.finalizeChatTurn.mock.calls[0][0]).not.toHaveProperty(
-      'participantId'
-    )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.000008
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
 
     expect(
       responseOptions().messageMetadata({
@@ -616,7 +664,11 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('finalizes an empty terminal result and charges reliable usage once', async () => {
+  test('does not charge an empty terminal result', async () => {
+    mocks.finalizeChatTurn.mockResolvedValueOnce({
+      outcome: 'empty',
+      creditsUsed: null,
+    })
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -634,12 +686,7 @@ describe('account usage chat route', () => {
         rawCreditsUsed: 0.00006,
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.00006
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('keeps invalid complete usage uncharged and metadata safe', async () => {
@@ -787,7 +834,7 @@ describe('account usage chat route', () => {
         ]),
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('marks a provider error as failed so the same key can be retried', async () => {
