@@ -133,7 +133,8 @@ Health and readiness endpoints are not logged at `info`.
 
 The implementation pins the latest Pino 9 release across the workspace rather
 than introducing a Pino 10 major upgrade as part of this feature. At the time of
-design, that means Pino `9.14.0`; `pino-pretty` remains pinned at `13.1.3`.
+design, that means Pino `9.14.0`; `pino-pretty` remains constrained to
+`~13.1.3`.
 
 ## Component boundaries
 

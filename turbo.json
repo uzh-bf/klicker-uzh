@@ -205,7 +205,9 @@
     "MCP_LECTURER_PORT",
     "MCP_LECTURER_URL",
     "LANGFUSE_TRACING_ENVIRONMENT",
-    "LANGFUSE_RELEASE"
+    "LANGFUSE_RELEASE",
+    "LOG_LEVEL",
+    "PINO_PRETTY"
   ],
   "cacheMaxAge": "14d",
   "cacheMaxSize": "10GB",
