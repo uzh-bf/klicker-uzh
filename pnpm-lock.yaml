@@ -78,6 +78,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config
@@ -1394,6 +1397,9 @@ importers:
 
   apps/lti:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1479,6 +1485,9 @@ importers:
 
   apps/olat-api:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
