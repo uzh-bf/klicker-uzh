@@ -314,6 +314,11 @@ does not present a UI whose backend state transition is not yet settled.
   feature-flag and GrowthBook runtimes and retains no import of those packages.
   The documentation validator still reports only the repository's existing
   26 conformance errors and 41 warnings; the new solution page adds none.
+- [x] Diagnosed the exact-head browser regression itself after the repaired
+  artifact started successfully. The added settings test used a relative URL,
+  which Playwright resolved against the Student PWA base URL and rendered its
+  404 page on both attempts. The test now opens the explicit Manage URL; its
+  focused TypeScript and formatting checks pass.
 - [ ] Require exact-head pinned-Node-24 CI to run the database-backed GraphQL
   suite and the new browser test before merge. Three supported Devrouter starts
   were blocked before runtime startup because Docker could not resolve

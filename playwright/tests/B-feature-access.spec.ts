@@ -1,4 +1,5 @@
 import { seedActivities } from '../global-setup.js'
+import { URL_MANAGE } from '../util/constants.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -64,7 +65,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
       if (operationName) graphqlOperations.push(operationName)
     })
 
-    await page.goto('/user/settings')
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     await expect(page.getByTestId('create-delegated-login')).toBeVisible()
     await expect(
       page.getByTestId('chat-account-usage-boundary')
