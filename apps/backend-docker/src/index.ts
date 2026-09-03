@@ -18,23 +18,10 @@ import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
+import { parseRefreshInterval } from './featureFlags.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
-
-function parseRefreshInterval(value: string | undefined): number | undefined {
-  if (value === undefined) return undefined
-
-  const interval = Number(value)
-  if (value.trim() === '' || !Number.isFinite(interval) || interval < 0) {
-    console.warn(
-      '[feature-flags] GROWTHBOOK_REFRESH_INTERVAL_MS must be a non-negative number; using the default refresh interval.'
-    )
-    return undefined
-  }
-
-  return interval
-}
 
 const featureFlags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,

@@ -200,8 +200,7 @@ Check:
 
 1. Before deployment, have the secret owner confirm without exposing values
    that `GROWTHBOOK_API_HOST` is a valid HTTPS SDK endpoint, the environment and
-   client key match, and `GROWTHBOOK_REFRESH_INTERVAL_MS` is not zero unless
-   expiry to a fail-closed state is intentional.
+   client key match, and `GROWTHBOOK_REFRESH_INTERVAL_MS` is positive when set.
 2. Merge and deploy source with `chat-account-usage` absent or false. This PR
    has no Prisma schema or migration and needs no database rollout step.
 3. Prove backend evaluator health and that the UI/query remain hidden. Treat an
@@ -305,9 +304,11 @@ does not present a UI whose backend state transition is not yet settled.
   rejecting its credential-leak framing: SDK client keys are public
   identifiers, but cleartext transport can still alter rollout definitions.
   The Node evaluator now rejects malformed and non-HTTPS hosts without fetching.
-- [x] Documented the final reviewer's low-severity operational finding: a zero
-  refresh interval disables polling, so the one startup payload expires after
-  120 seconds and all evaluations then fail closed.
+- [x] Accepted the final reviewer's refresh-lifecycle finding. The backend now
+  rejects a zero refresh interval and falls back to the 30-second default, so a
+  production process cannot silently stop refreshing and expire its only
+  payload after 120 seconds. Three focused backend parser tests protect absent,
+  positive, zero, malformed, and negative settings without adding a dependency.
 - [x] Passed the corrected local gate: 38 feature-flag tests, full repository
   `check:all`, the 21-task test build, the 23-task production build, and static
   inspection of the generated backend entry. The entry contains the
