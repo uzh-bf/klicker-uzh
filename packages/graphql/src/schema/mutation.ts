@@ -2025,7 +2025,22 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      replaceKbResourceFile: t.withAuth(asUserFullAccess).field({
+      requestKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileReplacement(args, ctx)
+        },
+      }),
+
+      confirmKbFileReplacement: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBResource,
         args: {
@@ -2037,7 +2052,7 @@ export const Mutation = builder.mutationType({
           sizeBytes: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await KnowledgeService.replaceKbResourceFile(args, ctx)
+          return await KnowledgeService.confirmKbFileReplacement(args, ctx)
         },
       }),
 

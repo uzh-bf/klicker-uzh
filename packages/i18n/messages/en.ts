@@ -1609,10 +1609,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileRejected: 'Choose a supported file of no more than 25 MB.',
     replaceFile: 'Replace file',
     replaceFileTitle: 'Replace file',
+    replaceAndIngest: 'Replace and ingest',
     replaceFileDescription:
-      'Upload a new file to replace the contents of “{title}”. The category and resource stay the same; ingestion runs again and the previous file is discarded.',
+      'Choose a new file for “{title}”. Its category and identity stay the same, ingestion starts immediately, and the previous AI content remains available until the replacement is ready. The previous source file cannot be restored.',
     replaceFileSuccess:
-      'File replaced. Queue it for ingestion to update the knowledge base.',
+      'Replacement queued. The previous version remains available until the new file is ready.',
     linkTitle: 'Add a link',
     linkDescription: 'Register a website or media resource for ingestion.',
     resourceTitleLabel: 'Title',

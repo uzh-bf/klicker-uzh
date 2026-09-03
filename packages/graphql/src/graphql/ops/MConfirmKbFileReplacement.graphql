@@ -1,4 +1,4 @@
-mutation ReplaceKbResourceFile(
+mutation ConfirmKbFileReplacement(
   $kbId: ID!
   $resourceId: ID!
   $blobName: String!
@@ -6,7 +6,7 @@ mutation ReplaceKbResourceFile(
   $mimeType: String!
   $sizeBytes: Int!
 ) {
-  replaceKbResourceFile(
+  confirmKbFileReplacement(
     kbId: $kbId
     resourceId: $resourceId
     blobName: $blobName
@@ -16,6 +16,7 @@ mutation ReplaceKbResourceFile(
   ) {
     id
     status
+    resourceVersion
     activeResourceVersion
   }
 }

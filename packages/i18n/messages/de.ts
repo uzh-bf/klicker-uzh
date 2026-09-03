@@ -1616,10 +1616,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
     replaceFile: 'Datei ersetzen',
     replaceFileTitle: 'Datei ersetzen',
+    replaceAndIngest: 'Ersetzen und verarbeiten',
     replaceFileDescription:
-      'Laden Sie eine neue Datei hoch, um den Inhalt von «{title}» zu ersetzen. Kategorie und Ressource bleiben gleich; die Verarbeitung läuft erneut und die bisherige Datei wird verworfen.',
+      'Wählen Sie eine neue Datei für «{title}». Kategorie und Identität bleiben gleich, die Verarbeitung startet sofort, und die bisherigen KI-Inhalte bleiben verfügbar, bis die Ersetzung bereit ist. Die bisherige Quelldatei kann nicht wiederhergestellt werden.',
     replaceFileSuccess:
-      'Datei wurde ersetzt. Planen Sie die Verarbeitung ein, um die Wissensdatenbank zu aktualisieren.',
+      'Ersetzung eingeplant. Die bisherige Version bleibt verfügbar, bis die neue Datei bereit ist.',
     linkTitle: 'Link hinzufügen',
     linkDescription:
       'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',

@@ -84,6 +84,8 @@ test.describe('Knowledge base management workspace', () => {
       let failNextKbMetricsRefresh = false
       let bulkIngestCalls = 0
       let replaceCalls = 0
+      let syntheticFileVisible = false
+      let syntheticFileReplaced = false
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -118,6 +120,7 @@ test.describe('Knowledge base management workspace', () => {
           return
         }
         if (operationName === 'ConfirmKbFileUpload') {
+          syntheticFileVisible = true
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -127,21 +130,89 @@ test.describe('Knowledge base management workspace', () => {
           })
           return
         }
-        if (operationName === 'ReplaceKbResourceFile') {
-          replaceCalls += 1
+        if (operationName === 'RequestKbFileReplacement') {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
               data: {
-                replaceKbResourceFile: {
+                requestKbFileReplacement: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: 'replacement.txt',
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileReplacement') {
+          replaceCalls += 1
+          syntheticFileReplaced = true
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                confirmKbFileReplacement: {
                   id: 'synthetic-resource',
-                  status: 'ADDED',
+                  status: 'QUEUED',
+                  resourceVersion: 2,
                   activeResourceVersion: 1,
                 },
               },
             }),
           })
+          return
+        }
+
+        if (operationName === 'GetKbResources' && syntheticFileVisible) {
+          const response = await route.fetch()
+          const body = (await response.json()) as {
+            data?: {
+              getKbResources?: {
+                items: Array<Record<string, unknown> & { id: string }>
+                totalCount: number
+                inProgressCount: number
+              }
+            }
+          }
+          const connection = body.data?.getKbResources
+          if (connection) {
+            connection.items = [
+              {
+                id: 'synthetic-resource',
+                type: 'BLOB',
+                materialType: 'COURSE_CONTENT',
+                title: 'pending.txt',
+                sourceUrl: null,
+                originalFilename: syntheticFileReplaced
+                  ? 'replaced.txt'
+                  : 'pending.txt',
+                mimeType: 'text/plain',
+                sizeBytes: syntheticFileReplaced ? 16 : 14,
+                status: syntheticFileReplaced ? 'QUEUED' : 'READY',
+                ingestedAt: new Date(0).toISOString(),
+                resourceVersion: syntheticFileReplaced ? 2 : 1,
+                activeResourceVersion: 1,
+                latestIngestionRun: syntheticFileReplaced
+                  ? {
+                      id: 'replacement-attempt',
+                      status: 'QUEUED',
+                      errorCode: null,
+                    }
+                  : null,
+                createdAt: new Date(0).toISOString(),
+                updatedAt: new Date(0).toISOString(),
+              },
+              ...connection.items.filter(
+                ({ id }) => id !== 'synthetic-resource'
+              ),
+            ]
+            connection.totalCount += 1
+            if (syntheticFileReplaced) connection.inProgressCount += 1
+          }
+          await route.fulfill({ response, json: body })
           return
         }
         if (operationName === 'IngestAllKbResources') {
@@ -298,7 +369,14 @@ test.describe('Knowledge base management workspace', () => {
       await page.getByTestId('done-kb-resource-inspector').click()
 
       await resourceRow.getByTestId(/kb-resource-actions-/).click()
-      await page.getByTestId(/replace-kb-resource-/).click()
+      await expect(page.getByTestId(/replace-kb-resource-/)).toHaveCount(0)
+      await page.keyboard.press('Escape')
+
+      const fileRow = resourceTable.getByRole('row').filter({
+        hasText: 'pending.txt',
+      })
+      await fileRow.getByTestId(/kb-resource-actions-/).click()
+      await page.getByTestId('replace-kb-resource-synthetic-resource').click()
       const replaceModal = page.getByTestId('kb-replace-file-modal')
       await expect(replaceModal).toBeVisible()
       await expect(replaceModal).toContainText(
@@ -309,8 +387,13 @@ test.describe('Knowledge base management workspace', () => {
         mimeType: 'text/plain',
         buffer: Buffer.from('replaced content'),
       })
+      await expect(
+        page.getByTestId('confirm-kb-file-replacement')
+      ).toBeVisible()
+      await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()
       expect(replaceCalls).toBe(1)
+      await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
 
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
