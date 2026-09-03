@@ -469,7 +469,10 @@ describe('account usage chat route', () => {
         ],
       })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: { KB_doc_query: {} },
+      close: mocks.closeMCPTools,
+    })
 
     const response = await POST(createRequest({ selectedMode: 'quizzer' }), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),

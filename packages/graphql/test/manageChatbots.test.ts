@@ -47,6 +47,10 @@ describe('Integration tests for lecturer chatbot create/update', () => {
     )
     userOneCtx = ctx1
     userTwoCtx = ctx2
+    await prisma.user.updateMany({
+      where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
+      data: { aiFeaturesEnabled: true },
+    })
   })
 
   afterEach(async () => await testCleanup(prisma))

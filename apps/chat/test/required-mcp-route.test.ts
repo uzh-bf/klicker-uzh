@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  closeMCPTools: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   deleteThread: vi.fn(),
@@ -319,7 +320,10 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({ course: { displayName } })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
     mocks.compileSystemPrompt.mockImplementationOnce(() => {
       throw new Error('stop after prompt compilation')
     })
@@ -337,6 +341,11 @@ describe('required MCP chat preflight', () => {
         mcpConfigurations: {
           include: { mcpServer: true },
           orderBy: { priority: 'asc' },
+        },
+        knowledgeBases: {
+          where: { isEnabled: true },
+          select: { kbId: true },
+          take: 1,
         },
       },
     })
@@ -399,7 +408,13 @@ describe('required MCP chat preflight', () => {
           }),
         }),
       ],
-      'chatbot-1'
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: undefined,
+        sessionId: 'thread-1',
+      }
     )
   })
 
@@ -415,7 +430,10 @@ describe('required MCP chat preflight', () => {
         ],
       })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
 
     const response = await POST(createRequest('quizzer'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -492,7 +510,13 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ id: 'server-1' }),
         }),
       ],
-      'chatbot-1'
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: undefined,
+        sessionId: 'thread-1',
+      }
     )
   })
 })
