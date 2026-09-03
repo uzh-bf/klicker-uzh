@@ -264,6 +264,7 @@ export interface IChatbotDisclaimerSummary {
   id: string
   name: string
   title: string
+  introText?: string | null
   acceptedCount: number
   declinedCount: number
   pendingCount: number
@@ -276,6 +277,7 @@ export const ChatbotDisclaimerSummary = ChatbotDisclaimerSummaryRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     title: t.exposeString('title'),
+    introText: t.exposeString('introText', { nullable: true }),
     acceptedCount: t.exposeInt('acceptedCount'),
     declinedCount: t.exposeInt('declinedCount'),
     pendingCount: t.exposeInt('pendingCount'),
