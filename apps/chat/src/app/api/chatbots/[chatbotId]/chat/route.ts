@@ -1,12 +1,29 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -14,26 +31,32 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { logger } from '@/src/lib/server/logger'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { sanitizeChatLogContext } from '@/src/lib/server/chatLogging'
+import {
+  getRouteLogger,
+  withRouteLogging,
+} from '@/src/lib/server/requestLogging'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
@@ -43,23 +66,6 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -77,8 +83,8 @@ type ChatRouteModelMessage = {
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
 }
 
-export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
-export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
+const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
+const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
 
 function chatModelUnavailableResponse(
   usageClass: ChatModelConfig['usageClass']
@@ -106,20 +112,25 @@ function completedTurnResponse() {
 }
 
 if (!process.env.OPENAI_BASE_URL) {
-  console.warn(
-    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  logger.warn(
+    {
+      event: 'chat.configuration.failed',
+      configuration: 'openai_base_url',
+      outcome: 'using_provider_defaults',
+    },
+    'Chat provider configuration is incomplete'
   )
 }
 if (!process.env.OPENAI_API_KEY) {
-  console.warn(
-    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  logger.warn(
+    {
+      event: 'chat.configuration.failed',
+      configuration: 'openai_api_key',
+      outcome: 'custom_key_required',
+    },
+    'Chat provider configuration is incomplete'
   )
 }
-const CHAT_LOG_PREFIX = '[chat:dev]'
-const isDevLogging = process.env.NODE_ENV === 'development'
-const MAX_LOG_STRING_LENGTH = 500
-const HASH_DIGEST_LENGTH = 12
-
 type ModelRouting = {
   source: 'custom' | 'default'
   hasCustomKey: boolean
@@ -135,7 +146,11 @@ function getOpenAIModel(
     : provider.chat(modelConfig.deploymentId)
 }
 
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
+function getModel(
+  chatbot: Chatbot,
+  modelConfig: ChatModelConfig,
+  log: AppLogger = logger
+) {
   // Use per-chatbot configuration if available
   const hasCustomKey =
     typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
@@ -149,11 +164,16 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
     if (hasCustomKey) {
       try {
         apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
+      } catch {
+        getRouteLogger(log).error(
+          {
+            event: 'chat.configuration.failed',
+            configuration: 'custom_api_key',
+            outcome: 'decryption_failed',
+            err: toSafeError('Failed to decrypt custom API key'),
+          },
+          'Failed to load chat provider configuration'
+        )
         throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
       }
     } else {
@@ -211,21 +231,6 @@ function getSupportedChatModes(systemPrompts: unknown): Set<string> {
   const configuredModes = asObject(systemPrompts)
   const modeKeys = configuredModes ? Object.keys(configuredModes) : []
   return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
-}
-
-function truncateString(
-  value: string,
-  maxLength = MAX_LOG_STRING_LENGTH
-): string {
-  if (value.length <= maxLength) return value
-  return `${value.slice(0, maxLength - 3)}...`
-}
-
-function hashSnippet(value: string): string {
-  return createHash('sha256')
-    .update(value)
-    .digest('hex')
-    .slice(0, HASH_DIGEST_LENGTH)
 }
 
 function safeSerialize(value: unknown): string | null {
@@ -298,23 +303,24 @@ function getDefaultReasoningEffort(
 function logChatDev(
   event: string,
   context: Record<string, unknown>,
-  level: 'info' | 'error' = 'info'
+  level: 'info' | 'error' = 'info',
+  log?: AppLogger
 ) {
-  if (!isDevLogging) return
-  const message = `${CHAT_LOG_PREFIX} ${event}`
+  const requestLog = getRouteLogger(log)
+  const fields = {
+    event: `chat.${event}`,
+    ...sanitizeChatLogContext(context),
+  }
   if (level === 'error') {
-    console.error(message, context)
+    requestLog.error(fields, 'Chat request event')
   } else {
-    console.info(message, context)
+    requestLog.info(fields, 'Chat request event')
   }
 }
 
 type ToolDiagnostic = {
-  toolName: string
   inputBytes: number | null
   outputBytes: number | null
-  inputHash: string | null
-  outputHash: string | null
 }
 
 function collectStepToolDiagnostics(
@@ -343,20 +349,12 @@ function collectStepToolDiagnostics(
       continue
     }
 
-    const toolName =
-      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
     const inputValue = typedPart.input ?? typedPart.args ?? null
     const outputValue = typedPart.output ?? typedPart.result ?? null
 
-    const inputSerialized = safeSerialize(inputValue)
-    const outputSerialized = safeSerialize(outputValue)
-
     diagnostics.push({
-      toolName,
       inputBytes: safeSize(inputValue),
       outputBytes: safeSize(outputValue),
-      inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
-      outputHash: outputSerialized ? hashSnippet(outputSerialized) : null,
     })
   }
 
@@ -400,9 +398,6 @@ type SerializedStreamError = {
   providerMessage: string | null
   providerParam: string | null
   safeHeaders: Record<string, unknown> | null
-  raw: string | null
-  messageHash: string | null
-  providerMessageHash: string | null
 }
 
 function serializeStreamError(error: unknown): SerializedStreamError {
@@ -426,17 +421,6 @@ function serializeStreamError(error: unknown): SerializedStreamError {
       nestedError.sequence_number) ||
     (typeof root?.sequence_number === 'number' && root.sequence_number) ||
     null
-
-  const raw =
-    typeof error === 'string'
-      ? truncateString(error)
-      : root
-        ? truncateString(
-            `error object keys: ${Object.keys(root).join(', ') || '(none)'}`
-          )
-        : error instanceof Error
-          ? truncateString(`${error.name}: ${error.message}`)
-          : null
 
   return {
     name:
@@ -466,12 +450,6 @@ function serializeStreamError(error: unknown): SerializedStreamError {
       extractSafeHeaders(providerError?.headers) ||
       extractSafeHeaders(nestedError?.headers) ||
       extractSafeHeaders(root?.headers),
-    raw,
-    messageHash: message ? hashSnippet(message) : null,
-    providerMessageHash:
-      typeof providerError?.message === 'string'
-        ? hashSnippet(providerError.message)
-        : null,
   }
 }
 
@@ -598,14 +576,15 @@ const joinReasoningFromSteps = (
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger,
+  requestId: string
 ) {
   const { chatbotId } = await params
-  const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -627,8 +606,14 @@ export async function POST(
         { status: 403 }
       )
     }
-  } catch (error) {
-    console.error('Error checking disclaimer status:', { requestId, error })
+  } catch {
+    log.error(
+      {
+        event: 'chat.disclaimer.check_failed',
+        err: toSafeError('Failed to check disclaimer status'),
+      },
+      'Failed to check disclaimer status'
+    )
     return NextResponse.json(
       { error: 'Error checking disclaimer status' },
       { status: 500 }
@@ -677,8 +662,11 @@ export async function POST(
   let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
-  } catch (e) {
-    console.error('Invalid request body:', { requestId, error: e })
+  } catch {
+    log.info(
+      { event: 'chat.request.rejected', outcome: 'invalid_body' },
+      'Rejected chat request'
+    )
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
   const {
@@ -705,16 +693,16 @@ export async function POST(
     .map((message) => message.content)
     .join('\n')
 
-  logChatDev('request.received', {
-    requestId,
-    chatbotId,
-    participantId,
-    threadId,
-    assistantMessageId,
-    selectedModel: parsed.selectedModel,
-    selectedMode,
-    messageCount: messages.length,
-  })
+  logChatDev(
+    'request.received',
+    {
+      requestId,
+      selectedMode,
+      messageCount: messages.length,
+    },
+    'info',
+    log
+  )
 
   let selectedModel = parsed.selectedModel
 
@@ -741,11 +729,15 @@ export async function POST(
         },
       },
     })
-  } catch (error) {
-    console.error('Failed to fetch chatbot configuration:', {
-      requestId,
-      error,
-    })
+  } catch {
+    log.error(
+      {
+        event: 'chat.configuration.failed',
+        configuration: 'chatbot',
+        err: toSafeError('Failed to fetch chatbot configuration'),
+      },
+      'Failed to fetch chatbot configuration'
+    )
   }
 
   if (!chatbot) {
@@ -801,11 +793,14 @@ export async function POST(
         ownerId: chatbot.ownerId,
         usageClass: selectedModelConfig.usageClass,
       })
-    } catch (error) {
-      console.error('Failed to check account chat usage:', {
-        requestId,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.account_usage.check_failed',
+          err: toSafeError('Failed to check account chat usage'),
+        },
+        'Failed to check account chat usage'
+      )
     }
     if (!accountUsageAvailable) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
@@ -908,11 +903,14 @@ export async function POST(
         currentThreadId = newThread.id
         createdThreadId = newThread.id
       }
-    } catch (error) {
-      console.error('Failed to resolve or create thread:', {
-        requestId,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.thread.resolve_failed',
+          err: toSafeError('Failed to resolve or create chat thread'),
+        },
+        'Failed to resolve or create chat thread'
+      )
     }
   }
   if (!currentThreadId) {
@@ -933,17 +931,20 @@ export async function POST(
         participantId,
         chatbotId
       )
-    } catch (error) {
-      console.error('Failed to discard a newly created chat thread:', {
-        requestId,
-        phase,
-        error,
-      })
+    } catch {
+      log.warn(
+        {
+          event: 'chat.thread.discard_failed',
+          phase,
+          err: toSafeError('Failed to discard newly created chat thread'),
+        },
+        'Failed to discard newly created chat thread'
+      )
       return false
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null = null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -970,7 +971,7 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
@@ -1004,12 +1005,15 @@ export async function POST(
         threadId: owningThread.id,
         lifecycleAttemptId,
       })
-    } catch (error) {
-      console.error('Failed to mark assistant lifecycle attempt as failed:', {
-        requestId,
-        phase,
-        error,
-      })
+    } catch {
+      log.error(
+        {
+          event: 'chat.lifecycle.failure_mark_failed',
+          phase,
+          err: toSafeError('Failed to mark assistant lifecycle attempt failed'),
+        },
+        'Failed to mark assistant lifecycle attempt failed'
+      )
     }
   }
 
@@ -1026,7 +1030,12 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpTools = await getAggregatedMCPTools(
+        mcpServersWithConfigs,
+        chatbotId,
+        {},
+        log
+      )
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1047,7 +1056,7 @@ export async function POST(
     // base prompt plus the layered runtime contracts (course policy, conditional
     // citations, then unconditional language policy — see compileSystemPrompt).
     // Assigning the finished value here (rather than a separate `instructions`
-    // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
+    // variable) keeps the `systemPromptLength` telemetry
     // below truthful to what is actually sent to the model.
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
@@ -1086,7 +1095,7 @@ export async function POST(
         ? appliedReasoningEffort
         : undefined
 
-    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const { model, routing } = getModel(chatbot, selectedModelConfig, log)
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({
@@ -1152,10 +1161,14 @@ export async function POST(
             )
           }
         } else {
-          console.error('Failed to generate image description:', {
-            requestId,
-            error: result.reason,
-          })
+          log.warn(
+            {
+              event: 'chat.image.description_failed',
+              outcome: 'using_fallback',
+              err: toSafeError('Failed to generate image description'),
+            },
+            'Failed to generate image description'
+          )
           // find the corresponding image from the original array
           const idx = results.indexOf(result)
           imageAttachments.push({
@@ -1190,27 +1203,18 @@ export async function POST(
       event: string,
       context: Record<string, unknown>,
       level: 'info' | 'error' = 'info'
-    ) => logChatDev(event, { requestId, ...context }, level)
+    ) => logChatDev(event, { requestId, ...context }, level, log)
 
     logEvent('request.context', {
-      chatbotId,
-      participantId,
-      threadId: currentThreadId,
-      assistantMessageId,
-      selectedModel,
-      resolvedModelId: selectedModelConfig.id,
-      deploymentId: selectedModelConfig.deploymentId,
-      routing,
+      providerRoute: routing.source,
+      customProvider: routing.source === 'custom',
       selectedMode,
       reasoningEffort: appliedReasoningEffort,
       allowedReasoningEfforts,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
-      toolNames,
       systemPromptLength: systemPrompt.length,
-      systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
       userPromptLengthTotal: userPrompt.length,
-      userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
@@ -1269,11 +1273,15 @@ export async function POST(
             }
           }
         }
-      } catch (error) {
-        console.error('Failed to fetch prior image descriptions:', {
-          requestId,
-          error,
-        })
+      } catch {
+        log.warn(
+          {
+            event: 'chat.image.history_lookup_failed',
+            outcome: 'continuing_without_history',
+            err: toSafeError('Failed to fetch prior image descriptions'),
+          },
+          'Failed to fetch prior image descriptions'
+        )
       }
     }
 
@@ -1321,14 +1329,13 @@ export async function POST(
             select: { id: true },
           })
           if (existingMessage) {
-            console.warn(
-              'Skipping user message update: message exists outside current thread',
+            log.warn(
               {
-                requestId,
+                event: 'chat.message.persist_skipped',
+                outcome: 'message_thread_mismatch',
                 phase: 'persist.userMessage',
-                messageId: userMessageId,
-                threadId: currentThreadId,
-              }
+              },
+              'Skipped user message update'
             )
           } else {
             await prisma.chatMessage.create({
@@ -1353,20 +1360,25 @@ export async function POST(
           where: { id: currentThreadId },
           data: { updatedAt: new Date() },
         })
-      } catch (error) {
-        console.error('Failed to save user message:', {
-          requestId,
-          phase: 'persist.userMessage',
-          error,
-        })
+      } catch {
+        log.error(
+          {
+            event: 'chat.message.persist_failed',
+            phase: 'persist.userMessage',
+            err: toSafeError('Failed to save user message'),
+          },
+          'Failed to save user message'
+        )
       }
     } else if (currentThreadId && !owningThread && userMessageId) {
-      console.warn('Skipping user message save: thread ownership mismatch', {
-        requestId,
-        phase: 'persist.userMessage',
-        messageId: userMessageId,
-        threadId: currentThreadId,
-      })
+      log.warn(
+        {
+          event: 'chat.message.persist_skipped',
+          outcome: 'thread_ownership_mismatch',
+          phase: 'persist.userMessage',
+        },
+        'Skipped user message persistence'
+      )
     }
 
     const normalizeCredits = (
@@ -1382,12 +1394,15 @@ export async function POST(
           rawCreditsUsed,
           creditsUsed: roundChatUsageCredits(rawCreditsUsed).toNumber(),
         }
-      } catch (error) {
-        console.error('Failed to normalize chat usage credits:', {
-          requestId,
-          phase,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+      } catch {
+        log.warn(
+          {
+            event: 'chat.credits.normalize_failed',
+            phase,
+            err: toSafeError('Failed to normalize chat usage credits'),
+          },
+          'Failed to normalize chat usage credits'
+        )
         return { rawCreditsUsed: null, creditsUsed: null }
       }
     }
@@ -1433,14 +1448,16 @@ export async function POST(
         if (result.outcome === 'completed') {
           participantCreditsUsed = result.creditsUsed
         }
-      } catch (error) {
-        console.error(
-          'Failed to finalize assistant message and account usage:',
+      } catch {
+        log.error(
           {
-            requestId,
+            event: 'chat.turn.finalize_failed',
             phase,
-            error,
-          }
+            err: toSafeError(
+              'Failed to finalize assistant message and account usage'
+            ),
+          },
+          'Failed to finalize assistant message and account usage'
         )
         await failAssistantClaim(`finalize.${phase}`)
       }
@@ -1456,12 +1473,15 @@ export async function POST(
             chatbotId,
             participantCreditsUsed
           )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
+        } catch {
+          log.error(
+            {
+              event: 'chat.credits.deduct_failed',
+              phase: 'credits.decrement',
+              err: toSafeError('Failed to deduct chat credits'),
+            },
+            'Failed to deduct chat credits'
+          )
         }
       }
     }
@@ -1705,9 +1725,6 @@ export async function POST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const toolCallNames = Array.from(
-            new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-          )
           const toolCallsCount = diagnostics.length
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
@@ -1730,7 +1747,6 @@ export async function POST(
                 ? stepOutputTokens >= providerReasoningTokens
                 : null,
             toolCallsCount,
-            toolCallNames,
             toolDiagnostics: diagnostics,
           })
         },
@@ -1744,7 +1760,6 @@ export async function POST(
             'stream.error',
             {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-              ...serializedError,
               classification: classification.classification,
               retryable: classification.retryable,
               suggestedAction: classification.suggestedAction,
@@ -1752,10 +1767,16 @@ export async function POST(
             'error'
           )
 
-          console.error('Error during streaming response:', {
-            requestId,
-            error: serializedError,
-          })
+          log.error(
+            {
+              event: 'chat.stream.error',
+              outcome: 'failed',
+              classification: classification.classification,
+              retryable: classification.retryable,
+              err: toSafeError('Error during streaming response'),
+            },
+            'Error during streaming response'
+          )
 
           emitFinalOnce('error', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
@@ -1787,13 +1808,17 @@ export async function POST(
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
-        console.error('Error while streaming UI message response:', {
-          requestId,
-          error: serializedError,
-          classification: classification.classification,
-          retryable: classification.retryable,
-          suggestedAction: classification.suggestedAction,
-        })
+        log.error(
+          {
+            event: 'chat.response.stream_error',
+            outcome: 'failed',
+            classification: classification.classification,
+            retryable: classification.retryable,
+            suggestedAction: classification.suggestedAction,
+            err: toSafeError('Error while streaming chat response'),
+          },
+          'Error while streaming chat response'
+        )
         void failAssistantClaim('response.stream.error')
 
         return 'An error occurred while processing the request.'
@@ -1830,6 +1855,18 @@ export async function POST(
     else await failOrDiscardUnstartedClaim('request')
     throw error
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/chat',
+    (log, requestContext) =>
+      handlePOST(req, context, log, requestContext.requestId)
+  )
 }
 
 // Function to calculate cost based on token usage and model pricing

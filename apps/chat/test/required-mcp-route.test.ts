@@ -167,7 +167,9 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      'chatbot-1'
+      'chatbot-1',
+      {},
+      expect.anything()
     )
     expect(mocks.getUserCredits).toHaveBeenCalledWith(
       'participant-1',

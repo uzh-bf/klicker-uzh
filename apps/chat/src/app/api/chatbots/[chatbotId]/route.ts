@@ -1,10 +1,11 @@
+import { type NextRequest, NextResponse } from 'next/server'
 import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
-import { NextRequest, NextResponse } from 'next/server'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
 /**
  * Retrieves model details for a specific chatbot.
  */
-export async function GET(
+async function handleGET(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -27,11 +28,19 @@ export async function GET(
     }
 
     return NextResponse.json(chatbotResult.chatbot)
-  } catch (error) {
-    console.error('Failed to fetch model details:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch model details' },
       { status: 500 }
     )
   }
+}
+
+export function GET(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(req, '/api/chatbots/:chatbotId', () =>
+    handleGET(req, context)
+  )
 }
