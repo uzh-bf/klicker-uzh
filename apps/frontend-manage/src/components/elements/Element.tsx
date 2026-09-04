@@ -82,14 +82,21 @@ function Element({
   refetchElements,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
+  const createdAt = dayjs(element.createdAt)
+  const updatedAt = dayjs(element.updatedAt)
   // A version-one element whose timestamps agree within one second is
-  // effectively unedited; any versioned edit, invalid date, or wider gap
-  // renders the edited timestamp instead.
+  // effectively unedited. Missing edit timestamps fall back to the creation
+  // timestamp instead of exposing an invalid date to the user.
   const isEffectivelyUnedited =
     element.version === 1 &&
-    dayjs(element.createdAt).isValid() &&
-    dayjs(element.updatedAt).isValid() &&
-    Math.abs(dayjs(element.updatedAt).diff(dayjs(element.createdAt))) <= 1000
+    createdAt.isValid() &&
+    updatedAt.isValid() &&
+    Math.abs(updatedAt.diff(createdAt)) <= 1000
+  const showCreatedAt = isEffectivelyUnedited || !updatedAt.isValid()
+  const displayedAt = showCreatedAt ? createdAt : updatedAt
+  const timestampTranslationKey = showCreatedAt
+    ? 'shared.generic.createdAt'
+    : 'shared.generic.updatedAt'
   const moreActionsLabel = t('manage.questionPool.moreActions', {
     name: element.name,
   })
@@ -247,17 +254,10 @@ function Element({
                   {t(`shared.${element.type}.typeLabel`)}
                 </div>
                 <div>
-                  {isEffectivelyUnedited
-                    ? t('shared.generic.createdAt', {
-                        date: dayjs(element.createdAt).format(
-                          'DD.MM.YYYY HH:mm'
-                        ),
-                      })
-                    : t('shared.generic.updatedAt', {
-                        date: dayjs(element.updatedAt).format(
-                          'DD.MM.YYYY HH:mm'
-                        ),
-                      })}
+                  {displayedAt.isValid() &&
+                    t(timestampTranslationKey, {
+                      date: displayedAt.format('DD.MM.YYYY HH:mm'),
+                    })}
                 </div>
               </div>
             </div>

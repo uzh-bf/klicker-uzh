@@ -14,6 +14,7 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
@@ -67,7 +68,7 @@ function ElementEditModal({
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
       typeof elementId === 'undefined' || isDuplication
-        ? 'autosave-element-creation'
+        ? ELEMENT_CREATION_AUTOSAVE_KEY
         : `autosave-element-${elementId}`,
       undefined
     )
@@ -384,7 +385,7 @@ function ElementEditModal({
         if (autoSavedElement) {
           localStorage.removeItem(
             typeof elementId === 'undefined' || isDuplication
-              ? 'autosave-element-creation'
+              ? ELEMENT_CREATION_AUTOSAVE_KEY
               : `autosave-element-${elementId}`
           )
         }

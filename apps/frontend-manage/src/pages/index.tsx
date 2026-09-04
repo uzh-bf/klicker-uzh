@@ -18,6 +18,7 @@ import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
 } from '@components/common/Pagination'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { computeResultRange } from '@lib/resultRange'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
@@ -305,7 +306,7 @@ function Index() {
   }, [])
 
   const handleCreateElement = useCallback(() => {
-    const value = localStorage.getItem('autosave-element-creation')
+    const value = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
 
     if (value) {
       setShowRecoveryPrompt(true)
@@ -433,7 +434,7 @@ function Index() {
               </div>
             </div>
 
-            {errorElements ? (
+            {errorElements && (
               <UserNotification
                 type="error"
                 message={t('manage.questionPool.elementsLoadError')}
@@ -448,11 +449,13 @@ function Index() {
                   {t('manage.questionPool.retry')}
                 </button>
               </UserNotification>
-            ) : !dataElements || loadingElements ? (
+            )}
+            {!errorElements && (!dataElements || loadingElements) && (
               <div className="flex flex-1 items-center justify-center">
                 <Loader />
               </div>
-            ) : (
+            )}
+            {!errorElements && dataElements && !loadingElements && (
               <div className="flex min-h-0 flex-1 flex-col">
                 <div
                   data-cy="result-range-summary-top"
@@ -572,7 +575,7 @@ function Index() {
             setIsElementCreationModalOpen(true)
           }}
           onDiscard={() => {
-            localStorage.removeItem('autosave-element-creation')
+            localStorage.removeItem(ELEMENT_CREATION_AUTOSAVE_KEY)
             setShowRecoveryPrompt(false)
             setIsElementCreationModalOpen(true)
           }}

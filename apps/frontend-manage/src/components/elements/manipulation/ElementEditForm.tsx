@@ -8,6 +8,7 @@ import {
   GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import {
   Button,
   H3,
@@ -152,7 +153,7 @@ function ElementEditForm({
       try {
         serializedValues = JSON.stringify(values)
         setAutoSavedElement(values)
-        storedRaw = localStorage.getItem('autosave-element-creation')
+        storedRaw = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
       } catch {
         storedRaw = undefined
       }
