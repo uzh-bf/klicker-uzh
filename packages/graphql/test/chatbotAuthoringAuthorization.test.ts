@@ -5,12 +5,14 @@ import type { ContextWithUser } from '../src/lib/context.js'
 
 const serviceMocks = vi.hoisted(() => ({
   updateChatbotModelSettings: vi.fn(),
+  updateChatbotModelPolicy: vi.fn(),
   updateChatbotStandardModeConfig: vi.fn(),
 }))
 
 vi.mock('../src/services/chatbots.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/services/chatbots.js')>()),
   updateChatbotModelSettings: serviceMocks.updateChatbotModelSettings,
+  updateChatbotModelPolicy: serviceMocks.updateChatbotModelPolicy,
   updateChatbotStandardModeConfig: serviceMocks.updateChatbotStandardModeConfig,
 }))
 
@@ -35,7 +37,12 @@ function buildContext({
   } as ContextWithUser
 }
 
-async function executeMutation(context: ContextWithUser) {
+async function executeMutation(
+  context: ContextWithUser,
+  field:
+    | 'updateChatbotModelSettings'
+    | 'updateChatbotModelPolicy' = 'updateChatbotModelSettings'
+) {
   const yoga = createYoga({
     schema,
     context: () => context,
@@ -47,7 +54,7 @@ async function executeMutation(context: ContextWithUser) {
     body: JSON.stringify({
       query: `
         mutation {
-          updateChatbotModelSettings(
+          ${field}(
             chatbotId: "00000000-0000-4000-8000-000000000002"
             modelSelection: false
             allowedModelIds: []
@@ -100,6 +107,10 @@ describe('chatbot authoring authorization', () => {
   beforeEach(() => {
     serviceMocks.updateChatbotModelSettings.mockReset()
     serviceMocks.updateChatbotModelSettings.mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000002',
+    })
+    serviceMocks.updateChatbotModelPolicy.mockReset()
+    serviceMocks.updateChatbotModelPolicy.mockResolvedValue({
       id: '00000000-0000-4000-8000-000000000002',
     })
     serviceMocks.updateChatbotStandardModeConfig.mockReset()
@@ -168,6 +179,47 @@ describe('chatbot authoring authorization', () => {
 
     expect(result.errors?.[0]?.message).toBe('Unauthorized')
     expect(serviceMocks.updateChatbotModelSettings).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    UserLoginScope.ACCOUNT_OWNER,
+    UserLoginScope.FULL_ACCESS,
+  ])('allows strict model policy updates for Catalyst users with %s scope', async (scope) => {
+    const result = await executeMutation(
+      buildContext({ scope, catalyst: true }),
+      'updateChatbotModelPolicy'
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(serviceMocks.updateChatbotModelPolicy).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    UserLoginScope.SESSION_EXEC,
+    UserLoginScope.READ_ONLY,
+  ])('rejects strict model policy updates for Catalyst users with %s scope', async (scope) => {
+    const result = await executeMutation(
+      buildContext({ scope, catalyst: true }),
+      'updateChatbotModelPolicy'
+    )
+
+    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    expect(serviceMocks.updateChatbotModelPolicy).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    UserLoginScope.ACCOUNT_OWNER,
+    UserLoginScope.FULL_ACCESS,
+    UserLoginScope.SESSION_EXEC,
+    UserLoginScope.READ_ONLY,
+  ])('rejects strict model policy updates for non-Catalyst users with %s scope', async (scope) => {
+    const result = await executeMutation(
+      buildContext({ scope, catalyst: false }),
+      'updateChatbotModelPolicy'
+    )
+
+    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    expect(serviceMocks.updateChatbotModelPolicy).not.toHaveBeenCalled()
   })
 
   it.each([

@@ -63,7 +63,16 @@ two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
 Manage projection exposes the combined effective settings, never raw
 `systemPrompts`. Participant GraphQL projections expose only the resolved mode
 options, never this owner configuration or raw system prompts. The chat compiler
-keeps the platform scaffolding authoritative.
+keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
+model policy with no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants; the previous model
+settings mutation remains available for rolling clients. Legacy fixed rows
+resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
+retired-only lists use Luna without a migration. Manage exposes one optional
+Chatbot framing field with a 200-character UI limit. The persisted parser
+accepts up to 1000 characters so an existing longer framing note survives a
+mode-only save, while Quizzer compilation receives only that scope note.
 
 ## Activities
 

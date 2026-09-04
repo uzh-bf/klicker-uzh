@@ -3772,6 +3772,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotFraming: 'Chatbot framing',
+      chatbotFramingDescription:
+        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+      chatbotFramingPlaceholder:
+        'For example: First-year organic chemistry for medical students.',
+      chatbotFramingTooLong:
+        'Chatbot framing must be 200 characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
@@ -3915,17 +3922,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Model selection',
+      modelSelection: 'Let participants choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'Participants can choose among the allowed models.',
+        'On: participants can choose one of the explicitly selected models.',
       modelSelectionDisabledDescription:
-        'Model selection is automatic and based on credit availability.',
+        'Off: the chatbot uses exactly one model selected by the lecturer.',
+      modelSelectionFixedDescription:
+        'Participants use this model. New chatbots start with Auto.',
+      modelSelectionParticipantDescription:
+        'Participants can choose among these models. Select at least one.',
+      selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
+      reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
       chatbotModelSettingsSave: 'Save model settings',
       chatbotModelSettingsSaving: 'Saving...',

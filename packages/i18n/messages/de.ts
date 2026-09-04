@@ -3832,6 +3832,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
+      chatbotFraming: 'Rahmung des Chatbots',
+      chatbotFramingDescription:
+        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+      chatbotFramingPlaceholder:
+        'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
+      chatbotFramingTooLong:
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
       chatbotModesSave: 'Lernmodi speichern',
       chatbotModesSaving: 'Wird gespeichert…',
       chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
@@ -3986,17 +3993,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriod: 'Zurücksetzungsintervall',
       creditResetAmount: 'Zurücksetzungsmenge',
       creditMaxCredits: 'Maximale Credits',
-      modelSelection: 'Modellauswahl',
+      modelSelection: 'Modellauswahl durch Teilnehmende',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
       modelSelectionEnabledDescription:
-        'Teilnehmende können zwischen den erlaubten Modellen wählen.',
+        'Aktiv: Teilnehmende können eines der explizit ausgewählten Modelle wählen.',
       modelSelectionDisabledDescription:
-        'Die Modellauswahl erfolgt automatisch basierend auf der Credit-Verfügbarkeit.',
+        'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
+      modelSelectionFixedDescription:
+        'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      modelSelectionParticipantDescription:
+        'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
+      selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
+      reasoningEffort: 'Reasoning-Level',
       singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
       chatbotModelSettingsSave: 'Modelleinstellungen speichern',
       chatbotModelSettingsSaving: 'Speichern...',

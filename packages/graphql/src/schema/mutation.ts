@@ -1474,6 +1474,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
       updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,

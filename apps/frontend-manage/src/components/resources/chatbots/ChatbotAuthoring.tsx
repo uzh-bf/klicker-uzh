@@ -2,11 +2,11 @@ import { useMutation } from '@apollo/client'
 import {
   type Chatbot,
   ChatbotStatus,
-  QGetChatbotsInfoWithStandardModesDocument,
   type LocaleType,
+  MUpdateChatbotStandardModeConfigDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   SaveChatbotDisclaimerDocument,
   UpdateChatbotDocument,
-  MUpdateChatbotStandardModeConfigDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -53,7 +53,7 @@ type StandardModeFormValues = {
   courseName: string | null
   subjectDomain: string | null
   languageOfInstruction: LocaleType | null
-  scopeNote: string | null
+  scopeNote: string
 }
 
 function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
@@ -66,7 +66,7 @@ function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
     courseName: config?.courseName ?? null,
     subjectDomain: config?.subjectDomain ?? null,
     languageOfInstruction: config?.languageOfInstruction ?? null,
-    scopeNote: config?.scopeNote ?? null,
+    scopeNote: config?.scopeNote ?? '',
   }
 }
 
@@ -618,7 +618,20 @@ function ChatbotAuthoring({
               {modeEditable ? (
                 <Formik<StandardModeFormValues>
                   enableReinitialize
+                  validateOnMount
                   initialValues={standardModeConfig}
+                  validate={(values) => {
+                    if (
+                      values.scopeNote !== standardModeConfig.scopeNote &&
+                      values.scopeNote.length > 200
+                    ) {
+                      return {
+                        scopeNote: t('manage.resources.chatbotFramingTooLong'),
+                      }
+                    }
+
+                    return {}
+                  }}
                   onSubmit={async (values, { resetForm }) => {
                     setModeError(null)
                     setModeSuccess(false)
@@ -642,7 +655,13 @@ function ChatbotAuthoring({
                     }
                   }}
                 >
-                  {({ dirty, isSubmitting, values, setFieldValue }) => {
+                  {({
+                    dirty,
+                    isSubmitting,
+                    isValid,
+                    values,
+                    setFieldValue,
+                  }) => {
                     const controlsDisabled = isSubmitting || publicationPending
 
                     return (
@@ -653,6 +672,22 @@ function ChatbotAuthoring({
                           pending={isSubmitting}
                           onChange={setModeNavigationState}
                         />
+                        <div className="space-y-1">
+                          <FormikTextareaField
+                            disabled={controlsDisabled}
+                            name="scopeNote"
+                            label={t('manage.resources.chatbotFraming')}
+                            placeholder={t(
+                              'manage.resources.chatbotFramingPlaceholder'
+                            )}
+                            maxLength={200}
+                            maxLengthUnit={t('shared.generic.characters')}
+                            data={{ cy: 'chatbot-framing' }}
+                          />
+                          <p className="text-xs text-gray-500">
+                            {t('manage.resources.chatbotFramingDescription')}
+                          </p>
+                        </div>
                         <div className="space-y-3">
                           <StandardModeCard
                             description={t(
@@ -738,7 +773,7 @@ function ChatbotAuthoring({
                         ) : null}
                         <SetupStepFooter
                           action={t('manage.resources.chatbotModesSave')}
-                          disabled={controlsDisabled}
+                          disabled={controlsDisabled || !isValid}
                           loading={isSubmitting}
                           savingLabel={t('manage.resources.chatbotModesSaving')}
                           success={modeSuccess}
@@ -1040,6 +1075,29 @@ function ChatbotAuthoring({
                     </div>
                   ))}
                 </dl>
+              </div>
+
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h5 className="font-semibold text-gray-900">
+                    {t('manage.resources.chatbotFraming')}
+                  </h5>
+                  <Button
+                    type="button"
+                    onClick={() => openSection('modes')}
+                    data={{ cy: 'chatbot-setup-edit-framing' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotSetupEdit')}
+                    </Button.Label>
+                  </Button>
+                </div>
+                <p
+                  className="whitespace-pre-wrap text-sm text-gray-900"
+                  data-cy="chatbot-review-framing"
+                >
+                  {standardModeConfig.scopeNote || t('shared.generic.unknown')}
+                </p>
               </div>
 
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">

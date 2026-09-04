@@ -55,7 +55,11 @@ replacing:
 - Lecturers may later edit a small set of constrained persona fields — course
   name, subject domain, language of instruction, optional scope note — that
   the server compiles into standard prompts. No approval is needed because
-  these fields can only aim the bot, not disarm it.
+  these fields can only aim the bot, not disarm it. The Manage framing field
+  limits newly entered or edited scope notes to 200 characters, while the
+  persisted parser accepts up to 1000 characters so existing longer notes
+  survive mode-only saves unchanged. The compiler gives Tutor and Explainer
+  the complete typed persona; Quizzer receives only `scopeNote`.
 - **Custom modes** let a lecturer author a name, description, and free persona
   text. That text is compiled as the persona section on top of the same
   scaffolding; publication of a new or edited custom mode requires team

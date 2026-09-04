@@ -234,6 +234,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const disclaimerRequestGate = createRequestGate()
     const modelSettingsRequestGate = createRequestGate()
     let modeConfigVariables: Record<string, unknown> | undefined
+    let modelPolicyVariables: Record<string, unknown> | undefined
 
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
@@ -241,15 +242,20 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       const requestBody = postData
         ? (JSON.parse(postData) as {
             operationName?: string
-            variables?: { config?: Record<string, unknown> }
+            variables?: Record<string, unknown> & {
+              config?: Record<string, unknown>
+            }
           })
         : undefined
       const operationName = requestBody?.operationName
       if (operationName === 'MUpdateChatbotStandardModeConfig') {
         modeConfigVariables = requestBody?.variables?.config
       }
+      if (operationName === 'MUpdateChatbotModelPolicy') {
+        modelPolicyVariables = requestBody?.variables
+      }
       const requestGate =
-        operationName === 'UpdateChatbotModelSettings'
+        operationName === 'MUpdateChatbotModelPolicy'
           ? modelSettingsRequestGate
           : operationName === 'MUpdateChatbotStandardModeConfig'
             ? modeRequestGate
@@ -373,6 +379,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-mode-switch-explainer')
     ).toBeChecked()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeChecked()
+    const framingField = page.getByTestId('chatbot-framing')
+    await expect(framingField).toHaveAttribute('maxlength', '200')
+    await framingField.fill(
+      'Focus on the course materials and applied examples.'
+    )
     await page.getByTestId('chatbot-mode-switch-tutor').click()
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
@@ -399,7 +410,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         courseName: null,
         subjectDomain: null,
         languageOfInstruction: null,
-        scopeNote: null,
+        scopeNote: 'Focus on the course materials and applied examples.',
       })
     modeRequestGate.release()
     await expect(page.getByText('Learning modes saved.')).toBeVisible()
@@ -415,6 +426,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-review-mode-quizzer')).toHaveText(
       'Disabled'
     )
+    await expect(page.getByTestId('chatbot-review-framing')).toHaveText(
+      'Focus on the course materials and applied examples.'
+    )
     await page.getByTestId('chatbot-setup-edit-modes').click()
     await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
 
@@ -429,7 +443,27 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'aria-current',
       'page'
     )
+    await expect(
+      page.getByTestId('chatbot-model-selection-switch')
+    ).not.toBeChecked()
+    await expect(page.getByTestId('chatbot-fixed-model')).toContainText(
+      'Auto Mode'
+    )
+    await expect(
+      page.getByTestId('chatbot-reasoning-gpt-5.6-luna')
+    ).toHaveCount(0)
+    await selectOption(page, '[data-cy="chatbot-fixed-model"]', 'GPT-5.6 Luna')
+    await selectOption(
+      page,
+      '[data-cy="chatbot-reasoning-gpt-5.6-luna"]',
+      'high'
+    )
     await page.getByTestId('chatbot-model-selection-switch').click()
+    await expect(page.getByTestId('chatbot-model-gpt-5.6-luna')).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-reasoning-gpt-5.6-luna-high')
+    ).toBeChecked()
+    await page.getByTestId('chatbot-model-auto').click()
     const advancedUrl = page.url()
     const historyDiscardDialogPromise = page
       .waitForEvent('dialog')
@@ -484,12 +518,26 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-model-selection-switch')
     ).toBeDisabled()
-    await expect(page.getByTestId('chatbot-models-all')).toBeDisabled()
-    for (const input of await page
-      .locator('input[data-cy^="chatbot-model-"]')
+    await expect(page.getByTestId('chatbot-models-all')).toHaveCount(0)
+    for (const checkbox of await page
+      .locator(
+        '[data-cy^="chatbot-model-"]:not([data-cy="chatbot-model-selection-switch"])'
+      )
       .all()) {
-      await expect(input).toBeDisabled()
+      await expect(checkbox).toBeDisabled()
     }
+    await expect(
+      page.getByTestId('chatbot-reasoning-gpt-5.6-luna-high')
+    ).toBeDisabled()
+    await expect
+      .poll(() => modelPolicyVariables)
+      .toMatchObject({
+        modelSelection: true,
+        allowedModelIds: ['auto', 'gpt-5.6-luna'],
+        allowedReasoningEffortsByModel: [
+          { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+        ],
+      })
     modelSettingsRequestGate.release()
     await expect(page.getByText('Model settings saved.')).toBeVisible()
 
@@ -537,6 +585,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await navigateToSetupStep(page, 'modes')
     await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
+      'Focus on the course materials and applied examples.'
+    )
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
     ).not.toBeChecked()

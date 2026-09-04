@@ -139,6 +139,18 @@ registries that violate that invariant.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
+New chatbots use a fixed Auto policy by default: the owner projection contains
+one effective `auto` model and no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation requires exactly one active model for fixed
+mode, one supported reasoning effort when that model supports reasoning, and at
+least one active model plus valid reasoning entries for every selected
+reasoning model in participant-choice mode. The older
+`updateChatbotModelSettings` mutation remains unchanged for rolling clients.
+Legacy fixed rows are readable without a migration: empty or multi-model values
+resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
+while a retired-only list falls back to Luna. Participant-choice empty lists
+display all active models and are made explicit only by a strict save.
+
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The schema does not
 model cached-input, cache-write, or long-context rates. Auto uses the accepted

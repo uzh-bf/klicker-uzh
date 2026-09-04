@@ -147,7 +147,7 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain('Language policy:')
   })
 
-  test('does not apply typed standard-mode context to Quizzer or custom modes', () => {
+  test('applies only scopeNote typed context to Quizzer, not custom modes', () => {
     const standardModeConfig = {
       tutorEnabled: true,
       explainerEnabled: true,
@@ -158,9 +158,17 @@ describe('compileSystemPrompt', () => {
       scopeNote: 'Scope',
     }
 
-    expect(
-      compilePrompt(null, 'quizzer', [DOC_TOOL], standardModeConfig)
-    ).not.toContain('Lecturer-provided standard-mode context')
+    const quizzer = compilePrompt(
+      null,
+      'quizzer',
+      [DOC_TOOL],
+      standardModeConfig
+    )
+    expect(quizzer).toContain('Lecturer-provided standard-mode context')
+    expect(quizzer).toContain(JSON.stringify({ scopeNote: 'Scope' }))
+    expect(quizzer).not.toContain('Typed context')
+    expect(quizzer).not.toContain('Subject')
+    expect(quizzer).not.toContain('languageOfInstruction')
     expect(
       compilePrompt(
         { custom: { prompt: 'Custom persona' } },
