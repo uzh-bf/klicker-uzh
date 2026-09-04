@@ -850,6 +850,33 @@ describe('cohort activation contract', () => {
     ).rejects.toMatchObject({ code: 'MIXED_MODE_COVERAGE' })
   })
 
+  it('refuses mixed knowledge bases for one chatbot', async () => {
+    const manifest = makeManifest([sourceConfig, secondModeConfig])
+    const conflicted = {
+      ...manifest,
+      entries: [
+        manifest.entries[0]!,
+        {
+          ...manifest.entries[1]!,
+          kbId: '00000000-0000-4000-8000-000000000022',
+        },
+      ],
+    }
+    conflicted.fingerprint = fingerprintManifest({
+      target: conflicted.target,
+      entries: conflicted.entries,
+      heldConfigIds: conflicted.heldConfigIds,
+      excludedCorpora: conflicted.excludedCorpora,
+      excludedConfigIds: conflicted.excludedConfigIds,
+    })
+    await expect(
+      dryRunCohortActivation(
+        fakeStore([sourceConfig, secondModeConfig]).store,
+        conflicted
+      )
+    ).rejects.toMatchObject({ code: 'MIXED_KB_COVERAGE' })
+  })
+
   it('refuses repeated knowledge-base ids with conflicting corpus ownership', async () => {
     const manifest = makeManifest([sourceConfig, secondChatbotConfig])
     const conflicted = {

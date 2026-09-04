@@ -702,6 +702,7 @@ type ManifestValidationState = {
   configIds: Set<string>
   chatbotModes: Set<string>
   sourceServersByChatbot: Map<string, string>
+  kbIdsByChatbot: Map<string, string>
 }
 
 function assertManifestShape(manifest: CohortActivationManifest): void {
@@ -754,7 +755,7 @@ function validateManifestEntry(
       'target tool is not the multi-tenant reader tool'
     )
   }
-  normalizeUuid(entry.kbId, 'entry.kbId')
+  const kbId = normalizeUuid(entry.kbId, 'entry.kbId')
   entryCorpusIdentity(entry)
   entryCorpusOwner(entry)
   assertEntryNotExcluded(entry)
@@ -767,6 +768,11 @@ function validateManifestEntry(
     fail('MIXED_MODE_COVERAGE', 'one chatbot uses more than one source server')
   }
   state.sourceServersByChatbot.set(chatbotId, sourceServerId)
+  const priorKbId = state.kbIdsByChatbot.get(chatbotId)
+  if (priorKbId && priorKbId !== kbId) {
+    fail('MIXED_KB_COVERAGE', 'one chatbot uses more than one knowledge base')
+  }
+  state.kbIdsByChatbot.set(chatbotId, kbId)
   const chatbotMode = `${chatbotId}:${entry.chatMode}`
   if (state.chatbotModes.has(chatbotMode)) {
     fail('DUPLICATE_TARGET_CONFIG', 'manifest targets one chatbot mode twice')
@@ -781,6 +787,7 @@ function validateManifestEntries(
     configIds: new Set<string>(),
     chatbotModes: new Set<string>(),
     sourceServersByChatbot: new Map<string, string>(),
+    kbIdsByChatbot: new Map<string, string>(),
   }
   for (const entry of manifest.entries) {
     validateManifestEntry(entry, state)
