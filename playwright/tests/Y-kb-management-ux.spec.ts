@@ -419,6 +419,8 @@ test.describe('Knowledge base management workspace', () => {
       await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()
       expect(replaceCalls).toBe(1)
+      await page.reload()
+      await expect(detail).toBeVisible()
       await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
 
       await page.setViewportSize({ width: 1440, height: 900 })
