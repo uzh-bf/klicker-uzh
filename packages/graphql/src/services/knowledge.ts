@@ -1462,6 +1462,43 @@ function assertMatchingConfirmedBlob(
   }
 }
 
+async function getReplaceableKbResourceOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  {
+    kbId,
+    resourceId,
+    ownerId,
+  }: { kbId: string; resourceId: string; ownerId: string }
+) {
+  await lockOwnedKbOrThrow(prisma, kbId, ownerId)
+  const resource = await prisma.kBResource.findFirst({
+    where: {
+      id: resourceId,
+      kbId,
+      deletedAt: null,
+      kb: { ownerId, deletedAt: null },
+    },
+  })
+  if (!resource) {
+    throw new GraphQLError('KB resource not found')
+  }
+  if (resource.type !== DB.KBResourceType.BLOB) {
+    throw new GraphQLError('KB resource is not a file')
+  }
+  if (
+    resource.status === DB.KBResourceStatus.QUEUED ||
+    resource.status === DB.KBResourceStatus.PROCESSING
+  ) {
+    throw new GraphQLError('KB resource cannot be replaced', {
+      extensions: { code: 'KB_RESOURCE_ACTIVE' },
+    })
+  }
+  if (resource.resourceVersion >= 2_147_483_647) {
+    throw new GraphQLError('KB resource version limit reached')
+  }
+  return resource
+}
+
 export async function confirmKbFileUpload(
   {
     kbId,
@@ -1621,32 +1658,11 @@ export async function requestKbFileReplacement(
   const blobName = `${blobId}.${validated.extension}`
   const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
   await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    const resource = await prisma.kBResource.findFirst({
-      where: {
-        id: resourceId,
-        kbId,
-        deletedAt: null,
-        kb: { ownerId: ctx.user.sub, deletedAt: null },
-      },
+    const resource = await getReplaceableKbResourceOrThrow(prisma, {
+      kbId,
+      resourceId,
+      ownerId: ctx.user.sub,
     })
-    if (!resource) {
-      throw new GraphQLError('KB resource not found')
-    }
-    if (resource.type !== DB.KBResourceType.BLOB) {
-      throw new GraphQLError('KB resource is not a file')
-    }
-    if (
-      resource.status === DB.KBResourceStatus.QUEUED ||
-      resource.status === DB.KBResourceStatus.PROCESSING
-    ) {
-      throw new GraphQLError('KB resource cannot be replaced', {
-        extensions: { code: 'KB_RESOURCE_ACTIVE' },
-      })
-    }
-    if (resource.resourceVersion >= 2_147_483_647) {
-      throw new GraphQLError('KB resource version limit reached')
-    }
     await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
     await prisma.kBUploadTicket.create({
       data: {
@@ -1769,32 +1785,11 @@ export async function confirmKbFileReplacement(
 
   const ingestionAttemptId = randomUUID()
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    const resource = await prisma.kBResource.findFirst({
-      where: {
-        id: resourceId,
-        kbId,
-        deletedAt: null,
-        kb: { ownerId: ctx.user.sub, deletedAt: null },
-      },
+    const resource = await getReplaceableKbResourceOrThrow(prisma, {
+      kbId,
+      resourceId,
+      ownerId: ctx.user.sub,
     })
-    if (!resource) {
-      throw new GraphQLError('KB resource not found')
-    }
-    if (resource.type !== DB.KBResourceType.BLOB) {
-      throw new GraphQLError('KB resource is not a file')
-    }
-    if (
-      resource.status === DB.KBResourceStatus.QUEUED ||
-      resource.status === DB.KBResourceStatus.PROCESSING
-    ) {
-      throw new GraphQLError('KB resource cannot be replaced', {
-        extensions: { code: 'KB_RESOURCE_ACTIVE' },
-      })
-    }
-    if (resource.resourceVersion >= 2_147_483_647) {
-      throw new GraphQLError('KB resource version limit reached')
-    }
 
     const currentTicket = await prisma.kBUploadTicket.findFirst({
       where: {
