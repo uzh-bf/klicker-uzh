@@ -38,7 +38,7 @@ duplication status into the generic task contract.
   prompts, uploaded material, worker payloads, email addresses, or Hatchet
   identifiers. Preserve a bounded subject/result reference and user-authored
   name snapshots needed to render a useful row after a target is renamed or
-  removed. Retain terminal records for 30 days through query filtering; a
+  removed. Retain terminal records for 7 days through query filtering; a
   cleanup job is deferred until operational volume warrants one.
 - **Layer footprint:** add a Prisma model and migration; GraphQL object, query,
   acknowledgement mutation, service, operations, and tests; course-duplication

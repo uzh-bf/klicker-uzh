@@ -132,7 +132,7 @@ describe('AsyncTask service and GraphQL API', () => {
 
   it('returns only the owner active tasks and recent terminal tasks', async () => {
     const now = new Date()
-    const oldTerminalDate = new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000)
+    const oldTerminalDate = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000)
 
     await prisma.asyncTask.createMany({
       data: [
@@ -183,7 +183,7 @@ describe('AsyncTask service and GraphQL API', () => {
         kind: AsyncTaskKind.QUESTION_GENERATION,
         status: AsyncTaskStatus.SUCCEEDED,
         subjectName: 'Expired tracked task',
-        finishedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+        finishedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         ownerId,
       },
     })
@@ -232,7 +232,7 @@ describe('AsyncTask service and GraphQL API', () => {
           status: AsyncTaskStatus.FAILED,
           subjectName: 'Expired task',
           ownerId,
-          finishedAt: new Date(now - 31 * 24 * 60 * 60 * 1000),
+          finishedAt: new Date(now - 8 * 24 * 60 * 60 * 1000),
         },
         {
           kind: AsyncTaskKind.KNOWLEDGE_GRAPH_GENERATION,
