@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
@@ -93,16 +94,40 @@ test.describe('Knowledge base management workspace', () => {
         signalUploadStarted = resolve
       })
 
+      const persistedOperations = JSON.parse(
+        await readFile(
+          new URL(
+            '../../packages/graphql/src/public/client.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ) as Record<string, string>
+      const persistedNames = Object.fromEntries(
+        Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+      )
+
       await page.route('**/graphql', async (route) => {
         const request = route.request()
-        if (request.method() !== 'POST') {
-          await route.continue()
-          return
-        }
+        const requestUrl = new URL(request.url())
+        let operationName =
+          requestUrl.searchParams.get('operationName') ?? undefined
 
-        const operationName = (
-          request.postDataJSON() as { operationName?: string }
-        ).operationName
+        if (!operationName && request.method() === 'POST') {
+          operationName = (request.postDataJSON() as { operationName?: string })
+            .operationName
+        }
+        if (!operationName) {
+          const extensions = requestUrl.searchParams.get('extensions')
+          const hash = extensions
+            ? (
+                JSON.parse(extensions) as {
+                  persistedQuery?: { sha256Hash?: string }
+                }
+              ).persistedQuery?.sha256Hash
+            : undefined
+          operationName = hash ? persistedNames[hash] : undefined
+        }
         if (operationName === 'RequestKbFileUpload') {
           await route.fulfill({
             status: 200,
