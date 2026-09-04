@@ -62,6 +62,7 @@ interface AsyncTaskContextValue {
   activeTasks: AsyncTaskData[]
   attentionCount: number
   loading: boolean
+  acknowledgeTask: (id: string) => Promise<void>
   acknowledgeTerminalTasks: () => Promise<void>
   refetchTasks: () => Promise<void>
   isSourceCourseDuplicating: (sourceCourseId: string) => boolean
@@ -395,23 +396,35 @@ export function AsyncTaskProvider({
     previousStatusesRef.current = nextStatuses
   }, [client, loading, router, t, tasks, userId])
 
-  const acknowledgeTerminalTasks = useCallback(async () => {
-    const ids = unreadTerminalTasks.map((task) => task.id)
-    if (ids.length === 0) return
+  const acknowledgeTasks = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return
 
-    try {
-      await acknowledgeAsyncTasks({ variables: { ids } })
-    } catch (error) {
-      console.error('Failed to acknowledge asynchronous tasks', error)
-      toast({
-        type: 'error',
-        message: t('manage.asyncTasks.acknowledgeFailed'),
-      })
-      return
-    }
+      try {
+        await acknowledgeAsyncTasks({ variables: { ids } })
+      } catch (error) {
+        console.error('Failed to acknowledge asynchronous tasks', error)
+        toast({
+          type: 'error',
+          message: t('manage.asyncTasks.acknowledgeFailed'),
+        })
+        return
+      }
 
-    await refetchTasks()
-  }, [acknowledgeAsyncTasks, refetchTasks, t, unreadTerminalTasks])
+      await refetchTasks()
+    },
+    [acknowledgeAsyncTasks, refetchTasks, t]
+  )
+
+  const acknowledgeTask = useCallback(
+    (id: string) => acknowledgeTasks([id]),
+    [acknowledgeTasks]
+  )
+
+  const acknowledgeTerminalTasks = useCallback(
+    () => acknowledgeTasks(unreadTerminalTasks.map((task) => task.id)),
+    [acknowledgeTasks, unreadTerminalTasks]
+  )
 
   const isSourceCourseDuplicating = useCallback(
     (sourceCourseId: string) =>
@@ -519,12 +532,14 @@ export function AsyncTaskProvider({
       activeTasks,
       attentionCount,
       loading,
+      acknowledgeTask,
       acknowledgeTerminalTasks,
       refetchTasks,
       isSourceCourseDuplicating,
       startCourseDuplication,
     }),
     [
+      acknowledgeTask,
       acknowledgeTerminalTasks,
       activeTasks,
       attentionCount,

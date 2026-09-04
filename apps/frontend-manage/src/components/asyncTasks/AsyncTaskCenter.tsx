@@ -62,7 +62,13 @@ function AsyncTaskStatusIcon({ task }: Readonly<{ task: AsyncTaskData }>) {
   )
 }
 
-function AsyncTaskRow({ task }: Readonly<{ task: AsyncTaskData }>) {
+function AsyncTaskRow({
+  task,
+  acknowledgeTask,
+}: Readonly<{
+  task: AsyncTaskData
+  acknowledgeTask: (id: string) => Promise<void>
+}>) {
   const t = useTranslations()
   const format = useFormatter()
   const taskName =
@@ -147,6 +153,9 @@ function AsyncTaskRow({ task }: Readonly<{ task: AsyncTaskData }>) {
           className="my-auto shrink-0 text-primary-100 text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80"
           data-cy={`async-task-open-${task.id}`}
           href={getManageCoursePath(task.resultId)}
+          onClick={() => {
+            if (!task.readAt) void acknowledgeTask(task.id)
+          }}
         >
           {t('manage.asyncTasks.openResult')}
         </Link>
@@ -170,6 +179,7 @@ export default function AsyncTaskCenter() {
     tasks,
     activeTasks,
     attentionCount,
+    acknowledgeTask,
     acknowledgeTerminalTasks,
     refetchTasks,
   } = useAsyncTasks()
@@ -245,7 +255,11 @@ export default function AsyncTaskCenter() {
                   </div>
                   <ul>
                     {activeTasks.map((task) => (
-                      <AsyncTaskRow key={task.id} task={task} />
+                      <AsyncTaskRow
+                        acknowledgeTask={acknowledgeTask}
+                        key={task.id}
+                        task={task}
+                      />
                     ))}
                   </ul>
                 </section>
@@ -260,7 +274,11 @@ export default function AsyncTaskCenter() {
                   </div>
                   <ul>
                     {recentTasks.map((task) => (
-                      <AsyncTaskRow key={task.id} task={task} />
+                      <AsyncTaskRow
+                        acknowledgeTask={acknowledgeTask}
+                        key={task.id}
+                        task={task}
+                      />
                     ))}
                   </ul>
                 </section>

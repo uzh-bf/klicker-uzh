@@ -3306,7 +3306,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(asyncTaskCenterTrigger(page)).toContainText('2')
   })
 
-  test('Shows separate actions for restored completed duplication tasks', async ({
+  test('Acknowledges a restored completed duplication task when it is opened', async ({
     loginLecturer,
     page,
   }) => {
@@ -3356,6 +3356,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         window.fetch = async (input, init) => {
           let isAcknowledgeMutation = false
           let isTaskQuery = false
+          let operationVariables: { ids?: string[] } = {}
           if (
             typeof input === 'string' ||
             input instanceof URL ||
@@ -3393,6 +3394,11 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
               }
               if (h === tasksHash) isTaskQuery = true
               if (h === acknowledgeHash) isAcknowledgeMutation = true
+
+              const variables = url.searchParams.get('variables')
+              if (variables) {
+                operationVariables = JSON.parse(variables)
+              }
             } catch (e) {
               // relative or malformed URL; treat as non-matching
             }
@@ -3400,7 +3406,9 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
           if (!isTaskQuery && typeof init?.body === 'string') {
             try {
-              const operationName = JSON.parse(init.body).operationName
+              const body = JSON.parse(init.body)
+              const operationName = body.operationName
+              operationVariables = body.variables ?? operationVariables
               if (operationName === 'GetAsyncTasks') {
                 isTaskQuery = true
               }
@@ -3414,11 +3422,18 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
           if (isAcknowledgeMutation) {
             const acknowledgedAt = new Date().toISOString()
-            for (const job of jobs) job.readAt = acknowledgedAt
+            const acknowledgedIds = new Set(operationVariables.ids ?? [])
+            let acknowledgedCount = 0
+            for (const job of jobs) {
+              if (!acknowledgedIds.has(job.id)) continue
+
+              job.readAt = acknowledgedAt
+              acknowledgedCount += 1
+            }
 
             return new window.Response(
               JSON.stringify({
-                data: { acknowledgeAsyncTasks: jobs.length },
+                data: { acknowledgeAsyncTasks: acknowledgedCount },
               }),
               { headers: { 'Content-Type': 'application/json' } }
             )
@@ -3505,6 +3520,28 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(taskB).toContainText(restoredJobs[1].name)
     await expect(page.getByTestId(/^async-task-open-/)).toHaveCount(2)
     await expect(page).toHaveURL(preActionUrl)
+    await taskA
+      .getByRole('link', {
+        name: messages.manage.asyncTasks.openResultLabel.replace(
+          '{name}',
+          restoredJobs[0].name
+        ),
+      })
+      .click()
+    await expect(page).toHaveURL(
+      new RegExp(`/courses/${seededCourseA!.courseId}`)
+    )
+    await expect(asyncTaskCenterTrigger(page)).toHaveAttribute(
+      'aria-label',
+      '1 task needs attention'
+    )
+    await asyncTaskCenterTrigger(page).click()
+    await expect(
+      taskA.getByText(messages.manage.asyncTasks.unread)
+    ).toHaveCount(0)
+    await expect(
+      taskB.getByText(messages.manage.asyncTasks.unread)
+    ).toBeVisible()
     await page.getByTestId('async-task-mark-read').click()
     await expect(asyncTaskCenterTrigger(page)).toHaveAttribute(
       'aria-label',
