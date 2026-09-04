@@ -43,7 +43,7 @@ spec:
         - name: auth
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.auth.image.repository }}:{{ .Values.global.imageTag | default .Values.auth.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
           ports:
             - name: http
@@ -122,7 +122,7 @@ spec:
         - name: frontend-pwa
           securityContext:
             {{- toYaml .Values.frontendPWA.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendPWA.image.pullPolicy }}
           ports:
             - name: http
@@ -201,7 +201,7 @@ spec:
         - name: frontend-manage
           securityContext:
             {{- toYaml .Values.frontendManage.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendManage.image.repository }}:{{ .Values.frontendManage.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendManage.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendManage.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendManage.image.pullPolicy }}
           ports:
             - name: http
@@ -280,7 +280,7 @@ spec:
         - name: frontend-control
           securityContext:
             {{- toYaml .Values.frontendControl.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendControl.image.repository }}:{{ .Values.frontendControl.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendControl.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendControl.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendControl.image.pullPolicy }}
           ports:
             - name: http
@@ -359,7 +359,7 @@ spec:
         - name: backend-graphql
           securityContext:
             {{- toYaml .Values.backendGraphql.securityContext | nindent 12 }}
-          image: "{{ .Values.backendGraphql.image.repository }}:{{ .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.backendGraphql.image.repository }}:{{ .Values.global.imageTag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.backendGraphql.image.pullPolicy }}
           ports:
             - name: http
@@ -447,7 +447,7 @@ spec:
         - name: olat-api
           securityContext:
             {{- toYaml .Values.olatApi.securityContext | nindent 12 }}
-          image: "{{ .Values.olatApi.image.repository }}:{{ .Values.olatApi.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.olatApi.image.repository }}:{{ .Values.global.imageTag | default .Values.olatApi.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.olatApi.image.pullPolicy }}
           ports:
             - name: http
@@ -531,7 +531,7 @@ spec:
         - name: lti
           securityContext:
             {{- toYaml .Values.lti.securityContext | nindent 12 }}
-          image: "{{ .Values.lti.image.repository }}:{{ .Values.lti.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.lti.image.repository }}:{{ .Values.global.imageTag | default .Values.lti.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.lti.image.pullPolicy }}
           ports:
             - name: http

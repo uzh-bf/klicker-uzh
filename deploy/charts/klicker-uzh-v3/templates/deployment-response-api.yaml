@@ -43,7 +43,7 @@ spec:
         - name: response-api
           securityContext:
             {{- toYaml .Values.responseApi.securityContext | nindent 12 }}
-          image: "{{ .Values.responseApi.image.repository }}:{{ .Values.responseApi.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.responseApi.image.repository }}:{{ .Values.global.imageTag | default .Values.responseApi.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.responseApi.image.pullPolicy }}
           ports:
             - name: http
@@ -130,7 +130,7 @@ spec:
         - name: response-api-assessment
           securityContext:
             {{- toYaml .Values.assessment.responseApi.securityContext | nindent 12 }}
-          image: "{{ .Values.assessment.responseApi.image.repository }}:{{ .Values.assessment.responseApi.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.assessment.responseApi.image.repository }}:{{ .Values.global.imageTag | default .Values.assessment.responseApi.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.assessment.responseApi.image.pullPolicy }}
           ports:
             - name: http

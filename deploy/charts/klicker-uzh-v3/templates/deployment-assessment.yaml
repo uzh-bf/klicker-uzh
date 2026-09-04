@@ -43,7 +43,7 @@ spec:
         - name: frontend-assessment
           securityContext:
             {{- toYaml .Values.assessment.frontendPWA.securityContext | nindent 12 }}
-          image: "{{ .Values.assessment.frontendPWA.image.repository }}:{{ .Values.assessment.frontendPWA.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.assessment.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.assessment.frontendPWA.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.assessment.frontendPWA.image.pullPolicy }}
           ports:
             - name: http
@@ -122,7 +122,7 @@ spec:
         - name: backend-assessment
           securityContext:
             {{- toYaml .Values.assessment.backendGraphql.securityContext | nindent 12 }}
-          image: "{{ .Values.assessment.backendGraphql.image.repository }}:{{ .Values.assessment.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.assessment.backendGraphql.image.repository }}:{{ .Values.global.imageTag | default .Values.assessment.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.assessment.backendGraphql.image.pullPolicy }}
           ports:
             - name: http

@@ -43,7 +43,7 @@ spec:
         - name: hatchet-worker-general
           securityContext:
             {{- toYaml .Values.hatchet.workers.general.securityContext | nindent 12 }}
-          image: "{{ .Values.hatchet.workers.general.image.repository }}:{{ .Values.hatchet.workers.general.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.hatchet.workers.general.image.repository }}:{{ .Values.global.imageTag | default .Values.hatchet.workers.general.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.general.image.pullPolicy }}
           {{- if .Values.backendGraphql.elementGeneration.enabled }}
           env:
@@ -131,7 +131,7 @@ spec:
         - name: hatchet-worker-response-processor
           securityContext:
             {{- toYaml .Values.hatchet.workers.responseProcessor.securityContext | nindent 12 }}
-          image: "{{ .Values.hatchet.workers.responseProcessor.image.repository }}:{{ .Values.hatchet.workers.responseProcessor.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.hatchet.workers.responseProcessor.image.repository }}:{{ .Values.global.imageTag | default .Values.hatchet.workers.responseProcessor.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessor.image.pullPolicy }}
 
           envFrom:
@@ -212,7 +212,7 @@ spec:
         - name: hatchet-worker-response-processor-assessment
           securityContext:
             {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.securityContext | nindent 12 }}
-          image: "{{ .Values.hatchet.workers.responseProcessorAssessment.image.repository }}:{{ .Values.hatchet.workers.responseProcessorAssessment.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.hatchet.workers.responseProcessorAssessment.image.repository }}:{{ .Values.global.imageTag | default .Values.hatchet.workers.responseProcessorAssessment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessorAssessment.image.pullPolicy }}
 
           envFrom:

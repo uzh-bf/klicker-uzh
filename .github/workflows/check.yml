@@ -63,6 +63,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check staging release contracts
+        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check

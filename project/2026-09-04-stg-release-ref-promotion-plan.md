@@ -261,13 +261,17 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
-- `Current:` The approved plan is the first local commit (`7e7f8e9fb1`). The
-  selected-source CI slice now covers all 32 metadata/build pairs with explicit
-  branch, pull-request, and full-SHA tags. Its 18 active push images use a
-  fail-closed publish-once guard that records an existing registry digest;
-  disabled AMD jobs remain explicit.
-- `Next:` Add the derived workflow and Helm render contract tests, then add the
-  chart override and the separate documentation/ADR/solution commit. Exact
-  controller and final-review runtime blobs remain deferred until the main
-  session supplies the completed default-controller commits or runtime files.
+- `Current:` The approved plan is the first local commit (`7e7f8e9fb1`), and
+  commit `ed3b236bfa` implements selected-source SHA tags and publish-once
+  guards. The chart now offers optional `global.imageTag` precedence across all
+  18 first-party images, including the migrator. A focused contract test derives
+  the 15 workflows, validates all 32 metadata/build pairs and 18 active image
+  jobs, and compares no-override renders with frozen-parent staging and
+  production baselines (`a6ee9ad6b235` and `0ec440b0e11d`). The staging and
+  production values files remain unchanged, including all 16 staging rollout
+  annotations.
+- `Next:` Commit the chart and contract-test slice, then add the separate
+  documentation/ADR/solution commit. Exact controller and final-review runtime
+  blobs remain deferred until the main session supplies the completed
+  default-controller commits or runtime files.
 - `External state:` Unchanged.
