@@ -293,3 +293,11 @@ a blocker.
   verified against the recorded pre-rewrite tree SHAs, and the rewritten heads
   `b1a4184d7` (#5736), `05dfa197f` (#5737), and `481afe95c` (#5738) were
   force-pushed under exact-head leases. Merged history was not rewritten.
+- [x] Layer 2 chatbot knowledge-base consistency correction (2026-09-04):
+  middle-branch commit `3ac1ddb45e` adds a normalized one-KB-per-chatbot
+  invariant and regression coverage. The correction was integrated into this
+  proof branch by merge commit `abbe0a028f`; the two changed activation files
+  are the only source delta. The integrated focused activation suite passes all
+  38 tests, Prisma-data checks, Biome, and diff checks; the dedicated correction
+  review passed. No runtime, database, cluster, secret, or live-proof action
+  was performed.
