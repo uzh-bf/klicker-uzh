@@ -89,7 +89,10 @@ describe('NodeFeatureFlagClient', () => {
     expect(await client.initialize()).toBe(true)
     expect(mockFetch).toHaveBeenCalledWith(
       'https://growthbook.test/api/features/sdk-test',
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
     )
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
     expect(client.isEnabled('targeted-flag', disabledAttributes)).toBe(false)
@@ -286,5 +289,19 @@ describe('NodeFeatureFlagClient', () => {
     await client.initialize()
 
     expect(client.isEnabled('ai-beta', { actorType: 'user' })).toBe(false)
+  })
+
+  it.each([
+    'http://growthbook.test',
+    'not-a-url',
+    'https://growthbook.test?source=invalid',
+    'https://growthbook.test/#invalid',
+  ])('fails closed without fetching for invalid API host %s', async (apiHost) => {
+    const client = createClient({ apiHost })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.getStatus().configured).toBe(false)
+    expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

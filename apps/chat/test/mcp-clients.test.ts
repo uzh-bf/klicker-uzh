@@ -139,14 +139,14 @@ describe('MCP runtime policy', () => {
       [
         createServer({
           name: 'KB',
-          authType: 'scope_token',
+          authType: 'bearer',
           authSecret: 'transport-token',
         }),
       ],
       {
         chatbotId: 'chatbot-1',
         authMode: 'account',
-        kbId: 'kb-1',
+        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
         sessionId: 'session-1',
       }
     )

@@ -7,10 +7,10 @@ import {
 
 const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
-const TEST_KID = 'test-key-2026-07'
+const TEST_KID = 'test-key-2026-08'
 const TEST_KB_ID = '7016810d-31e9-4b39-9529-cd46feb2fb63'
 const TEST_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
-const TEST_SESSION_ID = 'opaque-session-4ca8d6a4'
+const TEST_SESSION_ID = 'thread-4ca8d6a4'
 const TEST_JTI = '9b3cc7c6-3a11-4f6b-93d0-4b3678cf89fc'
 
 let publicKey: KeyLike
@@ -33,9 +33,9 @@ describe('signDocQueryScopeToken', () => {
     vi.unstubAllEnvs()
   })
 
-  test('mints the five-minute ES256 scope contract', async () => {
+  test('mints a five-minute ES256 scope token with the reviewed claims', async () => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-07-27T12:00:00.000Z'))
+    vi.setSystemTime(new Date('2026-08-31T12:00:00.000Z'))
 
     const token = await signDocQueryScopeToken({
       kbId: TEST_KB_ID,
@@ -63,6 +63,9 @@ describe('signDocQueryScopeToken', () => {
       chatbot_id: TEST_CHATBOT_ID,
     })
     expect(payload.exp! - payload.iat!).toBe(300)
+    expect(Object.keys(payload).sort()).toEqual(
+      ['aud', 'chatbot_id', 'exp', 'iat', 'iss', 'jti', 'kb_id', 'sub'].sort()
+    )
   })
 
   test.each([

@@ -950,6 +950,8 @@ export default {
       practicePoolPromotionDescription:
         'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
       startPracticePool: 'Start Practice Pool',
+      practicePoolRoundComplete:
+        'Round completed! Start another round to continue practicing. Your previous answers can influence the selection of question sets.',
       individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',

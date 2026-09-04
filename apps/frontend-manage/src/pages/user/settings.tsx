@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2 } from '@uzh-bf/design-system'
@@ -16,6 +17,7 @@ import ShortnameSetting from '../../components/user/ShortnameSetting'
 function Settings() {
   const t = useTranslations()
   const { data: user } = useQuery(UserProfileDocument)
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
 
   if (!user?.userProfile) {
     return <Loader />
@@ -33,9 +35,11 @@ function Settings() {
         <EmailSetting user={user.userProfile} />
         {user.userProfile.catalyst && <BetaFeaturesSetting />}
 
-        <Suspense fallback={<Loader />}>
-          <ChatAccountUsageSettings />
-        </Suspense>
+        {aiBetaEnabled && (
+          <Suspense fallback={<Loader />}>
+            <ChatAccountUsageSettings />
+          </Suspense>
+        )}
 
         <Suspense fallback={<Loader />}>
           <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />

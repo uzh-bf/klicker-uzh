@@ -1,19 +1,23 @@
 import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
-import { open, readFile, unlink } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { constants } from 'node:fs'
+import { open, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
+import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { generateKeyPair, importPKCS8, SignJWT } from 'jose'
 
 const RECEIPT_VERSION = 1
-const MANIFEST_VERSION = 1
+const MANIFEST_VERSION = 2
 const EXPECTED_KB_COUNT = 15
 const EXPECTED_CHATBOT_COUNT = 21
 const EXPECTED_EXCLUDED_CHATBOT_COUNT = 2
+const EXPECTED_CORPUS_PROOF_COUNT = 15
+const EXPECTED_DIRECT_CALL_COUNT = 37
 const COLLECTION = 'klicker_course_materials_v1'
 const STG_ENDPOINT =
   'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker'
@@ -29,6 +33,13 @@ const DEFAULT_LOCK_PATH = resolve(
 const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/
+
+function compareUtf16Strings(left, right) {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
 
 const SECRET_ENV_NAMES = [
   'DOC_QUERY_JWT_TOKEN_KLICKER',
@@ -45,9 +56,13 @@ const WORKER_CONTROL_ENV_NAMES = new Set([
   'DOC_QUERY_PROOF_PARENT_PID',
   'DOC_QUERY_PROOF_MANIFEST_PATH',
 ])
+const WORKER_INTEGRITY_ENV_NAMES = new Set([
+  'DOC_QUERY_PROOF_MANIFEST_FINGERPRINT',
+])
 const ALLOWED_WORKER_ENV_NAMES = new Set([
   ...SECRET_ENV_NAMES,
   ...WORKER_CONTROL_ENV_NAMES,
+  ...WORKER_INTEGRITY_ENV_NAMES,
   ...PLATFORM_ENV_NAMES,
 ])
 
@@ -87,13 +102,48 @@ const FAILURE_CLASSES = new Set([
   'interrupted',
 ])
 
+const DIAGNOSTIC_CLASSES = new Set([
+  'none',
+  'signer_setup',
+  'scope_signing',
+  'mcp_invocation',
+  'worker_protocol',
+  'unknown',
+])
+
 class ProofFailure extends Error {
-  constructor(failureClass, caseId = null, rejectionClass = null) {
+  constructor(
+    failureClass,
+    caseId = null,
+    rejectionClass = null,
+    diagnosticClass = 'none'
+  ) {
     super(failureClass)
     this.name = 'ProofFailure'
     this.failureClass = failureClass
     this.caseId = caseId
     this.rejectionClass = rejectionClass
+    this.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
+      ? diagnosticClass
+      : 'unknown'
+  }
+}
+
+async function withDiagnostic(operation, diagnosticClass) {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof ProofFailure) {
+      throw new ProofFailure(
+        error.failureClass,
+        error.caseId,
+        error.rejectionClass,
+        error.diagnosticClass === 'none'
+          ? diagnosticClass
+          : error.diagnosticClass
+      )
+    }
+    throw new ProofFailure('protocol_failed', null, null, diagnosticClass)
   }
 }
 
@@ -108,7 +158,11 @@ function requireString(value, pattern) {
 }
 
 function requireUuid(value) {
-  return requireString(value, UUID_PATTERN).toLocaleLowerCase('en')
+  return requireString(value, UUID_PATTERN).toLowerCase()
+}
+
+function requireFingerprint(value) {
+  return requireString(value, FINGERPRINT_PATTERN)
 }
 
 function requireMarkerList(value) {
@@ -140,7 +194,43 @@ function hasExactZeroPreservation(value) {
   )
 }
 
-export function validateManifest(input) {
+function normalizeManifestForFingerprint(input) {
+  return {
+    version: input.version,
+    environment: input.environment,
+    collection: input.collection,
+    singletonCanaryCaseId: input.singletonCanaryCaseId,
+    cases: input.cases.map((entry) => ({
+      id: entry.id,
+      kbId: entry.kbId.toLowerCase(),
+      chatbotIds: entry.chatbotIds.map((chatbotId) => chatbotId.toLowerCase()),
+      positive: {
+        question: entry.positive.question,
+        expectAny: [...entry.positive.expectAny],
+        minSources: entry.positive.minSources,
+      },
+      foreign: {
+        question: entry.foreign.question,
+        forbidReferences: [...entry.foreign.forbidReferences],
+      },
+    })),
+    excludedChatbotIds: input.excludedChatbotIds.map((chatbotId) =>
+      chatbotId.toLowerCase()
+    ),
+    activationManifestFingerprint: input.activationManifestFingerprint,
+  }
+}
+
+export function computeManifestFingerprint(input) {
+  return createHash('sha256')
+    .update(JSON.stringify(normalizeManifestForFingerprint(input)), 'utf8')
+    .digest('hex')
+}
+
+export function validateManifest(
+  input,
+  trustedFingerprint = process.env.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
+) {
   if (
     !input ||
     typeof input !== 'object' ||
@@ -227,13 +317,30 @@ export function validateManifest(input) {
     throw new ProofFailure('manifest_refused')
   }
 
-  return {
+  const activationManifestFingerprint = requireFingerprint(
+    input.activationManifestFingerprint
+  )
+  const manifestFingerprint = requireFingerprint(input.manifestFingerprint)
+  const normalizedManifest = {
     version: MANIFEST_VERSION,
     environment: 'stg',
     collection: COLLECTION,
     singletonCanaryCaseId: canaryCaseId,
     cases,
     excludedChatbotIds,
+    activationManifestFingerprint,
+  }
+  const recomputedFingerprint = computeManifestFingerprint(normalizedManifest)
+  if (
+    manifestFingerprint !== recomputedFingerprint ||
+    manifestFingerprint !== requireFingerprint(trustedFingerprint)
+  ) {
+    throw new ProofFailure('manifest_refused')
+  }
+
+  return {
+    ...normalizedManifest,
+    manifestFingerprint,
   }
 }
 
@@ -245,17 +352,20 @@ function emptyReceipt() {
     phase: 'preflight',
     result: 'failed',
     failureClass: 'none',
+    diagnosticClass: 'none',
     failedCaseId: null,
     failedRejectionClass: null,
     counts: {
       kbExpected: EXPECTED_KB_COUNT,
       kbPassed: 0,
-      chatbotsExpected: EXPECTED_CHATBOT_COUNT,
-      chatbotsPassed: 0,
+      chatbotsInScope: EXPECTED_CHATBOT_COUNT,
+      representativeChatbotsExpected: EXPECTED_CORPUS_PROOF_COUNT,
+      representativeChatbotsPassed: 0,
       excludedExpected: EXPECTED_EXCLUDED_CHATBOT_COUNT,
       positivePassed: 0,
       isolationPassed: 0,
       rejectionsPassed: 0,
+      directCallsAttempted: 0,
     },
     rejections: Object.fromEntries(
       REJECTION_CLASSES.map((name) => [name, 'not_run'])
@@ -267,7 +377,8 @@ function emptyReceipt() {
 function fixedFailureReceipt(
   failureClass,
   caseId = null,
-  rejectionClass = null
+  rejectionClass = null,
+  diagnosticClass = 'none'
 ) {
   const receipt = emptyReceipt()
   receipt.failureClass = FAILURE_CLASSES.has(failureClass)
@@ -277,7 +388,14 @@ function fixedFailureReceipt(
   receipt.failedRejectionClass = REJECTION_CLASSES.includes(rejectionClass)
     ? rejectionClass
     : null
+  receipt.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
+    ? diagnosticClass
+    : 'unknown'
   return receipt
+}
+
+function workerProtocolFailureReceipt(failureClass = 'protocol_failed') {
+  return fixedFailureReceipt(failureClass, null, null, 'worker_protocol')
 }
 
 function extractDocuments(result) {
@@ -320,43 +438,46 @@ function documentHaystack(documents) {
         : []),
     ])
     .join('\n')
-    .toLocaleLowerCase('en')
+    .toLowerCase()
 }
 
 function hasAnyDocumentMarker(documents, markers) {
   const haystack = documentHaystack(documents)
-  return markers.some((marker) =>
-    haystack.includes(marker.toLocaleLowerCase('en'))
-  )
+  return markers.some((marker) => haystack.includes(marker.toLowerCase()))
 }
 
 function hasAnyReferenceMarker(documents, markers) {
   const references = documents.sources
     .map((source) =>
       typeof source?.reference === 'string'
-        ? source.reference.toLocaleLowerCase('en')
+        ? source.reference.toLowerCase()
         : ''
     )
     .filter(Boolean)
   return markers.some((marker) => {
-    const normalized = marker.toLocaleLowerCase('en')
+    const normalized = marker.toLowerCase()
     return references.some((reference) => reference.includes(normalized))
   })
 }
 
-function isRejected(result) {
-  if (!result || typeof result !== 'object') return false
-  if (result.isError === true) return true
+function isRejected(result, rejectionClass) {
+  if (!result || typeof result !== 'object' || result.isError !== true) {
+    return false
+  }
   if (!Array.isArray(result.content)) return false
+  const expected =
+    rejectionClass === 'trusted_filter_override'
+      ? /invalid arguments|validation error|extra inputs are not permitted/i
+      : /unauthorized:\s*(?:missing bearer token|invalid token)/i
   return result.content.some((block) => {
     if (block?.type !== 'text' || typeof block.text !== 'string') {
       return false
     }
     try {
       const parsed = JSON.parse(block.text)
-      return Boolean(parsed?.error)
+      return typeof parsed?.error === 'string' && expected.test(parsed.error)
     } catch {
-      return /unauthorized|invalid token|invalid arguments/i.test(block.text)
+      return expected.test(block.text)
     }
   })
 }
@@ -365,7 +486,7 @@ async function createScopeSigner(environment) {
   let privateKey
   try {
     privateKey = await importPKCS8(
-      environment.DOC_QUERY_SCOPE_PRIVATE_KEY.replaceAll('\\n', '\n'),
+      environment.DOC_QUERY_SCOPE_PRIVATE_KEY.replaceAll(String.raw`\n`, '\n'),
       'ES256'
     )
   } catch {
@@ -407,8 +528,11 @@ export function createMcpTransport(
   headers,
   Transport = StreamableHTTPClientTransport
 ) {
+  const noRedirectFetch = (input, init = {}) =>
+    fetch(input, { ...init, redirect: 'error' })
   return new Transport(new URL(STG_ENDPOINT), {
     requestInit: { headers, redirect: 'error' },
+    fetch: noRedirectFetch,
     reconnectionOptions: {
       initialReconnectionDelay: 1_000,
       maxReconnectionDelay: 30_000,
@@ -457,8 +581,7 @@ async function provePositive(
   })
   const documents = extractDocuments(result)
   return Boolean(
-    documents &&
-      documents.summary.sources_returned >= proofCase.positive.minSources &&
+    documents?.summary.sources_returned >= proofCase.positive.minSources &&
       hasAnyDocumentMarker(documents, proofCase.positive.expectAny)
   )
 }
@@ -478,7 +601,7 @@ async function proveIsolation(
   })
   const documents = extractDocuments(result)
   return Boolean(
-    documents &&
+    documents?.sources &&
       !hasAnyReferenceMarker(documents, proofCase.foreign.forbidReferences)
   )
 }
@@ -510,7 +633,7 @@ async function proveRejections(
       scopeToken,
       question: proofCase.positive.question,
     })
-    if (!isRejected(result)) {
+    if (!isRejected(result, rejectionClass)) {
       throw new ProofFailure('rejection_failed', proofCase.id, rejectionClass)
     }
     receipt.rejections[rejectionClass] = 'passed'
@@ -524,7 +647,7 @@ async function proveRejections(
     question: proofCase.positive.question,
     override: foreignKbId,
   })
-  if (!isRejected(overrideResult)) {
+  if (!isRejected(overrideResult, 'trusted_filter_override')) {
     throw new ProofFailure(
       'rejection_failed',
       proofCase.id,
@@ -535,99 +658,122 @@ async function proveRejections(
   receipt.counts.rejectionsPassed += 1
 }
 
-export async function runProofMatrix({
-  manifest,
-  environment,
-  invoke = invokeMcp,
-}) {
-  const receipt = emptyReceipt()
-  try {
-    const signer = await createScopeSigner(environment)
-    const canary = manifest.cases[0]
-    const canaryChatbotId = canary.chatbotIds[0]
-    receipt.phase = 'canary'
+function recordPositivePass(receipt) {
+  receipt.counts.positivePassed += 1
+}
 
+function recordCompletedCase(receipt) {
+  receipt.counts.isolationPassed += 1
+  receipt.counts.representativeChatbotsPassed += 1
+  receipt.counts.kbPassed += 1
+}
+
+async function runCanaryProof(invoke, signer, environment, manifest, receipt) {
+  const canary = manifest.cases[0]
+  const canaryChatbotId = canary.chatbotIds[0]
+  receipt.phase = 'canary'
+
+  if (
+    !(await provePositive(invoke, signer, environment, canary, canaryChatbotId))
+  ) {
+    throw new ProofFailure('canary_positive_failed', canary.id)
+  }
+  recordPositivePass(receipt)
+  if (
+    !(await proveIsolation(
+      invoke,
+      signer,
+      environment,
+      canary,
+      canaryChatbotId
+    ))
+  ) {
+    throw new ProofFailure('canary_isolation_failed', canary.id)
+  }
+  recordCompletedCase(receipt)
+
+  receipt.phase = 'rejections'
+  await proveRejections(
+    invoke,
+    signer,
+    environment,
+    canary,
+    canaryChatbotId,
+    manifest.cases[1].kbId,
+    receipt
+  )
+}
+
+async function runSerialProof(invoke, signer, environment, manifest, receipt) {
+  receipt.phase = 'matrix'
+  for (const proofCase of manifest.cases.slice(1)) {
+    const representativeChatbotId = [...proofCase.chatbotIds]
+      .sort(compareUtf16Strings)
+      .at(-1)
     if (
       !(await provePositive(
         invoke,
         signer,
         environment,
-        canary,
-        canaryChatbotId
+        proofCase,
+        representativeChatbotId
       ))
     ) {
-      throw new ProofFailure('canary_positive_failed', canary.id)
+      throw new ProofFailure('positive_failed', proofCase.id)
     }
-    receipt.counts.positivePassed += 1
+    recordPositivePass(receipt)
     if (
       !(await proveIsolation(
         invoke,
         signer,
         environment,
-        canary,
-        canaryChatbotId
+        proofCase,
+        representativeChatbotId
       ))
     ) {
-      throw new ProofFailure('canary_isolation_failed', canary.id)
+      throw new ProofFailure('isolation_failed', proofCase.id)
     }
-    receipt.counts.isolationPassed += 1
-    receipt.counts.chatbotsPassed += 1
+    recordCompletedCase(receipt)
+  }
+}
 
-    receipt.phase = 'rejections'
-    await proveRejections(
-      invoke,
-      signer,
-      environment,
-      canary,
-      canaryChatbotId,
-      manifest.cases[1].kbId,
-      receipt
-    )
-
-    receipt.phase = 'matrix'
-    for (const proofCase of manifest.cases) {
-      for (const chatbotId of proofCase.chatbotIds) {
-        if (proofCase === canary && chatbotId === canaryChatbotId) continue
-        if (
-          !(await provePositive(
-            invoke,
-            signer,
-            environment,
-            proofCase,
-            chatbotId
-          ))
-        ) {
-          throw new ProofFailure('positive_failed', proofCase.id)
-        }
-        receipt.counts.positivePassed += 1
-        if (
-          !(await proveIsolation(
-            invoke,
-            signer,
-            environment,
-            proofCase,
-            chatbotId
-          ))
-        ) {
-          throw new ProofFailure('isolation_failed', proofCase.id)
-        }
-        receipt.counts.isolationPassed += 1
-        receipt.counts.chatbotsPassed += 1
+export async function runProofMatrix({
+  manifest,
+  environment,
+  invoke = invokeMcp,
+  createSigner = createScopeSigner,
+}) {
+  const receipt = emptyReceipt()
+  try {
+    const invokeWithCap = async (request) => {
+      receipt.counts.directCallsAttempted += 1
+      if (receipt.counts.directCallsAttempted > EXPECTED_DIRECT_CALL_COUNT) {
+        throw new ProofFailure('protocol_failed')
       }
-      receipt.counts.kbPassed += 1
+      return withDiagnostic(() => invoke(request), 'mcp_invocation')
     }
+    const rawSigner = await withDiagnostic(
+      () => createSigner(environment),
+      'signer_setup'
+    )
+    const signer = (request) =>
+      withDiagnostic(() => rawSigner(request), 'scope_signing')
+    await runCanaryProof(invokeWithCap, signer, environment, manifest, receipt)
+    await runSerialProof(invokeWithCap, signer, environment, manifest, receipt)
 
     receipt.phase = 'complete'
     receipt.result = 'passed'
     receipt.failureClass = 'none'
+    receipt.diagnosticClass = 'none'
     return receipt
   } catch (error) {
     const failure =
       error instanceof ProofFailure
         ? error
-        : new ProofFailure('protocol_failed')
+        : new ProofFailure('protocol_failed', null, null, 'unknown')
     receipt.result = 'failed'
     receipt.failureClass = failure.failureClass
+    receipt.diagnosticClass = failure.diagnosticClass
     receipt.failedCaseId = failure.caseId
     receipt.failedRejectionClass = failure.rejectionClass
     if (failure.rejectionClass) {
@@ -651,6 +797,9 @@ function requiredWorkerEnvironment(source) {
     throw new ProofFailure('manifest_refused')
   }
   environment.DOC_QUERY_PROOF_MANIFEST_PATH = manifestPath
+  environment.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT = requireFingerprint(
+    source.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
+  )
   return environment
 }
 
@@ -669,7 +818,7 @@ export function minimalChildEnvironment(source, parentPid) {
   }
 }
 
-async function readManifest(path) {
+async function readManifest(path, trustedFingerprint) {
   let raw
   try {
     raw = await readFile(path, 'utf8')
@@ -677,7 +826,7 @@ async function readManifest(path) {
     throw new ProofFailure('manifest_refused')
   }
   try {
-    return validateManifest(JSON.parse(raw))
+    return validateManifest(JSON.parse(raw), trustedFingerprint)
   } catch (error) {
     if (error instanceof ProofFailure) throw error
     throw new ProofFailure('manifest_refused')
@@ -695,36 +844,45 @@ function sanitizeReceipt(value) {
       value.phase
     ) ||
     !['passed', 'failed'].includes(value.result) ||
-    !FAILURE_CLASSES.has(value.failureClass)
+    !FAILURE_CLASSES.has(value.failureClass) ||
+    !DIAGNOSTIC_CLASSES.has(value.diagnosticClass)
   ) {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
+  }
+  if (!hasExactZeroPreservation(value.preservation)) {
+    return workerProtocolFailureReceipt()
   }
   if (value.result === 'failed' && value.failureClass === 'none') {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   if (
     value.result === 'passed' &&
     (value.phase !== 'complete' ||
       value.failureClass !== 'none' ||
+      value.diagnosticClass !== 'none' ||
       value.failedCaseId !== null ||
       value.failedRejectionClass !== null ||
       value.counts?.kbExpected !== EXPECTED_KB_COUNT ||
       value.counts?.kbPassed !== EXPECTED_KB_COUNT ||
-      value.counts?.chatbotsExpected !== EXPECTED_CHATBOT_COUNT ||
-      value.counts?.chatbotsPassed !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.chatbotsInScope !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.representativeChatbotsExpected !==
+        EXPECTED_CORPUS_PROOF_COUNT ||
+      value.counts?.representativeChatbotsPassed !==
+        EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.excludedExpected !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
-      value.counts?.positivePassed !== EXPECTED_CHATBOT_COUNT ||
-      value.counts?.isolationPassed !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.positivePassed !== EXPECTED_CORPUS_PROOF_COUNT ||
+      value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
-      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed') ||
-      !hasExactZeroPreservation(value.preservation))
+      value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
+      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
   ) {
-    return fixedFailureReceipt('protocol_failed')
+    return workerProtocolFailureReceipt()
   }
   const receipt = emptyReceipt()
   receipt.phase = value.phase
   receipt.result = value.result
   receipt.failureClass = value.failureClass
+  receipt.diagnosticClass = value.diagnosticClass
   receipt.failedCaseId = ID_PATTERN.test(value.failedCaseId ?? '')
     ? value.failedCaseId
     : null
@@ -762,12 +920,52 @@ function killProcessGroup(child, signal) {
   }
 }
 
+function isDatabaseLockError(error) {
+  return (
+    typeof error?.message === 'string' &&
+    error.message.includes('database is locked')
+  )
+}
+
+function lockGuardPath(path) {
+  return `${path}.guard.sqlite`
+}
+
 async function acquireLock(path) {
+  let database
+  const marker = await open(
+    path,
+    constants.O_WRONLY |
+      constants.O_CREAT |
+      constants.O_APPEND |
+      constants.O_NOFOLLOW,
+    0o600
+  )
   try {
-    return await open(path, 'wx', 0o600)
+    database = new DatabaseSync(lockGuardPath(path), { timeout: 0 })
+    database.exec('BEGIN EXCLUSIVE')
+    return {
+      // Keep the exclusive transaction open for the complete supervised
+      // proof. The guard database and marker are persistent and never unlinked
+      // during cleanup, so an old owner cannot remove a replacement marker.
+      close: async () => {
+        try {
+          database.exec('ROLLBACK')
+        } finally {
+          database.close()
+        }
+      },
+    }
   } catch (error) {
-    if (error?.code === 'EEXIST') return null
+    try {
+      database?.close()
+    } catch {
+      // The connection may not have opened.
+    }
+    if (isDatabaseLockError(error)) return null
     throw error
+  } finally {
+    await marker.close()
   }
 }
 
@@ -778,9 +976,23 @@ export async function superviseProof({
   deadlineMs = DEFAULT_DEADLINE_MS,
   lockPath = DEFAULT_LOCK_PATH,
   installSignalHandlers = false,
+  acquireLockForProof = acquireLock,
+  spawnForProof = spawn,
 }) {
   const startedAt = Date.now()
-  const lock = await acquireLock(lockPath)
+  let lock
+  try {
+    lock = await acquireLockForProof(lockPath)
+  } catch (error) {
+    const failureClass =
+      error instanceof ProofFailure ? error.failureClass : 'child_failed'
+    return {
+      ...fixedFailureReceipt(failureClass),
+      exitCode: null,
+      signal: null,
+      elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
+    }
+  }
   if (!lock) {
     return {
       ...fixedFailureReceipt('duplicate_refused'),
@@ -789,26 +1001,29 @@ export async function superviseProof({
       elapsedMs: 0,
     }
   }
-
   let child
   let interrupted = false
   let timedOut = false
   let message = null
+  let forceTimer
   const signalHandlers = new Map()
 
   try {
     const environment = minimalChildEnvironment(sourceEnvironment, process.pid)
-    child = spawn(process.execPath, [resolve(childPath), ...childArgs], {
-      detached: true,
-      env: environment,
-      shell: false,
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
-    })
+    child = spawnForProof(
+      process.execPath,
+      [resolve(childPath), ...childArgs],
+      {
+        detached: true,
+        env: environment,
+        shell: false,
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      }
+    )
     child.on('message', (candidate) => {
       if (message === null) message = sanitizeReceipt(candidate)
     })
 
-    let forceTimer
     const terminateChildGroup = () => {
       killProcessGroup(child, 'SIGTERM')
       if (forceTimer) return
@@ -816,6 +1031,7 @@ export async function superviseProof({
         () => killProcessGroup(child, 'SIGKILL'),
         TERMINATION_GRACE_MS
       )
+      forceTimer.unref()
     }
 
     if (installSignalHandlers) {
@@ -847,19 +1063,21 @@ export async function superviseProof({
     })
     clearTimeout(deadlineTimer)
 
-    let receipt = message ?? fixedFailureReceipt('protocol_failed')
+    let receipt = message ?? workerProtocolFailureReceipt()
     if (timedOut) receipt = fixedFailureReceipt('timeout')
     else if (interrupted) receipt = fixedFailureReceipt('interrupted')
     else if (close.signal) receipt = fixedFailureReceipt('child_signaled')
     else if (close.code === 0) {
-      if (
-        message?.result !== 'passed' &&
-        message?.failureClass !== 'protocol_failed'
-      ) {
-        receipt = fixedFailureReceipt('child_failed')
+      if (message?.result !== 'passed') {
+        receipt = workerProtocolFailureReceipt('child_failed')
       }
-    } else if (message === null || message.result === 'passed') {
-      receipt = fixedFailureReceipt('child_failed')
+    } else if (
+      !Number.isInteger(close.code) ||
+      close.code <= 0 ||
+      message === null ||
+      message.result === 'passed'
+    ) {
+      receipt = workerProtocolFailureReceipt('child_failed')
     }
 
     return {
@@ -884,11 +1102,11 @@ export async function superviseProof({
       elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
     }
   } finally {
+    if (forceTimer) clearTimeout(forceTimer)
     for (const [signal, handler] of signalHandlers) {
       process.removeListener(signal, handler)
     }
     await lock.close().catch(() => undefined)
-    await unlink(lockPath).catch(() => undefined)
   }
 }
 
@@ -917,7 +1135,8 @@ async function workerMain() {
     validateWorkerEnvironment(process.env)
     const environment = requiredWorkerEnvironment(process.env)
     const manifest = await readManifest(
-      environment.DOC_QUERY_PROOF_MANIFEST_PATH
+      environment.DOC_QUERY_PROOF_MANIFEST_PATH,
+      environment.DOC_QUERY_PROOF_MANIFEST_FINGERPRINT
     )
     const receipt = await runProofMatrix({ manifest, environment })
     sendWorkerReceipt(receipt, receipt.result === 'passed' ? 0 : 1)

@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-09-02'
+timestamp: '2026-09-03'
 tags:
   - frontend
 ---
@@ -119,6 +119,13 @@ when `SelfDocument` identifies the current user as an authenticated
 `Participant`; loading, error, missing-self, anonymous, temporary, and lecturer
 states fail closed. Individual published quiz links remain available to every
 user state already permitted to access them.
+
+Practice sessions complete back into the course practice context instead of
+the application home. The Practice Pool returns to its overview with a
+round-complete notice and refetches so the next start uses the server-side
+spaced repetition order; only the per-round UI progress resets, the recorded
+responses stay untouched. A finished individual quiz routes back to the course
+Practice Quiz overview; embedded quizzes keep their in-place completion panel.
 
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`

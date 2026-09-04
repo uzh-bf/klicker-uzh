@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-25'
+timestamp: '2026-09-03'
 tags:
   - architecture
   - frontend
@@ -13,9 +13,9 @@ tags:
 
 **Browser and backend consumers share one typed flag registry, but they must not
 share one network address.** Browsers need a public HTTPS SDK endpoint with
-CORS for the Klicker origin; Node.js services should use GrowthBook's
-cluster-internal service. The browser client key identifies an SDK connection
-and is not a GrowthBook management key.
+CORS for the Klicker origin; Node.js services should use an HTTPS endpoint for
+GrowthBook's cluster-internal service or proxy. The browser client key
+identifies an SDK connection and is not a GrowthBook management key.
 
 The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
 `packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`, which currently
@@ -38,10 +38,10 @@ settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer             | Fallback | Disabled behavior                                                |
-| -------------------- | -------------------- | -------- | ---------------------------------------------------------------- |
-| `ai-beta`            | Lecturer AI          | `false`  | AI surfaces and their endpoints remain unavailable               |
-| `learning-analytics` | Manage + GraphQL API | `false`  | Controls are inert, routes unavailable, analytics data forbidden |
+| Key                  | Consumer                                             | Fallback | Disabled behavior                                                                       |
+| -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
+| `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -186,7 +186,8 @@ authentication, API, and database are exercised.
 
 The adopting service maps server-only variables into one process-level client:
 
-- `GROWTHBOOK_API_HOST`: cluster-internal GrowthBook SDK service;
+- `GROWTHBOOK_API_HOST`: HTTPS GrowthBook SDK service or proxy reachable from
+  the cluster;
 - `GROWTHBOOK_CLIENT_KEY`: environment-specific server SDK key;
 - `GROWTHBOOK_ENV`: server deployment environment;
 - `GROWTHBOOK_REFRESH_INTERVAL_MS`: optional polling override (30 seconds by
@@ -202,20 +203,31 @@ await flags.initialize()
 flags.isEnabled(featureKey, requestAttributes)
 ```
 
-`packages/feature-flags/src/node.ts:NodeFeatureFlagClient` keeps the downloaded
-feature payload on the process client while passing the request-local
-`FeatureFlagAttributes` as `attributes` to every evaluation. The adapter filters
-unknown fields before calling GrowthBook, so direct identifiers cannot cross the
-boundary even when a JavaScript caller supplies a wider object. Never mutate
-global attributes with the current user. Entitlement evaluation requires the
-runtime feature value to be exactly boolean `true`; truthy strings, numbers, or
-objects fail closed. The adapter owns its network and refresh lifecycle: it
-applies an abortable two-second request deadline, polls every 30 seconds, and
-exposes `destroy()` for teardown. A refresh marks the client healthy only after
-a validated payload update. A failed refresh retains the previous payload for
-at most two minutes; after that bounded stale window, all evaluations fail
-closed until a refresh succeeds. `getStatus()` reports health, staleness, and
-the last successful refresh time without exposing keys or targeting data.
+`packages/feature-flags/src/node.ts:NodeFeatureFlagClient` owns the payload
+lifecycle so a long-running backend never serves a silently stale definition:
+it fetches with an abortable two-second deadline, polls every 30 seconds
+(`GROWTHBOOK_REFRESH_INTERVAL_MS` override), deduplicates overlapping refreshes,
+and marks the client healthy only after a validated payload update. A payload
+becomes unusable 120 seconds after the last successful refresh; every
+evaluation fails closed before initialization, while stale, and after
+`destroy()`. A direct client setting of zero disables polling, so it is only
+suitable for consumers that call `refresh()` themselves. The backend requires
+`GROWTHBOOK_REFRESH_INTERVAL_MS` to be positive and falls back to 30 seconds
+when it is zero or invalid, preventing an unattended startup payload from
+expiring permanently. Missing, malformed, non-HTTPS, or query- or
+fragment-bearing API hosts are treated as unconfigured and cause no SDK
+request, and payload requests reject redirects to avoid transport downgrades.
+`getStatus()` reports health, staleness, and the last successful refresh time
+without exposing keys or targeting data.
+Evaluations stay request-local: the adapter filters unknown attributes before
+calling GrowthBook, so direct identifiers cannot cross the boundary even when a
+JavaScript caller supplies a wider object. Never mutate global attributes with
+the current user.
+Entitlement evaluation requires the runtime feature value to be exactly boolean
+`true`; truthy strings, numbers, or objects fail closed. When no SDK connection
+is configured, `FEATURE_FLAGS_FORCED_ON` can supply registered flags only in
+`development` or `test`. Configured clients and staging or production ignore the
+override.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
@@ -235,7 +247,7 @@ chart makes the Kubernetes-deployed Node workloads configuration-ready:
   worker Deployments optionally import
   `<rendered-chart-fullname>-secret-growthbook`.
 - that externally provisioned Secret contains exactly
-  `GROWTHBOOK_API_HOST` (the reachable internal SDK/proxy endpoint) and
+  `GROWTHBOOK_API_HOST` (the reachable HTTPS SDK/proxy endpoint) and
   `GROWTHBOOK_CLIENT_KEY` (the environment's server SDK connection key).
 
 The Secret is deliberately optional at the Kubernetes reference boundary.

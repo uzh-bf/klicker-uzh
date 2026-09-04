@@ -1,24 +1,22 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import { createHash, randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
-import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   consumeStream,
   generateText,
   isStepCount,
-  tool,
   type ModelMessage,
   type StepResult,
   streamText,
   type ToolSet,
+  tool,
 } from 'ai'
-import { createHash, randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
@@ -27,13 +25,12 @@ import {
   getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
-import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
-import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -49,12 +46,13 @@ import {
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
@@ -76,7 +74,10 @@ import {
   type MCPServerWithConfig,
   type MCPToolsHandle,
 } from '@/src/services/mcpClients'
-import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
+import {
+  resolveMcpScope,
+  resolveMcpScopeSessionId,
+} from '@/src/services/mcpScope'
 import {
   formatPracticeCandidatesForPrompt,
   getPracticeStackForQuiz,
@@ -679,7 +680,6 @@ export async function POST(
   // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
-  let enabledKnowledgeBaseId: string | undefined
 
   try {
     chatbot = await prisma.chatbot.findUnique({
@@ -694,14 +694,8 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
-        knowledgeBases: {
-          where: { isEnabled: true },
-          select: { kbId: true },
-          take: 1,
-        },
       },
     })
-    enabledKnowledgeBaseId = chatbot?.knowledgeBases[0]?.kbId
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
       requestId,
@@ -852,10 +846,33 @@ export async function POST(
     }
   }
 
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
+    (config) => config.isEnabled !== false
+  )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
   )
+
+  let scopedKbId: string | undefined
+  try {
+    scopedKbId = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      selectedMCPConfigurations
+    )
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -1036,7 +1053,7 @@ export async function POST(
         chatbotId,
         participantId,
         authMode,
-        kbId: enabledKnowledgeBaseId,
+        kbId: scopedKbId,
         sessionId: mcpScopeSessionId,
       })
       mcpTools = mcpToolsHandle.tools
@@ -1065,12 +1082,7 @@ export async function POST(
         chatMode: selectedMode,
         role: 'included',
       })
-      if (
-        Object.prototype.hasOwnProperty.call(
-          mcpTools,
-          RESPONSE_EXAMPLE_SEARCH_TOOL_NAME
-        )
-      ) {
+      if (Object.hasOwn(mcpTools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
         console.warn(
           'Response-example skill name conflicts with an existing tool; continuing without response examples',
           { requestId, chatbotId }

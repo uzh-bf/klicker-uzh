@@ -1,5 +1,10 @@
 import { EventEmitter } from 'node:events'
+// import * as Sentry from '@sentry/node'
+// import '@sentry/tracing'
+import { type Cache, createInMemoryCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   createElementGenerationRuntimeFromEnv,
   enhanceContext,
@@ -8,22 +13,18 @@ import {
   schema,
   settleKbKnowledgeGraphResult,
 } from '@klicker-uzh/graphql'
-import { prisma as prismaBase } from '@klicker-uzh/prisma'
-// import * as Sentry from '@sentry/node'
-// import '@sentry/tracing'
-import { type Cache, createInMemoryCache } from '@envelop/response-cache'
-import { createRedisCache } from '@envelop/response-cache-redis'
-import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   getKBGraphTerminalResult,
   hatchetClient,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
+import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
+import { parseRefreshInterval } from './featureFlags.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
@@ -32,16 +33,16 @@ const featureFlags = new NodeFeatureFlagClient({
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
   forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
-  refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
-    ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
-    : undefined,
+  refreshIntervalMs: parseRefreshInterval(
+    process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+  ),
 })
 process.once('exit', () => featureFlags.destroy())
 const elementGenerationRuntime = createElementGenerationRuntimeFromEnv(
   process.env
 )
 
-let prisma = prismaBase
+const prisma = prismaBase
 
 // if (
 //   process.env.NODE_ENV === 'development' &&
@@ -129,11 +130,17 @@ const pubSub = createPubSub({ eventTarget })
 getChatModelRegistry()
 
 migrate(prisma).then(async () => {
-  await featureFlags.initialize()
-  console.log(
-    '[feature-flags] Backend evaluator ready.',
-    featureFlags.getStatus()
-  )
+  // Fail-closed feature flag evaluation must be ready before serving.
+  const initialized = await featureFlags.initialize()
+  const featureFlagStatus = featureFlags.getStatus()
+  if (initialized) {
+    console.log('[feature-flags] Backend evaluator ready.', featureFlagStatus)
+  } else {
+    console.warn(
+      '[feature-flags] Backend evaluator unavailable; false fallbacks are active.',
+      featureFlagStatus
+    )
+  }
 
   // initialize tasks to be able to call / schedule them inside service functions
   const tasks = prepareHatchetTasks({
