@@ -19,6 +19,7 @@ test.describe('Chatbot response-example review', () => {
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     const question = 'Why does a higher discount rate reduce present value?'
     const answer = 'A higher discount rate reduces the present value. [1]'
+    const textPartId = 'response-example-answer'
     let captureBody: unknown
 
     await ensureChatbotSeeded()
@@ -30,9 +31,9 @@ test.describe('Chatbot response-example review', () => {
         const stream = [
           { type: 'start' },
           { type: 'start-step' },
-          { type: 'text-start' },
-          { type: 'text-delta', delta: answer },
-          { type: 'text-end' },
+          { type: 'text-start', id: textPartId },
+          { type: 'text-delta', id: textPartId, delta: answer },
+          { type: 'text-end', id: textPartId },
           {
             type: 'data-response-example-receipt',
             data: {
@@ -54,11 +55,15 @@ test.describe('Chatbot response-example review', () => {
         ]
           .map((part) => `data: ${JSON.stringify(part)}`)
           .concat('data: [DONE]')
-          .join('\n')
+          .join('\n\n')
+          .concat('\n\n')
 
         await route.fulfill({
           status: 200,
-          headers: { 'content-type': 'text/event-stream' },
+          headers: {
+            'content-type': 'text/event-stream',
+            'x-vercel-ai-ui-message-stream': 'v1',
+          },
           body: stream,
         })
       }
