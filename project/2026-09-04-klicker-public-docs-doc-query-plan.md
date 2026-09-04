@@ -446,15 +446,25 @@ run. Do not add a hosted evaluation service or dependency.
   Corrected the source and acceptance contracts without changing the tenant,
   data boundary, or model-visible single-tool design.
 - [x] Implemented the isolated local Klicker B2 composite tool. The initial
-  source commit is `592fe82b40`; review corrections are in `de5e97a5bd`.
-- [x] Verified the corrected B2 head with 87 focused Chat tests, Chat
-  typecheck, Biome, ESLint, a production Chat build, and the complete commit
-  hooks. The initial B2 head also passed the repository 26-task pre-push build;
-  the corrected head reran the affected Chat production build. The hook used a
-  host Node 26 fallback and warned about the pinned Node 24 engine; exact Chat
-  verification ran in the owned Node 24 runtime.
+  source commit is `592fe82b40`; review corrections are in `de5e97a5bd`,
+  `3759031143`, and `80b209347b`.
+- [x] Addressed both integrated final-review findings. Deployment now keeps the
+  public-docs model aliases STG-only and protects PRD with an independent
+  fixture. Chat now bounds oversized remote document output to a ranked,
+  whole-source prefix and falls back when no complete source fits.
+- [x] Verified the final B2 source in the owned Node 24 runtime with the exact
+  14-test composite-tool file, 890 passing Chat tests with 22 integration tests
+  skipped, Chat typecheck, Biome, repository `check:all`, and the production
+  Chat build. Deployment passed all 17 runtime-manifest unit tests and the
+  actual STG and PRD Kustomize renders passed their environment-specific lints.
+- [x] Completed the integrated final review with no findings across exact source
+  heads `dbafa369fa` (data-catalog), `4fada0982c` (data-ingestion),
+  `6831c49669` (deployment), `f2d864a821` (df-cloud), and `80b209347b`
+  (Klicker implementation).
 - [x] Reached clean local commits across data-catalog, data-ingestion,
   deployment, df-cloud, and Klicker. No branch was pushed and no runtime or
   secret was activated.
-- [ ] Request the separate publication and activation authority after the
-  corrective review and integrated final review settle.
+- [x] Reached the source-ready terminal. Live retrieval, ingestion, tenant
+  isolation, secret readiness, and runtime health remain intentionally deferred
+  to the separately authorized activation task.
+- [ ] Request separate publication and activation authority.
