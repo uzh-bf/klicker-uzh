@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  ASYNC_TASK_TRACKED_IDS_LIMIT,
+} from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
@@ -336,7 +339,13 @@ export const Query = builder.queryType({
       asyncTasks: t.withAuth(asUser).field({
         type: [AsyncTask],
         args: {
-          trackedIds: t.arg.stringList({ required: true }),
+          trackedIds: t.arg.stringList({
+            required: true,
+            validate: {
+              items: { uuid: true },
+              maxLength: ASYNC_TASK_TRACKED_IDS_LIMIT,
+            },
+          }),
         },
         resolve: (_, args, ctx) => AsyncTaskService.getAsyncTasks(args, ctx),
       }),

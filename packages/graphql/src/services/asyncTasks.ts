@@ -13,7 +13,7 @@ import {
 
 const ASYNC_TASK_ACTIVE_LIMIT = 50
 const ASYNC_TASK_RECENT_LIMIT = 20
-const ASYNC_TASK_ACKNOWLEDGEMENT_LIMIT = 50
+export const ASYNC_TASK_ACKNOWLEDGEMENT_LIMIT = 50
 const ASYNC_TASK_RECENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 const ASYNC_TASK_RECONCILIATION_CURSOR_TTL_SECONDS = 24 * 60 * 60
 const ASYNC_TASK_RECONCILIATION_CURSOR_KEY_PREFIX =
@@ -433,7 +433,10 @@ export async function syncCourseDuplicationTask(
       existingTask.kind !== DB.AsyncTaskKind.COURSE_DUPLICATION ||
       existingTask.ownerId !== job.userId
     ) {
-      throw new Error(`Async task ${job.id} belongs to another producer`)
+      throw new GraphQLError(
+        `Async task ${job.id} belongs to another producer`,
+        { extensions: { code: 'ASYNC_TASK_PRODUCER_CONFLICT' } }
+      )
     }
 
     return existingTask

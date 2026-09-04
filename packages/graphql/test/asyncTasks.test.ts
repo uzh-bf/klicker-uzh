@@ -318,6 +318,23 @@ describe('AsyncTask service and GraphQL API', () => {
     ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
   })
 
+  it('rejects malformed acknowledgement ids through GraphQL', async () => {
+    const result = await executeGraphql({
+      source: `
+        mutation Acknowledge($ids: [String!]!) {
+          acknowledgeAsyncTasks(ids: $ids)
+        }
+      `,
+      variables: { ids: ['not-a-uuid'] },
+    })
+
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        message: expect.stringMatching(/uuid/i),
+      }),
+    ])
+  })
+
   it('rejects tracked-task batches larger than the shared limit', async () => {
     await expect(
       getAsyncTasks(
@@ -336,6 +353,29 @@ describe('AsyncTask service and GraphQL API', () => {
     await expect(
       getAsyncTasks({ trackedIds: ['not-a-uuid'] }, ownerCtx)
     ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
+  it('rejects oversized tracked-id lists through GraphQL', async () => {
+    const repeatedId = randomUUID()
+    const result = await executeGraphql({
+      source: `
+        query AsyncTasks($trackedIds: [String!]!) {
+          asyncTasks(trackedIds: $trackedIds) { id }
+        }
+      `,
+      variables: {
+        trackedIds: Array.from(
+          { length: ASYNC_TASK_TRACKED_IDS_LIMIT + 1 },
+          () => repeatedId
+        ),
+      },
+    })
+
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        message: expect.stringMatching(/50/),
+      }),
+    ])
   })
 
   it('surfaces older unread tasks after the newest outcomes are acknowledged', async () => {
@@ -584,6 +624,26 @@ describe('AsyncTask service and GraphQL API', () => {
       finishedAt: completedAt,
     })
     expect(task.readAt).toBeInstanceOf(Date)
+  })
+
+  it('rejects task ids owned by another producer with a stable error code', async () => {
+    const id = randomUUID()
+    await prisma.asyncTask.create({
+      data: {
+        id,
+        kind: AsyncTaskKind.QUESTION_GENERATION,
+        status: AsyncTaskStatus.QUEUED,
+        subjectName: 'Generated questions',
+        ownerId,
+      },
+    })
+
+    await expect(
+      syncCourseDuplicationTask(courseDuplicationSnapshot({ id }), prisma)
+    ).rejects.toMatchObject({
+      message: `Async task ${id} belongs to another producer`,
+      extensions: { code: 'ASYNC_TASK_PRODUCER_CONFLICT' },
+    })
   })
 
   it('enforces owner scope through the GraphQL query and mutation', async () => {

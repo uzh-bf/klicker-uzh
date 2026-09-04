@@ -1417,7 +1417,13 @@ export const Mutation = builder.mutationType({
       acknowledgeAsyncTasks: t.withAuth(asUser).field({
         type: 'Int',
         args: {
-          ids: t.arg.stringList({ required: true }),
+          ids: t.arg.stringList({
+            required: true,
+            validate: {
+              items: { uuid: true },
+              maxLength: AsyncTaskService.ASYNC_TASK_ACKNOWLEDGEMENT_LIMIT,
+            },
+          }),
         },
         resolve: (_, args, ctx) =>
           AsyncTaskService.acknowledgeAsyncTasks(args, ctx),
