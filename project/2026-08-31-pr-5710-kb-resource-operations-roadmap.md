@@ -2,7 +2,7 @@
 
 Date: 2026-08-31
 
-Status: W2 implementation reviewed — publication and runtime recovery pending
+Status: W2 implementation published — final delivery gates pending
 
 Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-replacement-w2`, branch `rs/kb-resource-replacement-w2`
 
@@ -21,7 +21,7 @@ Audience: a senior developer or agent picking this up without session context. R
 | Goal and terminal | Deliver two independently reviewable desktop Manage capabilities: `Ingest all` reconciles every resource that is not serving its current form, and file replacement updates one existing resource identity while preserving its active AI-serving content until settlement. Material classification is controlled metadata, not provider behavior. The package ends when both work PRs are green at their own tips, the final review accepts the integrated stack, and the required browser evidence covers the named states. |
 | Mode and boundary owner | Guided execution under `rs-roadmap-orchestrator`; the main session owns decomposition, integration, reviews, verification, and boundary decisions. |
 | Question channel | The orchestrator presents the decision gates in this roadmap. Sol supplied the planning pass and will be reused for plan hardening; no new user-visible task is needed. |
-| Authority layers | Plan artifact and local implementation commits: proposed. Normal push and PR updates: ask at execution handoff unless the user approves the exact branch and remote. Merge, promotion, deployment, live ingestion, graph generation, secret access, cluster writes, deletion, and production actions: withheld. |
+| Authority layers | Plan artifact, local implementation commits, normal push, and PR updates for the current package: approved. Marking ready, merge, promotion, deployment, live ingestion, graph generation, secret access, cluster writes, deletion, and production actions: withheld. |
 | Writer budget | One implementation writer per work PR. Do not split the two work packages into concurrent writers because both touch the resource list, generated GraphQL operations, and the same lifecycle seams. Sol is read-only for planning/review. |
 
 ## 2. How to work on this
@@ -452,3 +452,12 @@ The package's final review must explicitly verify that source type and material 
 - Historical Progress entries remain append-only evidence of the design evolution and are superseded by the approved 2026-09-03 simplification entry above.
 - Draft PR #5745 separately fixes the target-wide Playwright artifact omission by uploading `packages/knowledge-graph/dist`. Its ready-state run proves all workers start and seven of eight shards pass; the remaining shard 4 failure requires an independent disposition before that PR can advance. W2 does not duplicate or modify this CI fix.
 - Normal push, review-thread replies, PR refresh, and natural exact-head checks remain next. The PR stays draft. Merge, deployment, migration apply, live replacement, Playwright reruns, upstream integration, secret access, runtime deletion or recreation, and cleanup remain withheld.
+
+### 2026-09-04 — W2 publication and delivery reconciliation
+
+- W1 is merged as PR #5710 at source head `77d7018f34305ce713277f0c43793623098d7cd7` and merge commit `a0e32ade053ce5b8836cd9b99b45f557cb247cd4`. W2 is published as draft PR #5756 against `v3-ai`; its reviewed implementation head before this progress-only receipt is `037459d7df42263937ec8bf92b4e3d457160ddbc`.
+- The three current-layer review threads are resolved. The integrated final review remains accepted because the later commits only correct deterministic test fixtures and this progress record; they do not change the replacement contract or implementation.
+- Local evidence for `037459d7df` is green: focused Playwright TypeScript and formatting checks pass, repository `check:all` passes `29/29`, and the pre-push monorepo build passes `26/26`. Hosted CI passes the repository, GraphQL, MCP, gitleaks, GitGuardian, trusted-policy, fallback-build, and Playwright shard 1–7 checks. Shard 8 fails only the unrelated existing chat feature-access test, and its aggregate status mirrors that failure.
+- Exact-head OpenCodeReview run `33876150064`, job `101033487232`, failed before reviewing because all 14 provider requests returned HTTP 403; it produced no findings, tokens, or tool calls. The external final-AI status remains pending on the repository's manual `z-ai/glm-5.3-flash` route. Neither infrastructure result is treated as a replacement source defect, and no event is manufactured.
+- `origin/v3-ai` is two commits ahead of the W2 branch baseline. PR #5756 remains mergeable without conflicts, the target movement is unrelated to replacement behavior, and no additional upstream integration is performed.
+- The achieved layer is a reviewed draft PR with branch-relevant source and CI evidence. The remaining delivery boundary is the manual final-AI route, natural exact-head checks for this progress-only commit, and an explicit decision to mark ready or merge. The runtime was not started or touched during this reconciliation. Merge, deployment, migration apply, live replacement, upstream integration, secret access, runtime recovery, and cleanup remain withheld.
