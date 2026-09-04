@@ -280,9 +280,10 @@ IDs. Retired-only allow-lists retain the existing Luna safety fallback.
 The registry must contain exactly one `auto` model, classified as ADVANCED,
 non-reasoning, and not the participant-credit fallback. Chatbot creation fails
 before writing when that invariant is absent or malformed. Participant credits
-and account-usage policy can still fall back from an unavailable advanced
-choice to Luna; the UI describes that exceptional safety behavior without
-presenting it as participant control.
+may fall back from an unavailable advanced choice to Luna. Account-usage
+enforcement remains class-specific and denies an unavailable class rather than
+crossing into another class. The UI describes that exceptional safety behavior
+without presenting it as participant control.
 
 Extend the required-MCP route coverage so a crafted request for a typed-
 disabled mode returns 400 before MCP, thread, or provider work, and so the

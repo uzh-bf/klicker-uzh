@@ -32,10 +32,11 @@ export default {
         'Uses fewer credits and remains available when your credits run out.',
       autoSelectionInfo:
         'KlickerUZH chooses a suitable model for each message.',
+      fixedModelInfo: 'Your lecturer fixed this model for all participants.',
       usingPrimaryModel:
-        'The standard model is used while credits are available.',
+        'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. Some models may no longer be available.',
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:

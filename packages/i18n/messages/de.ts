@@ -32,10 +32,12 @@ export default {
         'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
         'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      fixedModelInfo:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
       usingPrimaryModel:
-        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:

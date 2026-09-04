@@ -159,11 +159,12 @@ not authorize model usage by itself.
 _Avoid_: usage approval, activation
 
 **Standard-mode configuration**:
-The nullable owner-controlled Tutor and Explainer settings stored on a
-chatbot. It contains explicit mode availability and bounded course context;
+The nullable owner-controlled Tutor, Explainer, and Quizzer settings stored on
+a chatbot. It contains explicit mode availability and bounded course context;
 the platform compiler treats valid values as lecturer context beneath its
 non-removable scaffolding. Missing or malformed values retain legacy/default
-behavior, and a new replacement must leave at least one standard mode enabled.
+behavior, and a new replacement must leave Tutor or Explainer enabled while
+Quizzer may be disabled independently.
 _Avoid_: raw prompt, system prompt editor, custom-mode configuration
 
 **Effective mode set**:

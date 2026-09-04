@@ -1584,6 +1584,87 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toBeVisible()
   }
 
+  async function setChatLocale(page: Page, locale: 'en' | 'de') {
+    const url = new URL(chatUrl())
+    await page.context().addCookies([
+      {
+        name: 'NEXT_LOCALE',
+        value: locale,
+        url: url.origin,
+        sameSite: 'Lax',
+        secure: url.protocol === 'https:',
+      },
+    ])
+  }
+
+  async function setAllowedModelIds(modelIds: string[]) {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { allowedModelIds: modelIds },
+    })
+  }
+
+  async function assertAutomaticAndFixedModelCopy(
+    page: Page,
+    participantId: string,
+    locale: 'en' | 'de',
+    copy: {
+      automatic: string
+      primary: string
+      fixed: string
+      fallback: string
+    }
+  ) {
+    await setChatLocale(page, locale)
+    await setModelSelection(participantId, false)
+
+    try {
+      // Restricting the list to Auto makes the server's effective fixed model
+      // deterministic, independent of the deployment's primary-model env.
+      await setAllowedModelIds(['auto'])
+      await setCredits(participantId, 50, 100)
+      await visitChat(page)
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+
+      const modelSection = page.getByTestId('chat-model-selection')
+      await expect(modelSection).toContainText('Auto Mode')
+      await expect(modelSection).toContainText(copy.automatic)
+      await expect(modelSection).toContainText(copy.primary)
+      await expect(modelSection).not.toContainText(copy.fixed)
+
+      // A concrete allow-list makes the same lecturer-fixed path display a
+      // concrete model rather than Auto, so the copy must change with it.
+      await setAllowedModelIds(['gpt-4.1'])
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText('GPT-4.1')
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).not.toContainText(copy.automatic)
+      await expect(modelSection).not.toContainText(copy.primary)
+
+      // The fixed model can still use Luna only in the exceptional
+      // participant-credit fallback path.
+      await setCredits(participantId, 0, 100)
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '0 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).toContainText(copy.fallback)
+      await expect(modelSection).not.toContainText(copy.automatic)
+    } finally {
+      await setAllowedModelIds([])
+    }
+  }
+
   test('Settings toggle is visible and opens the panel', async ({ page }) => {
     await visitChat(page)
 
@@ -1703,6 +1784,33 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(modelSection).toContainText('AI Model')
     await expect(page.getByTestId('chat-model-display')).toBeVisible()
+  })
+
+  test('Participant settings distinguish Auto and fixed models in English', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
+      automatic: 'KlickerUZH chooses a suitable model for each message.',
+      primary: 'The automatic choice is used while credits are available.',
+      fixed: 'Your lecturer fixed this model for all participants.',
+      fallback:
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+    })
+  })
+
+  test('Participant settings distinguish Auto and fixed models in German', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
+      automatic:
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      primary:
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
+      fixed:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
+      fallback:
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+    })
   })
 
   test('Credits display shows current/total and percentage', async ({
