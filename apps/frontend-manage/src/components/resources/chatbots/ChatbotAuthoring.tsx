@@ -2,11 +2,11 @@ import { useMutation } from '@apollo/client'
 import {
   type Chatbot,
   ChatbotStatus,
-  GetChatbotsInfoWithStandardModesDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   type LocaleType,
   SaveChatbotDisclaimerDocument,
   UpdateChatbotDocument,
-  UpdateChatbotStandardModeConfigDocument,
+  MUpdateChatbotStandardModeConfigDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -319,7 +319,7 @@ function ChatbotAuthoring({
   const t = useTranslations()
   const [updateChatbot] = useMutation(UpdateChatbotDocument)
   const [updateStandardModeConfig] = useMutation(
-    UpdateChatbotStandardModeConfigDocument
+    MUpdateChatbotStandardModeConfigDocument
   )
   const [saveDisclaimer] = useMutation(SaveChatbotDisclaimerDocument)
   const [metadataError, setMetadataError] = useState<string | null>(null)
@@ -517,7 +517,7 @@ function ChatbotAuthoring({
                           description: normalizedValues.description || null,
                         },
                         refetchQueries: [
-                          { query: GetChatbotsInfoWithStandardModesDocument },
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
                         ],
                         awaitRefetchQueries: true,
                       })
@@ -629,7 +629,7 @@ function ChatbotAuthoring({
                           config: values,
                         },
                         refetchQueries: [
-                          { query: GetChatbotsInfoWithStandardModesDocument },
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
                         ],
                         awaitRefetchQueries: true,
                       })
@@ -896,7 +896,7 @@ function ChatbotAuthoring({
                           introText: normalizedValues.introText,
                         },
                         refetchQueries: [
-                          { query: GetChatbotsInfoWithStandardModesDocument },
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
                         ],
                         awaitRefetchQueries: true,
                       })

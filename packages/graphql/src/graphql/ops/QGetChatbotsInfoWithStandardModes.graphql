@@ -1,4 +1,4 @@
-query GetChatbotsInfoWithStandardModes {
+query QGetChatbotsInfoWithStandardModes {
   getChatbotsInfo {
     id
     name
