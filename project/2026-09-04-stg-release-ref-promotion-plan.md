@@ -285,8 +285,24 @@ Phase 2 is a separate task with explicit delivery and operations authority.
   detection was accepted and fixed in `43e84ba3a5`; only an exact missing-tag
   response now permits first publication, while generic 404, not-found, and
   manifest-unknown responses fail closed.
-- `Remaining:` no implementation remains in this assigned worktree. The global
-  Phase 1 integration owner still must reconcile the helper, controller, and
-  selected-source contract matrix and complete the exact-range branch reviews
-  before the three local branches reach the plan's terminal condition.
+- `Final reviews:` the helper range through `1ea4c2ea43`, the trusted
+  controller range through `4a81e8e10b`, and this selected-source range through
+  `2785c85ea6` each passed their exact-range final review with no findings. The
+  selected-source review remains valid after this progress-only commit because
+  no runtime, workflow, chart, test, ADR, or operational contract changed.
+- `Cross-repository matrix:` helper Helm parameters preserve the omitted shape
+  and pass `forceString`; the seven controller blobs match 7/7 across branches;
+  the controller's 16-repository digest receipt covers every one of the 15
+  unique repositories used by the chart's 18 image expressions. The sole
+  receipt-only entry is the deliberately release-gating `analytics-arm` image,
+  which this chart does not render. Production values and workflows receive no
+  override, staging and production environment values remain unchanged, and
+  `stg-release` does not match the `v3` or `v3*` image-build filters.
+- `Terminal condition:` Phase 1 is complete with three clean, reviewed local
+  branches and no external state change. Fresh target inspection shows the
+  controller branch is six commits ahead and two behind `origin/v3`, while the
+  selected-source branch is eight ahead and sixteen behind `origin/v3-ai`.
+  Both prospective integrations have one textual conflict, confined to
+  `docs/ci-and-deployment.md`; no workflow, chart, or runtime path overlaps.
+  Upstream integration remains separately permission-gated.
 - `External state:` Unchanged.
