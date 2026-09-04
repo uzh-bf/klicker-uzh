@@ -107,6 +107,59 @@ async function waitForBackendGrowthBookLearningAnalytics(
 
 test('CLEANUP', cleanupTest)
 
+const standardActivityGuidance = [
+  {
+    button: 'create-live-quiz',
+    description: 'description-create-live-quiz',
+    firstStep: 'insert-live-quiz-name',
+    text: 'Engage participants live during a session.',
+  },
+  {
+    button: 'create-practice-quiz',
+    description: 'description-create-practice-quiz',
+    firstStep: 'insert-practice-quiz-name',
+    text: 'Let participants review content independently at their own pace.',
+  },
+  {
+    button: 'create-microlearning',
+    description: 'description-create-microlearning',
+    firstStep: 'insert-microlearning-name',
+    text: 'Schedule short learning activities over a defined period.',
+  },
+  {
+    button: 'create-group-activity',
+    description: 'description-create-group-activity',
+    firstStep: 'insert-groupactivity-name',
+    text: 'Let groups collaborate on a shared task.',
+  },
+] as const
+
+async function expectStandardActivityChoiceGuidance(page: Page) {
+  const choiceRegion = page.getByTestId('activity-creation-choices')
+
+  for (const activity of standardActivityGuidance) {
+    const button = page.getByTestId(activity.button)
+    const description = page.getByTestId(activity.description)
+
+    await expect(button).not.toBeDisabled()
+    await expect(description).toBeHidden()
+    await button.hover()
+    await expect(description).toBeVisible()
+    await expect(page.getByTestId(activity.description)).toContainText(
+      activity.text
+    )
+    await button.focus()
+    await expect(description).toBeVisible()
+    const describedBy = await button.getAttribute('aria-describedby')
+    expect(describedBy).toBe(activity.description)
+  }
+
+  await expect(choiceRegion).not.toContainText(/catalyst/i)
+  await expect(choiceRegion.getByRole('link')).toHaveCount(0)
+  await expect(choiceRegion.locator('[data-cy*="catalyst" i]')).toHaveCount(0)
+  await expect(choiceRegion.locator('[data-icon="crown"]')).toHaveCount(0)
+}
+
 test.describe('Tests the availability of standard activity creation formats', () => {
   test.beforeAll(async () => {
     await seedActivities()
@@ -204,31 +257,24 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginFreeUser()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    for (const [button, firstStep] of [
-      ['create-live-quiz', 'insert-live-quiz-name'],
-      ['create-practice-quiz', 'insert-practice-quiz-name'],
-      ['create-microlearning', 'insert-microlearning-name'],
-      ['create-group-activity', 'insert-groupactivity-name'],
-    ]) {
-      await expect(page.getByTestId(button)).not.toBeDisabled()
-      await page.getByTestId(button).click()
-      await expect(page.getByTestId(firstStep)).toBeVisible()
+    await expectStandardActivityChoiceGuidance(page)
+
+    for (const activity of standardActivityGuidance) {
+      await page.getByTestId(activity.button).click()
+      await expect(page.getByTestId(activity.firstStep)).toBeVisible()
       await page.getByTestId('cancel-activity-creation').click()
-      await expect(page.getByTestId(button)).toBeVisible()
+      await expect(page.getByTestId(activity.button)).toBeVisible()
     }
   })
 
   test('Test that all standard creation buttons are enabled for catalyst users', async ({
     page,
-    loginLecturer,
+    loginIndividualCatalyst,
   }) => {
-    await loginLecturer()
+    await loginIndividualCatalyst()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    await expect(page.getByTestId('create-live-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
-    await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
+    await expectStandardActivityChoiceGuidance(page)
   })
 
   test('Verify that learning analytics and private preview features are available for lecturer', async ({

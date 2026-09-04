@@ -69,6 +69,14 @@ Lifecycle enums:
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
+`ElementStatus` is manually controlled advisory metadata on an Element. `DRAFT`
+means unfinished, `REVIEW` means review requested, and `READY` means considered
+reusable. New Elements default to `READY`. The value does not gate activity use,
+auto-transition, reset after an edit, or imply reviewer assignment or approval;
+users with at least read access retain the deliberate permission to change it.
+This is separate from activity `PublicationStatus` and the activity
+`ReviewStatus` flow.
+
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
 ## Knowledge bases
