@@ -1,9 +1,9 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash, randomUUID } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
@@ -17,7 +17,7 @@ import {
   assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
-  normalizeDocQueryKbId,
+  normalizeDocQueryKbIds,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -46,7 +46,7 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
-  kbId?: string
+  kbIds?: readonly string[]
   sessionId?: string
 }
 
@@ -122,7 +122,7 @@ async function applyDocQueryAuthHeaders(
   authType: string
 ): Promise<boolean> {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
-  if (!(options.kbId && options.sessionId)) {
+  if (!options.kbIds || !options.sessionId) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
   if (authType !== 'bearer' || !server.authSecret) {
@@ -137,10 +137,10 @@ async function applyDocQueryAuthHeaders(
 
   assertDocQueryTransportSecurity(server.url)
 
-  const kbId = normalizeDocQueryKbId(options.kbId)
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
   const token = await signDocQueryScopeToken({
-    kbId,
+    kbIds,
     chatbotId,
     sessionId: options.sessionId,
     jti: randomUUID(),

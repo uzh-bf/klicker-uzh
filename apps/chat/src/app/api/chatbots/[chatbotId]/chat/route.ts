@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
@@ -12,11 +13,9 @@ import {
   streamText,
   type ToolSet,
 } from 'ai'
-import { createHash, randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatModelConfig,
@@ -25,12 +24,12 @@ import {
   getChatModelRegistry,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
-import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -48,6 +47,7 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
@@ -881,9 +881,9 @@ export async function POST(
     selectedMode
   )
 
-  let scopedKbId: string | undefined
+  let scopedKbIds: string[] | undefined
   try {
-    scopedKbId = resolveMcpScope(
+    scopedKbIds = resolveMcpScope(
       enabledMCPConfigurations,
       selectedMode,
       selectedMCPConfigurations
@@ -1059,9 +1059,9 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = scopedKbId
+      mcpTools = scopedKbIds
         ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
-            kbId: scopedKbId,
+            kbIds: scopedKbIds,
             sessionId: owningThread.id,
           })
         : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
