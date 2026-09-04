@@ -93,6 +93,7 @@ async function executeQuestion(
 describe('Klicker public docs composite tool', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     vi.mocked(createSDKMCPClient).mockReset()
     vi.mocked(StreamableHTTPClientTransport).mockReset()
   })
@@ -176,10 +177,11 @@ describe('Klicker public docs composite tool', () => {
   })
 
   test('rejects redirects and disables transport reconnection', async () => {
-    let capturedOptions: {
-      requestInit?: RequestInit
-      reconnectionOptions?: { maxRetries?: number }
-    } = {}
+    let capturedOptions: NonNullable<
+      ConstructorParameters<typeof StreamableHTTPClientTransport>[1]
+    > = {}
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null))
+    vi.stubGlobal('fetch', fetchMock)
     vi.mocked(StreamableHTTPClientTransport).mockImplementation(
       (_url, options) => {
         capturedOptions = options ?? {}
@@ -200,6 +202,13 @@ describe('Klicker public docs composite tool', () => {
       requestInit: { redirect: 'error' },
       reconnectionOptions: { maxRetries: 0 },
     })
+    await capturedOptions.fetch?.('https://docs.test/mcp', {
+      redirect: 'follow',
+    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://docs.test/mcp',
+      expect.objectContaining({ redirect: 'error' })
+    )
     await bundle.close()
   })
 

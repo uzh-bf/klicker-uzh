@@ -79,6 +79,11 @@ async function createKlickerDocsMcpClient({
   url: string
 }): Promise<KlickerDocsMcpClient> {
   const transport = new StreamableHTTPClientTransport(new URL(url), {
+    fetch: (input, init) =>
+      fetch(input, {
+        ...init,
+        redirect: 'error',
+      }),
     requestInit: {
       headers: {
         Authorization: `Bearer ${token}`,
