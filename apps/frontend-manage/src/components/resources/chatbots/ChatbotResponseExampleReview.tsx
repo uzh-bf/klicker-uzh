@@ -34,6 +34,7 @@ type EditValues = Pick<
 
 type EditState = EditValues & Pick<ResponseExample, 'id' | 'updatedAt'>
 
+const EMPTY_RESPONSE_EXAMPLES: ResponseExample[] = []
 const RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH = 4_000
 const RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH = 20_000
 
@@ -151,7 +152,8 @@ function ChatbotResponseExampleReview({
   )
   const [staleEditId, setStaleEditId] = useState<string | null>(null)
 
-  const examples = data?.getChatbotResponseExamples?.examples ?? []
+  const examples =
+    data?.getChatbotResponseExamples?.examples ?? EMPTY_RESPONSE_EXAMPLES
   const chatModes = data?.getChatbotResponseExamples?.chatModes ?? []
   const isMutating = approving || editing || rejecting
 

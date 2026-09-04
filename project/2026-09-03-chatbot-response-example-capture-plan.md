@@ -84,7 +84,7 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ## Progress
 
-- Current status: S0-S5 are complete on the branch's existing base. Focused integration checks pass; the next boundary is the one approved upstream integration pass before final review and PR publication.
+- Current status: S0-S5 and the approved one-time `origin/v3-ai` integration are complete. The exact target `ecf12398dc` was merged at `9844387186`; focused post-integration checks pass and final review is next.
 - [x] Gate: PR #5633 (owner preview) merged into `v3-ai` at `7249e57eb7`.
 - [x] Branch cut from `origin/v3-ai@7249e57eb7`; roadmap Progress and this plan are the first commit.
 - [x] S0 transport prototype: the receipt data part survives on the completed assistant message, the later action can read it, model-input conversion drops data parts, and refresh has no client persistence to restore.
@@ -93,6 +93,7 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 - [x] S3 capture UI: explicit available, unavailable, pending, created, duplicate, stale, expired, and failure states plus fresh-preview recovery. The simplifier removed redundant client validation and first-answer scanning while retaining the server-issued boundary. Agent-browser verified the accessible capture action, exact synthetic question/answer/receipt POST, success confirmation, and Review now link.
 - [x] S4 preview skill parity: the included response-example skill is composed for owner preview with graceful load failure and no conversation persistence. The simplifier's dead guard was removed.
 - [x] S5 Manage confirmation and docs: the canonical query-based review link opens Advanced settings, scrolls and focuses the candidate, exposes eligible source lineage, and leaves Approve, Edit and approve, and Reject enabled. Agent-browser verified the synthetic local flow and screenshots; Chat, Manage, Playwright type checks and 35 focused Chat tests pass. The Playwright scenario is present for hosted execution because this host has no installed Playwright Chromium.
-- [ ] Integration checks + final review
+- [x] Integration checks: 100 focused Chat tests, 12 util tests, 22 GraphQL tests, changed-package type/schema checks, and focused Chat/Manage lint pass. The repository-wide `check:all` run reached an unrelated analytics environment failure because pandas 2.2.2 had no wheel for the container-selected Python 3.14 and the image has no C compiler; no changed package failed its focused check.
+- [ ] Final review
 - [ ] PR ready (terminal)
-- Next action: commit the Manage confirmation and browser coverage, then request the one-time `origin/v3-ai` integration pass required before final review.
+- Next action: commit the post-integration lint correction and this Progress update, then run the integrated final review.
