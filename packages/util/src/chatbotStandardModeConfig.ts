@@ -127,51 +127,6 @@ export function parseChatbotStandardModeConfigInput(
   return parseConfig(value)
 }
 
-function parsePersistedConfig(
-  value: unknown,
-  systemPrompts: unknown
-): ChatbotStandardModeConfig {
-  if (!isRecord(value)) {
-    throw new Error('standardModeConfig must be an object')
-  }
-  if (typeof value.tutorEnabled !== 'boolean') {
-    throw new Error('tutorEnabled must be a boolean')
-  }
-  if (typeof value.explainerEnabled !== 'boolean') {
-    throw new Error('explainerEnabled must be a boolean')
-  }
-  if (!value.tutorEnabled && !value.explainerEnabled) {
-    throw new Error('Tutor or Explainer must remain enabled')
-  }
-
-  let quizzerEnabled: boolean
-  if (typeof value.quizzerEnabled === 'boolean') {
-    quizzerEnabled = value.quizzerEnabled
-  } else if (value.quizzerEnabled === undefined) {
-    quizzerEnabled = isLegacyModeEnabled(systemPrompts, 'quizzer')
-  } else {
-    throw new Error('quizzerEnabled must be a boolean')
-  }
-
-  return {
-    tutorEnabled: value.tutorEnabled,
-    explainerEnabled: value.explainerEnabled,
-    quizzerEnabled,
-    courseName: normalizeSingleLineText(
-      value.courseName,
-      'courseName',
-      CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH
-    ),
-    subjectDomain: normalizeSingleLineText(
-      value.subjectDomain,
-      'subjectDomain',
-      CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH
-    ),
-    languageOfInstruction: normalizeLocale(value.languageOfInstruction),
-    scopeNote: normalizeScopeNote(value.scopeNote),
-  }
-}
-
 /**
  * Tolerantly normalizes persisted JSON. Invalid rows are treated as legacy
  * rows so a bad value cannot disable every mode or expose raw JSON.
@@ -182,8 +137,16 @@ export function normalizeChatbotStandardModeConfig(
 ): ChatbotStandardModeConfig {
   if (value === null || value === undefined) return defaultConfig(systemPrompts)
 
+  const persistedValue =
+    isRecord(value) && value.quizzerEnabled === undefined
+      ? {
+          ...value,
+          quizzerEnabled: isLegacyModeEnabled(systemPrompts, 'quizzer'),
+        }
+      : value
+
   try {
-    return parsePersistedConfig(value, systemPrompts)
+    return parseConfig(persistedValue)
   } catch {
     return defaultConfig(systemPrompts)
   }

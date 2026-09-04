@@ -189,7 +189,7 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
-  if (normalizedConfig && isTypedStandardMode(mode)) {
+  if (isTypedStandardMode(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
     return normalizedConfig.quizzerEnabled

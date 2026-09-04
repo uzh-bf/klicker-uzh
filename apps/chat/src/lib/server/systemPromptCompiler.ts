@@ -86,9 +86,6 @@ function standardModeContextSection(
   selectedMode: string
 ): string | null {
   if (selectedMode !== 'tutor' && selectedMode !== 'explainer') return null
-  if (standardModeConfig === null || standardModeConfig === undefined) {
-    return null
-  }
 
   const normalizedConfig = normalizeChatbotStandardModeConfig(
     standardModeConfig,
