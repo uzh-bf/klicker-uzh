@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test'
 import { seedActivities } from '../global-setup.js'
 import { readFile } from 'node:fs/promises'
-import { URL_MANAGE } from '../util/constants.js'
+import { LECTURER_EMAIL, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  mockBetaEnrollmentGraphQL,
+  mockGrowthBookFeatureFlags,
   mockGrowthBookLearningAnalytics,
   prepareSeededAnalyticsActivities,
   updateLecturerPrivatePreview,
@@ -234,5 +236,146 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+  })
+})
+
+test.describe('Beta feature enrollment discovery', () => {
+  test('Open signup links eligible Catalyst users to the enrollment setting', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: false,
+      mayChange: true,
+      signupAvailable: true,
+    })
+    await loginLecturer()
+
+    await page.getByTestId('user-menu').click()
+    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
+    await page.getByTestId('menu-beta-features').click()
+
+    await expect(page).toHaveURL(/\/user\/settings#beta-features$/)
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
+  })
+
+  test('Closed signup hides enrollment from a non-member', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page)
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: false,
+      mayChange: false,
+      signupAvailable: false,
+    })
+    await loginLecturer()
+
+    await page.getByTestId('user-menu').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+  })
+
+  test('Existing members can opt out after signup closes', async ({
+    page,
+    loginLecturer,
+  }) => {
+    let requestedMembership: boolean | undefined
+    await mockGrowthBookFeatureFlags(page, { aiBeta: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: true,
+      mayChange: true,
+      onSet: (enabled) => {
+        requestedMembership = enabled
+      },
+      signupAvailable: false,
+    })
+    await loginLecturer()
+
+    await page.getByTestId('user-menu').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    const enrollmentSwitch = page.getByTestId('beta-enrollment-switch')
+    await expect(enrollmentSwitch).toBeChecked()
+    await enrollmentSwitch.click()
+
+    await expect.poll(() => requestedMembership).toBe(false)
+    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+  })
+
+  test('Enrollment reports pending and feature-refresh failure states', async ({
+    page,
+    loginLecturer,
+  }) => {
+    let releaseSetResponse!: () => void
+    const setResponseGate = new Promise<void>((resolve) => {
+      releaseSetResponse = resolve
+    })
+    await mockGrowthBookFeatureFlags(page, {
+      betaSignup: true,
+      failRefresh: true,
+    })
+    await mockBetaEnrollmentGraphQL(page, {
+      beforeSetResponse: () => setResponseGate,
+      membership: false,
+      mayChange: true,
+      signupAvailable: true,
+    })
+    await loginLecturer()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+
+    await page.getByTestId('beta-enrollment-switch').click()
+    await expect(page.getByTestId('beta-enrollment-pending')).toBeVisible()
+    releaseSetResponse()
+
+    await expect(
+      page.getByTestId('beta-enrollment-refresh-failure')
+    ).toBeVisible()
+  })
+
+  test('Open signup remains hidden from non-Catalyst users', async ({
+    page,
+    loginFreeUser,
+  }) => {
+    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: null,
+      mayChange: false,
+      signupAvailable: true,
+    })
+    await loginFreeUser()
+
+    await page.getByTestId('user-menu').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+  })
+
+  test('Open signup remains hidden from weaker login scopes', async ({
+    page,
+    loginFactory,
+  }) => {
+    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: null,
+      mayChange: false,
+      signupAvailable: true,
+    })
+    await loginFactory({
+      email: LECTURER_EMAIL,
+      sub: USER_ID_TEST,
+      role: 'ADMIN',
+      scope: 'EDUID',
+      catalystInstitutional: true,
+      catalystIndividual: true,
+    })
+
+    await page.getByTestId('user-menu').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
   })
 })

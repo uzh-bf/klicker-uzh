@@ -271,6 +271,31 @@ build, or a `NEXT_PUBLIC_*` variable. If another workload becomes the
 control-plane owner, mount the management Secret there in the same reviewed
 change rather than broadening it preemptively.
 
+### Beta enrollment activation and rollback
+
+1. Land and deploy the source with `beta-signup` absent or false. Confirm from
+   rendered manifests and values-free runtime metadata that only the primary
+   GraphQL backend receives the management Secret and saved-group id.
+2. Record the approved purpose, legal basis, retention owner, monthly removal
+   procedure, and support contact before collecting membership. Keep the group
+   limited to stable `User.id` values.
+3. Rehearse read, add, propagation, remove, and absence verification against a
+   disposable list saved group on the deployed GrowthBook version. Do not use
+   the production group for this proof.
+4. Configure `ai-beta` to require both membership in the intended saved group
+   and `catalyst: true`. Create `beta-signup` with a false default and verify
+   that browser and backend SDK connections receive equivalent definitions.
+5. Open `beta-signup` only for a small internal Catalyst cohort. Verify the
+   first-login prompt, user-menu link, settings control, opt-in, `ai-beta`
+   access, account-usage visibility, reload persistence, and opt-out before
+   widening the target.
+
+To stop new enrollment, set `beta-signup` false; this preserves current beta
+access and self-service opt-out. To hide unsafe AI beta surfaces, also set
+`ai-beta` false. Keep the Management API configuration available until the
+saved group has been reconciled and verified empty. Revert the source path only
+after that lifecycle completes.
+
 ## Failure and rollout behavior
 
 - Missing host or client key performs no fetch and evaluates boolean flags

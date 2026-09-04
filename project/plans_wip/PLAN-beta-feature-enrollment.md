@@ -429,6 +429,27 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: integrated `origin/v3` once at
+  `86fc70c77f756827d55ea9d0afc5cac3344630cf` in merge commit `a34039de97`.
+  The overlapping first-login work was reconciled without changing the
+  reviewed enrollment contract. Later target movement remains outside this
+  approved integration pass and will receive only the required interaction
+  check before publication.
+- 2026-09-04: completed the integrated browser evidence slice. The local
+  Devrouter profile now gives GrowthBook a same-origin, deliberately missing
+  endpoint so flags fail closed by default and Playwright can intercept the
+  exact browser request without cross-origin exceptions. The Playwright
+  typecheck, 58 CI contract tests, 9 host-launcher tests, and all 7 focused
+  enrollment journeys pass. Agent-browser evidence confirms the direct menu,
+  settings, first-login, pending, and unavailable states in English and German
+  at desktop and narrow viewports. The local fixture database was reseeded
+  after the evidence run.
+- 2026-09-04: the managed local Auth frontend became ready, but its NextAuth
+  handler returned 404 during delegated-login verification. This is recorded
+  as a local runtime follow-up, not production runtime proof. Browser evidence
+  therefore used the repository's signed seeded-session fixture; the current
+  verified page reported no console errors. No staging proof is claimed because
+  staging carries newer `v3-ai` state.
 - 2026-09-04: the signup and menu discovery slice is implemented on the
   reviewed baseline. Manage now uses a separately named profile operation for
   `userScope`, adds Catalyst to browser flag attributes, exposes the direct
