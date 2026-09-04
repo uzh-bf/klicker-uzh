@@ -3,9 +3,12 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   consumeStream,
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   isStepCount,
   streamText,
   type ToolSet,
+  type UIMessage,
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -25,6 +28,15 @@ import {
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  issuePreviewResponseExampleReceipt,
+  RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+} from '@/src/lib/server/responseExampleReceipt'
+import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   getAggregatedMCPTools,
@@ -233,6 +245,30 @@ export async function POST(
   }
 
   try {
+    let responseExampleSummary = ''
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      tools = {
+        ...tools,
+        [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
+          createResponseExampleSearchTool(responseExampleSkill),
+      }
+      responseExampleSummary = responseExampleSkill.summary
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        {
+          chatbotId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        }
+      )
+    }
+
     const toolNames = Object.keys(tools)
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
@@ -242,6 +278,9 @@ export async function POST(
         toolNames,
       }
     )
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${systemPrompt}\n\n${responseExampleSummary}`
+      : systemPrompt
     const baseModels = getModelsForChatbot(chatbot).filter(
       (model) => model.usageClass === 'BASE'
     )
@@ -264,7 +303,7 @@ export async function POST(
         ? await buildPromptCacheRequest({
             deploymentId: selectedModel.deploymentId,
             transport: selectedModel.usesResponsesApi ? 'responses' : 'chat',
-            instructions: systemPrompt,
+            instructions: effectiveSystemPrompt,
             tools,
           })
         : null
@@ -274,7 +313,7 @@ export async function POST(
       maxOutputTokens: selectedModel.maxOutputTokens,
       messages: modelMessages,
       model,
-      instructions: systemPrompt,
+      instructions: effectiveSystemPrompt,
       providerOptions: {
         openai: {
           ...(promptCacheRequest
@@ -303,10 +342,13 @@ export async function POST(
       },
     })
 
-    return result.toUIMessageStreamResponse({
+    let completedResponse:
+      | { isAborted: boolean; responseMessage: UIMessage }
+      | undefined
+    const resultStream = result.toUIMessageStream<UIMessage>({
       originalMessages: parsed.messages,
       sendReasoning: true,
-      consumeSseStream: consumeStream,
+      sendFinish: false,
       onError: (error) => {
         void closeMcpTools()
         console.error('Owner preview UI stream failed:', {
@@ -315,14 +357,68 @@ export async function POST(
         })
         return 'Chatbot preview request failed'
       },
-      messageMetadata: ({ part }) =>
-        part.type === 'finish'
-          ? {
+      onEnd: ({ isAborted, responseMessage }) => {
+        completedResponse = { isAborted, responseMessage }
+      },
+    })
+    const stream = createUIMessageStream<UIMessage>({
+      execute: async ({ writer }) => {
+        for await (const part of resultStream) writer.write(part)
+
+        const finishReason = await result.finishReason
+        if (completedResponse) {
+          try {
+            const receipt = await issuePreviewResponseExampleReceipt({
+              requestMessages: parsed.messages,
+              responseMessage: completedResponse.responseMessage,
+              finishReason,
+              isAborted: completedResponse.isAborted,
+              ownerId: auth.userId,
+              chatbotId,
+              kbId: chatbot.knowledgeBases[0]?.kbId,
               chatMode: selectedMode,
-              modelId: selectedModel.id,
-              reasoningEffort: 'none',
+            })
+            if (receipt) {
+              writer.write({
+                type: RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+                data: receipt,
+              })
             }
-          : undefined,
+          } catch (error) {
+            console.error('Owner preview receipt issuance failed:', {
+              chatbotId,
+              errorType: error instanceof Error ? error.name : typeof error,
+            })
+            writer.write({
+              type: RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+              data: { unavailable: true },
+            })
+          }
+        }
+
+        writer.write({
+          type: 'finish',
+          finishReason,
+          messageMetadata: {
+            chatMode: selectedMode,
+            modelId: selectedModel.id,
+            reasoningEffort: 'none',
+          },
+        })
+      },
+      onError: (error) => {
+        void closeMcpTools()
+        console.error('Owner preview response stream failed:', {
+          chatbotId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+        return 'Chatbot preview request failed'
+      },
+    })
+
+    return createUIMessageStreamResponse({
+      stream,
+      consumeSseStream: consumeStream,
     })
   } catch (error) {
     await closeMcpTools()

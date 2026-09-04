@@ -121,7 +121,11 @@ import {
   Chatbot,
   ChatbotReasoningConfigInput,
 } from './resource.js'
-import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
+import {
+  CaptureResponseExampleResult,
+  ResponseExampleSet,
+  ResponseExampleStyle,
+} from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -1634,6 +1638,20 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ResponseExamplesService.approveResponseExample(args, ctx)
+        },
+      }),
+
+      captureResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CaptureResponseExampleResult,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          receipt: t.arg.string({ required: true }),
+          question: t.arg.string({ required: true }),
+          answer: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.captureResponseExample(args, ctx)
         },
       }),
 

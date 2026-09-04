@@ -11,6 +11,7 @@ import { useEffect, useMemo } from 'react'
 import { resolveSelectedMode } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { ChatUiProvider } from './chat-ui-context'
+import { ModeOptionsProvider } from './mode-options-context'
 import { Thread } from './thread'
 
 type OwnerPreviewAssistantProps = {
@@ -79,12 +80,14 @@ export function OwnerPreviewAssistant({
           </header>
 
           <main id="main-content" className="flex min-h-0 flex-1 flex-col">
-            <Thread
-              chatbotAvatar={chatbot.avatar ?? ''}
-              chatbotName={chatbot.name}
-              initialModeOptions={initialModeOptions}
-              maxImageAttachments={0}
-            />
+            <ModeOptionsProvider modeOptions={initialModeOptions}>
+              <Thread
+                chatbotAvatar={chatbot.avatar ?? ''}
+                chatbotName={chatbot.name}
+                initialModeOptions={initialModeOptions}
+                maxImageAttachments={0}
+              />
+            </ModeOptionsProvider>
           </main>
         </div>
       </AssistantRuntimeProvider>

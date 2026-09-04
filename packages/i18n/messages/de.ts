@@ -194,6 +194,23 @@ export default {
       loginButton: 'KlickerUZH Manage öffnen',
       opensInNewTab:
         '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
+      responseExample: {
+        captureAction: 'Diese Antwort als Antwortbeispiel speichern',
+        captureUnavailable:
+          'Diese Antwort kann nicht gespeichert werden. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        capturePending: 'Antwortbeispiel wird gespeichert…',
+        captureCreated: 'Antwortbeispiel gespeichert und zur Prüfung bereit.',
+        captureDuplicate:
+          'Dieses Antwortbeispiel ist bereits gespeichert und zur Prüfung bereit.',
+        captureStale:
+          'Das Quellenmaterial hat sich geändert. Starte eine neue Vorschau, um diese Antwort erneut zu erfassen.',
+        captureExpired:
+          'Diese Erfassung ist abgelaufen. Starte eine neue Vorschau, um es erneut zu versuchen.',
+        captureFailed: 'Das Antwortbeispiel konnte nicht gespeichert werden.',
+        captureRetry: 'Erneut versuchen',
+        reviewNow: 'Jetzt prüfen',
+        startNewPreview: 'Neue Vorschau starten',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',

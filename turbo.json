@@ -107,6 +107,10 @@
     "DOC_QUERY_SCOPE_KID",
     "DOC_QUERY_SCOPE_ISSUER",
     "DOC_QUERY_SCOPE_AUDIENCE",
+    "RESPONSE_EXAMPLE_RECEIPT_PUBLIC_KEY",
+    "RESPONSE_EXAMPLE_RECEIPT_KID",
+    "RESPONSE_EXAMPLE_RECEIPT_ISSUER",
+    "RESPONSE_EXAMPLE_RECEIPT_AUDIENCE",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
@@ -229,6 +233,12 @@
       "dependsOn": ["^build"],
       "persistent": true
     },
+    "@klicker-uzh/chat#dev": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "persistent": true
+    },
     "dev:lti": {
       "cache": false,
       "dependsOn": ["^build"],
@@ -253,6 +263,12 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
+    "@klicker-uzh/chat#dev:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
+      "persistent": true
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
@@ -261,8 +277,18 @@
       "dependsOn": ["^build", "build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
+    "@klicker-uzh/chat#start": {
+      "dependsOn": ["^build", "build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+    },
     "start:test": {
       "cache": false,
+      "persistent": true
+    },
+    "@klicker-uzh/chat#start:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
       "persistent": true
     },
     "test": {

@@ -29,9 +29,9 @@ import ChatbotAuthoring, { metadataEditableStatuses } from './ChatbotAuthoring'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { canUseChatbotOwnerPreview } from './chatbotOwnerPreviewAccess'
 import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
-import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import type {
   ChatbotNavigationState,
@@ -95,6 +95,7 @@ function ChatbotDetails({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  focusedResponseExampleId,
 }: {
   chatbot?: Chatbot
   modelRegistry: ChatModelCapability[]
@@ -110,6 +111,7 @@ function ChatbotDetails({
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  focusedResponseExampleId?: string
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
@@ -826,6 +828,7 @@ function ChatbotDetails({
             <ChatbotResponseExampleReview
               key={chatbot.id}
               chatbotId={chatbot.id}
+              focusedExampleId={focusedResponseExampleId}
             />
 
             <div>

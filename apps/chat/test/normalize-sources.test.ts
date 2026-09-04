@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   isDocQueryToolName,
+  normalizeResponseExampleEvidenceFromParts,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
 
@@ -620,5 +621,135 @@ describe('normalizeSourcesFromParts', () => {
     ])
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
+
+  test('keeps display deduplication independent from capture lineage', () => {
+    const sharedLineage = {
+      source_id: '33ec1c89-f892-4ab6-97cb-27ed037ec33d',
+      chunk_id: 'chunk-7',
+      content_hash: 'b'.repeat(64),
+      citation_anchor: 'page=7',
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            ...sharedLineage,
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+          {
+            ...sharedLineage,
+            file_name: 'course-notes.html',
+            source_url: 'https://example.com/course-notes.html',
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id }) => id)).toEqual([
+      'url:https://example.com/lecture-01.pdf||',
+      'url:https://example.com/course-notes.html||',
+    ])
+  })
+})
+
+describe('normalizeResponseExampleEvidenceFromParts', () => {
+  const sourceId = '33ec1c89-f892-4ab6-97cb-27ed037ec33d'
+  const contentHash = 'b'.repeat(64)
+
+  test('returns only complete lineage cited by the final Markdown answer', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources: [
+          {
+            expert: 'Course source',
+            file_name: 'lecture-01.pdf',
+            source_id: sourceId,
+            chunk_id: 'chunk-7',
+            content_hash: contentHash,
+            citation_anchor: 'page=7',
+          },
+          {
+            expert: 'Unused source',
+            file_name: 'lecture-02.pdf',
+            source_id: 'b3ef3f06-ab00-4ff3-9ca2-c24cab723af3',
+            chunk_id: 'chunk-9',
+            content_hash: 'c'.repeat(64),
+            citation_anchor: 'page=9',
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'The relevant explanation is grounded here. [1]'
+      )
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('reads documents-mode lineage from the cited source chunk', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'lecture-01.pdf',
+            source_type: 'pdf',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'chunk-7',
+                content_hash: contentHash,
+                citation_anchor: 'page=7',
+                content: 'Relevant excerpt',
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('fails closed for missing lineage or an unresolved citation', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        sources: [{ expert: 'Course source', file_name: 'lecture.pdf' }],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [2]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer')
+    ).toBeNull()
   })
 })

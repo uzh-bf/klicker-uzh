@@ -9,10 +9,13 @@ const mocks = vi.hoisted(() => ({
   createChatMessage: vi.fn(),
   createChatThread: vi.fn(),
   createParticipant: vi.fn(),
+  createResponseExampleSearchTool: vi.fn(),
   findChatbot: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   getChatModel: vi.fn(),
   getModelsForChatbot: vi.fn(),
+  issuePreviewResponseExampleReceipt: vi.fn(),
+  loadResponseExampleRuntimeSkill: vi.fn(),
   rateLimitCheck: vi.fn(),
   readBoundedJson: vi.fn(),
   streamText: vi.fn(),
@@ -66,6 +69,17 @@ vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
 
 vi.mock('@/src/lib/server/openaiResponsesOptions', () => ({
   getOpenAIResponsesStore: () => true,
+}))
+
+vi.mock('@/src/lib/server/responseExampleReceipt', () => ({
+  issuePreviewResponseExampleReceipt: mocks.issuePreviewResponseExampleReceipt,
+  RESPONSE_EXAMPLE_RECEIPT_DATA_PART: 'data-response-example-receipt',
+}))
+
+vi.mock('@/src/lib/server/responseExampleRuntime', () => ({
+  createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill: mocks.loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME: 'search_response_examples',
 }))
 
 vi.mock('ai', async (importOriginal) => ({
@@ -161,8 +175,42 @@ describe('POST owner preview chat', () => {
       model: { modelId: 'base-model' },
       routing: { source: 'custom' },
     })
+    mocks.issuePreviewResponseExampleReceipt.mockResolvedValue(null)
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValue({
+      projectionDigest: 'projection-digest',
+      search: vi.fn(),
+      setDigest: 'set-digest',
+      summary: 'Use approved response examples when they fit.',
+    })
+    mocks.createResponseExampleSearchTool.mockReturnValue({
+      description: 'Search approved response examples',
+    })
     mocks.streamText.mockReturnValue({
-      toUIMessageStreamResponse: vi.fn().mockReturnValue(new Response('ok')),
+      finishReason: Promise.resolve('stop'),
+      toUIMessageStream: vi.fn().mockImplementation(
+        ({ onEnd }) =>
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue({ type: 'start', messageId: 'assistant-1' })
+              controller.enqueue({ type: 'text-start', id: 'text-1' })
+              controller.enqueue({
+                type: 'text-delta',
+                id: 'text-1',
+                delta: 'Grounded answer [1]',
+              })
+              controller.enqueue({ type: 'text-end', id: 'text-1' })
+              onEnd?.({
+                isAborted: false,
+                responseMessage: {
+                  id: 'assistant-1',
+                  parts: [{ text: 'Grounded answer [1]', type: 'text' }],
+                  role: 'assistant',
+                },
+              })
+              controller.close()
+            },
+          })
+      ),
     })
   })
 
@@ -217,6 +265,7 @@ describe('POST owner preview chat', () => {
     const response = await POST(request(), {
       params: Promise.resolve({ chatbotId: 'chatbot-id' }),
     })
+    await response.text()
 
     expect(response.status).toBe(200)
     expect(mocks.getChatModel).toHaveBeenCalledWith(
@@ -240,10 +289,35 @@ describe('POST owner preview chat', () => {
       'tutor',
       {
         courseDisplayName: 'Test Course',
-        toolNames: ['KB_doc_query'],
+        toolNames: ['KB_doc_query', 'search_response_examples'],
       }
     )
+    expect(mocks.loadResponseExampleRuntimeSkill).toHaveBeenCalledWith({
+      prisma: expect.anything(),
+      chatbotId: 'chatbot-id',
+      chatMode: 'tutor',
+      role: 'included',
+    })
     expect(mocks.streamText).toHaveBeenCalledOnce()
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions:
+          'Compiled prompt\n\nUse approved response examples when they fit.',
+        tools: expect.objectContaining({
+          KB_doc_query: expect.anything(),
+          search_response_examples: expect.anything(),
+        }),
+      })
+    )
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatbotId: 'chatbot-id',
+        chatMode: 'tutor',
+        finishReason: 'stop',
+        kbId: 'kb-id',
+        ownerId: 'owner-id',
+      })
+    )
     const streamOptions = mocks.streamText.mock.calls[0]![0]
     await streamOptions.onEnd()
     await streamOptions.onAbort()
@@ -251,6 +325,64 @@ describe('POST owner preview chat', () => {
     expect(mocks.createChatMessage).not.toHaveBeenCalled()
     expect(mocks.createChatThread).not.toHaveBeenCalled()
     expect(mocks.createParticipant).not.toHaveBeenCalled()
+  })
+
+  it('continues without response examples when the included skill is unavailable', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockRejectedValue(
+      new Error('skill unavailable')
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: 'Compiled prompt',
+        tools: { KB_doc_query: expect.anything() },
+      })
+    )
+    expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
+    expect(mocks.createChatMessage).not.toHaveBeenCalled()
+    expect(mocks.createChatThread).not.toHaveBeenCalled()
+    expect(mocks.createParticipant).not.toHaveBeenCalled()
+  })
+
+  it('appends an eligible receipt before the stream finishes', async () => {
+    mocks.issuePreviewResponseExampleReceipt.mockResolvedValue({
+      token: 'signed-receipt',
+      expiresAt: 1_788_437_400,
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    const body = await response.text()
+
+    expect(body).toContain('data-response-example-receipt')
+    expect(body).toContain('signed-receipt')
+    expect(body.indexOf('data-response-example-receipt')).toBeLessThan(
+      body.indexOf('"type":"finish"')
+    )
+  })
+
+  it('appends an unavailable capture state before the stream finishes', async () => {
+    mocks.issuePreviewResponseExampleReceipt.mockResolvedValue({
+      unavailable: true,
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    const body = await response.text()
+
+    expect(body).toContain('data-response-example-receipt')
+    expect(body).toContain('unavailable')
+    expect(body.indexOf('data-response-example-receipt')).toBeLessThan(
+      body.indexOf('"type":"finish"')
+    )
   })
 
   it('closes MCP tools when no base model is available', async () => {

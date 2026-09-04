@@ -9,8 +9,8 @@ import {
   ResponseExampleStyle,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { citationTargetIdFor } from '@klicker-uzh/util/citations'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { citationTargetIdFor } from '@klicker-uzh/util/citations'
 import {
   Badge,
   Button,
@@ -21,7 +21,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../common/ContentInput'
 
@@ -34,6 +34,7 @@ type EditValues = Pick<
 
 type EditState = EditValues & Pick<ResponseExample, 'id' | 'updatedAt'>
 
+const EMPTY_RESPONSE_EXAMPLES: ResponseExample[] = []
 const RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH = 4_000
 const RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH = 20_000
 
@@ -123,8 +124,10 @@ function approvalErrorKey(code: string | undefined) {
 
 function ChatbotResponseExampleReview({
   chatbotId,
-}: Readonly<{ chatbotId: string }>) {
+  focusedExampleId,
+}: Readonly<{ chatbotId: string; focusedExampleId?: string }>) {
   const t = useTranslations()
+  const focusedExampleRef = useRef<HTMLElement | null>(null)
   const [editValues, setEditValues] = useState<EditState | null>(null)
   const [activeActionId, setActiveActionId] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
@@ -149,9 +152,26 @@ function ChatbotResponseExampleReview({
   )
   const [staleEditId, setStaleEditId] = useState<string | null>(null)
 
-  const examples = data?.getChatbotResponseExamples?.examples ?? []
+  const examples =
+    data?.getChatbotResponseExamples?.examples ?? EMPTY_RESPONSE_EXAMPLES
   const chatModes = data?.getChatbotResponseExamples?.chatModes ?? []
   const isMutating = approving || editing || rejecting
+
+  useEffect(() => {
+    if (
+      loading ||
+      !focusedExampleId ||
+      !examples.some((example) => example.id === focusedExampleId)
+    ) {
+      return
+    }
+
+    focusedExampleRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
+    focusedExampleRef.current?.focus({ preventScroll: true })
+  }, [examples, focusedExampleId, loading])
 
   const chatModeLabel = (mode: string) => {
     if (mode === 'tutor') return t('chat.modes.tutor')
@@ -342,8 +362,21 @@ function ChatbotResponseExampleReview({
             return (
               <article
                 key={example.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                ref={
+                  example.id === focusedExampleId
+                    ? focusedExampleRef
+                    : undefined
+                }
+                tabIndex={example.id === focusedExampleId ? -1 : undefined}
+                className={twMerge(
+                  'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
+                  example.id === focusedExampleId &&
+                    'border-primary-100 ring-primary-20 ring-4 outline-none'
+                )}
                 data-cy={`response-example-${example.id}`}
+                data-focused={
+                  example.id === focusedExampleId ? 'true' : undefined
+                }
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">

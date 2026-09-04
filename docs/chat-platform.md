@@ -67,9 +67,12 @@ timestamps.
 
 The owner-only GraphQL surface is the source of truth for lecturer review:
 the owner can inspect the set, approve, edit and approve, or reject an entry.
-Non-owners receive `null`, and no production GraphQL or chat runtime path
-creates candidates or marks evidence eligible. Local/test fixtures may seed
-synthetic candidates and evidence solely to exercise the review lifecycle.
+Non-owners receive `null`. In owner preview, the first completed, grounded
+answer can carry a short-lived signed receipt. The owner can use that receipt
+once to create a `CANDIDATE`; capture rechecks the chatbot, mode, source hashes,
+and citation parity before writing. Capture never approves or publishes the
+example, and participant chats cannot use this path. Local/test fixtures may
+seed synthetic candidates and evidence solely to exercise the review lifecycle.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this

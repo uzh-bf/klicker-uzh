@@ -190,6 +190,23 @@ export default {
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
       loginButton: 'Go to KlickerUZH Manage',
       opensInNewTab: '(opens in a new tab; return here after signing in)',
+      responseExample: {
+        captureAction: 'Save this answer as a response example',
+        captureUnavailable:
+          'This answer is not available to save. Start a new preview to try again.',
+        capturePending: 'Saving response example…',
+        captureCreated: 'Response example saved and ready for review.',
+        captureDuplicate:
+          'This response example is already saved and ready for review.',
+        captureStale:
+          'The source material changed. Start a new preview to capture this answer again.',
+        captureExpired:
+          'This capture expired. Start a new preview to try again.',
+        captureFailed: 'We could not save this response example.',
+        captureRetry: 'Try again',
+        reviewNow: 'Review now',
+        startNewPreview: 'Start a new preview',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',

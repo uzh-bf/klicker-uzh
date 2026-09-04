@@ -448,6 +448,11 @@ type AwardEntry {
   type: String!
 }
 
+type CaptureResponseExampleResult {
+  created: Boolean!
+  exampleId: ID!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -2538,6 +2543,7 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
+  captureResponseExample(answer: String!, chatbotId: String!, question: String!, receipt: String!): CaptureResponseExampleResult
   changeActivityName(displayName: String!, id: String!, name: String!, type: ActivityType!): Boolean
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean
