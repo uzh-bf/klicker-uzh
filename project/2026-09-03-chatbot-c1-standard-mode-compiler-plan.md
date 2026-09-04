@@ -1,6 +1,6 @@
 # C1 — Standard-mode configuration and layered compiler
 
-Status: complete; S0-S3 acceptance complete and leased runtime retained
+Status: active; S0-S3 accepted, S4 model policy and framing in progress
 Revision: 2026-09-03
 Repository: KlickerUZH
 Target branch: `v3`
@@ -18,9 +18,10 @@ the configuration, exposes it through an owner-only GraphQL contract, and
 compiles it over the existing non-removable platform scaffolding. Manage
 provides a lecturer-facing editor inside the existing chatbot Setup workflow.
 
-The first C1 delivery ends at a locally committed, reviewed, source-complete
-boundary candidate. It does not claim a pushed branch, merged change,
-deployment, runtime acceptance, or live-model proof.
+The extended C1 delivery ends at a committed, reviewed exact head pushed to the
+existing draft pull request, with its leased local validation runtime retained.
+It does not claim target-branch integration, merge, deployment, staging or
+production acceptance, or live-model proof.
 
 ## Scope and non-goals
 
@@ -37,6 +38,12 @@ In scope:
 - effective-mode resolution and layered compiler integration;
 - a lecturer-facing Manage Setup section with persisted mode controls and a
   publication-review summary;
+- one short lecturer-authored framing note for the chatbot, stored through the
+  existing constrained standard-mode configuration and compiled as data rather
+  than prompt authority;
+- an intuitive model policy editor whose default is Auto, whose participant
+  choice switch says who controls the model, and whose fixed setting requires
+  exactly one model plus one reasoning effort when that model supports it;
 - UZH design-system controls, stable `data-cy` hooks, and English and German
   strings in a new Learning modes accordion section that does not become a
   publication-completeness prerequisite;
@@ -47,26 +54,29 @@ Out of scope:
 
 - practice flows, per-mode prompts, or custom-mode review;
 - publication approval, account activation, or usage enforcement;
-- response generation, citation-policy redesign, or new runtime storage;
-- branch integration, pushing, pull-request changes, merging, deployment,
-  cluster operations, and live-model acceptance.
+- response generation, citation-policy redesign, new runtime storage, or
+  removal of the existing credit-safe base-model fallback;
+- target-branch integration, marking the draft pull request ready, merging,
+  deployment, cluster operations, and live-model acceptance.
 
 ## Authority and stop conditions
 
 The approved package authorizes source edits in the C1 worktree, one
 schema-aware additive Prisma migration, generated client and analytics sync,
-repository-native checks, local commits, and the required review passes.
+repository-native checks, local commits, the required review passes, pushing
+the exact reviewed head to `origin/rs/chatbot-c1-standard-modes`, and updating
+the existing draft pull request description for the complete branch.
 Migration generation and GraphQL integration tests may write only to a
 disposable local development/test database. Shared development, staging,
 production, and live-data database writes remain withheld, as do deployment,
 runtime, cluster, and infrastructure changes.
 
-The package stops at a reviewed local source boundary and reports
-`BOUNDARY_CANDIDATE` to `rs-roadmap-orchestrator`. Push, pull-request creation
-or readiness changes, branch integration, merge, deployment, and cleanup are
-separate actions requiring their own authority. If a required check needs a
-shared database or another withheld effect, stop before that effect and report
-the exact blocker.
+The package stops after the reviewed exact head is pushed to the existing draft
+pull request and the user-leased local runtime is reachable. Marking the pull
+request ready, branch integration, merge, deployment, and cleanup are separate
+actions requiring their own authority. If a required check needs a shared
+database or another withheld effect, stop before that effect and report the
+exact blocker.
 
 ## Evidence baseline
 
@@ -89,15 +99,19 @@ new-chatbot defaults). `docs/chat-platform.md` is the current compiler wiki;
 
 ## Product primitives and ownership
 
-| Primitive                        | C1 decision                                                                                                               | Owner and invariant                                                                                                                                                                                                 | Consumers and impact                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Chatbot mode/persona             | Extend the existing Chatbot configuration with constrained shared persona fields and Tutor, Explainer, and Quizzer flags. | The lecturer owns the stored value through the chatbot; every new replacement enables at least one of Tutor or Explainer. Quizzer does not satisfy that invariant because its existing capability gate may hide it. | GraphQL owner API, Manage Setup editor, effective-mode resolver, compiler. |
-| Effective mode set               | Extend the existing server resolver with typed flags while preserving legacy and MCP policy.                              | Server policy owns the visible/requestable set; a hidden standard mode cannot be selected by a crafted request.                                                                                                     | Chat layout, chatbot API route, chat POST route, future authoring UI.      |
-| Prompt scaffolding               | Reuse the existing platform-owned layers and compose typed context below the platform contract.                           | Platform owns course scope/evidence, privacy and safety, non-disclosure, epistemic integrity, formatting, citations, and final language.                                                                            | Chat compiler and route tests; no new prompt authority.                    |
-| Publication and AI authorization | Reuse existing lifecycle and account gates; change neither contract.                                                      | Publication approval and account capability remain separate and out of C1.                                                                                                                                          | Existing GraphQL authorization and publication flows.                      |
+| Primitive                        | C1 decision                                                                                                                   | Owner and invariant                                                                                                                                                                                                 | Consumers and impact                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Chatbot mode/persona             | Extend the existing Chatbot configuration with constrained shared persona fields and Tutor, Explainer, and Quizzer flags.     | The lecturer owns the stored value through the chatbot; every new replacement enables at least one of Tutor or Explainer. Quizzer does not satisfy that invariant because its existing capability gate may hide it. | GraphQL owner API, Manage Setup editor, effective-mode resolver, compiler. |
+| Chatbot model policy             | Extend the existing allow-list and participant-choice configuration with explicit fixed-versus-participant-choice invariants. | The lecturer chooses either one fixed model or the models participants may choose. Auto remains one selectable model policy; runtime availability and credit safety remain server-owned.                            | GraphQL owner mutation, Manage Advanced editor, Chat model resolver.       |
+| Effective mode set               | Extend the existing server resolver with typed flags while preserving legacy and MCP policy.                                  | Server policy owns the visible/requestable set; a hidden standard mode cannot be selected by a crafted request.                                                                                                     | Chat layout, chatbot API route, chat POST route, future authoring UI.      |
+| Prompt scaffolding               | Reuse the existing platform-owned layers and compose typed context below the platform contract.                               | Platform owns course scope/evidence, privacy and safety, non-disclosure, epistemic integrity, formatting, citations, and final language.                                                                            | Chat compiler and route tests; no new prompt authority.                    |
+| Publication and AI authorization | Reuse existing lifecycle and account gates; change neither contract.                                                          | Publication approval and account capability remain separate and out of C1.                                                                                                                                          | Existing GraphQL authorization and publication flows.                      |
 
 No separate product primitive is introduced for persona fields; they remain a
 constrained part of Chatbot mode configuration.
+
+The framing note also remains part of that configuration. It does not create a
+prompt primitive or grant lecturers access to platform prompts.
 
 ## Frozen data contract
 
@@ -178,6 +192,16 @@ Test the schema-level Catalyst/account-owner/full-access gate separately from
 service-level owner, status, compare-and-set, invariant, malformed-input, and
 no-write behavior.
 
+S4 adds `updateChatbotModelPolicy` as the strict owner mutation and
+`MUpdateChatbotModelPolicy` as its newly named client operation. The existing
+`updateChatbotModelSettings` field and
+`MUpdateChatbotModelSettings` operation remain behaviorally unchanged for
+rolling deployments; an already deployed Manage client may still send empty or
+multi-model fixed allow-lists plus reasoning entries for every reasoning model.
+The new Manage editor uses only the strict field. Both mutations retain the
+same authorization, lifecycle-status, owner lookup, and compare-and-set
+behavior, and both return the existing Chatbot projection.
+
 ## Runtime and compiler contract
 
 Wire the normalized configuration into all three effective-mode consumers:
@@ -204,6 +228,62 @@ conflicting persona course label, and the final language contract wins over
 language-of-instruction text. Quizzer capability gating, custom-mode
 compilation, and existing legacy guidance remain unchanged.
 
+S4 exposes `scopeNote` as a single optional “Chatbot framing” field in Manage.
+Newly created or edited UI input is limited to 200 characters, while the
+persisted parser keeps its existing 1,000-character compatibility ceiling so
+older valid values remain readable. A 201–1,000-character legacy value loads
+without truncation and survives a mode-toggle save unchanged; the UI requires
+shortening it only when the lecturer edits the framing itself. The compiler
+applies the complete typed persona projection to Tutor and Explainer. Quizzer
+receives only `scopeNote`, so irrelevant course-name, subject-domain, and
+language persona fields do not silently acquire new Quizzer semantics. Custom
+modes remain unchanged. The authoritative course display name remains
+server-owned; lecturers need not repeat it unless extra course framing is
+useful.
+
+## Model policy contract
+
+The existing `modelSelection` field is presented as a user-control decision:
+
+- off means the lecturer fixes one model for all participants;
+- on means participants choose among the lecturer's allowed models;
+- Auto is the default fixed choice for every newly created chatbot and delegates
+  response routing to the existing Auto router;
+- a fixed reasoning-capable model requires exactly one supported reasoning
+  effort; Auto and non-reasoning models require none;
+- participant choice requires at least one active model. Each enabled
+  reasoning-capable model keeps one or more allowed reasoning efforts.
+
+The new owner mutation validates these invariants server-side and is the sole
+strict-write normalization authority. A fixed write accepts exactly one active
+model. Auto and non-reasoning fixed models reject all reasoning entries. A
+fixed reasoning model accepts exactly one entry for that model and exactly one
+supported effort; entries for any other model are rejected. A
+participant-choice write accepts one or more active model IDs. It rejects
+reasoning entries for unselected or non-reasoning models, and requires at least
+one supported effort for every selected reasoning model. The legacy owner
+mutation deliberately keeps accepting and normalizing its existing payload
+shapes so a rolling deployment cannot break an older client.
+
+Existing records remain readable without a migration. A legacy fixed record
+with zero or several active model IDs resolves through the existing
+`CHAT_PRIMARY_MODEL_ID`-aware automatic resolver and is presented as that one
+effective fixed model; its first model-settings save persists the canonical
+single selection. A fixed legacy reasoning model with several allowed efforts
+uses the runtime's existing deterministic default—medium when available,
+otherwise the first supported effort—and its first model-settings save
+persists that one effort. Participant-choice records with an empty allow-list
+retain their established “all active models” read meaning; the editor displays
+all active models selected and a subsequent save persists the explicit active
+IDs. Retired-only allow-lists retain the existing Luna safety fallback.
+
+The registry must contain exactly one `auto` model, classified as ADVANCED,
+non-reasoning, and not the participant-credit fallback. Chatbot creation fails
+before writing when that invariant is absent or malformed. Participant credits
+and account-usage policy can still fall back from an unavailable advanced
+choice to Luna; the UI describes that exceptional safety behavior without
+presenting it as participant control.
+
 Extend the required-MCP route coverage so a crafted request for a typed-
 disabled mode returns 400 before MCP, thread, or provider work, and so the
 canonical normalized configuration reaches compilation. Add adversarial
@@ -212,18 +292,20 @@ single section boundary and retained platform policies.
 
 ## Execution slices and review topology
 
-| Slice                                                     | Owner                                                                      | Dependency            | Acceptance boundary                                                                                                                                                                                                                                                                                                                                |
-| --------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S0 — reviewed plan commit                                 | Main session                                                               | This plan is approved | The plan, authority, stop conditions, primitive impact, ADR gate, test portfolio, Progress, and exact ownership are committed first.                                                                                                                                                                                                               |
-| S1 — typed persistence and owner API                      | Main session                                                               | S0                    | Additive no-backfill migration; shared strict/tolerant tests; normalized owner projection; authorization, status, conflict, invariant, and no-write tests; tracked SDL verified.                                                                                                                                                                   |
-| S2 — effective modes, layered compiler, and documentation | Main session                                                               | S1                    | Layout, API route, and POST route agree; crafted disabled requests fail before effects; compiler order and injection tests pass; legacy, custom, and Quizzer behavior remains; docs and ADR are reconciled.                                                                                                                                        |
-| S3 — lecturer mode controls and Quizzer flag              | Native executor as the sole implementation writer; main session integrates | S1-S2                 | The owner read path preserves legacy and pre-S3 values; strict writes cover three flags while keeping Tutor or Explainer enabled; Manage Setup edits and reviews all three modes with pending locks and persona preservation; Chat honours a disabled Quizzer before capability filtering; focused API, unit, Playwright, and browser checks pass. |
+| Slice                                                     | Owner                                                                      | Dependency            | Acceptance boundary                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S0 — reviewed plan commit                                 | Main session                                                               | This plan is approved | The plan, authority, stop conditions, primitive impact, ADR gate, test portfolio, Progress, and exact ownership are committed first.                                                                                                                                                                                                                                              |
+| S1 — typed persistence and owner API                      | Main session                                                               | S0                    | Additive no-backfill migration; shared strict/tolerant tests; normalized owner projection; authorization, status, conflict, invariant, and no-write tests; tracked SDL verified.                                                                                                                                                                                                  |
+| S2 — effective modes, layered compiler, and documentation | Main session                                                               | S1                    | Layout, API route, and POST route agree; crafted disabled requests fail before effects; compiler order and injection tests pass; legacy, custom, and Quizzer behavior remains; docs and ADR are reconciled.                                                                                                                                                                       |
+| S3 — lecturer mode controls and Quizzer flag              | Native executor as the sole implementation writer; main session integrates | S1-S2                 | The owner read path preserves legacy and pre-S3 values; strict writes cover three flags while keeping Tutor or Explainer enabled; Manage Setup edits and reviews all three modes with pending locks and persona preservation; Chat honours a disabled Quizzer before capability filtering; focused API, unit, Playwright, and browser checks pass.                                |
+| S4 — model policy and chatbot framing                     | Native executor as the sole implementation writer; main session integrates | Accepted S3           | New chatbots default to fixed Auto; server writes enforce fixed and participant-choice invariants; Manage uses design-system controls with conditional model and reasoning choices; a 200-character framing field saves, reloads, and reaches every standard-mode compiler path as untrusted data; focused service, compiler, Playwright, and English/German browser checks pass. |
 
 S1 and S2 stayed in the main session because S1 crossed data, authorization,
 and public-contract seams, while S2 owned prompt authority and was critically
-coupled to S1. S3 is delegated as one bounded implementation unit because its
-schema, compatibility normalization, resolver, UI, tests, and documentation
-form one tightly coupled public contract; no second writer is introduced.
+coupled to S1. S3 and S4 are delegated serially to one bounded implementation
+writer because each slice's schema, compatibility normalization, resolver, UI,
+tests, and documentation form one tightly coupled public contract; no second
+writer is introduced.
 Each substantive slice receives one
 `simplifier` pass and one combined-lens `slice-reviewer` pass in parallel when
 the slice is committed. One integrated `final-reviewer` pass follows all
@@ -240,7 +322,9 @@ is intentionally local review evidence, not a product artifact.
 | S2 — resolver, compiler, and docs       | Main session                  | S1                                       | Committed and slice-reviewed runtime contract.                                     |
 | S3 — lecturer controls and Quizzer flag | One native `executor` role    | S1-S2 and this approved revision         | Main session verifies the exact diff and all checks before accepting the commit.   |
 | S3 simplification and risk review       | Dedicated read-only reviewers | Immutable S3 commit                      | Simplifier and combined-lens reviewer run in parallel; main dispositions findings. |
-| Integrated finish gate                  | Dedicated final reviewer      | S3 corrections and verification complete | Complete package reviewed before delivery.                                         |
+| S4 — model policy and framing           | Same native `executor` writer | Accepted S3                              | Main session verifies the exact diff and all checks before accepting the commit.   |
+| S4 simplification and risk review       | Dedicated read-only reviewers | Immutable S4 commit                      | Simplifier and combined-lens reviewer run in parallel; main dispositions findings. |
+| Integrated finish gate                  | Dedicated final reviewer      | S4 corrections and verification complete | Complete package reviewed before delivery.                                         |
 
 ## Verification portfolio
 
@@ -261,6 +345,19 @@ Git operations separate:
   safely capable, and incapable Quizzer states;
 - Manage typecheck and focused Playwright coverage for validation, persistence,
   review summary, persona preservation, and in-flight locks;
+- service and route coverage for fixed Auto, fixed reasoning, participant
+  choice, empty or unknown model rejection, and compatibility normalization;
+- old-client/new-backend contract coverage proving the legacy mutation still
+  accepts participant-choice empty allow-lists, fixed empty or multiple
+  allow-lists, and irrelevant or multi-effort reasoning entries while the new
+  strict mutation rejects the corresponding ambiguous writes;
+- compiler coverage proving the short framing value reaches Tutor and
+  Explainer inside their full persona projection, reaches Quizzer alone, remains
+  JSON-escaped data, and never changes custom modes;
+- compatibility coverage proving a 201–1,000-character framing value loads and
+  survives a mode-only save unchanged;
+- Manage and Playwright coverage for the model-policy branches, required single
+  reasoning effort, 200-character framing limit, save locks, and reload;
 - host-side focused Playwright and `agent-browser` screenshots of the changed
   Setup state in English and German;
 - repository `check:all` and build checks as available;
@@ -268,14 +365,16 @@ Git operations separate:
   hygiene before every commit.
 
 No live-model check is required. Browser verification is required because S3
-changes a lecturer interaction, frontend operation, URL-addressable Setup
-state, and localized UI. The user-leased C1 runtime stays running after the
-final check for manual validation.
+and S4 change lecturer interactions, frontend operations, URL-addressable
+Setup and Advanced state, and localized UI. The user-leased C1 runtime stays
+running after the final check for manual validation.
 
 ## Documentation and ADR gate
 
-Amend ADR 0021 for the three-mode typed shape, two-flag compatibility, and
-Quizzer's independent capability gate. Reconcile `docs/chat-platform.md` and
+Amend ADR 0021 for the three-mode typed shape, two-flag compatibility,
+Quizzer's independent capability gate, and framing projection. Amend ADR 0041
+for the fixed-versus-participant model policy, fixed Auto default, and explicit
+fallback exception. Reconcile `docs/chat-platform.md` and
 `docs/domain-model.md`; update `docs/data-and-migrations.md` or `CONTEXT.md`
 only if their existing statements become inaccurate. Do not add a new ADR
 unless the storage choice materially changes. Keep AGENTS.md high-level.
@@ -299,3 +398,4 @@ unless the storage choice materially changes. Keep AGENTS.md high-level.
 | 2026-09-04 | S3 integrated source review complete                          | The configured `combo/glm-5.3` final-reviewer failed before work with `unreadable_encrypted_agent_task`. The routing continuity ladder supplied the same independent read-only contract to native `gpt-5.6-sol` at xhigh effort with `generic-continuity` provenance. It found one required Playwright interceptor mismatch after the GraphQL operation-prefix correction; both comparisons now match `MUpdateChatbotStandardModeConfig` in `456ab1b48`, and exact-head Playwright TypeScript, Prettier, and diff checks pass. Its same-child correction pass returned `VERDICT: DONE` with no remaining source finding. The user goal remains open solely for the required host Playwright and English/German browser proof once the OrbStack Docker engine responds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 2026-09-04 | S3 local acceptance complete; runtime lease recovery pending  | Refreshed `origin/v3` is `7182adf2a1b821729a1ed238573c08cece15390d`; the clean local head `feaef323f54d564b54b35957885b2507bb0ec65f` is 17 commits ahead and 18 behind, and no upstream integration occurred. Devrouter 0.0.51 resumed the exact Devsy workspace `rs-chatbot-c1-standard-modes` with the full profile, ten routes, healthy base and optional services, both managed processes running, and no profile drift. English and German `agent-browser` verification proved accessible named switches, explicit enabled and disabled states, independent Quizzer control, the Tutor-or-Explainer invariant, save success, and reload persistence; the seeded values were restored after the mutation check. Host `pnpm playwright:host -- --project=chromium tests/T-chatbot-authoring.spec.ts` passed all 7 tests in 52.6 seconds, including delayed-request locks and the prefixed mutation interceptor. A clearly synthetic `Mode controls validation` draft was created through the lecturer UI after the test cleanup removed Benibot. The final inspired card layout is captured at `/tmp/c1-modes-validation-draft.png`. OrbStack subsequently stopped answering its Docker socket while still reporting `Running`, so all routes time out again; restarting OrbStack would affect unrelated local containers and remains separately approval-gated. The accepted source and browser/test evidence remain valid, but the goal stays open until the exact user-leased runtime is reachable and retained. |
 | 2026-09-04 | S3 complete; user-leased validation runtime retained          | The user approved one `orbctl stop` and `orbctl start` cycle after OrbStack's Docker socket repeatedly timed out. The restart restored the provider, and `devrouter ensure` resumed only `rs-chatbot-c1-standard-modes` with the `full` profile. Its owner is present, its Devsy workspace is owned, all five optional and two base services are healthy, both managed processes run, there is no profile drift, and all ten routes are registered. The Auth catch-all was recompiled without a content change to restore its omitted development route. A fresh delegated login reached the synthetic `Mode controls validation` draft; the browser accessibility tree exposes named Tutor, Explainer, and Quizzer switches, and `/tmp/c1-modes-after-orbstack-restart.png` captures all three enabled cards and the single save action. Final direct probes return HTTP 200 for Manage and the Auth provider endpoint. The exact runtime remains running under the user's lease. The accepted source head `caa99b798fb2d3d16999f9443b4c6575104514a7` is 19 commits ahead and 25 behind refreshed `origin/v3` at `86fc70c77f756827d55ea9d0afc5cac3344630cf`. Upstream integration, push, merge, deployment, and runtime cleanup remain withheld.                                                                                                                                                                                                                                                                      |
+| 2026-09-04 | S4 model policy and framing plan approved                     | The user added two connected authoring requirements: make fixed-versus-participant model control explicit with fixed Auto as the new-chatbot default, and expose a short lecturer-authored framing note without raw prompt access. Live code inspection confirmed that model selection off already resolves one server-authoritative model, but new chatbots currently default to Luna and the owner mutation accepts ambiguous empty or multi-model fixed configurations. Planner review froze server-authoritative legacy normalization, required Auto-registry invariants, preservation of existing 201–1,000-character framing values, and scope-note-only Quizzer projection. Its second round found a rolling-deployment break in tightening the existing mutation. The accepted correction preserves the legacy mutation and operation while adding a strict model-policy mutation and newly named client operation with old-client/new-backend contract tests. Round three returned `APPROVED`. Refreshed `origin/v3` is `3f79823404`; the local head `7b35f22769` is 20 commits ahead and 26 behind, while draft PR #5744 remains based on `v3`. No upstream integration occurred.                                                                                                                                                                                                                                                                                                                            |
