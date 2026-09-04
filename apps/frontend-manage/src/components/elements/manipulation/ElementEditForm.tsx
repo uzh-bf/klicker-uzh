@@ -16,9 +16,16 @@ import {
   Tabs,
   toast,
 } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import { Form, Formik, type FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
@@ -47,6 +54,7 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
+  preserveDraftOnDismiss = false,
   onClose,
   onSuccess,
   mode,
@@ -65,6 +73,8 @@ function ElementEditForm({
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
+  // flag to preserve dirty drafts when the modal is dismissed (creation only)
+  preserveDraftOnDismiss?: boolean
   // modal state props
   onClose: () => void
   onSuccess: () => void
@@ -93,6 +103,9 @@ function ElementEditForm({
   const [elementDataTypename, setElementDataTypename] = useState<
     ElementData['__typename'] | undefined
   >()
+  const formikContextRef = useRef<FormikProps<ElementFormTypes>>(null)
+  const formBodyRef = useRef<HTMLDivElement>(null)
+  const formActionsRef = useRef<HTMLDivElement>(null)
   const [collectionModal, setCollectionModal] = useState<{
     open: boolean
     id?: number
@@ -112,6 +125,76 @@ function ElementEditForm({
   })
   const collections = data?.getAnswerCollectionsElements ?? []
 
+  // Dismissal arbiter for the normal library creation form: pristine dismissal
+  // closes immediately, a dirty draft is written to the recovery store and the
+  // modal closes only after the raw store entry exactly matches the current
+  // values, so a failed write never discards user input.
+  const handleCloseRequest = useCallback(
+    (
+      formikContext:
+        | { dirty: boolean; values: ElementFormTypes }
+        | null
+        | undefined
+    ) => {
+      if (!preserveDraftOnDismiss || !formikContext) {
+        onClose()
+        return
+      }
+
+      const { dirty, values } = formikContext
+      if (!dirty) {
+        onClose()
+        return
+      }
+
+      let serializedValues: string | undefined
+      let storedRaw: string | null | undefined
+      try {
+        serializedValues = JSON.stringify(values)
+        setAutoSavedElement(values)
+        storedRaw = localStorage.getItem('autosave-element-creation')
+      } catch {
+        storedRaw = undefined
+      }
+
+      if (
+        typeof serializedValues === 'undefined' ||
+        storedRaw !== serializedValues
+      ) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
+      onClose()
+    },
+    [onClose, preserveDraftOnDismiss, setAutoSavedElement, t]
+  )
+
+  useEffect(() => {
+    if (!preserveDraftOnDismiss) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || collectionModal.open) return
+
+      const eventPath = event.composedPath()
+      const formOwnsEvent = [formBodyRef.current, formActionsRef.current].some(
+        (element) => element && eventPath.includes(element)
+      )
+      if (!formOwnsEvent) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      handleCloseRequest(formikContextRef.current)
+    }
+
+    window.addEventListener('keydown', handleEscape, true)
+    return () => window.removeEventListener('keydown', handleEscape, true)
+  }, [collectionModal.open, handleCloseRequest, preserveDraftOnDismiss])
+
   return (
     <Modal
       open
@@ -119,7 +202,7 @@ function ElementEditForm({
       escapeDisabled
       loading={loading || (!isTemplate && !initialValues)}
       title={t(`manage.elements.${mode}Title`)}
-      onClose={() => onClose()}
+      onClose={() => handleCloseRequest(formikContextRef.current)}
       className={{
         title: 'text-xl',
         content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
@@ -129,6 +212,7 @@ function ElementEditForm({
     >
       {initialValues && (
         <Formik
+          innerRef={formikContextRef}
           validateOnMount
           // enableReinitialize={!isTemplate && !initialValues}
           initialValues={initialValues}
@@ -173,7 +257,7 @@ function ElementEditForm({
                 setElementDataTypename={setElementDataTypename}
                 validateForm={validateForm}
               />
-              <div className="flex flex-row gap-12">
+              <div ref={formBodyRef} className="flex flex-row gap-12">
                 <div className="flex-1">
                   <Form className="w-full" id="question-manipulation-form">
                     <ElementInformationFields
@@ -376,6 +460,7 @@ function ElementEditForm({
                 )}
 
               <div
+                ref={formActionsRef}
                 className={twMerge(
                   'mt-4 flex gap-4',
                   isTemplate ? 'justify-end' : 'justify-between'
@@ -383,7 +468,7 @@ function ElementEditForm({
               >
                 {!isTemplate && !inputsDisabled && (
                   <Button
-                    onClick={() => onClose()}
+                    onClick={() => handleCloseRequest(formikContextRef.current)}
                     data={{ cy: 'close-element-modal-button' }}
                   >
                     {t('shared.generic.close')}

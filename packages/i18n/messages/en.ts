@@ -334,50 +334,68 @@ export default {
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Students select exactly one of the provided answer options.',
       text: 'Please select a single option.',
       richtext: 'Please select a <b>single</b> option.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Students select one or more of the provided answer options.',
       text: 'Please select one or more options.',
       richtext: 'Please select <b>one or more</b> options.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Students mark each of exactly four statements as correct or incorrect.',
       text: 'Evaluate the statements for correctness.',
       richtext: 'Evaluate the statements for <b>correctness</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Free Text (FT)',
+      description:
+        'Students answer by typing free text, optionally restricted by a maximum length.',
       text: 'Please enter your answer.',
       richtext: 'Please enter your <b>answer</b>.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerical (NR)',
+      description:
+        'Students answer by typing a number, optionally restricted by range, precision and unit.',
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Content (CT)',
+      description:
+        'Presents additional information to students, without a question.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
+      description:
+        'Students practice content by heart and self-assess whether they remembered it.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Selection (SE)',
+      description:
+        'Students select a specific number of items from an answer collection.',
       text: 'Please select the correct answer from the list.',
       richtext: 'Please select the <b>correct answer</b> from the list.',
     },
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Case Study (CS)',
+      description:
+        'Students evaluate items against criteria within one or more case scenarios.',
       text: 'Please evaluate all options with respect to the given criteria.',
       richtext:
         'Please evaluate all options with respect to the given criteria.',
@@ -2191,6 +2209,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyElement: 'Modify Element',
       useElementInActivities: 'Use Element in Activities',
       elementType: 'Element type',
+      elementTypeImmutableNotice:
+        'The element type cannot be changed after creation. You can duplicate the element to create a different type.',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
