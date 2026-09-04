@@ -1538,6 +1538,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortOrderAscending: 'Sort ascending',
+      sortOrderDescending: 'Sort descending',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -2009,6 +2011,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
+      moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
       tags: 'Tags',

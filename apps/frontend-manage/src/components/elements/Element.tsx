@@ -26,6 +26,7 @@ import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../sharing/SharingTypeBadge'
 import ElementTags from './ElementTags'
+import IconActionTooltip from './IconActionTooltip'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
   ElementEditMode,
@@ -79,6 +80,17 @@ function Element({
   refetchElements,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
+  // A version-one element whose timestamps agree within one second is
+  // effectively unedited; any versioned edit, invalid date, or wider gap
+  // renders the edited timestamp instead.
+  const isEffectivelyUnedited =
+    element.version === 1 &&
+    dayjs(element.createdAt).isValid() &&
+    dayjs(element.updatedAt).isValid() &&
+    Math.abs(dayjs(element.updatedAt).diff(dayjs(element.createdAt))) <= 1000
+  const moreActionsLabel = t('manage.questionPool.moreActions', {
+    name: element.name,
+  })
   const [isModificationModalOpen, setModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setDuplicationModalOpen] = useState(false)
   const [isRemovalModalOpen, setRemovalModalOpen] = useState(false)
@@ -215,14 +227,17 @@ function Element({
                   {t(`shared.${element.type}.typeLabel`)}
                 </div>
                 <div>
-                  {t('shared.generic.createdAt', {
-                    date: dayjs(element.createdAt).format('DD.MM.YYYY HH:mm'),
-                  })}
-                </div>
-                <div>
-                  {t('shared.generic.updatedAt', {
-                    date: dayjs(element.updatedAt).format('DD.MM.YYYY HH:mm'),
-                  })}
+                  {isEffectivelyUnedited
+                    ? t('shared.generic.createdAt', {
+                        date: dayjs(element.createdAt).format(
+                          'DD.MM.YYYY HH:mm'
+                        ),
+                      })
+                    : t('shared.generic.updatedAt', {
+                        date: dayjs(element.updatedAt).format(
+                          'DD.MM.YYYY HH:mm'
+                        ),
+                      })}
                 </div>
               </div>
             </div>
@@ -265,50 +280,62 @@ function Element({
               .slice(0, availableActions.length > 3 ? 2 : 3)
               .map((action) => {
                 return (
-                  <Button
+                  <IconActionTooltip
                     key={`action-${element.id}-${action.label}`}
-                    disabled={action.disabled}
-                    onClick={action.onClick}
-                    className={{
-                      root: twMerge('h-8 w-8 p-0', action.className),
-                    }}
-                    data={action.data}
+                    label={action.label}
                   >
-                    <Button.Icon withoutLabel icon={action.icon} />
-                  </Button>
+                    <Button
+                      disabled={action.disabled}
+                      onClick={action.onClick}
+                      aria-label={action.label}
+                      className={{
+                        root: twMerge('h-8 w-8 p-0', action.className),
+                      }}
+                      data={action.data}
+                    >
+                      <Button.Icon withoutLabel icon={action.icon} />
+                    </Button>
+                  </IconActionTooltip>
                 )
               })}
 
             {availableActions.length > 3 && (
-              <Dropdown
-                items={availableActions.slice(2).map((action) => ({
-                  id: `action-${element.id}-${action.label}`,
-                  label: (
-                    <div
-                      className={twMerge(
-                        'flex cursor-pointer items-center rounded hover:bg-gray-100',
-                        action.className
-                      )}
-                    >
-                      <FontAwesomeIcon
-                        icon={action.icon}
-                        className="mr-2.5 h-4 w-4"
-                      />
-                      {action.label}
-                    </div>
-                  ),
-                  onClick: action.onClick,
-                  disabled: action.disabled,
-                  data: action.data,
-                }))}
-                trigger={<FontAwesomeIcon icon={faEllipsis} />}
-                className={{
-                  viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
-                  item: 'py-0.5 text-sm',
-                  trigger: 'h-8 w-8 p-0',
-                }}
-                data={{ cy: `actions-element-${element.name}` }}
-              />
+              <IconActionTooltip label={moreActionsLabel}>
+                <Dropdown
+                  items={availableActions.slice(2).map((action) => ({
+                    id: `action-${element.id}-${action.label}`,
+                    label: (
+                      <div
+                        className={twMerge(
+                          'flex cursor-pointer items-center rounded hover:bg-gray-100',
+                          action.className
+                        )}
+                      >
+                        <FontAwesomeIcon
+                          icon={action.icon}
+                          className="mr-2.5 h-4 w-4"
+                        />
+                        {action.label}
+                      </div>
+                    ),
+                    onClick: action.onClick,
+                    disabled: action.disabled,
+                    data: action.data,
+                  }))}
+                  trigger={
+                    <>
+                      <FontAwesomeIcon icon={faEllipsis} />
+                      <span className="sr-only">{moreActionsLabel}</span>
+                    </>
+                  }
+                  className={{
+                    viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
+                    item: 'py-0.5 text-sm',
+                    trigger: 'h-8 w-8 p-0',
+                  }}
+                  data={{ cy: `actions-element-${element.name}` }}
+                />
+              </IconActionTooltip>
             )}
           </div>
         </div>
