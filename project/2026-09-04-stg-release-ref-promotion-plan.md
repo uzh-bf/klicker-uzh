@@ -261,17 +261,19 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
-- `Current:` The approved plan is the first local commit (`7e7f8e9fb1`), and
-  commit `ed3b236bfa` implements selected-source SHA tags and publish-once
-  guards. The chart now offers optional `global.imageTag` precedence across all
-  18 first-party images, including the migrator. A focused contract test derives
-  the 15 workflows, validates all 32 metadata/build pairs and 18 active image
-  jobs, and compares no-override renders with frozen-parent staging and
+- `Current:` Commit `ed3b236bfa` implements selected-source SHA tags and
+  publish-once guards. Commit `b7b381812d` adds optional `global.imageTag`
+  precedence across all 18 first-party images and a focused contract test that
+  derives the 15 workflows, validates all 32 metadata/build pairs and 18 active
+  image jobs, and compares no-override renders with frozen-parent staging and
   production baselines (`a6ee9ad6b235` and `0ec440b0e11d`). The staging and
   production values files remain unchanged, including all 16 staging rollout
-  annotations.
-- `Next:` Commit the chart and contract-test slice, then add the separate
-  documentation/ADR/solution commit. Exact controller and final-review runtime
-  blobs remain deferred until the main session supplies the completed
-  default-controller commits or runtime files.
+  annotations. The documentation slice records the SHA-tag, Argo revision,
+  digest-receipt, deployed-`imageID`, trusted-code, and production boundaries;
+  it preserves the source-switch incident history while replacing its stale
+  prevention guidance.
+- `Next:` Reconcile the exact trusted controller and final-review runtime blobs
+  once the main session supplies the completed default-controller commits or
+  files, then rerun the focused runtime tests and byte-match checks. This is the
+  only remaining in-scope Phase 1 item for this worktree.
 - `External state:` Unchanged.
