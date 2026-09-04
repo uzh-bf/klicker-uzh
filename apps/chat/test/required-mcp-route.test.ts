@@ -82,6 +82,8 @@ import {
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
 
+const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
+
 function createRequest(selectedMode?: string, threadId?: string) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
@@ -293,6 +295,59 @@ describe('required MCP chat preflight', () => {
     )
   })
 
+  test('passes the resolved KB scope and owning thread to MCP discovery', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: { tutor: { prompt: 'Use course material.' } },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          priority: 0,
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+          },
+          mcpServer: {
+            id: 'kb-server',
+            name: 'KB',
+            url: 'https://mcp.example.test',
+            authType: 'bearer',
+            authSecret: 'opaque-transport-token',
+            parameters: null,
+            isActive: true,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          server: expect.objectContaining({ name: 'KB' }),
+        }),
+      ],
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: KB_ID,
+        sessionId: 'thread-1',
+      }
+    )
+  })
+
   test('rejects an unsupported mode before MCP and thread work', async () => {
     const response = await POST(createRequest('unsupported'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -342,11 +397,6 @@ describe('required MCP chat preflight', () => {
           include: { mcpServer: true },
           orderBy: { priority: 'asc' },
         },
-        knowledgeBases: {
-          where: { isEnabled: true },
-          select: { kbId: true },
-          take: 1,
-        },
       },
     })
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
@@ -391,6 +441,23 @@ describe('required MCP chat preflight', () => {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
         },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['doc_query'],
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: KB_ID,
+            },
+            mcpServer: createMcpServer({
+              id: 'kb-server',
+              name: 'KB',
+              authType: 'bearer',
+              authSecret: 'opaque-transport-token',
+              isActive: true,
+            }),
+          }),
+        ],
       })
     )
 
@@ -403,8 +470,12 @@ describe('required MCP chat preflight', () => {
       [
         expect.objectContaining({
           config: expect.objectContaining({
-            allowedTools: ['informatik_und_wirtschaft_video_expert'],
-            parameters: { required: true, toolAlias: 'doc_query' },
+            allowedTools: ['doc_query'],
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: KB_ID,
+            },
           }),
         }),
       ],
@@ -412,7 +483,7 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
-        kbId: undefined,
+        kbId: KB_ID,
         sessionId: 'thread-1',
       }
     )

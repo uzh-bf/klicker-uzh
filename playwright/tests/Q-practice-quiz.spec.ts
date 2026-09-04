@@ -2112,6 +2112,10 @@ test.describe.serial('Different practice quiz workflows', () => {
     )
     await page.getByTestId('start-practice-quiz').click()
     await answerRunningPracticeQuiz(data)
+    await expect(page).toHaveURL(
+      `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/overview`
+    )
+    await expect(page.getByTestId('open-practice-pool')).toBeVisible()
   })
 
   test('Solve the practice quiz with partial answers (where supported)', async ({
