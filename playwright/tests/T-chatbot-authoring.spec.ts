@@ -245,13 +245,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
           })
         : undefined
       const operationName = requestBody?.operationName
-      if (operationName === 'UpdateChatbotStandardModeConfig') {
+      if (operationName === 'MUpdateChatbotStandardModeConfig') {
         modeConfigVariables = requestBody?.variables?.config
       }
       const requestGate =
         operationName === 'UpdateChatbotModelSettings'
           ? modelSettingsRequestGate
-          : operationName === 'UpdateChatbotStandardModeConfig'
+          : operationName === 'MUpdateChatbotStandardModeConfig'
             ? modeRequestGate
             : operationName === 'UpdateChatbot'
               ? metadataRequestGate
