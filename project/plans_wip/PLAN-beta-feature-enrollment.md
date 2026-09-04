@@ -429,6 +429,15 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: the persistent settings executor added the reusable enrollment
+  control, anchored settings section, English and German copy, stable UI hooks,
+  confirmed-state preservation, browser feature refresh, and distinct pending,
+  saved, converged, refresh-failed, unavailable, and mutation-error states.
+  The parent accepted the bounded diff and added explicit convergence evidence.
+  The Manage typecheck and focused Biome check pass. The i18n package has no
+  standalone `check` script, so its messages are covered by the consuming
+  Manage typecheck and focused Biome check. Browser proof remains in the
+  integrated evidence slice.
 - 2026-09-04: backend commit `8e8bed22c` passed its GLM 5.3 Flash
   simplifier and risk-selected slice review with no Critical or Important
   correctness finding. Accepted the behavior-preserving URL normalization and
