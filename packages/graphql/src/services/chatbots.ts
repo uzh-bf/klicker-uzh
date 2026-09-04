@@ -966,6 +966,7 @@ export async function updateChatbotCreditPolicy(
   args: { chatbotId: string } & ChatbotCreditPolicy,
   ctx: ContextWithUser
 ) {
+  await assertManageAiEnabled(ctx)
   const chatbot = await ctx.prisma.chatbot.findFirst({
     where: { id: args.chatbotId, ownerId: ctx.user.sub },
     select: { id: true, status: true },

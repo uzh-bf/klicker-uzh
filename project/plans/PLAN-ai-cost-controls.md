@@ -76,11 +76,18 @@ Make the three existing AI cost controls clear and reliable:
   graph quota handling. Added focused validation and service integration tests,
   generated the public schema, and updated the engineering documentation.
 - **2026-09-04:** Focused TypeScript checks passed for GraphQL,
-  frontend-manage, and kb-management; the seven pure credit-policy tests pass.
-  The repository-wide `check:all` and production build pass. The database-backed
-  GraphQL tests require the repository test infrastructure and remain for CI.
-  Live browser QA remains pending because this isolated branch has no authorized
-  running development environment.
+  frontend-manage, and kb-management; the credit-policy and AI feature-gate
+  tests pass. Repository-wide `check:all` passes, the branch-local bootstrap
+  production build completed, and all 54 database-backed chatbot-management
+  tests pass against a clean isolated database.
+- **2026-09-04:** Browser verification passed in the isolated Manage runtime for
+  English and German: editable draft credits and saved confirmation,
+  publication review, current and stale/retry account usage, and the blocked KB
+  graph build with an insufficient semester quota. Screenshots for all ten
+  states are stored under `project/screenshots/`.
+- **2026-09-04:** Follow-up standards fixes restored the Manage AI feature gate
+  on credit-policy mutations and reduced the two new schema resolvers to direct
+  service delegations.
 - **2026-09-04:** Independent review identified the initial settings-refresh
   fallback and an ambiguous ownership sentence. Settings now renders cached
   values during an entry refresh and exposes stale or unavailable Retry states;

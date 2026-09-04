@@ -1528,9 +1528,8 @@ export const Mutation = builder.mutationType({
           creditResetAmount: t.arg.int({ required: true }),
           creditMaxCredits: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotCreditPolicy(args, ctx)
-        },
+        resolve: (_, args, ctx) =>
+          ChatbotsService.updateChatbotCreditPolicy(args, ctx),
       }),
 
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
@@ -1633,9 +1632,8 @@ export const Mutation = builder.mutationType({
             validate: { min: 1 },
           }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublicationV2(args, ctx)
-        },
+        resolve: (_, args, ctx) =>
+          ChatbotsService.requestChatbotPublicationV2(args, ctx),
       }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({

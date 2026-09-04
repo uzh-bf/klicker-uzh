@@ -1,3 +1,4 @@
+import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -5,7 +6,10 @@ import {
   isManageAiEnabled,
   manageAiFeatureFlagAttributes,
 } from '../src/lib/manageAiFeatureGate.js'
-import { getManageChatModelRegistry } from '../src/services/chatbots.js'
+import {
+  getManageChatModelRegistry,
+  updateChatbotCreditPolicy,
+} from '../src/services/chatbots.js'
 
 function createContext(
   aiFeaturesEnabled: boolean | null,
@@ -93,6 +97,26 @@ describe('Manage AI feature gate', () => {
     const { ctx, findUnique } = createContext(true)
 
     await expect(getManageChatModelRegistry(ctx)).rejects.toMatchObject({
+      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
+    })
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
+  test('keeps chatbot credit-policy mutations behind the gate', async () => {
+    const { ctx, findUnique } = createContext(true)
+
+    await expect(
+      updateChatbotCreditPolicy(
+        {
+          chatbotId: 'chatbot-1',
+          creditInitialCredits: 2,
+          creditResetPeriod: CreditResetPeriod.MONTHLY,
+          creditResetAmount: 2,
+          creditMaxCredits: 2,
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({
       extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
     })
     expect(findUnique).not.toHaveBeenCalled()
