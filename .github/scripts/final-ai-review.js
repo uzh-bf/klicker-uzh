@@ -34,7 +34,6 @@ const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review cle
 const FINAL_REVIEW_REQUIRED_DESCRIPTION = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
-const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
 const OCR_RUN_MANIFEST_SCHEMA = 'ocr.run-manifest/v1'
 // Long-lived consolidation branches (for example, v3-ai) that staging
 // deployments are cut from. Individual final reviews treat open ready pull
@@ -67,7 +66,6 @@ const OPENROUTER_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
 const OPENROUTER_TOOL_CANARY_NAME = 'final_review_probe'
 const OPENROUTER_TOOL_CANARY_TIMEOUT_MS = 30_000
 const OCR_MAX_COMPLETION_TOKENS = 16_384
-const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
 const MAX_INCREMENTAL_LINES = 1_000
@@ -657,264 +655,6 @@ function removeOCRConfig(configPath = defaultOCRConfigPath()) {
   fs.rmSync(configPath, { force: true })
 }
 
-function promotionBody(targetSha) {
-  return [
-    `Automated staging promotion of \`${targetSha}\`.`,
-    '',
-    'Writes the built commit into `rollout.klicker.uzh.ch/release` so ArgoCD',
-    'detects drift, runs the PreSync migration hook, and rolls the stg pods.',
-    'Opened only after every `v3_*-stg.yml` image build succeeded for this',
-    'commit. See ADR-0003.',
-    '',
-  ].join('\n')
-}
-
-function parsePromotionTarget(body) {
-  const match = String(body ?? '').match(
-    /^Automated staging promotion of `([0-9a-f]{40})`\.\n\n/
-  )
-  return match?.[1] ?? ''
-}
-
-function isPromotionCandidate(headRef) {
-  return /^chore\/promote-stg-[0-9a-f]{12}$/.test(headRef)
-}
-
-function buildExpectedPromotionContent(baseContent, shortSha, sourceBranch) {
-  let releaseCount = 0
-  let tagCount = 0
-
-  const withRelease = baseContent.replace(
-    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
-    (_line, prefix) => {
-      releaseCount += 1
-      return `${prefix}'${shortSha}'`
-    }
-  )
-  const content = withRelease.replace(
-    /^([ \t]+tag: ).*$/gm,
-    (_line, prefix) => {
-      tagCount += 1
-      return `${prefix}${sourceBranch}`
-    }
-  )
-
-  return { content, releaseCount, tagCount }
-}
-
-function invalidPromotion(reason) {
-  return { valid: false, reason }
-}
-
-async function verifyPromotionBuilds({
-  github,
-  context,
-  sourceBranch,
-  targetSha,
-  trustedSha,
-}) {
-  if (!/^[0-9a-f]{40}$/.test(trustedSha ?? '')) {
-    return invalidPromotion('trusted promotion workflow commit is missing')
-  }
-  if (
-    typeof github.paginate !== 'function' ||
-    typeof github.rest.actions?.listWorkflowRunsForRepo !== 'function'
-  ) {
-    return invalidPromotion('staging build evidence is unavailable')
-  }
-  const response = await github.rest.repos.getContent({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    path: '.github/workflows',
-    ref: trustedSha,
-  })
-  const workflowPaths = Array.isArray(response.data)
-    ? response.data
-        .filter(
-          (entry) =>
-            entry?.type === 'file' &&
-            /^v3_.*-stg\.yml$/.test(String(entry.name ?? ''))
-        )
-        .map((entry) => String(entry.path ?? ''))
-        .filter(Boolean)
-        .sort()
-    : []
-  if (workflowPaths.length === 0) {
-    return invalidPromotion('no staging build workflows were found')
-  }
-
-  const results = await Promise.all(
-    workflowPaths.map(async (workflowPath) => {
-      let trustedDefinition
-      let targetDefinition
-      try {
-        const definitions = await Promise.all([
-          getFileText(github, context, workflowPath, trustedSha),
-          getFileText(github, context, workflowPath, targetSha),
-        ])
-        trustedDefinition = definitions[0]
-        targetDefinition = definitions[1]
-      } catch {
-        return {
-          reason: 'workflow definition could not be verified',
-          verified: false,
-          workflowPath,
-        }
-      }
-      if (sha256(trustedDefinition) !== sha256(targetDefinition)) {
-        return {
-          reason: 'workflow definition differs from trusted policy',
-          verified: false,
-          workflowPath,
-        }
-      }
-      const runs = await github.paginate(
-        github.rest.actions.listWorkflowRunsForRepo,
-        {
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          workflow_id: workflowPath,
-          event: 'push',
-          head_sha: targetSha,
-          status: 'completed',
-          per_page: 100,
-        }
-      )
-      const verified = Array.isArray(runs)
-        ? runs.some(
-            (run) =>
-              run?.path === workflowPath &&
-              run?.event === 'push' &&
-              run?.head_branch === sourceBranch &&
-              run?.head_sha === targetSha &&
-              run?.status === 'completed' &&
-              run?.conclusion === 'success' &&
-              run?.repository?.full_name === repositoryName(context)
-          )
-        : false
-      return {
-        reason: verified ? '' : 'successful exact-SHA run is missing',
-        verified,
-        workflowPath,
-      }
-    })
-  )
-  const failures = results.filter(({ verified }) => !verified)
-  if (failures.length > 0) {
-    return invalidPromotion(
-      `staging build evidence or trusted workflow definition is missing for ${failures
-        .map(({ reason, workflowPath }) => `${workflowPath} (${reason})`)
-        .join(', ')}`
-    )
-  }
-  return {
-    valid: true,
-    reason: `verified ${workflowPaths.length} staging build runs for the target SHA`,
-    sourceBranch,
-    targetSha,
-    workflowPaths,
-  }
-}
-
-function validatePromotionContract(input) {
-  const {
-    pull,
-    permission,
-    repository,
-    sourceBranch,
-    commits,
-    files,
-    baseContent,
-    headContent,
-    targetIsAncestor,
-    buildEvidence,
-  } = input
-
-  if (pull.state !== 'open' || pull.draft) {
-    return invalidPromotion('promotion PR must be open and ready')
-  }
-  if (
-    pull.baseRef !== sourceBranch ||
-    pull.baseRepo !== repository ||
-    pull.headRepo !== repository
-  ) {
-    return invalidPromotion('promotion PR repository or base does not match')
-  }
-  if (!isTrustedPermission(permission)) {
-    return invalidPromotion('promotion author lacks write permission')
-  }
-  if (!/^[A-Za-z0-9_.-]+$/.test(sourceBranch)) {
-    return invalidPromotion('staging source branch is invalid')
-  }
-
-  const branchMatch = pull.headRef.match(/^chore\/promote-stg-([0-9a-f]{12})$/)
-  if (!branchMatch) {
-    return invalidPromotion('promotion head branch does not match')
-  }
-  const shortSha = branchMatch[1]
-  if (pull.title !== `chore(deploy): promote ${shortSha} to stg [skip ci]`) {
-    return invalidPromotion('promotion title does not match')
-  }
-
-  const targetSha = parsePromotionTarget(pull.body)
-  if (
-    !targetSha?.startsWith(shortSha) ||
-    pull.body !== promotionBody(targetSha)
-  ) {
-    return invalidPromotion('promotion body or target SHA does not match')
-  }
-  if (!targetIsAncestor) {
-    return invalidPromotion('promotion target is not on the staging source')
-  }
-  if (
-    !buildEvidence?.valid ||
-    buildEvidence.targetSha !== targetSha ||
-    buildEvidence.sourceBranch !== sourceBranch
-  ) {
-    return invalidPromotion(
-      'exact successful staging build evidence is missing'
-    )
-  }
-
-  if (commits.length !== 1) {
-    return invalidPromotion('promotion PR must contain one commit')
-  }
-  const [commit] = commits
-  if (
-    commit.message !== `chore(deploy): promote ${shortSha} to stg` ||
-    commit.parents.length !== 1 ||
-    commit.parents[0] !== pull.baseSha
-  ) {
-    return invalidPromotion('promotion commit or parent does not match')
-  }
-
-  if (
-    files.length !== 1 ||
-    files[0].filename !== PROMOTION_FILE ||
-    files[0].status !== 'modified'
-  ) {
-    return invalidPromotion('promotion changed an unexpected file')
-  }
-
-  const expected = buildExpectedPromotionContent(
-    baseContent,
-    shortSha,
-    sourceBranch
-  )
-  if (expected.releaseCount === 0 || expected.tagCount === 0) {
-    return invalidPromotion('base promotion file has unexpected structure')
-  }
-  if (headContent !== expected.content) {
-    return invalidPromotion('promotion content exceeds generated replacements')
-  }
-
-  return {
-    valid: true,
-    reason: 'verified generated staging promotion',
-    targetSha,
-  }
-}
-
 async function setCommitStatus({ github, context, sha, state, description }) {
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
@@ -1219,88 +959,6 @@ async function latestVerifiedCleanFinalReviewEvidence({
   })
 }
 
-async function getStagingSourceBranch({ github, context, defaultBranch }) {
-  if (typeof github.rest.actions?.getRepoVariable !== 'function') {
-    return defaultBranch
-  }
-  try {
-    const response = await github.rest.actions.getRepoVariable({
-      name: 'STG_SOURCE_BRANCH',
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-    })
-    const value = response.data?.value
-    return /^[A-Za-z0-9_.-]+$/.test(value ?? '') ? value : defaultBranch
-  } catch (error) {
-    if (
-      error?.status === 404 ||
-      /\b404\b|not found/i.test(String(error?.stderr ?? ''))
-    ) {
-      return defaultBranch
-    }
-    throw error
-  }
-}
-
-async function hasVerifiedGeneratedPromotionStatus({
-  github,
-  context,
-  pull,
-  sourceBranch,
-  trustedSha,
-}) {
-  const status = await getLatestFinalReviewStatus(
-    github,
-    context,
-    pull.head.sha
-  )
-  if (
-    status?.state !== 'success' ||
-    status.description !== GENERATED_PROMOTION_STATUS
-  ) {
-    return false
-  }
-  const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
-  if (
-    workflowRunId == null ||
-    typeof github.rest.actions?.getWorkflowRun !== 'function'
-  ) {
-    return false
-  }
-  const workflow = (
-    await github.rest.actions.getWorkflowRun({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      run_id: workflowRunId,
-    })
-  )?.data
-  if (
-    !workflow ||
-    workflow.id !== workflowRunId ||
-    workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
-    workflow.event !== 'pull_request_target' ||
-    workflow.head_branch !== context.payload.repository.default_branch ||
-    workflow.conclusion !== 'success' ||
-    workflow.repository?.full_name !== repositoryName(context) ||
-    !(await hasSuccessfulFinalReview(
-      github,
-      context,
-      pull.head.sha,
-      workflowRunId
-    ))
-  ) {
-    return false
-  }
-  const promotion = await inspectPromotion({
-    github,
-    context,
-    pull,
-    sourceBranch,
-    trustedSha,
-  })
-  return promotion.valid === true
-}
-
 async function getFileText(github, context, filePath, ref) {
   const response = await github.rest.repos.getContent({
     owner: context.repo.owner,
@@ -1340,7 +998,6 @@ function reviewPolicySettings() {
     model: FINAL_REVIEW_MODEL,
     ocr: buildOCRPolicy(),
     openrouter_url: OPENROUTER_URL,
-    promotion_file: PROMOTION_FILE,
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
@@ -1372,81 +1029,6 @@ async function getReviewPolicyDigest({ github, context, trustedSha }) {
       settings: reviewPolicySettings(),
     })
   )
-}
-
-async function inspectPromotion({
-  github,
-  context,
-  pull,
-  sourceBranch,
-  trustedSha,
-}) {
-  const permission = await getPermission(github, context, pull.user.login)
-  const targetSha = parsePromotionTarget(pull.body)
-  if (!targetSha) {
-    return invalidPromotion('promotion target SHA is missing')
-  }
-
-  const [commits, files, baseContent, headContent, comparison, buildEvidence] =
-    await Promise.all([
-      github.paginate(github.rest.pulls.listCommits, {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: pull.number,
-        per_page: 100,
-      }),
-      github.paginate(github.rest.pulls.listFiles, {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: pull.number,
-        per_page: 100,
-      }),
-      getFileText(github, context, PROMOTION_FILE, pull.base.sha),
-      getFileText(github, context, PROMOTION_FILE, pull.head.sha),
-      github.rest.repos.compareCommitsWithBasehead({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        basehead: `${targetSha}...${sourceBranch}`,
-      }),
-      verifyPromotionBuilds({
-        github,
-        context,
-        sourceBranch,
-        targetSha,
-        trustedSha,
-      }),
-    ])
-
-  return validatePromotionContract({
-    pull: {
-      state: pull.state,
-      draft: pull.draft,
-      baseRef: pull.base.ref,
-      baseSha: pull.base.sha,
-      baseRepo: pull.base.repo.full_name,
-      headRef: pull.head.ref,
-      headRepo: pull.head.repo.full_name,
-      title: pull.title,
-      body: pull.body ?? '',
-    },
-    permission,
-    repository: `${context.repo.owner}/${context.repo.repo}`,
-    sourceBranch,
-    commits: commits.map((commit) => ({
-      message: commit.commit.message,
-      parents: commit.parents.map((parent) => parent.sha),
-    })),
-    files: files.map((file) => ({
-      filename: file.filename,
-      status: file.status,
-    })),
-    baseContent,
-    headContent,
-    targetIsAncestor:
-      comparison.data.status === 'ahead' ||
-      comparison.data.status === 'identical',
-    buildEvidence,
-  })
 }
 
 function parseReviewMetadata(body) {
@@ -2221,13 +1803,7 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
   }
 }
 
-async function initializeFinalReview({
-  github,
-  context,
-  core,
-  sourceBranch,
-  trustedSha,
-}) {
+async function initializeFinalReview({ github, context, core }) {
   const pull = context.payload.pull_request
   let state = 'pending'
   let description = FINAL_REVIEW_REQUIRED_DESCRIPTION
@@ -2235,32 +1811,6 @@ async function initializeFinalReview({
   if (pull.state !== 'open') {
     state = 'error'
     description = 'Final review is unavailable for a closed pull request'
-  } else if (isPromotionCandidate(pull.head.ref)) {
-    try {
-      const promotion = await inspectPromotion({
-        github,
-        context,
-        pull,
-        sourceBranch,
-        trustedSha,
-      })
-      core.info(`Promotion exemption: ${promotion.reason}`)
-      if (promotion.valid) {
-        state = 'success'
-        description = 'Verified generated staging promotion'
-      }
-    } catch (error) {
-      state = 'error'
-      description = 'Promotion validation failed; use /final-review'
-      await setCommitStatus({
-        github,
-        context,
-        sha: pull.head.sha,
-        state,
-        description,
-      })
-      throw error
-    }
   } else if (!pull.draft) {
     try {
       const eligibility = await resolvePullEligibility({
@@ -3632,23 +3182,9 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
   }
   const pull = await getPull(github, context, prNumber)
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
-  const promotion = isPromotionCandidate(pull.head?.ref)
-    ? await hasVerifiedGeneratedPromotionStatus({
-        github,
-        context,
-        pull,
-        sourceBranch: await getStagingSourceBranch({
-          github,
-          context,
-          defaultBranch,
-        }),
-        trustedSha,
-      })
-    : false
   const current =
-    promotion ||
-    (plan.eligible &&
-      (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan })))
+    plan.eligible &&
+    (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }))
   return {
     current,
     head_sha: pull.head?.sha ?? '',
@@ -3764,7 +3300,6 @@ module.exports = {
   FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
-  GENERATED_PROMOTION_STATUS,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,
@@ -3773,12 +3308,10 @@ module.exports = {
   OCR_RUN_MANIFEST_SCHEMA,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
-  PROMOTION_FILE,
   authorizeFinalReview,
   buildFinalReviewEvidenceDigest,
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
-  buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
   buildOpenRouterToolCanaryRequest,
@@ -3793,13 +3326,10 @@ module.exports = {
   finalizeFinalReviewFailure,
   initializeFinalReview,
   isFinalReviewCommand,
-  isPromotionCandidate,
   isTrustedPermission,
   getReviewPolicyDigest,
-  getStagingSourceBranch,
   ghRepositoryPath,
   hasCurrentSuccessfulFinalReview,
-  hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
   mergeOCRResumeResults,
   normalizeTitle,
@@ -3808,8 +3338,6 @@ module.exports = {
   listReviewArtifacts,
   parseDispositionRecord,
   parseReviewMetadata,
-  parsePromotionTarget,
-  promotionBody,
   publishFinalReview,
   removeOCRConfig,
   resolveFinalReviewLockKey,
@@ -3820,9 +3348,7 @@ module.exports = {
   startFinalReview,
   validateDispositionRecord,
   validateOCRResult,
-  validatePromotionContract,
   validateFinding,
-  verifyPromotionBuilds,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
 }
