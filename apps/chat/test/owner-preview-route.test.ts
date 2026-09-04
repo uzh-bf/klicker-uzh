@@ -368,6 +368,23 @@ describe('POST owner preview chat', () => {
     )
   })
 
+  it('appends an unavailable capture state before the stream finishes', async () => {
+    mocks.issuePreviewResponseExampleReceipt.mockResolvedValue({
+      unavailable: true,
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    const body = await response.text()
+
+    expect(body).toContain('data-response-example-receipt')
+    expect(body).toContain('unavailable')
+    expect(body.indexOf('data-response-example-receipt')).toBeLessThan(
+      body.indexOf('"type":"finish"')
+    )
+  })
+
   it('closes MCP tools when no base model is available', async () => {
     mocks.getModelsForChatbot.mockReturnValue([])
 

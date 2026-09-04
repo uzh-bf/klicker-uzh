@@ -96,8 +96,11 @@ describe('issuePreviewResponseExampleReceipt', () => {
       question: 'Why?',
       answer: 'The source explains this result. [1]',
     })
+    if (!receipt || 'unavailable' in receipt) {
+      throw new Error('Expected a signed response-example receipt')
+    }
     const claims = await verifyResponseExampleReceipt({
-      token: receipt!.token,
+      token: receipt.token,
       publicKeyPem,
       keyId: KEY_ID,
       issuer: ISSUER,
@@ -174,7 +177,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
       name: 'incomplete lineage',
       message: assistantMessage({ includeLineage: false }),
     },
-  ])('does not issue with $name', async ({ message }) => {
+  ])('returns unavailable data with $name', async ({ message }) => {
     await expect(
       issuePreviewResponseExampleReceipt({
         requestMessages: [userMessage('user-1', 'Why?')],
@@ -186,7 +189,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         kbId: KB_ID,
         chatMode: 'tutor',
       })
-    ).resolves.toBeNull()
+    ).resolves.toEqual({ unavailable: true })
   })
 
   it('stays unavailable without dedicated signing configuration', async () => {
@@ -203,6 +206,21 @@ describe('issuePreviewResponseExampleReceipt', () => {
         kbId: KB_ID,
         chatMode: 'tutor',
       })
-    ).resolves.toBeNull()
+    ).resolves.toEqual({ unavailable: true })
+  })
+
+  it('stays unavailable without an enabled knowledge base', async () => {
+    await expect(
+      issuePreviewResponseExampleReceipt({
+        requestMessages: [userMessage('user-1', 'Why?')],
+        responseMessage: assistantMessage(),
+        finishReason: 'stop',
+        isAborted: false,
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        kbId: undefined,
+        chatMode: 'tutor',
+      })
+    ).resolves.toEqual({ unavailable: true })
   })
 })

@@ -20,6 +20,10 @@ export interface PreviewResponseExampleReceiptData {
   answer: string
 }
 
+export type PreviewResponseExampleCaptureData =
+  | PreviewResponseExampleReceiptData
+  | { unavailable: true }
+
 function getReceiptEnvironment() {
   const privateKeyPem = process.env.RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY?.trim()
   const keyId = process.env.RESPONSE_EXAMPLE_RECEIPT_KID?.trim()
@@ -75,11 +79,10 @@ export async function issuePreviewResponseExampleReceipt({
   chatbotId: string
   kbId: string | undefined
   chatMode: string
-}): Promise<PreviewResponseExampleReceiptData | null> {
+}): Promise<PreviewResponseExampleCaptureData | null> {
   if (
     isAborted ||
     finishReason !== 'stop' ||
-    !kbId ||
     requestMessages.length !== 1 ||
     requestMessages[0]?.role !== 'user'
   ) {
@@ -90,14 +93,16 @@ export async function issuePreviewResponseExampleReceipt({
   const answer = messageText(responseMessage)
   if (!question || !answer) return null
 
+  if (!kbId) return { unavailable: true }
+
   const evidenceReferences = normalizeResponseExampleEvidenceFromParts(
     sourceParts(responseMessage),
     answer
   )
-  if (!evidenceReferences) return null
+  if (!evidenceReferences) return { unavailable: true }
 
   const environment = getReceiptEnvironment()
-  if (!environment) return null
+  if (!environment) return { unavailable: true }
 
   const signedReceipt = await signResponseExampleReceipt({
     ...environment,

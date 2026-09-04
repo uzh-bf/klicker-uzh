@@ -389,6 +389,10 @@ export async function POST(
               chatbotId,
               errorType: error instanceof Error ? error.name : typeof error,
             })
+            writer.write({
+              type: RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
+              data: { unavailable: true },
+            })
           }
         }
 
