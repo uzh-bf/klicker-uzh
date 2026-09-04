@@ -211,6 +211,46 @@ function getUsableDocumentsPayload(
   return valid ? payload : undefined
 }
 
+function formatBoundedRemoteDocumentsPayload(
+  payload: Record<string, unknown>
+): string | undefined {
+  const serialized = JSON.stringify(payload)
+  if (serialized.length <= MAX_DOCS_OUTPUT_CHARS) return serialized
+
+  const candidates = payload.sources as unknown[]
+  const sources: unknown[] = []
+  const buildPayload = (truncated: boolean) => ({
+    mode: 'documents',
+    retrieval: {
+      source: 'remote_doc_query',
+      truncated,
+    },
+    summary: {
+      chunks_returned: sources.reduce<number>((count, source) => {
+        if (!source || typeof source !== 'object') return count
+        const chunks = (source as Record<string, unknown>).chunks
+        return count + (Array.isArray(chunks) ? chunks.length : 0)
+      }, 0),
+      sources_returned: sources.length,
+    },
+    sources,
+  })
+
+  for (const candidate of candidates) {
+    sources.push(candidate)
+    if (
+      JSON.stringify(buildPayload(sources.length < candidates.length)).length >
+      MAX_DOCS_OUTPUT_CHARS
+    ) {
+      sources.pop()
+      break
+    }
+  }
+
+  if (sources.length === 0) return undefined
+  return JSON.stringify(buildPayload(sources.length < candidates.length))
+}
+
 function formatKlickerDocsFallbackResult(question: string): string {
   const outcome = searchKlickerDocs(manifest, question)
   const candidates = outcome.results.map((result) => ({
@@ -343,10 +383,13 @@ export function createKlickerDocsQueryToolBundle({
           options: { signal },
         })
         const payload = getUsableDocumentsPayload(result)
-        if (!payload) {
+        const output = payload
+          ? formatBoundedRemoteDocumentsPayload(payload)
+          : undefined
+        if (!output) {
           throw new Error('Klicker docs MCP returned no usable documents')
         }
-        return JSON.stringify(payload)
+        return output
       } catch (error) {
         remoteUnavailable = true
         await closeRemoteClient()

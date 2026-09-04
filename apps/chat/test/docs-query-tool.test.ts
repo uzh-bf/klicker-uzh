@@ -176,6 +176,43 @@ describe('Klicker public docs composite tool', () => {
     await bundle.close()
   })
 
+  test('bounds oversized remote documents to a ranked source prefix', async () => {
+    const payload = {
+      mode: 'documents',
+      sources: Array.from({ length: 3 }, (_, index) => ({
+        chunks: [{ content: `${index}:${'x'.repeat(2200)}` }],
+        reference: `https://www.klicker.uzh.ch/tutorials/page-${index}/`,
+        reference_type: 'url',
+        source_type: 'webpage',
+        title: `Page ${index}`,
+      })),
+    }
+    const client = createClient({
+      callTool: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify(payload) }],
+      }),
+    })
+    const bundle = createKlickerDocsQueryToolBundle({
+      createClient: vi.fn().mockResolvedValue(client),
+      env: configuredEnv(),
+    })
+
+    const output = await executeQuestion(bundle)
+    const parsed = parseDocQueryPayload(output)
+
+    expect((output as string).length).toBeLessThanOrEqual(MAX_DOCS_OUTPUT_CHARS)
+    expect(parsed?.retrieval).toEqual({
+      source: 'remote_doc_query',
+      truncated: true,
+    })
+    expect(parsed?.summary).toEqual({
+      chunks_returned: 1,
+      sources_returned: 1,
+    })
+    expect(parsed?.sources).toHaveLength(1)
+    await bundle.close()
+  })
+
   test('rejects redirects and disables transport reconnection', async () => {
     let capturedOptions: NonNullable<
       ConstructorParameters<typeof StreamableHTTPClientTransport>[1]
