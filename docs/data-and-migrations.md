@@ -29,7 +29,15 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 
 ## Split schema
 
-The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 16 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, `assessmentAudit`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+
+`assessmentAudit.prisma` is a deliberately separate subsystem boundary. Its
+scope, rollout inventory, and outbox models use scalar UUIDs with no relations
+or foreign keys to mutable business models, so evidence survives deletion of a
+LiveQuiz, user, course, or participant. The outbox stores exact canonical JSON
+as `String @db.Text`, not `Json`/JSONB, because PostgreSQL must not rewrite the
+evidence bytes. Its migration also contains explicit SQL checks for invariants
+that Prisma cannot express. See [Assessment Audit Evidence](./assessment-audit-evidence.md).
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
