@@ -50,10 +50,10 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-// Expands repo-root-relative glob patterns such as `apps/*/.next` against the
+// Expands root-relative glob patterns such as `apps/*/.next` against the
 // filesystem. Returns existing paths only.
-function expand(pattern) {
-  let current = [repoRoot]
+function expand(pattern, root) {
+  let current = [root]
   for (const segment of pattern.split('/')) {
     const next = []
     for (const dir of current) {
@@ -142,22 +142,37 @@ function devServerListening() {
   ).then((results) => results.filter(Boolean))
 }
 
-function resolveTargets(list) {
+function resolveTargets(list, root) {
   const out = []
-  for (const pattern of list) out.push(...expand(pattern))
+  for (const pattern of list) out.push(...expand(pattern, root))
   return [...new Set(out)]
 }
 
-function deleteTargets(label, list) {
-  const targets = resolveTargets(list)
+// A target that contains Git-tracked files is committed data, not regenerable
+// output (e.g. packages/transactional/out ships the exported email templates).
+function containsTrackedFiles(root, target) {
+  const res = spawnSync('git', ['-C', root, 'ls-files', '--', target], {
+    encoding: 'utf8',
+  })
+  return res.status === 0 && res.stdout.trim().length > 0
+}
+
+// Deletes the expanded targets below `root`, which is the checkout that owns
+// them: this checkout for cache/generated, the explicit path in worktree mode.
+function deleteTargets(label, list, root) {
+  const targets = resolveTargets(list, root)
   if (targets.length === 0) {
     console.log(`${label}: nothing to remove`)
     return 0
   }
   let total = 0
   for (const target of targets) {
+    const rel = path.relative(root, target) || target
+    if (containsTrackedFiles(root, target)) {
+      console.log(`${label}: skipping ${rel} (contains tracked files)`)
+      continue
+    }
     const size = duSize(target)
-    const rel = path.relative(repoRoot, target) || target
     if (dryRun) {
       console.log(`${label}: would remove ${rel} (${fmt(size)})`)
     } else {
@@ -169,20 +184,44 @@ function deleteTargets(label, list) {
   return total
 }
 
-function isMainCheckout(worktreePath) {
-  const run = (gitArgs) =>
-    spawnSync('git', ['-C', worktreePath, ...gitArgs], { encoding: 'utf8' })
-  const gitDir = run(['rev-parse', '--git-dir'])
-  const commonDir = run(['rev-parse', '--git-common-dir'])
-  if (gitDir.status !== 0 || commonDir.status !== 0) return null
-  const a = fs.realpathSync(path.resolve(worktreePath, gitDir.stdout.trim()))
-  const b = fs.realpathSync(path.resolve(worktreePath, commonDir.stdout.trim()))
-  return a === b
+// Resolves `git rev-parse <flag>` for a checkout to a real absolute path, or
+// null when the directory is not inside a Git repository.
+function gitPath(checkout, flag) {
+  const res = spawnSync('git', ['-C', checkout, 'rev-parse', flag], {
+    encoding: 'utf8',
+  })
+  if (res.status !== 0) return null
+  try {
+    return fs.realpathSync(path.resolve(checkout, res.stdout.trim()))
+  } catch {
+    return null
+  }
+}
+
+// The target must be a linked worktree of THIS repository: same common Git
+// dir as the checkout running the script, but its own (non-common) git dir.
+function checkLinkedWorktree(worktreePath) {
+  const ownCommon = gitPath(repoRoot, '--git-common-dir')
+  const targetCommon = gitPath(worktreePath, '--git-common-dir')
+  const targetGitDir = gitPath(worktreePath, '--git-dir')
+  if (!targetCommon || !targetGitDir) {
+    die(`${worktreePath} is not a Git checkout; refusing to clean it`)
+  }
+  if (targetCommon !== ownCommon) {
+    die(
+      `${worktreePath} belongs to a different repository; refusing to clean it`
+    )
+  }
+  if (targetGitDir === targetCommon) {
+    die(
+      'refusing to clean the main checkout; use the cache/generated modes or pass an explicit linked-worktree path'
+    )
+  }
 }
 
 async function main() {
   if (mode === 'cache') {
-    const total = deleteTargets('cache', cacheTargets)
+    const total = deleteTargets('cache', cacheTargets, repoRoot)
     console.log(`cache: ${dryRun ? 'would free' : 'freed'} ${fmt(total)}`)
     console.log(
       'note: run from the main checkout, .turbo is the shared Turbo cache for all linked worktrees (Turbo >= 2.8)'
@@ -201,7 +240,7 @@ async function main() {
   }
 
   if (mode === 'generated') {
-    const total = deleteTargets('generated', generatedTargets)
+    const total = deleteTargets('generated', generatedTargets, repoRoot)
     console.log(`generated: ${dryRun ? 'would free' : 'freed'} ${fmt(total)}`)
     return
   }
@@ -217,11 +256,7 @@ async function main() {
     } catch {
       die(`no such directory: ${target}`)
     }
-    if (isMainCheckout(worktreePath)) {
-      die(
-        'refusing to clean the main checkout; use the cache/generated modes or pass an explicit linked-worktree path'
-      )
-    }
+    checkLinkedWorktree(worktreePath)
     const branch = spawnSync(
       'git',
       ['-C', worktreePath, 'branch', '--show-current'],
@@ -243,7 +278,7 @@ async function main() {
       'packages/*/node_modules',
       '.pnpm-store',
     ]
-    const total = deleteTargets('worktree', worktreeTargets)
+    const total = deleteTargets('worktree', worktreeTargets, worktreePath)
     console.log(`worktree: ${dryRun ? 'would free' : 'freed'} ${fmt(total)}`)
     console.log(
       'the worktree source itself is untouched; remove it with git worktree remove when done'
