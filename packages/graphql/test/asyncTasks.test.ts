@@ -177,6 +177,30 @@ describe('AsyncTask service and GraphQL API', () => {
     ])
   })
 
+  it('does not return expired terminal tasks requested through tracked ids', async () => {
+    const expiredTask = await prisma.asyncTask.create({
+      data: {
+        kind: AsyncTaskKind.QUESTION_GENERATION,
+        status: AsyncTaskStatus.SUCCEEDED,
+        subjectName: 'Expired tracked task',
+        finishedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+        ownerId,
+      },
+    })
+
+    const result = await executeGraphql({
+      source: `
+        query AsyncTasks($trackedIds: [String!]!) {
+          asyncTasks(trackedIds: $trackedIds) { id }
+        }
+      `,
+      variables: { trackedIds: [expiredTask.id] },
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.asyncTasks).toEqual([])
+  })
+
   it('counts every active and unread recent task beyond the row limits', async () => {
     const now = Date.now()
     await prisma.asyncTask.createMany({

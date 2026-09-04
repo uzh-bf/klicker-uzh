@@ -325,6 +325,13 @@ export async function getAsyncTasks(
         where: {
           id: { in: uniqueTrackedIds },
           ownerId: ctx.user.sub,
+          OR: [
+            { status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] } },
+            {
+              status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
+              finishedAt: { gte: recentCutoff },
+            },
+          ],
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
