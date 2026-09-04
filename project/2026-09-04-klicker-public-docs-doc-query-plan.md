@@ -425,6 +425,16 @@ run. Do not add a hosted evaluation service or dependency.
 - [x] Created the isolated local B2 branch and worktree without modifying PR
   #5754 or the dirty primary checkout.
 - [x] User approved this execution plan on 2026-09-04 with a goal.
-- [ ] Active: commit the approved plan before implementation files.
+- [x] Committed the approved plan before implementation files.
+- [x] Reached reviewed local source commits for the dedicated ingestion
+  project, STG deployment manifests, and values-free STG secret projection.
+- [ ] The catalog source is implemented and passes static and full test suites,
+  but its required model-backed no-ingestion build is blocked because the
+  authenticated self-hosted LiteLLM endpoint is unreachable from this host and
+  no approved tunnel is listening at `127.0.0.1:14000`. The failed artifact has
+  zero successful classifications, zero model calls, and zero cost.
+- [ ] The local Klicker B2 source remains intentionally untouched because this
+  plan starts it only after the separately authorized STG ingestion and
+  retrieval-isolation evaluation pass.
 - [ ] Reach source-ready local commits across all five repositories.
 - [ ] Request the separate publication and activation authority.
