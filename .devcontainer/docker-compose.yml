@@ -111,6 +111,12 @@ services:
       # Machine-local, content-addressed package cache shared by every worktree.
       # node_modules remains isolated in the project-scoped volume above.
       - pnpm_store:/pnpm/.pnpm-store
+      # The workspace bind mount and the store volume are different devices
+      # inside the container, so pnpm can fall back from the configured store
+      # to <workspace>/.pnpm-store during installs. Mounting the same shared
+      # volume at that fallback path keeps such installs off the host bind
+      # mount while still sharing content across every worktree.
+      - pnpm_store:/workspaces/klicker-uzh/.pnpm-store
       # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
       - hatchet_lite_config:/config:ro
       # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
