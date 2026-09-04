@@ -701,8 +701,8 @@ this order:
 
 1. server-sourced course data containing JSON-serialized `Course.displayName`;
 2. lower-priority lecturer guidance for a standard mode, when stored;
-3. one JSON-serialized typed lecturer context section for Tutor or Explainer, when valid and
-   present;
+3. one JSON-serialized typed lecturer context section for Tutor or Explainer, or a scope-note-only
+   section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
 5. fixed image-attachment description handling from

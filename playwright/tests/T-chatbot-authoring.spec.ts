@@ -275,7 +275,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       await route.fulfill({ response })
     })
 
-    await createChatbot(page, FIRST_CHATBOT)
+    const firstChatbotId = await createChatbot(page, FIRST_CHATBOT)
     await navigateToSetupStep(page, 'basics')
 
     await page
@@ -594,6 +594,46 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-mode-switch-quizzer')
     ).not.toBeChecked()
+
+    const legacyScopeNote = 'Legacy framing. '.repeat(20).trim()
+    expect(legacyScopeNote.length).toBeGreaterThan(200)
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: firstChatbotId },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: legacyScopeNote,
+        },
+      },
+    })
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
+      legacyScopeNote
+    )
+    modeConfigVariables = undefined
+    await page.getByTestId('chatbot-mode-switch-explainer').click()
+    await page.getByTestId('save-chatbot-modes').click()
+    await expect
+      .poll(() => modeConfigVariables)
+      .toMatchObject({
+        tutorEnabled: true,
+        explainerEnabled: true,
+        quizzerEnabled: false,
+        scopeNote: legacyScopeNote,
+      })
+    await expect(page.getByText('Learning modes saved.')).toBeVisible()
+    await page.reload()
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
+      legacyScopeNote
+    )
     await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(

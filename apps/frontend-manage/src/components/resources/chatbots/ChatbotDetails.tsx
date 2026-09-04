@@ -187,6 +187,16 @@ function ChatbotDetails({
     [modelRegistry]
   )
 
+  const selectedReasoningModels = useMemo(
+    () =>
+      reasoningModels.filter((model) =>
+        modelSelectionEnabled
+          ? allowedModelIds.includes(model.id)
+          : model.id === fixedModelId
+      ),
+    [allowedModelIds, fixedModelId, modelSelectionEnabled, reasoningModels]
+  )
+
   const supportedEffortsByModelId = useMemo(
     () =>
       new Map(
@@ -1007,122 +1017,109 @@ function ChatbotDetails({
                   </div>
                 )}
 
-                {reasoningModels.some((model) =>
-                  modelSelectionEnabled
-                    ? allowedModelIds.includes(model.id)
-                    : model.id === fixedModelId
-                ) && (
+                {selectedReasoningModels.length > 0 && (
                   <div className="space-y-3 border-t pt-4">
                     <div className="text-sm font-medium text-gray-700">
                       {t('manage.resources.reasoningEffortsByModel')}
                     </div>
 
                     <div className="space-y-3">
-                      {reasoningModels
-                        .filter((model) =>
-                          modelSelectionEnabled
-                            ? allowedModelIds.includes(model.id)
-                            : model.id === fixedModelId
+                      {selectedReasoningModels.map((model) => {
+                        const supportedEfforts = model.supportedReasoningEfforts
+                        const configuredEfforts = orderEffortsBy(
+                          reasoningConfig[model.id] ?? supportedEfforts,
+                          supportedEfforts
                         )
-                        .map((model) => {
-                          const supportedEfforts =
-                            model.supportedReasoningEfforts
-                          const configuredEfforts = orderEffortsBy(
-                            reasoningConfig[model.id] ?? supportedEfforts,
-                            supportedEfforts
-                          )
-                          const selectedEffort =
-                            !modelSelectionEnabled &&
-                            configuredEfforts.includes('medium')
-                              ? 'medium'
-                              : (configuredEfforts[0] ?? supportedEfforts[0])
+                        const selectedEffort =
+                          !modelSelectionEnabled &&
+                          configuredEfforts.includes('medium')
+                            ? 'medium'
+                            : (configuredEfforts[0] ?? supportedEfforts[0])
 
-                          return (
-                            <div
-                              key={`reasoning-model-${model.id}`}
-                              className="rounded-md border border-gray-200 bg-gray-50 p-3"
-                            >
-                              <div className="mb-2 text-sm font-semibold text-gray-800">
-                                {model.name}
-                              </div>
-
-                              {!modelSelectionEnabled ? (
-                                <div className="space-y-2">
-                                  <label
-                                    htmlFor={`chatbot-reasoning-select-${model.id}`}
-                                    className="text-xs text-gray-600"
-                                  >
-                                    {t('manage.resources.reasoningEffort')}
-                                  </label>
-                                  <Select
-                                    id={`chatbot-reasoning-select-${model.id}`}
-                                    data={{
-                                      cy: `chatbot-reasoning-${model.id}`,
-                                    }}
-                                    value={selectedEffort}
-                                    disabled={
-                                      isSaving || !modelSettingsEditable
-                                    }
-                                    items={supportedEfforts.map((effort) => ({
-                                      value: effort,
-                                      label: effort,
-                                    }))}
-                                    onChange={(effort) =>
-                                      handleReasoningEffortChange(
-                                        model.id,
-                                        effort
-                                      )
-                                    }
-                                  />
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap gap-2">
-                                  {supportedEfforts.map((effort) => {
-                                    const checked =
-                                      configuredEfforts.includes(effort)
-                                    const canToggleOff =
-                                      configuredEfforts.length > 1
-                                    return (
-                                      <div
-                                        key={`reasoning-effort-${model.id}-${effort}`}
-                                        className={twMerge(
-                                          'flex items-center gap-2 rounded-full border px-3 py-1 text-xs',
-                                          checked
-                                            ? 'border-blue-300 bg-blue-50 text-blue-900'
-                                            : 'border-gray-300 text-gray-700',
-                                          !checked && !canToggleOff
-                                            ? 'opacity-60'
-                                            : ''
-                                        )}
-                                      >
-                                        <Checkbox
-                                          checked={checked}
-                                          disabled={
-                                            isSaving ||
-                                            !modelSettingsEditable ||
-                                            (checked && !canToggleOff)
-                                          }
-                                          aria-label={`${model.name}: ${effort}`}
-                                          data={{
-                                            cy: `chatbot-reasoning-${model.id}-${effort}`,
-                                          }}
-                                          onCheck={() =>
-                                            handleReasoningEffortToggle(
-                                              model.id,
-                                              effort,
-                                              !checked
-                                            )
-                                          }
-                                          label={<span>{effort}</span>}
-                                        />
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              )}
+                        return (
+                          <div
+                            key={`reasoning-model-${model.id}`}
+                            className="rounded-md border border-gray-200 bg-gray-50 p-3"
+                          >
+                            <div className="mb-2 text-sm font-semibold text-gray-800">
+                              {model.name}
                             </div>
-                          )
-                        })}
+
+                            {!modelSelectionEnabled ? (
+                              <div className="space-y-2">
+                                <label
+                                  htmlFor={`chatbot-reasoning-select-${model.id}`}
+                                  className="text-xs text-gray-600"
+                                >
+                                  {t('manage.resources.reasoningEffort')}
+                                </label>
+                                <Select
+                                  id={`chatbot-reasoning-select-${model.id}`}
+                                  data={{
+                                    cy: `chatbot-reasoning-${model.id}`,
+                                  }}
+                                  value={selectedEffort}
+                                  disabled={isSaving || !modelSettingsEditable}
+                                  items={supportedEfforts.map((effort) => ({
+                                    value: effort,
+                                    label: effort,
+                                  }))}
+                                  onChange={(effort) =>
+                                    handleReasoningEffortChange(
+                                      model.id,
+                                      effort
+                                    )
+                                  }
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {supportedEfforts.map((effort) => {
+                                  const checked =
+                                    configuredEfforts.includes(effort)
+                                  const canToggleOff =
+                                    configuredEfforts.length > 1
+                                  return (
+                                    <div
+                                      key={`reasoning-effort-${model.id}-${effort}`}
+                                      className={twMerge(
+                                        'flex items-center gap-2 rounded-full border px-3 py-1 text-xs',
+                                        checked
+                                          ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                          : 'border-gray-300 text-gray-700',
+                                        !checked && !canToggleOff
+                                          ? 'opacity-60'
+                                          : ''
+                                      )}
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        disabled={
+                                          isSaving ||
+                                          !modelSettingsEditable ||
+                                          (checked && !canToggleOff)
+                                        }
+                                        aria-label={`${model.name}: ${effort}`}
+                                        data={{
+                                          cy: `chatbot-reasoning-${model.id}-${effort}`,
+                                        }}
+                                        onCheck={() =>
+                                          handleReasoningEffortToggle(
+                                            model.id,
+                                            effort,
+                                            !checked
+                                          )
+                                        }
+                                        label={<span>{effort}</span>}
+                                      />
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}

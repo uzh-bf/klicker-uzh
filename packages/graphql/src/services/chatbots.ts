@@ -944,27 +944,6 @@ export async function updateChatbotModelPolicy(
 
   if (
     !args.modelSelection &&
-    selectedModels[0] &&
-    !selectedModels[0].supportsReasoning &&
-    normalizedReasoningConfig.length > 0
-  ) {
-    throw chatbotError(
-      `Model ${selectedModels[0].id} does not support configurable reasoning efforts`,
-      'BAD_USER_INPUT'
-    )
-  }
-  if (
-    !args.modelSelection &&
-    selectedModels[0]?.supportsReasoning &&
-    normalizedReasoningConfig.length !== 1
-  ) {
-    throw chatbotError(
-      `Fixed model policy requires exactly one reasoning configuration for model: ${selectedModels[0].id}`,
-      'BAD_USER_INPUT'
-    )
-  }
-  if (
-    !args.modelSelection &&
     selectedModels[0]?.supportsReasoning &&
     normalizedReasoningConfig[0]?.efforts.length !== 1
   ) {

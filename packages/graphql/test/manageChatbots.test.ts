@@ -307,6 +307,40 @@ describe('Integration tests for lecturer chatbot create/update', () => {
           { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
         ],
       })
+
+      await expect(
+        updateChatbotModelSettings(
+          {
+            chatbotId: chatbot.id,
+            modelSelection: false,
+            allowedModelIds: [],
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        modelSelection: false,
+        allowedModelIds: [],
+      })
+
+      await expect(
+        updateChatbotModelSettings(
+          {
+            chatbotId: chatbot.id,
+            modelSelection: false,
+            allowedModelIds: ['gpt-4.1'],
+            allowedReasoningEffortsByModel: [
+              { modelId: 'gpt-5.6-luna', efforts: ['medium'] },
+            ],
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        modelSelection: false,
+        allowedModelIds: ['gpt-4.1'],
+        allowedReasoningEffortsByModel: [
+          { modelId: 'gpt-5.6-luna', efforts: ['medium'] },
+        ],
+      })
     })
   })
 
@@ -524,6 +558,47 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       ).rejects.toMatchObject({
         extensions: { code: 'CHATBOT_NOT_EDITABLE' },
       })
+    })
+
+    it('reports a compare-and-set conflict when status changes during save', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const transaction = vi.fn(
+        async (
+          callback: (tx: {
+            chatbot: {
+              updateMany: () => Promise<{ count: number }>
+              findUniqueOrThrow: () => Promise<never>
+            }
+          }) => Promise<unknown>
+        ) =>
+          await callback({
+            chatbot: {
+              updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+              findUniqueOrThrow: vi.fn(),
+            },
+          })
+      )
+      const testPrisma = new Proxy(prisma, {
+        get(target, property, receiver) {
+          return property === '$transaction'
+            ? transaction
+            : Reflect.get(target, property, receiver)
+        },
+      })
+
+      await expect(
+        updateChatbotModelPolicy(
+          {
+            chatbotId: chatbot.id,
+            modelSelection: false,
+            allowedModelIds: ['auto'],
+          },
+          { ...userOneCtx, prisma: testPrisma }
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_EDIT_CONFLICT' },
+      })
+      expect(transaction).toHaveBeenCalledOnce()
     })
   })
 
