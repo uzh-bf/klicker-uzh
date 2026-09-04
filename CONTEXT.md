@@ -36,6 +36,16 @@ participant account.
 numeric pin code, while an **SSO course** admits only people arriving through
 SWITCH edu-ID.
 
+**Course deletion request**: An accepted instruction to remove a course. The
+course and its activities immediately leave user-facing collections and detail
+reads, even though permanent course deletion may still be pending.
+_Avoid_: Background deletion, soft deletion
+
+**Permanent course deletion**: The irreversible removal of a course and the
+deletion or disconnection of its associated activities according to the course
+deletion rules.
+_Avoid_: Course deletion request, soft deletion
+
 **Assessment course**: A course whose participant results are used as formal
 assessment records and grade-matching inputs (`isAssessmentEnabled`). It is a
 mode of an ordinary course, not a separate type, and it changes what identity

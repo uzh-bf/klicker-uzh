@@ -19,6 +19,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import {
   type BuildKBGraphInput,
+  type CourseDeletionEvent,
   DisplayMode,
   type ElementData,
   type ElementInstanceOptions,
@@ -40,6 +41,7 @@ import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -327,6 +329,17 @@ export async function testInitialization(
       fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
         const success = await handleSweepStaleCourseDuplications(
           {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    processCourseDeletion: hatchet.task({
+      name: 'process-course-deletion',
+      fn: vi.fn(async (input: CourseDeletionEvent, executionCtx) => {
+        const success = await handleProcessCourseDeletion(
+          input,
           hatchetCtx,
           executionCtx
         )

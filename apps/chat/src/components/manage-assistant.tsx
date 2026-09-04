@@ -36,9 +36,11 @@ import {
 } from '../services/manageContext'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { EmbeddedSettings } from './embedded-settings'
+import { ModeOptionsProvider } from './mode-options-context'
 import { Thread, type ThreadWelcomeCapability } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
+const MANAGE_MODE_OPTIONS = { manage: '' }
 export function ManageAssistant() {
   return (
     <ChatUiProvider>
@@ -355,9 +357,11 @@ function ManageAssistantRuntimeProvider({
   })
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
+    <ModeOptionsProvider modeOptions={MANAGE_MODE_OPTIONS}>
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    </ModeOptionsProvider>
   )
 }
 
