@@ -59,7 +59,7 @@ function betaEnrollmentSettings(): BetaEnrollmentSettings | null {
 
     return {
       apiKey,
-      apiUrl: `${parsedUrl.origin}${path}`,
+      apiUrl: `${parsedUrl.origin}/api/v1`,
       savedGroupId,
     }
   } catch {
@@ -97,12 +97,7 @@ function makeCapability({
 }
 
 function savedGroupUrl(settings: BetaEnrollmentSettings): string {
-  const apiBase = settings.apiUrl.endsWith('/api/v1')
-    ? settings.apiUrl
-    : settings.apiUrl.endsWith('/api')
-      ? `${settings.apiUrl}/v1`
-      : `${settings.apiUrl}/api/v1`
-  return `${apiBase}/saved-groups/${encodeURIComponent(settings.savedGroupId)}`
+  return `${settings.apiUrl}/saved-groups/${encodeURIComponent(settings.savedGroupId)}`
 }
 
 async function readSavedGroup(
@@ -283,7 +278,7 @@ export async function setBetaEnrollment(
   }
 
   try {
-    await ctx.featureFlags?.refresh?.()
+    await ctx.featureFlags?.refresh()
   } catch (error) {
     // The saved-group write is authoritative. Refresh failure only delays the
     // evaluator payload update until its normal polling interval.

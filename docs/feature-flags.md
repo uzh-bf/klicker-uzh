@@ -242,7 +242,9 @@ workload with the management Secret. Evaluator-only APIs and workers continue
 to receive only the read-only SDK connection. The saved-group id renders from
 `backendGraphql.betaSavedGroupId` only when an environment configures it; the
 checked-in default is empty. Missing configuration keeps membership unknown and
-disables changes.
+causes mutations to fail as unavailable. An otherwise eligible caller still
+receives `mayChange: true` so the UI can keep the enrollment section findable
+and explain the outage without guessing a switch state.
 
 The GraphQL service is the sole writer for this saved group. It serializes each
 read-modify-write operation with a saved-group-scoped Redis lease and verifies
@@ -258,6 +260,11 @@ after eligibility changes or signup closes. Weaker login scopes receive no
 saved-group read and see membership as unknown. Production `ai-beta` targeting
 must require both membership in this saved group and `catalyst: true`; the
 source default remains false until that operational rule is configured.
+
+Do not remove the Management API configuration while the saved group still has
+members. Missing configuration also prevents self-service opt-out, so first
+close signup, keep the integration available, reconcile the group to empty,
+and verify absence before unprovisioning it or reverting this source path.
 
 Never pass the management key to `NodeFeatureFlagClient`, a frontend image
 build, or a `NEXT_PUBLIC_*` variable. If another workload becomes the

@@ -18,7 +18,10 @@ function context({
   scope?: UserLoginScope
 } = {}): Context {
   return {
-    featureFlags: { isEnabled: vi.fn(() => flagEnabled) },
+    featureFlags: {
+      isEnabled: vi.fn(() => flagEnabled),
+      refresh: vi.fn(async () => undefined),
+    },
     redisExec: {
       set: vi.fn(async () => 'OK'),
       eval: vi.fn(async (script: string) =>

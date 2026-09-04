@@ -239,7 +239,7 @@ approval behavior, and conflict handling are verified.
 | --- | --- | --- | --- |
 | Main orchestrator — backend enrollment | `packages/feature-flags/**`; beta-enrollment schema, service, operations, and tests under `packages/graphql/**` except `QUserProfile.graphql`; `turbo.json`; `.devcontainer/docker-compose.yml`; GrowthBook fields in `deploy/**`; directly affected feature-flag docs | Approved plan | `feat(manage): add gated beta enrollment backend` |
 | Manage enrollment executor — persistent settings | New enrollment component, `apps/frontend-manage/src/pages/user/settings.tsx`, and matching `packages/i18n/messages/{en,de}.ts` keys only | Backend commit and generated operations | `feat(manage): add beta enrollment settings` |
-| Manage discovery executor — signup and menu | `SuspendedFirstLoginModal.tsx`, `Header.tsx`, `Layout.tsx`, `packages/graphql/src/graphql/ops/QUserProfile.graphql`, and discovery-specific keys in `packages/i18n/messages/{en,de}.ts`; no Playwright paths | Persistent settings commit | `feat(manage): surface beta enrollment discovery` |
+| Manage discovery executor — signup and menu | `SuspendedFirstLoginModal.tsx`, `Header.tsx`, `Layout.tsx`, `ManageFeatureFlagProvider.tsx`, a new Manage-specific profile operation under `packages/graphql/src/graphql/ops/`, and discovery-specific keys in `packages/i18n/messages/{en,de}.ts`; no Playwright paths | Persistent settings commit | `feat(manage): surface beta enrollment discovery` |
 | Main orchestrator — integrated evidence and runbook | Playwright fixtures/spec, `docs/feature-flags.md`, `docs/ci-and-deployment.md`, plan progress, runtime evidence, and only fixes required by integrated review | All implementation commits | `test(manage): verify beta enrollment rollout` plus a metadata-only plan rename commit if a pull request id exists |
 
 Only one writer uses the worktree at a time. Each executor receives a fresh,
@@ -429,6 +429,15 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: backend commit `8e8bed22c` passed its GLM 5.3 Flash
+  simplifier and risk-selected slice review with no Critical or Important
+  correctness finding. Accepted the behavior-preserving URL normalization and
+  required evaluator refresh contract. Clarified that `mayChange` preserves an
+  eligible caller's unavailable UI state, and recorded that Management API
+  configuration cannot be removed until the cohort is verified empty because
+  unprovisioning would also disable self-service opt-out. The discovery slice
+  now explicitly owns the Manage provider's Catalyst attribute and a new
+  operation name; the deployed `QUserProfile` operation remains untouched.
 - 2026-09-04: backend enrollment slice implementation and focused verification
   are complete before review. Added the default-off `beta-signup` contract,
   Catalyst targeting attribute, typed capability query/mutation, full-access
@@ -442,8 +451,7 @@ GrowthBook or cluster mutation occurs.
   unrelated fixture/Redis failures, then replaced with direct focused Vitest.
   The repository-wide pre-commit equivalent completed all 25 typecheck tasks;
   its only failure was the untouched Analytics lint bootstrap timing out while
-  downloading `pydantic-core`. The backend slice awaits its local commit,
-  simplifier, and risk review.
+  downloading `pydantic-core`. The backend slice was committed as `8e8bed22c`.
 - 2026-09-04: the GraphQL rolling-deployment rule requires a new operation name
   when adding `userScope`; the discovery slice will retain `QUserProfile` and
   introduce a Manage-specific profile operation instead of changing the
