@@ -230,6 +230,15 @@ test.describe('W4 activity wizard safety', () => {
   }) => {
     await page.setViewportSize({ width: 749, height: 820 })
     await loginLecturer()
+    await createQuestionSC(page, {
+      name: 'W4 Responsive Layout Element',
+      content: 'Synthetic element for responsive library layout coverage',
+      choices: [
+        { value: 'Correct', correct: true },
+        { value: 'Incorrect', correct: false },
+      ],
+      userId: USER_ID_TEST,
+    })
     await openLibrary(page, 'en')
 
     const activityChoices = page
@@ -283,6 +292,15 @@ test.describe('W4 activity wizard safety', () => {
     loginLecturer,
   }) => {
     await loginLecturer()
+    await createQuestionSC(page, {
+      name: 'W4 Compact Layout Element',
+      content: 'Synthetic element for compact library layout coverage',
+      choices: [
+        { value: 'Correct', correct: true },
+        { value: 'Incorrect', correct: false },
+      ],
+      userId: USER_ID_TEST,
+    })
     await openLibrary(page, 'en')
 
     const sidebar = page.getByTestId('element-library-sidebar')
