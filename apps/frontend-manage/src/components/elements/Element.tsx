@@ -195,15 +195,14 @@ function Element({
                   compact && 'text-base'
                 )}
               >
-                <a
+                <button
                   className={twMerge(
                     'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
                     compact && 'min-w-0 text-base',
                     disabled && 'hover:cursor-not-allowed hover:text-black'
                   )}
-                  role="button"
-                  tabIndex={0}
                   type="button"
+                  disabled={disabled}
                   onClick={() => {
                     if (!disabled) {
                       const value = localStorage.getItem(
@@ -227,7 +226,7 @@ function Element({
                       className="ml-3"
                     />
                   )}
-                </a>
+                </button>
               </div>
 
               <div
