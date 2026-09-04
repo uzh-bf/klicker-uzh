@@ -429,10 +429,13 @@ run. Do not add a hosted evaluation service or dependency.
 - [x] Reached reviewed local source commits for the dedicated ingestion
   project, STG deployment manifests, and values-free STG secret projection.
 - [ ] The catalog source is implemented and passes static and full test suites,
-  but its required model-backed no-ingestion build is blocked because the
-  authenticated self-hosted LiteLLM endpoint is unreachable from this host and
-  no approved tunnel is listening at `127.0.0.1:14000`. The failed artifact has
-  zero successful classifications, zero model calls, and zero cost.
+  but its required model-backed no-ingestion build is blocked by model-pool
+  policy. The explicitly approved STG tunnel and restricted key returned an
+  authenticated 24-model listing, but it exposes only the relevant
+  `aibuddy/azure/gpt-5.6-*` aliases and not the catalog's required
+  `foundry-public/azure/gpt-5.6-luna-canary`. The public model pool is PRD-only;
+  STG cannot provide public-provider runtime proof. No model request or cost
+  occurred, and the temporary tunnel was stopped and verified absent.
 - [ ] The local Klicker B2 source remains intentionally untouched because this
   plan starts it only after the separately authorized STG ingestion and
   retrieval-isolation evaluation pass.
