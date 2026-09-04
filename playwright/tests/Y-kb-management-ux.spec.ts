@@ -107,7 +107,7 @@ test.describe('Knowledge base management workspace', () => {
         Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
       )
 
-      await page.route('**/graphql', async (route) => {
+      await page.route('**/graphql*', async (route) => {
         const request = route.request()
         const requestUrl = new URL(request.url())
         let operationName =
