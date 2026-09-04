@@ -261,19 +261,32 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
-- `Current:` Commit `ed3b236bfa` implements selected-source SHA tags and
-  publish-once guards. Commit `b7b381812d` adds optional `global.imageTag`
-  precedence across all 18 first-party images and a focused contract test that
-  derives the 15 workflows, validates all 32 metadata/build pairs and 18 active
-  image jobs, and compares no-override renders with frozen-parent staging and
-  production baselines (`a6ee9ad6b235` and `0ec440b0e11d`). The staging and
-  production values files remain unchanged, including all 16 staging rollout
-  annotations. The documentation slice records the SHA-tag, Argo revision,
-  digest-receipt, deployed-`imageID`, trusted-code, and production boundaries;
-  it preserves the source-switch incident history while replacing its stale
-  prevention guidance.
-- `Next:` Reconcile the exact trusted controller and final-review runtime blobs
-  once the main session supplies the completed default-controller commits or
-  files, then rerun the focused runtime tests and byte-match checks. This is the
-  only remaining in-scope Phase 1 item for this worktree.
+- `Current:` Commits `ed3b236bfa` and `43e84ba3a5` implement and harden
+  selected-source SHA tags and publish-once guards. Commit `b7b381812d` adds
+  optional `global.imageTag` precedence across all 18 first-party images and
+  the independent contract anchors for the 15 workflows, 32 metadata/build
+  pairs, 18 active image jobs, and frozen-parent staging and production render
+  digests (`a6ee9ad6b235` and `0ec440b0e11d`). The environment values remain
+  unchanged, including all 16 staging rollout annotations. Commit `999da1473e`
+  mirrors the seven trusted promotion and final-review runtime/policy files
+  from reviewed controller head
+  `4a81e8e10bb5f1b8b8c3b7af275e7b14425767dc`.
+- `Mirror verification:` direct byte comparison and Git blob-ID comparison
+  both report 7/7 exact matches against the controller head. Selected-source
+  tests pass 4/4, mirrored promoter tests pass 20/20, and final-review tests
+  pass 56/56. Node syntax, workflow YAML parsing, 24 extracted Bash `bash -n`
+  and ShellCheck checks, the publish guard's Bash checks, Biome and Prettier
+  formatting, both Helm lints, frozen render hashes, the 18/18 sentinel render,
+  Git diff checks, staged Gitleaks, and focused personal-data review pass.
+- `Review dispositions:` the selected-source simplifier's suggestions to derive
+  render digests and remove the explicit image/job inventory were rejected:
+  those values are deliberately independent expected-state anchors that detect
+  coordinated drift. Its risk finding about overly broad registry absence
+  detection was accepted and fixed in `43e84ba3a5`; only an exact missing-tag
+  response now permits first publication, while generic 404, not-found, and
+  manifest-unknown responses fail closed.
+- `Remaining:` no implementation remains in this assigned worktree. The global
+  Phase 1 integration owner still must reconcile the helper, controller, and
+  selected-source contract matrix and complete the exact-range branch reviews
+  before the three local branches reach the plan's terminal condition.
 - `External state:` Unchanged.
