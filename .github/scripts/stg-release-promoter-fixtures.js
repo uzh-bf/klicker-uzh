@@ -1,5 +1,9 @@
 'use strict'
 
+const crypto = require('node:crypto')
+
+const OCI_MANIFEST_CONTENT_TYPE = 'application/vnd.oci.image.manifest.v1+json'
+
 const FIXTURE_WORKFLOW_PATHS = Object.freeze([
   '.github/workflows/v3_auth-stg.yml',
   '.github/workflows/v3_backend-docker-stg.yml',
@@ -174,10 +178,48 @@ function workflowJobs({
   }))
 }
 
+function registryManifestResponse({
+  body = '{"schemaVersion":2}',
+  contentType = OCI_MANIFEST_CONTENT_TYPE,
+  digest,
+  includeDigest = true,
+  includeReader = true,
+  redirected = false,
+} = {}) {
+  const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body)
+  const resolvedDigest =
+    digest ??
+    `sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}`
+  const values = new Map(
+    Object.entries({
+      'content-type': contentType,
+      ...(includeDigest ? { 'docker-content-digest': resolvedDigest } : {}),
+    })
+  )
+  return {
+    ...(includeReader ? { arrayBuffer: async () => bytes } : {}),
+    headers: {
+      get: (name) => values.get(String(name).toLowerCase()) ?? null,
+    },
+    ok: true,
+    redirected,
+    status: 200,
+  }
+}
+
+function transientReadbackFailure(status = 503) {
+  const error = new Error('synthetic readback unavailable')
+  error.status = status
+  return error
+}
+
 module.exports = {
   FIXTURE_STAGING_WORKFLOWS,
   FIXTURE_WORKFLOW_PATHS,
+  OCI_MANIFEST_CONTENT_TYPE,
   fixtureDefinitions,
+  registryManifestResponse,
+  transientReadbackFailure,
   workflowDefinition,
   workflowJobs,
   workflowRun,

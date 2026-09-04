@@ -12,19 +12,21 @@ const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
 const SOURCE_BRANCH_VARIABLE = 'STG_SOURCE_BRANCH'
 const PROMOTION_ENABLED_VARIABLE = 'STG_RELEASE_PROMOTION_ENABLED'
 const MANUAL_CONFIRMATION = 'stg-release'
-const DEFAULT_SOURCE_BRANCH = 'v3'
 const DEFAULT_MAX_ATTEMPTS = 6
 const DEFAULT_RETRY_DELAY_MS = 20_000
+const DEFAULT_POST_PUSH_READBACK_ATTEMPTS = 3
+const DEFAULT_POST_PUSH_READBACK_DELAY_MS = 2_000
 const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/v3_.*-stg\.yml$/
 const APPROVED_PUSH_BRANCHES = Object.freeze(['v3', 'v3*'])
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/
-const REGISTRY_ACCEPT = [
+const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.docker.distribution.manifest.list.v2+json',
   'application/vnd.oci.image.manifest.v1+json',
   'application/vnd.docker.distribution.manifest.v2+json',
-].join(', ')
+])
+const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
 
 // Keep this inventory synchronized with the workflow_run names below. A
 // candidate cannot rename, add, remove, or retarget a runtime publisher without
@@ -117,6 +119,10 @@ const STAGING_WORKFLOW_PATHS = Object.freeze(
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
+}
+
+function sha256Bytes(value) {
+  return crypto.createHash('sha256').update(value).digest('hex')
 }
 
 function validSha(value) {
@@ -630,27 +636,13 @@ async function getCandidateDefinitions({
   return definitions
 }
 
-async function getSourceBranch({
-  github,
-  context,
-  selectedSourceBranch = undefined,
-}) {
-  if (selectedSourceBranch !== undefined) {
-    return assertSafeSourceBranch(selectedSourceBranch)
+function getSourceBranch(selectedSourceBranch) {
+  if (selectedSourceBranch === undefined) {
+    throw new Error(
+      `${SOURCE_BRANCH_VARIABLE} must be resolved by the trusted workflow`
+    )
   }
-  const getVariable = github.rest.actions?.getRepoVariable
-  if (typeof getVariable !== 'function') return DEFAULT_SOURCE_BRANCH
-  try {
-    const response = await getVariable({
-      name: SOURCE_BRANCH_VARIABLE,
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-    })
-    return assertSafeSourceBranch(response.data?.value)
-  } catch (error) {
-    if (error?.status === 404) return DEFAULT_SOURCE_BRANCH
-    throw error
-  }
+  return assertSafeSourceBranch(selectedSourceBranch)
 }
 
 async function compareRevisions({ github, context, base, head }) {
@@ -686,16 +678,14 @@ async function validateCandidateAncestry({
 }
 
 async function paginate(github, endpoint, params) {
-  if (typeof github.paginate === 'function') {
-    const result = await github.paginate(endpoint, params)
-    return Array.isArray(result) ? result : []
+  if (typeof github.paginate !== 'function') {
+    throw new Error('GitHub pagination is unavailable')
   }
-  const response = await endpoint(params)
-  const data = response?.data
-  if (Array.isArray(data)) return data
-  if (Array.isArray(data?.workflow_runs)) return data.workflow_runs
-  if (Array.isArray(data?.jobs)) return data.jobs
-  return []
+  const result = await github.paginate(endpoint, params)
+  if (!Array.isArray(result)) {
+    throw new Error('GitHub pagination returned an invalid result')
+  }
+  return result
 }
 
 function latestRun(runs, workflowPath, candidateSha) {
@@ -1013,6 +1003,9 @@ async function registryResponse({ repository, tag, fetchImpl }) {
       redirect: 'error',
     })
   let response = await request()
+  if (response.redirected) {
+    throw new Error(`${repository}:${tag} registry response redirected`)
+  }
   if (response.status !== 401) return response
 
   const challenge = parseBearerChallenge(
@@ -1034,6 +1027,9 @@ async function registryResponse({ repository, tag, fetchImpl }) {
   realm.searchParams.set('service', registry)
   realm.searchParams.set('scope', expectedScope)
   const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
+  if (tokenResponse.redirected) {
+    throw new Error(`${repository}:${tag} registry token response redirected`)
+  }
   if (!tokenResponse.ok) {
     throw new Error(
       `${repository}:${tag} registry token response was ${tokenResponse.status}`
@@ -1047,6 +1043,9 @@ async function registryResponse({ repository, tag, fetchImpl }) {
     )
   }
   response = await request(`Bearer ${token}`)
+  if (response.redirected) {
+    throw new Error(`${repository}:${tag} registry response redirected`)
+  }
   return response
 }
 
@@ -1057,10 +1056,37 @@ async function fetchRegistryDigest({ repository, tag, fetchImpl = fetch }) {
       `${repository}:${tag} registry response was ${response.status}`
     )
   }
+  const contentType = String(response.headers.get('content-type') ?? '')
+    .split(';', 1)[0]
+    .trim()
+    .toLowerCase()
+  if (!REGISTRY_CONTENT_TYPES.includes(contentType)) {
+    throw new Error(
+      `${repository}:${tag} registry response has an unexpected content type`
+    )
+  }
   const digest = response.headers.get('docker-content-digest')
   if (!DIGEST_PATTERN.test(digest ?? '')) {
     throw new Error(
-      `${repository}:${tag} registry response has no digest header`
+      `${repository}:${tag} registry response has no valid digest header`
+    )
+  }
+  if (typeof response.arrayBuffer !== 'function') {
+    throw new Error(`${repository}:${tag} registry response was incomplete`)
+  }
+  let body
+  try {
+    body = Buffer.from(await response.arrayBuffer())
+  } catch {
+    throw new Error(`${repository}:${tag} registry response was incomplete`)
+  }
+  if (body.length === 0) {
+    throw new Error(`${repository}:${tag} registry response was incomplete`)
+  }
+  const bodyDigest = `sha256:${sha256Bytes(body)}`
+  if (bodyDigest !== digest) {
+    throw new Error(
+      `${repository}:${tag} registry response body does not match its digest header`
     )
   }
   return digest
@@ -1209,7 +1235,16 @@ async function compareAndSwapReleaseRef({
   repositoryUrl,
   gitRunner,
   workspace,
+  readbackMaxAttempts = DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
+  readbackRetryDelayMs = DEFAULT_POST_PUSH_READBACK_DELAY_MS,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
 }) {
+  if (!Number.isSafeInteger(readbackMaxAttempts) || readbackMaxAttempts < 1) {
+    throw new Error('post-push readback attempts must be a positive integer')
+  }
+  if (!Number.isSafeInteger(readbackRetryDelayMs) || readbackRetryDelayMs < 0) {
+    throw new Error('post-push readback delay must be a non-negative integer')
+  }
   const observed = await getReleaseRef({ github, context })
   if (observed !== expectedSha) {
     throw new Error('stg-release changed before the compare-and-swap')
@@ -1238,11 +1273,44 @@ async function compareAndSwapReleaseRef({
   } catch (error) {
     throw new Error('stg-release compare-and-swap failed', { cause: error })
   }
-  const result = await getReleaseRef({ github, context })
-  if (result !== candidateSha) {
-    throw new Error('stg-release changed during the compare-and-swap')
+
+  const readbackAttempts = []
+  let observedReleaseSha = null
+  let verification = 'uncertain'
+  for (let attempt = 1; attempt <= readbackMaxAttempts; attempt += 1) {
+    try {
+      observedReleaseSha = await getReleaseRef({ github, context })
+      verification =
+        observedReleaseSha === candidateSha ? 'verified' : 'mismatch'
+      readbackAttempts.push({
+        attempt,
+        observed_release_sha: observedReleaseSha,
+        state: verification,
+      })
+      if (verification === 'verified') break
+    } catch {
+      observedReleaseSha = null
+      verification = 'uncertain'
+      readbackAttempts.push({
+        attempt,
+        observed_release_sha: null,
+        state: 'unavailable',
+      })
+    }
+    if (attempt < readbackMaxAttempts) {
+      try {
+        await sleep(readbackRetryDelayMs)
+      } catch {
+        break
+      }
+    }
   }
-  return result
+  return {
+    observed_release_sha: observedReleaseSha,
+    readback_attempts: readbackAttempts,
+    result: 'push-succeeded',
+    verification,
+  }
 }
 
 function defaultReceiptPath() {
@@ -1282,6 +1350,8 @@ function writeReceiptArtifacts({
         `- Controller run: \`${receipt.controller_run_id}\``,
         `- Decision: \`${receipt.decision.action}\``,
         `- Write mode: \`${receipt.decision.mode}\``,
+        `- Ref update: \`${receipt.update_result.result}\``,
+        `- Ref verification: \`${receipt.update_result.verification}\``,
         `- Workflows: ${receipt.workflows.length}`,
         `- Runtime image digests: ${receipt.images.length}`,
         `- Receipt checksum: \`${checksum}\``,
@@ -1297,17 +1367,12 @@ function setOutput(core, name, value) {
 }
 
 async function resolveInputs({
-  github,
   context,
   sourceBranch,
   candidateSha,
   promotionEnabled = process.env[PROMOTION_ENABLED_VARIABLE],
 }) {
-  const selectedSourceBranch = await getSourceBranch({
-    github,
-    context,
-    selectedSourceBranch: sourceBranch,
-  })
+  const selectedSourceBranch = getSourceBranch(sourceBranch)
   if (context.eventName === 'workflow_run') {
     const workflowRun = context.payload?.workflow_run
     if (
@@ -1334,10 +1399,10 @@ async function resolveInputs({
     const inputs = context.payload?.inputs ?? {}
     const selectedCandidateSha = candidateSha ?? inputs.sha
     const dryRun = inputs.dry_run !== false && inputs.dry_run !== 'false'
-    const confirmation = inputs.confirm ?? ''
+    const confirmation = inputs.confirm_ref_update ?? ''
     if (!dryRun && confirmation !== MANUAL_CONFIRMATION) {
       throw new Error(
-        `manual writes require the exact confirmation ${MANUAL_CONFIRMATION}`
+        `manual writes require confirm_ref_update=${MANUAL_CONFIRMATION}`
       )
     }
     return {
@@ -1364,6 +1429,8 @@ async function runPromotion({
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  readbackMaxAttempts = DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
+  readbackRetryDelayMs = DEFAULT_POST_PUSH_READBACK_DELAY_MS,
   receiptPath,
   checksumPath,
   summaryPath,
@@ -1373,7 +1440,6 @@ async function runPromotion({
   workspace,
 }) {
   const inputs = await resolveInputs({
-    github,
     context,
     sourceBranch,
     candidateSha,
@@ -1445,12 +1511,17 @@ async function runPromotion({
     currentSha,
     candidateSha: inputs.candidateSha,
   })
-  let appliedSha = null
+  let updateResult = {
+    observed_release_sha: currentSha,
+    readback_attempts: [],
+    result: 'not-attempted',
+    verification: 'not-required',
+  }
   if (
     inputs.allowWrite &&
     ['create', 'fast-forward'].includes(decision.action)
   ) {
-    appliedSha = await compareAndSwapReleaseRef({
+    updateResult = await compareAndSwapReleaseRef({
       github,
       context,
       expectedSha: currentSha,
@@ -1459,8 +1530,13 @@ async function runPromotion({
       repositoryUrl,
       gitRunner,
       workspace,
+      readbackMaxAttempts,
+      readbackRetryDelayMs,
+      sleep,
     })
   }
+  const appliedSha =
+    updateResult.verification === 'verified' ? inputs.candidateSha : null
 
   const receipt = {
     schema_version: 'stg-release-promotion/v1',
@@ -1475,6 +1551,7 @@ async function runPromotion({
       mode: inputs.allowWrite ? 'apply' : 'dry-run',
       ref: PROMOTION_REF,
     },
+    update_result: updateResult,
     attempts: evidence.attempts,
     workflows: evidence.workflows.map((workflow) => ({
       name: workflows.find((entry) => entry.path === workflow.path).name,
@@ -1501,12 +1578,22 @@ async function runPromotion({
   core?.info?.(
     `Staging release promotion ${decision.action}; receipt ${checksum}`
   )
+  if (
+    updateResult.result === 'push-succeeded' &&
+    updateResult.verification !== 'verified'
+  ) {
+    throw new Error(
+      `stg-release push succeeded but post-push verification is ${updateResult.verification}; receipt ${checksum}`
+    )
+  }
   return { ...receipt, checksum, ...artifacts }
 }
 
 module.exports = {
   APPROVED_PUSH_BRANCHES,
   DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
+  DEFAULT_POST_PUSH_READBACK_DELAY_MS,
   DEFAULT_RETRY_DELAY_MS,
   DIGEST_PATTERN,
   MANUAL_CONFIRMATION,

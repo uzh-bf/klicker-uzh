@@ -54,5 +54,6 @@ Three rules bound the release:
   owner, required approvals stay at zero and always-reporting status checks
   carry the entire gate. Promotion does not commit to those branches or require
   a bypass actor; the trusted controller updates only `stg-release` after
-  exact-build and registry-receipt validation.
+  exact-build validation and raw-body verification of each registry digest
+  recorded in the receipt.
 - The pattern repeats for future AI releases until `v3-ai` retires into `v3`.

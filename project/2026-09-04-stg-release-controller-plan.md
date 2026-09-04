@@ -57,7 +57,7 @@ and document the new release-ref contract.
   candidate code, actions, caches, and artifacts are never executed or used.
 - Workflow permissions are only `actions: read` and `contents: write`.
 - Automatic writes require `STG_RELEASE_PROMOTION_ENABLED=true`. Manual runs
-  default to dry-run and require exact confirmation `stg-release` before a
+  default to dry-run and require `confirm_ref_update=stg-release` before a
   write.
 - Candidate-scoped concurrency permits different candidates to race; remote
   compare-and-swap allows create or fast-forward only. Equal and stale
@@ -131,18 +131,26 @@ and document the new release-ref contract.
 
 ## Progress
 
-- `Current:` all assigned Phase 1 controller work is implemented, verified,
-  and committed locally.
+- `Current:` the accepted controller correction is implemented and verified on
+  exact local baseline `3079761289a4e0bb54380bfc7792c7c0295dbf11`.
+- `Correction:` preserve a receipt after every successful Git push, add bounded
+  post-push readback retries and explicit verification state, verify registry
+  digest headers against raw manifest bytes and accepted content types, remove
+  dead source-branch and pagination fallbacks, and rename the manual input to
+  `confirm_ref_update`.
 - `Completed:` `e7743d2c57` replaces the generated commit/pull-request promoter
   with the trusted exact-build release-ref controller; `2edaec3a37` removes the
   generated-promotion final-review bypass; `553b1f131a` supersedes ADR 0003,
-  narrowly amends ADR 0028, and updates the CI guide.
-- `Verification:` Node 24 syntax checks passed; promoter tests pass 14/14;
-  final-review tests pass 56/56; the selected-source fixture commit validates
-  15 workflow definitions and 16 runtime ARM jobs; workflow YAML parsing,
-  extracted-shell `bash -n`, ShellCheck, Biome and Prettier formatting checks,
-  and Git diff checks pass. Each staged slice passed Gitleaks and a focused
-  personal-data scan.
+  narrowly amends ADR 0028, and updates the CI guide. The correction preserves
+  receipts for uncertain or mismatched successful pushes, validates manifest
+  bodies against digest headers, removes dead fallbacks, and uses the exact
+  `confirm_ref_update` input.
+- `Verification:` Node 24 syntax checks pass; promoter tests pass 20/20 and
+  final-review tests pass 56/56. Workflow YAML parsing, extracted-shell
+  `bash -n`, ShellCheck, Biome and Prettier formatting checks, and Git diff
+  checks pass. Deterministic tests write and verify canonical fixture receipts
+  and checksums before rejecting exhausted or mismatched post-push readback.
+  Staged Gitleaks and focused personal-data review complete before commit.
 - `Review:` the execution owner completed a bounded trust-boundary and diff
   review. The global integration owner still owns the independent cross-branch
   review and contract matrix after all Phase 1 worktrees are available.

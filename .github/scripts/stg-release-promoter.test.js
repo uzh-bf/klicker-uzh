@@ -8,6 +8,8 @@ const test = require('node:test')
 const {
   FIXTURE_STAGING_WORKFLOWS,
   fixtureDefinitions,
+  registryManifestResponse,
+  transientReadbackFailure,
   workflowJobs,
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
@@ -20,6 +22,7 @@ const {
   collectBuildEvidence,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
+  getSourceBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
   resolveStableRegistryDigests,
@@ -150,8 +153,13 @@ function successfulJobs(workflows) {
   )
 }
 
-function refGithub(initialSha = null, { afterUpdateSha } = {}) {
+function refGithub(
+  initialSha = null,
+  { afterUpdateSha, postPushReadbacks = [] } = {}
+) {
   let currentSha = initialSha
+  let pushed = false
+  let readbackIndex = 0
   const calls = []
   const github = {
     calls,
@@ -159,6 +167,17 @@ function refGithub(initialSha = null, { afterUpdateSha } = {}) {
       git: {
         getRef: async (params) => {
           calls.push({ method: 'getRef', params })
+          if (pushed && readbackIndex < postPushReadbacks.length) {
+            const readback = postPushReadbacks[readbackIndex]
+            readbackIndex += 1
+            if (readback instanceof Error) throw readback
+            if (readback == null) {
+              const error = new Error('reference not found')
+              error.status = 404
+              throw error
+            }
+            return { data: { object: { sha: readback, type: 'commit' } } }
+          }
           if (currentSha == null) {
             const error = new Error('reference not found')
             error.status = 404
@@ -184,6 +203,7 @@ function refGithub(initialSha = null, { afterUpdateSha } = {}) {
     if (currentSha !== expectedSha) throw new Error('stale ref lease')
     const candidateSha = args.at(-1).split(':')[0]
     currentSha = afterUpdateSha ?? candidateSha
+    pushed = true
     return ''
   }
   return {
@@ -196,6 +216,12 @@ function refGithub(initialSha = null, { afterUpdateSha } = {}) {
     },
   }
 }
+
+test('requires the trusted workflow to resolve the selected source branch', () => {
+  assert.equal(getSourceBranch('v3'), 'v3')
+  assert.throws(() => getSourceBranch(), /resolved by the trusted workflow/)
+  assert.throws(() => getSourceBranch('main'), /approved push triggers/)
+})
 
 test('validates the candidate workflow set and only inventories active ARM publishers', () => {
   const workflows = validWorkflows()
@@ -638,6 +664,43 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
   }
 })
 
+test('fails closed when Octokit pagination is unavailable or invalid', async () => {
+  const workflows = validWorkflows()
+  const missingPaginator = evidenceGithub({
+    workflows,
+    jobs: successfulJobs(workflows),
+  }).github
+  delete missingPaginator.paginate
+  await assert.rejects(
+    collectBuildEvidence({
+      github: missingPaginator,
+      context: reviewContext(),
+      workflows,
+      candidateSha: CANDIDATE_SHA,
+      sourceBranch: 'v3',
+      maxAttempts: 1,
+    }),
+    /pagination is unavailable/
+  )
+
+  const invalidPaginator = evidenceGithub({
+    workflows,
+    jobs: successfulJobs(workflows),
+  }).github
+  invalidPaginator.paginate = async () => ({})
+  await assert.rejects(
+    collectBuildEvidence({
+      github: invalidPaginator,
+      context: reviewContext(),
+      workflows,
+      candidateSha: CANDIDATE_SHA,
+      sourceBranch: 'v3',
+      maxAttempts: 1,
+    }),
+    /pagination returned an invalid result/
+  )
+})
+
 test('resolves stable runtime SHA-tag digests and rejects incomplete or changing results', async () => {
   const workflows = validWorkflows()
   const { github } = evidenceGithub({
@@ -701,7 +764,8 @@ test('resolves stable runtime SHA-tag digests and rejects incomplete or changing
 })
 
 test('resolves a public registry Bearer challenge without exposing credentials', async () => {
-  const digest = `sha256:${'5'.repeat(64)}`
+  const manifestResponse = registryManifestResponse()
+  const digest = manifestResponse.headers.get('docker-content-digest')
   const calls = []
   const responses = [
     {
@@ -717,11 +781,7 @@ test('resolves a public registry Bearer challenge without exposing credentials',
       ok: true,
       status: 200,
     },
-    {
-      headers: new Headers({ 'docker-content-digest': digest }),
-      ok: true,
-      status: 200,
-    },
+    manifestResponse,
   ]
   const fetchImpl = async (url, options = {}) => {
     calls.push({ url: String(url), options })
@@ -741,6 +801,89 @@ test('resolves a public registry Bearer challenge without exposing credentials',
   assert.equal(
     calls[2].options.headers.authorization,
     'Bearer synthetic-registry-token'
+  )
+})
+
+test('verifies registry digest headers against accepted raw manifest bodies', async () => {
+  const contentTypes = [
+    'application/vnd.oci.image.index.v1+json',
+    'application/vnd.docker.distribution.manifest.list.v2+json',
+    'application/vnd.oci.image.manifest.v1+json',
+    'application/vnd.docker.distribution.manifest.v2+json',
+  ]
+  for (const contentType of contentTypes) {
+    const response = registryManifestResponse({
+      contentType: `${contentType}; charset=utf-8`,
+    })
+    assert.equal(
+      await fetchRegistryDigest({
+        repository: 'ghcr.io/uzh-bf/klicker-uzh/auth-arm',
+        tag: CANDIDATE_SHA,
+        fetchImpl: async () => response,
+      }),
+      response.headers.get('docker-content-digest'),
+      contentType
+    )
+  }
+})
+
+test('rejects untrusted or incomplete registry manifest responses', async () => {
+  const cases = [
+    [
+      'unexpected content type',
+      registryManifestResponse({ contentType: 'text/plain' }),
+      /unexpected content type/,
+    ],
+    [
+      'missing digest',
+      registryManifestResponse({ includeDigest: false }),
+      /no valid digest header/,
+    ],
+    [
+      'invalid digest',
+      registryManifestResponse({ digest: 'sha256:not-a-digest' }),
+      /no valid digest header/,
+    ],
+    [
+      'body mismatch',
+      registryManifestResponse({ digest: `sha256:${'f'.repeat(64)}` }),
+      /does not match its digest header/,
+    ],
+    ['redirect', registryManifestResponse({ redirected: true }), /redirected/],
+    [
+      'missing body reader',
+      registryManifestResponse({ includeReader: false }),
+      /incomplete/,
+    ],
+    [
+      'empty body',
+      registryManifestResponse({ body: Buffer.alloc(0) }),
+      /incomplete/,
+    ],
+  ]
+  for (const [label, response, reason] of cases) {
+    await assert.rejects(
+      fetchRegistryDigest({
+        repository: 'ghcr.io/uzh-bf/klicker-uzh/auth-arm',
+        tag: CANDIDATE_SHA,
+        fetchImpl: async () => response,
+      }),
+      reason,
+      label
+    )
+  }
+
+  const interrupted = registryManifestResponse()
+  interrupted.arrayBuffer = async () => {
+    throw new Error('synthetic truncated body')
+  }
+  await assert.rejects(
+    fetchRegistryDigest({
+      repository: 'ghcr.io/uzh-bf/klicker-uzh/auth-arm',
+      tag: CANDIDATE_SHA,
+      fetchImpl: async () => interrupted,
+    }),
+    /incomplete/
   )
 })
 
@@ -806,17 +949,17 @@ test('plans equal, stale, fast-forward, and divergent release refs without force
 test('uses an exact remote lease for create and prevalidated fast-forward updates', async () => {
   const context = reviewContext()
   const create = refGithub()
-  assert.equal(
-    await compareAndSwapReleaseRef({
-      github: create.github,
-      context,
-      expectedSha: null,
-      candidateSha: CANDIDATE_SHA,
-      gitRunner: create.gitRunner,
-      gitToken: 'fixture-token',
-    }),
-    CANDIDATE_SHA
-  )
+  const created = await compareAndSwapReleaseRef({
+    github: create.github,
+    context,
+    expectedSha: null,
+    candidateSha: CANDIDATE_SHA,
+    gitRunner: create.gitRunner,
+    gitToken: 'fixture-token',
+  })
+  assert.equal(created.result, 'push-succeeded')
+  assert.equal(created.verification, 'verified')
+  assert.equal(created.observed_release_sha, CANDIDATE_SHA)
   const createGitCalls = create.calls.filter((call) => call.method === 'git')
   assert.equal(createGitCalls[0].args[0], 'fetch')
   assert.deepEqual(createGitCalls[1].args.slice(0, 3), [
@@ -865,17 +1008,21 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
   )
 
   const raced = refGithub(CURRENT_SHA, { afterUpdateSha: 'd'.repeat(40) })
-  await assert.rejects(
-    compareAndSwapReleaseRef({
-      github: raced.github,
-      context,
-      expectedSha: CURRENT_SHA,
-      candidateSha: NEXT_SHA,
-      gitRunner: raced.gitRunner,
-      gitToken: 'fixture-token',
-    }),
-    /changed during the compare-and-swap/
-  )
+  const racedResult = await compareAndSwapReleaseRef({
+    github: raced.github,
+    context,
+    expectedSha: CURRENT_SHA,
+    candidateSha: NEXT_SHA,
+    gitRunner: raced.gitRunner,
+    gitToken: 'fixture-token',
+    readbackMaxAttempts: 2,
+    readbackRetryDelayMs: 0,
+    sleep: async () => {},
+  })
+  assert.equal(racedResult.result, 'push-succeeded')
+  assert.equal(racedResult.verification, 'mismatch')
+  assert.equal(racedResult.observed_release_sha, 'd'.repeat(40))
+  assert.equal(racedResult.readback_attempts.length, 2)
 
   const notForward = refGithub(CURRENT_SHA)
   notForward.github.rest.repos.compareCommitsWithBasehead = async () => ({
@@ -897,6 +1044,28 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
       (call) => call.method === 'git' && call.args[0] === 'push'
     ),
     false
+  )
+})
+
+test('recovers from a transient post-push ref readback failure', async () => {
+  const refs = refGithub(null, {
+    postPushReadbacks: [transientReadbackFailure(), CANDIDATE_SHA],
+  })
+  const result = await compareAndSwapReleaseRef({
+    github: refs.github,
+    context: reviewContext(),
+    expectedSha: null,
+    candidateSha: CANDIDATE_SHA,
+    gitRunner: refs.gitRunner,
+    gitToken: 'fixture-token',
+    readbackMaxAttempts: 3,
+    readbackRetryDelayMs: 0,
+    sleep: async () => {},
+  })
+  assert.equal(result.verification, 'verified')
+  assert.deepEqual(
+    result.readback_attempts.map((attempt) => attempt.state),
+    ['unavailable', 'verified']
   )
 })
 
@@ -1057,6 +1226,105 @@ test('keeps an out-of-order candidate stale after a newer fast-forward wins', as
   )
 })
 
+test('writes receipts before rejecting uncertain or mismatched post-push readback', async (t) => {
+  const workflows = validWorkflows()
+  const { github: baseGithub } = evidenceGithub({
+    definitions: fixtureDefinitions(),
+    workflows,
+    jobs: successfulJobs(workflows),
+    runs: evidenceRuns(workflows),
+  })
+  const temporaryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stg-release-readback-')
+  )
+  t.after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }))
+
+  const cases = [
+    {
+      label: 'uncertain',
+      options: {
+        postPushReadbacks: [
+          transientReadbackFailure(),
+          transientReadbackFailure(),
+        ],
+      },
+      reason: /post-push verification is uncertain/,
+      states: ['unavailable', 'unavailable'],
+    },
+    {
+      label: 'mismatch',
+      options: { afterUpdateSha: NEXT_SHA },
+      reason: /post-push verification is mismatch/,
+      states: ['mismatch', 'mismatch'],
+    },
+  ]
+
+  for (const fixture of cases) {
+    const refs = refGithub(null, fixture.options)
+    const github = {
+      ...baseGithub,
+      rest: {
+        ...baseGithub.rest,
+        git: refs.github.rest.git,
+      },
+    }
+    const receiptPath = path.join(
+      temporaryDirectory,
+      `${fixture.label}-receipt.json`
+    )
+    const checksumPath = path.join(
+      temporaryDirectory,
+      `${fixture.label}-receipt.sha256`
+    )
+    const outputs = new Map()
+    await assert.rejects(
+      runPromotion({
+        github,
+        context: reviewContext('workflow_dispatch', {
+          confirm_ref_update: MANUAL_CONFIRMATION,
+          dry_run: false,
+          sha: CANDIDATE_SHA,
+        }),
+        sourceBranch: 'v3',
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        getRegistryDigest: async () => `sha256:${'6'.repeat(64)}`,
+        gitRunner: refs.gitRunner,
+        gitToken: 'fixture-token',
+        maxAttempts: 1,
+        readbackMaxAttempts: 2,
+        readbackRetryDelayMs: 0,
+        sleep: async () => {},
+        receiptPath,
+        checksumPath,
+        core: {
+          setOutput: (name, value) => outputs.set(name, value),
+        },
+      }),
+      fixture.reason,
+      fixture.label
+    )
+
+    assert.equal(fs.existsSync(receiptPath), true, fixture.label)
+    assert.equal(fs.existsSync(checksumPath), true, fixture.label)
+    const receiptText = fs.readFileSync(receiptPath, 'utf8')
+    const receipt = JSON.parse(receiptText)
+    assert.equal(receipt.update_result.result, 'push-succeeded')
+    assert.equal(receipt.update_result.verification, fixture.label)
+    assert.equal(receipt.applied_release_sha, null)
+    assert.deepEqual(
+      receipt.update_result.readback_attempts.map((attempt) => attempt.state),
+      fixture.states
+    )
+    assert.doesNotMatch(receiptText, /synthetic readback unavailable/)
+    const checksum = checksumReceipt(receipt)
+    assert.equal(outputs.get('receipt_checksum'), checksum)
+    assert.equal(
+      fs.readFileSync(checksumPath, 'utf8'),
+      `${checksum}  ${path.basename(receiptPath)}\n`
+    )
+  }
+})
+
 test('keeps manual defaults dry-run and gates automatic writes', async () => {
   const workflows = validWorkflows()
   const runs = evidenceRuns(workflows)
@@ -1096,6 +1364,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     })
     assert.equal(result.decision.mode, 'dry-run')
     assert.equal(result.decision.action, 'create')
+    assert.equal(result.update_result.result, 'not-attempted')
+    assert.equal(result.update_result.verification, 'not-required')
     assert.equal(refs.current(), null)
     assert.equal(
       checksumReceipt(JSON.parse(fs.readFileSync(result.receiptPath, 'utf8'))),
@@ -1114,7 +1384,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     const rerun = await runPromotion({
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
-        confirm: MANUAL_CONFIRMATION,
+        confirm_ref_update: MANUAL_CONFIRMATION,
         dry_run: false,
         sha: CANDIDATE_SHA,
       }),
@@ -1127,6 +1397,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
       summaryPath,
     })
     assert.equal(rerun.decision.action, 'no-op-equal')
+    assert.equal(rerun.update_result.result, 'not-attempted')
     assert.equal(
       rerunRefs.calls.some((call) => call.method === 'updateRef'),
       false
@@ -1157,25 +1428,32 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     })
     assert.equal(enabled.decision.action, 'create')
     assert.equal(enabled.decision.mode, 'apply')
+    assert.equal(enabled.update_result.result, 'push-succeeded')
+    assert.equal(enabled.update_result.verification, 'verified')
     assert.equal(refs.current(), CANDIDATE_SHA)
   } finally {
     fs.rmSync(temporaryDirectory, { recursive: true, force: true })
   }
 
-  await assert.rejects(
-    runPromotion({
-      github,
-      context: reviewContext('workflow_dispatch', {
-        confirm: 'wrong',
-        dry_run: false,
-        sha: CANDIDATE_SHA,
+  for (const inputs of [
+    { confirm_ref_update: 'wrong' },
+    { confirm: MANUAL_CONFIRMATION },
+  ]) {
+    await assert.rejects(
+      runPromotion({
+        github,
+        context: reviewContext('workflow_dispatch', {
+          ...inputs,
+          dry_run: false,
+          sha: CANDIDATE_SHA,
+        }),
+        sourceBranch: 'v3',
+        candidateSha: CANDIDATE_SHA,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
       }),
-      sourceBranch: 'v3',
-      candidateSha: CANDIDATE_SHA,
-      expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-    }),
-    new RegExp(`exact confirmation ${MANUAL_CONFIRMATION}`)
-  )
+      new RegExp(`confirm_ref_update=${MANUAL_CONFIRMATION}`)
+    )
+  }
 })
 
 test('uses only trusted controller checkout and has no commit or PR commands', () => {
@@ -1188,7 +1466,8 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.match(workflow, /SOURCE_BRANCH:.*STG_SOURCE_BRANCH/)
   assert.match(workflow, /sourceBranch: process\.env\.SOURCE_BRANCH/)
   assert.match(workflow, /default: true/)
-  assert.match(workflow, /confirm/)
+  assert.match(workflow, /^ {6}confirm_ref_update:$/m)
+  assert.doesNotMatch(workflow, /^ {6}confirm:$/m)
   assert.match(workflow, /stg-release/)
   assert.match(workflow, /github\.event\.workflow_run\.head_sha/)
   assert.doesNotMatch(workflow, /STG_PROMOTE_TOKEN|git commit|git push|gh pr/)
@@ -1221,6 +1500,7 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.match(promoter, /--force-with-lease=/)
   assert.doesNotMatch(promoter, /['"]--force['"]|git commit|gh pr/)
   assert.doesNotMatch(promoter, /createRef|updateRef|pulls\.create/)
+  assert.doesNotMatch(promoter, /getRepoVariable/)
 })
 
 test('does not use candidate files as executable workflow inputs', () => {

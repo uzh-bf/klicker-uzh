@@ -35,7 +35,7 @@ on:
         default: true
         required: true
         type: boolean
-      confirm:
+      confirm_ref_update:
         description: 'Required only when applying a manual promotion: stg-release'
         required: false
         type: string

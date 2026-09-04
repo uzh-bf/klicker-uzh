@@ -120,14 +120,21 @@ ref update:
   bounded interval; skipped, failed, cancelled, or mismatched evidence fails
   immediately.
 - Every expected runtime repository exposes the full candidate SHA tag with a
-  complete digest. The controller reads the registry inventory twice and fails
-  if any digest is absent or changes during collection.
+  complete digest. Each accepted OCI or Docker manifest response must be
+  redirect-free, complete, and have raw body bytes whose SHA-256 equals its
+  validated `Docker-Content-Digest` header. The controller reads the registry
+  inventory twice and fails if any digest is absent or changes during
+  collection.
 
 The sorted evidence becomes a canonical JSON receipt with the controller run,
 source and candidate revisions, workflow/run/job identities, registry tags and
-digests, retry history, ref decision, and previous/applied release revisions.
-Its SHA-256 checksum is written beside the receipt, and both are uploaded as a
-workflow artifact; the job summary records the same checksum and run identity.
+digests, retry history, ref decision, update result, post-push verification
+state, and previous/applied release revisions. Its SHA-256 checksum is written
+beside the receipt, and both are uploaded as a workflow artifact; the job
+summary records the same checksum and run identity. A successful Git push is
+followed by bounded ref readback retries. If readback remains unavailable or
+reports another ref, the controller writes the receipt and checksum with
+`uncertain` or `mismatch` verification before failing the run.
 
 `refs/heads/stg-release` is the only write target. An explicit expected-old
 lease provides the remote compare-and-swap after the controller has proved the
@@ -140,16 +147,18 @@ newer candidate.
 Operational notes.
 
 - Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. It falls back to
-  `v3` when unset, but promotion fails closed unless that branch has the exact
-  trusted publisher inventory and full-SHA tags.
+  `v3` in the trusted workflow expression when unset. The promoter requires
+  that resolved input and does not query repository variables itself. Promotion
+  fails closed unless the branch has the exact trusted publisher inventory and
+  full-SHA tags.
 - GitHub evaluates `workflow_run` from the default branch. A correction on a
   selected-source branch does not change the privileged controller. Candidate
   source may contain an identical mirror for manual diagnostics, but the
   automatic run executes only the default-branch revision.
 - Keep `STG_RELEASE_PROMOTION_ENABLED` absent or `false` during Phase 1. A
   manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
-  exact confirmation `stg-release`. Initial ref creation, repository-variable
-  changes, and activation remain separate operations.
+  exact input `confirm_ref_update=stg-release`. Initial ref creation,
+  repository-variable changes, and activation remain separate operations.
 - Before activation, prove every full-SHA image and retain the receipt, create
   `stg-release` through the confirmed manual path, then update only the private
   staging ArgoCD Application to track that ref and pass
