@@ -89,7 +89,6 @@ async function createKlickerDocsMcpClient({
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      redirect: 'error',
     },
     reconnectionOptions: {
       initialReconnectionDelay: 1000,

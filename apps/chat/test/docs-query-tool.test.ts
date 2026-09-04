@@ -199,7 +199,6 @@ describe('Klicker public docs composite tool', () => {
     )
 
     expect(capturedOptions).toMatchObject({
-      requestInit: { redirect: 'error' },
       reconnectionOptions: { maxRetries: 0 },
     })
     await capturedOptions.fetch?.('https://docs.test/mcp', {
