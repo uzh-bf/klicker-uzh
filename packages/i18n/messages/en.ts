@@ -2034,6 +2034,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
+      filterApplied: 'Filter applied',
       tags: 'Tags',
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
@@ -2098,12 +2099,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       batchOperationsElements: 'Elements - Batch Operations',
       batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'Review the selected elements below. Then choose the actions to apply.',
       batchElementName: 'Element',
-      batchElementPermission: 'Your permission',
-      batchUpdateStatus: 'Element update eligibility',
+      batchElementPermission: 'Permission',
+      batchUpdateStatus: 'Changes',
       batchUpdateStatusInactive: 'No element update configured',
-      batchSharingStatus: 'Element sharing eligibility',
+      batchSharingStatus: 'Sharing',
       actionApplies: 'Action applies',
       batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
@@ -2164,8 +2165,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       updateActivitiesBatchInfo:
         'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
       activityUpdates: 'Activity updates',
-      draftScheduledActivities: 'Draft and scheduled activities',
-      templateUpdates: 'Activity template updates',
+      batchUpdateInstancesConsequence:
+        'Also apply these changes to draft and scheduled activities',
+      batchUpdateTemplateInstancesConsequence: 'Also update activity templates',
       batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
         'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
