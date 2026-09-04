@@ -448,6 +448,12 @@ type AwardEntry {
   type: String!
 }
 
+type BetaEnrollmentCapability {
+  mayChange: Boolean!
+  membership: Boolean
+  signupAvailable: Boolean!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -2124,6 +2130,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
@@ -2590,6 +2597,7 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
+  betaEnrollment: BetaEnrollmentCapability!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!

@@ -16,6 +16,10 @@ import {
   viewPorts,
 } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
+import {
+  mockBetaEnrollmentGraphQL,
+  mockGrowthBookFeatureFlags,
+} from '../util/fixtures/manage.js'
 
 function getStudentLoginUrl() {
   return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
@@ -64,7 +68,7 @@ async function interceptInitialSettings(
   page: Page,
   captureVariables: (variables: Record<string, unknown>) => void
 ) {
-  await page.route('**/api/graphql', async (route) => {
+  await page.route('**/api/graphql*', async (route) => {
     const rawBody = route.request().postData()
     const body = rawBody
       ? (JSON.parse(rawBody) as {
@@ -74,7 +78,7 @@ async function interceptInitialSettings(
       : undefined
 
     if (body?.operationName !== 'ChangeInitialSettings') {
-      await route.continue()
+      await route.fallback()
       return
     }
 
@@ -262,6 +266,28 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await page.waitForTimeout(500)
       expect(mutationFired).toBe(false)
       await expect(saveButton).toBeDisabled()
+    })
+  })
+
+  test('First login surfaces beta enrollment while signup is open', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: false,
+      mayChange: true,
+      signupAvailable: true,
+    })
+
+    await withSyntheticFirstLogin(async () => {
+      await loginLecturer()
+
+      await expect(
+        page.getByTestId('first-login-beta-enrollment')
+      ).toBeVisible()
+      await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
+      await expect(page.getByTestId('first-login-save-settings')).toBeDisabled()
     })
   })
 

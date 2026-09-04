@@ -27,6 +27,7 @@ initialize GrowthBook only when they adopt their first flag.
 | -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
 | `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
 | `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
+| `beta-signup`        | Manage beta enrollment discovery and new opt-ins     | `false`  | Enrollment is hidden and new opt-ins are denied; existing members can still opt out     |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -74,6 +75,8 @@ supplies the actor contract from
 
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
 - `actorType`: `user`, `participant`, or `anonymous`;
+- `catalyst`: whether the authenticated lecturer currently has Catalyst
+  eligibility;
 - `role`: the Klicker role when applicable;
 - `environment`: added by each adapter after normalizing its deployment config;
 
@@ -121,9 +124,10 @@ attributes when they become available:
 `packages/feature-flags/src/react.tsx:FeatureFlagProvider` creates one client
 per provider mount, applies new attributes through the browser adapter's
 sanitizer without recreating it, and dedupes initialization under React Strict
-Mode. It loads the feature payload once; a flag change is picked up on the next
-provider mount or page reload. Missing configuration initializes an empty
-payload without a network request and emits a credential-free browser warning.
+Mode. `useRefreshFeatureFlags()` bypasses the browser cache after an enrollment
+change; otherwise a flag change is picked up on the next provider mount or page
+reload. Missing configuration initializes an empty payload without a network
+request and emits a credential-free browser warning.
 Failed SDK initialization emits the same class of safe warning while retaining
 false fallbacks. The browser adapter disables GrowthBook auto-experiments,
 visual changes, JavaScript injection, and URL redirects; this foundation
@@ -218,33 +222,79 @@ Auth and Chat receive the public browser configuration only. If either hybrid
 Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
 to that Deployment in the same change that initializes the Node adapter.
 
-## Management API readiness
+## Beta enrollment ownership
 
-SDK evaluation and GrowthBook administration use separate trust boundaries. A
-future Klicker administration surface may use GrowthBook's REST API to create a
-draft feature revision, change a rule, or publish an approved revision. The v3
-chart reserves these server-only variables for that integration:
+SDK evaluation and GrowthBook administration use separate trust boundaries.
+The beta enrollment setting uses the GrowthBook Management API only from the
+primary GraphQL backend. The browser calls typed GraphQL operations and never
+receives the management key.
 
-- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API base URL, including the
-  `/api` path where applicable;
+- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API origin or base URL; the
+  adapter accepts an optional trailing `/api` or `/api/v1`;
 - `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Personal Access
-  Token or Secret Access Token sent as a bearer credential.
+  Token or Secret Access Token sent as a bearer credential;
+- `GROWTHBOOK_BETA_SAVED_GROUP_ID`: the non-secret identifier of the list saved
+  group that owns beta membership.
 
 The primary backend GraphQL Deployment optionally imports those exact keys from
 `<rendered-chart-fullname>-secret-growthbook-management`. It is the only
-workload with the management Secret because a future Manage UI should terminate
-at an authenticated GraphQL mutation. Evaluator-only APIs and workers continue
-to receive only the read-only SDK connection. The management variables are
-registered with Turborepo but have no consumer yet; the Secret may remain absent
-until an administration feature is implemented.
+workload with the management Secret. Evaluator-only APIs and workers continue
+to receive only the read-only SDK connection. The saved-group id renders from
+`backendGraphql.betaSavedGroupId` only when an environment configures it; the
+checked-in default is empty. Missing configuration keeps membership unknown and
+causes mutations to fail as unavailable. An otherwise eligible caller still
+receives `mayChange: true` so the UI can keep the enrollment section findable
+and explain the outage without guessing a switch state.
+
+The GraphQL service is the sole writer for this saved group. It serializes each
+read-modify-write operation with a saved-group-scoped Redis lease and verifies
+ownership plus sufficient remaining lease immediately before the write. Any
+future reconciliation, cleanup, or operator path must reuse that same lock
+contract. Do not edit the owned saved group through GrowthBook's UI or API while
+application mutations are available. A manual repair requires a maintenance
+window that blocks application membership changes.
+
+New opt-ins require a `FULL_ACCESS` or account-owner login, current Catalyst
+eligibility, and `beta-signup`. Opt-out remains available to existing members
+after eligibility changes or signup closes. Weaker login scopes receive no
+saved-group read and see membership as unknown. Production `ai-beta` targeting
+must require both membership in this saved group and `catalyst: true`; the
+source default remains false until that operational rule is configured.
+
+Do not remove the Management API configuration while the saved group still has
+members. Missing configuration also prevents self-service opt-out, so first
+close signup, keep the integration available, reconcile the group to empty,
+and verify absence before unprovisioning it or reverting this source path.
 
 Never pass the management key to `NodeFeatureFlagClient`, a frontend image
-build, or a `NEXT_PUBLIC_*` variable. A future consumer must use GrowthBook's
-draft/revision and publish workflow, enforce an explicit Klicker administrative
-authorization scope, record an audit trail, and handle retries without making a
-student-facing domain mutation depend on GrowthBook availability. If another
-workload becomes the control-plane owner, mount the management Secret there in
-the same reviewed change rather than broadening it preemptively.
+build, or a `NEXT_PUBLIC_*` variable. If another workload becomes the
+control-plane owner, mount the management Secret there in the same reviewed
+change rather than broadening it preemptively.
+
+### Beta enrollment activation and rollback
+
+1. Land and deploy the source with `beta-signup` absent or false. Confirm from
+   rendered manifests and values-free runtime metadata that only the primary
+   GraphQL backend receives the management Secret and saved-group id.
+2. Record the approved purpose, legal basis, retention owner, monthly removal
+   procedure, and support contact before collecting membership. Keep the group
+   limited to stable `User.id` values.
+3. Rehearse read, add, propagation, remove, and absence verification against a
+   disposable list saved group on the deployed GrowthBook version. Do not use
+   the production group for this proof.
+4. Configure `ai-beta` to require both membership in the intended saved group
+   and `catalyst: true`. Create `beta-signup` with a false default and verify
+   that browser and backend SDK connections receive equivalent definitions.
+5. Open `beta-signup` only for a small internal Catalyst cohort. Verify the
+   first-login prompt, user-menu link, settings control, opt-in, `ai-beta`
+   access, account-usage visibility, reload persistence, and opt-out before
+   widening the target.
+
+To stop new enrollment, set `beta-signup` false; this preserves current beta
+access and self-service opt-out. To hide unsafe AI beta surfaces, also set
+`ai-beta` false. Keep the Management API configuration available until the
+saved group has been reconciled and verified empty. Revert the source path only
+after that lifecycle completes.
 
 ## Failure and rollout behavior
 

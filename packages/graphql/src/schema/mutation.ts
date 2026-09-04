@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
@@ -104,6 +105,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -1872,6 +1874,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 

@@ -64,6 +64,7 @@ export type PrismaTransactionContextWithUser = Omit<
 
 export interface FeatureFlagEvaluator {
   isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
+  refresh(): Promise<void>
 }
 
 function enhanceContext(args = {}) {

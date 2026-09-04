@@ -81,6 +81,7 @@ services:
     env_file:
       - devcontainer.env
     environment:
+      - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
       - WORKSPACE=${WORKSPACE:-}
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
