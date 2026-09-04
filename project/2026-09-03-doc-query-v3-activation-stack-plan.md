@@ -301,3 +301,12 @@ a blocker.
   38 tests, Prisma-data checks, Biome, and diff checks; the dedicated correction
   review passed. No runtime, database, cluster, secret, or live-proof action
   was performed.
+- [x] Layer 3 publication refresh (2026-09-04): the proof branch was pushed at
+  `7e42c9ce06` on base `3ac1ddb45e`; pull request #5738 is open, non-draft, and
+  mergeable. Its exact diff contains the three proof files and this plan update
+  (2,511 additions and 11 deletions). Exact-head Playwright run `33826842245`
+  passed all eight shards and the aggregate, and the remaining substantive
+  checks passed as well. The local final review passed; the CodeRabbit transport
+  comment was verified as not applicable and resolved. Repository manual final-AI
+  statuses remain pending until separately authorized. No merge, deployment,
+  runtime, data, secret, or live-proof action occurred.
