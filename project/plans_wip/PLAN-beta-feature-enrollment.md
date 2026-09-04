@@ -429,6 +429,21 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: final integrated verification at `2450d4a91e` passes the
+  production build, feature-flag tests (42), focused GraphQL tests (47),
+  package typechecks/code generation, Playwright typecheck and launcher
+  contracts, 7 focused browser journeys, Helm lint for staging and production,
+  and empty/configured saved-group renders. The full Node 24 `check:all` run
+  completed all 25 typecheck tasks and every non-Analytics lint task. Its sole
+  failure is the untouched Analytics bootstrap: uv selects CPython 3.14,
+  pandas 2.2.2 has no matching wheel, and the Devcontainer has no C compiler.
+  The earlier host hook completed the same full check successfully. The build
+  also retains existing non-fatal bundle, page-size, and translation warnings.
+- 2026-09-04: refreshed `origin/v3` before publication. It is two commits ahead
+  with only a production Chat image-pin change and fixtures in an unrelated
+  Playwright spec. A merge-tree interaction check is clean and neither commit
+  overlaps the beta-enrollment paths, so the completed one-time integration
+  and head-scoped evidence remain valid.
 - 2026-09-04: integrated `origin/v3` once at
   `86fc70c77f756827d55ea9d0afc5cac3344630cf` in merge commit `a34039de97`.
   The overlapping first-login work was reconciled without changing the
