@@ -1996,9 +1996,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createLiveQuizDescription: 'Engage participants live during a session.',
       createMicrolearning: 'Create microlearning',
+      createMicrolearningDescription:
+        'Schedule short learning activities over a defined period.',
       createPracticeQuiz: 'Create practice quiz',
+      createPracticeQuizDescription:
+        'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
+      createGroupTaskDescription: 'Let groups collaborate on a shared task.',
       createElement: 'Create Element',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
@@ -2394,12 +2400,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newStack: 'New stack',
-      newBlockSelected: 'Add 1 block with {count} elements',
-      newStackSelected: 'Add 1 stack with {count} elements',
+      newBlockSelected:
+        '{count, plural, one {Add 1 block with # element} other {Add 1 block with # elements}}',
+      newStackSelected:
+        '{count, plural, one {Add 1 stack with # element} other {Add 1 stack with # elements}}',
       pasteSelection: 'Add {count} questions',
-      pasteSelectionElements: 'Add {count} elements',
-      pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
-      pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pasteSelectionElements:
+        '{count, plural, one {Add # element} other {Add # elements}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {Add # block with 1 element} other {Add # blocks with 1 element each}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {Add # stack with 1 element} other {Add # stacks with 1 element each}}',
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',

@@ -13,6 +13,21 @@ const {
 } = require('./playwright-selector.cjs')
 
 const repositoryRoot = path.join(__dirname, '../..')
+const localGitEnvironmentVariables = childProcess
+  .execFileSync(
+    'git',
+    ['-C', repositoryRoot, 'rev-parse', '--local-env-vars'],
+    { encoding: 'utf8' }
+  )
+  .trim()
+  .split('\n')
+
+// Git exports repository-local variables to hooks. Clear them before any
+// fixture command or selector call so temporary repositories stay isolated.
+for (const variable of localGitEnvironmentVariables) {
+  delete process.env[variable]
+}
+
 const relevanceManifest = JSON.parse(
   fs.readFileSync(
     path.join(repositoryRoot, 'playwright/relevance-manifest.json'),

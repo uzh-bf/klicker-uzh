@@ -2007,9 +2007,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
+      createLiveQuizDescription:
+        'Interagieren Sie während einer Veranstaltung direkt mit Ihren Teilnehmenden.',
       createMicrolearning: 'Microlearning erstellen',
+      createMicrolearningDescription:
+        'Planen Sie kurze Lernaktivitäten über einen festgelegten Zeitraum.',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
+      createPracticeQuizDescription:
+        'Lassen Sie Teilnehmende selbstständig im eigenen Tempo üben.',
       createGroupTask: 'Gruppenaktivität erstellen',
+      createGroupTaskDescription:
+        'Lassen Sie Gruppen gemeinsam an einer Aufgabe arbeiten.',
       createElement: 'Element Erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
@@ -2411,12 +2419,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
       newStack: 'Neuer Stack',
-      newBlockSelected: '1 Block mit {count} Elementen hinzufügen',
-      newStackSelected: '1 Stack mit {count} Elementen hinzufügen',
+      newBlockSelected:
+        '{count, plural, one {1 Block mit # Element hinzufügen} other {1 Block mit # Elementen hinzufügen}}',
+      newStackSelected:
+        '{count, plural, one {1 Stack mit # Element hinzufügen} other {1 Stack mit # Elementen hinzufügen}}',
       pasteSelection: '{count} Fragen hinzufügen',
-      pasteSelectionElements: '{count} Elemente hinzufügen',
-      pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
-      pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
+      pasteSelectionElements:
+        '{count, plural, one {# Element hinzufügen} other {# Elemente hinzufügen}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {# Block mit 1 Element hinzufügen} other {# Blöcke mit jeweils 1 Element hinzufügen}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {# Stack mit 1 Element hinzufügen} other {# Stacks mit jeweils 1 Element hinzufügen}}',
       pinProtected: 'PIN-Schutz',
       pinProtectedTooltip:
         'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
