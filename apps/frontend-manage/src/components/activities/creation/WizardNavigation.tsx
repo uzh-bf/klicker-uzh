@@ -4,9 +4,10 @@ import {
   faCancel,
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useWizardCloseGuard } from './WizardLayout'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -37,6 +38,8 @@ function WizardNavigation({
 }: WizardNavigationProps) {
   const t = useTranslations()
   const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
+  const closeGuard = useWizardCloseGuard()
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
 
   useEffect(() => {
     onDisabledReasonChangeRef.current = onDisabledReasonChange
@@ -52,6 +55,15 @@ function WizardNavigation({
     },
     []
   )
+
+  const requestClose = () => {
+    if (closeGuard.forceClean || !closeGuard.isDirty()) {
+      onCloseWizard()
+      return
+    }
+
+    setConfirmCancelOpen(true)
+  }
 
   return (
     <div className="flex flex-row justify-between pt-2">
@@ -69,7 +81,7 @@ function WizardNavigation({
         )}
         <Button
           className={{ root: 'h-8 border-red-400' }}
-          onClick={() => onCloseWizard()}
+          onClick={() => requestClose()}
           data={{ cy: 'cancel-activity-creation' }}
           type="button"
         >
@@ -119,6 +131,31 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
+      <Modal
+        open={confirmCancelOpen}
+        onClose={() => setConfirmCancelOpen(false)}
+        title={t(
+          editMode
+            ? 'manage.activityWizard.confirmCancelEditTitle'
+            : 'manage.activityWizard.confirmCancelTitle'
+        )}
+        primaryButtonStyle="primary"
+        primaryLabel={t('manage.activityWizard.confirmCancelKeepEditing')}
+        onPrimaryAction={() => setConfirmCancelOpen(false)}
+        dataPrimaryAction={{ cy: 'keep-editing-activity-creation' }}
+        secondaryLabel={t('manage.activityWizard.confirmCancelDiscard')}
+        onSecondaryAction={onCloseWizard}
+        dataSecondaryAction={{ cy: 'discard-activity-creation' }}
+        className={{ content: 'max-w-lg' }}
+      >
+        <div className="mb-2 text-sm">
+          {t(
+            editMode
+              ? 'manage.activityWizard.confirmCancelEditBody'
+              : 'manage.activityWizard.confirmCancelBody'
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

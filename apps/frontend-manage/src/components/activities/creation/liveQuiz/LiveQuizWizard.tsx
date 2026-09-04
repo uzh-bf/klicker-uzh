@@ -3,10 +3,10 @@ import { faPlay } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateLiveQuizDocument,
   EditLiveQuizDocument,
-  Element,
+  type Element,
   ElementType,
   GetUserRunningLiveQuizzesDocument,
-  LiveQuiz,
+  type LiveQuiz,
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -16,17 +16,27 @@ import {
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
+import {
+  resolveActivityWizardMode,
+  useActivityWizardRecovery,
+} from '@lib/activityWizardRecovery'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { Button, toast } from '@uzh-bf/design-system'
-import { FormikProps } from 'formik'
+import type { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ActivityCreation'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
-import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
+import WizardLayout, { type LiveQuizFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
@@ -88,6 +98,7 @@ interface LiveQuizWizardProps {
   > & { course?: { id: string } | null }
   selection: Record<number, Element>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
@@ -99,6 +110,7 @@ function LiveQuizWizard({
   initialValues,
   selection,
   resetSelection,
+  restoreSelection,
   closeWizard,
   editMode,
   duplicationMode,
@@ -286,6 +298,18 @@ function LiveQuizWizard({
   )
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
+  const { recoveryProps, closeWizardAndClearSnapshot } =
+    useActivityWizardRecovery({
+      snapshot: {
+        mode: resolveActivityWizardMode({ editMode, duplicationMode }),
+        activityType: 'LIVE_QUIZ',
+        sourceId: initialValues?.id ? String(initialValues.id) : undefined,
+      },
+      form: { data: formData, ref: formRef, setData: setFormData },
+      elements: { selected: selection, restore: restoreSelection },
+      lifecycle: { isCompleted: isWizardCompleted, close: closeWizard },
+    })
+
   const handleSubmit = useCallback(
     (values: LiveQuizFormValues) => {
       return submitLiveQuizForm({
@@ -332,6 +356,7 @@ function LiveQuizWizard({
       disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
       workflowItems={workflowItems}
       isCompleted={isWizardCompleted}
+      {...recoveryProps}
       completionStep={
         <CompletionStep
           completionSuccessMessage={(elementName) => (
@@ -360,7 +385,7 @@ function LiveQuizWizard({
           }}
           resetForm={() => setFormData(formDefaultValues)}
           setStepNumber={setActiveStep}
-          onCloseWizard={closeWizard}
+          onCloseWizard={closeWizardAndClearSnapshot}
         >
           {creationData?.createLiveQuiz?.id || editingData?.editLiveQuiz?.id ? (
             <Button
@@ -436,7 +461,7 @@ function LiveQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep + 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <LiveQuizDescriptionStep
           key="live-quiz-description-step"
@@ -456,7 +481,7 @@ function LiveQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <LiveQuizSettingsStep
           key="live-quiz-settings-step"
@@ -480,7 +505,7 @@ function LiveQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <LiveQuizQuestionsStep
           key="live-quiz-questions-step"
@@ -503,7 +528,7 @@ function LiveQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
       ]}
       saveFormData={() => {

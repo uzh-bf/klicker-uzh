@@ -2020,7 +2020,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createGroupTask: 'Gruppenaktivität erstellen',
       createGroupTaskDescription:
         'Lassen Sie Gruppen gemeinsam an einer Aufgabe arbeiten.',
-      createElement: 'Element Erstellen',
+      createElementaryLabel: 'Elemente',
+      createActivitiesLabel: 'Aktivitäten',
+      createElement: 'Element erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
@@ -2389,6 +2391,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
+      confirmCancelTitle: 'Änderungen bei der Aktivitätserstellung verwerfen?',
+      confirmCancelBody:
+        'Sie haben Daten eingegeben, die noch nicht gespeichert sind. Beim Verwerfen werden die in diesem Wizard eingegebenen Daten endgültig entfernt.',
+      confirmCancelEditTitle: 'Änderungen an dieser Aktivität verwerfen?',
+      confirmCancelEditBody:
+        'Sie haben Änderungen eingegeben, die noch nicht gespeichert sind. Beim Verwerfen werden die an dieser Aktivität vorgenommenen Änderungen endgültig entfernt.',
+      confirmCancelDiscard: 'Verwerfen',
+      confirmCancelKeepEditing: 'Weiter bearbeiten',
+      temporaryStorageCreation:
+        'Der Erstellungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      temporaryStorageEditing:
+        'Der Bearbeitungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
       activityDisplayName:
         'Bitte geben Sie einen Anzeigenamen für Ihre Aktivität ein.',
       considerFormErrors: 'Bitte beachten Sie die Fehlermeldungen im Formular',
