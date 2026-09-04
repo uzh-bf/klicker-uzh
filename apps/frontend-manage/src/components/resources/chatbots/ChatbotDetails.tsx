@@ -187,14 +187,10 @@ function ChatbotDetails({
     [modelRegistry]
   )
 
-  const selectedReasoningModels = useMemo(
-    () =>
-      reasoningModels.filter((model) =>
-        modelSelectionEnabled
-          ? allowedModelIds.includes(model.id)
-          : model.id === fixedModelId
-      ),
-    [allowedModelIds, fixedModelId, modelSelectionEnabled, reasoningModels]
+  const selectedReasoningModels = reasoningModels.filter((model) =>
+    modelSelectionEnabled
+      ? allowedModelIds.includes(model.id)
+      : model.id === fixedModelId
   )
 
   const supportedEffortsByModelId = useMemo(
