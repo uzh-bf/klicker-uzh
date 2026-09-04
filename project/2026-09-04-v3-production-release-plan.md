@@ -21,23 +21,23 @@
 
 ## Work and ownership
 
-| Work | Owner | Acceptance |
-| --- | --- | --- |
-| Stabilize the citation layout assertion and correct the credit comment | Main; small edits cost less than delegation | Same paused-stream contract; focused Chromium repetitions without retry masking; formatting/type checks |
-| Patch Next.js and next-auth consistently | Native executor for mechanical updates; main owns security disposition | Exact versions and lockfile agree; frozen install, package checks, supported builds and relevant tests |
-| Verify database release payload | Main; coupled data-integrity evidence | Four unchanged additive migrations; valid matching schemas; synthetic migration smoke where available; no production mutations |
-| Reconcile hotfixes, open PRs and release tooling | Main | Explicit required/deferred PR list; release dry-run; release notes distinguish features, flags and database changes |
-| Review complete preparation package | Native final reviewer | Exact committed range; correctness, security, maintainability and plan compliance; honest CI-only gaps |
+| Work                                                                   | Owner                                                                  | Acceptance                                                                                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Stabilize the citation layout assertion and correct the credit comment | Main; small edits cost less than delegation                            | Same paused-stream contract; focused Chromium repetitions without retry masking; formatting/type checks                        |
+| Patch Next.js and next-auth consistently                               | Native executor for mechanical updates; main owns security disposition | Exact versions and lockfile agree; frozen install, package checks, supported builds and relevant tests                         |
+| Verify database release payload                                        | Main; coupled data-integrity evidence                                  | Four unchanged additive migrations; valid matching schemas; synthetic migration smoke where available; no production mutations |
+| Reconcile hotfixes, open PRs and release tooling                       | Main                                                                   | Explicit required/deferred PR list; release dry-run; release notes distinguish features, flags and database changes            |
+| Review complete preparation package                                    | Native final reviewer                                                  | Exact committed range; correctness, security, maintainability and plan compliance; honest CI-only gaps                         |
 
 ## Test portfolio
 
-| Risk | Obligation | Evidence |
-| --- | --- | --- |
-| Live citation layout timing | Extend existing observation, no new test | Existing paused stream, sources hidden while running, viewport overflow and follow-scroll assertions |
-| Framework/auth patch regression | Reuse existing tests | Frozen install; check:all; production and test build paths; Chat tests; focused auth/browser checks |
-| Migration payload inconsistency | No new permanent test by default | SQL delta/checksums, Prisma validation, Analytics mirror check, disposable migration smoke if supported |
-| Lost Chat maintenance behavior | Reuse existing PR evidence plus interaction check | Disclaimer patch is retained before Chat release; no import of the larger conflicting Doc Query stack |
-| Release command changes files or selects wrong version | No new test | Repository-native release dry-run only; inspect resulting proposed version and changelog without tag creation |
+| Risk                                                   | Obligation                                        | Evidence                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Live citation layout timing                            | Extend existing observation, no new test          | Existing paused stream, sources hidden while running, viewport overflow and follow-scroll assertions          |
+| Framework/auth patch regression                        | Reuse existing tests                              | Frozen install; check:all; production and test build paths; Chat tests; focused auth/browser checks           |
+| Migration payload inconsistency                        | No new permanent test by default                  | SQL delta/checksums, Prisma validation, Analytics mirror check, disposable migration smoke if supported       |
+| Lost Chat maintenance behavior                         | Reuse existing PR evidence plus interaction check | Disclaimer patch is retained before Chat release; no import of the larger conflicting Doc Query stack         |
+| Release command changes files or selects wrong version | No new test                                       | Repository-native release dry-run only; inspect resulting proposed version and changelog without tag creation |
 
 ## Source preparation
 
@@ -52,12 +52,12 @@
 
 ## Database and flags in release notes
 
-| Migration | Released effect |
-| --- | --- |
+| Migration                                          | Released effect                                                                                                   |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | 20260820151622_chatbot_lifecycle_and_ai_capability | Adds publication states and owner capability fields; existing bots become PUBLISHED and new bots default to DRAFT |
-| 20260822075407_chat_account_usage | Adds initially empty monthly owner usage accounting |
-| 20260826012006_chat_turn_lifecycle_claim | Adds COMPLETED default and nullable attempt ID; SQL is not explicitly wrapped in a transaction |
-| 20260902100000_course_deletion_request | Adds nullable asynchronous deletion request marker |
+| 20260822075407_chat_account_usage                  | Adds initially empty monthly owner usage accounting                                                               |
+| 20260826012006_chat_turn_lifecycle_claim           | Adds COMPLETED default and nullable attempt ID; SQL is not explicitly wrapped in a transaction                    |
+| 20260902100000_course_deletion_request             | Adds nullable asynchronous deletion request marker                                                                |
 
 - Usage UI and protected query use ai-beta. beta-signup governs new enrollment and discovery while preserving opt-out when closed. Do not activate or broaden either remotely.
 - Catalyst/full-access chatbot authoring is not universally gated by ai-beta. Publishing has separate entitlement and approval checks.
@@ -68,7 +68,15 @@
 ## Progress
 
 - Completed: remote refresh, live production baseline comparison, four-migration inventory, independent standards/specification reviews and main disposition.
-- Active: local source preparation on the unchanged v3 baseline.
-- Remaining: dependency patch, assertion fix, native verification, source review and release dry-run/notes.
-- Review reports: project/_local/reviews/2026-09-04-v3-unreleased-code-quality.md and the earlier plan-hardening report. Both are ignored local evidence.
-- Runtime: exact worktree startup requested with devrouter 0.0.51 and the chat profile. Stop and verify the exact runtime after the last check.
+- Active: local source preparation on the unchanged v3 baseline. Dependency patch committed as 5854717115; no push or upstream integration.
+- Release dry-run passed and proposes v3.4.0-alpha.74 with alpha.73 as its changelog baseline. No release files or tags were created. Release notes are drafted at project/2026-09-04-v3-release-notes.md.
+- Tornado is only reachable through Analytics' development notebook dependencies. The production Dockerfile installs with --no-dev, so its open patch PR is optional maintenance rather than a production artifact blocker.
+- Verification passed: frozen pnpm 11.5.0 install; complete check:all (35 type/build tasks and all lint/guard tasks); Prisma schema validation and Analytics mirror check; local migrate status reports all 183 migrations applied; Auth redirect, Prisma adapter and assessment identity tests; Chat suite with PostgreSQL accounting integration enabled (54 files, 564 tests, no skips).
+- Local verification correction: Analytics initially selected Python 3.14 and tried to compile pandas without a C compiler. Reusing its production Python 3.12 toolchain made lint pass without changing dependency definitions.
+- Production and test-mode builds passed for all six affected apps and their dependency graph: 15/15 tasks each, no cache. Durations: 5m28s production, 3m08s test mode. The first production invocation had an extra argument separator and failed before compilation; the corrected command passed.
+- Dependency slice review completed: DONE_WITH_CONCERNS, no blocking defect. Existing Next 15 peer-only resolutions remain deferred; actual Next servers use 16.2.11. Runtime routing verification remains required.
+- delivery_pending: citation browser verification and integrated final review. Browser startup stops before tests with `Managed runtime state is degraded; refusing a new profile transition until drift is repaired.` The exact worktree has a failed process-start transition and no running klicker-dev process. Installed devrouter 0.0.51 rejects any ensure while this state persists; an ordinary stop does not clear it. Do not edit global runtime metadata or bypass the lifecycle manager. Request exact disposable-runtime recreation before retrying the host launcher.
+- Remaining after runtime recovery: citation repetitions without retries, authenticated routing smoke, assertion/comment commit and integrated final review. No push, PR publication, upstream integration, merge or release tag is authorized yet.
+- Review reports: project/\_local/reviews/2026-09-04-v3-unreleased-code-quality.md and the earlier plan-hardening report. Both are ignored local evidence.
+- Runtime stopped: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release`, provider ID `rs-v3-production-release`, Devsy context `default`, Docker provider. `devrouter stop` returned stopped=true and removed four routes. Fresh `devrouter ls --json` contains no exact-source routes; `devsy workspace status rs-v3-production-release --result-format json` reports `Stopped`. Worktree, commits and runtime data are preserved.
+- Proposed next authority (not granted): `devrouter stop /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release --delete`, followed by `devrouter ensure /Users/rschlae/Git/klicker/klicker-uzh/trees/rs/v3-production-release --profile full`. This discards only the task's disposable runtime state/data and preserves the source worktree. After browser verification and integrated final review pass, push `origin rs/v3-production-release` and open a draft PR against `v3`. Merge, tag and release publication remain separate.
