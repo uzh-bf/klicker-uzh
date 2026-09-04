@@ -1,7 +1,8 @@
-# Chatbot Response-Example Capture (K5) — Execution Plan
+# Chatbot Response-Example Capture (K5) — PR #5764 Execution Plan
 
 Date: 2026-09-03 (revised after planner hardening, 12 findings incorporated)
 Status: APPROVED — execution active
+Pull request: https://github.com/uzh-bf/klicker-uzh/pull/5764
 Roadmap: project/2026-08-28-chatbot-test-and-teach-ground-truth-plan.md (package K5)
 Execution owner: this Codex session. Terminal condition: PR-ready. Merge, deployment, and live activation remain user decisions.
 
@@ -84,7 +85,7 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ## Progress
 
-- Current status: S0-S5, the approved one-time `origin/v3-ai` integration, and integrated final review are complete. The exact target `ecf12398dc` was merged at `9844387186`; the final-review correction is committed at `6ec99227f`.
+- Current status: S0-S5, the approved one-time `origin/v3-ai` integration, and integrated final review are complete. Draft PR #5764 targets `v3-ai`; exact-head CI and final AI review are pending. The exact target `ecf12398dc` was merged at `9844387186`; the final-review correction is committed at `6ec99227f`.
 - [x] Gate: PR #5633 (owner preview) merged into `v3-ai` at `7249e57eb7`.
 - [x] Branch cut from `origin/v3-ai@7249e57eb7`; roadmap Progress and this plan are the first commit.
 - [x] S0 transport prototype: the receipt data part survives on the completed assistant message, the later action can read it, model-input conversion drops data parts, and refresh has no client persistence to restore.
@@ -96,4 +97,4 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 - [x] Integration checks: 100 focused Chat tests, 12 util tests, 22 GraphQL tests, changed-package type/schema checks, and focused Chat/Manage lint pass. The repository-wide `check:all` run reached an unrelated analytics environment failure because pandas 2.2.2 had no wheel for the container-selected Python 3.14 and the image has no C compiler; no changed package failed its focused check.
 - [x] Final review: the configured final-reviewer route failed before review because its encrypted task payload was unreadable by the routed provider. Native GPT-5.6 Sol at xhigh effort completed the continuity fallback and found one medium UX gap: missing lineage or signing configuration suppressed the unavailable state. Commit `6ec99227f` now emits a values-free unavailable data part for eligible first answers; 29 focused Chat tests, the Chat package check, Biome, and `git diff --check` pass. The same reviewer returned `DONE` on the correction range with no remaining finding. The gitignored report is `project/_local/reviews/2026-09-04-chatbot-response-example-capture-final.md`.
 - [ ] PR ready (terminal)
-- Next action: publish the branch and open the draft PR into `v3-ai`, then bind this plan to the PR and monitor exact-head CI and final AI review to the terminal condition.
+- Next action: push this PR-bound plan rename, update the draft description, and monitor exact-head CI and final AI review to the terminal condition.
