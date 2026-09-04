@@ -429,12 +429,14 @@ run. Do not add a hosted evaluation service or dependency.
 - [x] Reached reviewed local source commits for the dedicated ingestion
   project, STG deployment manifests, and values-free STG secret projection.
 - [ ] The catalog source is implemented and passes static and full test suites,
-  but its required model-backed no-ingestion build is blocked by model-pool
-  policy. The explicitly approved STG tunnel and restricted key returned an
-  authenticated 24-model listing, but it exposes only the relevant
-  `aibuddy/azure/gpt-5.6-*` aliases and not the catalog's required
-  `foundry-public/azure/gpt-5.6-luna-canary`. The public model pool is PRD-only;
-  STG cannot provide public-provider runtime proof. No model request or cost
+  but its required model-backed no-ingestion build awaits one exact credential
+  boundary. The approved STG tunnel and AIBuddy tenant key correctly exposed
+  only internal `aibuddy/azure/gpt-5.6-*` aliases. Current manifests also define
+  the required `foundry-public/azure/gpt-5.6-luna-canary` in the isolated
+  `foundry-public-canary` access group and mount the dedicated
+  `CATALOG_PUBLIC_LITELLM_API_KEY` into the STG catalog worker. The values-free
+  `ai-generic-stg` profile confirms that existing key name is readable, but its
+  value has not been injected, printed, or mutated. No model request or cost
   occurred, and the temporary tunnel was stopped and verified absent.
 - [ ] The local Klicker B2 source remains intentionally untouched because this
   plan starts it only after the separately authorized STG ingestion and
