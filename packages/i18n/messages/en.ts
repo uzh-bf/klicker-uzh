@@ -305,6 +305,7 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Draft',
+      statusDescription: 'Manual status: unfinished and still being prepared.',
     },
     SCHEDULED: {
       statusLabel: 'Scheduled',
@@ -327,9 +328,12 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manual status: review requested.',
     },
     READY: {
       statusLabel: 'Ready',
+      statusDescription:
+        'Manual status: considered reusable; the default for new elements.',
     },
     SC: {
       short: 'SC',
@@ -2028,6 +2032,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createElementaryLabel: 'Elements',
       createActivitiesLabel: 'Activities',
       createElement: 'Create Element',
+      emptyStateTitle: 'Create your first element',
+      emptyStateDescription:
+        'Elements are reusable questions and content for your activities. Create one to get started.',
+      clearSearch: 'Clear search',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',

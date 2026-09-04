@@ -1,16 +1,19 @@
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useRef, useState } from 'react'
+import { type Dispatch, type SetStateAction, useRef } from 'react'
 import useFindShortcutFocus from '../../lib/hooks/useFindShortcutFocus'
 
 function ElementListSearch({
-  setSearchString,
+  value,
+  onValueChange,
+  onApplySearch,
 }: {
-  setSearchString: Dispatch<SetStateAction<string>>
+  value: string
+  onValueChange: Dispatch<SetStateAction<string>>
+  onApplySearch: (value: string) => void
 }) {
   const t = useTranslations()
-  const [searchInput, setSearchInput] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   useFindShortcutFocus({ ref: containerRef })
 
@@ -18,20 +21,20 @@ function ElementListSearch({
     <div ref={containerRef}>
       <TextField
         placeholder={t('manage.general.searchPlaceholder')}
-        value={searchInput}
+        value={value}
         onChange={(newValue: string) => {
-          setSearchInput(newValue)
+          onValueChange(newValue)
 
           if (newValue.trim() === '') {
-            setSearchString('')
+            onApplySearch('')
           }
         }}
         icon={faMagnifyingGlass}
         className={{ input: 'h-9 pl-8', field: 'w-64 rounded-md' }}
-        onEnter={() => setSearchString(searchInput)}
+        onEnter={() => onApplySearch(value)}
         onReset={() => {
-          setSearchInput('')
-          setSearchString('')
+          onValueChange('')
+          onApplySearch('')
         }}
         data={{ cy: 'elements-search-input' }}
       />

@@ -1,31 +1,13 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { createElement } from 'react'
-
-// Renders the type label with a concise authoring description beneath it.
-// The description is derived from apps/docs/docs/tutorials/supported_element_types.mdx.
-function typeOptionLabel(typeLabel: string, description: string) {
-  return createElement(
-    'span',
-    {
-      className:
-        'flex w-[calc(100vw-4rem)] max-w-[30rem] flex-col gap-0.5 whitespace-normal',
-    },
-    createElement('span', null, typeLabel),
-    createElement(
-      'span',
-      { className: 'text-xs text-uzh-grey-80' },
-      description
-    )
-  )
-}
+import optionLabel from './optionLabel'
 
 function useElementTypeOptions() {
   const t = useTranslations()
   return [
     {
       value: ElementType.Sc,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Sc}.typeLabel`),
         t(`shared.${ElementType.Sc}.description`)
       ),
@@ -36,7 +18,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Mc,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Mc}.typeLabel`),
         t(`shared.${ElementType.Mc}.description`)
       ),
@@ -47,7 +29,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Kprim,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Kprim}.typeLabel`),
         t(`shared.${ElementType.Kprim}.description`)
       ),
@@ -60,7 +42,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Numerical,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Numerical}.typeLabel`),
         t(`shared.${ElementType.Numerical}.description`)
       ),
@@ -73,7 +55,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.FreeText,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.FreeText}.typeLabel`),
         t(`shared.${ElementType.FreeText}.description`)
       ),
@@ -86,7 +68,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Selection,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Selection}.typeLabel`),
         t(`shared.${ElementType.Selection}.description`)
       ),
@@ -99,7 +81,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.CaseStudy,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.CaseStudy}.typeLabel`),
         t(`shared.${ElementType.CaseStudy}.description`)
       ),
@@ -112,7 +94,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Content,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Content}.typeLabel`),
         t(`shared.${ElementType.Content}.description`)
       ),
@@ -125,7 +107,7 @@ function useElementTypeOptions() {
     },
     {
       value: ElementType.Flashcard,
-      label: typeOptionLabel(
+      label: optionLabel(
         t(`shared.${ElementType.Flashcard}.typeLabel`),
         t(`shared.${ElementType.Flashcard}.description`)
       ),
