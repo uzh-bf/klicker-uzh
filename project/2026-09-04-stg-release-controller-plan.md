@@ -131,9 +131,24 @@ and document the new release-ref contract.
 
 ## Progress
 
-- `Current:` approved controller scope copied into this branch-local plan;
-  implementation has not started.
-- `Completed:` none.
-- `Remaining:` controller, final-review policy, documentation, verification,
-  and final local commits.
+- `Current:` all assigned Phase 1 controller work is implemented, verified,
+  and committed locally.
+- `Completed:` `e7743d2c57` replaces the generated commit/pull-request promoter
+  with the trusted exact-build release-ref controller; `2edaec3a37` removes the
+  generated-promotion final-review bypass; `553b1f131a` supersedes ADR 0003,
+  narrowly amends ADR 0028, and updates the CI guide.
+- `Verification:` Node 24 syntax checks passed; promoter tests pass 14/14;
+  final-review tests pass 56/56; the selected-source fixture commit validates
+  15 workflow definitions and 16 runtime ARM jobs; workflow YAML parsing,
+  extracted-shell `bash -n`, ShellCheck, Biome and Prettier formatting checks,
+  and Git diff checks pass. Each staged slice passed Gitleaks and a focused
+  personal-data scan.
+- `Review:` the execution owner completed a bounded trust-boundary and diff
+  review. The global integration owner still owns the independent cross-branch
+  review and contract matrix after all Phase 1 worktrees are available.
+- `Remaining:` no implementation remains in this assigned worktree. Activation
+  still requires the separately owned selected-source SHA publishers, chart
+  override and runtime mirror, the private platform change, a receipt-backed
+  initial ref creation, runtime proof, and separate authorization of
+  `STG_RELEASE_PROMOTION_ENABLED=true`.
 - `External state:` unchanged.
