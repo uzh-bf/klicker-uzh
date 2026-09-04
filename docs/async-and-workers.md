@@ -84,6 +84,12 @@ KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow se
 
 Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
 
+Question and flashcard synchronization share the acquisition and token-fenced
+release functions in [elementGenerationLease.ts](../packages/graphql/src/services/elementGenerationLease.ts).
+The callers retain their status predicates, failure handling and transitions;
+the short synchronization lease does not replace the durable dispatch and
+accounting claims that fence external generation effects.
+
 ## Course duplication operations
 
 Job state lives in Redis under three key families (all self-expiring): status records `course-duplication:job:<jobId>` and per-user/per-course source locks `course-duplication:source:<userId>:<sourceCourseId>` expire after **24 hours**; process leases `course-duplication:job:<jobId>:processing` and heartbeats `course-duplication:job:<jobId>:heartbeat` expire after 60/120 seconds. Postgres is the source of truth for outcomes: a committed course row whose id equals the job id proves the copy succeeded regardless of Redis state.
