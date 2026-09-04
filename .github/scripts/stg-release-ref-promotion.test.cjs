@@ -322,17 +322,28 @@ test('the publish-once guard reuses a canonical digest and fails closed', (t) =>
   assert.equal(existing.output, `publish=false\ndigest=${digest}\n`)
   assert.match(existing.summary, /Reused staging image/u)
 
-  const missing = runPublishGuard('manifest unknown', 1)
+  const missing = runPublishGuard(
+    `ERROR: ghcr.io/example/staging-image:${'a'.repeat(40)}: not found`,
+    1
+  )
   t.after(missing.cleanup)
   assert.equal(missing.result.status, 0, missing.result.stderr)
   assert.equal(missing.output, 'publish=true\n')
   assert.match(missing.summary, /Publish staging image/u)
 
-  const uncertain = runPublishGuard('unauthorized', 1)
-  t.after(uncertain.cleanup)
-  assert.notEqual(uncertain.result.status, 0)
-  assert.equal(uncertain.output, '')
-  assert.match(uncertain.result.stderr, /refusing to rebuild/u)
+  for (const output of [
+    'ERROR: unexpected status from HEAD request: 404 Not Found',
+    'ERROR: resource not found',
+    'ERROR: manifest unknown',
+    `ERROR: no such manifest: ghcr.io/example/staging-image:${'a'.repeat(40)}`,
+    'unauthorized',
+  ]) {
+    const uncertain = runPublishGuard(output, 1)
+    t.after(uncertain.cleanup)
+    assert.notEqual(uncertain.result.status, 0)
+    assert.equal(uncertain.output, '')
+    assert.match(uncertain.result.stderr, /refusing to rebuild/u)
+  }
 })
 
 test('all first-party chart images prefer the optional global tag', () => {

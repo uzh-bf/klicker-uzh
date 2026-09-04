@@ -31,8 +31,7 @@ if [[ "${inspect_status}" -eq 0 ]]; then
   exit 0
 fi
 
-if printf '%s\n' "${inspect_output}" | grep -Eiq \
-  'manifest unknown|no such manifest|not found|404'; then
+if [[ "${inspect_output}" == "ERROR: ${ref}: not found" ]]; then
   printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
   {
     printf '### Publish staging image\n\n'
