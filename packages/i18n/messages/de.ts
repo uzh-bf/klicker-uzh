@@ -113,7 +113,7 @@ export default {
         'Fragenentwürfe vorbereiten, ohne sie zu speichern',
       capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
       capabilityDocumentation:
-        'Gängige KlickerUZH-Abläufe anhand eines kuratierten Verzeichnisses der Dokumentation und Anleitungen erklären',
+        'Die mit dieser Version gebündelte KlickerUZH-Dokumentation durchsuchen und die passenden Quellseiten verlinken',
       capabilityChecking:
         'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
       capabilityReadOnly:

@@ -39,6 +39,9 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 
 COPY --from=builder /app/out/full/ .
 
+# Chat imports the generated docs manifest outside Turbo's dependency graph.
+COPY --from=builder /app/apps/docs/src/generated/docs-manifest.json ./apps/docs/src/generated/docs-manifest.json
+
 ARG BLOB_STORAGE_ACCOUNT_URL
 RUN pnpm run build --filter=@klicker-uzh/chat
 

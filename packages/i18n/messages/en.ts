@@ -111,7 +111,7 @@ export default {
       capabilityNoSaveDraft: 'Prepare question drafts without saving them',
       capabilityFeedback: 'Suggest improvements to question feedback',
       capabilityDocumentation:
-        'Explain common KlickerUZH workflows using a curated index of documentation and tutorials',
+        'Search the KlickerUZH documentation bundled with this release and link the matching source pages',
       capabilityChecking: 'Checking live data and draft availability…',
       capabilityReadOnly:
         'Live lookups are available, but this session cannot save draft proposals. No-save drafting and documentation help remain available.',

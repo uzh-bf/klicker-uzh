@@ -189,7 +189,7 @@ describe('Manage assistant runtime helpers', () => {
     )
   })
 
-  test('omits the injection-defense section when tools are unavailable, even with a sentinel', () => {
+  test('keeps the injection-defense section with a sentinel when lecturer MCP tools are unavailable', () => {
     const sentinel = 'sentinel-unused'
     const prompt = buildManageAssistantSystemPrompt(
       SAMPLE_CONTEXT,
@@ -198,9 +198,14 @@ describe('Manage assistant runtime helpers', () => {
       sentinel
     )
 
-    expect(prompt).not.toContain(sentinel)
-    expect(prompt).not.toContain('KLICKER_TOOL_DATA')
+    // The Chat-local docs search tool is available on every request and its
+    // results are fenced, so the fence rule must stay in the prompt even
+    // when the lecturer MCP tools are unavailable.
+    expect(prompt).toContain(`KLICKER_TOOL_DATA ${sentinel}`)
     expect(prompt).toContain('Lecturer MCP tools are currently unavailable')
+    expect(prompt).toContain(
+      'klicker_docs_search documentation search remains available'
+    )
   })
 
   test('adds canonical signed proposal context for conversational revisions', () => {
