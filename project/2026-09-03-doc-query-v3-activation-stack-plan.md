@@ -234,6 +234,12 @@ a blocker.
   reductions landed in `08af40bc8`; the security correction review passed.
   Production preflight must still confirm the five-minute token lifetime is
   sufficient for supported turns, and Layer 3 must prove the consumer contract.
-- [ ] Layer 2 activation implementation and review.
+- [x] Layer 2 activation extraction and local verification: all 37 focused
+  tests, Prisma-data checks, formatting, and diff checks pass. Prisma-data has
+  no package-local ESLint configuration.
+- [x] Layer 2 activation review passed with no integrity defect. The proposed
+  helper extractions were rejected because they add concepts without reducing
+  the state machine. The final retry guard and exact expected-state comparison
+  remain as fail-closed invariants rather than dead-code cleanup.
 - [ ] Layer 3 proof implementation and review.
 - [ ] Draft publication, exact-head CI/reviews, and coverage-ledger completion.
