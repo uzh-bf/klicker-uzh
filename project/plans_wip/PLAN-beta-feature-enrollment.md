@@ -429,6 +429,26 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: backend enrollment slice implementation and focused verification
+  are complete before review. Added the default-off `beta-signup` contract,
+  Catalyst targeting attribute, typed capability query/mutation, full-access
+  and opt-in gates, nullable membership, serialized GrowthBook writes with
+  lease validation, backend/browser refresh hooks, tracked SDL, environment
+  wiring, and ownership documentation. Feature-flag tests pass (42 tests),
+  focused service/schema tests pass (27 tests), both package typechecks pass,
+  GraphQL generation succeeds, and staging/production Helm lint plus empty and
+  configured saved-group-id renders pass. The package-level GraphQL test script
+  ignored file arguments and started the full suite; it was interrupted after
+  unrelated fixture/Redis failures, then replaced with direct focused Vitest.
+  The repository-wide pre-commit equivalent completed all 25 typecheck tasks;
+  its only failure was the untouched Analytics lint bootstrap timing out while
+  downloading `pydantic-core`. The backend slice awaits its local commit,
+  simplifier, and risk review.
+- 2026-09-04: the GraphQL rolling-deployment rule requires a new operation name
+  when adding `userScope`; the discovery slice will retain `QUserProfile` and
+  introduce a Manage-specific profile operation instead of changing the
+  deployed operation hash. This preserves the approved behavior without
+  changing the public product contract.
 - 2026-09-04: human plan approval recorded. Execution is active on the backend
   enrollment contract and rollout-gate slice. Remaining slices are persistent
   settings, signup/menu discovery, integrated browser evidence and runbook,
