@@ -1,12 +1,28 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  convertToModelMessages: vi.fn(),
+  createDocsQueryBundle: vi.fn(),
   getAuthenticatedManageUser: vi.fn(),
   isManageAiEnabled: vi.fn(),
+  lecturerClose: vi.fn(),
+  loadLecturerMcpTools: vi.fn(),
+  docsClose: vi.fn(),
   rateLimitCheck: vi.fn(),
   readBoundedJson: vi.fn(),
+  streamText: vi.fn(),
   tryAcquireManageChatRequest: vi.fn(),
+}))
+
+vi.mock('ai', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('ai')>()),
+  convertToModelMessages: mocks.convertToModelMessages,
+  streamText: mocks.streamText,
+}))
+
+vi.mock('@ai-sdk/openai', () => ({
+  createOpenAI: vi.fn(() => vi.fn(() => ({ modelId: 'test-model' }))),
 }))
 
 // These cases are about what the route does after the gate, so the gate itself
@@ -32,6 +48,28 @@ vi.mock('@/src/lib/server/manageChatRequest', async (importOriginal) => ({
   tryAcquireManageChatRequest: mocks.tryAcquireManageChatRequest,
 }))
 
+vi.mock('@/src/lib/server/chatModelRegistry', () => ({
+  getChatModelRegistry: vi.fn(() => []),
+}))
+
+vi.mock('@/src/services/docsSearchTool', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/src/services/docsSearchTool')>()),
+  createKlickerDocsQueryToolBundle: mocks.createDocsQueryBundle,
+}))
+
+vi.mock('@/src/services/lecturerMcp', () => ({
+  loadLecturerMcpTools: mocks.loadLecturerMcpTools,
+}))
+
+vi.mock('@/src/services/manageAssistantRuntime', () => ({
+  buildManageAssistantSystemPrompt: vi.fn(() => 'system prompt'),
+  getManageAssistantOpenAIProviderOptions: vi.fn(() => ({})),
+  selectManageAssistantModel: vi.fn(() => ({
+    deploymentId: 'test-deployment',
+    maxOutputTokens: 100,
+  })),
+}))
+
 import { POST } from '@/src/app/api/manage/chat/route'
 
 function request() {
@@ -47,12 +85,37 @@ async function expectJson(response: Response, status: number, body: unknown) {
 }
 
 describe('POST /api/manage/chat request boundary', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   beforeEach(() => {
+    vi.stubEnv('OPENAI_API_KEY', 'synthetic-model-key')
+    mocks.convertToModelMessages.mockReset()
+    mocks.convertToModelMessages.mockResolvedValue([])
+    mocks.createDocsQueryBundle.mockReset()
+    mocks.docsClose.mockReset()
+    mocks.createDocsQueryBundle.mockReturnValue({
+      close: mocks.docsClose,
+      tools: {},
+    })
     mocks.isManageAiEnabled.mockReset()
     mocks.isManageAiEnabled.mockResolvedValue(true)
     mocks.getAuthenticatedManageUser.mockReset()
     mocks.rateLimitCheck.mockReset()
     mocks.readBoundedJson.mockReset()
+    mocks.lecturerClose.mockReset()
+    mocks.loadLecturerMcpTools.mockReset()
+    mocks.loadLecturerMcpTools.mockResolvedValue({
+      capabilityState: 'draft-and-read',
+      close: mocks.lecturerClose,
+      sentinel: 'route-test-sentinel',
+      tools: {},
+    })
+    mocks.streamText.mockReset()
+    mocks.streamText.mockReturnValue({
+      toUIMessageStreamResponse: vi.fn(() => new Response(null)),
+    })
     mocks.tryAcquireManageChatRequest.mockReset()
     mocks.getAuthenticatedManageUser.mockResolvedValue({
       role: 'USER',
@@ -144,5 +207,37 @@ describe('POST /api/manage/chat request boundary', () => {
     await expectJson(await POST(request()), 408, {
       error: 'Request timed out',
     })
+  })
+
+  test.each([
+    'onFinish',
+    'onAbort',
+    'onError',
+  ] as const)('closes both tool clients from %s', async (callbackName) => {
+    mocks.readBoundedJson.mockResolvedValue({
+      ok: true,
+      value: {
+        messages: [
+          {
+            id: 'user-1',
+            parts: [{ text: 'Draft a question', type: 'text' }],
+            role: 'user',
+          },
+        ],
+      },
+    })
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(200)
+    const streamOptions = mocks.streamText.mock.calls[0]?.[0]
+    expect(streamOptions).toBeDefined()
+    const callback = streamOptions?.[callbackName] as
+      | ((value?: unknown) => Promise<void>)
+      | undefined
+    expect(callback).toEqual(expect.any(Function))
+    await callback?.(new Error('synthetic stream terminal state'))
+    expect(mocks.lecturerClose).toHaveBeenCalledTimes(1)
+    expect(mocks.docsClose).toHaveBeenCalledTimes(1)
   })
 })

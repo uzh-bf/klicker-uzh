@@ -1,14 +1,45 @@
+import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import { KLICKER_DOCS_DOC_QUERY_TOOL_NAME } from '@/src/lib/config/toolNames'
 import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
+import { MAX_DOCS_OUTPUT_CHARS } from '@/src/services/docsSearch'
 import {
   createKlickerDocsQueryToolBundle,
-  getKlickerDocsDocQueryUrl,
-  KLICKER_DOCS_DOC_QUERY_TOOL_NAME,
   klickerDocsQueryInputSchema,
 } from '@/src/services/docsSearchTool'
-import { MAX_DOCS_OUTPUT_CHARS } from '@/src/services/docsSearch'
+import {
+  fenceToolResultText,
+  fenceToolSetResults,
+} from '@/src/services/toolOutputFencing'
+
+vi.mock('@ai-sdk/mcp', () => ({
+  experimental_createMCPClient: vi.fn(),
+}))
+
+vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
+  StreamableHTTPClientTransport: vi.fn(),
+}))
 
 const COMPANION_TOOL_NAME = `${KLICKER_DOCS_DOC_QUERY_TOOL_NAME}_chunk_topics`
+
+function documentsPayload(
+  reference = 'https://www.klicker.uzh.ch/tutorials/live_quiz/'
+) {
+  return {
+    mode: 'documents',
+    summary: { chunks_returned: 1, sources_returned: 1 },
+    sources: [
+      {
+        chunks: [{ content: 'Create and run a live quiz.' }],
+        reference,
+        reference_type: 'url',
+        source_type: 'webpage',
+        title: 'Live Quizzes',
+      },
+    ],
+  }
+}
 
 function documentsResult(
   reference = 'https://www.klicker.uzh.ch/tutorials/live_quiz/'
@@ -17,19 +48,7 @@ function documentsResult(
     content: [
       {
         type: 'text' as const,
-        text: JSON.stringify({
-          mode: 'documents',
-          summary: { chunks_returned: 1, sources_returned: 1 },
-          sources: [
-            {
-              chunks: [{ content: 'Create and run a live quiz.' }],
-              reference,
-              reference_type: 'url',
-              source_type: 'webpage',
-              title: 'Live Quizzes',
-            },
-          ],
-        }),
+        text: JSON.stringify(documentsPayload(reference)),
       },
     ],
     isError: false,
@@ -74,16 +93,11 @@ async function executeQuestion(
 describe('Klicker public docs composite tool', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.mocked(createSDKMCPClient).mockReset()
+    vi.mocked(StreamableHTTPClientTransport).mockReset()
   })
 
-  test('requires an explicit endpoint and bounds the question', () => {
-    expect(getKlickerDocsDocQueryUrl({ NODE_ENV: 'production' })).toBeNull()
-    expect(
-      getKlickerDocsDocQueryUrl({
-        MCP_KLICKER_PUBLIC_DOCS_URL: ' https://docs.test/mcp ',
-        NODE_ENV: 'test',
-      })
-    ).toBe('https://docs.test/mcp')
+  test('bounds the question', () => {
     expect(
       klickerDocsQueryInputSchema.safeParse({ question: 'live quiz' }).success
     ).toBe(true)
@@ -103,7 +117,7 @@ describe('Klicker public docs composite tool', () => {
 
     const result = await executeQuestion(bundle)
 
-    expect(result).toEqual(documentsResult())
+    expect(result).toBe(JSON.stringify(documentsPayload()))
     expect(client.listTools).toHaveBeenCalledTimes(1)
     expect(client.callTool).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -129,7 +143,63 @@ describe('Klicker public docs composite tool', () => {
       env: configuredEnv(),
     })
 
-    await expect(executeQuestion(bundle)).resolves.toEqual(documentsResult())
+    await expect(executeQuestion(bundle)).resolves.toBe(
+      JSON.stringify(documentsPayload())
+    )
+    await bundle.close()
+  })
+
+  test('fences validated structured content before it reaches the model', async () => {
+    const payload = documentsPayload()
+    const client = createClient({
+      callTool: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'untrusted alternate text' }],
+        structuredContent: payload,
+      }),
+    })
+    const bundle = createKlickerDocsQueryToolBundle({
+      createClient: vi.fn().mockResolvedValue(client),
+      env: configuredEnv(),
+    })
+    const sentinel = 'docs-sentinel'
+    const fencedTools = fenceToolSetResults(bundle.tools, sentinel)
+    const execute = fencedTools[KLICKER_DOCS_DOC_QUERY_TOOL_NAME].execute as (
+      input: { question: string },
+      options?: { abortSignal?: AbortSignal }
+    ) => Promise<unknown>
+
+    const result = await execute({ question: 'How do I create a live quiz?' })
+
+    expect(result).toBe(fenceToolResultText(JSON.stringify(payload), sentinel))
+    expect(parseDocQueryPayload(result)).toEqual(payload)
+    await bundle.close()
+  })
+
+  test('rejects redirects and disables transport reconnection', async () => {
+    let capturedOptions: {
+      requestInit?: RequestInit
+      reconnectionOptions?: { maxRetries?: number }
+    } = {}
+    vi.mocked(StreamableHTTPClientTransport).mockImplementation(
+      (_url, options) => {
+        capturedOptions = options ?? {}
+        return {} as InstanceType<typeof StreamableHTTPClientTransport>
+      }
+    )
+    const client = createClient()
+    vi.mocked(createSDKMCPClient).mockResolvedValue(
+      client as unknown as Awaited<ReturnType<typeof createSDKMCPClient>>
+    )
+    const bundle = createKlickerDocsQueryToolBundle({ env: configuredEnv() })
+
+    await expect(executeQuestion(bundle)).resolves.toBe(
+      JSON.stringify(documentsPayload())
+    )
+
+    expect(capturedOptions).toMatchObject({
+      requestInit: { redirect: 'error' },
+      reconnectionOptions: { maxRetries: 0 },
+    })
     await bundle.close()
   })
 

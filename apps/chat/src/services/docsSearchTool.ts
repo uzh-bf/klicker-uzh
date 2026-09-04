@@ -5,9 +5,9 @@ import {
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { type ToolExecutionOptions, type ToolSet, tool } from 'ai'
 import { z } from 'zod'
-import docsManifest from '../../../docs/src/generated/docs-manifest.json'
 import { KLICKER_DOCS_DOC_QUERY_TOOL_NAME } from '@/src/lib/config/toolNames'
 import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
+import docsManifest from '../../../docs/src/generated/docs-manifest.json'
 import {
   type KlickerDocsManifest,
   MAX_DOCS_OUTPUT_CHARS,
@@ -15,10 +15,8 @@ import {
   searchKlickerDocs,
 } from './docsSearch'
 
-export { KLICKER_DOCS_DOC_QUERY_TOOL_NAME }
-
 const KLICKER_DOCS_CHUNK_TOPICS_TOOL_NAME = `${KLICKER_DOCS_DOC_QUERY_TOOL_NAME}_chunk_topics`
-export const KLICKER_DOCS_REMOTE_TIMEOUT_MS = 4000
+const KLICKER_DOCS_REMOTE_TIMEOUT_MS = 4000
 
 type KlickerDocsMcpClient = Pick<MCPClient, 'callTool' | 'close' | 'listTools'>
 
@@ -61,21 +59,14 @@ export function mergeManageAssistantToolSets(
   return { ...lecturerTools, ...localTools }
 }
 
-export function getKlickerDocsDocQueryUrl(
-  env: NodeJS.ProcessEnv = process.env
-): string | null {
-  return env.MCP_KLICKER_PUBLIC_DOCS_URL?.trim() || null
-}
-
 function combineAbortSignals(
   ...candidates: Array<AbortSignal | null | undefined>
 ): AbortSignal {
-  const signals = candidates.filter(
-    (candidate): candidate is AbortSignal => candidate != null
+  return AbortSignal.any(
+    candidates.filter(
+      (candidate): candidate is AbortSignal => candidate != null
+    )
   )
-  if (signals.length === 0) return new AbortController().signal
-  if (signals.length === 1) return signals[0]
-  return AbortSignal.any(signals)
 }
 
 async function createKlickerDocsMcpClient({
@@ -93,6 +84,13 @@ async function createKlickerDocsMcpClient({
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      redirect: 'error',
+    },
+    reconnectionOptions: {
+      initialReconnectionDelay: 1000,
+      maxReconnectionDelay: 30_000,
+      reconnectionDelayGrowFactor: 1.5,
+      maxRetries: 0,
     },
   })
 
@@ -169,23 +167,25 @@ function isCanonicalKlickerDocsUrl(value: unknown): boolean {
   }
 }
 
-function isUsableDocumentsResult(result: unknown): boolean {
+function getUsableDocumentsPayload(
+  result: unknown
+): Record<string, unknown> | undefined {
   if (
     result &&
     typeof result === 'object' &&
     !Array.isArray(result) &&
     (result as { isError?: unknown }).isError === true
   ) {
-    return false
+    return undefined
   }
 
   const payload = parseDocQueryPayload(result)
-  if (!payload || payload.mode !== 'documents' || 'error' in payload) {
-    return false
+  if (payload?.mode !== 'documents' || 'error' in payload) {
+    return undefined
   }
 
   const sources = Array.isArray(payload.sources) ? payload.sources : []
-  return (
+  const valid =
     sources.length > 0 &&
     sources.every((source) => {
       if (!source || typeof source !== 'object') return false
@@ -203,7 +203,8 @@ function isUsableDocumentsResult(result: unknown): boolean {
             0
       )
     })
-  )
+
+  return valid ? payload : undefined
 }
 
 function formatKlickerDocsFallbackResult(question: string): string {
@@ -271,7 +272,7 @@ export function createKlickerDocsQueryToolBundle({
   requestSignal,
   timeoutMs = KLICKER_DOCS_REMOTE_TIMEOUT_MS,
 }: KlickerDocsQueryToolBundleOptions = {}): KlickerDocsQueryToolBundle {
-  const url = getKlickerDocsDocQueryUrl(env)
+  const url = env.MCP_KLICKER_PUBLIC_DOCS_URL?.trim() || null
   const token = env.DOC_QUERY_JWT_TOKEN_KLICKER_PUBLIC_DOCS?.trim() || null
   let client: KlickerDocsMcpClient | undefined
   let clientPromise: Promise<KlickerDocsMcpClient> | undefined
@@ -337,10 +338,11 @@ export function createKlickerDocsQueryToolBundle({
           name: KLICKER_DOCS_DOC_QUERY_TOOL_NAME,
           options: { signal },
         })
-        if (!isUsableDocumentsResult(result)) {
+        const payload = getUsableDocumentsPayload(result)
+        if (!payload) {
           throw new Error('Klicker docs MCP returned no usable documents')
         }
-        return result
+        return JSON.stringify(payload)
       } catch (error) {
         remoteUnavailable = true
         await closeRemoteClient()

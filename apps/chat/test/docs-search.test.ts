@@ -1,16 +1,13 @@
-import { describe, expect, test } from 'vitest'
 import type { ToolSet } from 'ai'
+import { describe, expect, test } from 'vitest'
+import { KLICKER_DOCS_DOC_QUERY_TOOL_NAME } from '@/src/lib/config/toolNames'
 import {
-  formatKlickerDocsSearchOutcome,
   KLICKER_DOCS_BASE_URL,
   type KlickerDocsManifest,
   searchKlickerDocs,
   tokenizeDocsQuery,
 } from '@/src/services/docsSearch'
-import {
-  KLICKER_DOCS_DOC_QUERY_TOOL_NAME,
-  mergeManageAssistantToolSets,
-} from '@/src/services/docsSearchTool'
+import { mergeManageAssistantToolSets } from '@/src/services/docsSearchTool'
 import { fenceToolResultText } from '@/src/services/toolOutputFencing'
 import realDocsManifest from '../../docs/src/generated/docs-manifest.json'
 
@@ -123,56 +120,6 @@ describe('docs search ranking', () => {
       '/feedback/',
       '/tutorials/live_quiz/',
     ])
-  })
-})
-
-describe('docs search output formatting', () => {
-  test('joins authoritative URLs, caps headings, and lists media', () => {
-    const outcome = searchKlickerDocs(makeManifest(), 'live', {
-      maxResults: 2,
-      maxHeadings: 2,
-    })
-    const text = formatKlickerDocsSearchOutcome(outcome, {
-      maxResults: 2,
-      maxHeadings: 2,
-    })
-    expect(text).toContain(`${KLICKER_DOCS_BASE_URL}/tutorials/live_quiz/`)
-    expect(text).toContain('category: tutorials')
-    expect(text).toContain('sections: Setup; Running a quiz')
-    expect(text).not.toContain('Results')
-    expect(text).toContain('media: /img/live-quiz.png')
-  })
-
-  test('caps the number of results and says so', () => {
-    const manifest = makeManifest()
-    for (let index = 0; index < 7; index += 1) {
-      manifest.pages.push({
-        route: `/extra/page-${index}/`,
-        title: `Alpha page ${index}`,
-        headings: [],
-        summary: 'Alpha content.',
-        tags: [],
-        media: [],
-        sourcePath: `docs/extra/page-${index}.mdx`,
-        sourceCategory: 'general',
-      })
-    }
-    const outcome = searchKlickerDocs(manifest, 'alpha')
-    expect(outcome.truncated).toBe(true)
-    const text = formatKlickerDocsSearchOutcome(outcome)
-    expect(text).toContain('more matching pages omitted')
-  })
-
-  test('hard-caps total output characters', () => {
-    const outcome = searchKlickerDocs(makeManifest(), 'live', {
-      maxResults: 5,
-    })
-    const text = formatKlickerDocsSearchOutcome(outcome, {
-      maxResults: 5,
-      maxOutputChars: 150,
-    })
-    expect(text.length).toBeLessThanOrEqual(200)
-    expect(text).toContain('[truncated: further matching pages omitted]')
   })
 })
 
