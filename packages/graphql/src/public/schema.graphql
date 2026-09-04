@@ -448,6 +448,12 @@ type AwardEntry {
   type: String!
 }
 
+type BetaEnrollmentCapability {
+  mayChange: Boolean!
+  membership: Boolean
+  signupAvailable: Boolean!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -2687,7 +2693,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setAiFeatures(email: String!, enabled: Boolean!): Int
-  setBetaFeatures(enabled: Boolean!): Boolean
+  setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setGeneratedElementDecision(input: SetGeneratedElementDecisionInput!): GeneratedElementDraft!
   setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
@@ -3165,7 +3171,7 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
-  betaFeatures: Boolean
+  betaEnrollment: BetaEnrollmentCapability!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!

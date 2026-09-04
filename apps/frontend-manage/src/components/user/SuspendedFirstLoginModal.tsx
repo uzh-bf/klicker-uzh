@@ -1,19 +1,16 @@
 import { useLazyQuery, useMutation, useSuspenseQuery } from '@apollo/client'
 import {
-  ChangeInitialSettingsDocument,
-  CheckShortnameAvailableDocument,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
-import { useEffect, useState } from 'react'
-import * as Yup from 'yup'
-
-import {
   faBook,
   faListCheck,
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
+import {
+  ChangeInitialSettingsDocument,
+  CheckShortnameAvailableDocument,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { routing } from '@klicker-uzh/i18n'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
   FormikSelectField,
@@ -25,8 +22,11 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import * as Yup from 'yup'
+import BetaEnrollmentSettings from './BetaEnrollmentSettings'
 
 function SuspendedFirstLoginModal({
   refetchElements,
@@ -72,6 +72,7 @@ function SuspendedFirstLoginModal({
       <div className="mb-3 max-w-none">
         {t('manage.firstLogin.makeFirstSettings')}
       </div>
+      <BetaEnrollmentSettings dataCy="first-login-beta-enrollment" />
       {data.userProfile && (
         <Formik
           isInitialValid={false}

@@ -2360,6 +2360,28 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
+      betaFeaturesDataUse:
+        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
+      betaFeaturesDescription:
+        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesConvergedOff: 'Beta access is no longer active.',
+      betaFeaturesConvergedOn: 'Beta access is now active.',
+      betaFeaturesEnrollment: 'Beta enrollment',
+      betaFeaturesEnrollmentTooltip:
+        'This optional setting controls whether your account is enrolled in the beta cohort.',
+      betaFeaturesError:
+        'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
+      betaFeaturesRefreshFailure:
+        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+      betaFeaturesRefreshing:
+        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+      betaFeaturesSaved:
+        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+      betaFeaturesPending:
+        'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
+      betaFeaturesTitle: 'Beta features',
+      betaFeaturesUnavailable:
+        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -2417,11 +2439,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
       newPassword: 'New Password',
-      betaFeatures: 'Beta Features',
-      betaFeaturesTooltip:
-        'Enable early access to KlickerUZH features that are still in testing. Beta features can change or be withdrawn at short notice, and are not recommended for use in a graded assessment. You can turn this off again at any time.',
-      betaFeaturesError:
-        'The beta setting could not be saved. Please try again in a moment.',
       changePassword: 'Change Password',
       changeDelegatedLoginPassword: 'Change delegated login password',
       changeDelegatedLoginPasswordMessage:

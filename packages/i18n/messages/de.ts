@@ -2390,6 +2390,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
+      betaFeaturesDataUse:
+        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
+      betaFeaturesDescription:
+        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
+      betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
+      betaFeaturesEnrollment: 'Beta-Anmeldung',
+      betaFeaturesEnrollmentTooltip:
+        'Mit dieser optionalen Einstellung steuern Sie, ob Ihr Konto für die Beta-Kohorte angemeldet ist.',
+      betaFeaturesError:
+        'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
+      betaFeaturesRefreshFailure:
+        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+      betaFeaturesRefreshing:
+        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+      betaFeaturesSaved:
+        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+      betaFeaturesPending:
+        'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
+      betaFeaturesTitle: 'Beta-Features',
+      betaFeaturesUnavailable:
+        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:
@@ -2447,11 +2469,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
-      betaFeatures: 'Beta-Funktionen',
-      betaFeaturesTooltip:
-        'Erhalten Sie frühzeitigen Zugriff auf KlickerUZH-Funktionen, die sich noch im Test befinden. Beta-Funktionen können sich kurzfristig ändern oder zurückgezogen werden und eignen sich nicht für benotete Prüfungen. Sie können diese Einstellung jederzeit wieder deaktivieren.',
-      betaFeaturesError:
-        'Die Beta-Einstellung konnte nicht gespeichert werden. Bitte versuchen Sie es in einem Moment erneut.',
       changePassword: 'Passwort ändern',
       changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
       changeDelegatedLoginPasswordMessage:
