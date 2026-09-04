@@ -62,6 +62,53 @@ export function normalizeDocQueryKbIds(value: unknown): string[] {
   return [...normalized].sort((left, right) => left.localeCompare(right))
 }
 
+type ResolvedDocQueryParameters = Pick<
+  ResolvedMcpScope,
+  'kbIds' | 'representation'
+>
+
+function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
+  const parameters = isRecord(value) ? value : null
+  const hasKbId = parameters !== null && Object.hasOwn(parameters, 'kb_id')
+  const hasKbIds = parameters !== null && Object.hasOwn(parameters, 'kb_ids')
+  if (
+    parameters === null ||
+    hasKbId === hasKbIds ||
+    parameters.required !== true ||
+    parameters.toolAlias !== 'doc_query'
+  ) {
+    requiredScopeError()
+  }
+
+  if (hasKbId) {
+    return {
+      kbIds: [normalizeDocQueryKbId(parameters.kb_id)],
+      representation: 'kb_id',
+    }
+  }
+  if (!Array.isArray(parameters.kb_ids) || parameters.kb_ids.length < 2) {
+    requiredScopeError()
+  }
+  return {
+    kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
+    representation: 'kb_ids',
+  }
+}
+
+export function assertDocQueryRequestScope(
+  parameters: unknown,
+  requestedKbIds: unknown
+): void {
+  const configured = resolveDocQueryParameters(parameters).kbIds
+  const requested = normalizeDocQueryKbIds(requestedKbIds)
+  if (
+    configured.length !== requested.length ||
+    configured.some((kbId, index) => kbId !== requested[index])
+  ) {
+    requiredScopeError()
+  }
+}
+
 function isInternalTransportHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (
@@ -128,9 +175,6 @@ function resolveKbConfiguration(
 
   if (
     parameters === null ||
-    (!hasKbId && !hasKbIds) ||
-    parameters.required !== true ||
-    parameters.toolAlias !== 'doc_query' ||
     typeof config?.chatMode !== 'string' ||
     config.chatMode.trim().length === 0 ||
     typeof serverId !== 'string' ||
@@ -139,10 +183,7 @@ function resolveKbConfiguration(
     requiredScopeError()
   }
 
-  const representation = hasKbId ? 'kb_id' : 'kb_ids'
-  const kbIds = hasKbId
-    ? [normalizeDocQueryKbId(parameters.kb_id)]
-    : normalizeDocQueryKbIds(parameters.kb_ids)
+  const { representation, kbIds } = resolveDocQueryParameters(parameters)
 
   return {
     chatMode: config.chatMode,

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import type {
   CohortActivationConfigRecord,
   CohortActivationConfigUpdate,
@@ -319,6 +320,17 @@ function parseDocQueryParameters(
       'Doc Query parameters must use exactly one KB representation'
     )
   }
+  const allowedKeys = new Set([
+    'required',
+    'toolAlias',
+    hasKbId ? 'kb_id' : 'kb_ids',
+  ])
+  if (
+    Object.keys(value).length !== allowedKeys.size ||
+    Object.keys(value).some((key) => !allowedKeys.has(key))
+  ) {
+    fail(errorCode, 'Doc Query parameters contain unsupported fields')
+  }
   if (value.required !== true || value.toolAlias !== DOC_QUERY_TOOL_ALIAS) {
     fail(errorCode, 'Doc Query parameters are not a required doc_query binding')
   }
@@ -329,7 +341,7 @@ function parseDocQueryParameters(
         if (!Array.isArray(value.kb_ids)) {
           fail(errorCode, 'kb_ids must be an array')
         }
-        if (value.kb_ids.length < 1 || value.kb_ids.length > MAX_KB_IDS) {
+        if (value.kb_ids.length < 2 || value.kb_ids.length > MAX_KB_IDS) {
           fail(errorCode, 'kb_ids has an invalid size')
         }
         const normalized = value.kb_ids.map(normalizeKbId)
@@ -463,12 +475,8 @@ function assertNoSecretKeys(value: unknown): void {
   }
   if (!isRecord(value)) return
   for (const [key, child] of Object.entries(value)) {
-    if (
-      key === 'authSecret' ||
-      key === 'bearerToken' ||
-      key === 'encryptedSecret' ||
-      key === 'ciphertext'
-    ) {
+    if (key === 'hasAuthSecret' && typeof child === 'boolean') continue
+    if (/secret|token|password|credential|ciphertext/i.test(key)) {
       fail('RECEIPT_INVALID', 'receipt contains forbidden secret material')
     }
     assertNoSecretKeys(child)
@@ -508,7 +516,6 @@ function assertConfigSnapshot(
     fail('RECEIPT_INVALID', 'config snapshot mode is malformed')
   }
   assertIsoTimestamp(value.updatedAt)
-  assertNoSecretKeys(value)
 }
 
 function assertServerSnapshot(
@@ -531,8 +538,11 @@ function assertServerSnapshot(
     fail('RECEIPT_INVALID', 'server snapshot is malformed')
   }
   normalizeUuid(value.id, 'receipt server id')
+  const parameters = value.parameters as JsonValue
+  if (!isJsonRecord(parameters) || Object.keys(parameters).length !== 0) {
+    fail('RECEIPT_INVALID', 'receipt server parameters must be empty')
+  }
   assertIsoTimestamp(value.updatedAt)
-  assertNoSecretKeys(value)
 }
 
 function assertReceiptTarget(
@@ -576,6 +586,14 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
     if (!isRecord(entry)) fail('RECEIPT_INVALID', 'receipt entry is malformed')
     assertReceiptTarget(entry.target)
     assertConfigSnapshot(entry.prior)
+    const prior = parseDocQueryParameters(
+      entry.prior.parameters,
+      'RECEIPT_INVALID'
+    )
+    assertAllowedTools(entry.prior.allowedTools)
+    if (hasFinanceWiki(prior.kbIds)) {
+      fail('RECEIPT_INVALID', 'receipt prior already contains FinanceWiki')
+    }
     normalizeUuid(entry.configId, 'receipt config id')
     if (
       entry.configId.toLowerCase() !== entry.prior.id.toLowerCase() ||
@@ -603,6 +621,7 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
         fail('RECEIPT_INVALID', 'receipt entry is incomplete')
       }
       assertConfigSnapshot(entry.attached)
+      assertAllowedTools(entry.attached.allowedTools)
       if (
         entry.prior.id !== entry.attached.id ||
         entry.prior.chatbotId !== entry.attached.chatbotId ||
@@ -756,6 +775,8 @@ function assertServerReady(server: CohortActivationServerRecord): void {
     !server.isActive ||
     server.authType.toLowerCase() !== 'bearer' ||
     !server.hasAuthSecret ||
+    !isJsonRecord(server.parameters) ||
+    Object.keys(server.parameters).length !== 0 ||
     server.url.trim().length === 0
   ) {
     fail('KB_SERVER_INVALID', 'the active bearer KB server is required')
@@ -1197,7 +1218,7 @@ export async function readFinanceWikiAttachment(
   receiptStore: FinanceWikiAttachmentReceiptStore
 ): Promise<FinanceWikiAttachmentReadback> {
   const receipt = requireReceipt(await readReceipt(receiptStore))
-  if (receipt.state === 'preparing') {
+  if (receipt.state === 'preparing' || receipt.state === 'rolling_back') {
     fail('RECEIPT_STATE', 'readback requires an applied or rolled-back receipt')
   }
   const current = await readReceiptCurrentState(store, receipt)
@@ -1211,6 +1232,14 @@ export async function readFinanceWikiAttachment(
     if (!config) fail('CONFIG_MISSING', 'receipt config is missing')
     if (configSnapshotEqual(config, entry.attached)) attached += 1
     if (configContentEqual(config, entry.prior)) restored += 1
+  }
+  if (
+    (receipt.state === 'applied' &&
+      (attached !== receipt.entries.length || restored !== 0)) ||
+    (receipt.state === 'rolled_back' &&
+      (restored !== receipt.entries.length || attached !== 0))
+  ) {
+    fail('RECEIPT_STALE', 'receipt configs do not match the receipt state')
   }
   return {
     state: receipt.state,
@@ -1235,6 +1264,34 @@ function assertReceiptExpectation(
     current.state !== expected.state
   ) {
     fail('RECEIPT_CONCURRENT_WRITE', 'receipt changed before write')
+  }
+}
+
+function acquireReceiptWriteLock(path: string): () => void {
+  let database: DatabaseSync | undefined
+  try {
+    database = new DatabaseSync(path, { timeout: 0 })
+    database.exec('BEGIN EXCLUSIVE')
+  } catch (error) {
+    try {
+      database?.close()
+    } catch {
+      // The connection may not have opened.
+    }
+    if (
+      error instanceof Error &&
+      error.message.includes('database is locked')
+    ) {
+      fail('RECEIPT_LOCKED', 'another receipt write is active')
+    }
+    throw error
+  }
+  return () => {
+    try {
+      database.exec('ROLLBACK')
+    } finally {
+      database.close()
+    }
   }
 }
 
@@ -1273,22 +1330,10 @@ export function createFileFinanceWikiAttachmentReceiptStore(
       assertFinanceWikiAttachmentReceiptIntegrity(receipt)
       const directory = dirname(absolutePath)
       await mkdir(directory, { recursive: true })
-      const lockPath = `${absolutePath}.lock`
-      let lock: Awaited<ReturnType<typeof open>> | undefined
+      const releaseLock = acquireReceiptWriteLock(
+        `${absolutePath}.write-lock.sqlite`
+      )
       try {
-        try {
-          lock = await open(lockPath, 'wx')
-        } catch (error) {
-          if (
-            error &&
-            typeof error === 'object' &&
-            'code' in error &&
-            error.code === 'EEXIST'
-          ) {
-            fail('RECEIPT_LOCKED', 'another receipt write is active')
-          }
-          throw error
-        }
         const current = await readCurrent()
         assertReceiptExpectation(expected, current)
         if (current?.payloadDigest === receipt.payloadDigest) return
@@ -1325,12 +1370,7 @@ export function createFileFinanceWikiAttachmentReceiptStore(
           }
         }
       } finally {
-        if (lock) {
-          await lock.close()
-          await unlink(lockPath).catch((error: NodeJS.ErrnoException) => {
-            if (error.code !== 'ENOENT') throw error
-          })
-        }
+        releaseLock()
       }
     },
   }

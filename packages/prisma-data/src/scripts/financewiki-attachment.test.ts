@@ -7,6 +7,7 @@ import type {
 } from './doc-query-cohort-activation.js'
 import {
   applyFinanceWikiAttachment,
+  assertFinanceWikiAttachmentReceiptIntegrity,
   FINANCEWIKI_KB_ID,
   type FinanceWikiAttachmentReceiptExpectation,
   type FinanceWikiAttachmentReceiptFile,
@@ -88,7 +89,6 @@ function makeParameters(
   const common = {
     required: true,
     toolAlias: 'doc_query',
-    metadata: { fixture: 'financewiki-attachment' },
   }
   return representation === 'kb_id'
     ? { ...common, kb_id: kbIds[0]! }
@@ -467,6 +467,60 @@ describe('FinanceWiki attachment operator', () => {
     })
   })
 
+  it('rejects readback while rollback recovery is still required', async () => {
+    const harness = makeHarness()
+    await applyFinanceWikiAttachment(
+      harness.store,
+      makeManifest(),
+      harness.receiptStore
+    )
+    harness.receiptStore.interruptOnWrite(4)
+
+    await expect(
+      rollbackFinanceWikiAttachment(harness.store, harness.receiptStore)
+    ).rejects.toThrow('synthetic receipt-store interruption')
+
+    await expect(
+      readFinanceWikiAttachment(harness.store, harness.receiptStore)
+    ).rejects.toMatchObject({ code: 'RECEIPT_STATE' })
+  })
+
+  it('rejects readback when the database no longer matches an applied receipt', async () => {
+    const harness = makeHarness()
+    await applyFinanceWikiAttachment(
+      harness.store,
+      makeManifest(),
+      harness.receiptStore
+    )
+    const drifted = harness.configs()[0]!
+    harness.replaceConfig({ ...drifted, parameters: makeParameters() })
+
+    await expect(
+      readFinanceWikiAttachment(harness.store, harness.receiptStore)
+    ).rejects.toMatchObject({ code: 'RECEIPT_STALE' })
+  })
+
+  it('rejects receipt snapshots with unapproved parameter fields', async () => {
+    const harness = makeHarness()
+    const applied = await applyFinanceWikiAttachment(
+      harness.store,
+      makeManifest(),
+      harness.receiptStore
+    )
+    if (applied.status !== 'applied') throw new Error('apply did not attach')
+    const receipt = structuredClone(applied.receipt)
+    receipt.entries[0]!.prior.parameters = {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_id: BASE_KB_ID,
+      note: 'not part of the receipt-safe schema',
+    }
+
+    expect(() => assertFinanceWikiAttachmentReceiptIntegrity(receipt)).toThrow(
+      'Doc Query parameters contain unsupported fields'
+    )
+  })
+
   it('does not partially attach modes when one compare-and-set fails', async () => {
     const harness = makeHarness()
     const before = new Map(
@@ -544,6 +598,36 @@ describe('FinanceWiki attachment operator', () => {
             toolAlias: 'doc_query',
             kb_id: BASE_KB_ID,
             kb_ids: [BASE_KB_ID],
+          }),
+          ...makeConfigs().slice(1),
+        ]),
+      manifest: makeManifest(),
+      code: 'PARAMETERS_MALFORMED',
+    },
+    {
+      name: 'a list representation contains only one KB',
+      makeCase: () =>
+        makeHarness([
+          makeConfig(
+            CONFIG_A_REVIEW_ID,
+            CHATBOT_A_ID,
+            'review',
+            makeParameters([BASE_KB_ID], 'kb_ids')
+          ),
+          ...makeConfigs().slice(1),
+        ]),
+      manifest: makeManifest(),
+      code: 'PARAMETERS_MALFORMED',
+    },
+    {
+      name: 'a parameter object contains an unsupported field',
+      makeCase: () =>
+        makeHarness([
+          makeConfig(CONFIG_A_REVIEW_ID, CHATBOT_A_ID, 'review', {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: BASE_KB_ID,
+            metadata: { fixture: 'not-receipted' },
           }),
           ...makeConfigs().slice(1),
         ]),

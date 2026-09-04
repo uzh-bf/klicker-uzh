@@ -14,6 +14,7 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
@@ -241,7 +242,7 @@ async function createAuthHeaders(
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-export async function createMCPClient(
+async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
   options: MCPRequestOptions = {}
@@ -336,6 +337,9 @@ async function loadServerTools(
   }
 
   try {
+    if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+      assertDocQueryRequestScope(config.parameters, options.kbIds)
+    }
     const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
 

@@ -322,6 +322,7 @@ describe('current-v3 Doc Query scope', () => {
 
     for (const kbIds of [
       [],
+      [KB_ID],
       [KB_ID, KB_ID],
       Array.from(
         { length: 33 },
@@ -358,6 +359,20 @@ describe('current-v3 Doc Query scope', () => {
         )
       ).toThrowError(RequiredMCPUnavailableError)
     }
+  })
+
+  test('rejects a request scope that is wider than the stored configuration', async () => {
+    const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
+
+    await expect(
+      getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+        kbIds: [KB_ID, secondKbId],
+        sessionId: SESSION_ID,
+      })
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    expect(transportConstructorMock).not.toHaveBeenCalled()
   })
 
   test('accepts a Tutor binding safely inherited by Quizzer', () => {
