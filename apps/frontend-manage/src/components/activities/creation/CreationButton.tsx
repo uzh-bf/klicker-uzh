@@ -36,15 +36,15 @@ function CreationButton({
       fluid
       disabled={disabled}
       className={{
-        root: 'h-10 justify-between gap-6 px-6 disabled:cursor-pointer md:h-12',
+        root: 'h-full min-h-10 min-w-0 justify-start gap-2 px-2 py-2 text-sm disabled:cursor-pointer sm:min-h-12 md:px-3 lg:gap-3 lg:px-4 lg:text-base',
       }}
       data={data}
       aria-describedby={comingSoon && disabled ? undefined : describedById}
       onClick={onClick}
     >
-      <div className="flex flex-row items-center gap-3">
+      <div className="flex min-w-0 flex-row items-center gap-2 lg:gap-3">
         <FontAwesomeIcon icon={icon} />
-        <div>{text}</div>
+        <div className="min-w-0 text-left leading-tight">{text}</div>
       </div>
     </Button>
   )

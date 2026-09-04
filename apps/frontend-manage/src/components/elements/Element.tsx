@@ -56,6 +56,7 @@ interface ElementProps {
   checked: boolean
   element: ElementObject
   disabled: boolean
+  compact?: boolean
   tags?: Tag[]
   handleTagClick: (tagId: number) => void
   onCheck: () => void
@@ -70,6 +71,7 @@ function Element({
   checked = false,
   element,
   disabled,
+  compact = false,
   tags = [],
   handleTagClick,
   onCheck,
@@ -80,14 +82,21 @@ function Element({
   refetchElements,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
+  const createdAt = dayjs(element.createdAt)
+  const updatedAt = dayjs(element.updatedAt)
   // A version-one element whose timestamps agree within one second is
-  // effectively unedited; any versioned edit, invalid date, or wider gap
-  // renders the edited timestamp instead.
+  // effectively unedited. Missing edit timestamps fall back to the creation
+  // timestamp instead of exposing an invalid date to the user.
   const isEffectivelyUnedited =
     element.version === 1 &&
-    dayjs(element.createdAt).isValid() &&
-    dayjs(element.updatedAt).isValid() &&
-    Math.abs(dayjs(element.updatedAt).diff(dayjs(element.createdAt))) <= 1000
+    createdAt.isValid() &&
+    updatedAt.isValid() &&
+    Math.abs(updatedAt.diff(createdAt)) <= 1000
+  const showCreatedAt = isEffectivelyUnedited || !updatedAt.isValid()
+  const displayedAt = showCreatedAt ? createdAt : updatedAt
+  const timestampTranslationKey = showCreatedAt
+    ? 'shared.generic.createdAt'
+    : 'shared.generic.updatedAt'
   const moreActionsLabel = t('manage.questionPool.moreActions', {
     name: element.name,
   })
@@ -166,21 +175,34 @@ function Element({
         <div
           className={twMerge(
             'flex w-full cursor-grab flex-col rounded-lg border border-solid px-3 py-2 hover:shadow-md md:flex-row',
+            compact && 'py-1.5',
             collectedProps.isDragging && 'opacity-50',
             disabled && 'cursor-not-allowed opacity-50 hover:shadow-none'
           )}
         >
-          <div className="flex flex-1 flex-row">
-            <div className="flex flex-1 flex-col gap-1">
-              <div className="flex flex-none flex-row items-center gap-2 text-lg">
-                <a
+          <div
+            className={twMerge('flex flex-1 flex-row', compact && 'min-w-0')}
+          >
+            <div
+              className={twMerge(
+                'flex flex-1 flex-col gap-1',
+                compact && 'min-w-0 gap-0.5'
+              )}
+            >
+              <div
+                className={twMerge(
+                  'flex flex-none flex-row items-center gap-2 text-lg',
+                  compact && 'text-base'
+                )}
+              >
+                <button
                   className={twMerge(
                     'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
+                    compact && 'min-w-0 text-base',
                     disabled && 'hover:cursor-not-allowed hover:text-black'
                   )}
-                  role="button"
-                  tabIndex={0}
                   type="button"
+                  disabled={disabled}
                   onClick={() => {
                     if (!disabled) {
                       const value = localStorage.getItem(
@@ -204,12 +226,15 @@ function Element({
                       className="ml-3"
                     />
                   )}
-                </a>
+                </button>
               </div>
 
-              <div className="flex-1 text-sm">
+              <div
+                className="flex-1 text-sm"
+                data-cy={`element-content-preview-${element.name}`}
+              >
                 <Ellipsis
-                  maxLines={2}
+                  maxLines={compact ? 1 : 2}
                   withMarkdown={false}
                   previewContent={markdownToPlainText(element.content)}
                   className={{ root: 'text-left' }}
@@ -228,17 +253,10 @@ function Element({
                   {t(`shared.${element.type}.typeLabel`)}
                 </div>
                 <div>
-                  {isEffectivelyUnedited
-                    ? t('shared.generic.createdAt', {
-                        date: dayjs(element.createdAt).format(
-                          'DD.MM.YYYY HH:mm'
-                        ),
-                      })
-                    : t('shared.generic.updatedAt', {
-                        date: dayjs(element.updatedAt).format(
-                          'DD.MM.YYYY HH:mm'
-                        ),
-                      })}
+                  {displayedAt.isValid() &&
+                    t(timestampTranslationKey, {
+                      date: displayedAt.format('DD.MM.YYYY HH:mm'),
+                    })}
                 </div>
               </div>
             </div>
@@ -276,7 +294,13 @@ function Element({
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </div>
           ) : null}
-          <div className="flex flex-row gap-1.5 md:flex-col">
+          <div
+            className={twMerge(
+              'flex flex-row gap-1.5 md:flex-col',
+              compact && 'md:flex-row'
+            )}
+            data-cy={`element-actions-${element.name}`}
+          >
             {availableActions
               .slice(0, availableActions.length > 3 ? 2 : 3)
               .map((action) => {

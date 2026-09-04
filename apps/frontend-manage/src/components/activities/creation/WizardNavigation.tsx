@@ -40,6 +40,11 @@ function WizardNavigation({
   const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
   const closeGuard = useWizardCloseGuard()
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const continueLabels = [
+    t('manage.activityWizard.continueToDescription'),
+    t('manage.activityWizard.continueToSettings'),
+    t('manage.activityWizard.continueToQuestions'),
+  ]
 
   useEffect(() => {
     onDisabledReasonChangeRef.current = onDisabledReasonChange
@@ -66,8 +71,11 @@ function WizardNavigation({
   }
 
   return (
-    <div className="flex flex-row justify-between pt-2">
-      <div className="flex flex-row items-center gap-2">
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 pt-2"
+      data-cy="activity-wizard-navigation"
+    >
+      <div className="flex flex-row items-center gap-2 justify-self-start">
         {typeof onPrevStep !== 'undefined' && (
           <Button
             type="button"
@@ -94,7 +102,7 @@ function WizardNavigation({
         </Button>
       </div>
       <div
-        className={`flex flex-col items-end${lastStep && disabledReason ? ' gap-1' : ''}`}
+        className={`flex flex-col items-end justify-self-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
         {lastStep && (
           <div
@@ -108,7 +116,7 @@ function WizardNavigation({
           </div>
         )}
         <Button
-          primary={lastStep}
+          primary
           disabled={!stepValidity[activeStep] || continueDisabled}
           loading={isSubmitting}
           type="submit"
@@ -127,7 +135,7 @@ function WizardNavigation({
               ? editMode
                 ? t('shared.generic.save')
                 : t('shared.generic.create')
-              : t('shared.generic.continue')}
+              : (continueLabels[activeStep] ?? t('shared.generic.continue'))}
           </Button.Label>
         </Button>
       </div>

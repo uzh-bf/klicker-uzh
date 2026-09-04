@@ -2036,6 +2036,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emptyStateDescription:
         'Elements are reusable questions and content for your activities. Create one to get started.',
       clearSearch: 'Clear search',
+      elementsLoadError: 'The elements could not be loaded.',
+      retry: 'Retry',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
@@ -2410,6 +2412,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
       confirmCancelDiscard: 'Discard',
       confirmCancelKeepEditing: 'Keep editing',
+      continueToDescription: 'Continue to description',
+      continueToSettings: 'Continue to settings',
+      continueToQuestions: 'Continue to questions',
       temporaryStorageCreation:
         'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       temporaryStorageEditing:

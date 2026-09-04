@@ -23,6 +23,7 @@ interface MarkdownNode {
 }
 
 const BLOCK_CONTAINERS = new Set(['root', 'blockquote', 'list', 'listItem'])
+const markdownParser = unified().use(remarkParse).use(remarkMath).freeze()
 
 function projectNode(node: MarkdownNode): string {
   switch (node.type) {
@@ -65,9 +66,6 @@ function collapseWhitespace(value: string): string {
  * paths keep their current behavior.
  */
 export function markdownToPlainText(markdown: string): string {
-  const tree = unified()
-    .use(remarkParse)
-    .use(remarkMath)
-    .parse(markdown) as MarkdownNode
+  const tree = markdownParser.parse(markdown) as MarkdownNode
   return collapseWhitespace(projectNode(tree))
 }

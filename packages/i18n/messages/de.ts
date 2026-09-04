@@ -2050,6 +2050,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emptyStateDescription:
         'Elemente sind wiederverwendbare Fragen und Inhalte für Ihre Aktivitäten. Erstellen Sie eines, um loszulegen.',
       clearSearch: 'Suche löschen',
+      elementsLoadError: 'Die Elemente konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
@@ -2431,6 +2433,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben Änderungen eingegeben, die noch nicht gespeichert sind. Beim Verwerfen werden die an dieser Aktivität vorgenommenen Änderungen endgültig entfernt.',
       confirmCancelDiscard: 'Verwerfen',
       confirmCancelKeepEditing: 'Weiter bearbeiten',
+      continueToDescription: 'Weiter zur Beschreibung',
+      continueToSettings: 'Weiter zu den Einstellungen',
+      continueToQuestions: 'Weiter zu den Fragen',
       temporaryStorageCreation:
         'Der Erstellungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
       temporaryStorageEditing:
