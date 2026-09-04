@@ -10,6 +10,7 @@ import {
   approveChatbotPublication,
   rejectChatbotPublication,
   requestChatbotPublication,
+  requestChatbotPublicationV2,
 } from '../src/services/chatbots.js'
 import {
   initializePrisma,
@@ -117,6 +118,33 @@ describe('Integration tests for the chatbot publication workflow', () => {
         creditResetAmount: 50,
         creditMaxCredits: 50,
         reviewComment: null,
+      })
+    })
+
+    it('preserves the saved four-field credit policy in a v2 request', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT, {
+        creditInitialCredits: 2,
+        creditResetPeriod: 'MONTHLY',
+        creditResetAmount: 3,
+        creditMaxCredits: 8,
+      })
+
+      const result = await requestChatbotPublicationV2(
+        {
+          id: bot.id,
+          useCase: 'Course Q&A',
+          expectedStudentCount: 120,
+        },
+        userOneCtx
+      )
+
+      expect(result).toMatchObject({
+        status: 'PENDING_APPROVAL',
+        creditInitialCredits: 2,
+        creditResetPeriod: 'MONTHLY',
+        creditResetAmount: 3,
+        creditMaxCredits: 8,
       })
     })
 

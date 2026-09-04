@@ -24,6 +24,9 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
+import ChatbotCreditPolicy, {
+  ChatbotCreditPolicySummary,
+} from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
@@ -243,11 +246,13 @@ function ChatbotAuthoring({
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
-  const [advanceToReview, setAdvanceToReview] = useState(false)
+  const [advanceToCredits, setAdvanceToCredits] = useState(false)
   const [openSections, setOpenSections] = useState<ChatbotSetupStep[]>([step])
   const [metadataNavigationState, setMetadataNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [creditNavigationState, setCreditNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
@@ -259,9 +264,13 @@ function ChatbotAuthoring({
   const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
   const published = chatbot.status === ChatbotStatus.Published
   const setupDirty =
-    metadataNavigationState.dirty || disclaimerNavigationState.dirty
+    metadataNavigationState.dirty ||
+    disclaimerNavigationState.dirty ||
+    creditNavigationState.dirty
   const setupPending =
-    metadataNavigationState.pending || disclaimerNavigationState.pending
+    metadataNavigationState.pending ||
+    disclaimerNavigationState.pending ||
+    creditNavigationState.pending
   const publicationPending = publicationNavigationState.pending
 
   const openSection = useCallback((section: ChatbotSetupStep) => {
@@ -279,13 +288,16 @@ function ChatbotAuthoring({
       dirty:
         metadataNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
+        creditNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
         disclaimerNavigationState.pending ||
+        creditNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
+    creditNavigationState,
     disclaimerNavigationState,
     metadataNavigationState,
     onNavigationStateChange,
@@ -302,10 +314,10 @@ function ChatbotAuthoring({
   }, [disclaimerEditable, metadataEditable])
 
   useEffect(() => {
-    if (!advanceToReview || !hasCompleteDisclaimer(chatbot)) return
-    setAdvanceToReview(false)
-    openSection('review')
-  }, [advanceToReview, chatbot, openSection])
+    if (!advanceToCredits || !hasCompleteDisclaimer(chatbot)) return
+    setAdvanceToCredits(false)
+    openSection('credits')
+  }, [advanceToCredits, chatbot, openSection])
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
@@ -553,7 +565,7 @@ function ChatbotAuthoring({
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values: normalizedValues })
-                      setAdvanceToReview(true)
+                      setAdvanceToCredits(true)
                     } catch (error) {
                       setDisclaimerError(
                         t(getChatbotMutationErrorKey(error, 'disclaimer'))
@@ -626,6 +638,44 @@ function ChatbotAuthoring({
                   />
                 </>
               )}
+            </section>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem
+          value="credits"
+          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+          data-cy="chatbot-setup-item-credits"
+        >
+          <AccordionTrigger
+            className="py-3 hover:no-underline"
+            data-cy="chatbot-setup-trigger-credits"
+          >
+            <span className="flex flex-col gap-1">
+              <span>{t('manage.resources.chatbotSetupCredits')}</span>
+              <span className="text-sm font-normal text-gray-600">
+                {t('manage.resources.chatbotSetupCreditsDescription')}
+              </span>
+            </span>
+          </AccordionTrigger>
+          <AccordionContent forceMount>
+            <section
+              hidden={!openSections.includes('credits')}
+              className="space-y-4"
+              data-cy="chatbot-setup-credits"
+            >
+              <div>
+                <H4>{t('manage.resources.chatbotSetupCreditsTitle')}</H4>
+                <p className="mt-1 text-sm text-gray-600">
+                  {t('manage.resources.chatbotSetupCreditsDescriptionLong')}
+                </p>
+              </div>
+              <ChatbotCreditPolicy
+                chatbot={chatbot}
+                publicationPending={publicationPending}
+                onNavigationStateChange={setCreditNavigationState}
+                onSaved={() => openSection('review')}
+              />
             </section>
           </AccordionContent>
         </AccordionItem>
@@ -744,6 +794,24 @@ function ChatbotAuthoring({
                     t('manage.resources.chatbotDisclaimerIntroPlaceholder')
                   )}
                 </div>
+              </div>
+
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h5 className="font-semibold text-gray-900">
+                    {t('manage.resources.chatbotSetupCreditsTitle')}
+                  </h5>
+                  <Button
+                    type="button"
+                    onClick={() => openSection('credits')}
+                    data={{ cy: 'chatbot-setup-edit-credits' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotSetupEdit')}
+                    </Button.Label>
+                  </Button>
+                </div>
+                <ChatbotCreditPolicySummary chatbot={chatbot} />
               </div>
 
               <UserNotification>

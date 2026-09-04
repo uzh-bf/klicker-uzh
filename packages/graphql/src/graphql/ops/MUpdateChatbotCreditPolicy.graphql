@@ -1,0 +1,21 @@
+mutation UpdateChatbotCreditPolicy(
+  $chatbotId: String!
+  $creditInitialCredits: Int!
+  $creditResetPeriod: CreditResetPeriod!
+  $creditResetAmount: Int!
+  $creditMaxCredits: Int!
+) {
+  updateChatbotCreditPolicy(
+    chatbotId: $chatbotId
+    creditInitialCredits: $creditInitialCredits
+    creditResetPeriod: $creditResetPeriod
+    creditResetAmount: $creditResetAmount
+    creditMaxCredits: $creditMaxCredits
+  ) {
+    id
+    creditInitialCredits
+    creditResetPeriod
+    creditResetAmount
+    creditMaxCredits
+  }
+}

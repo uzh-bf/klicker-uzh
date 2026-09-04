@@ -135,6 +135,22 @@ permissions and never replaces them.
 scope, rather than through edu-ID. The scope becomes the session's authority
 and is enforced field-by-field in the API layer.
 
+## AI usage and quotas
+
+**Chat account usage budget**: A User's monthly allowance for participant
+chatbot model usage, split into base-model and advanced-model lanes and shared
+by that User's chatbots.
+_Avoid_: Balance, chatbot credits
+
+**Chatbot credit policy**: The per-chatbot allowance granted to each
+Participant, defined by initial credits, reset period, reset amount, and maximum
+credits.
+_Avoid_: Chat account usage budget
+
+**KB graph semester quota**: A User's semester allowance shared by knowledge
+graph construction and graph-backed element-generation actions.
+_Avoid_: Balance, chatbot credits, chat account usage budget
+
 ## Boundary rules
 
 - Participant-editable values never gain provenance by sitting next to verified

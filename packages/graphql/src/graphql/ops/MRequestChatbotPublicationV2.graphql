@@ -1,0 +1,13 @@
+mutation RequestChatbotPublicationV2(
+  $id: String!
+  $useCase: String!
+  $expectedStudentCount: Int!
+) {
+  requestChatbotPublicationV2(
+    id: $id
+    useCase: $useCase
+    expectedStudentCount: $expectedStudentCount
+  ) {
+    id
+  }
+}

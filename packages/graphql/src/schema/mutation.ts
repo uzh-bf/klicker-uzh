@@ -120,6 +120,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  CreditResetPeriod,
 } from './resource.js'
 import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
@@ -1514,6 +1515,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateChatbotCreditPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          creditInitialCredits: t.arg.int({ required: true }),
+          creditResetPeriod: t.arg({
+            type: CreditResetPeriod,
+            required: true,
+          }),
+          creditResetAmount: t.arg.int({ required: true }),
+          creditMaxCredits: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotCreditPolicy(args, ctx)
+        },
+      }),
+
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
         nullable: true,
         type: ChatAccountUsageOverviewRef,
@@ -1597,6 +1616,25 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
+
+      requestChatbotPublicationV2: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublicationV2(args, ctx)
         },
       }),
 
