@@ -400,6 +400,9 @@ export function AsyncTaskProvider({
     async (ids: string[]) => {
       if (ids.length === 0) return
 
+      const acknowledgedIds = new Set(ids)
+      const readAt = new Date().toISOString()
+
       try {
         await acknowledgeAsyncTasks({ variables: { ids } })
       } catch (error) {
@@ -411,9 +414,51 @@ export function AsyncTaskProvider({
         return
       }
 
+      try {
+        client.cache.updateQuery(
+          {
+            query: GetAsyncTasksDocument,
+            variables: { trackedIds: requestedTrackedIds },
+          },
+          (queryData) => {
+            if (!queryData) return queryData
+
+            let acknowledgedUnreadCount = 0
+            const asyncTasks = queryData.asyncTasks.map((task) => {
+              if (
+                !acknowledgedIds.has(task.id) ||
+                task.readAt ||
+                !isTerminalTask(task)
+              ) {
+                return task
+              }
+
+              acknowledgedUnreadCount += 1
+              return { ...task, readAt }
+            })
+
+            if (acknowledgedUnreadCount === 0) return queryData
+
+            return {
+              ...queryData,
+              asyncTaskAttentionCount: Math.max(
+                0,
+                queryData.asyncTaskAttentionCount - acknowledgedUnreadCount
+              ),
+              asyncTasks,
+            }
+          }
+        )
+      } catch (error) {
+        console.error(
+          'Failed to update asynchronous task cache after acknowledgement',
+          error
+        )
+      }
+
       await refetchTasks()
     },
-    [acknowledgeAsyncTasks, refetchTasks, t]
+    [acknowledgeAsyncTasks, client.cache, refetchTasks, requestedTrackedIds, t]
   )
 
   const acknowledgeTask = useCallback(

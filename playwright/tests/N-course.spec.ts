@@ -3306,7 +3306,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(asyncTaskCenterTrigger(page)).toContainText('2')
   })
 
-  test('Acknowledges a restored completed duplication task when it is opened', async ({
+  test('Keeps an opened task acknowledged when the task refetch fails', async ({
     loginLecturer,
     page,
   }) => {
@@ -3353,6 +3353,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page.addInitScript(
       ({ acknowledgeHash, tasksHash, jobs }) => {
         const originalFetch = window.fetch.bind(window)
+        let failNextTaskQuery = false
         window.fetch = async (input, init) => {
           let isAcknowledgeMutation = false
           let isTaskQuery = false
@@ -3430,6 +3431,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
               job.readAt = acknowledgedAt
               acknowledgedCount += 1
             }
+            failNextTaskQuery = true
 
             return new window.Response(
               JSON.stringify({
@@ -3440,6 +3442,16 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           }
 
           if (!isTaskQuery) return originalFetch(input, init)
+
+          if (failNextTaskQuery) {
+            failNextTaskQuery = false
+            return new window.Response(
+              JSON.stringify({
+                errors: [{ message: 'Synthetic task refetch failure' }],
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
 
           return new window.Response(
             JSON.stringify({
