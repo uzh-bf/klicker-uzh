@@ -6,7 +6,7 @@ import {
   ChatbotStatus,
   type ChatModelCapability,
   CreditResetPeriod,
-  GetChatbotsInfoDocument,
+  GetChatbotsInfoWithStandardModesDocument,
   UpdateChatbotModelSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -346,7 +346,7 @@ function ChatbotDetails({
           allowedModelIds: normalizedAllowedModelIds,
           allowedReasoningEffortsByModel: normalizedReasoningConfig,
         },
-        refetchQueries: [{ query: GetChatbotsInfoDocument }],
+        refetchQueries: [{ query: GetChatbotsInfoWithStandardModesDocument }],
         awaitRefetchQueries: true,
       })
 

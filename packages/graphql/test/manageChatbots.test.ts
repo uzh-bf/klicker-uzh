@@ -288,6 +288,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
     const config = {
       tutorEnabled: true,
       explainerEnabled: false,
+      quizzerEnabled: true,
       courseName: '  Clinical pharmacology  ',
       subjectDomain: 'Medicine',
       languageOfInstruction: 'en' as const,
@@ -311,6 +312,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         standardModeConfig: {
           tutorEnabled: true,
           explainerEnabled: false,
+          quizzerEnabled: true,
           courseName: 'Clinical pharmacology',
           subjectDomain: 'Medicine',
           languageOfInstruction: 'en',
@@ -344,7 +346,11 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         updateChatbotStandardModeConfig(
           {
             chatbotId: chatbot.id,
-            config: { tutorEnabled: false, explainerEnabled: false },
+            config: {
+              tutorEnabled: false,
+              explainerEnabled: false,
+              quizzerEnabled: false,
+            },
           },
           userOneCtx
         )
@@ -791,6 +797,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
           standardModeConfig: {
             tutorEnabled: true,
             explainerEnabled: true,
+            quizzerEnabled: true,
             courseName: '  Course  ',
             subjectDomain: null,
             languageOfInstruction: 'de',
@@ -806,11 +813,42 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         standardModeConfig: {
           tutorEnabled: true,
           explainerEnabled: true,
+          quizzerEnabled: true,
           courseName: 'Course',
           languageOfInstruction: 'de',
           scopeNote: 'Scope',
         },
       })
+      expect(info).not.toHaveProperty('systemPrompts')
+    })
+
+    it('derives all effective flags from legacy prompts without exposing them', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      const chatbot = await prisma.chatbot.create({
+        data: {
+          name: 'Legacy standard modes',
+          courseId: course.id,
+          ownerId: userOneCtx.user.sub,
+          systemPrompts: {
+            tutor: { enabled: false, prompt: 'PRIVATE-TUTOR-PROMPT' },
+            explainer: { enabled: true },
+            quizzer: { enabled: false },
+          },
+        },
+      })
+
+      const [info] = await getChatbotsInfo(userOneCtx)
+
+      expect(info).toMatchObject({
+        id: chatbot.id,
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+        },
+      })
+      expect(info).not.toHaveProperty('systemPrompts')
+      expect(JSON.stringify(info)).not.toContain('PRIVATE-TUTOR-PROMPT')
     })
 
     it('normalizes a retired allow-list for the owner without rewriting the row', async () => {

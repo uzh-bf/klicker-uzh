@@ -173,8 +173,10 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
-function isTypedStandardMode(mode: string): mode is 'tutor' | 'explainer' {
-  return mode === 'tutor' || mode === 'explainer'
+function isTypedStandardMode(
+  mode: string
+): mode is 'tutor' | 'explainer' | 'quizzer' {
+  return mode === 'tutor' || mode === 'explainer' || mode === 'quizzer'
 }
 
 function isStandardModeEnabled(
@@ -182,13 +184,15 @@ function isStandardModeEnabled(
   systemPrompts: unknown,
   mode: string
 ): boolean {
-  const normalizedConfig =
-    normalizeChatbotStandardModeConfig(standardModeConfig)
+  const normalizedConfig = normalizeChatbotStandardModeConfig(
+    standardModeConfig,
+    systemPrompts
+  )
 
   if (normalizedConfig && isTypedStandardMode(mode)) {
-    return mode === 'tutor'
-      ? normalizedConfig.tutorEnabled
-      : normalizedConfig.explainerEnabled
+    if (mode === 'tutor') return normalizedConfig.tutorEnabled
+    if (mode === 'explainer') return normalizedConfig.explainerEnabled
+    return normalizedConfig.quizzerEnabled
   }
 
   return !isModeExplicitlyDisabled(systemPrompts, mode)

@@ -1,0 +1,17 @@
+mutation UpdateChatbotStandardModeConfig(
+  $chatbotId: String!
+  $config: ChatbotStandardModeConfigInput!
+) {
+  updateChatbotStandardModeConfig(chatbotId: $chatbotId, config: $config) {
+    id
+    standardModeConfig {
+      tutorEnabled
+      explainerEnabled
+      quizzerEnabled
+      courseName
+      subjectDomain
+      languageOfInstruction
+      scopeNote
+    }
+  }
+}

@@ -50,15 +50,20 @@ owning course. Publication approval is separate from account-level AI usage
 authorization.
 
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
-Tutor and Explainer configuration: explicit mode flags plus course name,
-subject domain, language of instruction, and an optional scope note. The
-owner-only `updateChatbotStandardModeConfig` mutation accepts full replacements
-in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires at least one standard mode, and
-uses a status compare-and-set so a concurrent lifecycle transition cannot be
-overwritten. Missing or malformed legacy values fall back to the platform
-defaults and legacy mode opt-outs. Participant GraphQL projections expose only
-the resolved mode options, never this owner configuration or raw system
-prompts. The chat compiler keeps the platform scaffolding authoritative.
+Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+course name, subject domain, language of instruction, and an optional scope
+note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
+replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
+Explainer to remain enabled, and uses a status compare-and-set so a concurrent
+lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+a knowledge base; Quizzer remains independently configurable but is filtered by
+the safe course-material capability gate. Missing or malformed persisted values
+derive all three flags from legacy mode opt-outs/defaults, while valid legacy
+two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
+Manage projection exposes the combined effective settings, never raw
+`systemPrompts`. Participant GraphQL projections expose only the resolved mode
+options, never this owner configuration or raw system prompts. The chat compiler
+keeps the platform scaffolding authoritative.
 
 ## Activities
 

@@ -50,6 +50,7 @@ function modeSections(
   const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
   const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
   const typedContext = standardModeContextSection(
+    systemPrompts,
     standardModeConfig,
     selectedMode
   )
@@ -80,14 +81,27 @@ function modeSections(
 }
 
 function standardModeContextSection(
+  systemPrompts: unknown,
   standardModeConfig: unknown,
   selectedMode: string
 ): string | null {
   if (selectedMode !== 'tutor' && selectedMode !== 'explainer') return null
+  if (standardModeConfig === null || standardModeConfig === undefined) {
+    return null
+  }
 
-  const normalizedConfig =
-    normalizeChatbotStandardModeConfig(standardModeConfig)
-  if (!normalizedConfig) return null
+  const normalizedConfig = normalizeChatbotStandardModeConfig(
+    standardModeConfig,
+    systemPrompts
+  )
+  if (
+    normalizedConfig.courseName === null &&
+    normalizedConfig.subjectDomain === null &&
+    normalizedConfig.languageOfInstruction === null &&
+    normalizedConfig.scopeNote === null
+  ) {
+    return null
+  }
 
   const personaContext = JSON.stringify({
     courseName: normalizedConfig.courseName,

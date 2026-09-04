@@ -72,7 +72,7 @@ async function createChatbot(
 
 async function navigateToSetupStep(
   page: Parameters<typeof fillEditorField>[0],
-  step: 'basics' | 'disclaimer' | 'review'
+  step: 'basics' | 'modes' | 'disclaimer' | 'review'
 ) {
   const url = new URL(page.url())
   url.searchParams.set('view', 'setup')
@@ -83,7 +83,7 @@ async function navigateToSetupStep(
 }
 
 async function expectSetupTriggers(page: Page) {
-  for (const section of ['basics', 'disclaimer', 'review']) {
+  for (const section of ['basics', 'modes', 'disclaimer', 'review']) {
     await expect(
       page.getByTestId(`chatbot-setup-trigger-${section}`)
     ).toBeVisible()
@@ -230,23 +230,34 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   }) => {
     test.slow()
     const metadataRequestGate = createRequestGate()
+    const modeRequestGate = createRequestGate()
     const disclaimerRequestGate = createRequestGate()
     const modelSettingsRequestGate = createRequestGate()
+    let modeConfigVariables: Record<string, unknown> | undefined
 
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
       const postData = request.postData()
-      const operationName = postData
-        ? (JSON.parse(postData) as { operationName?: string }).operationName
+      const requestBody = postData
+        ? (JSON.parse(postData) as {
+            operationName?: string
+            variables?: { config?: Record<string, unknown> }
+          })
         : undefined
+      const operationName = requestBody?.operationName
+      if (operationName === 'UpdateChatbotStandardModeConfig') {
+        modeConfigVariables = requestBody?.variables?.config
+      }
       const requestGate =
         operationName === 'UpdateChatbotModelSettings'
           ? modelSettingsRequestGate
-          : operationName === 'UpdateChatbot'
-            ? metadataRequestGate
-            : operationName === 'SaveChatbotDisclaimer'
-              ? disclaimerRequestGate
-              : undefined
+          : operationName === 'UpdateChatbotStandardModeConfig'
+            ? modeRequestGate
+            : operationName === 'UpdateChatbot'
+              ? metadataRequestGate
+              : operationName === 'SaveChatbotDisclaimer'
+                ? disclaimerRequestGate
+                : undefined
 
       if (!requestGate) {
         await route.continue()
@@ -355,6 +366,57 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-review-name')).toHaveText(
       FIRST_CHATBOT
     )
+
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).toBeChecked()
+    await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeChecked()
+    await page.getByTestId('chatbot-mode-switch-tutor').click()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).toBeDisabled()
+    await page.getByTestId('chatbot-mode-switch-tutor').click()
+    await page.getByTestId('chatbot-mode-switch-explainer').click()
+    await page.getByTestId('chatbot-mode-switch-quizzer').click()
+    await page.getByTestId('save-chatbot-modes').click()
+    await expect(page.getByTestId('save-chatbot-modes')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeDisabled()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).toBeDisabled()
+    await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeDisabled()
+    await expect(
+      page.getByTestId('chatbot-mode-capability-note')
+    ).toContainText('Quizzer may still be hidden')
+    await expect
+      .poll(() => modeConfigVariables)
+      .toMatchObject({
+        tutorEnabled: true,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        courseName: null,
+        subjectDomain: null,
+        languageOfInstruction: null,
+        scopeNote: null,
+      })
+    modeRequestGate.release()
+    await expect(page.getByText('Learning modes saved.')).toBeVisible()
+
+    await navigateToSetupStep(page, 'review')
+    await expect(page.getByTestId('chatbot-review-modes')).toBeVisible()
+    await expect(page.getByTestId('chatbot-review-mode-tutor')).toHaveText(
+      'Enabled'
+    )
+    await expect(page.getByTestId('chatbot-review-mode-explainer')).toHaveText(
+      'Disabled'
+    )
+    await expect(page.getByTestId('chatbot-review-mode-quizzer')).toHaveText(
+      'Disabled'
+    )
+    await page.getByTestId('chatbot-setup-edit-modes').click()
+    await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
 
     await page.getByTestId('chatbot-setup-edit-basics').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
@@ -473,6 +535,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
     await page.reload()
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await navigateToSetupStep(page, 'modes')
+    await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-explainer')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('chatbot-mode-switch-quizzer')
+    ).not.toBeChecked()
     await navigateToSetupStep(page, 'basics')
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
     await expect(page.getByTestId('chatbot-description')).toHaveValue(
@@ -519,7 +589,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(submitButton).toBeDisabled()
     await expect(
       page.getByText(
-        'Save or wait for changes in Basics and Disclaimer before requesting publication.'
+        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.'
       )
     ).toBeVisible()
 

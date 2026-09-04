@@ -93,6 +93,7 @@ describe('compileSystemPrompt', () => {
       {
         tutorEnabled: true,
         explainerEnabled: false,
+        quizzerEnabled: true,
         courseName: 'Clinical pharmacology',
         subjectDomain: 'Medicine',
         languageOfInstruction: 'de',
@@ -120,6 +121,7 @@ describe('compileSystemPrompt', () => {
     const result = compilePrompt(null, 'explainer', [], {
       tutorEnabled: false,
       explainerEnabled: true,
+      quizzerEnabled: false,
       courseName: 'Course "quoted"',
       subjectDomain: 'Medicine ## heading',
       languageOfInstruction: 'en',
@@ -149,6 +151,7 @@ describe('compileSystemPrompt', () => {
     const standardModeConfig = {
       tutorEnabled: true,
       explainerEnabled: true,
+      quizzerEnabled: true,
       courseName: 'Typed context',
       subjectDomain: 'Subject',
       languageOfInstruction: 'en',
@@ -222,6 +225,9 @@ describe('compileSystemPrompt', () => {
     const resultNoTool = compilePrompt(null, 'tutor')
     expect(resultNoTool).toContain(DEFAULT_TUTOR_MARK)
     expect(resultNoTool).not.toContain(LECTURER_GUIDANCE_MARK)
+    expect(resultNoTool).not.toContain(
+      'Lecturer-provided standard-mode context'
+    )
     expect(resultNoTool).toContain(COURSE_POLICY_MARK)
     expect(resultNoTool).toContain(OUTPUT_FORMAT_MARK)
     expect(resultNoTool).toContain(LANGUAGE_MARK)
@@ -231,6 +237,17 @@ describe('compileSystemPrompt', () => {
     expect(resultWithTool).toContain(DEFAULT_TUTOR_MARK)
     expect(resultWithTool).toContain(GROUNDING_MARK)
     expect(resultWithTool).toContain(CITATION_MARK)
+  })
+
+  test('does not add typed context for malformed standard-mode data', () => {
+    const result = compilePrompt(null, 'tutor', [], {
+      tutorEnabled: 'yes',
+      explainerEnabled: true,
+      quizzerEnabled: true,
+      scopeNote: 'This value is not applied.',
+    })
+
+    expect(result).not.toContain('Lecturer-provided standard-mode context')
   })
 
   test('provides distinct built-in Tutor, Explainer, and Quizzer contracts', () => {

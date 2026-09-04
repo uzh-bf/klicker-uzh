@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   CreateChatbotDocument,
-  GetChatbotsInfoDocument,
+  GetChatbotsInfoWithStandardModesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -71,7 +71,9 @@ function ChatbotCreateModal({
                 description: values.description.trim() || null,
                 courseId: values.courseId,
               },
-              refetchQueries: [{ query: GetChatbotsInfoDocument }],
+              refetchQueries: [
+                { query: GetChatbotsInfoWithStandardModesDocument },
+              ],
               awaitRefetchQueries: true,
             })
             const chatbotId = result.data?.createChatbot.id

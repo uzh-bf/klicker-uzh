@@ -361,9 +361,12 @@ custom modes use their configured description.
 
 `src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
 defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and
-custom modes. A valid typed value owns Tutor and Explainer enablement; a missing or malformed value
-falls back to legacy `enabled: false` opt-outs and otherwise enables both standard modes. Quizzer
-and custom-mode flags remain legacy-controlled. The resolver excludes modes that cannot satisfy
+custom modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
+Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
+knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
+resolver excludes modes that cannot satisfy
 the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
 `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while

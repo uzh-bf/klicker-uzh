@@ -28,15 +28,19 @@ replacing:
   migration.
 - Tutor and Explainer also accept the bounded lecturer-owned fields `courseName`,
   `subjectDomain`, `languageOfInstruction`, and `scopeNote`, plus explicit
-  `tutorEnabled` and `explainerEnabled` flags, in the nullable typed
-  `Chatbot.standardModeConfig` value. A valid value is authoritative for those
-  two flags and must leave at least one enabled. Missing or malformed values
-  retain the legacy opt-out/default behavior, so existing rows need no
-  backfill. The owner-only replacement mutation trims and bounds the fields;
-  the participant projection never exposes the raw JSON.
-- Tutor and Explainer are general standard candidates. Quizzer is
-  capability-gated: it appears only when the server can resolve a restricted
-  course `doc_query` binding. An exact Quizzer MCP configuration takes
+  `tutorEnabled`, `explainerEnabled`, and `quizzerEnabled` flags, in the nullable
+  typed `Chatbot.standardModeConfig` value. A valid mutation value requires all
+  three flags and must leave Tutor or Explainer enabled; Quizzer never satisfies
+  that invariant. Tutor and Explainer do not require a knowledge base. Missing
+  or malformed persisted values derive all three flags from legacy opt-outs and
+  defaults, while a valid pre-flag value with only Tutor and Explainer flags
+  derives Quizzer from its legacy opt-out/default. This keeps existing rows
+  compatible without a backfill. The owner-only replacement mutation trims and
+  bounds the fields, and the Manage owner projection returns only the combined
+  effective settings, never raw `systemPrompts`.
+- Tutor and Explainer are general standard candidates. Quizzer is independently
+  configurable but remains capability-gated: it appears only when the server
+  can resolve a restricted course `doc_query` binding. An exact Quizzer MCP configuration takes
   precedence per server. Otherwise Quizzer may inherit only a Tutor binding
   that exposes an exact `doc_query` tool or a required single-tool alias named
   `doc_query`; unrestricted and wildcard configurations are never inherited.

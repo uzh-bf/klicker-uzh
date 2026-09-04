@@ -3752,6 +3752,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
       chatbotSetupBasics: 'Basics',
       chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupModes: 'Learning modes',
+      chatbotSetupModesDescription:
+        'Choose which standard modes participants can use',
+      chatbotSetupModesTitle: 'Learning modes',
+      chatbotSetupModesDescriptionLong:
+        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Guides participants with questions, hints, and formative feedback.',
+      chatbotModeExplainer: 'Explainer',
+      chatbotModeExplainerDescription:
+        'Explains course concepts directly with definitions and grounded examples.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Practises exam-style course questions one at a time with formative feedback.',
+      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeQuizzerCapabilityNote:
+        'Quizzer may still be hidden when its course-material capability is unavailable.',
+      chatbotModeEnabled: 'Enabled',
+      chatbotModeDisabled: 'Disabled',
+      chatbotModesSave: 'Save learning modes',
+      chatbotModesSaving: 'Saving…',
+      chatbotModesSaveSuccess: 'Learning modes saved.',
+      chatbotModesSaveError: 'Could not save learning modes. Please try again.',
+      chatbotModesReadonly:
+        'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
       chatbotSetupReview: 'Review and submit',
@@ -3819,7 +3845,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
+        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:

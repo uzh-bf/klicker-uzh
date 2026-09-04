@@ -308,6 +308,7 @@ describe('required MCP chat preflight', () => {
         standardModeConfig: {
           tutorEnabled: false,
           explainerEnabled: true,
+          quizzerEnabled: false,
           courseName: null,
           subjectDomain: null,
           languageOfInstruction: null,

@@ -179,6 +179,7 @@ export const ChatbotStandardModeConfigInput =
     fields: (t) => ({
       tutorEnabled: t.boolean({ required: true }),
       explainerEnabled: t.boolean({ required: true }),
+      quizzerEnabled: t.boolean({ required: true }),
       courseName: t.string({ required: false }),
       subjectDomain: t.string({ required: false }),
       languageOfInstruction: t.field({
@@ -196,6 +197,7 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
     fields: (t) => ({
       tutorEnabled: t.exposeBoolean('tutorEnabled'),
       explainerEnabled: t.exposeBoolean('explainerEnabled'),
+      quizzerEnabled: t.exposeBoolean('quizzerEnabled'),
       courseName: t.exposeString('courseName', { nullable: true }),
       subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
       languageOfInstruction: t.expose('languageOfInstruction', {

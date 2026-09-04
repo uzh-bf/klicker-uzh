@@ -395,6 +395,7 @@ const chatbotOwnerSelect = {
   name: true,
   description: true,
   avatar: true,
+  systemPrompts: true,
   standardModeConfig: true,
   modelSelection: true,
   allowedModelIds: true,
@@ -413,6 +414,7 @@ const chatbotOwnerSelect = {
 } satisfies Prisma.ChatbotSelect
 
 type ChatbotWithOwnerCourse = {
+  systemPrompts: unknown
   standardModeConfig: unknown
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
@@ -438,10 +440,13 @@ function normalizeAllowedModelIds(allowedModelIds: string[]) {
 }
 
 function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
+  const { systemPrompts, ...chatbotWithoutSystemPrompts } = chatbot
+
   return {
-    ...chatbot,
+    ...chatbotWithoutSystemPrompts,
     standardModeConfig: normalizeChatbotStandardModeConfig(
-      chatbot.standardModeConfig
+      chatbot.standardModeConfig,
+      systemPrompts
     ),
     allowedModelIds: normalizeAllowedModelIds(chatbot.allowedModelIds),
     allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(

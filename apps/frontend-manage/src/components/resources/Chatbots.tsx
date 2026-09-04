@@ -4,7 +4,7 @@ import {
   type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
-  GetChatbotsInfoDocument,
+  GetChatbotsInfoWithStandardModesDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -36,7 +36,7 @@ function Chatbots() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
-  const { data, loading } = useQuery(GetChatbotsInfoDocument, {
+  const { data, loading } = useQuery(GetChatbotsInfoWithStandardModesDocument, {
     fetchPolicy: 'network-only',
   })
   const { data: modelRegistryData, loading: modelRegistryLoading } = useQuery(

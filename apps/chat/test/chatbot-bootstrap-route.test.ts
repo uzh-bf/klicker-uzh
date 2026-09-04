@@ -62,6 +62,7 @@ describe('chatbot bootstrap route', () => {
         standardModeConfig: {
           tutorEnabled: false,
           explainerEnabled: true,
+          quizzerEnabled: false,
           courseName: null,
           subjectDomain: null,
           languageOfInstruction: null,

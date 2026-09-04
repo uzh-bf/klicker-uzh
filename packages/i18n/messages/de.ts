@@ -3812,6 +3812,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
       chatbotSetupBasics: 'Grundangaben',
       chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupModes: 'Lernmodi',
+      chatbotSetupModesDescription:
+        'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
+      chatbotSetupModesTitle: 'Lernmodi',
+      chatbotSetupModesDescriptionLong:
+        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
+      chatbotModeExplainer: 'Erklärer',
+      chatbotModeExplainerDescription:
+        'Erklärt Kurskonzepte direkt mit Definitionen und passenden Beispielen.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
+      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeQuizzerCapabilityNote:
+        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+      chatbotModeEnabled: 'Aktiviert',
+      chatbotModeDisabled: 'Deaktiviert',
+      chatbotModesSave: 'Lernmodi speichern',
+      chatbotModesSaving: 'Wird gespeichert…',
+      chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
+      chatbotModesSaveError:
+        'Die Lernmodi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotModesReadonly:
+        'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
       chatbotSetupReview: 'Prüfen und einreichen',
@@ -3885,7 +3912,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern Sie Änderungen in den Grundangaben, Lernmodi und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:

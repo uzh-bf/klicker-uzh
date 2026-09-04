@@ -8,6 +8,7 @@ import type { Locale } from '@klicker-uzh/prisma/client'
 export type ChatbotStandardModeConfig = {
   tutorEnabled: boolean
   explainerEnabled: boolean
+  quizzerEnabled: boolean
   courseName: string | null
   subjectDomain: string | null
   languageOfInstruction: Locale | null
@@ -18,6 +19,7 @@ export type ChatbotStandardModeConfig = {
 export type ChatbotStandardModeConfigInput = {
   tutorEnabled: boolean
   explainerEnabled: boolean
+  quizzerEnabled: boolean
   courseName?: string | null
   subjectDomain?: string | null
   languageOfInstruction?: Locale | null

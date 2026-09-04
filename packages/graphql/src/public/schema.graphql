@@ -802,6 +802,7 @@ type ChatbotStandardModeConfig {
   courseName: String
   explainerEnabled: Boolean!
   languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
@@ -811,6 +812,7 @@ input ChatbotStandardModeConfigInput {
   courseName: String
   explainerEnabled: Boolean!
   languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
   scopeNote: String
   subjectDomain: String
   tutorEnabled: Boolean!
