@@ -21,7 +21,11 @@ type EnrollmentStatus =
   | 'refresh-failed'
   | 'error'
 
-function BetaEnrollmentSettings() {
+function BetaEnrollmentSettings({
+  dataCy = 'beta-enrollment-section',
+}: {
+  dataCy?: string
+}) {
   const t = useTranslations()
   const aiBetaEnabled = useFeatureFlag('ai-beta')
   const refreshFeatureFlags = useRefreshFeatureFlags()
@@ -37,7 +41,11 @@ function BetaEnrollmentSettings() {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   if (loading && !data) {
-    return <Loader />
+    return (
+      <section id="beta-features" className="scroll-mt-4" data-cy={dataCy}>
+        <Loader />
+      </section>
+    )
   }
 
   const capability = data?.betaEnrollment
@@ -106,7 +114,7 @@ function BetaEnrollmentSettings() {
   }
 
   return (
-    <section id="beta-features" data-cy="beta-enrollment-section">
+    <section id="beta-features" className="scroll-mt-4" data-cy={dataCy}>
       <Setting title={t('manage.settings.betaFeaturesTitle')}>
         <div className="mb-5 flex flex-col gap-3">
           <p>{t('manage.settings.betaFeaturesDescription')}</p>

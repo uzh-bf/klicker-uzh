@@ -429,6 +429,17 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: the signup and menu discovery slice is implemented on the
+  reviewed baseline. Manage now uses a separately named profile operation for
+  `userScope`, adds Catalyst to browser flag attributes, exposes the direct
+  Beta features menu entry only for eligible full-access users while signup is
+  open, and reuses the enrollment control in the first-login modal outside the
+  mandatory profile form. GraphQL generation, the Manage typecheck, Prettier,
+  and focused Biome checks pass; `QUserProfile.graphql` remains unchanged. The
+  full-file Header lint still reports four pre-existing diagnostics outside
+  this slice's changed hunks. Current `origin/v3` is twelve commits ahead and
+  materially changes `SuspendedFirstLoginModal.tsx`; reconcile that overlap in
+  the single upstream-integration pass before integrated browser evidence.
 - 2026-09-04: the settings slice GLM 5.3 Flash simplifier found one
   redundant query-to-state synchronization effect. The effect was removed;
   query membership now remains directly derived until the mutation returns a
