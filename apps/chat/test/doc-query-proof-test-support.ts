@@ -17,6 +17,24 @@ export type ProofInvokeArgs = {
 
 export type ProofInvoke = (args: ProofInvokeArgs) => Promise<MockToolResult>
 
+export type ProofScopeVariant =
+  | 'valid'
+  | 'expired'
+  | 'forged'
+  | 'wrong_issuer'
+  | 'wrong_audience'
+  | 'unknown_key'
+
+export type ProofSigner = (input: {
+  kbId: string
+  chatbotId: string
+  variant?: ProofScopeVariant
+}) => Promise<string>
+
+export type ProofLock = {
+  close: () => Promise<void>
+}
+
 export type ProofReceipt = {
   result: string
   failureClass: string | null
@@ -41,25 +59,24 @@ export type RunProofMatrix = (options: {
   manifest: unknown
   environment: Record<string, string> | NodeJS.ProcessEnv
   invoke: ProofInvoke
+  createSigner?: (
+    environment: Record<string, string> | NodeJS.ProcessEnv
+  ) => Promise<ProofSigner>
 }) => Promise<ProofReceipt>
 
 export type SuperviseProof = (options: {
-  sourceEnvironment: NodeJS.ProcessEnv
+  sourceEnvironment: Record<string, string> | NodeJS.ProcessEnv
   childPath: string
   childArgs: string[]
   lockPath: string
   deadlineMs?: number
-  acquireLockForProof?: unknown
+  acquireLockForProof?: (lockPath: string) => Promise<ProofLock | null>
 }) => Promise<ProofReceipt>
 
 export function rejected(
   message = 'unauthorized: invalid token'
 ): MockToolResult {
   return { isError: true, content: [{ type: 'text', text: message }] }
-}
-
-export function emptyRejection(): MockToolResult {
-  return { isError: true, content: [] }
 }
 
 export function proofUuid(index: number): string {
@@ -193,6 +210,7 @@ export function createProofReceiptSources({
       "  phase: 'complete',",
       "  result: 'passed',",
       "  failureClass: 'none',",
+      "  diagnosticClass: 'none',",
       '  failedCaseId: null,',
       '  failedRejectionClass: null,',
       `  counts: ${passedCounts},`,
@@ -215,6 +233,7 @@ export function createProofReceiptSources({
       "  phase: 'canary',",
       "  result: 'failed',",
       "  failureClass: 'canary_positive_failed',",
+      "  diagnosticClass: 'none',",
       "  failedCaseId: 'corpus_1',",
       '  failedRejectionClass: null,',
       `  counts: ${failedCounts},`,
@@ -515,7 +534,7 @@ export function defineProofSupervisorSuite(
     superviseProof: SuperviseProof
   },
   config: {
-    dummyEnvironment: () => Promise<Record<string, string>>
+    dummyEnvironment: () => Promise<Record<string, string> | NodeJS.ProcessEnv>
     writeDummy: (source: string) => Promise<{ path: string; lockPath: string }>
     prepareDuplicateLock?: (lockPath: string) => Promise<() => Promise<void>>
     passedReceiptSource: (extra?: string, preservation?: string) => string
@@ -577,8 +596,7 @@ export function defineProofSupervisorSuite(
         )
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -596,12 +614,12 @@ export function defineProofSupervisorSuite(
           config
             .passedReceiptSource()
             .replaceAll("phase: 'complete'", "phase: 'matrix'"),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'missing preservation evidence',
         () => config.passedReceiptSource('', 'undefined'),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'non-zero preservation evidence',
@@ -610,7 +628,7 @@ export function defineProofSupervisorSuite(
             '',
             '{databaseWrites:1,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
           ),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'an exit-mismatched receipt',
@@ -626,8 +644,7 @@ export function defineProofSupervisorSuite(
     >)('rejects %s', async (_name, source, expectedFailure) => {
       const dummy = await config.writeDummy(source())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -637,6 +654,27 @@ export function defineProofSupervisorSuite(
       expect(receipt.failureClass).toBe(expectedFailure)
     })
 
+    test('classifies a successful exit with a failed receipt as a worker protocol failure', async () => {
+      const dummy = await config.writeDummy(
+        config
+          .failedReceiptSource()
+          .replaceAll('process.exit(1)', 'process.exit(0)')
+      )
+      const receipt = await behaviors.superviseProof({
+        sourceEnvironment: await config.dummyEnvironment(),
+        childPath: dummy.path,
+        childArgs: [],
+        lockPath: dummy.lockPath,
+        deadlineMs: 2_000,
+      })
+      expect(receipt).toMatchObject({
+        result: 'failed',
+        failureClass: 'child_failed',
+        diagnosticClass: 'worker_protocol',
+        exitCode: 0,
+      })
+    })
+
     test('preserves a protocol failure when a failed child claims writes', async () => {
       const dummy = await config.writeDummy(
         config.failedReceiptSource(
@@ -644,8 +682,7 @@ export function defineProofSupervisorSuite(
         )
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -707,7 +744,7 @@ export function defineProofSupervisorSuite(
         sourceEnvironment: {
           ...(await config.dummyEnvironment()),
           LEAK_ME: 'must-not-pass',
-        } as unknown as NodeJS.ProcessEnv,
+        },
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -720,8 +757,7 @@ export function defineProofSupervisorSuite(
     test('preserves a values-free failure receipt from a failed child', async () => {
       const dummy = await config.writeDummy(config.failedReceiptSource())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -743,8 +779,7 @@ export function defineProofSupervisorSuite(
     ])('classifies %s without retrying', async (_name, source, expected) => {
       const dummy = await config.writeDummy(source)
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -760,8 +795,7 @@ export function defineProofSupervisorSuite(
         : await prepareDuplicateLock(dummy.lockPath)
       try {
         const receipt = await behaviors.superviseProof({
-          sourceEnvironment:
-            (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+          sourceEnvironment: await config.dummyEnvironment(),
           childPath: dummy.path,
           childArgs: [],
           lockPath: dummy.lockPath,

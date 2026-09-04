@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
+const transportConstructorMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
@@ -20,16 +21,18 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
     constructor(
       readonly url: URL,
       readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {}
+    ) {
+      transportConstructorMock(url, options)
+    }
   },
 }))
 
 import {
-  createAuthHeaders,
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
 import {
+  assertDocQueryTransportSecurity,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   normalizeDocQueryKbId,
   resolveMcpScope,
@@ -74,19 +77,30 @@ describe('current-v3 Doc Query scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+    createSDKMCPClientMock.mockResolvedValue({
+      tools: vi.fn().mockResolvedValue({ doc_query: {} }),
+    })
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
-    const headers = await createAuthHeaders(createServer().server, CHATBOT_ID, {
+    await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
       kbId: KB_ID,
       sessionId: SESSION_ID,
     })
 
-    expect(headers).toEqual({
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer opaque-transport-token',
-      [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
-    })
+    expect(transportConstructorMock).toHaveBeenCalledWith(
+      new URL('https://mcp.example.test'),
+      {
+        requestInit: {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer opaque-transport-token',
+            [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
+          },
+          redirect: 'error',
+        },
+      }
+    )
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbId: KB_ID,
       chatbotId: CHATBOT_ID,
@@ -104,6 +118,62 @@ describe('current-v3 Doc Query scope', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects credentials on a public cleartext endpoint', async () => {
+    await expect(
+      getAggregatedMCPTools(
+        [createServer({ url: 'http://mcp.example.test' })],
+        CHATBOT_ID,
+        { kbId: KB_ID, sessionId: SESSION_ID }
+      )
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    expect(transportConstructorMock).not.toHaveBeenCalled()
+  })
+
+  test('accepts HTTPS and internal cleartext endpoints', async () => {
+    const internalUrls = [
+      'https://mcp.example.test',
+      'http://doc-query.default.svc:8080',
+      'http://doc-query.internal',
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://10.1.2.3',
+      'http://172.16.0.9',
+      'http://192.168.1.5',
+    ]
+    for (const url of internalUrls) {
+      await getAggregatedMCPTools([createServer({ url })], CHATBOT_ID, {
+        kbId: KB_ID,
+        sessionId: SESSION_ID,
+      })
+      expect(transportConstructorMock).toHaveBeenCalledWith(
+        new URL(url),
+        expect.objectContaining({
+          requestInit: expect.objectContaining({
+            headers: expect.objectContaining({
+              Authorization: 'Bearer opaque-transport-token',
+            }),
+          }),
+        })
+      )
+    }
+  })
+
+  test('transport guard boundary cases', () => {
+    expect(() =>
+      assertDocQueryTransportSecurity('http://172.32.0.1')
+    ).toThrowError(/HTTPS/)
+    expect(() =>
+      assertDocQueryTransportSecurity('ftp://mcp.example.test')
+    ).toThrowError(/HTTPS/)
+    expect(() => assertDocQueryTransportSecurity('not-a-url')).toThrowError(
+      /invalid/
+    )
+    expect(() =>
+      assertDocQueryTransportSecurity('http://[::1]:8080')
+    ).not.toThrowError()
   })
 
   test('fails a required target without both scope values', async () => {
@@ -125,24 +195,56 @@ describe('current-v3 Doc Query scope', () => {
       parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
       mcpServer: { id: 'kb-server', name: 'KB' },
     }
-    expect(resolveMcpScope([target], 'tutor')).toBe(KB_ID)
+    expect(resolveMcpScope([target], 'tutor', [target])).toBe(KB_ID)
+    const explainerTarget = {
+      ...target,
+      chatMode: 'explainer',
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: KB_ID.toUpperCase(),
+      },
+    }
     expect(
-      resolveMcpScope(
-        [
-          target,
-          {
-            ...target,
-            chatMode: 'explainer',
-            parameters: {
-              required: true,
-              toolAlias: 'doc_query',
-              kb_id: KB_ID.toUpperCase(),
-            },
-          },
-        ],
-        'explainer'
-      )
+      resolveMcpScope([target, explainerTarget], 'explainer', [explainerTarget])
     ).toBe(KB_ID)
+  })
+
+  test('accepts a Tutor binding safely inherited by Quizzer', () => {
+    const tutorBinding = {
+      chatMode: 'tutor',
+      parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+    const inheritedQuizzerBinding = {
+      ...tutorBinding,
+      chatMode: 'quizzer',
+    }
+
+    expect(
+      resolveMcpScope([tutorBinding], 'quizzer', [inheritedQuizzerBinding])
+    ).toBe(KB_ID)
+  })
+
+  test('rejects an effective binding outside the validated chatbot scope', () => {
+    const tutorBinding = {
+      chatMode: 'tutor',
+      parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+
+    expect(() =>
+      resolveMcpScope([tutorBinding], 'quizzer', [
+        {
+          ...tutorBinding,
+          chatMode: 'quizzer',
+          parameters: {
+            ...tutorBinding.parameters,
+            kb_id: '8016810d-31e9-4b39-9529-cd46feb2bf63',
+          },
+        },
+      ])
+    ).toThrowError(RequiredMCPUnavailableError)
   })
 
   test.each([
@@ -229,8 +331,14 @@ describe('current-v3 Doc Query scope', () => {
       ],
     },
   ])('$name fails closed', ({ configurations, selectedMode = 'tutor' }) => {
-    expect(() => resolveMcpScope(configurations, selectedMode)).toThrowError(
-      RequiredMCPUnavailableError
-    )
+    expect(() =>
+      resolveMcpScope(
+        configurations,
+        selectedMode,
+        configurations.filter(
+          (configuration) => configuration.chatMode === selectedMode
+        )
+      )
+    ).toThrowError(RequiredMCPUnavailableError)
   })
 })

@@ -763,7 +763,11 @@ export async function POST(
 
   let scopedKbId: string | undefined
   try {
-    scopedKbId = resolveMcpScope(enabledMCPConfigurations, selectedMode)
+    scopedKbId = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      selectedMCPConfigurations
+    )
   } catch (error) {
     if (error instanceof RequiredMCPUnavailableError) {
       return NextResponse.json(

@@ -521,14 +521,6 @@ function canonicalExclusion(value: string): string {
   return value.trim().replaceAll('_', ' ').replaceAll(/\s+/g, ' ').toLowerCase()
 }
 
-function canonicalExcludedCorpora(
-  manifest: Pick<CohortActivationManifest, 'excludedCorpora' | 'exclusions'>
-): string[] {
-  return exclusionValues(manifest)
-    .map((value) => value.trim())
-    .sort(compareStrings)
-}
-
 function excludedConfigValues(
   manifest: Pick<CohortActivationManifest, 'excludedConfigIds'>
 ): string[] {
@@ -595,8 +587,8 @@ function canonicalManifest(
         corpusOwner: entry.corpusOwner ?? entry.corpusOwnerId,
       })),
     heldConfigIds: [...manifest.heldConfigIds].sort(compareStrings),
-    excludedCorpora: canonicalExcludedCorpora(manifest),
-    excludedConfigIds: excludedConfigValues(manifest).sort(compareStrings),
+    excludedCorpora: canonicalExclusionValues(manifest),
+    excludedConfigIds: canonicalExcludedConfigIds(manifest),
   }
 }
 
@@ -710,6 +702,7 @@ type ManifestValidationState = {
   configIds: Set<string>
   chatbotModes: Set<string>
   sourceServersByChatbot: Map<string, string>
+  kbIdsByChatbot: Map<string, string>
 }
 
 function assertManifestShape(manifest: CohortActivationManifest): void {
@@ -762,7 +755,7 @@ function validateManifestEntry(
       'target tool is not the multi-tenant reader tool'
     )
   }
-  normalizeUuid(entry.kbId, 'entry.kbId')
+  const kbId = normalizeUuid(entry.kbId, 'entry.kbId')
   entryCorpusIdentity(entry)
   entryCorpusOwner(entry)
   assertEntryNotExcluded(entry)
@@ -775,6 +768,11 @@ function validateManifestEntry(
     fail('MIXED_MODE_COVERAGE', 'one chatbot uses more than one source server')
   }
   state.sourceServersByChatbot.set(chatbotId, sourceServerId)
+  const priorKbId = state.kbIdsByChatbot.get(chatbotId)
+  if (priorKbId && priorKbId !== kbId) {
+    fail('MIXED_KB_COVERAGE', 'one chatbot uses more than one knowledge base')
+  }
+  state.kbIdsByChatbot.set(chatbotId, kbId)
   const chatbotMode = `${chatbotId}:${entry.chatMode}`
   if (state.chatbotModes.has(chatbotMode)) {
     fail('DUPLICATE_TARGET_CONFIG', 'manifest targets one chatbot mode twice')
@@ -789,6 +787,7 @@ function validateManifestEntries(
     configIds: new Set<string>(),
     chatbotModes: new Set<string>(),
     sourceServersByChatbot: new Map<string, string>(),
+    kbIdsByChatbot: new Map<string, string>(),
   }
   for (const entry of manifest.entries) {
     validateManifestEntry(entry, state)
@@ -1290,6 +1289,15 @@ function assertIntentMatchesManifest(
       'cohortActivation intent holds do not match manifest'
     )
   }
+  if (
+    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
+    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
+  ) {
+    fail(
+      'RECEIPT_INVALID',
+      'cohortActivation intent does not cover the manifest'
+    )
+  }
 }
 
 function assertReceiptShape(receipt: CohortActivationReceipt): void {
@@ -1632,18 +1640,6 @@ export async function prepareCohortActivation(
   const intent = options.intent ?? makeCohortActivationReceiptIntent(manifest)
   validateCohortActivationReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
-  const manifestConfigIds = new Set(
-    manifest.entries.map((entry) => entry.configId.toLowerCase())
-  )
-  if (
-    Object.keys(intent.targetConfigIds).length !== manifestConfigIds.size ||
-    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
-  ) {
-    fail(
-      'RECEIPT_INVALID',
-      'cohortActivation intent does not cover the manifest'
-    )
-  }
   const prepared = await store.transaction(async (tx) => {
     const sourceEntries = await readSourceEntries(tx, manifest)
     const targetServer = await findTargetServer(
@@ -1690,6 +1686,67 @@ export async function prepareCohortActivation(
   })
 }
 
+export async function assertCohortActivationNotPrepared(
+  store: CohortActivationStore,
+  manifest: CohortActivationManifest,
+  intent: CohortActivationReceiptIntent
+): Promise<void> {
+  validateManifest(manifest)
+  validateCohortActivationReceiptIntent(intent)
+  assertIntentMatchesManifest(manifest, intent)
+
+  await store.transaction(async (tx) => {
+    await readSourceEntries(tx, manifest)
+    const targetByName = await tx.findServerByName(manifest.target.serverName)
+    let targetServer: CohortActivationServerRecord | null = null
+
+    if (intent.targetServerId === null) {
+      if (targetByName) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'target server appeared after the preparing intent was written'
+        )
+      }
+    } else {
+      const targetById = await tx.findServerById(intent.targetServerId)
+      if (
+        !targetByName ||
+        !targetById ||
+        targetByName.id.toLowerCase() !== intent.targetServerId.toLowerCase() ||
+        targetById.id.toLowerCase() !== intent.targetServerId.toLowerCase()
+      ) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'the pre-existing target server no longer matches the intent'
+        )
+      }
+      assertTargetServer(targetByName, manifest.target)
+      assertTargetServer(targetById, manifest.target)
+      targetServer = targetByName
+    }
+
+    for (const entry of manifest.entries) {
+      const targetConfigId = intent.targetConfigIds[entry.configId]
+      if (!targetConfigId || (await tx.findConfigById(targetConfigId))) {
+        fail(
+          'CLEAR_AMBIGUOUS',
+          'a deterministic target config may have been prepared'
+        )
+      }
+      if (
+        targetServer &&
+        (await tx.findConfigByChatbotServer(
+          normalizeUuid(entry.chatbotId, 'entry.chatbotId'),
+          targetServer.id,
+          entry.chatMode
+        ))
+      ) {
+        fail('CLEAR_AMBIGUOUS', 'a target chatbot mode may have been prepared')
+      }
+    }
+  })
+}
+
 export async function recoverPreparedCohortActivation(
   store: CohortActivationStore,
   manifest: CohortActivationManifest,
@@ -1698,15 +1755,6 @@ export async function recoverPreparedCohortActivation(
   validateManifest(manifest)
   validateCohortActivationReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
-  if (
-    Object.keys(intent.targetConfigIds).length !== manifest.entries.length ||
-    manifest.entries.some((entry) => !intent.targetConfigIds[entry.configId])
-  ) {
-    fail(
-      'RECEIPT_INVALID',
-      'cohortActivation intent does not cover the manifest'
-    )
-  }
   const recovered = await store.transaction(async (tx) => {
     const targetServer = await tx.findServerByName(manifest.target.serverName)
     if (!targetServer) {

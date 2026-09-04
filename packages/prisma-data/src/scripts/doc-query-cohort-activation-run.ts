@@ -1,12 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import {
-  chmod,
-  mkdir,
-  readFile,
-  rename,
-  unlink,
-  writeFile,
-} from 'node:fs/promises'
+import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
@@ -14,8 +7,10 @@ import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { encrypt } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
 import {
+  assertCohortActivationNotPrepared,
   assertReceiptMatchesManifest,
   assertReceiptTransition,
+  CohortActivationError,
   type CohortActivationManifest,
   type CohortActivationReceipt,
   type CohortActivationReceiptExpectation,
@@ -38,7 +33,13 @@ import { createPrismaCohortActivationStore } from './doc-query-cohort-activation
 const TOKEN_ENV = 'DOC_QUERY_JWT_TOKEN_KLICKER'
 const DB_PORT_FORWARD_PORT = 7432
 
-type Command = 'dry-run' | 'migrate' | 'recover' | 'rollback' | 'readback'
+type Command =
+  | 'dry-run'
+  | 'migrate'
+  | 'recover'
+  | 'clear'
+  | 'rollback'
+  | 'readback'
 type ReceiptFile = CohortActivationReceiptFile
 
 export type CohortActivationSessionLock = {
@@ -59,6 +60,7 @@ function parseArgs(argv: string[]): {
     command !== 'dry-run' &&
     command !== 'migrate' &&
     command !== 'recover' &&
+    command !== 'clear' &&
     command !== 'rollback' &&
     command !== 'readback'
   ) {
@@ -138,20 +140,57 @@ export async function writeReceipt(
   if (current?.payloadDigest === receipt.payloadDigest) return
   const temporary = `${path}.tmp-${process.pid}-${randomUUID()}`
   await mkdir(dirname(path), { recursive: true })
+  let renamed = false
   try {
-    await writeFile(temporary, `${JSON.stringify(receipt)}\n`, {
-      encoding: 'utf8',
-      mode: 0o600,
-      flag: 'wx',
-    })
-    await chmod(temporary, 0o600)
+    const file = await open(temporary, 'wx', 0o600)
+    try {
+      await file.writeFile(`${JSON.stringify(receipt)}\n`, 'utf8')
+      await file.sync()
+    } finally {
+      await file.close()
+    }
     const latest = await readReceipt(path)
     assertReceiptTransition(expected, latest, receipt)
     await rename(temporary, path)
+    renamed = true
+    const directory = await open(dirname(path), 'r')
+    try {
+      await directory.sync()
+    } finally {
+      await directory.close()
+    }
   } finally {
-    await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== 'ENOENT') throw error
-    })
+    if (!renamed) {
+      await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error
+      })
+    }
+  }
+}
+
+export async function clearPreparingReceipt(
+  path: string,
+  expected: NonNullable<CohortActivationReceiptExpectation>
+): Promise<void> {
+  const current = await readReceipt(path)
+  if (
+    !current ||
+    current.state !== 'preparing' ||
+    current.manifestFingerprint !== expected.manifestFingerprint ||
+    current.payloadDigest !== expected.payloadDigest ||
+    current.state !== expected.state
+  ) {
+    throw new CohortActivationError(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt changed before the preparing intent could be cleared'
+    )
+  }
+  await unlink(path)
+  const directory = await open(dirname(path), 'r')
+  try {
+    await directory.sync()
+  } finally {
+    await directory.close()
   }
 }
 
@@ -334,6 +373,39 @@ async function runRecover(
   })
 }
 
+async function runClear(
+  store: ReturnType<typeof createPrismaCohortActivationStore>,
+  manifest: CohortActivationManifest,
+  receiptPath: string,
+  existingReceipt: ReceiptFile | null
+): Promise<void> {
+  if (!existingReceipt) {
+    printResult({ status: 'refused', reason: 'receipt_missing' })
+    process.exitCode = 3
+    return
+  }
+  if (!isCohortActivationIntent(existingReceipt)) {
+    printResult({ status: 'refused', reason: 'receipt_complete' })
+    process.exitCode = 3
+    return
+  }
+  if (existingReceipt.manifestFingerprint !== manifest.fingerprint) {
+    printResult({ status: 'refused', reason: 'receipt_manifest_mismatch' })
+    process.exitCode = 3
+    return
+  }
+  await assertCohortActivationNotPrepared(store, manifest, existingReceipt)
+  const expected = receiptExpectation(existingReceipt)
+  if (!expected) {
+    throw new CohortActivationError(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt disappeared before the preparing intent could be cleared'
+    )
+  }
+  await clearPreparingReceipt(receiptPath, expected)
+  printResult({ status: 'intent_cleared' })
+}
+
 async function runSettledCommand(
   store: ReturnType<typeof createPrismaCohortActivationStore>,
   command: Command,
@@ -441,6 +513,11 @@ async function main(): Promise<void> {
 
     if (args.command === 'recover') {
       await runRecover(store, manifest, existingReceipt, persistReceipt)
+      return
+    }
+
+    if (args.command === 'clear') {
+      await runClear(store, manifest, args.receiptPath, existingReceipt)
       return
     }
 

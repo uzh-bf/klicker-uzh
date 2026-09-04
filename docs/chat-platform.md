@@ -429,7 +429,9 @@ one normalized UUID across the chatbot; the selected mode must also contain one.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
 keeps the opaque bearer transport credential in `Authorization` and adds a
-five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
+five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Credential-bearing
+Doc Query requests require HTTPS unless the endpoint is clearly internal, such
+as loopback, cluster-local, or an RFC1918 address. Its claims contain
 `kb_id`, `chatbot_id`, the request ID as `sub`, and a request `jti`; issuer,
 audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
 `DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and

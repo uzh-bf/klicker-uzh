@@ -14,6 +14,7 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   normalizeDocQueryKbId,
@@ -133,6 +134,8 @@ async function applyDocQueryAuthHeaders(
   ) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
+
+  assertDocQueryTransportSecurity(server.url)
 
   const kbId = normalizeDocQueryKbId(options.kbId)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
