@@ -8,22 +8,25 @@ Accepted — 2026-08-29
 
 `v3` is the production mainline and ships alphas continuously. `v3-ai` has
 accumulated a large body of AI work, including exploratory migrations that
-shared staging has already applied. Shared staging follows a floating branch
-selected by `STG_SOURCE_BRANCH`; the promoter accepts only Docker-tag-safe
-branch names, and the staging image workflows build only `v3` and `v3*`
-branches. The AI capabilities must reach production without freezing either
-line, without shipping exploratory schema, and without a database
+shared staging has already applied. `STG_SOURCE_BRANCH` selects the staging
+candidate source; the promoter accepts only Docker-tag-safe branch names, and
+the staging image workflows build only `v3` and `v3*` branches. Under the
+release-ref promotion contract, that variable selects which branch publishes
+candidate images while ArgoCD continues to track `stg-release`. The AI
+capabilities must reach production without freezing
+either line, without shipping exploratory schema, and without a database
 down-migration story that PostgreSQL cannot honestly provide.
 
 ## Decision
 
 Each AI release is cut as a short-lived release-candidate branch named
 `v3.5.0-ai-rc` (pattern `v3*`, Docker-safe — both constraints are load-bearing)
-from a normalized `v3-ai` commit. Shared staging is repointed to the RC
-(repository variable and ArgoCD `targetRevision` together), reset
-destructively, and qualifies that exact tree. After qualification the RC merges
-into `v3`, the resulting tree is tagged and deployed dark, and feature trains
-continue on `v3-ai` throughout.
+from a normalized `v3-ai` commit. The `STG_SOURCE_BRANCH` repository variable
+is repointed to the RC while ArgoCD keeps `targetRevision: stg-release`; the
+receipt-gated controller then advances that ref to the qualified RC commit.
+Shared staging is reset destructively and qualifies that exact tree. After
+qualification the RC merges into `v3`, the resulting tree is tagged and
+deployed dark, and feature trains continue on `v3-ai` throughout.
 
 Three rules bound the release:
 
@@ -49,6 +52,7 @@ Three rules bound the release:
   every RC fix into `v3-ai`.
 - One branch ruleset covers `v3`, `v3-ai`, and the RC. With a single code
   owner, required approvals stay at zero and always-reporting status checks
-  carry the entire gate; the staging promoter identity is a named bypass
-  actor.
+  carry the entire gate. Promotion does not commit to those branches or require
+  a bypass actor; the trusted controller updates only `stg-release` after
+  exact-build and registry-receipt validation.
 - The pattern repeats for future AI releases until `v3-ai` retires into `v3`.

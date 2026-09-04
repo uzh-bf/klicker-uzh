@@ -1,8 +1,34 @@
 # 3. Promote to staging by writing the built commit into a release annotation
 
-- **Status:** Accepted — 2026-08-04
+- **Status:** Superseded — 2026-09-04
 - **Deciders:** @rschlaefli
 - **Context:** [PR #5183](https://github.com/uzh-bf/klicker-uzh/pull/5183), [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303)
+
+## Supersession
+
+Staging promotion no longer creates a commit or pull request that rewrites
+rollout annotations. A trusted default-branch `workflow_run` controller now
+validates the selected-source workflow definitions, exact-SHA successful runs
+and ARM jobs, and stable full-SHA registry digests. It records that evidence in
+a canonical checksummed receipt before creating or fast-forwarding
+`refs/heads/stg-release`. An explicit expected-old lease makes the remote write
+a compare-and-swap, while prior graph validation permits only creation or a
+fast-forward and never a history rewrite. Equal and stale candidates are
+no-ops; divergence and concurrent ref movement fail closed.
+
+The controller executes only code checked out at `github.workflow_sha`.
+Candidate Git objects, API metadata, and registry manifests are data; candidate
+actions, scripts, caches, and artifacts are never executed or consumed. It uses
+only `actions: read` and `contents: write`. Automatic writes require
+`STG_RELEASE_PROMOTION_ENABLED=true`; manual runs default to dry-run and require
+the exact confirmation `stg-release` before a write.
+
+The companion selected-source and platform work makes staging track
+`stg-release` and render all first-party images with its resolved full commit
+SHA. The immutable registry-digest receipt, rather than a mutable branch tag or
+rollout annotation, is the deployment provenance. Keep automatic promotion
+disabled until the SHA publishers, chart override, platform ref, and an initial
+manual receipt-backed ref creation have all been verified.
 
 ## Context
 
