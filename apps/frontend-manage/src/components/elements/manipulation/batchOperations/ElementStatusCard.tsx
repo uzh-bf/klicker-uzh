@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ElementBatchOperationActions } from '../types'
+import useStatusOptions from '../useStatusOptions'
 
 function ElementStatusCard({
   selectedActions,
@@ -20,6 +21,7 @@ function ElementStatusCard({
   setSelectedActions: Dispatch<SetStateAction<ElementBatchOperationActions>>
 }) {
   const t = useTranslations()
+  const statusOptions = useStatusOptions()
 
   return (
     <Card
@@ -53,12 +55,7 @@ function ElementStatusCard({
           />
           <Select
             value={selectedActions.status ?? ElementStatus.Draft}
-            items={[
-              ...Object.values(ElementStatus).map((status) => ({
-                value: status,
-                label: t(`shared.${status}.statusLabel`),
-              })),
-            ]}
+            items={statusOptions}
             onChange={(value) => {
               setSelectedActions((prev) => ({
                 ...prev,

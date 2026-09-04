@@ -17,6 +17,8 @@ import {
   FormikSwitchField,
   H1,
   Modal,
+  RadioGroup,
+  RadioGroupItem,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -101,6 +103,13 @@ function SuspendedFirstLoginModal({
             seedDemoElements: undefined,
           }}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
+            // The required Yup check and disabled Save button already block
+            // submission while unset; keep that invariant explicit so
+            // undefined can never reach the required Boolean mutation.
+            if (values.seedDemoElements === undefined) {
+              return
+            }
+
             setShowGenericError(false)
             setSubmitting(true)
 
@@ -111,7 +120,7 @@ function SuspendedFirstLoginModal({
                 shortname: trimmedUsername,
                 locale: values.locale,
                 sendUpdates: values.sendProjectUpdates,
-                seedDemoElements: values.seedDemoElements ?? false,
+                seedDemoElements: values.seedDemoElements,
               },
             })
             await refetchElements()
@@ -131,7 +140,13 @@ function SuspendedFirstLoginModal({
             setSubmitting(false)
           }}
         >
-          {({ isValid, isSubmitting, validateField }) => (
+          {({
+            isValid,
+            isSubmitting,
+            validateField,
+            values,
+            setFieldValue,
+          }) => (
             <Form className="flex flex-col">
               <div className="mb-1 flex flex-col space-y-4 md:mb-5 md:flex-row md:justify-between md:space-y-0">
                 <DebouncedUsernameField
@@ -189,14 +204,58 @@ function SuspendedFirstLoginModal({
               )}
 
               <div className="mb-1.5">
-                {t('manage.firstLogin.seedDemoElementsExplanation')}
+                <p id="seed-demo-elements-label" className="mb-0.5">
+                  {t('manage.firstLogin.seedDemoElements')}
+                </p>
+                <p id="seed-demo-elements-description" className="text-sm">
+                  {t('manage.firstLogin.seedDemoElementsExplanation')}
+                </p>
               </div>
-              <FormikSwitchField
+              <RadioGroup
                 name="seedDemoElements"
-                labelLeft
-                label={t('manage.firstLogin.seedDemoElements')}
-                className={{ root: 'mb-5' }}
-              />
+                aria-labelledby="seed-demo-elements-label"
+                aria-describedby="seed-demo-elements-description"
+                aria-required="true"
+                className="mb-5"
+                value={
+                  values.seedDemoElements === undefined
+                    ? ''
+                    : String(values.seedDemoElements)
+                }
+                onValueChange={(nextValue) => {
+                  // The radio group only carries string values; convert them
+                  // back to real booleans at this UI boundary so Formik and
+                  // the mutation never see a string.
+                  setFieldValue('seedDemoElements', nextValue === 'true')
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem
+                    id="seed-demo-elements-yes"
+                    value="true"
+                    data-cy="first-login-seed-demo-elements-yes"
+                  />
+                  <label
+                    htmlFor="seed-demo-elements-yes"
+                    className="cursor-pointer"
+                  >
+                    {t('shared.generic.yes')}
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem
+                    id="seed-demo-elements-no"
+                    value="false"
+                    data-cy="first-login-seed-demo-elements-no"
+                  />
+                  <label
+                    htmlFor="seed-demo-elements-no"
+                    className="cursor-pointer"
+                  >
+                    {t('shared.generic.no')}
+                  </label>
+                </div>
+              </RadioGroup>
 
               <div className="mb-1.5 max-w-none">
                 {t('manage.firstLogin.relevantLinks')}

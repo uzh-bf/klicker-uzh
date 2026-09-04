@@ -41,6 +41,7 @@ import { useTranslations } from 'next-intl'
 import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { LibraryFilters } from '../../../lib/hooks/useSortingAndFiltering'
+import useStatusOptions from '../manipulation/useStatusOptions'
 import FilterItem from './FilterItem'
 import FilterListEntry from './FilterListEntry'
 import SuspendedActivitySelection from './SuspendedActivitySelection'
@@ -109,6 +110,7 @@ function FilterList({
   refetchElements,
 }: FilterListProps): React.ReactElement {
   const t = useTranslations()
+  const statusOptions = useStatusOptions()
 
   const { data: user } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -129,29 +131,36 @@ function FilterList({
   }
 
   return (
-    <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <Accordion type="single" defaultValue={defaultValue} className="w-full">
+    <div className="flex h-max max-h-full w-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm">
+      <Accordion
+        type="multiple"
+        defaultValue={[defaultValue]}
+        className="w-full"
+      >
         <FilterListEntry
           trigger={t('manage.questionPool.elementStatus')}
           value="element-status"
           active={!!filters.status}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: 'collapse-tag-header-status' }}
         >
-          {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
+          {statusOptions.map((option) => (
             <FilterItem
-              key={status}
-              text={t(`shared.${status as ElementStatus}.statusLabel`)}
-              icon={icons}
-              active={filters.status === status}
+              key={option.value}
+              text={option.shortLabel}
+              tooltip={option.description}
+              icon={ELEMENT_STATUS_FILTERS[option.value]}
+              active={filters.status === option.value}
               onClick={(): void =>
                 handleTagClick({
-                  valueOrId: status,
+                  valueOrId: option.value,
                   isTypeTag: false,
                   isStatusTag: true,
                   isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
+              data={{ cy: `element-status-filter-${option.value}` }}
             />
           ))}
         </FilterListEntry>
@@ -160,6 +169,7 @@ function FilterList({
           trigger={t('manage.questionPool.elementTypes')}
           value="element-types"
           active={!!filters.type}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: 'collapse-tag-header-types' }}
         >
           {Object.entries(ELEMENT_TYPE_FILTERS).map(([type, icons]) => {
@@ -210,6 +220,7 @@ function FilterList({
             trigger={t('shared.generic.sharing')}
             value="sharing-types"
             active={filters.sharingType?.length !== 3}
+            appliedLabel={t('manage.questionPool.filterApplied')}
             data={{ cy: `collapse-tag-header-sharing` }}
           >
             {Object.entries(SHARING_TYPE_FILTERS).map(([type, icons]) => {
@@ -249,6 +260,7 @@ function FilterList({
           trigger={t('manage.questionPool.tags')}
           value="user-tags"
           active={filters.tags.length > 0 || filters.untagged}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: `collapse-tag-header-user-tags` }}
         >
           <Suspense fallback={<Loader />}>
@@ -265,6 +277,7 @@ function FilterList({
           trigger={t('manage.questionPool.activityUsage')}
           value="used-in-activity"
           active={typeof filters.activityId !== 'undefined'}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: `collapse-tag-header-used-in-activity` }}
         >
           <Suspense fallback={<Loader />}>
@@ -281,6 +294,7 @@ function FilterList({
           trigger={t('shared.generic.multiplier')}
           value="multiplier-filters"
           active={filters.multiplier !== undefined}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: `collapse-tag-header-multiplier` }}
         >
           {['1', '2', '3', '4'].map((multiplier) => (
@@ -303,6 +317,7 @@ function FilterList({
           trigger={t('shared.generic.gamification')}
           value="gamification-tags"
           active={filters.sampleSolution || filters.answerFeedbacks}
+          appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: `collapse-tag-header-gamification` }}
         >
           <FilterItem

@@ -3,15 +3,22 @@
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  assertDocQueryTransportSecurity,
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbId,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -39,6 +46,8 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+  kbId?: string
+  sessionId?: string
 }
 
 function toToolNameHash(rawName: string): string {
@@ -105,16 +114,66 @@ function toSafeToolName(
   return candidate
 }
 
+async function applyDocQueryAuthHeaders(
+  headers: Record<string, string>,
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions,
+  authType: string
+): Promise<boolean> {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+  if (!(options.kbId && options.sessionId)) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (authType !== 'bearer' || !server.authSecret) {
+    throw new Error('Doc Query transport authentication is invalid')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  assertDocQueryTransportSecurity(server.url)
+
+  const kbId = normalizeDocQueryKbId(options.kbId)
+  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  const token = await signDocQueryScopeToken({
+    kbId,
+    chatbotId,
+    sessionId: options.sessionId,
+    jti: randomUUID(),
+  })
+  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+  return true
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  options: MCPRequestOptions = {}
+): Promise<Record<string, string>> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const authType = server.authType.toLowerCase()
+
+  if (
+    await applyDocQueryAuthHeaders(
+      baseHeaders,
+      server,
+      chatbotId,
+      options,
+      authType
+    )
+  ) {
+    return baseHeaders
+  }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -129,7 +188,7 @@ function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -192,7 +251,7 @@ export async function createMCPClient(
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const headers = await createAuthHeaders(server, chatbotId, options)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -259,7 +318,7 @@ async function loadServerTools(
     const configuredTool = config.allowedTools?.[0]
     if (
       !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
+      config.allowedTools.length !== 1 ||
       typeof configuredTool !== 'string' ||
       configuredTool.length === 0 ||
       /[*?]/.test(configuredTool)

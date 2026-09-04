@@ -36,6 +36,9 @@ replacing:
   discovery, a Quizzer request fails closed with the existing required-tool
   response if no `doc_query` tool is available; optional retrieval outages keep
   their existing graceful-degradation behavior in Tutor and Explainer.
+  Runtime scope checks reject conflicting stored bindings across modes, while
+  authorizing the selected request from the effective configuration produced by
+  this inheritance rule.
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a
