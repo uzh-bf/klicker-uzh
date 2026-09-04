@@ -261,9 +261,13 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
-- `Current:` Plan hardened through three native rounds; final public-safe plan
-  written but not committed.
-- `Next after approval:` Commit this plan as the first selected-source commit,
-  create the separate helper and default-controller worktrees, then start S0,
-  S2, and S3 as isolated workstreams.
+- `Current:` The approved plan is the first local commit (`7e7f8e9fb1`). The
+  selected-source CI slice now covers all 32 metadata/build pairs with explicit
+  branch, pull-request, and full-SHA tags. Its 18 active push images use a
+  fail-closed publish-once guard that records an existing registry digest;
+  disabled AMD jobs remain explicit.
+- `Next:` Add the derived workflow and Helm render contract tests, then add the
+  chart override and the separate documentation/ADR/solution commit. Exact
+  controller and final-review runtime blobs remain deferred until the main
+  session supplies the completed default-controller commits or runtime files.
 - `External state:` Unchanged.

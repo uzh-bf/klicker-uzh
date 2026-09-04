@@ -54,8 +54,22 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -94,8 +108,22 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-amd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-amd
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
