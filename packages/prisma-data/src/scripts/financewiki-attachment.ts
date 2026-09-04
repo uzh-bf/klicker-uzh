@@ -613,7 +613,12 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
         fail('RECEIPT_INVALID', 'receipt intent is malformed')
       }
       const next = parseDocQueryParameters(entry.nextParameters as JsonValue)
-      if (!hasFinanceWiki(next.kbIds) || next.representation !== 'kb_ids') {
+      const expectedNext = parseDocQueryParameters(nextParameters(prior))
+      if (
+        next.representation !== 'kb_ids' ||
+        next.kbIds.length !== expectedNext.kbIds.length ||
+        next.kbIds.some((kbId, index) => kbId !== expectedNext.kbIds[index])
+      ) {
         fail('RECEIPT_INVALID', 'receipt intent does not attach FinanceWiki')
       }
     } else {
@@ -888,7 +893,7 @@ async function readAttachmentState(
 function assertCurrentReceiptState(
   state: AttachmentState,
   receipt: FinanceWikiAttachmentReceipt,
-  expected: 'attached' | 'prior'
+  expected: 'attached' | 'restored'
 ): void {
   if (!serverSnapshotEqual(state.server, receipt.server)) {
     fail('RECEIPT_STALE', 'receipt server timestamp or content is stale')
@@ -899,7 +904,11 @@ function assertCurrentReceiptState(
     )
     if (!entry) fail('RECEIPT_STALE', 'receipt target set is stale')
     const snapshot = expected === 'attached' ? entry.attached : entry.prior
-    if (!configSnapshotEqual(current.config, snapshot)) {
+    const matches =
+      expected === 'attached'
+        ? configSnapshotEqual(current.config, snapshot)
+        : configContentEqual(current.config, snapshot)
+    if (!matches) {
       fail('RECEIPT_STALE', 'receipt config timestamp or content is stale')
     }
   }
@@ -946,7 +955,7 @@ export async function planFinanceWikiAttachment(
     if (receipt.state === 'applied') {
       assertCurrentReceiptState(state, receipt, 'attached')
     } else if (receipt.state === 'rolled_back') {
-      assertCurrentReceiptState(state, receipt, 'prior')
+      assertCurrentReceiptState(state, receipt, 'restored')
     } else {
       fail('RECEIPT_IN_PROGRESS', 'an unfinished FinanceWiki receipt exists')
     }

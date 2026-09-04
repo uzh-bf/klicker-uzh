@@ -465,6 +465,16 @@ describe('FinanceWiki attachment operator', () => {
       attached: 0,
       restored: 4,
     })
+    await expect(
+      planFinanceWikiAttachment(
+        harness.store,
+        makeManifest(),
+        harness.receiptStore
+      )
+    ).resolves.toMatchObject({
+      status: 'ready',
+      receiptState: 'rolled_back',
+    })
   })
 
   it('rejects readback while rollback recovery is still required', async () => {
@@ -518,6 +528,32 @@ describe('FinanceWiki attachment operator', () => {
 
     expect(() => assertFinanceWikiAttachmentReceiptIntegrity(receipt)).toThrow(
       'Doc Query parameters contain unsupported fields'
+    )
+  })
+
+  it('rejects recovery intent that drops an existing knowledge base', async () => {
+    const harness = makeHarness()
+    harness.receiptStore.interruptOnWrite(2)
+
+    await expect(
+      applyFinanceWikiAttachment(
+        harness.store,
+        makeManifest(),
+        harness.receiptStore
+      )
+    ).rejects.toThrow('synthetic receipt-store interruption')
+    const receipt = await harness.receiptStore.read()
+    if (receipt?.state !== 'preparing') {
+      throw new Error('preparing receipt was not retained')
+    }
+    receipt.entries[0]!.nextParameters = {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_ids: ['00000000-0000-4000-8000-000000000999', FINANCEWIKI_KB_ID],
+    }
+
+    expect(() => assertFinanceWikiAttachmentReceiptIntegrity(receipt)).toThrow(
+      'receipt intent does not attach FinanceWiki'
     )
   })
 
