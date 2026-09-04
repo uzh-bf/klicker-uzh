@@ -38,7 +38,7 @@ test.describe('Chatbot response-example review', () => {
             type: 'data-response-example-receipt',
             data: {
               token: 'synthetic-signed-receipt',
-              expiresAt: 1_788_437_400,
+              expiresAt: Math.floor(Date.now() / 1_000) + 3_600,
               question,
               answer,
             },
