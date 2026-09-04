@@ -10,7 +10,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Setting from './Setting'
 import SimpleSetting from './SimpleSetting'
 
@@ -35,12 +35,6 @@ function BetaEnrollmentSettings() {
   >(undefined)
   const [status, setStatus] = useState<EnrollmentStatus>('idle')
   const [isRefreshing, setIsRefreshing] = useState(false)
-
-  useEffect(() => {
-    if (status !== 'idle' || !data?.betaEnrollment) return
-
-    setConfirmedMembership(data.betaEnrollment.membership)
-  }, [data, status])
 
   if (loading && !data) {
     return <Loader />

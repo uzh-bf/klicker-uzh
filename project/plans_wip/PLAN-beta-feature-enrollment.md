@@ -429,6 +429,13 @@ GrowthBook or cluster mutation occurs.
 
 ## Progress
 
+- 2026-09-04: the settings slice GLM 5.3 Flash simplifier found one
+  redundant query-to-state synchronization effect. The effect was removed;
+  query membership now remains directly derived until the mutation returns a
+  new confirmed value. This preserves the no-optimistic-update contract with
+  less state synchronization. No slice reviewer was required because the UI
+  composition introduced no new authorization, privacy, or external-write
+  boundary beyond the reviewed backend contract.
 - 2026-09-04: the persistent settings executor added the reusable enrollment
   control, anchored settings section, English and German copy, stable UI hooks,
   confirmed-state preservation, browser feature refresh, and distinct pending,
