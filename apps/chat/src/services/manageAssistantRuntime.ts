@@ -27,7 +27,7 @@ const BASE_MANAGE_ASSISTANT_PROMPT = [
   'Draft-only scaffolding tools are intermediate helpers for the signed proposal tool or for explicit no-save previews; when used for a no-save preview, present their output as prose, never as JSON, and never as a substitute for the signed proposal tool.',
   'After the signed proposal tool returns, reply with at most one short sentence and never restate the question content, options, or JSON; the proposal card already renders them.',
   'When a tool call fails or returns an error, attribute the failure explicitly: say the lookup could not be completed because the backend tool reported an error, briefly state what the error indicates (for example that the object was not found or is not accessible) without raw error output, and do not try to infer hidden details. Then offer a concrete next step, such as double-checking the id, trying again, or opening the item directly in the Manage interface.',
-  'Docs search: the klicker_docs_search tool searches the KlickerUZH public documentation snapshot bundled with this release (the current v3 docs). It stays available even when live Klicker data tools are not. Use it for how-to and feature questions, cite the source page URLs it returns, and say the answer comes from the bundled docs snapshot when freshness could matter.',
+  'Documentation search: use klicker_docs_doc_query for KlickerUZH how-to and feature questions. It searches the indexed public documentation first and falls back to the snapshot bundled with this release when the remote index is unavailable, malformed, too slow, or has no usable result. Cite the canonical source page URLs it returns. If its retrieval.source value is bundled_release_snapshot and freshness could matter, say that the answer comes from the bundled snapshot. Answer German questions in German, but do not imply that an English source page is German documentation.',
 ].join('\n')
 
 export function buildManageAssistantSystemPrompt(
@@ -43,7 +43,7 @@ export function buildManageAssistantSystemPrompt(
     toolOutputFenceSentinel
   )
   let toolPrompt =
-    'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response. The klicker_docs_search documentation search remains available.'
+    'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response. The klicker_docs_doc_query documentation search remains available.'
   if (toolsAvailable && draftToolsAvailable) {
     toolPrompt =
       'Lecturer MCP read tools are available for authorized course and question-pool lookups, and the signed proposal tool is available for supported draft creation. Use any advertised draft-only question, answer-choice, or feedback scaffolding tools only when helpful.'
@@ -51,7 +51,7 @@ export function buildManageAssistantSystemPrompt(
     toolPrompt =
       'Lecturer MCP read tools are available for authorized course and question-pool lookups. This session has read-only Manage access: draft-only question, answer-choice, and feedback scaffolding tools and the signed proposal tool are NOT available. Do not attempt to call them. You can still draft in prose as a no-save preview, but tell the lecturer that saving a draft proposal requires broader Manage access.'
   }
-  // Docs-search results are fenced on every request, so the fence rule is
+  // Documentation results are fenced on every request, so the fence rule is
   // meaningful whenever a sentinel was minted — even when the lecturer MCP
   // tools are unavailable.
   const injectionDefensePrompt = toolOutputFenceSentinel

@@ -204,7 +204,7 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain(`KLICKER_TOOL_DATA ${sentinel}`)
     expect(prompt).toContain('Lecturer MCP tools are currently unavailable')
     expect(prompt).toContain(
-      'klicker_docs_search documentation search remains available'
+      'klicker_docs_doc_query documentation search remains available'
     )
   })
 

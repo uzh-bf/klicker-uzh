@@ -75,8 +75,9 @@ primitive.
 
 ### Multi-tenant serving
 
-- Add dedicated tenant path `/mcp/klicker-public-docs` with exactly one tool,
-  `klicker_docs_doc_query`.
+- Add dedicated tenant path `/mcp/klicker-public-docs` with one retrieval
+  configuration, `klicker_docs_doc_query`. The pinned runtime also generates
+  its same-tenant `klicker_docs_doc_query_chunk_topics` companion.
 - Give the tenant its own transport secret and project it only to the shared
   Doc Query service and Klicker Chat.
 - Keep `/mcp/klicker`, its course collection, legacy experts, and required
@@ -202,11 +203,12 @@ cannot express the dedicated tenant, and stop for a revised architecture first.
    `ingestion/stg-generic/project-configs.yaml` and add
    `catalog_klicker_docs_v1` only to `ingestion/stg-generic/cm.yaml`.
 3. Add `pipelines/stg-doc-query/doc-query/tenants/klicker-public-docs/`
-   containing one tool and its prompt. Register only that tenant's mount and
-   token environment reference.
+   containing one retrieval configuration and its prompt. Register only that
+   tenant's mount and token environment reference.
 4. Preserve all existing tenant files and the pinned service image.
 5. Prove rendered inventory, collection allowlist, network policy, tenant path,
-   one-tool visibility, and image/runtime compatibility with focused tests.
+   the exact retrieval-plus-companion runtime inventory, and image/runtime
+   compatibility with focused tests.
 6. Run repository checks, review, and commit. Do not deploy.
 
 ### df-cloud secret projection source
@@ -254,13 +256,16 @@ This slice starts only after the controlled STG run passes.
 7. Across at least 20 successful STG calls, require p95 remote retrieval at or
    below three seconds and no call above the four-second deadline. Separate
    cold and warm evidence.
-8. Prove the public path lists exactly one tool; public and course tokens reject
-   cross-use; and generic `doc_query` plus a known legacy expert are unavailable
-   through the public path.
+8. Prove the public path lists exactly the retrieval tool and its generated
+   `_chunk_topics` companion; public and course tokens reject cross-use; and
+   generic `doc_query` plus a known legacy expert are unavailable through the
+   public path.
 
 ### B2 public-docs Manage integration
 
-This slice starts only after the retrieval and isolation evaluation passes.
+Source implementation may proceed after the pinned runtime contract is verified
+locally. Live acceptance still waits for the separately authorized ingestion
+and retrieval-isolation evaluation.
 
 1. Work only in the local B2 branch. Leave PR #5754 and its worktree untouched.
 2. Replace primary local search with the fenced remote-first composite tool.
@@ -392,8 +397,9 @@ run. Do not add a hosted evaluation service or dependency.
   in the later authorized activation task.
 - `catalog_klicker_docs_v1` contains non-empty public Klicker documents with
   the declared vector and BM25 schema and canonical source URLs.
-- `/mcp/klicker-public-docs` exposes exactly one tool and rejects cross-tenant
-  credentials in both directions.
+- `/mcp/klicker-public-docs` exposes exactly the configured retrieval tool and
+  its generated same-tenant companion, and rejects cross-tenant credentials in
+  both directions. Klicker exposes only the retrieval tool to the model.
 - The frozen paired evaluation meets the grounding, source, safety, isolation,
   baseline, and latency gates without weakening failed expectations.
 - Remote failure reaches deterministic fallback within four seconds and leaves
@@ -426,20 +432,19 @@ run. Do not add a hosted evaluation service or dependency.
   #5754 or the dirty primary checkout.
 - [x] User approved this execution plan on 2026-09-04 with a goal.
 - [x] Committed the approved plan before implementation files.
-- [x] Reached reviewed local source commits for the dedicated ingestion
-  project, STG deployment manifests, and values-free STG secret projection.
-- [ ] The catalog source is implemented and passes static and full test suites,
-  but its required model-backed no-ingestion build awaits one exact credential
-  boundary. The approved STG tunnel and AIBuddy tenant key correctly exposed
-  only internal `aibuddy/azure/gpt-5.6-*` aliases. Current manifests also define
-  the required `foundry-public/azure/gpt-5.6-luna-canary` in the isolated
-  `foundry-public-canary` access group and mount the dedicated
-  `CATALOG_PUBLIC_LITELLM_API_KEY` into the STG catalog worker. The values-free
-  `ai-generic-stg` profile confirms that existing key name is readable, but its
-  value has not been injected, printed, or mutated. No model request or cost
-  occurred, and the temporary tunnel was stopped and verified absent.
-- [ ] The local Klicker B2 source remains intentionally untouched because this
-  plan starts it only after the separately authorized STG ingestion and
-  retrieval-isolation evaluation pass.
+- [x] Reached reviewed local source commits for the dedicated catalog,
+  ingestion project, STG deployment manifests, and values-free STG secret
+  projection.
+- [x] Completed the catalog's real model-backed no-ingestion build: all 43
+  normalized URLs were fetched, classified, and included with no failures or
+  exclusions. The review refined five titles and accepted the export. Seven
+  pages retain fail-closed `embedded_target_ambiguous` markers because they
+  legitimately contain multiple Kaltura embeds; activation must disposition
+  that coverage separately.
+- [x] Verified from the exact pinned Doc Query source revision that each tenant
+  retrieval configuration generates a same-tenant `_chunk_topics` companion.
+  Corrected the source and acceptance contracts without changing the tenant,
+  data boundary, or model-visible single-tool design.
+- [ ] Implement and verify the isolated local Klicker B2 composite-tool source.
 - [ ] Reach source-ready local commits across all five repositories.
 - [ ] Request the separate publication and activation authority.

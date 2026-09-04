@@ -17,6 +17,7 @@ import {
   normalizeSourcesFromParts,
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
+import { KLICKER_DOCS_DOC_QUERY_TOOL_NAME } from '@/src/lib/config/toolNames'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
 
 const MAX_PREVIEW_LINES = 10
@@ -117,25 +118,43 @@ export function getDocQueryChipState({
   return sources.length > 0 ? 'done' : 'doneEmpty'
 }
 
-function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
+function docQueryChipLabel(
+  t: Translate,
+  state: DocQueryChipState,
+  isPublicDocsQuery: boolean
+): string {
+  if (!isPublicDocsQuery) {
+    switch (state) {
+      case 'running':
+        return t('chat.tools.searchingCourseMaterial')
+      case 'doneEmpty':
+        return t('chat.tools.searchedCourseMaterialEmpty')
+      case 'failed':
+        return t('chat.tools.searchCourseMaterialFailed')
+      case 'done':
+        return t('chat.tools.searchedCourseMaterial')
+    }
+  }
+
   switch (state) {
     case 'running':
-      return t('chat.tools.searchingCourseMaterial')
+      return t('chat.tools.searchingDocumentation')
     case 'doneEmpty':
-      return t('chat.tools.searchedCourseMaterialEmpty')
+      return t('chat.tools.searchedDocumentationEmpty')
     case 'failed':
-      return t('chat.tools.searchCourseMaterialFailed')
+      return t('chat.tools.searchDocumentationFailed')
     case 'done':
-      return t('chat.tools.searchedCourseMaterial')
+      return t('chat.tools.searchedDocumentation')
   }
 }
 
 /**
  * Extracts the search query a model issued to a doc_query tool from its
- * (possibly still-streaming) JSON args text — `{ "query": "...", ... }`.
- * Parses defensively: partial/non-JSON argsText, or a payload with no
- * non-empty string `query` field, both read as "nothing to show" rather than
- * throwing.
+ * (possibly still-streaming) JSON args text. Course tools use `query`; the
+ * Manage documentation composite uses `question`.
+ * Parses defensively: partial/non-JSON argsText, or a payload with neither a
+ * non-empty string `query` nor `question` field, both read as "nothing to
+ * show" rather than throwing.
  */
 export function parseDocQueryArgsQuery(argsText: string): string | undefined {
   let parsed: unknown
@@ -149,7 +168,8 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
     return undefined
   }
 
-  const query = (parsed as Record<string, unknown>).query
+  const record = parsed as Record<string, unknown>
+  const query = record.query ?? record.question
   return typeof query === 'string' && query.trim().length > 0
     ? query
     : undefined
@@ -239,6 +259,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     )
   }
   const isDocQuery = isDocQueryToolName(toolName)
+  const isPublicDocsQuery = toolName === KLICKER_DOCS_DOC_QUERY_TOOL_NAME
 
   const docQueryState = isDocQuery
     ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
@@ -291,7 +312,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           )}
         </span>
         {docQueryState
-          ? docQueryChipLabel(t, docQueryState)
+          ? docQueryChipLabel(t, docQueryState, isPublicDocsQuery)
           : isFailed
             ? t('chat.toolFallback.failed', { tool })
             : isRunning

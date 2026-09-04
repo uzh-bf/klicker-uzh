@@ -9,3 +9,8 @@
 // that file is `'use server'`, and such files may only export async functions.
 export const MAX_TOOL_NAME_LENGTH = 64
 export const TOOL_NAME_SUFFIX_LENGTH = 8
+
+// The Manage assistant owns this local composite tool name. It deliberately
+// ends in `_doc_query` so the existing source and citation UI recognizes its
+// Doc Query-compatible results without a second rendering path.
+export const KLICKER_DOCS_DOC_QUERY_TOOL_NAME = 'klicker_docs_doc_query'

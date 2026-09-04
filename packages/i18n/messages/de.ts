@@ -113,7 +113,7 @@ export default {
         'Fragenentwürfe vorbereiten, ohne sie zu speichern',
       capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
       capabilityDocumentation:
-        'Die mit dieser Version gebündelte KlickerUZH-Dokumentation durchsuchen und die passenden Quellseiten verlinken',
+        'Die indexierte öffentliche KlickerUZH-Dokumentation durchsuchen und die passenden Quellseiten verlinken',
       capabilityChecking:
         'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
       capabilityReadOnly:
@@ -149,7 +149,7 @@ export default {
         documentation: 'KlickerUZH Hilfe',
       },
       limitsNote:
-        'Die Dokumentationshilfe nutzt ein kuratiertes Verzeichnis und keine vollständige Suche. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+        'Die Dokumentationshilfe nutzt den öffentlichen Dokumentationsindex mit einer versionsgebundenen Reservekopie. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
       degradedLimitsNote:
         'Gib fehlende Inhalte direkt an, wenn die Live-Abfrage nicht verfügbar ist. Ohne Vorschlagskarte und Deine Bestätigung wird nichts gespeichert.',
       proposalReview: {
@@ -358,6 +358,12 @@ export default {
       searchedCourseMaterial: 'Kursmaterialien durchsucht',
       searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+      searchingDocumentation: 'KlickerUZH-Dokumentation wird durchsucht...',
+      searchedDocumentation: 'KlickerUZH-Dokumentation durchsucht',
+      searchedDocumentationEmpty:
+        'KlickerUZH-Dokumentation durchsucht · keine Treffer',
+      searchDocumentationFailed:
+        'Suche in der KlickerUZH-Dokumentation fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
     },
     sources: {
