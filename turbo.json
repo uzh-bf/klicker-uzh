@@ -203,6 +203,8 @@
     "MCP_LECTURER_PORT",
     "MCP_LECTURER_URL"
   ],
+  "cacheMaxAge": "14d",
+  "cacheMaxSize": "10GB",
   "tasks": {
     "lint": {
       "outputLogs": "errors-only"
@@ -218,11 +220,25 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "build/**",
+        "out/**"
+      ]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "build/**",
+        "out/**"
+      ]
     },
     "dev": {
       "cache": false,
@@ -250,7 +266,6 @@
     },
     "dev:test": {
       "cache": false,
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
     "publish": {
