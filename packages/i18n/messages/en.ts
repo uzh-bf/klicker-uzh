@@ -4575,10 +4575,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Enter the expected student count.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Enter a positive whole number for the expected student count.',
-      chatbotPublicationProposedCredits: 'Proposed credits',
-      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Enter a positive whole number for the proposed credits.',
       requestChatbotPublication: 'Request publication',
       resubmitChatbotPublication: 'Resubmit for approval',
       chatbotPublicationSubmitted: 'Publication request submitted for review.',

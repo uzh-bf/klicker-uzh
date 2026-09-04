@@ -7,8 +7,8 @@ import * as ActivitiesService from '../services/activities.js'
 import * as BetaFeaturesService from '../services/betaFeatures.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
-import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
 import * as ElementService from '../services/elements.js'
@@ -1608,32 +1608,9 @@ export const Mutation = builder.mutationType({
             required: true,
             validate: { min: 1 },
           }),
-          proposedCredits: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublication(args, ctx)
-        },
-      }),
-
-      requestChatbotPublicationV2: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          useCase: t.arg.string({
-            required: true,
-            validate: { minLength: 1, maxLength: 2000 },
-          }),
-          expectedStudentCount: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
         },
         resolve: (_, args, ctx) =>
-          ChatbotsService.requestChatbotPublicationV2(args, ctx),
+          ChatbotsService.requestChatbotPublication(args, ctx),
       }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({

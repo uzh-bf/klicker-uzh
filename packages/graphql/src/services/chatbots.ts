@@ -1125,8 +1125,8 @@ type RequestChatbotPublicationArgs = {
   expectedStudentCount: number
 }
 
-async function requestChatbotPublicationInternal(
-  args: RequestChatbotPublicationArgs & { proposedCredits?: number },
+export async function requestChatbotPublication(
+  args: RequestChatbotPublicationArgs,
   ctx: ContextWithUser
 ) {
   // Ownership/existence first: a non-owner gets null (not found) and never
@@ -1166,32 +1166,12 @@ async function requestChatbotPublicationInternal(
       'expectedStudentCount must be a positive signed 32-bit integer'
     )
   }
-  if (
-    args.proposedCredits !== undefined &&
-    !isPositiveSignedInt32(args.proposedCredits)
-  ) {
-    throw new GraphQLError(
-      'proposedCredits must be a positive signed 32-bit integer'
-    )
-  }
-
-  const legacyCreditPolicy =
-    args.proposedCredits === undefined
-      ? undefined
-      : {
-          creditInitialCredits: args.proposedCredits,
-          creditResetPeriod: chatbot.creditResetPeriod,
-          creditResetAmount: args.proposedCredits,
-          creditMaxCredits: args.proposedCredits,
-        }
-  if (!legacyCreditPolicy) {
-    normalizeAndValidateCreditPolicy({
-      creditInitialCredits: chatbot.creditInitialCredits,
-      creditResetPeriod: chatbot.creditResetPeriod,
-      creditResetAmount: chatbot.creditResetAmount,
-      creditMaxCredits: chatbot.creditMaxCredits,
-    })
-  }
+  normalizeAndValidateCreditPolicy({
+    creditInitialCredits: chatbot.creditInitialCredits,
+    creditResetPeriod: chatbot.creditResetPeriod,
+    creditResetAmount: chatbot.creditResetAmount,
+    creditMaxCredits: chatbot.creditMaxCredits,
+  })
 
   // Account-level capability gate (D1, ADR 0020): read the live User row, never
   // a JWT claim — ops flips this flag out of band after the token was issued.
@@ -1249,11 +1229,8 @@ async function requestChatbotPublicationInternal(
       publicationUseCase: normalizedUseCase,
       expectedStudentCount: args.expectedStudentCount,
       reviewComment: null, // clear any prior rejection note on re-request
-      // The legacy request supplies a flat proposal. The v2 request leaves the
-      // separately saved four-field policy untouched, so a concurrent save
-      // that wins before this status fence is preserved. Both stay
+      // The separately saved four-field policy remains untouched and stays
       // student-inert until the chatbot is PUBLISHED (S4 gates access).
-      ...legacyCreditPolicy,
     },
   })
 
@@ -1273,21 +1250,6 @@ async function requestChatbotPublicationInternal(
 
   return shapeChatbotResponse(updated)
 }
-
-export async function requestChatbotPublication(
-  args: RequestChatbotPublicationArgs & { proposedCredits: number },
-  ctx: ContextWithUser
-) {
-  return await requestChatbotPublicationInternal(args, ctx)
-}
-
-export async function requestChatbotPublicationV2(
-  args: RequestChatbotPublicationArgs,
-  ctx: ContextWithUser
-) {
-  return await requestChatbotPublicationInternal(args, ctx)
-}
-
 export async function approveChatbotPublication(
   args: { id: string },
   ctx: ContextWithUser

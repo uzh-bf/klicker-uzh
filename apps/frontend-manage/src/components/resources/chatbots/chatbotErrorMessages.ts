@@ -27,7 +27,6 @@ export type ChatbotErrorMessageKey =
   | 'manage.resources.chatbotPublicationUnauthorized'
   | 'manage.resources.chatbotPublicationUseCaseInvalid'
   | 'manage.resources.chatbotPublicationExpectedStudentCountInvalid'
-  | 'manage.resources.chatbotPublicationProposedCreditsInvalid'
   | 'manage.resources.chatbotPublicationDisclaimerRequired'
 
 const errorMessageKeys: Record<ChatbotErrorCode, ChatbotErrorMessageKey> = {
@@ -118,9 +117,6 @@ export function getChatbotMutationErrorKey(
     }
     if (message?.includes('expectedStudentCount must be')) {
       return 'manage.resources.chatbotPublicationExpectedStudentCountInvalid'
-    }
-    if (message?.includes('proposedCredits must be')) {
-      return 'manage.resources.chatbotPublicationProposedCreditsInvalid'
     }
   }
 

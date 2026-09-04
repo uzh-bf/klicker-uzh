@@ -4670,11 +4670,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie die erwartete Anzahl Studierender ein.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
-      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
-      chatbotPublicationProposedCreditsRequired:
-        'Bitte geben Sie die vorgeschlagenen Credits ein.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
       requestChatbotPublication: 'Veröffentlichung beantragen',
       resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
       chatbotPublicationSubmitted:

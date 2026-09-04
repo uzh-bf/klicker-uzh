@@ -35,8 +35,8 @@ Make the three existing AI cost controls clear and reliable:
   keep the policy read-only after submission, refresh settings on entry/focus,
   and render stale/retry and quota-specific error states in English and German.
 - **Tests:** focused service/schema tests for credit-policy validation and
-  rolling-compatible publication behavior, package/app checks, root checks and
-  build, plus delegated-login browser verification of all changed states.
+  publication behavior, package/app checks, root checks and build, plus
+  delegated-login browser verification of all changed states.
 - **Seeds/fixtures:** reuse existing local chatbot and knowledge-base fixtures.
 
 ## Credit-policy contract
@@ -48,14 +48,12 @@ Make the three existing AI cost controls clear and reliable:
   positive reset amount and positive maximum.
 - The policy is editable only in `DRAFT` and `REJECTED`, then frozen while
   pending, published, or paused.
-- The new publication client reviews the saved policy without overwriting it;
-  the deployed publication operation remains available for rolling clients.
+- Publication reviews the saved policy without overwriting it.
 
 ## Implementation slices
 
-1. Add owner-scoped credit-policy service/schema operations and a new
-   publication operation that preserves the saved policy; retain the deployed
-   operation document and behavior.
+1. Add owner-scoped credit-policy service/schema operations and update the
+   publication operation to preserve the saved policy.
 2. Add the Credits authoring step, validation, navigation state, and read-only
    publication summary.
 3. Make account-usage settings network-fresh on mount/focus with last-known
@@ -93,3 +91,7 @@ Make the three existing AI cost controls clear and reliable:
   values during an entry refresh and exposes stale or unavailable Retry states;
   the plan now states the agreed persisted-chatbot-owner boundary explicitly.
   The correction review returned no remaining high-confidence finding.
+- **2026-09-04:** Consolidated publication onto the single
+  `requestChatbotPublication` mutation. Removed the temporary alternate
+  operation and the obsolete flat `proposedCredits` input; the mutation now
+  validates and preserves the separately saved four-field credit policy.

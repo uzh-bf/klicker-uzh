@@ -2,13 +2,11 @@ mutation RequestChatbotPublication(
   $id: String!
   $useCase: String!
   $expectedStudentCount: Int!
-  $proposedCredits: Int!
 ) {
   requestChatbotPublication(
     id: $id
     useCase: $useCase
     expectedStudentCount: $expectedStudentCount
-    proposedCredits: $proposedCredits
   ) {
     id
   }

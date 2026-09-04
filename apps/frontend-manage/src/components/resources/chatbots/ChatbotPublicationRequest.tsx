@@ -3,7 +3,7 @@ import {
   type Chatbot,
   ChatbotStatus,
   GetChatbotsInfoDocument,
-  RequestChatbotPublicationV2Document,
+  RequestChatbotPublicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -164,7 +164,7 @@ function ChatbotPublicationRequest({
 }: ChatbotPublicationRequestProps) {
   const t = useTranslations()
   const [requestChatbotPublication, { loading: requestLoading }] = useMutation(
-    RequestChatbotPublicationV2Document
+    RequestChatbotPublicationDocument
   )
   const [requestError, setRequestError] = useState<string | null>(null)
   const [requestSuccess, setRequestSuccess] = useState(false)
@@ -237,7 +237,7 @@ function ChatbotPublicationRequest({
             awaitRefetchQueries: true,
           })
 
-          if (!result.data?.requestChatbotPublicationV2) {
+          if (!result.data?.requestChatbotPublication) {
             throw new Error('Publication request returned no chatbot')
           }
 

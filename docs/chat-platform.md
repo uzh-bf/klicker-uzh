@@ -710,13 +710,11 @@ accepted count apply only when
 `requestChatbotPublication` still requires the live account capability from
 [ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
 linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
-`PENDING_APPROVAL`. The legacy operation retains its required flat proposed
-credit value for deployed clients. `requestChatbotPublicationV2` preserves the
-separately saved four-field participant credit policy instead. A dedicated
-Boolean query exposes only the live publication capability to Catalyst and
-full-access lecturers; it does not expose account budget data. Submission never
-publishes automatically; the existing administrator approval remains a
-separate transition.
+`PENDING_APPROVAL` and preserves the separately saved four-field participant
+credit policy. A dedicated Boolean query exposes only the live publication
+capability to Catalyst and full-access lecturers; it does not expose account
+budget data. Submission never publishes automatically; the existing
+administrator approval remains a separate transition.
 
 Manage exposes draft preparation through
 `apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
