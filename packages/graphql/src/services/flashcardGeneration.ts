@@ -21,6 +21,10 @@ import {
 } from './elementGenerationAccounting.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
 import {
+  acquireElementGenerationLease,
+  releaseElementGenerationLease,
+} from './elementGenerationLease.js'
+import {
   parseFlashcardGenerationResult,
   parseTerminalFlashcardGenerationBank,
 } from './flashcardGenerationArtifacts.js'
@@ -51,7 +55,6 @@ import type {
   FlashcardWorkflowStartPayload,
 } from './questionGenerationRuntime.js'
 
-const SYNC_LEASE_MILLISECONDS = 15_000
 const NON_SYNCHRONIZING_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
   DB.ElementGenerationBuildStatus.COMPLETED,
@@ -337,21 +340,12 @@ async function resumePreparingBuild(
   runtime: FlashcardGenerationRuntime,
   ctx: ContextWithUser
 ) {
-  const leaseOwner = randomUUID()
-  const now = new Date()
-  const acquired = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-      OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lt: now } }],
-    },
-    data: {
-      syncLeaseOwner: leaseOwner,
-      syncLeaseUntil: new Date(now.getTime() + SYNC_LEASE_MILLISECONDS),
-    },
+  const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    expectedStatus: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
   })
-  if (acquired.count !== 1) return findOwnedBuild(build.id, ctx)
+  if (!leaseOwner) return findOwnedBuild(build.id, ctx)
 
   try {
     await dispatchPreparingBuild(build, runtime, leaseOwner, ctx)
@@ -364,10 +358,7 @@ async function resumePreparingBuild(
       leaseOwner
     )
   } finally {
-    await ctx.prisma.elementGenerationBuild.updateMany({
-      where: { id: build.id, syncLeaseOwner: leaseOwner },
-      data: { syncLeaseOwner: null, syncLeaseUntil: null },
-    })
+    await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
   }
   return findOwnedBuild(build.id, ctx)
 }
@@ -808,27 +799,15 @@ export async function getFlashcardGenerationBuild(
   }
   assertElementGenerationCostAccounted(build)
 
-  const leaseOwner = randomUUID()
-  const now = new Date()
-  const acquired = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lt: now } }],
-    },
-    data: {
-      syncLeaseOwner: leaseOwner,
-      syncLeaseUntil: new Date(now.getTime() + SYNC_LEASE_MILLISECONDS),
-    },
+  const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
   })
-  if (acquired.count === 1) {
+  if (leaseOwner) {
     try {
       await synchronizeLeasedBuild(build, runtime, leaseOwner, ctx)
     } finally {
-      await ctx.prisma.elementGenerationBuild.updateMany({
-        where: { id: build.id, syncLeaseOwner: leaseOwner },
-        data: { syncLeaseOwner: null, syncLeaseUntil: null },
-      })
+      await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
     }
   }
   return findOwnedBuild(buildId, ctx)
