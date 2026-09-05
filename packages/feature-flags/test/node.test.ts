@@ -89,7 +89,10 @@ describe('NodeFeatureFlagClient', () => {
     expect(await client.initialize()).toBe(true)
     expect(mockFetch).toHaveBeenCalledWith(
       'https://growthbook.test/api/features/sdk-test',
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
     )
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
     expect(client.isEnabled('targeted-flag', disabledAttributes)).toBe(false)
@@ -286,5 +289,41 @@ describe('NodeFeatureFlagClient', () => {
     await client.initialize()
 
     expect(client.isEnabled('ai-beta', { actorType: 'user' })).toBe(false)
+  })
+
+  it('allows an HTTP loopback API host in the test environment', async () => {
+    const client = createClient({ apiHost: 'http://127.0.0.1:4010/' })
+
+    expect(await client.initialize()).toBe(true)
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://127.0.0.1:4010/api/features/sdk-test',
+      expect.objectContaining({ redirect: 'error' })
+    )
+    expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(true)
+  })
+
+  it.each([
+    ['a non-loopback host in test', 'http://growthbook.test', 'test'],
+    ['a loopback host in staging', 'http://127.0.0.1:4010', 'staging'],
+    ['a loopback host in production', 'http://localhost:4010', 'production'],
+  ])('fails closed for HTTP on %s', async (_label, apiHost, environment) => {
+    const client = createClient({ apiHost, environment })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.getStatus().configured).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'not-a-url',
+    'https://growthbook.test?source=invalid',
+    'https://growthbook.test/#invalid',
+  ])('fails closed without fetching for invalid API host %s', async (apiHost) => {
+    const client = createClient({ apiHost })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.getStatus().configured).toBe(false)
+    expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

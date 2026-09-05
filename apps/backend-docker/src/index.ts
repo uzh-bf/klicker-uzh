@@ -1,5 +1,10 @@
 import { EventEmitter } from 'node:events'
+// import * as Sentry from '@sentry/node'
+// import '@sentry/tracing'
+import { type Cache, createInMemoryCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   createElementGenerationRuntimeFromEnv,
   enhanceContext,
@@ -8,22 +13,18 @@ import {
   schema,
   settleKbKnowledgeGraphResult,
 } from '@klicker-uzh/graphql'
-import { prisma as prismaBase } from '@klicker-uzh/prisma'
-// import * as Sentry from '@sentry/node'
-// import '@sentry/tracing'
-import { type Cache, createInMemoryCache } from '@envelop/response-cache'
-import { createRedisCache } from '@envelop/response-cache-redis'
-import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   getKBGraphTerminalResult,
   hatchetClient,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
+import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
+import { parseRefreshInterval } from './featureFlags.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
@@ -32,16 +33,16 @@ const featureFlags = new NodeFeatureFlagClient({
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
   forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
-  refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
-    ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
-    : undefined,
+  refreshIntervalMs: parseRefreshInterval(
+    process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+  ),
 })
 process.once('exit', () => featureFlags.destroy())
 const elementGenerationRuntime = createElementGenerationRuntimeFromEnv(
   process.env
 )
 
-let prisma = prismaBase
+const prisma = prismaBase
 
 // if (
 //   process.env.NODE_ENV === 'development' &&
@@ -128,117 +129,126 @@ const pubSub = createPubSub({ eventTarget })
 // #region
 getChatModelRegistry()
 
-migrate(prisma).then(async () => {
-  await featureFlags.initialize()
-  console.log(
-    '[feature-flags] Backend evaluator ready.',
-    featureFlags.getStatus()
+try {
+  await migrate(prisma)
+} catch (error) {
+  // Runtime migrations must not prevent the server from starting: a failed
+  // data migration leaves the affected feature degraded but the API usable.
+  // The migration record is absent so the next restart retries it.
+  console.error(
+    'Runtime migrations failed; starting server in degraded state:',
+    error
   )
+}
 
-  // initialize tasks to be able to call / schedule them inside service functions
-  const tasks = prepareHatchetTasks({
-    hatchet: hatchetClient,
-    pubSub,
-    emitter,
-    redisCache,
-    redisExec,
-    redisAssessmentExec,
-    handlers,
-    getKBGraphTerminalResult,
-    settleKBGraphTerminalResult: ({
-      buildId,
-      result,
-      finishedAt,
-      allowLateSuccess,
-    }) =>
-      settleKbKnowledgeGraphResult(
+// Fail-closed feature flag evaluation must be ready before serving.
+const initialized = await featureFlags.initialize()
+const featureFlagStatus = featureFlags.getStatus()
+if (initialized) {
+  console.log('[feature-flags] Backend evaluator ready.', featureFlagStatus)
+} else {
+  console.warn(
+    '[feature-flags] Backend evaluator unavailable; false fallbacks are active.',
+    featureFlagStatus
+  )
+}
+
+// initialize tasks to be able to call / schedule them inside service functions
+const tasks = prepareHatchetTasks({
+  hatchet: hatchetClient,
+  pubSub,
+  emitter,
+  redisCache,
+  redisExec,
+  redisAssessmentExec,
+  handlers,
+  getKBGraphTerminalResult,
+  settleKBGraphTerminalResult: ({
+    buildId,
+    result,
+    finishedAt,
+    allowLateSuccess,
+  }) =>
+    settleKbKnowledgeGraphResult(
+      prisma,
+      { buildId, result, allowLateSuccess },
+      finishedAt
+    ),
+})
+
+console.log('Hatchet tasks initialized.', Object.keys(tasks))
+// #endregion
+
+const { app, yogaApp } = prepareApp({
+  prisma,
+  redisCache,
+  redisExec,
+  redisAssessmentExec,
+  pubSub,
+  cache,
+  emitter,
+  hatchet: hatchetClient,
+  elementGenerationRuntime,
+  tasks,
+  featureFlags,
+})
+
+// Validate required environment variables at startup
+if (!process.env.APP_ORIGIN_API) {
+  console.error('APP_ORIGIN_API is required but not defined')
+  process.exit(1)
+}
+
+const server = app.listen(3000, () => {
+  console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+
+  const wsServer = new WebSocket.WebSocketServer({
+    server,
+    path: yogaApp.graphqlEndpoint,
+  })
+
+  useServer(
+    {
+      schema,
+      context: enhanceContext({
         prisma,
-        { buildId, result, allowLateSuccess },
-        finishedAt
-      ),
-  })
-
-  console.log('Hatchet tasks initialized.', Object.keys(tasks))
-  // #endregion
-
-  const { app, yogaApp } = prepareApp({
-    prisma,
-    redisCache,
-    redisExec,
-    redisAssessmentExec,
-    pubSub,
-    cache,
-    emitter,
-    hatchet: hatchetClient,
-    elementGenerationRuntime,
-    tasks,
-    featureFlags,
-  })
-
-  // Validate required environment variables at startup
-  if (!process.env.APP_ORIGIN_API) {
-    console.error('APP_ORIGIN_API is required but not defined')
-    process.exit(1)
-  }
-
-  const server = app.listen(3000, () => {
-    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
-
-    const wsServer = new WebSocket.WebSocketServer({
-      server,
-      path: yogaApp.graphqlEndpoint,
-    })
-
-    useServer(
-      {
-        schema,
-        context: enhanceContext({
-          prisma,
-          redisExec,
-          redisAssessmentExec,
-          pubSub,
-          emitter,
-          elementGenerationRuntime,
-          hatchet: hatchetClient,
-          tasks,
-          featureFlags,
-        }),
-        execute: (args: any) => args.rootValue.execute(args),
-        subscribe: (args: any) => args.rootValue.subscribe(args),
-        onSubscribe: async (ctx, msg) => {
-          const {
-            schema,
-            execute,
-            subscribe,
-            contextFactory,
-            parse,
-            validate,
-          } = yogaApp.getEnveloped({
+        redisExec,
+        redisAssessmentExec,
+        pubSub,
+        emitter,
+        elementGenerationRuntime,
+        tasks,
+        featureFlags,
+      }),
+      execute: (args: any) => args.rootValue.execute(args),
+      subscribe: (args: any) => args.rootValue.subscribe(args),
+      onSubscribe: async (ctx, msg) => {
+        const { schema, execute, subscribe, contextFactory, parse, validate } =
+          yogaApp.getEnveloped({
             ...ctx,
             req: ctx.extra.request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })
 
-          const args = {
-            schema,
-            operationName: msg.payload.operationName,
-            document: parse(msg.payload.query),
-            variableValues: msg.payload.variables,
-            contextValue: await contextFactory(),
-            rootValue: {
-              execute,
-              subscribe,
-            },
-          }
+        const args = {
+          schema,
+          operationName: msg.payload.operationName,
+          document: parse(msg.payload.query),
+          variableValues: msg.payload.variables,
+          contextValue: await contextFactory(),
+          rootValue: {
+            execute,
+            subscribe,
+          },
+        }
 
-          const errors = validate(args.schema, args.document)
-          if (errors.length) return errors
-          return args
-        },
+        const errors = validate(args.schema, args.document)
+        if (errors.length) return errors
+        return args
       },
-      wsServer as Parameters<typeof useServer>[1]
-    )
-  })
+    },
+    wsServer as Parameters<typeof useServer>[1]
+  )
 })
 // #endregion

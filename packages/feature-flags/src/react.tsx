@@ -33,6 +33,10 @@ type FeatureFlagProviderProps = {
   evaluationAvailable?: boolean
 }
 
+const FeatureFlagRefreshContext = createContext<() => Promise<boolean>>(
+  async () => false
+)
+
 export function FeatureFlagProvider({
   attributes,
   attributesReady = true,
@@ -40,7 +44,7 @@ export function FeatureFlagProvider({
   children,
   evaluationAvailable = true,
 }: FeatureFlagProviderProps) {
-  const [{ growthbook, initialize, setAttributes }] = useState(() =>
+  const [{ growthbook, initialize, refresh, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
   const destroyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -121,7 +125,9 @@ export function FeatureFlagProvider({
         value={effectiveEvaluationAvailable}
       >
         <GrowthBookProvider growthbook={growthbook}>
-          {children}
+          <FeatureFlagRefreshContext.Provider value={refresh}>
+            {children}
+          </FeatureFlagRefreshContext.Provider>
         </GrowthBookProvider>
       </FeatureFlagEvaluationAvailableContext.Provider>
     </FeatureFlagsReadyContext.Provider>
@@ -141,4 +147,8 @@ export function useFeatureFlagsReady(): boolean {
 
 export function useFeatureFlagEvaluationAvailable(): boolean {
   return useContext(FeatureFlagEvaluationAvailableContext)
+}
+
+export function useRefreshFeatureFlags(): () => Promise<boolean> {
+  return useContext(FeatureFlagRefreshContext)
 }

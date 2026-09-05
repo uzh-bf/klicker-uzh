@@ -107,6 +107,15 @@ function ElementInformationFields({
         ) : null}
       </div>
 
+      {mode === ElementEditMode.CREATE && !isTemplate ? (
+        <p
+          data-cy="element-type-immutable-notice"
+          className="mt-1 text-sm text-uzh-grey-80"
+        >
+          {t('manage.elements.elementTypeImmutableNotice')}
+        </p>
+      ) : null}
+
       <div className="mt-2 flex flex-row">
         <FormikTextField
           name="name"

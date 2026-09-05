@@ -80,7 +80,11 @@ tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
 keep separate app caches, database state, routes, and processes while sharing
 only the package-download cache. Do not default every parallel worktree to
 `full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
-workers in each environment.
+workers in each environment. The Turbo local cache is shared across all
+worktrees and bounded in size/age; see
+[Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
+the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
+commands.
 
 Playwright is the deliberate toolchain exception. Run
 `pnpm playwright:host -- <args>` from the host; the launcher calls

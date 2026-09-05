@@ -69,6 +69,14 @@ Lifecycle enums:
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
+`ElementStatus` is manually controlled advisory metadata on an Element. `DRAFT`
+means unfinished, `REVIEW` means review requested, and `READY` means considered
+reusable. New Elements default to `READY`. The value does not gate activity use,
+auto-transition, reset after an edit, or imply reviewer assignment or approval;
+users with at least read access retain the deliberate permission to change it.
+This is separate from activity `PublicationStatus` and the activity
+`ReviewStatus` flow.
+
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
 ## Knowledge bases
@@ -106,6 +114,8 @@ The initial release is explicitly a beta and may open after the existing system 
 The last successfully published graph may remain available after the KB's active content revision advances, including after a resource is deleted or withdrawn. Staleness is the mismatch between the graph's pinned source digest and the current KB digest; timestamps alone are not the consistency contract. Klicker does not disable the graph automatically, and it does not surface staleness to students: the label appears only on the lecturer-facing KB and graph views, where the people who can spend a rebuild are the ones who see it. A provider `COMPLETED`, `FAILED`, `CANCELLED`, or timeout observation without the versioned result handoff clears the active slot, does not move the published pointer, and holds the reserved cost for human review; a later valid result may settle the ledger but still cannot publish without passing the same identity checks.
 
 Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. `KBResource` stores the latest operation identity (`resourceVersion`, exact-byte `contentSha256`, attempt, and external operation), the independently active serving identity (`activeResourceVersion` and `activeContentSha256`), and the latest safe error code. `KBIngestionRun` is the append-only, resource-scoped ledger: lecturer dispatch uses the local attempt UUID, while a signed platform `resource.content_refreshed` event uses its event UUID and records the platform operation ID. A refresh advances only the serving identity, so it cannot overwrite a concurrent lecturer operation; the resource list and its status filter resolve through the stored lecturer attempt rather than the newest ledger row. A failed replacement therefore remains visible without erasing the previously active serving version. Ingestion transport and atomic status reconciliation are described in [Async & Workers](./async-and-workers.md).
+
+Uploaded file resources can be replaced in place from the resource workspace. `requestKbFileReplacement` binds each upload ticket to one BLOB resource and its expected version. `confirmKbFileReplacement` accepts only a still-current ticket, atomically swaps the canonical source metadata, increments the resource version, creates the ingestion run, and queues it while preserving the resource id, title, material category, and active serving identity. The previously active AI content remains available until the replacement succeeds, but the old source file is deleted best-effort after confirmation and cannot be restored. A queue failure leaves the new canonical source in `FAILED`, so the ordinary resource retry path can ingest it without another upload.
 
 Each resource also has one lecturer-controlled `KBResourceMaterialType`: `UNCLASSIFIED`, `COURSE_CONTENT`, or `ADMINISTRATIVE`. It is independent of the source type (`BLOB` or `URL`) and is metadata for organization only; it is not sent to data-ingestion and does not change retrieval, graph generation, or question generation. Existing resources default to `UNCLASSIFIED`, and the resource workspace can filter or update the value without creating an ingestion attempt.
 

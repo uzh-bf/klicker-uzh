@@ -10,6 +10,7 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import { expect, type Locator, type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import { getPrisma } from '../../global-setup.js'
 import { openActivityActionMenu, openCourseActionMenu } from '../actions.js'
 import {
@@ -54,22 +55,149 @@ const growthbookClientKey =
   process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
 const GROWTHBOOK_FEATURES_URL = `${growthbookApiHost.replace(/\/$/, '')}/api/features/${growthbookClientKey}*`
 
+export async function mockGrowthBookFeatureFlags(
+  page: Page,
+  {
+    aiBeta = false,
+    betaSignup = false,
+    failRefresh = false,
+    learningAnalytics = true,
+  }: {
+    aiBeta?: boolean
+    betaSignup?: boolean
+    failRefresh?: boolean
+    learningAnalytics?: boolean
+  } = {}
+) {
+  let requestCount = 0
+  await page.unroute(GROWTHBOOK_FEATURES_URL)
+  await page.route(GROWTHBOOK_FEATURES_URL, (route) => {
+    requestCount += 1
+    if (failRefresh && requestCount > 1) {
+      return route.abort('failed')
+    }
+
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        features: {
+          'ai-beta': { defaultValue: aiBeta },
+          'beta-signup': { defaultValue: betaSignup },
+          'learning-analytics': { defaultValue: learningAnalytics },
+        },
+      }),
+    })
+  })
+}
+
 export async function mockGrowthBookLearningAnalytics(
   page: Page,
   enabled: boolean
 ) {
-  await page.unroute(GROWTHBOOK_FEATURES_URL)
-  await page.route(GROWTHBOOK_FEATURES_URL, (route) =>
-    route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        features: {
-          'ai-beta': { defaultValue: true },
-          'learning-analytics': { defaultValue: enabled },
-        },
-      }),
-    })
+  await mockGrowthBookFeatureFlags(page, {
+    aiBeta: true,
+    learningAnalytics: enabled,
+  })
+}
+
+export async function mockBetaEnrollmentGraphQL(
+  page: Page,
+  {
+    beforeSetResponse,
+    membership: initialMembership,
+    mayChange: initialMayChange,
+    onSet,
+    signupAvailable,
+  }: {
+    beforeSetResponse?: () => Promise<void>
+    membership: boolean | null
+    mayChange: boolean
+    onSet?: (enabled: boolean) => void
+    signupAvailable: boolean
+  }
+) {
+  const persistedOperations = JSON.parse(
+    await readFile(
+      new URL(
+        '../../../packages/graphql/src/public/client.json',
+        import.meta.url
+      ),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const persistedNames = Object.fromEntries(
+    Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
   )
+  let membership = initialMembership
+  let mayChange = initialMayChange
+
+  await page.route('**/api/graphql*', async (route) => {
+    const request = route.request()
+    const requestUrl = new URL(request.url())
+    const body = request.postData()
+      ? (request.postDataJSON() as {
+          extensions?: { persistedQuery?: { sha256Hash?: string } }
+          operationName?: string
+          variables?: Record<string, unknown>
+        })
+      : undefined
+    const extensions = body?.extensions
+      ? body.extensions
+      : requestUrl.searchParams.get('extensions')
+        ? (JSON.parse(requestUrl.searchParams.get('extensions')!) as {
+            persistedQuery?: { sha256Hash?: string }
+          })
+        : undefined
+    const hash = extensions?.persistedQuery?.sha256Hash
+    const operationName =
+      body?.operationName ?? (hash ? persistedNames[hash] : undefined)
+
+    if (operationName === 'BetaEnrollment') {
+      await route.fulfill({
+        json: {
+          data: {
+            betaEnrollment: {
+              __typename: 'BetaEnrollmentCapability',
+              mayChange,
+              membership,
+              signupAvailable,
+            },
+          },
+        },
+      })
+      return
+    }
+
+    if (operationName === 'SetBetaEnrollment') {
+      const enabled = body?.variables?.enabled
+      if (typeof enabled !== 'boolean') {
+        await route.fulfill({
+          json: { errors: [{ message: 'Missing enabled variable' }] },
+        })
+        return
+      }
+
+      onSet?.(enabled)
+      await beforeSetResponse?.()
+      membership = enabled
+      mayChange = enabled || signupAvailable
+      await route.fulfill({
+        json: {
+          data: {
+            setBetaEnrollment: {
+              __typename: 'BetaEnrollmentCapability',
+              mayChange,
+              membership,
+              signupAvailable,
+            },
+          },
+        },
+      })
+      return
+    }
+
+    await route.fallback()
+  })
 }
 
 export async function updateLecturerPrivatePreview(privatePreview: boolean) {

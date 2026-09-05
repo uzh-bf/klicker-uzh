@@ -17,6 +17,9 @@ data:
   RESPONSE_EXAMPLE_RECEIPT_ISSUER: {{ .Values.chat.responseExampleReceipt.issuer | quote }}
   RESPONSE_EXAMPLE_RECEIPT_AUDIENCE: {{ .Values.chat.responseExampleReceipt.audience | quote }}
   RESPONSE_EXAMPLE_RECEIPT_KID: {{ .Values.chat.responseExampleReceipt.keyId | quote }}
+  {{- if .Values.backendGraphql.betaSavedGroupId }}
+  GROWTHBOOK_BETA_SAVED_GROUP_ID: {{ .Values.backendGraphql.betaSavedGroupId | quote }}
+  {{- end }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}

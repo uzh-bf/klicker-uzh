@@ -5,6 +5,7 @@ import {
 import type {
   BooleanFeatureFlagKey,
   FeatureFlagAttributes,
+  FeatureFlagEnvironment,
   KlickerFeatureFlags,
 } from './contracts.js'
 import {
@@ -18,6 +19,32 @@ const DEFAULT_REFRESH_INTERVAL_MS = 30_000
 const DEFAULT_MAX_STALE_MS = 120_000
 const MIN_REFRESH_INTERVAL_MS = 100
 
+function normalizeApiHost(
+  value: string | undefined,
+  environment: FeatureFlagEnvironment
+): string | undefined {
+  if (!value) return undefined
+
+  try {
+    const url = new URL(value)
+    const isLocalDevelopmentHost =
+      (environment === 'development' || environment === 'test') &&
+      (url.hostname === '127.0.0.1' ||
+        url.hostname === 'localhost' ||
+        url.hostname === '[::1]')
+    if (
+      (url.protocol !== 'https:' &&
+        !(url.protocol === 'http:' && isLocalDevelopmentHost)) ||
+      url.search ||
+      url.hash
+    ) {
+      return undefined
+    }
+    return value.replace(/\/$/, '')
+  } catch {
+    return undefined
+  }
+}
 function normalizeDuration(
   value: number | undefined,
   fallback: number,
@@ -65,7 +92,7 @@ export class NodeFeatureFlagClient<
 
   constructor(config: NodeFeatureFlagClientConfig) {
     this.environment = normalizeFeatureFlagEnvironment(config.environment)
-    this.apiHost = config.apiHost?.replace(/\/$/, '')
+    this.apiHost = normalizeApiHost(config.apiHost, this.environment)
     this.clientKey = config.clientKey
     this.configured = Boolean(
       this.environment !== 'unknown' && this.apiHost && this.clientKey
@@ -86,7 +113,6 @@ export class NodeFeatureFlagClient<
       1
     )
     this.client = new GrowthBookClient<Features>()
-
     if (!this.configured) {
       this.client.initSync({
         payload: {
@@ -221,7 +247,7 @@ export class NodeFeatureFlagClient<
     const request = async () => {
       const response = await this.fetcher(
         `${this.apiHost}/api/features/${this.clientKey}`,
-        { signal: controller.signal }
+        { redirect: 'error', signal: controller.signal }
       )
       if (!response.ok) {
         throw new Error(`GrowthBook returned HTTP ${response.status}`)

@@ -15,8 +15,10 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbId,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -53,6 +55,8 @@ export interface MCPRequestContext {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+  kbId?: string
+  sessionId?: string
 }
 
 export interface MCPToolsHandle {
@@ -61,55 +65,6 @@ export interface MCPToolsHandle {
 }
 
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
-const DOC_QUERY_SCOPE_HEADER_PREFIX = 'x-doc-query-'
-const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
-  'authorization',
-  'chatbot-id',
-  'content-type',
-  'mcp-session-id',
-  '__proto__',
-  'constructor',
-  'prototype',
-])
-
-function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
-  if (
-    server.parameters !== undefined &&
-    (!server.parameters ||
-      typeof server.parameters !== 'object' ||
-      Array.isArray(server.parameters))
-  ) {
-    throw new Error('Invalid Doc Query scope-token configuration')
-  }
-
-  const parameters = server.parameters as Record<string, unknown> | undefined
-  const rawScopeToken = parameters?.scope_token
-  if (
-    parameters &&
-    Object.prototype.hasOwnProperty.call(parameters, 'scope_token') &&
-    (!rawScopeToken ||
-      typeof rawScopeToken !== 'object' ||
-      Array.isArray(rawScopeToken))
-  ) {
-    throw new Error('Invalid Doc Query scope-token configuration')
-  }
-  const scopeToken = rawScopeToken as Record<string, unknown> | undefined
-  const header =
-    scopeToken && Object.prototype.hasOwnProperty.call(scopeToken, 'header')
-      ? scopeToken.header
-      : DOC_QUERY_SCOPE_TOKEN_HEADER
-
-  if (
-    typeof header !== 'string' ||
-    HTTP_HEADER_NAME_PATTERN.test(header) === false ||
-    header.toLowerCase().startsWith(DOC_QUERY_SCOPE_HEADER_PREFIX) === false ||
-    RESERVED_DOC_QUERY_SCOPE_HEADERS.has(header.toLowerCase())
-  ) {
-    throw new Error('Invalid Doc Query scope-token header')
-  }
-
-  return header
-}
 
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
@@ -175,6 +130,40 @@ function toSafeToolName(
   return candidate
 }
 
+async function applyDocQueryAuthHeaders(
+  headers: Record<string, string>,
+  server: MCPServerConfig,
+  context: MCPRequestContext,
+  authType: string
+): Promise<boolean> {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+  if (!(context.kbId && context.sessionId)) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (authType !== 'bearer' || !server.authSecret) {
+    throw new Error('Doc Query transport authentication is invalid')
+  }
+  if (
+    typeof context.sessionId !== 'string' ||
+    context.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  assertDocQueryTransportSecurity(server.url)
+
+  const kbId = normalizeDocQueryKbId(context.kbId)
+  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  const token = await signDocQueryScopeToken({
+    kbId,
+    chatbotId: context.chatbotId,
+    sessionId: context.sessionId,
+    jti: randomUUID(),
+  })
+  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+  return true
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
@@ -182,42 +171,13 @@ export async function createAuthHeaders(
   server: MCPServerConfig,
   context: MCPRequestContext
 ): Promise<Record<string, string>> {
-  const baseHeaders: Record<string, string> = {
+  const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
-  }
+  }) as Record<string, string>
   const authType = server.authType.toLowerCase()
 
-  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    if (!context.kbId || !context.sessionId) {
-      throw new Error('Scoped knowledge retrieval is not available')
-    }
-
-    // Shared multi-tenant Doc Query keeps transport authentication in
-    // Authorization and carries retrieval scope in its dedicated header.
-    // Scope-only rows remain valid only for explicitly standalone deployments.
-    if (!server.authSecret && authType !== 'scope_token') {
-      throw new Error('Doc Query transport authentication is invalid')
-    }
-
-    if (server.authSecret) {
-      if (authType !== 'bearer' && authType !== 'scope_token') {
-        throw new Error('Doc Query transport authentication is invalid')
-      }
-      baseHeaders.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
-    }
-
-    const token = await signDocQueryScopeToken({
-      kbId: context.kbId,
-      chatbotId: context.chatbotId,
-      sessionId: context.sessionId,
-      jti: randomUUID(),
-    })
-    baseHeaders[resolveDocQueryScopeHeader(server)] = `Bearer ${token}`
+  if (await applyDocQueryAuthHeaders(baseHeaders, server, context, authType)) {
     return baseHeaders
-  }
-
-  if (authType === 'scope_token') {
-    throw new Error('Scoped knowledge retrieval is not available')
   }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
@@ -242,6 +202,10 @@ export async function createAuthHeaders(
     )
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
+  }
+
+  if (authType === 'scope_token') {
+    throw new Error('Scoped knowledge retrieval is not available')
   }
 
   if (!server.authSecret) {
@@ -314,6 +278,9 @@ function normalizeMCPRequest(
     }
   }
 
+  const options =
+    typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions
+
   return {
     context: {
       chatbotId: contextOrChatbotId,
@@ -322,9 +289,10 @@ function normalizeMCPRequest(
           ? participantIdOrOptions
           : undefined,
       authMode,
+      kbId: options.kbId,
+      sessionId: options.sessionId,
     },
-    options:
-      typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions,
+    options,
   }
 }
 
@@ -426,7 +394,7 @@ async function loadServerTools(
     const configuredTool = config.allowedTools?.[0]
     if (
       !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
+      config.allowedTools.length !== 1 ||
       typeof configuredTool !== 'string' ||
       configuredTool.length === 0 ||
       /[*?]/.test(configuredTool)

@@ -432,6 +432,7 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Draft',
+      statusDescription: 'Manual status: unfinished and still being prepared.',
     },
     SCHEDULED: {
       statusLabel: 'Scheduled',
@@ -454,57 +455,78 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manual status: review requested.',
     },
     READY: {
       statusLabel: 'Ready',
+      statusDescription:
+        'Manual status: considered reusable; the default for new elements.',
     },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Students select exactly one of the provided answer options.',
       text: 'Please select a single option.',
       richtext: 'Please select a <b>single</b> option.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Students select one or more of the provided answer options.',
       text: 'Please select one or more options.',
       richtext: 'Please select <b>one or more</b> options.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Students mark each of exactly four statements as correct or incorrect.',
       text: 'Evaluate the statements for correctness.',
       richtext: 'Evaluate the statements for <b>correctness</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Free Text (FT)',
+      description:
+        'Students answer by typing free text, optionally restricted by a maximum length.',
       text: 'Please enter your answer.',
       richtext: 'Please enter your <b>answer</b>.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerical (NR)',
+      description:
+        'Students answer by typing a number, optionally restricted by range, precision and unit.',
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Content (CT)',
+      description:
+        'Presents additional information to students, without a question.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
+      description:
+        'Students practice content by heart and self-assess whether they remembered it.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Selection (SE)',
+      description:
+        'Students select a specific number of items from an answer collection.',
       text: 'Please select the correct answer from the list.',
       richtext: 'Please select the <b>correct answer</b> from the list.',
     },
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Case Study (CS)',
+      description:
+        'Students evaluate items against criteria within one or more case scenarios.',
       text: 'Please evaluate all options with respect to the given criteria.',
       richtext:
         'Please evaluate all options with respect to the given criteria.',
@@ -967,6 +989,8 @@ export default {
       practicePoolPromotionDescription:
         'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
       startPracticePool: 'Start Practice Pool',
+      practicePoolRoundComplete:
+        'Round completed! Start another round to continue practicing. Your previous answers can influence the selection of question sets.',
       individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
@@ -1703,6 +1727,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadSuccess: 'File added to the knowledge base.',
     fileUploadError: 'The file could not be uploaded.',
     fileRejected: 'Choose a supported file of no more than 25 MB.',
+    replaceFile: 'Replace file',
+    replaceFileTitle: 'Replace file',
+    replaceAndIngest: 'Replace and ingest',
+    replaceFileDescription:
+      'Choose a new file for “{title}”. Its category and identity stay the same, ingestion starts immediately, and the previous AI content remains available until the replacement is ready. The previous source file cannot be restored.',
+    replaceFileSuccess:
+      'Replacement queued. The previous version remains available until the new file is ready.',
     linkTitle: 'Add a link',
     linkDescription: 'Register a website or media resource for ingestion.',
     resourceTitleLabel: 'Title',
@@ -1798,6 +1829,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     notServing: 'Not available yet',
     servingCurrentVersion: 'Current version {version}',
     servingPreviousVersion: 'Version {version} remains available',
+    servingNewerVersion: 'Version {version} (refreshed externally)',
     servingSince: 'Available since {date}',
     version: 'Version {version}',
     recentAttempts: 'Recent attempts',
@@ -1955,6 +1987,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortOrderAscending: 'Sort ascending',
+      sortOrderDescending: 'Sort descending',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -2351,6 +2385,28 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
+      betaFeaturesDataUse:
+        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
+      betaFeaturesDescription:
+        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesConvergedOff: 'Beta access is no longer active.',
+      betaFeaturesConvergedOn: 'Beta access is now active.',
+      betaFeaturesEnrollment: 'Beta enrollment',
+      betaFeaturesEnrollmentTooltip:
+        'This optional setting controls whether your account is enrolled in the beta cohort.',
+      betaFeaturesError:
+        'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
+      betaFeaturesRefreshFailure:
+        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+      betaFeaturesRefreshing:
+        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+      betaFeaturesSaved:
+        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+      betaFeaturesPending:
+        'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
+      betaFeaturesTitle: 'Beta features',
+      betaFeaturesUnavailable:
+        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -2408,11 +2464,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
       newPassword: 'New Password',
-      betaFeatures: 'Beta Features',
-      betaFeaturesTooltip:
-        'Enable early access to KlickerUZH features that are still in testing. Beta features can change or be withdrawn at short notice, and are not recommended for use in a graded assessment. You can turn this off again at any time.',
-      betaFeaturesError:
-        'The beta setting could not be saved. Please try again in a moment.',
       changePassword: 'Change Password',
       changeDelegatedLoginPassword: 'Change delegated login password',
       changeDelegatedLoginPasswordMessage:
@@ -2735,15 +2786,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createLiveQuizDescription: 'Engage participants live during a session.',
       createMicrolearning: 'Create microlearning',
+      createMicrolearningDescription:
+        'Schedule short learning activities over a defined period.',
       createPracticeQuiz: 'Create practice quiz',
+      createPracticeQuizDescription:
+        'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
+      createGroupTaskDescription: 'Let groups collaborate on a shared task.',
+      createElementaryLabel: 'Elements',
+      createActivitiesLabel: 'Activities',
       createElement: 'Create Element',
+      emptyStateTitle: 'Create your first element',
+      emptyStateDescription:
+        'Elements are reusable questions and content for your activities. Create one to get started.',
+      clearSearch: 'Clear search',
+      elementsLoadError: 'The elements could not be loaded.',
+      retry: 'Retry',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
+      moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
+      filterApplied: 'Filter applied',
       tags: 'Tags',
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
@@ -2808,12 +2875,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       batchOperationsElements: 'Elements - Batch Operations',
       batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'Review the selected elements below. Then choose the actions to apply.',
       batchElementName: 'Element',
-      batchElementPermission: 'Your permission',
-      batchUpdateStatus: 'Element update eligibility',
+      batchElementPermission: 'Permission',
+      batchUpdateStatus: 'Changes',
       batchUpdateStatusInactive: 'No element update configured',
-      batchSharingStatus: 'Element sharing eligibility',
+      batchSharingStatus: 'Sharing',
       actionApplies: 'Action applies',
       batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
@@ -2874,8 +2941,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       updateActivitiesBatchInfo:
         'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
       activityUpdates: 'Activity updates',
-      draftScheduledActivities: 'Draft and scheduled activities',
-      templateUpdates: 'Activity template updates',
+      batchUpdateInstancesConsequence:
+        'Also apply these changes to draft and scheduled activities',
+      batchUpdateTemplateInstancesConsequence: 'Also update activity templates',
       batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
         'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
@@ -2919,6 +2987,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyElement: 'Modify Element',
       useElementInActivities: 'Use Element in Activities',
       elementType: 'Element type',
+      elementTypeImmutableNotice:
+        'The element type cannot be changed after creation. You can duplicate the element to create a different type.',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
@@ -3100,6 +3170,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
+      confirmCancelTitle: 'Discard changes to this activity creation?',
+      confirmCancelBody:
+        'You have entered data that has not been saved yet. Discarding will permanently remove the data you entered in this wizard.',
+      confirmCancelEditTitle: 'Discard changes to this activity?',
+      confirmCancelEditBody:
+        'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
+      confirmCancelDiscard: 'Discard',
+      confirmCancelKeepEditing: 'Keep editing',
+      continueToDescription: 'Continue to description',
+      continueToSettings: 'Continue to settings',
+      continueToQuestions: 'Continue to questions',
+      temporaryStorageCreation:
+        'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
+      temporaryStorageEditing:
+        'The activity editing process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       activityDisplayName:
         'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
@@ -3133,12 +3218,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newStack: 'New stack',
-      newBlockSelected: 'Add 1 block with {count} elements',
-      newStackSelected: 'Add 1 stack with {count} elements',
+      newBlockSelected:
+        '{count, plural, one {Add 1 block with # element} other {Add 1 block with # elements}}',
+      newStackSelected:
+        '{count, plural, one {Add 1 stack with # element} other {Add 1 stack with # elements}}',
       pasteSelection: 'Add {count} questions',
-      pasteSelectionElements: 'Add {count} elements',
-      pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
-      pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pasteSelectionElements:
+        '{count, plural, one {Add # element} other {Add # elements}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {Add # block with 1 element} other {Add # blocks with 1 element each}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {Add # stack with 1 element} other {Add # stacks with 1 element each}}',
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',

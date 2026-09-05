@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2 } from '@uzh-bf/design-system'
@@ -6,7 +7,7 @@ import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
 import Layout from '../../components/Layout'
-import BetaFeaturesSetting from '../../components/user/BetaFeaturesSetting'
+import BetaEnrollmentSettings from '../../components/user/BetaEnrollmentSettings'
 import ChatAccountUsageSettings from '../../components/user/ChatAccountUsageSettings'
 import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettings'
 import EmailSetting from '../../components/user/EmailSetting'
@@ -16,6 +17,7 @@ import ShortnameSetting from '../../components/user/ShortnameSetting'
 function Settings() {
   const t = useTranslations()
   const { data: user } = useQuery(UserProfileDocument)
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
 
   if (!user?.userProfile) {
     return <Loader />
@@ -31,11 +33,13 @@ function Settings() {
         <ShortnameSetting user={user.userProfile} />
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
-        {user.userProfile.catalyst && <BetaFeaturesSetting />}
+        <BetaEnrollmentSettings />
 
-        <Suspense fallback={<Loader />}>
-          <ChatAccountUsageSettings />
-        </Suspense>
+        {aiBetaEnabled && (
+          <Suspense fallback={<Loader />}>
+            <ChatAccountUsageSettings />
+          </Suspense>
+        )}
 
         <Suspense fallback={<Loader />}>
           <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />

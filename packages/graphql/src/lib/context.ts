@@ -22,6 +22,7 @@ interface BaseContext {
 
 export interface FeatureFlagEvaluator {
   isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
+  refresh(): Promise<void>
 }
 
 export interface Context extends BaseContext {

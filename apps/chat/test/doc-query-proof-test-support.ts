@@ -1,6 +1,7 @@
-import { mkdtemp, open, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, open, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { exportPKCS8, generateKeyPair } from 'jose'
 import { afterEach, describe, expect, test } from 'vitest'
 
@@ -15,6 +16,24 @@ export type ProofInvokeArgs = {
 }
 
 export type ProofInvoke = (args: ProofInvokeArgs) => Promise<MockToolResult>
+
+export type ProofScopeVariant =
+  | 'valid'
+  | 'expired'
+  | 'forged'
+  | 'wrong_issuer'
+  | 'wrong_audience'
+  | 'unknown_key'
+
+export type ProofSigner = (input: {
+  kbId: string
+  chatbotId: string
+  variant?: ProofScopeVariant
+}) => Promise<string>
+
+export type ProofLock = {
+  close: () => Promise<void>
+}
 
 export type ProofReceipt = {
   result: string
@@ -40,25 +59,24 @@ export type RunProofMatrix = (options: {
   manifest: unknown
   environment: Record<string, string> | NodeJS.ProcessEnv
   invoke: ProofInvoke
+  createSigner?: (
+    environment: Record<string, string> | NodeJS.ProcessEnv
+  ) => Promise<ProofSigner>
 }) => Promise<ProofReceipt>
 
 export type SuperviseProof = (options: {
-  sourceEnvironment: NodeJS.ProcessEnv
+  sourceEnvironment: Record<string, string> | NodeJS.ProcessEnv
   childPath: string
   childArgs: string[]
   lockPath: string
   deadlineMs?: number
-  acquireLockForProof?: unknown
+  acquireLockForProof?: (lockPath: string) => Promise<ProofLock | null>
 }) => Promise<ProofReceipt>
 
 export function rejected(
   message = 'unauthorized: invalid token'
 ): MockToolResult {
   return { isError: true, content: [{ type: 'text', text: message }] }
-}
-
-export function emptyRejection(): MockToolResult {
-  return { isError: true, content: [] }
 }
 
 export function proofUuid(index: number): string {
@@ -68,6 +86,10 @@ export function proofUuid(index: number): string {
 function getChatbotCount(index: number, extraChatbotCases: number): number {
   if (index > 0 && index <= extraChatbotCases) return 2
   return 1
+}
+
+function compareStrings(left: string, right: string): number {
+  return left.localeCompare(right)
 }
 
 export function createTemporaryDirectoryRegistry() {
@@ -86,14 +108,35 @@ export function createTemporaryDirectoryRegistry() {
   }
 }
 
+type TemporaryDirectoryRegistry = {
+  register: (directory: string) => void
+}
+
+async function createPrivateDirectory(
+  registry: TemporaryDirectoryRegistry,
+  prefix: string
+): Promise<string> {
+  const directory = await mkdtemp(join(tmpdir(), prefix))
+  await chmod(directory, 0o700)
+  registry.register(directory)
+  return directory
+}
+
+const defaultProofEnvironmentRegistry = createTemporaryDirectoryRegistry()
+afterEach(() => defaultProofEnvironmentRegistry.cleanup())
+
 export function createProofManifest({
   environment,
   collection,
   extraChatbotCases,
+  version = 1,
+  activationManifestFingerprint,
 }: {
   environment: string
   collection: string
   extraChatbotCases: number
+  version?: number
+  activationManifestFingerprint?: string
 }) {
   let chatbotIndex = 100
   const cases = Array.from({ length: 15 }, (_, index) => ({
@@ -113,27 +156,35 @@ export function createProofManifest({
       forbidReferences: [`foreign-reference-${index + 1}`],
     },
   }))
-  return {
-    version: 1,
+  const manifest = {
+    version,
     environment,
     collection,
     singletonCanaryCaseId: 'corpus_1',
     cases,
     excludedChatbotIds: [proofUuid(900), proofUuid(901)],
   }
+  return activationManifestFingerprint
+    ? { ...manifest, activationManifestFingerprint }
+    : manifest
 }
 
 export async function proofDummyEnvironment(): Promise<Record<string, string>> {
   const { privateKey } = await generateKeyPair('ES256')
+  const directory = await createPrivateDirectory(
+    defaultProofEnvironmentRegistry,
+    'klicker-doc-query-proof-env-'
+  )
   return {
     DOC_QUERY_JWT_TOKEN_KLICKER: 'dummy-transport-token',
     DOC_QUERY_SCOPE_PRIVATE_KEY: await exportPKCS8(privateKey),
     DOC_QUERY_SCOPE_KID: 'dummy-key',
     DOC_QUERY_SCOPE_ISSUER: 'https://chat.klicker.test',
     DOC_QUERY_SCOPE_AUDIENCE: 'klicker-doc-query-test',
-    DOC_QUERY_PROOF_MANIFEST_PATH: '/private/tmp/dummy-manifest.json',
+    DOC_QUERY_PROOF_MANIFEST_PATH: join(directory, 'dummy-manifest.json'),
   }
 }
+
 export function createProofReceiptSources({
   environment,
   collection,
@@ -159,6 +210,7 @@ export function createProofReceiptSources({
       "  phase: 'complete',",
       "  result: 'passed',",
       "  failureClass: 'none',",
+      "  diagnosticClass: 'none',",
       '  failedCaseId: null,',
       '  failedRejectionClass: null,',
       `  counts: ${passedCounts},`,
@@ -169,7 +221,9 @@ export function createProofReceiptSources({
     ].join('\n')
   }
 
-  function failedReceiptSource() {
+  function failedReceiptSource(
+    preservation = '{databaseWrites:0,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
+  ) {
     return [
       '',
       'process.send({',
@@ -179,10 +233,12 @@ export function createProofReceiptSources({
       "  phase: 'canary',",
       "  result: 'failed',",
       "  failureClass: 'canary_positive_failed',",
+      "  diagnosticClass: 'none',",
       "  failedCaseId: 'corpus_1',",
       '  failedRejectionClass: null,',
       `  counts: ${failedCounts},`,
       "  rejections: {missing:'not_run',expired:'not_run',forged:'not_run',wrong_issuer:'not_run',wrong_audience:'not_run',unknown_key:'not_run',trusted_filter_override:'not_run'},",
+      `  preservation: ${preservation},`,
       "  secret: 'dummy-private-key'",
       '}, () => process.exit(1))',
       '',
@@ -196,19 +252,24 @@ export function createProofChildWriter(registry: {
   register: (directory: string) => void
 }) {
   return async function writeDummy(source: string) {
-    const directory = await mkdtemp(
-      join(tmpdir(), 'klicker-doc-query-proof-test-')
+    const directory = await createPrivateDirectory(
+      registry,
+      'klicker-doc-query-proof-test-'
     )
-    registry.register(directory)
     const path = join(directory, 'child.mjs')
     await writeFile(path, source, { mode: 0o700 })
     return { path, lockPath: join(directory, 'proof.lock') }
   }
 }
+
 export function defineProofManifestSuite(
   label: string,
   behaviors: { validateManifest: ValidateProofManifest },
-  config: { manifest: () => unknown; expectedChatbotCount: number }
+  config: {
+    manifest: () => unknown
+    expectedChatbotCount: number
+    expectFingerprintBinding?: boolean
+  }
 ) {
   describe(`${label} Doc Query proof manifest`, () => {
     test('accepts exactly 15 KBs, the configured chatbot targets, and two exclusions', () => {
@@ -220,6 +281,18 @@ export function defineProofManifestSuite(
       expect(validated.cases[0].chatbotIds).toHaveLength(1)
       expect(validated.excludedChatbotIds).toHaveLength(2)
     })
+
+    if (config.expectFingerprintBinding) {
+      test('refuses a same-cardinality substitution with a different cohort fingerprint', () => {
+        const substituted = config.manifest() as {
+          cases: Array<{ kbId: string }>
+        }
+        substituted.cases[0].kbId = proofUuid(999)
+        expect(() => behaviors.validateManifest(substituted)).toThrow(
+          'manifest_refused'
+        )
+      })
+    }
 
     test('refuses duplicate target chatbots before any proof call', () => {
       const duplicate = config.manifest() as {
@@ -461,11 +534,12 @@ export function defineProofSupervisorSuite(
     superviseProof: SuperviseProof
   },
   config: {
-    dummyEnvironment: () => Promise<Record<string, string>>
+    dummyEnvironment: () => Promise<Record<string, string> | NodeJS.ProcessEnv>
     writeDummy: (source: string) => Promise<{ path: string; lockPath: string }>
     prepareDuplicateLock?: (lockPath: string) => Promise<() => Promise<void>>
     passedReceiptSource: (extra?: string, preservation?: string) => string
-    failedReceiptSource: () => string
+    failedReceiptSource: (preservation?: string) => string
+    expectProofManifestFingerprint?: boolean
   }
 ) {
   const suiteRegistry = createTemporaryDirectoryRegistry()
@@ -480,16 +554,20 @@ export function defineProofSupervisorSuite(
       )
       expect(childEnvironment).not.toHaveProperty('LEAK_ME')
       expect(childEnvironment).not.toHaveProperty('PATH')
-      expect(Object.keys(childEnvironment).sort()).toEqual(
-        [
-          'DOC_QUERY_JWT_TOKEN_KLICKER',
-          'DOC_QUERY_SCOPE_AUDIENCE',
-          'DOC_QUERY_SCOPE_ISSUER',
-          'DOC_QUERY_SCOPE_KID',
-          'DOC_QUERY_SCOPE_PRIVATE_KEY',
-          'DOC_QUERY_PROOF_PARENT_PID',
-          'DOC_QUERY_PROOF_MANIFEST_PATH',
-        ].sort()
+      const expectedEnvironmentNames = [
+        'DOC_QUERY_JWT_TOKEN_KLICKER',
+        'DOC_QUERY_SCOPE_AUDIENCE',
+        'DOC_QUERY_SCOPE_ISSUER',
+        'DOC_QUERY_SCOPE_KID',
+        'DOC_QUERY_SCOPE_PRIVATE_KEY',
+        'DOC_QUERY_PROOF_PARENT_PID',
+        'DOC_QUERY_PROOF_MANIFEST_PATH',
+      ]
+      if (config.expectProofManifestFingerprint) {
+        expectedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
+      expect(Object.keys(childEnvironment).sort(compareStrings)).toEqual(
+        expectedEnvironmentNames.sort(compareStrings)
       )
     })
 
@@ -518,8 +596,7 @@ export function defineProofSupervisorSuite(
         )
       )
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -536,13 +613,13 @@ export function defineProofSupervisorSuite(
         () =>
           config
             .passedReceiptSource()
-            .replace("phase: 'complete'", "phase: 'matrix'"),
-        'protocol_failed',
+            .replaceAll("phase: 'complete'", "phase: 'matrix'"),
+        'child_failed',
       ],
       [
         'missing preservation evidence',
         () => config.passedReceiptSource('', 'undefined'),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'non-zero preservation evidence',
@@ -551,14 +628,14 @@ export function defineProofSupervisorSuite(
             '',
             '{databaseWrites:1,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
           ),
-        'protocol_failed',
+        'child_failed',
       ],
       [
         'an exit-mismatched receipt',
         () =>
           config
             .passedReceiptSource()
-            .replace('process.exit(0)', 'process.exit(1)'),
+            .replaceAll('process.exit(0)', 'process.exit(1)'),
         'child_failed',
       ],
       ['a missing receipt', () => 'process.exit(0)', 'child_failed'],
@@ -567,8 +644,7 @@ export function defineProofSupervisorSuite(
     >)('rejects %s', async (_name, source, expectedFailure) => {
       const dummy = await config.writeDummy(source())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -578,11 +654,61 @@ export function defineProofSupervisorSuite(
       expect(receipt.failureClass).toBe(expectedFailure)
     })
 
-    test('passes no unrelated environment or file descriptor to the child', async () => {
-      const directory = await mkdtemp(
-        join(tmpdir(), 'klicker-doc-query-fd-test-')
+    test('classifies a successful exit with a failed receipt as a worker protocol failure', async () => {
+      const dummy = await config.writeDummy(
+        config
+          .failedReceiptSource()
+          .replaceAll('process.exit(1)', 'process.exit(0)')
       )
-      suiteRegistry.register(directory)
+      const receipt = await behaviors.superviseProof({
+        sourceEnvironment: await config.dummyEnvironment(),
+        childPath: dummy.path,
+        childArgs: [],
+        lockPath: dummy.lockPath,
+        deadlineMs: 2_000,
+      })
+      expect(receipt).toMatchObject({
+        result: 'failed',
+        failureClass: 'child_failed',
+        diagnosticClass: 'worker_protocol',
+        exitCode: 0,
+      })
+    })
+
+    test('preserves a protocol failure when a failed child claims writes', async () => {
+      const dummy = await config.writeDummy(
+        config.failedReceiptSource(
+          '{databaseWrites:1,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
+        )
+      )
+      const receipt = await behaviors.superviseProof({
+        sourceEnvironment: await config.dummyEnvironment(),
+        childPath: dummy.path,
+        childArgs: [],
+        lockPath: dummy.lockPath,
+        deadlineMs: 2_000,
+      })
+      expect(receipt).toMatchObject({
+        result: 'failed',
+        failureClass: 'protocol_failed',
+        exitCode: 1,
+        preservation: {
+          databaseWrites: 0,
+          configurationChanges: 0,
+          bindingChanges: 0,
+          clusterChanges: 0,
+          productionActions: 0,
+          retries: 0,
+        },
+      })
+      expect(JSON.stringify(receipt)).not.toContain('dummy-private-key')
+    })
+
+    test('passes no unrelated environment or file descriptor to the child', async () => {
+      const directory = await createPrivateDirectory(
+        suiteRegistry,
+        'klicker-doc-query-fd-test-'
+      )
       const unrelated = await open(join(directory, 'unrelated'), 'w')
       const allowedEnvironmentNames = [
         'DOC_QUERY_JWT_TOKEN_KLICKER',
@@ -594,6 +720,9 @@ export function defineProofSupervisorSuite(
         'DOC_QUERY_PROOF_MANIFEST_PATH',
         '__CF_USER_TEXT_ENCODING',
       ]
+      if (config.expectProofManifestFingerprint) {
+        allowedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
       const source = [
         "import { fstatSync, readFileSync } from 'node:fs'",
         'const allowed = new Set(' +
@@ -615,7 +744,7 @@ export function defineProofSupervisorSuite(
         sourceEnvironment: {
           ...(await config.dummyEnvironment()),
           LEAK_ME: 'must-not-pass',
-        } as unknown as NodeJS.ProcessEnv,
+        },
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -628,8 +757,7 @@ export function defineProofSupervisorSuite(
     test('preserves a values-free failure receipt from a failed child', async () => {
       const dummy = await config.writeDummy(config.failedReceiptSource())
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -651,8 +779,7 @@ export function defineProofSupervisorSuite(
     ])('classifies %s without retrying', async (_name, source, expected) => {
       const dummy = await config.writeDummy(source)
       const receipt = await behaviors.superviseProof({
-        sourceEnvironment:
-          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        sourceEnvironment: await config.dummyEnvironment(),
         childPath: dummy.path,
         childArgs: [],
         lockPath: dummy.lockPath,
@@ -663,16 +790,12 @@ export function defineProofSupervisorSuite(
 
     test('refuses a duplicate invocation before spawning', async () => {
       const dummy = await config.writeDummy(config.passedReceiptSource())
-      let release = async () => {}
-      if (config.prepareDuplicateLock) {
-        release = await config.prepareDuplicateLock(dummy.lockPath)
-      } else {
-        await writeFile(dummy.lockPath, '')
-      }
+      const release = config.prepareDuplicateLock
+        ? await config.prepareDuplicateLock(dummy.lockPath)
+        : await prepareDuplicateLock(dummy.lockPath)
       try {
         const receipt = await behaviors.superviseProof({
-          sourceEnvironment:
-            (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+          sourceEnvironment: await config.dummyEnvironment(),
           childPath: dummy.path,
           childArgs: [],
           lockPath: dummy.lockPath,
@@ -684,4 +807,16 @@ export function defineProofSupervisorSuite(
       }
     })
   })
+}
+
+async function prepareDuplicateLock(lockPath: string) {
+  const database = new DatabaseSync(`${lockPath}.guard.sqlite`, { timeout: 0 })
+  database.exec('BEGIN EXCLUSIVE')
+  return async () => {
+    try {
+      database.exec('ROLLBACK')
+    } finally {
+      database.close()
+    }
+  }
 }
