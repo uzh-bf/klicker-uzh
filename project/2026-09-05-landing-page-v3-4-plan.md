@@ -203,3 +203,12 @@ Design rationale: [NN/g homepage principles](https://www.nngroup.com/articles/ho
 This proposal remains uncommitted until human approval and then folds into the existing execution plan; it is not a second competing execution contract. Proposed implementation terminal condition: locally committed changes, accepted required reviews, recorded verification and a task-owned preview verified stopped. Push, PR amendment, upstream integration, merge and deployment are withheld.
 
 Planning status: independent planner APPROVED after one revision. All five findings accepted: concrete examples, exact ownership, review timing, reproducible acceptance and local completion boundary. Planner approval is not human implementation approval. No landing-page implementation, commit, PR amendment or deployment under this request. The existing website refresh PR remains open and separate from approval of this additional design work.
+
+
+## Implementation verification
+
+The two delegated component drafts are integrated as one atomic homepage commit so the page composition, global announcement target and section IDs remain buildable together. This is one substantive slice with both simplifier and claim-risk slice-review gates before integrated final review. Existing commented future sections and shared catalogue/CTA consumers are preserved. No package, lockfile, legal or tracking changes.
+
+Existing public illustrations are reused unchanged: Live Quiz aggregate prize results, a Practice Quiz embedded in OLAT and a Case Study using an Answer Collection. Captions match visible content; these are not new synthetic or current-application captures. No full application runtime is introduced. Current React DOM guidance was retrieved through Context7.
+
+Website production build and six-file Biome check pass; TypeScript reports the same 35 diagnostic identities as the baseline, with source positions normalised. Required root checks and build were attempted and fail on unrelated missing dependencies and build tools in the website-only container (including email and rollup). Host Git hooks use the previously documented container-check split. Baseline screenshots and final browser evidence live under project/_local/landing-page/. No fully green monorepo claim.
