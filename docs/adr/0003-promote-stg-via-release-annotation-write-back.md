@@ -1,8 +1,25 @@
 # 3. Promote to staging by writing the built commit into a release annotation
 
-- **Status:** Accepted — 2026-08-04
+- **Status:** Superseded — 2026-09-04
 - **Deciders:** @rschlaefli
 - **Context:** [PR #5183](https://github.com/uzh-bf/klicker-uzh/pull/5183), [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303)
+
+## Supersession
+
+The annotation-write-back mechanism below remains the historical response to
+floating-tag drift. Phase 1 replaces it with full-SHA image publication and a
+trusted default-branch controller that advances `stg-release` without a commit
+or pull request. A full-SHA tag is still mutable, so active image workflows use
+a publish-once guard and the controller records canonical registry digests
+before promotion. The privileged `workflow_run` executes only trusted
+default-branch code and treats candidate Git objects and API metadata as data.
+
+At activation, staging ArgoCD will resolve `stg-release` to a commit and supply
+`$ARGOCD_APP_REVISION` as the forced-string `global.imageTag`; after sync, each
+deployed `imageID` digest must match the controller receipt. The ArgoCD revision,
+digest receipt, migration result, sync, health, and acceptance remain separate
+evidence. Production is unchanged: it stays on `v3`, receives no global image
+parameter, and continues to use hand-edited release tags.
 
 ## Context
 

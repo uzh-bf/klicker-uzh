@@ -46,7 +46,7 @@ spec:
         - name: mcp-student
           securityContext:
             {{- toYaml .Values.mcpStudent.securityContext | nindent 12 }}
-          image: "{{ .Values.mcpStudent.image.repository }}:{{ .Values.mcpStudent.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.mcpStudent.image.repository }}:{{ .Values.global.imageTag | default .Values.mcpStudent.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.mcpStudent.image.pullPolicy }}
           ports:
             - name: http

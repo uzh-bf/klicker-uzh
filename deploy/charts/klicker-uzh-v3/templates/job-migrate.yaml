@@ -57,7 +57,7 @@ spec:
           # tracks the app release without a separate per-env pin; falls back to
           # the chart appVersion. Only the repository is pinned per env (the `-arm`
           # migrator image differs from the backend image).
-          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.migrator.image.repository }}:{{ .Values.global.imageTag | default .Values.migrator.image.tag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
           # DATABASE_URL comes from the externally-provisioned backend-graphql Secret.
           # A PreSync hook must not depend on Sync-phase ConfigMaps.

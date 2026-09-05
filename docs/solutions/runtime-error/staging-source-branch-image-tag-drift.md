@@ -75,25 +75,39 @@ import failure. That fix and its build-time regression check are recorded in
 
 ## Prevention
 
-The staging promoter now resolves `STG_SOURCE_BRANCH` once and checks out,
-updates, and opens its generated pull request against that same branch. It
-discovers the image tags and rollout annotations in the selected values file,
-requires both inventories to be non-empty, and proves every discovered entry was
-rewritten. This avoids a workload-count constant becoming stale when the chart
-adds or removes workloads.
+The annotation write-back in
+[ADR-0003](../../adr/0003-promote-stg-via-release-annotation-write-back.md)
+was the first protection against floating-tag drift. Its successor publishes a
+full source-commit SHA tag beside each branch tag and promotes that exact
+revision through `stg-release`. The chart's optional `global.imageTag` applies
+the ArgoCD-resolved revision to all first-party workloads, including the
+PreSync migrator.
 
-The `workflow_run` definition still activates from default branch `v3`. A
-correction merged only to `v3-ai` must therefore reach `v3` through a focused
-activation change before automatic build fan-in uses it. Build runs already in
-progress retain their old promoter behavior; after every exact-head image build
-passes, use a separately authorized branch-selected promoter dispatch or one
-bounded equivalent promotion commit. Merging the correction alone does not
-redeploy that existing image set.
+A full-SHA Docker tag is still mutable registry metadata; its spelling alone
+does not prove image content. Every active push workflow must inspect that tag
+after registry login. If it already exists, the workflow records its canonical
+digest and skips the build/push path. If it is absent, the existing build may
+publish all tags once. An uncertain registry response fails closed. This keeps
+a rerun from overwriting the SHA tag or moving the floating branch tag backward.
 
-Before any source switch, follow the render and runtime checks in
-[CI & Deployment](../../ci-and-deployment.md#staging-promotion). The testing
-procedure also requires image-tag inspection and independent ArgoCD health
-verification.
+The privileged `workflow_run` controller must execute only code checked out
+from the trusted default branch. Candidate commits, workflow runs, API records,
+and Git objects are untrusted data; the controller must never execute candidate
+actions or scripts or consume candidate caches or artifacts. It advances
+`stg-release` only after every required exact-SHA build and registry digest is
+present, using a non-forcing compare-and-swap update.
+
+The controller's sorted canonical registry digest receipt is deployment
+provenance. ArgoCD's resolved `$ARGOCD_APP_REVISION` separately proves which Git
+revision supplied `global.imageTag`. After sync, compare every deployed
+container's `imageID` digest with the corresponding receipt entry. A matching
+tag, green build, successful sync, migration result, workload health, and user
+acceptance are distinct checks; none substitutes for the others. Follow the
+full sequence in [CI & Deployment](../../ci-and-deployment.md#staging-promotion).
+
+Production is unchanged: it stays on `v3`, receives no `global.imageTag`, and
+continues to use hand-edited release tags. Retain the old rollout annotations
+through the stability window as rollback aids, not as proof of image content.
 
 The source change followed the external ArgoCD application update in
 [df-cloud MR !434](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/merge_requests/434).
