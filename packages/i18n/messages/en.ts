@@ -2483,6 +2483,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       spreadsheetImported: 'Imported elements: {count}',
       spreadsheetSkipped: 'Not imported because they are exact duplicates:',
       spreadsheetNoValidElements: 'No valid elements are available to import.',
+      elementImportDetails: 'What is included?',
+      elementImportReplaceFile: 'Replace file',
+      elementImportReviewGuidance:
+        'New elements are private copies in review status. Responses, statistics and calibration history are not imported.',
       importElementsInfo:
         'Imported packages create private new elements and answer collections in your question pool. Original IDs, tags, permissions, activity results, and private metadata are not preserved.',
       elementImportCopyrightSolutionsDisclosure:

@@ -1,4 +1,4 @@
-import { Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {
   ElementImportCompletionView,
@@ -62,7 +62,7 @@ function UploadModal({
       dataContent={{ cy: 'element-upload-modal' }}
     >
       <div
-        className="flex max-h-[calc(100vh-8rem)] min-h-0 flex-col gap-4"
+        className="flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col gap-4"
         aria-busy={processing}
         data-cy="element-import-workflow"
       >
@@ -79,9 +79,11 @@ function UploadModal({
         >
           {workflowStatus}
         </p>
-        <UserNotification type="info" className={{ root: 'text-sm' }}>
-          {t('manage.elements.importElementsInfo')}
-        </UserNotification>
+        {!review && !completion ? (
+          <p className="m-0 text-sm leading-relaxed text-[#4C4C4C]">
+            {t('manage.elements.importElementsInfo')}
+          </p>
+        ) : null}
 
         {review ? (
           <ElementImportReviewView

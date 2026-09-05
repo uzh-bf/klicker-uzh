@@ -1,7 +1,6 @@
 import { faMagnifyingGlass, faXmark } from '@fortawesome/free-solid-svg-icons'
-import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import {
-  Badge,
   Button,
   Checkbox,
   H4,
@@ -14,10 +13,10 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { PackagePreviewElementMeta } from '~/lib/elementImportPreview'
 import PackageAnswerCollectionOverview, {
-  OverviewAnswerCollection,
+  type OverviewAnswerCollection,
 } from '../manipulation/PackageAnswerCollectionOverview'
 import StudentElementPreview from '../manipulation/StudentElementPreview'
-import { ElementFormTypes } from '../manipulation/types'
+import type { ElementFormTypes } from '../manipulation/types'
 import ImportedElementDidacticReview from './ImportedElementDidacticReview'
 
 type AnswerCollectionPreviewEntry = {
@@ -64,12 +63,6 @@ const ImportSelectionCheckbox = memo(function ImportSelectionCheckbox({
     </div>
   )
 })
-
-const StatusColors: Record<ElementStatus, string> = {
-  [ElementStatus.Draft]: 'bg-slate-600 hover:bg-slate-700',
-  [ElementStatus.Review]: 'bg-violet-600 hover:bg-violet-700',
-  [ElementStatus.Ready]: 'bg-green-700 hover:bg-green-800',
-}
 
 const getElementDataType = (elementType: ElementType) => {
   if (
@@ -240,14 +233,14 @@ function ImportedElementsOverviewTable({
           return (
             <Button
               basic
-              size="icon"
               type="button"
-              title={label}
               aria-label={label}
               aria-controls="element-import-preview-region"
               aria-pressed={previewedElementId === key}
               disabled={busy}
-              className={{ root: 'h-9 w-9 flex-none' }}
+              className={{
+                root: 'min-h-11 flex-none gap-2 rounded-full px-3 text-primary-100',
+              }}
               onClick={(event) => {
                 previewTriggerRef.current = event?.currentTarget ?? null
                 setPreviewedElementId(key)
@@ -255,46 +248,55 @@ function ImportedElementsOverviewTable({
               data={{ cy: `preview-imported-element-${index}` }}
             >
               <Button.Icon icon={faMagnifyingGlass} />
+              <Button.Label>
+                {t('manage.elements.elementImportPreview')}
+              </Button.Label>
             </Button>
           )
         }
 
         return (
           <div
-            className="flex max-h-[calc(100vh-16rem)] min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1 lg:grid lg:h-[38rem] lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:overflow-hidden lg:pr-0"
+            className="flex max-h-[calc(100vh-16rem)] min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1 lg:grid lg:h-[min(38rem,calc(100vh-19rem))] lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:overflow-hidden lg:pr-0"
             aria-busy={busy}
             data-cy="element-import-review-form"
           >
-            <Form className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+            <Form className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
               <section
-                className="flex flex-col gap-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                role="region"
-                tabIndex={0}
+                className="flex flex-col gap-2 rounded-md border border-[#E9E9E9] bg-[#FAFAFA] p-3 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                tabIndex={-1}
                 aria-label={t('manage.elements.reviewElementsBeforeImport')}
                 aria-describedby="element-import-copyright-disclosure element-import-psychometric-disclosure"
                 data-cy="element-import-review-disclosures"
               >
-                <div id="element-import-copyright-disclosure">
-                  <UserNotification
-                    type="warning"
-                    message={t(
-                      'manage.elements.elementImportCopyrightSolutionsDisclosure'
-                    )}
-                    className={{
-                      root: 'text-sm',
-                      icon: 'text-red-900',
-                      message: 'text-red-900',
-                    }}
-                  />
-                </div>
-                <div id="element-import-psychometric-disclosure">
-                  <UserNotification
-                    message={t(
-                      'manage.elements.elementImportPsychometricDisclosure'
-                    )}
-                    className={{ root: 'text-sm' }}
-                  />
-                </div>
+                <p
+                  id="element-import-copyright-disclosure"
+                  className="m-0 text-sm text-[#4C4C4C]"
+                >
+                  {t(
+                    'manage.elements.elementImportCopyrightSolutionsDisclosure'
+                  )}
+                </p>
+                <p
+                  id="element-import-psychometric-disclosure"
+                  className="m-0 text-sm text-[#4C4C4C]"
+                >
+                  {t('manage.elements.elementImportReviewGuidance')}
+                </p>
+                <details>
+                  <summary
+                    className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-[#0028A5] focus-visible:outline-2 focus-visible:outline-offset-2"
+                    data-cy="element-import-details-toggle"
+                  >
+                    {t('manage.elements.elementImportDetails')}
+                  </summary>
+                  <p className="m-0 text-sm text-[#4C4C4C]">
+                    {t('manage.elements.importElementsInfo')}
+                  </p>
+                  <p className="mb-0 mt-2 text-sm text-[#4C4C4C]">
+                    {t('manage.elements.elementImportPsychometricDisclosure')}
+                  </p>
+                </details>
               </section>
               {commitError ? (
                 <div
@@ -313,7 +315,6 @@ function ImportedElementsOverviewTable({
               {selectedDuplicateCount > 0 ? (
                 <div data-cy="element-import-duplicate-summary">
                   <UserNotification
-                    type="warning"
                     message={t(
                       duplicatePolicy === 'skip'
                         ? 'manage.elements.spreadsheetDuplicateSummary'
@@ -321,27 +322,29 @@ function ImportedElementsOverviewTable({
                       { count: selectedDuplicateCount }
                     )}
                     className={{
-                      root: 'text-sm',
-                      icon: 'text-red-900',
-                      message: 'text-red-900',
+                      root: 'bg-[#F5F5FB] text-sm',
+                      icon: 'text-[#0028A5]',
+                      message: 'text-[#1B214A]',
                     }}
                   />
                 </div>
               ) : null}
 
-              <PackageAnswerCollectionOverview
-                mode="import"
-                descriptionOverride={
-                  duplicatePolicy === 'skip'
-                    ? t('manage.elements.spreadsheetCollections')
-                    : undefined
-                }
-                collections={collectionsWithSelectedElements}
-                selectedCollectionRefs={requiredCollectionRefs}
-                dataCy="element-import-answer-collections-overview"
-              />
+              {collectionsWithSelectedElements.length > 0 ? (
+                <PackageAnswerCollectionOverview
+                  mode="import"
+                  descriptionOverride={
+                    duplicatePolicy === 'skip'
+                      ? t('manage.elements.spreadsheetCollections')
+                      : undefined
+                  }
+                  collections={collectionsWithSelectedElements}
+                  selectedCollectionRefs={requiredCollectionRefs}
+                  dataCy="element-import-answer-collections-overview"
+                />
+              ) : null}
 
-              <div className="flex flex-none flex-wrap items-center gap-2">
+              <div className="flex flex-none flex-wrap items-center gap-1 border-b border-[#E9E9E9] pb-2 text-sm">
                 <Button
                   basic
                   type="button"
@@ -378,7 +381,7 @@ function ImportedElementsOverviewTable({
               </div>
 
               <ul
-                className="m-0 flex min-h-32 flex-none list-none flex-col gap-2 overflow-auto rounded-md border border-solid p-2 lg:flex-1"
+                className="m-0 flex min-h-32 flex-none list-none flex-col gap-2 overflow-auto p-1 lg:flex-1"
                 aria-label={t('manage.elements.reviewElementsBeforeImport')}
                 data-cy="element-import-selection-list"
               >
@@ -389,9 +392,9 @@ function ImportedElementsOverviewTable({
                     <li
                       key={key}
                       className={twMerge(
-                        'bg-muted/30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2 rounded-md p-2 [contain-intrinsic-size:0_4rem] [content-visibility:auto] sm:gap-3',
+                        'grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2 rounded-md border border-[#E9E9E9] bg-white p-2 [contain-intrinsic-size:0_6rem] [content-visibility:auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-3',
                         previewedElementId === key &&
-                          'bg-primary-20 ring-primary-80 ring-1'
+                          'border-[#0028A5] bg-[#F5F5FB] ring-1 ring-[#0028A5]'
                       )}
                       data-cy={`element-import-${index}`}
                     >
@@ -407,7 +410,7 @@ function ImportedElementsOverviewTable({
                       <div className="min-w-0">
                         <label
                           htmlFor={`element-import-switch-${key}`}
-                          className="flex min-h-11 cursor-pointer items-center break-words text-sm font-bold"
+                          className="flex min-h-11 cursor-pointer items-center break-words text-sm font-semibold"
                           data-cy={`element-${index}-import-label`}
                         >
                           <span className="sr-only">
@@ -419,24 +422,16 @@ function ImportedElementsOverviewTable({
                         </label>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-700 sm:gap-2">
                           <span>{t(`shared.${element.type}.typeLabel`)}</span>
-                          <Badge
-                            className={twMerge(
-                              'text-white',
-                              StatusColors[ElementStatus.Review]
-                            )}
-                          >
-                            {t(`shared.${ElementStatus.Review}.statusLabel`)}
-                          </Badge>
                           {meta?.alreadyImported ? (
                             <span
                               className="min-w-0"
                               data-cy={`element-import-duplicate-${index}`}
                             >
-                              <Badge className="border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100">
+                              <span className="inline-flex rounded border border-[#E9E9E9] bg-[#FAFAFA] px-2 py-0.5 text-[#4C4C4C]">
                                 {t('manage.elements.elementImportDuplicate')}
-                              </Badge>
+                              </span>
                               {meta.existingElementName ? (
-                                <span className="ml-1 break-words text-xs text-amber-900">
+                                <span className="ml-1 break-words text-xs text-[#4C4C4C]">
                                   {t(
                                     'manage.elements.elementImportDuplicateExisting',
                                     { name: meta.existingElementName }
@@ -447,13 +442,15 @@ function ImportedElementsOverviewTable({
                           ) : null}
                         </div>
                       </div>
-                      {renderPreviewButton(key, element.name, index)}
+                      <div className="col-start-2 sm:col-start-auto">
+                        {renderPreviewButton(key, element.name, index)}
+                      </div>
                     </li>
                   )
                 })}
               </ul>
 
-              <div className="flex flex-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-none flex-col gap-3 border-t border-[#E9E9E9] bg-white pt-3 sm:flex-row sm:items-center sm:justify-between">
                 <div
                   className="text-sm text-slate-700"
                   aria-live="polite"
@@ -469,7 +466,9 @@ function ImportedElementsOverviewTable({
                   type="submit"
                   disabled={busy || selectedCount === 0}
                   loading={busy}
-                  className={{ root: 'h-9' }}
+                  className={{
+                    root: 'min-h-11 rounded-full px-5 font-semibold',
+                  }}
                   data={{ cy: 'confirm-element-import' }}
                 >
                   {t('manage.elements.importSelectedElements')}
@@ -490,14 +489,18 @@ function ImportedElementsOverviewTable({
             <section
               ref={previewPanelRef}
               id="element-import-preview-region"
-              role="region"
               tabIndex={-1}
               data-cy="element-import-preview-region"
               aria-label={previewLabel}
-              className="flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-md border border-solid bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2 lg:min-h-0"
+              className={twMerge(
+                'flex min-h-[14rem] min-w-0 flex-col overflow-hidden rounded-md border border-solid bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2 lg:min-h-0',
+                previewedElement && 'min-h-[24rem] lg:min-h-0'
+              )}
             >
               <div className="flex h-12 flex-none items-center justify-between gap-3 border-b px-3">
-                <H4 className={{ root: 'm-0 truncate text-base' }}>
+                <H4
+                  className={{ root: 'm-0 truncate text-base font-semibold' }}
+                >
                   {previewedElement
                     ? previewedElement.name
                     : t('manage.elements.elementImportPreview')}
@@ -505,12 +508,12 @@ function ImportedElementsOverviewTable({
                 {previewedElement ? (
                   <Button
                     basic
-                    size="icon"
                     type="button"
-                    title={t('shared.generic.close')}
                     aria-label={t('shared.generic.close')}
                     disabled={busy}
-                    className={{ root: 'h-8 w-8 flex-none' }}
+                    className={{
+                      root: 'min-h-11 flex-none gap-2 rounded-full px-3',
+                    }}
                     onClick={() => {
                       const trigger = previewTriggerRef.current
                       setPreviewedElementId(null)
@@ -518,13 +521,14 @@ function ImportedElementsOverviewTable({
                     }}
                     data={{ cy: 'close-element-import-preview' }}
                   >
-                    <Button.Icon withoutLabel icon={faXmark} />
+                    <Button.Icon icon={faXmark} />
+                    <Button.Label>{t('shared.generic.close')}</Button.Label>
                   </Button>
                 ) : null}
               </div>
 
-              <div
-                role="region"
+              <section
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable preview must be keyboard accessible.
                 tabIndex={0}
                 aria-label={previewLabel}
                 className="min-h-0 flex-1 overflow-auto rounded-sm p-3 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
@@ -548,16 +552,13 @@ function ImportedElementsOverviewTable({
                     />
                   </div>
                 ) : (
-                  <div className="flex h-full min-h-48 items-center">
-                    <UserNotification
-                      message={t(
-                        'manage.elements.elementImportPreviewEmptyState'
-                      )}
-                      className={{ root: 'w-full text-sm' }}
-                    />
+                  <div className="flex h-full min-h-32 items-center justify-center px-6 text-center text-sm leading-relaxed text-[#666666]">
+                    <p className="max-w-64">
+                      {t('manage.elements.elementImportPreviewEmptyState')}
+                    </p>
                   </div>
                 )}
-              </div>
+              </section>
             </section>
           </div>
         )

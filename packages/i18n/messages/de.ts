@@ -2508,6 +2508,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nicht importiert, da es sich um exakte Duplikate handelt:',
       spreadsheetNoValidElements:
         'Es sind keine gültigen Elemente zum Importieren vorhanden.',
+      elementImportDetails: 'Was wird übernommen?',
+      elementImportReplaceFile: 'Datei ersetzen',
+      elementImportReviewGuidance:
+        'Neue Elemente sind private Kopien mit dem Status «Prüfung». Antworten, Statistiken und Kalibrierungsverläufe werden nicht importiert.',
       importElementsInfo:
         'Importierte Pakete erstellen neue private Elemente und Antwortsammlungen in Ihrem Fragenpool. Ursprungs-IDs, Tags, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht übernommen.',
       elementImportCopyrightSolutionsDisclosure:
