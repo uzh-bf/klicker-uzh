@@ -9,6 +9,7 @@ const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
 const TEST_KID = 'test-key-2026-08'
 const TEST_KB_ID = '7016810d-31e9-4b39-9529-cd46feb2fb63'
+const TEST_KB_ID_2 = '8016810d-31e9-4b39-9529-cd46feb2fb63'
 const TEST_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const TEST_SESSION_ID = 'thread-4ca8d6a4'
 const TEST_JTI = '9b3cc7c6-3a11-4f6b-93d0-4b3678cf89fc'
@@ -38,7 +39,7 @@ describe('signDocQueryScopeToken', () => {
     vi.setSystemTime(new Date('2026-08-31T12:00:00.000Z'))
 
     const token = await signDocQueryScopeToken({
-      kbId: TEST_KB_ID,
+      kbIds: [TEST_KB_ID],
       chatbotId: TEST_CHATBOT_ID,
       sessionId: TEST_SESSION_ID,
       jti: TEST_JTI,
@@ -68,6 +69,22 @@ describe('signDocQueryScopeToken', () => {
     )
   })
 
+  test('emits multiple knowledge-base IDs as an array claim', async () => {
+    const token = await signDocQueryScopeToken({
+      kbIds: [TEST_KB_ID, TEST_KB_ID_2],
+      chatbotId: TEST_CHATBOT_ID,
+      sessionId: TEST_SESSION_ID,
+      jti: TEST_JTI,
+    })
+    const { payload } = await jwtVerify(token, publicKey, {
+      algorithms: ['ES256'],
+      issuer: TEST_ISSUER,
+      audience: TEST_AUDIENCE,
+    })
+
+    expect(payload.kb_id).toEqual([TEST_KB_ID, TEST_KB_ID_2])
+  })
+
   test.each([
     'DOC_QUERY_SCOPE_PRIVATE_KEY',
     'DOC_QUERY_SCOPE_KID',
@@ -78,7 +95,7 @@ describe('signDocQueryScopeToken', () => {
 
     await expect(
       signDocQueryScopeToken({
-        kbId: TEST_KB_ID,
+        kbIds: [TEST_KB_ID],
         chatbotId: TEST_CHATBOT_ID,
         sessionId: TEST_SESSION_ID,
         jti: TEST_JTI,
@@ -91,7 +108,7 @@ describe('signDocQueryScopeToken', () => {
 
     await expect(
       signDocQueryScopeToken({
-        kbId: TEST_KB_ID,
+        kbIds: [TEST_KB_ID],
         chatbotId: TEST_CHATBOT_ID,
         sessionId: TEST_SESSION_ID,
         jti: TEST_JTI,
