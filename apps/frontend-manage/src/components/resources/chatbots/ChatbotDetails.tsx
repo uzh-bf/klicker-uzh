@@ -447,7 +447,11 @@ function ChatbotDetails({
     setSaveSuccess(false)
 
     const normalizedAllowedModelIds = modelSelectionEnabled
-      ? Array.from(new Set(allowedModelIds)).sort()
+      ? Array.from(new Set(allowedModelIds)).sort((left, right) => {
+          if (left < right) return -1
+          if (left > right) return 1
+          return 0
+        })
       : fixedModelId
         ? [fixedModelId]
         : []
