@@ -56,16 +56,12 @@ describe('Unit tests batch operations on elements', () => {
   afterEach(async () => await testCleanup(prisma))
 
   async function seedElement(args: { [x: string]: any }, prisma: PrismaClient) {
-    // Randomly choose one of the values of ElementType
-    const elementTypes = Object.values(ElementType)
-    const randomType =
-      elementTypes[Math.floor(Math.random() * elementTypes.length)]!
-
     const element = await prisma.element.create({
       data: {
         name: uuid(),
         content: uuid(),
-        type: randomType,
+        explanation: 'Seeded explanation',
+        type: ElementType.CONTENT,
         options: {} as ElementOptions,
         ownerId: userOneCtx.user.sub,
         ...args,
