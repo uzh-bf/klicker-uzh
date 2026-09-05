@@ -1,4 +1,4 @@
-# Website refresh for v3.4
+# Website refresh for v3.4 — PR 5791
 
 ## Current amendment: broader website fixes and PR
 
@@ -8,7 +8,7 @@ Fix confirmed mobile overflow, keyboard controls, broken links/images, missing h
 
 The UI executor owns remaining page/components and existing CSS. The documentation executor owns `constants.tsx` (including Figure) and review-identified MDX. Parent owns claim decisions, integration and verification because those checks cross both slices. No new dependencies are needed. Success requires production build, scoped formatting, no additional TypeScript diagnostic identities, and finding-specific browser checks: four overflow routes at 390px, math scrolling, image zoom, keyboard links and feature selection at tablet width, reduced motion, corrected routes/fragments, headings/titles and images. Preserve inherited root-check limitations. Run simplifier and integrated final review before authorized push and draft PR.
 
-Planner amendment review: DONE_WITH_CONCERNS; all corrections accepted (authority clarity, disjoint ownership, URL and availability preservation, finding-specific verification). No renewed human approval is needed because the user explicitly requested this extension and delivery. Progress: implementing the amendment; prior completion records below describe only the initial local package.
+Planner amendment review: DONE_WITH_CONCERNS; all corrections accepted (authority clarity, disjoint ownership, URL and availability preservation, finding-specific verification). No renewed human approval is needed because the user explicitly requested this extension and delivery. Progress: fixes and prose are complete; [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/5791) targets v3. Prior completion records below describe only the initial local package.
 
 ## Approval summary
 Prepare the public KlickerUZH website for the upcoming v3.4 release. Keep its visual identity while updating dependencies, homepage information, roadmap presentation and feedback guidance. Approved by the user on 2026-09-05.
@@ -24,7 +24,7 @@ Approval permits this session to own the full reversible local workflow: isolate
 Recommended dependency exceptions: retain the existing Font Awesome and Lucide lines required by design-system 4.1.8, and TypeScript 6.0.3. Use PostCSS 8.5.26 and Autoprefixer 10.5.4 because the newest releases are inside the repository cooldown. Approving this plan accepts these explicit limits on the request for latest versions. Website-only Syncpack exceptions for the named shared libraries below are included; changing other application manifests or the shared design system is excluded.
 
 ## Identity and baseline
-Repository /Users/rschlae/Git/klicker/klicker-uzh; worktree trees/rs/website-v3-4-refresh; branch rs/website-v3-4-refresh; target v3. Baseline fbc5f4fcc2ffa1c8d25695679823134985c5a8d8. Remote refs refreshed 2026-09-05. This worktree starts even with origin/v3; unrelated dirty primary checkout is untouched. No existing website-refresh worktree or PR found. This plan is project/2026-09-05-website-v3-4-refresh-plan.md. Full-path tier: dependencies plus public content and browser-visible changes. One cohesive website PR package; no stacked topology is needed for this bounded single-app refresh.
+Repository /Users/rschlae/Git/klicker/klicker-uzh; worktree trees/rs/website-v3-4-refresh; branch rs/website-v3-4-refresh; target v3. Baseline fbc5f4fcc2ffa1c8d25695679823134985c5a8d8. Remote refs refreshed 2026-09-05. This worktree starts even with origin/v3; unrelated dirty primary checkout is untouched. No existing website-refresh worktree or PR found. This plan is project/2026-09-05-pr-5791-website-v3-4-refresh-plan.md. Full-path tier: dependencies plus public content and browser-visible changes. One cohesive website PR package; no stacked topology is needed for this bounded single-app refresh.
 
 ## Findings and evidence
 - apps/docs/package.json pins Docusaurus family ~3.8.1; the researched target is 3.10.2, compatible with React 19 and Node >=20.
@@ -99,7 +99,7 @@ Registry dist-tags, peer manifests and publication timestamps were checked on 20
 | `react` | `~19.2.7` | `19.2.8` | Upgrade; docs-only Syncpack exception |
 | `react-dom` | `~19.2.7` | `19.2.8` | Upgrade; docs-only Syncpack exception |
 | `react-medium-image-zoom` | `~5.2.14` | `5.4.9` | Upgrade |
-| `react-spring` | `~10.0.3` | `10.0.4` | Upgrade |
+| `react-spring` | `~10.0.3` | Removed | No remaining use after the Catalyst animation fix |
 | `recharts` | `~3.0.2` | `3.10.1` | Upgrade; docs-only Syncpack exception |
 | `rehype-katex` | `~7.0.1` | `7.0.1` | Already current |
 | `remark-math` | `~6.0.0` | `6.0.0` | Already current |
@@ -199,4 +199,9 @@ The combined production build passes. A generated HTML audit covers all 71 pages
 
 All 35 baseline TypeScript diagnostic identities remain unchanged after normalizing shifted source line numbers. Changed MDX Prettier and code Biome formatting pass. Broader Biome checks retain inherited array-index, external-link and import warnings; no blanket lint-clean claim. Required root check and root build were attempted in the website-only container and fail on missing unrelated package dependencies/build outputs, including rollup. Host Git hooks use the previously documented container-check split. No monorepo-green or live-deployment claim is made.
 
-The fixes preserve source URLs and replace placeholders with bounded guidance and relevant links; full lecturer walkthroughs remain with https://github.com/uzh-bf/klicker-uzh/pull/5434. Expired 2025 recruitment forms are removed without inventing pilot outcomes. Chatbot authoring remains described as an upcoming qualified preview. Legal content, team identities, access policy and tracking configuration are unchanged. Public-data and secret checks precede commits. Documentation simplification and integrated final review are pending before the authorized draft PR.
+The fixes preserve source URLs and replace placeholders with bounded guidance and relevant links; full lecturer walkthroughs remain with https://github.com/uzh-bf/klicker-uzh/pull/5434. Expired 2025 recruitment forms are removed without inventing pilot outcomes. Chatbot authoring remains described as an upcoming qualified preview. Legal content, team identities, access policy and tracking configuration are unchanged. Public-data and secret checks precede commits. Documentation simplification and integrated final review are complete. The final reviewer accepted both corrections at ff2e77a196643a17998b8b9d5e0fa939e7458b51 with no remaining actionable findings. Full-row hover is restored and unused react-spring is removed; remaining direct resolutions, non-docs importers and baseline snapshots are preserved. Frozen filtered install, production build, Syncpack, focused formatting and generated-site audit pass after these corrections. Browser verifies description hover and keyboard selection. The browser is closed and the exact task container is stopped (exited).
+
+
+## Draft PR delivery
+
+[Website refresh PR](https://github.com/uzh-bf/klicker-uzh/pull/5791) is draft, targeting v3 from origin/rs/website-v3-4-refresh. Reviewed source is ff2e77a196643a17998b8b9d5e0fa939e7458b51; this metadata-only rename does not change source or verification. Required remote checks and ordinary feedback remain separate from local source acceptance. No upstream integration, merge or deployment occurred.
