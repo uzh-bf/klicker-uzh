@@ -32,7 +32,12 @@ const config = defineConfig([
         targets: [{ src: 'src/public/*', dest: 'dist' }],
       }),
     ],
-    external: [/^@klicker-uzh\//, /node_modules/], // Exclude node_modules and workspace packages
+    // Workspace packages stay external, except the dependency-free product
+    // updates catalog, which is bundled so the transferred graphql dist runs
+    // in CI jobs that only ship the allowlisted package outputs.
+    external: (id) =>
+      !id.startsWith('@klicker-uzh/product-updates') &&
+      (/^@klicker-uzh\//.test(id) || /node_modules/.test(id)),
   },
 ])
 

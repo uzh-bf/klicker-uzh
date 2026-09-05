@@ -16,7 +16,6 @@ import { createHash, randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatModelConfig,
@@ -25,12 +24,12 @@ import {
   getChatModelRegistry,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
-import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -48,6 +47,7 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
@@ -64,6 +64,7 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { resolveMcpScope } from '@/src/services/mcpScope'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -752,7 +753,8 @@ export async function POST(
 
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -872,10 +874,33 @@ export async function POST(
     }
   }
 
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
+    (config) => config.isEnabled !== false
+  )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
   )
+
+  let scopedKbId: string | undefined
+  try {
+    scopedKbId = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      selectedMCPConfigurations
+    )
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -1035,7 +1060,12 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpTools = scopedKbId
+        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
+            kbId: scopedKbId,
+            sessionId: owningThread.id,
+          })
+        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1078,6 +1108,7 @@ export async function POST(
       {
         courseDisplayName: chatbot.course.displayName,
         toolNames,
+        standardModeConfig: chatbot.standardModeConfig,
       }
     )
 
