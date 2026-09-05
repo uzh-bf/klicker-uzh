@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-09-02'
+timestamp: '2026-09-05'
 tags:
   - backend
   - hatchet
@@ -83,6 +83,21 @@ With `KB_INGESTION_WORKER_DISABLED=false`, or with any of the three required ing
 KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. The GraphQL backend owns quota reservation and exposes `settleKbKnowledgeGraphResult` for the W1 terminal-result handoff; `prepareHatchetTasks` accepts the result-fetch and settlement callbacks so the worker never treats provider status as a publication contract. The production backend and general worker explicitly pass `getKBGraphTerminalResult` (the external Hatchet run output) and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; omitting either adapter is not a supported runtime composition. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. The startup gate is armed only by the ConfigMap-owned `KB_GRAPH_*` names, deliberately excluding that token: a secret rollout on its own must never fail the general worker's startup and stop every unrelated job. Once the gate is armed the token is still required, so the secret must carry it before `hatchet.kbGraph.workflowName` is set. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
 
 Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
+
+Question and flashcard synchronization share the acquisition and token-fenced
+release functions in [elementGenerationLease.ts](../packages/graphql/src/services/elementGenerationLease.ts).
+The callers retain their status predicates, failure handling and transitions;
+the short synchronization lease does not replace the durable dispatch and
+accounting claims that fence external generation effects.
+
+Initial question and flashcard results complete through
+[elementGenerationCompletion.ts](../packages/graphql/src/services/elementGenerationCompletion.ts).
+One transaction inserts review drafts and conditionally completes the build;
+losing the lease or failing the draft-count check rolls back both operations.
+Provider-specific content conversion, accepted source states and draft-count
+rules remain distinct compatibility constraints within this shared Element
+operation. Completion creates drafts, not ordinary Elements, and does not
+settle usage or dispatch another generation run.
 
 ## Course duplication operations
 

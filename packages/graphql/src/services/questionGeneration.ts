@@ -20,7 +20,12 @@ import {
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
 } from './elementGenerationAccounting.js'
+import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
+import {
+  acquireElementGenerationLease,
+  releaseElementGenerationLease,
+} from './elementGenerationLease.js'
 import {
   generatedKPRIMElementInput,
   generatedMCElementInput,
@@ -45,7 +50,6 @@ import {
   QuestionGenerationConfigurationError,
   type QuestionGenerationConfigurationInput,
 } from './questionGenerationConfiguration.js'
-import { persistInitialGeneratedQuestionDrafts } from './questionGenerationDrafts.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -60,7 +64,6 @@ import type {
   QuestionWorkflowStartPayload,
 } from './questionGenerationRuntime.js'
 
-const SYNC_LEASE_MILLISECONDS = 15_000
 const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,
@@ -386,31 +389,19 @@ async function resumePreparingQuestionBuild(
   runtime: QuestionGenerationRuntime,
   ctx: ContextWithUser
 ) {
-  const leaseOwner = randomUUID()
-  const now = new Date()
-  const acquired = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-      OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lt: now } }],
-    },
-    data: {
-      syncLeaseOwner: leaseOwner,
-      syncLeaseUntil: new Date(now.getTime() + SYNC_LEASE_MILLISECONDS),
-    },
+  const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    expectedStatus: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
   })
-  if (acquired.count !== 1) return findOwnedBuild(build.id, ctx)
+  if (!leaseOwner) return findOwnedBuild(build.id, ctx)
 
   try {
     await dispatchPreparingQuestionBuild(build, runtime, leaseOwner, ctx)
   } catch (error) {
     return recordBuildFailure(build.id, error, ctx, leaseOwner)
   } finally {
-    await ctx.prisma.elementGenerationBuild.updateMany({
-      where: { id: build.id, syncLeaseOwner: leaseOwner },
-      data: { syncLeaseOwner: null, syncLeaseUntil: null },
-    })
+    await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
   }
   return findOwnedBuild(build.id, ctx)
 }
@@ -792,8 +783,9 @@ async function synchronizeLeasedBuild(
             questions
           )
         }
-        await persistInitialGeneratedQuestionDrafts(
+        await completeElementGeneration(
           {
+            kind: 'questions',
             buildId: build.id,
             leaseOwner,
             questions,
@@ -861,27 +853,15 @@ export async function getQuestionGenerationBuild(
     return resumePreparingQuestionBuild(build, runtime, ctx)
   }
 
-  const leaseOwner = randomUUID()
-  const now = new Date()
-  const acquired = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lt: now } }],
-    },
-    data: {
-      syncLeaseOwner: leaseOwner,
-      syncLeaseUntil: new Date(now.getTime() + SYNC_LEASE_MILLISECONDS),
-    },
+  const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
   })
-  if (acquired.count === 1) {
+  if (leaseOwner) {
     try {
       await synchronizeLeasedBuild(build, runtime, leaseOwner, ctx)
     } finally {
-      await ctx.prisma.elementGenerationBuild.updateMany({
-        where: { id: build.id, syncLeaseOwner: leaseOwner },
-        data: { syncLeaseOwner: null, syncLeaseUntil: null },
-      })
+      await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
     }
   }
   return findOwnedBuild(buildId, ctx)
@@ -1044,21 +1024,12 @@ async function resumeQuestionReviewDispatch(
   const { expectedStatus } = questionReviewState(review.gate, review.decision)
   if (build.status !== expectedStatus) return build
 
-  const leaseOwner = randomUUID()
-  const now = new Date()
-  const acquired = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: expectedStatus,
-      OR: [{ syncLeaseUntil: null }, { syncLeaseUntil: { lt: now } }],
-    },
-    data: {
-      syncLeaseOwner: leaseOwner,
-      syncLeaseUntil: new Date(now.getTime() + SYNC_LEASE_MILLISECONDS),
-    },
+  const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    expectedStatus,
   })
-  if (acquired.count === 1) {
+  if (leaseOwner) {
     try {
       await dispatchQuestionReviewLeased(
         build,
@@ -1069,10 +1040,7 @@ async function resumeQuestionReviewDispatch(
         allowNewDispatch
       )
     } finally {
-      await ctx.prisma.elementGenerationBuild.updateMany({
-        where: { id: build.id, syncLeaseOwner: leaseOwner },
-        data: { syncLeaseOwner: null, syncLeaseUntil: null },
-      })
+      await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
     }
   }
   return findOwnedBuild(build.id, ctx)
