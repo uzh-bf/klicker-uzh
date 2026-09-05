@@ -1,12 +1,22 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
-import { jwtVerify } from 'jose'
+import {
+  ChatbotStatus,
+  type Prisma,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
+import { type JWTPayload, jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-export async function getParticipantIdFromToken(
+// Every participant guard starts from the same three questions: is there a
+// token, does its signature verify, and does the payload name a subject. The
+// answers and their 401 responses are identical everywhere, so they live here
+// once; a guard that needs more adds its own checks to the verified payload.
+async function verifyParticipantToken(
   participantToken: string | undefined
-): Promise<{ participantId: string } | { response: NextResponse }> {
+): Promise<
+  { participantId: string; payload: JWTPayload } | { response: NextResponse }
+> {
   if (!participantToken) {
     return {
       response: NextResponse.json(
@@ -17,14 +27,13 @@ export async function getParticipantIdFromToken(
   }
 
   try {
-    const jwtPayload = await jwtVerify(
+    const { payload } = await jwtVerify(
       participantToken,
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
+
     const participantId =
-      typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub
-        ? jwtPayload.payload.sub
-        : null
+      typeof payload.sub === 'string' && payload.sub ? payload.sub : null
 
     if (!participantId) {
       return {
@@ -35,7 +44,7 @@ export async function getParticipantIdFromToken(
       }
     }
 
-    return { participantId }
+    return { participantId, payload }
   } catch (error) {
     console.error('JWT verification failed:', error)
     return {
@@ -45,6 +54,54 @@ export async function getParticipantIdFromToken(
       ),
     }
   }
+}
+
+export async function getParticipantIdFromToken(
+  participantToken: string | undefined
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  const result = await verifyParticipantToken(participantToken)
+  if ('response' in result) {
+    return result
+  }
+
+  return { participantId: result.participantId }
+}
+
+export async function getParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
+}
+
+// Product updates are addressed to people who own a persistent account, so the
+// caller must be a full participant. `getParticipantId` deliberately accepts any
+// token that carries a subject, which includes the temporary accounts issued for
+// anonymous live-quiz participation; this guard is the only thing that keeps
+// those out. It mirrors `resolveActor` in the GraphQL product-update service,
+// which rejects such accounts outright instead of returning an empty feed, so a
+// misdirected caller learns it is on the wrong surface.
+export async function getProductUpdateParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  const result = await verifyParticipantToken(
+    req.cookies.get('participant_token')?.value
+  )
+  if ('response' in result) {
+    return result
+  }
+
+  // Participant tokens carry no scope claim, so unlike the lecturer path there
+  // is no further write floor to apply: the role is the whole check.
+  if (result.payload.role !== UserRole.PARTICIPANT) {
+    return {
+      response: NextResponse.json(
+        { error: 'This account type does not receive product updates' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return { participantId: result.participantId }
 }
 
 export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
