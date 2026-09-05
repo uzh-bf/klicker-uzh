@@ -1539,6 +1539,39 @@ enum ElementOrderType {
   SPACED_REPETITION
 }
 
+type ElementSpreadsheetDownload {
+  base64: String!
+  filename: String!
+}
+
+type ElementSpreadsheetIssue {
+  code: String!
+  field: String!
+  ref: String
+  row: Int!
+  sheet: String!
+}
+
+type ElementSpreadsheetPreview {
+  answerCollections: [ElementImportPackagePreviewAnswerCollection!]!
+  elements: [ElementImportPackagePreviewElement!]!
+  importToken: String
+  issues: [ElementSpreadsheetIssue!]!
+  sources: [ElementSpreadsheetSource!]!
+}
+
+type ElementSpreadsheetResult {
+  importedElements: Int!
+  skippedElementRefs: [String!]!
+}
+
+type ElementSpreadsheetSource {
+  name: String!
+  ref: String!
+  row: Int!
+  sheet: String!
+}
+
 type ElementStack {
   description: String
   displayName: String
@@ -2292,6 +2325,7 @@ type Mutation {
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   importElementPackage(importToken: String!, selectedElementRefs: [String!]!): ElementImportPackageResult
+  importElementSpreadsheet(importToken: String!, selectedElementRefs: [String!]!): ElementSpreadsheetResult!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
@@ -2321,6 +2355,7 @@ type Mutation {
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
   prepareElementImportPackageUpload(bytes: Int!, filename: String!): ElementImportPackageUpload
+  prepareElementSpreadsheetUpload(bytes: Int!, filename: String!): ElementImportPackageUpload!
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -2379,6 +2414,7 @@ type Mutation {
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   validateElementImportPackage(artifactId: String!): ElementImportPackagePreview
+  validateElementSpreadsheet(artifactId: String!): ElementSpreadsheetPreview!
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -2818,8 +2854,8 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
-  canUseElementImportExport: Boolean!
   betaEnrollment: BetaEnrollmentCapability!
+  canUseElementImportExport: Boolean!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!
@@ -2875,6 +2911,7 @@ type Query {
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
   getElementExportPackageLink(elementIds: [Int!]!): ElementExportPackageLink
   getElementExportPackagePreview(elementIds: [Int!]!): ElementExportPackagePreview
+  getElementSpreadsheet(elementIds: [Int!]!): ElementSpreadsheetDownload!
   getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary

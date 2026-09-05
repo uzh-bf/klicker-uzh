@@ -161,6 +161,9 @@ model ElementImportReceipt {
   /// [PrismaElementImportCreatedAnswerCollectionIds]
   createdAnswerCollectionIds Json
 
+  // Spreadsheet duplicate decisions are retained even if source elements are deleted.
+  skippedElementRefs String[] @default([])
+
   completedAt        DateTime?
   retentionExpiresAt DateTime?
 

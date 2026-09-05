@@ -66,6 +66,10 @@ chain from reusable definition to what one participant actually sees.
 a question, a flashcard, or a content slide. It is owned by a user, lives in
 their library independently of any course, and is never answered directly.
 
+**Element import template**: A prescribed spreadsheet layout that a user fills
+with authored content to create elements in Klicker. Each supported template
+defines its own required columns and permitted element types.
+
 **Element instance**: A copy of an element placed inside one activity. It
 carries its own results and its own frozen copy of the element's content, so
 editing the original element never rewrites what participants already answered.

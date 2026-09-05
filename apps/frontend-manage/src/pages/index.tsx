@@ -50,6 +50,10 @@ const UploadModal = dynamic(
   () => import('~/components/elements/manipulation/UploadModal'),
   { ssr: false }
 )
+const SpreadsheetModal = dynamic(
+  () => import('~/components/elements/manipulation/SpreadsheetModal'),
+  { ssr: false }
+)
 
 function Index() {
   const router = useRouter()
@@ -90,6 +94,7 @@ function Index() {
 
   // export elements
   const [uploadElements, setUploadElements] = useState(false)
+  const [spreadsheetOpen, setSpreadsheetOpen] = useState(false)
   const [downloadElements, setDownloadElements] = useState<Element[] | null>(
     null
   )
@@ -220,6 +225,7 @@ function Index() {
 
     setUploadElements(false)
     setDownloadElements(null)
+    setSpreadsheetOpen(false)
   }, [canUseElementImportExport])
   const refetchElementsForChildren = useCallback(async () => {
     await refetchElements()
@@ -501,6 +507,15 @@ function Index() {
                 {canUseElementImportExport ? (
                   <>
                     <Button
+                      onClick={() => setSpreadsheetOpen(true)}
+                      data={{ cy: 'elements-spreadsheet' }}
+                      className={{ root: 'h-9' }}
+                    >
+                      <Button.Label>
+                        {t('manage.elements.spreadsheetTitle')}
+                      </Button.Label>
+                    </Button>
+                    <Button
                       className={{
                         root: 'h-9',
                       }}
@@ -679,6 +694,20 @@ function Index() {
           onClose={closeImportModal}
           refetchElements={async () => {
             await refetchElements()
+          }}
+        />
+      )}
+      {canUseElementImportExport && spreadsheetOpen && (
+        <SpreadsheetModal
+          selectedElementIds={Object.keys(selectedElements).map(Number)}
+          refetchElements={refetchElementsForChildren}
+          onClose={() => {
+            setSpreadsheetOpen(false)
+            window.requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLElement>('[data-cy="elements-spreadsheet"]')
+                ?.focus()
+            )
           }}
         />
       )}

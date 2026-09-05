@@ -20,7 +20,6 @@ import {
   isRetryableElementExportPreviewError,
 } from '~/lib/importExportErrors'
 import PackageAnswerCollectionOverview from './PackageAnswerCollectionOverview'
-import SelectedElementsList from './batchOperations/SelectedElementsList'
 
 type ElementsTranslator = ReturnType<typeof useTranslations<'manage.elements'>>
 
@@ -287,12 +286,6 @@ function DownloadModal({
     void refetchExportPreview().catch(() => undefined)
   }
 
-  const affectedElements = selectedElements.map((element) => ({
-    ...element,
-    actionsApplied: true,
-    reasons: [] as string[],
-  }))
-
   return (
     <Modal
       open
@@ -340,10 +333,14 @@ function DownloadModal({
               numElements: selectedElements.length,
             })}
           </div>
-          <SelectedElementsList
-            selectedElements={selectedElements}
-            affectedElements={affectedElements}
-          />
+          <ul
+            className="max-h-48 list-disc overflow-auto pl-6"
+            aria-label={t('shared.generic.elements')}
+          >
+            {selectedElements.map((element) => (
+              <li key={element.id}>{element.name}</li>
+            ))}
+          </ul>
           <PackageAnswerCollectionOverview
             mode="export"
             collections={exportPreview?.answerCollections ?? []}

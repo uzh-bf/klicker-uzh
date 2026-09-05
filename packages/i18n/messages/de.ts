@@ -2461,10 +2461,57 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionsImportDescription: 'Optionen',
       importElements: 'Elemente importieren',
       exportElements: 'Elemente exportieren',
+      spreadsheetTitle: 'Excel',
+      spreadsheetInfo:
+        'Importieren Sie die feste Excel-Vorlage von Klicker oder Kahoot. Klicker unterstützt alle neun Elementtypen. Gültige Elemente können importiert werden, auch wenn andere Zeilen korrigiert werden müssen.',
+      spreadsheetTemplate: 'Klicker-Vorlage herunterladen',
+      spreadsheetExport: 'Ausgewählte Elemente als Excel exportieren',
+      spreadsheetKahootTemplate: 'Kahoot-Vorlage',
+      spreadsheetUpload: 'Excel-Arbeitsmappe hochladen',
+      spreadsheetWorking: 'Arbeitsmappe wird verarbeitet…',
+      spreadsheetFailure:
+        'Die Verarbeitung ist fehlgeschlagen. Prüfen Sie die Vorlage und versuchen Sie es erneut. Ein unterbrochener Import kann sicher wiederholt werden.',
+      spreadsheetFileRequirements:
+        'Wählen Sie eine nicht leere .xlsx-Arbeitsmappe mit höchstens 5 MiB.',
+      spreadsheetDuplicatePolicy:
+        'Exakte Duplikate werden automatisch übersprungen. Namen, Tags und Status beeinflussen den Vergleich nicht. Bestehende Elemente werden nie überschrieben.',
+      spreadsheetDuplicateSummary:
+        '{count, plural, one {# ausgewähltes Element stimmt mit Inhalten in dieser Datei oder Ihrer Bibliothek überein.} other {# ausgewählte Elemente stimmen mit Inhalten in dieser Datei oder Ihrer Bibliothek überein.}} Übereinstimmungen werden beim Import erneut geprüft und übersprungen.',
+      spreadsheetCollections:
+        'Benötigte Antwortsammlungen werden nur für tatsächlich importierte Elemente kopiert.',
+      spreadsheetIssues: 'Zeilen und Konvertierungshinweise',
+      spreadsheetRow: 'Zeile {row}',
+      spreadsheetImageDependency:
+        'Der ursprüngliche öffentliche Bildlink bleibt erhalten. Das Bild ist davon abhängig, dass der ursprüngliche Blob verfügbar bleibt.',
+      spreadsheetTimerOmitted:
+        'Kahoot-Zeitlimits werden nicht in Elemente übernommen.',
+      spreadsheetImagesOmitted:
+        'Bilder in der Kahoot-Datei werden nicht importiert.',
+      spreadsheetInvalidRow:
+        'Diese Zeile oder ihr zugehöriges Element kann nicht importiert werden. Korrigieren Sie das angegebene Feld und die zugehörigen Zeilen.',
+      spreadsheetImported: 'Importierte Elemente: {count}',
+      spreadsheetInvalidOrder:
+        'Die Reihenfolge muss bei 0 beginnen und ohne Lücken oder Wiederholungen um 1 steigen.',
+      spreadsheetDuplicateRef:
+        'Diese Referenz wird mehrfach verwendet. Vergeben Sie für jeden Eintrag eine eindeutige Referenz.',
+      spreadsheetUnknownRef:
+        'Der referenzierte Eintrag fehlt. Prüfen Sie die Referenz und das zugehörige Tabellenblatt.',
+      spreadsheetDisabledSolution:
+        'Antworten oder Feedback sind eingetragen, aber deaktiviert. Aktivieren Sie hasSampleSolution (und hasAnswerFeedbacks für Feedback), oder entfernen Sie die deaktivierten Daten.',
+      spreadsheetAmbiguousSolution:
+        'Tragen Sie entweder einen exakten Wert oder einen Minimum-/Maximum-Bereich für diese Lösung ein.',
+      spreadsheetInvalidImage:
+        'Verwenden Sie eine gültige öffentliche Klicker-Bild-URL oder entfernen Sie diese Bildreferenz.',
+      spreadsheetUnsupportedCell:
+        'Verwenden Sie Text, Zahlen oder TRUE/FALSE. Formel- und Hyperlink-Zellen werden nicht unterstützt.',
+      spreadsheetSkipped:
+        'Nicht importiert, da es sich um exakte Duplikate handelt:',
+      spreadsheetNoValidElements:
+        'Es sind keine gültigen Elemente zum Importieren vorhanden.',
       importElementsInfo:
         'Importierte Pakete erstellen neue private Elemente und Antwortsammlungen in Ihrem Fragenpool. Ursprungs-IDs, Tags, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht übernommen.',
       elementImportCopyrightSolutionsDisclosure:
-        'Pakete können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Importieren Sie Inhalte nur, wenn Sie zu deren Nutzung berechtigt sind.',
+        'Importierte Inhalte können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Importieren Sie Inhalte nur, wenn Sie zu deren Nutzung berechtigt sind.',
       elementExportCopyrightSolutionsDisclosure:
         'Pakete können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Teilen oder verbreiten Sie Inhalte nur, wenn Sie dazu berechtigt sind.',
       elementImportPsychometricDisclosure:

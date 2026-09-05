@@ -1,0 +1,12 @@
+mutation ImportElementSpreadsheet(
+  $importToken: String!
+  $selectedElementRefs: [String!]!
+) {
+  importElementSpreadsheet(
+    importToken: $importToken
+    selectedElementRefs: $selectedElementRefs
+  ) {
+    importedElements
+    skippedElementRefs
+  }
+}
