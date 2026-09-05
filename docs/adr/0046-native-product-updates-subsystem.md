@@ -1,4 +1,4 @@
-# 28. Build product updates as a native subsystem, not a changelog service
+# 46. Build product updates as a native subsystem, not a changelog service
 
 - **Status:** Accepted — 2026-08-27
 - **Deciders:** KlickerUZH maintainers
