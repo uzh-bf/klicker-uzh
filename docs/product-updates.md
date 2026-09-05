@@ -365,9 +365,9 @@ A spotlight announces one feature. A tour orients someone who has just arrived:
 several steps over the parts of an interface that are always on screen. Manage
 has one (`manage-onboarding-v1`) and chat has one (`chat-onboarding-v1`); the
 student app is meant to follow, which is why the shared mechanics live in a
-package instead of next to the manage header. The two surfaces present their
-tours differently — manage walks the page with driver.js, chat shows a modal
-carousel — and share the id list and the completion semantics.
+package instead of next to the manage header. Both surfaces walk the page with
+driver.js popovers anchored to registered feature targets, and share the id
+list, the session slot and the completion semantics.
 
 ### The shared package
 
@@ -442,41 +442,54 @@ session's single overlay.
 
 ### Replays
 
-"Take the tour" in the support modal starts it on request. Replays ignore both
-caps, and because the server never rewrites `completedAt`, replaying does not
-change what the account has already recorded. The support entry renders as a
-button rather than a link, since it acts on the current page.
+Two entry points replay the tour on request: a "Take the tour" item in the
+account menu and the matching entry in the support modal. Both navigate to
+`/?tour=1` (`TOUR_REPLAY_HREF`) instead of starting in place, because the two
+steps about creating elements and activities only resolve on the home page and
+a replay started elsewhere would silently be shorter than promised. The hook
+spends the query parameter the moment it sees it and strips it from the URL in
+the same step, so a reload or a bookmarked link does not reopen the tour.
+Replays ignore both caps, and because the server never rewrites `completedAt`,
+replaying does not change what the account has already recorded.
 
 Step copy lives under `manage.productTours` in the shared message files, in both
 locales, and is escaped before it reaches a popover for the reason described in
 the spotlight section.
 
-### The chat carousel
+### The chat tour
 
-`chat-onboarding-v1` is not a walkthrough. Chat is one screen, and the five
-things a newcomer needs — the two modes, cited sources, attachments, the
-conversation list, credits — are explained faster in a modal carousel than by a
-spotlight moving around a page. It is therefore a design-system `Modal`
-(`onboarding-carousel.tsx`), with no driver.js, no overlay and no DOM targeting,
-and it does not use the session slot: chat has no second unsolicited overlay to
-collide with.
+`chat-onboarding-v1` is a five-step driver.js tour over the chat screen: the
+Tutor/Explainer mode switcher, cited sources, the attachment button, the
+conversation list and the credit balance. It runs on the same
+`@klicker-uzh/product-tours` hook as the manage tour and takes its targets from
+a chat-side registry (`apps/chat/src/components/onboarding/featureTargets.ts`)
+that maps keys to `data-product-feature` attributes; step lists never contain CSS
+selectors. Several targets are conditional — the mode switcher is absent on a
+single-mode chatbot, the attachment button on one that takes no images, and the
+sidebar is unmounted on mobile while closed — and a step whose target is missing
+is dropped rather than pointed at nothing. The sources step names no element at
+all, because citations only exist inside an answer; driver.js centers it, which
+is how the tour carries one card of plain explanation and why no run can end up
+with every step missing.
 
-**Sequencing.** The carousel opens strictly after the disclaimer, never beside
-it. `ChatOnboardingProvider` (`chat-onboarding.tsx`) takes the gate's open state
-from `assistant.tsx` as `disclaimerPending` and opens only from settled state:
-completion known and not recorded, no disclaimer in the way. Deriving it this
-way rather than watching the gate close is what makes the bot that requires a
-disclaimer and the bot that does not take the same path. A declined disclaimer
-never reaches the provider, because that state renders its own blocked view.
+**Sequencing.** The tour opens strictly after the disclaimer, never beside it.
+`ChatOnboardingProvider` (`chat-onboarding.tsx`) takes the gate's open state from
+`assistant.tsx` as `disclaimerPending` and auto-starts only from settled state:
+completion known and not recorded, no disclaimer in the way, not embedded, and
+no replay already requested in this page view. Deriving it this way rather than
+watching the gate close is what makes the bot that requires a disclaimer and the
+bot that does not take the same path. A declined disclaimer never reaches the
+provider, because that state renders its own blocked view. The unsolicited start
+also respects the shared session slot, so a tab that already spent its one
+overlay does not get a second.
 
-**Focus.** The carousel publishes its open state through the same external store
-in `chat-ui-context.tsx` that the disclaimer uses, so the composer does not
-autofocus underneath it and takes focus back when it closes — after the first
-showing and after a replay alike. The store carries one flag per dialog and the
-composer reads their disjunction, because the carousel claims the gate in the
-same commit in which the disclaimer releases it; a single shared flag would dip
-to false in between and hand focus over for one frame. The modal focuses its own
-content on open for the reason given in the chat-surface section above.
+**Focus.** The provider publishes the tour's open state through the same
+external store in `chat-ui-context.tsx` that the disclaimer uses, so the
+composer does not autofocus underneath the popover and takes focus back when the
+tour ends — after the first showing and after a replay alike. The store carries
+one flag per dialog and the composer reads their disjunction, because the tour
+claims the gate in the same commit in which the disclaimer releases it; a single
+shared flag would dip to false in between and hand focus over for one frame.
 
 **State.** `apps/chat/src/app/api/onboarding-tour/route.ts` is the participant
 half of the GraphQL tour service, restated for the Prisma-direct app:
@@ -484,16 +497,16 @@ half of the GraphQL tour service, restated for the Prisma-direct app:
 `getTourParticipantId` — the tours-worded sibling of the product-update guard,
 requiring the `PARTICIPANT` role. The id is validated against `TOUR_IDS`, and an
 unknown one is refused rather than answered with empty state, which a client
-would otherwise read as "never completed". Finishing, skipping and closing all
-record completion; a failed request leaves the carousel unrecorded, so it may
+would otherwise read as "never completed". Finishing, skipping and dismissing
+all record completion; a failed request leaves the tour unrecorded, so it may
 appear once more, which is the harmless direction.
 
-**Replay and embedding.** "Show intro" sits in the sidebar footer next to
-"What's new" and reopens the carousel from the first card. It writes nothing:
-the state is already stored and `completedAt` never moves anyway. An embedded
-conversation is suppressed entirely — no state request and no modal — because it
-has no sidebar and nobody opened it to be introduced to an application.
+**Replay and embedding.** "Take the tour" sits in the sidebar footer next to
+"What's new" and restarts the tour from the first step. It writes nothing: the
+state is already stored and `completedAt` never moves anyway. An embedded
+conversation is suppressed entirely — no state request and no overlay — because
+it has no sidebar and nobody opened it to be introduced to an application.
 
-Card copy lives under `chat.onboarding` in both message files, one `<id>Title`
-and `<id>Body` per card, and is currently placeholder text awaiting editorial
+Step copy lives under `chat.onboarding` in both message files, one `<id>Title`
+and `<id>Body` per step, and is currently placeholder text awaiting editorial
 review.
