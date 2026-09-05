@@ -1,9 +1,10 @@
 import {
   CHAT_BASE_MODEL_ID,
+  getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
 } from '@klicker-uzh/util'
 import { z } from 'zod'
-import { type ReasoningEffort } from '../config/reasoning'
+import type { ReasoningEffort } from '../config/reasoning'
 
 const chatModelSchema = z
   .object({
@@ -60,14 +61,6 @@ const chatModelRegistrySchema = z
       if (model.fallback) {
         hasFallback = true
       }
-
-      if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [index, 'usageClass'],
-          message: 'Model "auto" must be classified as ADVANCED.',
-        })
-      }
     }
 
     if (!hasFallback) {
@@ -79,6 +72,12 @@ const chatModelRegistrySchema = z
     }
 
     for (const issue of getChatModelBasePolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
+    }
+    for (const issue of getChatModelAutoPolicyIssues(models)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         ...issue,

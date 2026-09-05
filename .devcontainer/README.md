@@ -347,6 +347,12 @@ disabled and the rest of the DevPod still starts normally.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
+- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
+  workspace bind and the store volume are different devices inside the
+  container, so pnpm can fall back from the configured store to a workspace
+  store during installs; the second mount makes that fallback land in the
+  shared volume instead of writing a per-worktree store onto the host bind
+  mount.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

@@ -5,7 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
-import * as BetaFeaturesService from '../services/betaFeatures.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
@@ -150,7 +150,14 @@ import {
   ActivityTemplateMetadata,
   TemplateElementInformation,
 } from './template.js'
-import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
+import {
+  BetaEnrollmentCapability,
+  MediaFile,
+  User,
+  UserInfo,
+  UserLogin,
+  UserLoginScope,
+} from './user.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -165,7 +172,6 @@ export const Query = builder.queryType({
       scope: DB.UserLoginScope.FULL_ACCESS,
     }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
 
     return {
       self: t.field({
@@ -262,16 +268,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      // Nullable on purpose: `null` means GrowthBook could not answer, which is
-      // not the same as the lecturer being opted out. The setting hides itself
-      // rather than showing a switch whose position would be a guess.
-      betaFeatures: t.withAuth(asUserWithCatalyst).boolean({
-        nullable: true,
-        resolve: async (_, __, ctx) => {
-          return await BetaFeaturesService.getBetaFeatures({}, ctx)
-        },
-      }),
-
       userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,
@@ -291,6 +287,13 @@ export const Query = builder.queryType({
         type: UserLoginScope,
         resolve: (_, __, ctx) => {
           return ctx.user.scope
+        },
+      }),
+
+      betaEnrollment: t.withAuth(asUser).field({
+        type: BetaEnrollmentCapability,
+        resolve: async (_, __, ctx) => {
+          return await BetaEnrollmentService.getBetaEnrollment({}, ctx)
         },
       }),
 

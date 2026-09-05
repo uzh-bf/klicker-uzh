@@ -15,6 +15,7 @@ export function isFeatureFlagEnabled(
       ctx.featureFlags?.isEnabled(key, {
         id: ctx.user.sub,
         actorType: 'user',
+        catalyst: ctx.user.catalystInstitutional || ctx.user.catalystIndividual,
         role: ctx.user.role,
       }) ?? false
     )

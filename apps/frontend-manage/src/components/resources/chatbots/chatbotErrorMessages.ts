@@ -1,6 +1,7 @@
 export type ChatbotMutation =
   | 'create'
   | 'metadata'
+  | 'standardMode'
   | 'disclaimer'
   | 'credits'
   | 'publication'
@@ -21,6 +22,7 @@ export type ChatbotErrorMessageKey =
   | 'manage.resources.chatbotErrorForbidden'
   | 'manage.resources.chatbotCreateError'
   | 'manage.resources.chatbotMetadataSaveError'
+  | 'manage.resources.chatbotModesSaveError'
   | 'manage.resources.chatbotDisclaimerSaveError'
   | 'manage.resources.chatbotCreditPolicySaveError'
   | 'manage.resources.chatbotPublicationRequestError'
@@ -43,6 +45,7 @@ const errorMessageKeys: Record<ChatbotErrorCode, ChatbotErrorMessageKey> = {
 const fallbackMessageKeys: Record<ChatbotMutation, ChatbotErrorMessageKey> = {
   create: 'manage.resources.chatbotCreateError',
   metadata: 'manage.resources.chatbotMetadataSaveError',
+  standardMode: 'manage.resources.chatbotModesSaveError',
   disclaimer: 'manage.resources.chatbotDisclaimerSaveError',
   credits: 'manage.resources.chatbotCreditPolicySaveError',
   publication: 'manage.resources.chatbotPublicationRequestError',

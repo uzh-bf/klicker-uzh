@@ -86,5 +86,29 @@ export function createBrowserFeatureFlagClient<
       sanitizeFeatureFlagAttributes(attributes, environment)
     )
 
-  return { environment, growthbook, initialize, setAttributes }
+  const refresh = async (): Promise<boolean> => {
+    if (!configured) return false
+
+    try {
+      await initialize()
+      const result = await growthbook.init({
+        skipCache: true,
+        streaming: false,
+        timeout: config.timeoutMs ?? 2000,
+      })
+      if (!result.success) {
+        console.warn(
+          '[feature-flags] Browser refresh failed; keeping the last usable payload'
+        )
+      }
+      return result.success
+    } catch {
+      console.warn(
+        '[feature-flags] Browser refresh failed; keeping the last usable payload'
+      )
+      return false
+    }
+  }
+
+  return { environment, growthbook, initialize, refresh, setAttributes }
 }

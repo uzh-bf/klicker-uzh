@@ -5,7 +5,7 @@ FROM base AS deps
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/mcp-lecturer ./apps/mcp-lecturer
@@ -19,7 +19,7 @@ FROM base AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .

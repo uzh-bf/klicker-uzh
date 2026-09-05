@@ -8,6 +8,7 @@ import {
   GetAnswerCollectionsElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import {
   Button,
   H3,
@@ -22,6 +23,8 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -53,6 +56,7 @@ function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
   templateId,
+  preserveDraftOnDismiss = false,
   onClose,
   onSuccess,
   mode,
@@ -78,6 +82,8 @@ function ElementEditForm({
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
+  // flag to preserve dirty drafts when the modal is dismissed (creation only)
+  preserveDraftOnDismiss?: boolean
   // modal state props
   onClose: () => void
   onSuccess: () => void
@@ -124,6 +130,8 @@ function ElementEditForm({
   const [elementDataTypename, setElementDataTypename] = useState<
     ElementData['__typename'] | undefined
   >()
+  const formBodyRef = useRef<HTMLDivElement>(null)
+  const formActionsRef = useRef<HTMLDivElement>(null)
   const [collectionModal, setCollectionModal] = useState<{
     open: boolean
     id?: number
@@ -143,13 +151,59 @@ function ElementEditForm({
   })
   const collections = data?.getAnswerCollectionsElements ?? []
 
-  function requestClose() {
-    if (discardChangesPrompt && formikRef.current?.dirty) {
+  const requestClose = useCallback(() => {
+    const formikContext = formikRef.current
+
+    if (discardChangesPrompt && formikContext?.dirty) {
       setDiscardChangesOpen(true)
       return
     }
+
+    if (!preserveDraftOnDismiss || !formikContext) {
+      onClose()
+      return
+    }
+
+    const { dirty, values } = formikContext
+    if (!dirty) {
+      onClose()
+      return
+    }
+
+    // Dismissal arbiter for the normal library creation form: pristine dismissal
+    // closes immediately, a dirty draft is written to the recovery store and the
+    // modal closes only after the raw store entry exactly matches the current
+    // values, so a failed write never discards user input.
+    let serializedValues: string | undefined
+    let storedRaw: string | null | undefined
+    try {
+      serializedValues = JSON.stringify(values)
+      setAutoSavedElement(values)
+      storedRaw = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
+    } catch {
+      storedRaw = undefined
+    }
+
+    if (
+      typeof serializedValues === 'undefined' ||
+      storedRaw !== serializedValues
+    ) {
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+      return
+    }
+
     onClose()
-  }
+  }, [
+    discardChangesPrompt,
+    onClose,
+    preserveDraftOnDismiss,
+    setAutoSavedElement,
+    t,
+  ])
 
   async function runSecondaryAction() {
     if (!secondaryAction || secondaryActionLoading) return
@@ -166,6 +220,27 @@ function ElementEditForm({
       setSecondaryActionLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!preserveDraftOnDismiss) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || collectionModal.open) return
+
+      const eventPath = event.composedPath()
+      const formOwnsEvent = [formBodyRef.current, formActionsRef.current].some(
+        (element) => element && eventPath.includes(element)
+      )
+      if (!formOwnsEvent) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      requestClose()
+    }
+
+    window.addEventListener('keydown', handleEscape, true)
+    return () => window.removeEventListener('keydown', handleEscape, true)
+  }, [collectionModal.open, preserveDraftOnDismiss, requestClose])
 
   return (
     <>
@@ -232,7 +307,7 @@ function ElementEditForm({
                   setElementDataTypename={setElementDataTypename}
                   validateForm={validateForm}
                 />
-                <div className="flex flex-row gap-12">
+                <div ref={formBodyRef} className="flex flex-row gap-12">
                   <div className="flex-1">
                     <Form className="w-full" id="question-manipulation-form">
                       <ElementInformationFields
@@ -440,6 +515,7 @@ function ElementEditForm({
                   )}
 
                 <div
+                  ref={formActionsRef}
                   className={twMerge(
                     'mt-4 flex gap-4',
                     isTemplate ? 'justify-end' : 'justify-between'

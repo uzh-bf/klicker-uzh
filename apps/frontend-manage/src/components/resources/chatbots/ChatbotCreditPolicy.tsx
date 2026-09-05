@@ -3,7 +3,7 @@ import {
   type Chatbot,
   ChatbotStatus,
   CreditResetPeriod,
-  GetChatbotsInfoDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   UpdateChatbotCreditPolicyDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -245,7 +245,9 @@ function ChatbotCreditPolicy({
               creditResetAmount: Number(values.creditResetAmount),
               creditMaxCredits: Number(values.creditMaxCredits),
             },
-            refetchQueries: [{ query: GetChatbotsInfoDocument }],
+            refetchQueries: [
+              { query: QGetChatbotsInfoWithStandardModesDocument },
+            ],
             awaitRefetchQueries: true,
           })
           const saved = result.data?.updateChatbotCreditPolicy

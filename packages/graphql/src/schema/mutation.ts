@@ -4,7 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
-import * as BetaFeaturesService from '../services/betaFeatures.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
@@ -120,6 +120,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
   CreditResetPeriod,
 } from './resource.js'
 import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
@@ -136,6 +137,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -157,7 +159,6 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
@@ -1532,6 +1533,41 @@ export const Mutation = builder.mutationType({
           ChatbotsService.updateChatbotCreditPolicy(args, ctx),
       }),
 
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
         nullable: true,
         type: ChatAccountUsageOverviewRef,
@@ -1961,6 +1997,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
+        },
+      }),
+
       grantPrivatePreviewAccess: t.withAuth(asAdmin).int({
         nullable: true,
         args: { email: t.arg.string({ required: true }) },
@@ -2044,6 +2088,37 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.confirmKbFileUpload(args, ctx)
+        },
+      }),
+
+      requestKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileReplacement(args, ctx)
+        },
+      }),
+
+      confirmKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.confirmKbFileReplacement(args, ctx)
         },
       }),
 
@@ -3753,19 +3828,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH STANDARD ACTIVITY ACCESS -----
       // #region
-      // Not gated by a feature flag: this is the switch that puts the
-      // lecturer into the group the flags target, so gating it behind one of
-      // them would leave nobody able to opt in.
-      setBetaFeatures: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .boolean({
-          nullable: true,
-          args: { enabled: t.arg.boolean({ required: true }) },
-          resolve: async (_, args, ctx) => {
-            return await BetaFeaturesService.setBetaFeatures(args, ctx)
-          },
-        }),
-
       createPracticeQuiz: t
         .withAuth(asUserFullAccessForStandardActivities)
         .field({

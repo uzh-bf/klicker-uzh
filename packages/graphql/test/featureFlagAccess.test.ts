@@ -23,7 +23,13 @@ describe('requireFeatureFlagAccess', () => {
 
     expect(() =>
       requireFeatureFlagAccess(
-        { user, featureFlags: { isEnabled } },
+        {
+          user,
+          featureFlags: {
+            isEnabled,
+            refresh: vi.fn(async () => undefined),
+          },
+        },
         'learning-analytics'
       )
     ).not.toThrow()
@@ -31,18 +37,26 @@ describe('requireFeatureFlagAccess', () => {
       id: 'user-id',
       actorType: 'user',
       role: UserRole.ADMIN,
+      catalyst: false,
     })
   })
 
   it.each([
     ['a missing evaluator', undefined],
-    ['a disabled flag', { isEnabled: vi.fn().mockReturnValue(false) }],
+    [
+      'a disabled flag',
+      {
+        isEnabled: vi.fn().mockReturnValue(false),
+        refresh: vi.fn(async () => undefined),
+      },
+    ],
     [
       'an evaluation failure',
       {
         isEnabled: vi.fn(() => {
           throw new Error('SDK failure')
         }),
+        refresh: vi.fn(async () => undefined),
       },
     ],
   ])('fails closed for %s', (_, featureFlags) => {
@@ -94,7 +108,10 @@ describe('learning analytics services', () => {
     )
     const ctx = {
       user,
-      featureFlags: { isEnabled: vi.fn().mockReturnValue(false) },
+      featureFlags: {
+        isEnabled: vi.fn().mockReturnValue(false),
+        refresh: vi.fn(async () => undefined),
+      },
       prisma,
     } as unknown as ContextWithUser
 

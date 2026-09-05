@@ -1,0 +1,22 @@
+mutation MUpdateChatbotModelPolicy(
+  $chatbotId: String!
+  $modelSelection: Boolean!
+  $allowedModelIds: [String!]!
+  $allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+) {
+  updateChatbotModelPolicy(
+    chatbotId: $chatbotId
+    modelSelection: $modelSelection
+    allowedModelIds: $allowedModelIds
+    allowedReasoningEffortsByModel: $allowedReasoningEffortsByModel
+  ) {
+    id
+    modelSelection
+    allowedModelIds
+    allowedReasoningEffortsByModel {
+      modelId
+      efforts
+    }
+    updatedAt
+  }
+}

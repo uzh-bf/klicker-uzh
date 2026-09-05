@@ -55,6 +55,39 @@ revision-history model. Deleting the chatbot cascades through the set, examples,
 and evidence references. Synthetic candidates and evidence-eligible fixtures
 are created only by local and test setup, not by a production caller.
 
+## Course chatbots
+
+`Chatbot` belongs to one owning `User` and one `Course`. Its lifecycle is
+`DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
+can access only a published chatbot when a `Participation` exists for the
+owning course. Publication approval is separate from account-level AI usage
+authorization.
+
+The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
+Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+course name, subject domain, language of instruction, and an optional scope
+note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
+replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
+Explainer to remain enabled, and uses a status compare-and-set so a concurrent
+lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+a knowledge base; Quizzer remains independently configurable but is filtered by
+the safe course-material capability gate. Missing or malformed persisted values
+derive all three flags from legacy mode opt-outs/defaults, while valid legacy
+two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
+Manage projection exposes the combined effective settings, never raw
+`systemPrompts`. Participant GraphQL projections expose only the resolved mode
+options, never this owner configuration or raw system prompts. The chat compiler
+keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
+model policy with no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants; the previous model
+settings mutation remains available for rolling clients. Legacy fixed rows
+resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
+retired-only lists use Luna without a migration. Manage exposes one optional
+Chatbot framing field with a 200-character UI limit. The persisted parser
+accepts up to 1000 characters so an existing longer framing note survives a
+mode-only save, while Quizzer compilation receives only that scope note.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.
@@ -68,6 +101,14 @@ Lifecycle enums:
 | `ReviewStatus`       | INCOMPLETE, REVIEWED, MODIFIED_AFTER_REVIEW          | activity review flow |
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
+
+`ElementStatus` is manually controlled advisory metadata on an Element. `DRAFT`
+means unfinished, `REVIEW` means review requested, and `READY` means considered
+reusable. New Elements default to `READY`. The value does not gate activity use,
+auto-transition, reset after an edit, or imply reviewer assignment or approval;
+users with at least read access retain the deliberate permission to change it.
+This is separate from activity `PublicationStatus` and the activity
+`ReviewStatus` flow.
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
@@ -106,6 +147,8 @@ The initial release is explicitly a beta and may open after the existing system 
 The last successfully published graph may remain available after the KB's active content revision advances, including after a resource is deleted or withdrawn. Staleness is the mismatch between the graph's pinned source digest and the current KB digest; timestamps alone are not the consistency contract. Klicker does not disable the graph automatically, and it does not surface staleness to students: the label appears only on the lecturer-facing KB and graph views, where the people who can spend a rebuild are the ones who see it. A provider `COMPLETED`, `FAILED`, `CANCELLED`, or timeout observation without the versioned result handoff clears the active slot, does not move the published pointer, and holds the reserved cost for human review; a later valid result may settle the ledger but still cannot publish without passing the same identity checks.
 
 Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. `KBResource` stores the latest operation identity (`resourceVersion`, exact-byte `contentSha256`, attempt, and external operation), the independently active serving identity (`activeResourceVersion` and `activeContentSha256`), and the latest safe error code. `KBIngestionRun` is the append-only, resource-scoped ledger: lecturer dispatch uses the local attempt UUID, while a signed platform `resource.content_refreshed` event uses its event UUID and records the platform operation ID. A refresh advances only the serving identity, so it cannot overwrite a concurrent lecturer operation; the resource list and its status filter resolve through the stored lecturer attempt rather than the newest ledger row. A failed replacement therefore remains visible without erasing the previously active serving version. Ingestion transport and atomic status reconciliation are described in [Async & Workers](./async-and-workers.md).
+
+Uploaded file resources can be replaced in place from the resource workspace. `requestKbFileReplacement` binds each upload ticket to one BLOB resource and its expected version. `confirmKbFileReplacement` accepts only a still-current ticket, atomically swaps the canonical source metadata, increments the resource version, creates the ingestion run, and queues it while preserving the resource id, title, material category, and active serving identity. The previously active AI content remains available until the replacement succeeds, but the old source file is deleted best-effort after confirmation and cannot be restored. A queue failure leaves the new canonical source in `FAILED`, so the ordinary resource retry path can ingest it without another upload.
 
 Each resource also has one lecturer-controlled `KBResourceMaterialType`: `UNCLASSIFIED`, `COURSE_CONTENT`, or `ADMINISTRATIVE`. It is independent of the source type (`BLOB` or `URL`) and is metadata for organization only; it is not sent to data-ingestion and does not change retrieval, graph generation, or question generation. Existing resources default to `UNCLASSIFIED`, and the resource workspace can filter or update the value without creating an ingestion attempt.
 

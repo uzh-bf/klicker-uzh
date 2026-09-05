@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   type Chatbot,
   ChatbotStatus,
-  GetChatbotsInfoDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   RequestChatbotPublicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -233,7 +233,9 @@ function ChatbotPublicationRequest({
               useCase: values.useCase.trim(),
               expectedStudentCount: Number(values.expectedStudentCount),
             },
-            refetchQueries: [{ query: GetChatbotsInfoDocument }],
+            refetchQueries: [
+              { query: QGetChatbotsInfoWithStandardModesDocument },
+            ],
             awaitRefetchQueries: true,
           })
 

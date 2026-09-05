@@ -10,6 +10,7 @@ export const FEATURE_FLAG_DEFAULTS = {
   // move together on purpose — a surface withdrawn while the tools behind it
   // stay live is a gap, not a finer control.
   'ai-beta': false,
+  'beta-signup': false,
   'learning-analytics': false,
 } as const satisfies Record<string, false>
 
@@ -80,8 +81,10 @@ export function sanitizeFeatureFlagAttributes(
   }
 
   if (typeof source.id === 'string') sanitized.id = source.id
+  if (typeof source.catalyst === 'boolean') {
+    sanitized.catalyst = source.catalyst
+  }
   if (typeof source.role === 'string') sanitized.role = source.role
-  if (typeof source.catalyst === 'boolean') sanitized.catalyst = source.catalyst
   return sanitized
 }
 
