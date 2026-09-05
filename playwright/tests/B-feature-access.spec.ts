@@ -415,8 +415,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    let profileFailureInjected = false
     await page.route('**/api/graphql*', async (route) => {
-      if (getGraphqlOperationName(route.request()) === 'UserProfile') {
+      if (getGraphqlOperationName(route.request()) === 'ManageUserProfile') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -424,6 +425,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
             errors: [{ message: 'Synthetic user profile failure' }],
           }),
         })
+        profileFailureInjected = true
         return
       }
 
@@ -433,6 +435,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
 
+    await expect.poll(() => profileFailureInjected).toBe(true)
     await expect(
       page.getByTestId('learning-analytics-access-denied')
     ).toBeVisible()
