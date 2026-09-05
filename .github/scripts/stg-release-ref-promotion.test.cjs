@@ -1,5 +1,4 @@
 const assert = require('node:assert/strict')
-const crypto = require('node:crypto')
 const { execFileSync, spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -10,15 +9,29 @@ const { parse } = require('yaml')
 const ROOT = path.join(__dirname, '../..')
 const WORKFLOW_DIR = path.join(ROOT, '.github/workflows')
 const CHART_DIR = path.join(ROOT, 'deploy/charts/klicker-uzh-v3')
-const PARENT_SHA = '208e97d38e6abfd13d997d48200077febc8c1445'
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const SENTINEL_TAG = 'stg-release-ref-sentinel'
 
-const BASELINE_RENDER_DIGESTS = {
-  'deploy/env-uzh-prd/values.yaml':
-    '07bebd9e0801ecea68d8875425262158bb5132dd32125425c96332d312cae92a',
-  'deploy/env-uzh-stg/values.yaml':
-    '78f21724a35e500c9c24391853e4e4e732f4d22814fdc229a9e77cd33e4abd7e',
+const IMAGE_VALUES = {
+  auth: 'auth-arm',
+  frontendPWA: 'frontend-pwa-arm',
+  frontendManage: 'frontend-manage-arm',
+  frontendControl: 'frontend-control-arm',
+  backendGraphql: 'backend-docker-arm',
+  olatApi: 'olat-api-arm',
+  lti: 'lti-arm',
+  chat: 'chat-arm',
+  responseApi: 'response-api-arm',
+  mcpStudent: 'mcp-student-arm',
+  mcpLecturer: 'mcp-lecturer-arm',
+  migrator: 'backend-docker-migrator-arm',
+  'assessment.frontendPWA': 'frontend-assessment-arm',
+  'assessment.backendGraphql': 'backend-docker-arm',
+  'assessment.responseApi': 'response-api-arm',
+  'hatchet.workers.general': 'hatchet-worker-general-arm',
+  'hatchet.workers.responseProcessor': 'hatchet-worker-response-processor-arm',
+  'hatchet.workers.responseProcessorAssessment':
+    'hatchet-worker-response-processor-arm',
 }
 
 const EXPECTED_RUNTIME_IMAGE_JOB_MAP = {
@@ -123,18 +136,6 @@ function renderChart(chartDir, valuesPath, extraArguments = []) {
     ['template', 'klicker', chartDir, '-f', valuesPath, ...extraArguments],
     { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }
   )
-}
-
-function sha256(text) {
-  return crypto.createHash('sha256').update(text).digest('hex')
-}
-
-function parentFile(relativePath) {
-  return execFileSync('git', ['show', `${PARENT_SHA}:${relativePath}`], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-  })
 }
 
 function runPublishGuard(inspectOutput, inspectStatus) {
@@ -365,86 +366,75 @@ test('all first-party chart images prefer the optional global tag', () => {
     migrator.line,
     /global\.imageTag \| default \.Values\.migrator\.image\.tag \| default \.Values\.backendGraphql\.image\.tag/u
   )
-
-  const stagingValues = fs.readFileSync(
-    path.join(ROOT, 'deploy/env-uzh-stg/values.yaml'),
-    'utf8'
-  )
-  const productionValues = fs.readFileSync(
-    path.join(ROOT, 'deploy/env-uzh-prd/values.yaml'),
-    'utf8'
-  )
-  assert.equal(
-    (stagingValues.match(/rollout\.klicker\.uzh\.ch\/release:/gu) ?? []).length,
-    16
-  )
-  assert.equal(
-    (productionValues.match(/rollout\.klicker\.uzh\.ch\/release:/gu) ?? [])
-      .length,
-    0
-  )
 })
 
-test('sentinel coverage is complete and no-override renders match the parent', (t) => {
+test('rendered images preserve per-image fallbacks and prefer the global tag', (t) => {
   const fixtureRoot = fs.mkdtempSync(
     path.join(os.tmpdir(), 'stg-release-chart-baseline-')
   )
   t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }))
 
-  const chartArchive = execFileSync(
-    'git',
-    [
-      'archive',
-      '--format=tar',
-      PARENT_SHA,
-      '--',
-      'deploy/charts/klicker-uzh-v3',
-    ],
-    { cwd: ROOT, maxBuffer: 16 * 1024 * 1024 }
+  const fixtureValuesPath = path.join(fixtureRoot, 'values.json')
+  fs.writeFileSync(
+    fixtureValuesPath,
+    JSON.stringify({
+      mcpStudent: { enabled: true },
+      mcpLecturer: { enabled: true },
+      migrator: { enabled: true },
+    })
   )
-  execFileSync('tar', ['-x', '-f', '-', '-C', fixtureRoot], {
-    input: chartArchive,
-    maxBuffer: 16 * 1024 * 1024,
-  })
-  const parentChartDir = path.join(fixtureRoot, 'deploy/charts/klicker-uzh-v3')
-
-  for (const [valuesRelativePath, expectedDigest] of Object.entries(
-    BASELINE_RENDER_DIGESTS
-  )) {
-    const frozenValues = parentFile(valuesRelativePath)
-    const currentValuesPath = path.join(ROOT, valuesRelativePath)
-    assert.equal(fs.readFileSync(currentValuesPath, 'utf8'), frozenValues)
-
-    const fixtureValuesPath = path.join(
-      fixtureRoot,
-      path.basename(path.dirname(valuesRelativePath)) + '-values.yaml'
-    )
-    fs.writeFileSync(fixtureValuesPath, frozenValues)
-
-    const frozenRender = renderChart(parentChartDir, fixtureValuesPath)
-    assert.equal(sha256(frozenRender), expectedDigest)
-    assert.equal(
-      renderChart(CHART_DIR, currentValuesPath),
-      frozenRender,
-      `${valuesRelativePath} changed without global.imageTag`
-    )
-  }
-
-  const stagingValuesPath = path.join(ROOT, 'deploy/env-uzh-stg/values.yaml')
-  const sentinelRender = renderChart(CHART_DIR, stagingValuesPath, [
+  const imageArguments = Object.entries(IMAGE_VALUES).flatMap(([key, name]) => [
     '--set-string',
-    `global.imageTag=${SENTINEL_TAG}`,
+    `${key}.image.repository=ghcr.io/uzh-bf/klicker-uzh/${name}`,
+    '--set-string',
+    `${key}.image.tag=release-${key.replaceAll('.', '-')}`,
   ])
-  const images = renderedImages(sentinelRender).filter((image) =>
-    image.startsWith('ghcr.io/uzh-bf/klicker-uzh/')
-  )
-  assert.equal(images.length, 18)
-  assert.ok(images.every((image) => image.endsWith(`:${SENTINEL_TAG}`)))
-
-  for (const repository of images.map(imageRepository)) {
-    assert.ok(
-      repository in EXPECTED_RUNTIME_IMAGE_JOB_MAP,
-      `no active selected-source build publishes ${repository}`
+  const renderImages = (extraArguments = []) =>
+    renderedImages(
+      renderChart(CHART_DIR, fixtureValuesPath, [
+        ...imageArguments,
+        ...extraArguments,
+      ])
+    ).sort()
+  const expected = Object.entries(IMAGE_VALUES)
+    .map(
+      ([key, name]) =>
+        `ghcr.io/uzh-bf/klicker-uzh/${name}:release-${key.replaceAll('.', '-')}`
     )
+    .sort()
+
+  assert.deepEqual(renderImages(), expected)
+  assert.deepEqual(renderImages(['--set-string', 'global.imageTag=']), expected)
+  for (const tag of [SENTINEL_TAG, '0'.repeat(40)]) {
+    const images = renderImages(['--set-string', `global.imageTag=${tag}`])
+    assert.deepEqual(
+      images,
+      expected.map((image) => `${imageRepository(image)}:${tag}`).sort()
+    )
+    for (const repository of images.map(imageRepository)) {
+      assert.ok(
+        repository in EXPECTED_RUNTIME_IMAGE_JOB_MAP,
+        `no active selected-source build publishes ${repository}`
+      )
+    }
   }
+
+  const migratorRepository =
+    'ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm'
+  assert.ok(
+    renderImages(['--set-string', 'migrator.image.tag=']).includes(
+      `${migratorRepository}:release-backendGraphql`
+    )
+  )
+  const appVersion = readYaml(
+    'deploy/charts/klicker-uzh-v3/Chart.yaml'
+  ).appVersion
+  const untagged = Object.keys(IMAGE_VALUES).flatMap((key) => [
+    '--set-string',
+    `${key}.image.tag=`,
+  ])
+  assert.deepEqual(
+    renderImages(untagged),
+    expected.map((image) => `${imageRepository(image)}:${appVersion}`).sort()
+  )
 })

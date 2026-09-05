@@ -160,9 +160,10 @@ worktree, and do not publish or mutate remote state.
   including the PreSync migrator, prefer it.
 - Do not edit staging or production values and do not remove rollout
   annotations.
-- Capture frozen baseline renders. An all-enabled render must apply a sentinel
-  tag to all 18 first-party images. Staging and production renders without the
-  override must remain byte-identical to their frozen outputs.
+- Use synthetic render inputs to verify all 18 first-party images retain their
+  individual tags without an override and prefer the global tag when supplied.
+  Check empty-tag fallback to the chart version and the migrator's backend-tag
+  fallback. Do not pin whole environment files or Helm-version-dependent output.
 - Update the migrator ADR, supersede the staging-promotion ADR on this branch,
   and update CI and migration guides. State that the registry digest receipt,
   not mutable tag text alone, is deployment provenance.
@@ -261,6 +262,19 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
+- `Source follow-up, 2026-09-05:` The user approved repairing the failing
+  contract test and preparing private platform source wiring, with merges and
+  activation still gated. The published test failed under CI's Helm 3.21.4
+  with digest `5921e61ac4bb` instead of the Helm 4.2.4 baseline `07bebd9e0801`.
+  Reproducing the committed test locally with Helm 3.21.4 yields the exact CI
+  failure. The replacement uses synthetic image inputs, preserves the explicit
+  image/workflow inventory, and passes 4/4 with both Helm versions on Node
+  24.20.0. It checks omitted and empty overrides, all 18 per-image tags, global
+  precedence including a leading-zero revision, and migrator/chart fallbacks.
+  No environment values, chart templates, or runtime workflows change. Earlier
+  frozen-render evidence below is historical, not the ongoing test contract.
+  Route: main session because diagnosis and acceptance are tightly coupled.
+  Test obligation: replace existing coverage; no additional test cases.
 - `Current:` Commits `ed3b236bfa` and `43e84ba3a5` implement and harden
   selected-source SHA tags and publish-once guards. Commit `b7b381812d` adds
   optional `global.imageTag` precedence across all 18 first-party images and
