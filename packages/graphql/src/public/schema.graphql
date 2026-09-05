@@ -2578,6 +2578,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  confirmKbFileReplacement(blobName: String!, kbId: ID!, mimeType: String!, originalFilename: String!, resourceId: ID!, sizeBytes: Int!): KBResource!
   confirmKbFileUpload(blobName: String!, kbId: ID!, materialType: KBResourceMaterialType, mimeType: String!, originalFilename: String!, sizeBytes: Int!, title: String!): KBResource!
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
@@ -2698,6 +2699,7 @@ type Mutation {
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   requestChatbotPublication(expectedStudentCount: Int!, id: String!, proposedCredits: Int!, useCase: String!): Chatbot
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
+  requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry

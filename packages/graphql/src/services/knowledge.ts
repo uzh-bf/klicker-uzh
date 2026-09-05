@@ -344,24 +344,27 @@ async function getKbQuotaUsage(
   prisma: DB.Prisma.TransactionClient,
   kbId: string
 ) {
-  const [resources, unknownSizeResources, uploadTickets] = await Promise.all([
-    prisma.kBResource.aggregate({
-      where: { kbId },
-      _count: { _all: true },
-      _sum: { sizeBytes: true },
-    }),
-    prisma.kBResource.count({
-      where: { kbId, sizeBytes: null },
-    }),
-    prisma.kBUploadTicket.aggregate({
-      where: { kbId },
-      _count: { _all: true },
-      _sum: { sizeBytes: true },
-    }),
-  ])
+  const [resources, unknownSizeResources, uploadTickets, createUploadTickets] =
+    await Promise.all([
+      prisma.kBResource.aggregate({
+        where: { kbId },
+        _count: { _all: true },
+        _sum: { sizeBytes: true },
+      }),
+      prisma.kBResource.count({
+        where: { kbId, sizeBytes: null },
+      }),
+      prisma.kBUploadTicket.aggregate({
+        where: { kbId },
+        _sum: { sizeBytes: true },
+      }),
+      prisma.kBUploadTicket.count({
+        where: { kbId, replacementResourceId: null },
+      }),
+    ])
 
   return {
-    resourceCount: resources._count._all + uploadTickets._count._all,
+    resourceCount: resources._count._all + createUploadTickets,
     sizeBytes:
       (resources._sum.sizeBytes ?? 0) +
       unknownSizeResources * MAX_KB_FILE_SIZE_BYTES +
@@ -593,6 +596,7 @@ async function getKbMetricsMap(
     retainedResources,
     retainedUnknownSizes,
     uploadTickets,
+    createUploadTickets,
     linkedConsumers,
   ] = await Promise.all([
     prisma.kBResource.groupBy({
@@ -620,8 +624,15 @@ async function getKbMetricsMap(
     prisma.kBUploadTicket.groupBy({
       by: ['kbId'],
       where: { kbId: { in: kbIds } },
-      _count: { _all: true },
       _sum: { sizeBytes: true },
+    }),
+    prisma.kBUploadTicket.groupBy({
+      by: ['kbId'],
+      where: {
+        kbId: { in: kbIds },
+        replacementResourceId: null,
+      },
+      _count: { _all: true },
     }),
     prisma.kBChatbot.groupBy({
       by: ['kbId'],
@@ -639,6 +650,9 @@ async function getKbMetricsMap(
     retainedUnknownSizes.map((row) => [row.kbId, row._count._all])
   )
   const ticketsByKb = new Map(uploadTickets.map((row) => [row.kbId, row]))
+  const createTicketsByKb = new Map(
+    createUploadTickets.map((row) => [row.kbId, row._count._all])
+  )
   const consumersByKb = new Map(
     linkedConsumers.map((row) => [row.kbId, row._count._all])
   )
@@ -657,7 +671,7 @@ async function getKbMetricsMap(
           retainedResourceCount: retained?._count._all,
           retainedSizeBytes: retained?._sum.sizeBytes ?? 0,
           retainedUnknownSizeCount: retainedUnknownByKb.get(kbId),
-          reservedResourceCount: tickets?._count._all,
+          reservedResourceCount: createTicketsByKb.get(kbId),
           reservedSizeBytes: tickets?._sum.sizeBytes ?? 0,
           linkedConsumerCount: consumersByKb.get(kbId),
         }),
@@ -1448,6 +1462,43 @@ function assertMatchingConfirmedBlob(
   }
 }
 
+async function getReplaceableKbResourceOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  {
+    kbId,
+    resourceId,
+    ownerId,
+  }: { kbId: string; resourceId: string; ownerId: string }
+) {
+  await lockOwnedKbOrThrow(prisma, kbId, ownerId)
+  const resource = await prisma.kBResource.findFirst({
+    where: {
+      id: resourceId,
+      kbId,
+      deletedAt: null,
+      kb: { ownerId, deletedAt: null },
+    },
+  })
+  if (!resource) {
+    throw new GraphQLError('KB resource not found')
+  }
+  if (resource.type !== DB.KBResourceType.BLOB) {
+    throw new GraphQLError('KB resource is not a file')
+  }
+  if (
+    resource.status === DB.KBResourceStatus.QUEUED ||
+    resource.status === DB.KBResourceStatus.PROCESSING
+  ) {
+    throw new GraphQLError('KB resource cannot be replaced', {
+      extensions: { code: 'KB_RESOURCE_ACTIVE' },
+    })
+  }
+  if (resource.resourceVersion >= 2_147_483_647) {
+    throw new GraphQLError('KB resource version limit reached')
+  }
+  return resource
+}
+
 export async function confirmKbFileUpload(
   {
     kbId,
@@ -1545,6 +1596,7 @@ export async function confirmKbFileUpload(
         id: blobId,
         kbId,
         blobName,
+        replacementResourceId: null,
         expiresAt: { gt: new Date() },
       },
       select: { id: true, sizeBytes: true },
@@ -1576,6 +1628,270 @@ export async function confirmKbFileUpload(
     await prisma.kBUploadTicket.delete({ where: { id: ticket.id } })
     return resource
   })
+}
+
+export async function requestKbFileReplacement(
+  {
+    kbId,
+    resourceId,
+    fileName,
+    contentType,
+    sizeBytes,
+  }: {
+    kbId: string
+    resourceId: string
+    fileName: string
+    contentType: string
+    sizeBytes: number
+  },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  assertKbIngestionEnabled()
+  const validated = validateKbFile({ fileName, contentType, sizeBytes })
+  const { accountUrl, containerClient, credential } = getKbBlobContainer(
+    ctx.user.sub
+  )
+  await containerClient.createIfNotExists()
+
+  const blobId = randomUUID()
+  const blobName = `${blobId}.${validated.extension}`
+  const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
+  await ctx.prisma.$transaction(async (prisma) => {
+    const resource = await getReplaceableKbResourceOrThrow(prisma, {
+      kbId,
+      resourceId,
+      ownerId: ctx.user.sub,
+    })
+    await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
+    await prisma.kBUploadTicket.create({
+      data: {
+        id: blobId,
+        kbId,
+        blobName,
+        sizeBytes,
+        expiresAt: expiresOn,
+        replacementResourceId: resource.id,
+        expectedResourceVersion: resource.resourceVersion,
+      },
+    })
+  })
+
+  const permissions = BlobSASPermissions.parse('cw')
+  const queryParams = generateBlobSASQueryParameters(
+    {
+      containerName: containerClient.containerName,
+      blobName,
+      permissions,
+      expiresOn,
+    },
+    credential
+  )
+  return {
+    uploadSasURL: `${accountUrl}?${queryParams.toString()}`,
+    containerName: containerClient.containerName,
+    blobName,
+  }
+}
+
+export async function confirmKbFileReplacement(
+  {
+    kbId,
+    resourceId,
+    blobName,
+    originalFilename,
+    mimeType,
+    sizeBytes,
+  }: {
+    kbId: string
+    resourceId: string
+    blobName: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+  },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  assertKbIngestionEnabled()
+  const validated = validateKbFile({
+    fileName: originalFilename,
+    contentType: mimeType,
+    sizeBytes,
+  })
+  const separator = blobName.lastIndexOf('.')
+  const blobId = blobName.slice(0, separator)
+  const blobExtension = blobName.slice(separator + 1).toLowerCase()
+  if (
+    separator <= 0 ||
+    !validateUuid(blobId) ||
+    blobExtension !== validated.extension
+  ) {
+    throw new GraphQLError('KB blob name is invalid')
+  }
+
+  const confirmedReplacement = await ctx.prisma.kBResource.findFirst({
+    where: {
+      id: resourceId,
+      kbId,
+      blobName,
+      deletedAt: null,
+      kb: { ownerId: ctx.user.sub, deletedAt: null },
+    },
+  })
+  if (confirmedReplacement) {
+    assertMatchingConfirmedBlob(confirmedReplacement, {
+      kbId,
+      blobName,
+      title: confirmedReplacement.title,
+      originalFilename,
+      mimeType: validated.contentType,
+      sizeBytes,
+    })
+    return confirmedReplacement
+  }
+
+  const ticket = await ctx.prisma.kBUploadTicket.findFirst({
+    where: {
+      id: blobId,
+      kbId,
+      blobName,
+      replacementResourceId: resourceId,
+      expiresAt: { gt: new Date() },
+      kb: { ownerId: ctx.user.sub, deletedAt: null },
+    },
+    select: { id: true },
+  })
+  if (!ticket) {
+    throw new GraphQLError('KB upload ticket is invalid', {
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+  }
+
+  const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
+  const blobClient = containerClient.getBlobClient(blobName)
+  if (!(await blobClient.exists())) {
+    throw new GraphQLError('KB blob was not found')
+  }
+
+  const properties = await blobClient.getProperties()
+  if (
+    properties.contentLength !== sizeBytes ||
+    properties.contentType?.trim().toLowerCase() !== validated.contentType
+  ) {
+    await blobClient.deleteIfExists()
+    throw new GraphQLError('KB blob metadata is invalid')
+  }
+
+  const ingestionAttemptId = randomUUID()
+  const result = await ctx.prisma.$transaction(async (prisma) => {
+    const resource = await getReplaceableKbResourceOrThrow(prisma, {
+      kbId,
+      resourceId,
+      ownerId: ctx.user.sub,
+    })
+
+    const currentTicket = await prisma.kBUploadTicket.findFirst({
+      where: {
+        id: blobId,
+        kbId,
+        blobName,
+        replacementResourceId: resource.id,
+        expectedResourceVersion: resource.resourceVersion,
+        expiresAt: { gt: new Date() },
+      },
+    })
+    if (!currentTicket || currentTicket.sizeBytes !== sizeBytes) {
+      throw new GraphQLError('KB upload ticket is invalid', {
+        extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+      })
+    }
+
+    const resourceVersion = resource.resourceVersion + 1
+    const claim = await prisma.kBResource.updateMany({
+      where: {
+        id: resource.id,
+        status: resource.status,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        resourceVersion: resource.resourceVersion,
+        deletedAt: null,
+      },
+      data: {
+        blobName,
+        blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
+        originalFilename,
+        mimeType: validated.contentType,
+        sizeBytes,
+        status: DB.KBResourceStatus.QUEUED,
+        statusMessage: null,
+        errorCode: null,
+        ingestionOperation: DB.KBIngestionOperation.UPSERT,
+        ingestionAttemptId,
+        resourceVersion,
+        contentSha256: null,
+        externalOperationId: null,
+        externalOperationStartedAt: null,
+      },
+    })
+    if (claim.count !== 1) {
+      throw new GraphQLError('KB resource cannot be replaced')
+    }
+
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: ingestionAttemptId,
+        resourceId: resource.id,
+        operation: DB.KBIngestionOperation.UPSERT,
+        resourceVersion,
+      },
+    })
+    await prisma.kBUploadTicket.delete({ where: { id: currentTicket.id } })
+
+    const updated = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: resource.id },
+    })
+    return {
+      resource: updated,
+      payload: buildKbIngestionPayload(
+        updated,
+        ingestionAttemptId,
+        resourceVersion,
+        ctx.user.sub
+      ),
+      previousBlobName: resource.blobName,
+    }
+  })
+
+  let queueFailed = false
+  try {
+    await ctx.tasks.ingestKBResource.runNoWait(result.payload)
+  } catch {
+    await markKbIngestionQueueFailure(
+      ctx,
+      result.resource.id,
+      ingestionAttemptId
+    )
+    queueFailed = true
+  }
+
+  if (result.previousBlobName && result.previousBlobName !== blobName) {
+    try {
+      await containerClient
+        .getBlobClient(result.previousBlobName)
+        .deleteIfExists()
+    } catch {
+      // Blob cleanup is best-effort. The canonical replacement and its
+      // ingestion state must remain committed when storage cleanup fails.
+    }
+  }
+
+  if (queueFailed) {
+    throw new GraphQLError('KB ingestion could not be queued', {
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+  }
+
+  return result.resource
 }
 
 export async function createKbUrlResource(

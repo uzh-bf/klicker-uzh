@@ -2,11 +2,35 @@
 
 Date: 2026-08-31
 
-Status: execution in progress — W1 acceptance and publication
+Status: Ingest all and material categories merged; file replacement published in PR #5756, with CI and release acceptance pending.
 
-Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-operations-w1`, branch `rs/kb-resource-operations-w1`
+## Current delivery summary — 2026-09-05
 
-PR: [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710), targeting `feat/kb-element-generation-followups`
+The resource table and add-resource flow are implemented. Ingest all and material categories merged in PR #5710. The generated-question review list and canonical editor workflow merged in PR #5667 with its dependency #5635. File replacement is the remaining resource-management delivery in PR #5756.
+
+An **upload reservation** is the temporary record that reserves bytes and identifies an upload before confirmation. The existing database model remains named `KBUploadTicket` for compatibility. File replacement adds only the target resource ID and expected resource version, with a foreign key and index in one generated migration. Confirmation consumes the reservation; abandoned uploads use the existing retention sweep. No separate replacement entity or lifecycle is needed.
+
+The replacement source changes at confirmation. Existing indexed AI content remains active until ingestion settles, but the previous source file has no rollback. Pending replacement uploads also defer hard resource deletion until the retention sweep removes them.
+
+At reviewed head `2f38d8a546b46b53339f40a3964cf1620f14c38f`, the branch includes `v3-ai@208e97d38e6abfd13d997d48200077febc8c1445` without conflicts. The full pre-push build passed 26/26. Current CI includes inherited MCP Docker build failures: the pinned Turbo executable rejects the new cache configuration. Playwright and final-review status remain delivery gates; successful local builds do not establish live ingestion acceptance.
+
+After this PR merges:
+
+1. Verify the deployed revision, then exercise one synthetic upload, ingestion, retrieval, and same-resource replacement. Require retrieval to switch to the new content without a duplicate resource.
+2. Verify the downstream journey with an explicit graph build, question generation, editing and keeping one question, and opening its saved Element. Coordinate with the existing generation-lifecycle work before changing shared behavior.
+3. Continue the question-generation roadmap with clearer stages, honest progress, and settings revision/restart. Bulk question review, richer citation excerpts, and arbitrary tags remain deferred.
+
+Deployment and live provider actions retain their separate execution boundaries. Historical snapshots and Progress entries below explain prior decisions; this summary supersedes their delivery-state claims.
+
+### Approved review corrections
+
+The follow-up removes the unreachable zero-byte compatibility exception from replacement confirmation and uses `uploadReservation` in the upload component, without renaming the database table or API. The MCP lecturer and student Dockerfiles now pin Turbo 2.10.11, matching the repository and backend image; both local prune commands pass with that version.
+
+Formatting, diff checks, staged gitleaks, and Node 24 Prisma generation/type checking pass. The repository pre-commit check under Node 24 passes 37/40 tasks but fails GraphQL, Chat, and OLAT type checks in unchanged assessment, chatbot, user-group, and live-quiz code. The earlier Node 26 run additionally failed Prisma generation. Publication bypasses the failing pre-commit hook with this limitation recorded; the ordinary pre-push build and natural CI remain required evidence. No database-backed test, browser, deployment, or live provider operation ran in this correction pass.
+
+Working context: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-resource-replacement-w2`, branch `rs/kb-resource-replacement-w2`
+
+PR: W1 [#5710](https://github.com/uzh-bf/klicker-uzh/pull/5710) is merged; the W2 PR targets `v3-ai`
 
 Proposed delivery target: the current KB/KG feature stack, with the live PR base resolved again before implementation. The ultimate integration target remains `v3-ai` unless the user names another target. This roadmap does not include the `v3-ai` to `v3` promotion branch.
 
@@ -18,10 +42,10 @@ Audience: a senior developer or agent picking this up without session context. R
 
 | Field | Contract |
 | --- | --- |
-| Goal and terminal | Deliver two independently reviewable desktop Manage capabilities: `Ingest all` reconciles every resource that is not serving its current form, and file replacement updates one existing resource identity through a safe staged revision. Material classification is controlled metadata, not provider behavior. The package ends when both work PRs are green at their own tips, the final review accepts the integrated stack, and the required browser evidence covers the named states. |
+| Goal and terminal | Deliver two independently reviewable desktop Manage capabilities: `Ingest all` reconciles every resource that is not serving its current form, and file replacement updates one existing resource identity while preserving its active AI-serving content until settlement. Material classification is controlled metadata, not provider behavior. The package ends when both work PRs are green at their own tips, the final review accepts the integrated stack, and the required browser evidence covers the named states. |
 | Mode and boundary owner | Guided execution under `rs-roadmap-orchestrator`; the main session owns decomposition, integration, reviews, verification, and boundary decisions. |
 | Question channel | The orchestrator presents the decision gates in this roadmap. Sol supplied the planning pass and will be reused for plan hardening; no new user-visible task is needed. |
-| Authority layers | Plan artifact and local implementation commits: proposed. Normal push and PR updates: ask at execution handoff unless the user approves the exact branch and remote. Merge, promotion, deployment, live ingestion, graph generation, secret access, cluster writes, deletion, and production actions: withheld. |
+| Authority layers | Plan artifact, local implementation commits, normal push, and PR updates for the current package: approved. Marking ready, merge, promotion, deployment, live ingestion, graph generation, secret access, cluster writes, deletion, and production actions: withheld. |
 | Writer budget | One implementation writer per work PR. Do not split the two work packages into concurrent writers because both touch the resource list, generated GraphQL operations, and the same lifecycle seams. Sol is read-only for planning/review. |
 
 ## 2. How to work on this
@@ -46,7 +70,7 @@ current resolved KB feature base
 
 There is no separate docs-only PR and no promotion PR in this stack. Each PR may contain multiple commits. The exact branch names and PR bases are resolved at execution time after Gate A1.
 
-## 3. Current state
+## 3. Planning baseline (historical)
 
 | Item | State | Evidence |
 | --- | --- | --- |
@@ -59,7 +83,7 @@ There is no separate docs-only PR and no promotion PR in this stack. Each PR may
 | Current graph and question-generation lifecycle | Out of scope and preserved | The graph build ledger remains the canonical graph identity. No graph-version lifecycle, graph source taxonomy, or question-generation change is part of this roadmap. |
 | Local implementation checkout | Clean at planning start | Lower worktree head is `b1646839e8737da18fb016860be971aaeb05a205` (`chore(devrouter): align managed runtime with azurite`), branch is 9 commits ahead and 6 behind its tracking branch. This is a planning snapshot, not a permission to integrate its remote or another base. |
 | Remote freshness risk | Open execution gate | The primary checkout `docs/chatbot-hitl-config-roadmap` is 144 commits behind `origin/v3` and 1 ahead; `origin/dev` is 62 commits beyond its merge-base and overlaps 37 files. Recheck and obtain approval before any upstream integration. |
-| Planning partner | Completed with concerns | Sol recommended server-side reconciliation, a staged same-resource replacement, and a three-value controlled classification. The material replacement concern is recorded in the design below: never overwrite or delete the only source of the still-serving revision before the candidate is proven. |
+| Planning partner | Completed with concerns | Sol originally recommended server-side reconciliation, a staged same-resource replacement, and a three-value controlled classification. The user-approved 2026-09-03 MVP simplification supersedes the staged-candidate design: the canonical source changes at confirmation, while the prior active serving identity remains available until normal ingestion settlement. |
 
 ## 4. Non-negotiables
 
@@ -67,10 +91,9 @@ There is no separate docs-only PR and no promotion PR in this stack. Each PR may
 - A current `READY` resource is a no-op. `Ingest all` must not become “refresh every URL”. A provider-refreshed active version newer than the latest lecturer attempt is also not downgraded.
 - `QUEUED` and `PROCESSING` resources are skipped, not duplicated. Concurrent bulk and per-resource actions must converge through conditional claims and deterministic lock ordering.
 - Failed resources are eligible for one new attempt when their failed revision is not already the active serving revision. The result must tell the lecturer that failures are being retried.
-- File replacement preserves the `KBResource.id` and the material category. It is not delete-plus-create and it is not an in-place overwrite that can destroy the only recoverable source.
-- File replacement stages a candidate blob and keeps the old serving identity available until the signed callback or the existing reconciliation path proves the new revision. The worker, source preparation, callback comparison, and source gateway must resolve the candidate from the immutable resource-version/run correlation, not from mutable `KBResource` source or digest fields. On failure, the old resource metadata and AI-serving content remain available.
-- Old and candidate blobs are retained until a bounded asynchronous cleanup proves that the new serving revision is settled. Do not delete them synchronously from the browser confirmation path.
-- Replacement consumes no resource slot, but the transition temporarily stores both old and candidate bytes. Reserve the candidate's full size while it is staged or pending, keep the old bytes in the resource or retention ledger until cleanup, and release only after conditional cleanup succeeds. The UI must explain temporary headroom rather than silently evicting content.
+- File replacement preserves the `KBResource.id`, title, material category, and active serving identity. It is not delete-plus-create. Confirmation atomically makes the uploaded blob canonical, increments the resource version, and creates the ordinary UPSERT run; normal callback or polling settlement controls the serving cutover.
+- A confirmed replacement has no source-file rollback. The old blob is deleted best-effort after the transaction, while the previous AI-serving content remains available until the new version settles. A dispatch failure leaves the new canonical source retryable through the ordinary ingestion actions.
+- Replacement consumes no resource slot. While an upload ticket is pending, quota counts both the current resource bytes and the candidate's full size. Confirmation consumes the ticket and replaces the resource's accounted size; expiry cleanup releases an abandoned candidate reservation.
 - Material category is controlled single-select metadata, separate from `BLOB`/`URL`, and has no effect on ingestion, retrieval, graph generation, or question generation in this MVP.
 - Use one generated Prisma migration per work PR at most. Review generated provenance, schema equivalence, defaults, indexes, and retained custom SQL. Do not hand-create a migration when Prisma can generate it.
 - Preserve the existing external data-ingestion contract. Do not send web-scraping instructions from Klicker, add a second scraper, change provider payload semantics without necessity, or move provider ownership into Klicker.
@@ -88,17 +111,17 @@ There is no separate docs-only PR and no promotion PR in this stack. Each PR may
 
 **A queue failure leaves a permanent QUEUED row.** Cause: the DB claim commits before the task dispatch. Remedy: settle a failed dispatch as `FAILED` for that attempt, and preserve the existing maintenance backstop that can safely re-dispatch a stale attempt with the same idempotency key.
 
-**Replacing a file makes the old AI content disappear.** Cause: the canonical blob pointer or active version is overwritten before the new operation settles. Remedy: stage a candidate upload, correlate it to the resource revision, retain the prior serving identity, and promote only after the signed callback/reconciliation proof.
+**Replacing a file makes the old AI content disappear.** Cause: source metadata is mistaken for the active serving identity. Remedy: fence confirmation to the expected resource version, update the canonical source and create its run atomically, and leave the active serving version and digest unchanged until signed callback or reconciliation settlement.
 
-**The candidate upload is recorded but the worker still reads the old file.** Cause: the current source gateway resolves only `KBResource.blobName`, while a safe replacement must leave that field unchanged until promotion. Remedy: persist immutable candidate BLOB metadata on the matching ingestion run, and make the worker, retry path, and source gateway resolve it by resource ID, resource version, and attempt; keep a legacy fallback only for pre-change runs.
+**The replacement run still reads the old file.** Cause: confirmation creates an ingestion run without first making the uploaded blob the canonical source. Remedy: replace the canonical BLOB metadata and create the new version's run in one transaction; the existing worker and source gateway then resolve the new source through the ordinary resource contract.
 
-**Source preparation writes the candidate digest into the canonical resource.** Cause: the current `persistPreparedSource` and callback comparison use `KBResource.contentSha256`; that would expose or compare the replacement before it is promoted. Remedy: for replacement runs, write candidate digest/size to the immutable run record, compare callbacks against that run, and promote the resource source metadata and active identity together only after a matching serving result.
+**Replacing the source also cuts over the AI-serving content.** Cause: canonical source metadata and active serving identity are treated as one state. Remedy: confirmation changes only the canonical source and desired version. Keep `activeResourceVersion` and `activeContentSha256` unchanged until the ordinary signed callback or reconciliation path settles the matching run.
 
-**A failed replacement cannot be retried.** Cause: the candidate upload ticket is deleted at confirmation or the worker reads only the old resource metadata. Remedy: retain a target-bound replacement ticket/source record through success or explicit supersession, and make retry resolve the same candidate without re-uploading it.
+**A failed replacement cannot be retried.** Cause: failure handling assumes the consumed upload ticket remains the source owner. Remedy: after confirmation, the resource row owns the new canonical source. The ordinary row retry and `Ingest all` paths therefore retry that version without another upload.
 
-**Quota rejects a replacement because old and new bytes are counted as two permanent resources.** Cause: the existing create-only ticket path is reused unchanged. Remedy: reserve the full candidate size while the old source remains retained, and use the physical-byte formula below under the KB lock.
+**Quota rejects a replacement because it consumes a second resource slot.** Cause: the create-only ticket rule is reused unchanged. Remedy: replacement tickets reserve the uploaded bytes while pending but never reserve a resource slot; confirmation replaces the existing resource's accounted size.
 
-**The quota formula is internally inconsistent during replacement.** Cause: a positive delta is reserved while both the old resource and full candidate blob remain physically present. Remedy: use one explicit physical-byte formula: other retained bytes plus the old resource bytes plus the full candidate bytes before promotion; other retained bytes plus new resource bytes plus the retained old bytes after promotion; new resource bytes after cleanup. Keep the full candidate reservation through the candidate's non-terminal lifetime.
+**An abandoned upload keeps quota reserved.** Cause: pending replacement tickets count their full uploaded size until consumed or expired. Remedy: include pending replacement bytes in the existing ticket reservation total and let the normal ticket-retention sweep delete expired blobs and release their reservation. Confirmation consumes the winning ticket and makes the resource's new size authoritative.
 
 **A category is mistaken for a source type or provider hint.** Cause: “file”, “website”, “syllabus”, and “script” are mixed into one field. Remedy: keep source type (`BLOB`/`URL`) and material category (`UNCLASSIFIED`/`COURSE_CONTENT`/`ADMINISTRATIVE`) as separate concepts; do not pass the category to data-ingestion in this MVP.
 
@@ -110,7 +133,7 @@ There is no separate docs-only PR and no promotion PR in this stack. Each PR may
 | --- | --- | --- | --- |
 | Resource freshness | `KBResource` latest revision plus active serving identity and `KBIngestionRun` | The workspace says which resources need ingestion and offers one `Ingest all` action. | Current READY is a no-op; active/in-flight claims are fenced; latest operation and serving revision remain distinguishable. |
 | Bulk command | GraphQL mutation and server-side candidate predicate | One confirmation and one result summary replace repetitive row-by-row clicking. | Complete-KB scope, deterministic claims, bounded dispatch, idempotent repeated clicks, no client pagination dependence. |
-| Same-resource replacement | Target-bound upload ticket plus resource/run revision correlation | A BLOB row can be updated without changing its resource identity; the old serving revision remains visible during processing. | Candidate is staged, old serving content is retained on failure, promotion is atomic after callback, cleanup is asynchronous. |
+| Same-resource replacement | Target-bound upload ticket plus expected resource version | A BLOB row can be updated without changing its resource identity; the old serving revision remains visible during processing. | Confirmation atomically changes the canonical source and queues the next version; active serving identity changes only after settlement; old source deletion is best-effort. |
 | Material category | Controlled enum on `KBResource` | Lecturers can classify and filter materials as Course content, Administrative, or Unclassified. | Independent of source type and provider behavior; replacement preserves it; existing rows backfill safely. |
 | Lecturer control | Manage resource table, inspector, and focused dialogs | The common workflow is scan, classify, ingest all, or replace one file. | Status wording is actionable, result summaries are honest, focus and keyboard behavior follow the existing modal contract. |
 
@@ -185,33 +208,28 @@ P1. Estimated 12–18 files and 350–500 human-authored lines, plus generated G
 
 **Problem**
 
-The current upload path can only create a new resource. A lecturer who updates a script must delete and recreate the row, losing its identity and making active serving behavior hard to understand. The second work PR adds a staged BLOB replacement that keeps the same row and keeps the old AI content available until the new revision is proven.
+The current upload path can only create a new resource. A lecturer who updates a script must delete and recreate the row, losing its identity. The second work PR adds a bounded BLOB replacement that keeps the same row and uses the existing ingestion, callback, and serving contracts.
 
 **Do**
 
-1. Freeze a replacement state machine before coding. An unconfirmed ticket is `PENDING_UPLOAD` and may expire with its candidate cleaned up. Confirmation consumes it into one replacement ingestion run; ticket-expiry maintenance must never delete a confirmed or in-flight candidate. A failed candidate remains retryable, a superseded candidate can never promote, and a successfully promoted candidate becomes cleanup-eligible only after the exact promotion proof. Enforce one non-terminal replacement per resource with the locked resource slot plus a database-enforced uniqueness rule (use the smallest documented SQL partial index if Prisma cannot express the active-status predicate). Extend the upload-ticket lifecycle with a target resource, expected resource version, replacement purpose, and candidate metadata. Extend the append-only ingestion run with immutable candidate BLOB source metadata, candidate digest/size, candidate identity, and the previous source pointer needed for cleanup. Use one generated migration for these replacement fields and any cleanup index. Do not weaken the create-only ticket checks.
-2. Add dedicated `requestKbFileReplacement` and `confirmKbFileReplacement` operations rather than making the existing create mutations ambiguously destructive. The request validates a live BLOB resource and creates a random candidate blob. It reserves the candidate's full bytes because the old source remains retained. The confirmation locks the KB and target resource, verifies the expected version and upload metadata, carries the candidate reservation into the run, creates a new versioned ingestion run, and rejects replacement while another ingestion/replacement is active.
-3. Keep the candidate source addressable through the run until settlement. Update the existing task payload builder, source preparation/digest persistence, stale-attempt maintenance retry, callback comparison, and `handleKBSourceGateway` to resolve BLOB source metadata from the matching resource ID, resource version, and attempt/run. They must not read the old mutable `KBResource.blobName`, `mimeType`, `sizeBytes`, or `contentSha256` for a replacement. Candidate identity, digest, and size are stored on the run; the canonical resource source metadata stays at the last promoted revision until success. A legacy fallback to current resource metadata is allowed only for runs created before this change. The data-ingestion service still receives the existing URL/BLOB source contract; no scraper or new provider path is added.
-4. Give retry a precise identity rule: a retry creates a fresh monotonic resource version and ingestion attempt, retains the same candidate blob identity, supersedes the failed run, and requires resource ID, candidate identity, version, and attempt to match at promotion. `Ingest all` and row retry must resolve the latest failed replacement candidate rather than silently re-ingesting the old canonical blob.
-5. On a signed success callback or valid reconciliation result, atomically promote candidate file metadata, `activeResourceVersion`, and `activeContentSha256`; retain the prior blob long enough for asynchronous cleanup. On failure or queue failure, leave the prior resource metadata, active serving identity, and prior serving content intact, surface the failed replacement, and keep the candidate available for one explicit retry or safe supersession. The resource query may expose the pending candidate from the latest run for UX, but must not pretend it is serving.
-6. Extend maintenance and deletion fencing to account for candidate and retained blobs and for superseded failed candidates. Cleanup must be retryable and conditional on the settled resource revision; no browser action deletes the old blob synchronously. Until cleanup completes, quota is calculated as other retained bytes plus both the new and retained old physical blobs. After cleanup, only the promoted blob remains in the resource total.
-7. Add the row action `Replace file` for BLOB resources. The modal shows the current file, category, serving state, and the consequence of replacement. The final action is explicit: `Replace and ingest`. Keep the same title/category unless the lecturer edits category intentionally. After confirmation, keep one row, show the candidate file and “previous version still serving” state, and offer `Retry replacement` or `Choose another file` after failure without forcing delete-plus-create.
-8. Update the same domain, async-worker, frontend documentation, and affected frontend skill with the replacement state machine and retention rule. Do not add graph source-category snapshots or question-generation behavior in this PR.
+1. Add dedicated `requestKbFileReplacement` and `confirmKbFileReplacement` operations. A replacement ticket is bound to one live BLOB resource and its expected version; ordinary upload confirmation must reject it. Multiple uploads may be prepared, but the first confirmation for the expected version wins under the KB lock.
+2. Count every pending upload's bytes against quota while counting only create tickets as resource slots. Use one generated migration containing only the nullable target/version ticket fields, relation, and lookup index.
+3. On confirmation, verify the uploaded blob and ticket, then atomically swap the canonical BLOB source metadata, increment `resourceVersion`, preserve resource id, title, material category, and active serving fields, create the existing UPSERT ingestion run, consume the winning ticket, and dispatch the existing Hatchet task. No data-ingestion, source-gateway, webhook, worker, or maintenance contract changes are needed.
+4. A dispatch failure leaves the new canonical source in `FAILED` with the previous AI-serving identity still active. The ordinary row retry and `Ingest all` therefore operate on that canonical new source. The old source blob is deleted best-effort after the transaction; deletion failure cannot undo confirmation, and source-file rollback is not offered in this MVP.
+5. Add `Replace file` only to BLOB row menus. The modal explains the identity, category, serving, and source-file consequences; file selection does not mutate anything, and the explicit final action is `Replace and ingest`. Prevent duplicate submission and refresh the row after a queue failure.
+6. Update the domain, async-worker, frontend documentation, and frontend skill. Do not change graph or question-generation behavior.
 
 **Check**
 
-- GraphQL tests prove the exact ticket/run state machine, one active replacement constraint, same-ID replacement, BLOB-only authorization, expected-version fencing, upload-ticket mismatch/expiry, full candidate-byte quota reservation, concurrent replacement rejection, candidate retry with a fresh version/attempt, supersession, and category preservation.
-- Ingestion/webhook/source-preparation/source-gateway tests prove the candidate source and digest are read from the matching immutable run/version/attempt while the resource still points at the old file, the callback promotes only that matching candidate, a failure leaves old resource metadata and active fields unchanged, and a stale callback cannot delete or promote a candidate. Maintenance tests prove retained and superseded candidate blob cleanup is conditional and retryable.
-- The failed-replacement path is tested through both the row retry action and `Ingest all`; both reuse the latest candidate run and never fall back to the old canonical blob.
-- Quota tests cover equal, larger, and smaller candidates before promotion, after promotion but before cleanup, after cleanup, failed replacement, and a second replacement attempt. The assertions use the physical-byte formula rather than a positive-delta shortcut.
-- The migration is exactly one generated replacement migration for this PR. Review generated SQL, indexes, defaults, foreign keys, custom cleanup operations, and the absence of unrelated model churn.
-- Playwright covers replacing a file without changing its row, processing with the old serving badge, successful promotion, failed replacement with old serving content retained, retry with the same candidate, safe supersession with another file, upload expiry, quota feedback, concurrent replacement rejection, reload persistence, disabled/loading double-submit prevention, and keyboard/focus behavior in English and German at the primary desktop viewport.
-- Run GraphQL generation, targeted service/Hatchet tests, package type checks, formatting/linting, the full `check:all`, and the pre-push build at this layer's exact head.
+- GraphQL tests prove target/version binding, ordinary-confirmation separation, byte-versus-slot quota accounting, same-id confirmation, category and active-serving preservation, a single winner from concurrent confirmations, queue-failure state, ordinary retry, expiry, ownership, and BLOB-only authorization.
+- The migration is exactly one generated replacement-ticket migration. Review its SQL, index, foreign key, schema equivalence, and absence of unrelated model churn.
+- Playwright proves URL rows have no replacement action, BLOB rows require explicit selection and confirmation, one replacement request occurs, the modal closes on success, and the previous serving version remains visible while the new version is queued.
+- Run GraphQL generation, focused service tests, package checks, formatting/linting, `check:all`, and the pre-push build at the exact head. Use a synthetic local Blob only.
 - Use a synthetic/local Blob fixture only. No live external ingestion retry, production data, graph build, or cleanup operation is part of this acceptance check.
 
 **Working context**
 
-Repository: KlickerUZH. Base is the green exact head of W1 after the normal stack interaction check. Proposed branch role: second actual work PR in the current KB feature stack. Owned mutable seams: replacement ticket/schema fields, GraphQL replacement operations and callbacks, existing Hatchet bridge/maintenance paths, `KnowledgeBaseFileDropzone`, resource inspector/table, generated operations, and affected docs. Do not modify data-ingestion or sibling question-generation work.
+Repository: KlickerUZH. Base is the merged Ingest all and material category result on `v3-ai` after the normal interaction check. Branch: `rs/kb-resource-replacement-w2`. Owned mutable seams are upload reservation fields, GraphQL replacement operations, `KnowledgeBaseFileDropzone`, resource row/modal behavior, generated operations, focused tests, and affected docs. Maintenance changes are limited to deferring hard deletion while replacement upload reservations remain. Do not modify data-ingestion, Hatchet workflows, source-gateway/webhook code, graph work, or sibling question-generation work.
 
 **Authority and terminal**
 
@@ -223,15 +241,15 @@ Local edits, repository-native checks, required reviews, and local commits are p
 
 **Release-note impact**
 
-Candidate claim: “Lecturers can replace a file without recreating its Knowledge Base resource, while the previous AI-serving revision remains available if the update fails.” This claim requires exact-head service, maintenance, and desktop browser evidence.
+Candidate claim: “Lecturers can replace a file without recreating its Knowledge Base resource; ingestion starts immediately and previous AI content remains available during the update.” This claim requires exact-head service and desktop browser evidence. It does not promise restoration of the previous source file.
 
 **Depends on / GATED on**
 
-GATED on W1 and A1–A5. Do not start W2 on a stale or rebased W1 head without refreshing the interaction check.
+GATED on merged W1 and A1–A5. Integrate the current `v3-ai` once after the branch passes on its existing base, as explicitly approved for this package.
 
 **Priority and size signal**
 
-P1. Estimated 18–24 files and 550–750 human-authored lines, plus generated output. This is deliberately one risk-isolated work package because staged source identity, source-gateway resolution, callback promotion, quota, cleanup, and the user-visible replacement state are one correctness contract. Do not split it into a UI PR and a storage PR that cannot independently preserve the old serving revision.
+P1. Estimated 12–16 files and 300–500 human-authored lines, plus generated output. The simplified package keeps the replacement command, ticket fence, quota accounting, ingestion dispatch, UI, and evidence together while reusing every downstream ingestion contract.
 
 ## 8. Decision gates
 
@@ -241,14 +259,14 @@ The recommendations below make the MVP predictable. The user can approve them to
 | --- | --- | --- | --- |
 | A1 — Base and integration | Which exact live branch/PR base should receive the two work PRs, and should the current upstream changes be integrated once before coding? | Resolve the live KB feature-stack base at execution start. Incorporate upstream only after one explicit approval naming the branch and integration pass. The stale roadmap checkout is not the base. | W1, W2 |
 | A2 — Bulk freshness semantics | Should `Ingest all` retry failed resources, skip current READY resources, and skip a provider-refreshed active version newer than the latest lecturer attempt? | Yes. Include failed resources that are not currently serving, never re-fetch current READY resources, and never downgrade a newer active provider revision. This makes the label truthful and prevents surprise URL refreshes. | W1 |
-| A3 — Replacement completion | Should confirming a replacement automatically queue ingestion? | Yes, behind an explicit `Replace and ingest` confirmation. A replacement is not complete until its candidate is ingested, while the old serving revision remains available during the operation. | W2 |
-| A4 — Replacement quota | Should candidate and retained bytes count until asynchronous cleanup settles? | Yes. Reserve the candidate's full size while the old source remains retained. Before promotion count old plus candidate; after promotion count new plus retained old; after cleanup count only new. This keeps the physical quota truthful, even for a smaller replacement. | W2 |
+| A3 — Replacement completion | Should confirming a replacement automatically queue ingestion? | Yes, behind an explicit `Replace and ingest` confirmation. Confirmation makes the uploaded source canonical and queues its ordinary UPSERT run, while the old serving revision remains available during the operation. | W2 |
+| A4 — Replacement quota | Should the pending replacement upload count alongside the current resource? | Yes. Before confirmation, count the current resource plus every pending candidate upload. Confirmation consumes the ticket and replaces the resource's accounted size; expiry cleanup releases abandoned candidate reservations. | W2 |
 | A5 — Material taxonomy | Should MVP use controlled single-select metadata rather than arbitrary tags, and should new resources default to Course content? | Yes. Use `Unclassified`, `Course content`, and `Administrative`; backfill existing resources to Unclassified and preselect Course content for new resources. “Script” maps to Course content and “syllabus” maps to Administrative. Add arbitrary multi-tags only after a real filtering/metadata use case exists. | W1, W2 |
 
 ## 9. External dependencies to watch
 
-- **Data-ingestion service:** its existing source URL/BLOB payload and signed callback/resource-version contract must remain usable. Klicker resolves staged candidates through its own ticket/run correlation where needed; no provider API change is planned. If the contract cannot preserve same-resource/version fencing, stop at the design boundary and ask before expanding it.
-- **Azure Blob storage:** existing SAS upload and maintenance deletion paths must support candidate blobs and conditional cleanup. Do not access secret values; use metadata-only tests or existing local Azurite fixtures.
+- **Data-ingestion service:** its existing source URL/BLOB payload and signed callback/resource-version contract must remain usable. The new canonical source flows through that ordinary contract; no provider API change is planned. If the contract cannot preserve same-resource/version fencing, stop at the design boundary and ask before expanding it.
+- **Azure Blob storage:** existing SAS upload and maintenance deletion paths must support pending replacement uploads, expired-ticket cleanup, and best-effort deletion of the superseded source. Do not access secret values; use metadata-only tests or existing local Azurite fixtures.
 - **Current feature stack and upstream branches:** the lower worktree is not a fresh copy of its remote, and the unrelated primary checkout has substantial upstream drift. Re-run the remote-state gate and make the A1 integration decision before creating implementation branches.
 - **Devrouter/runtime:** browser proof needs a healthy Manage runtime. Reuse the existing managed runtime only after its exact branch and revision are verified; do not start, stop, or repair it as part of planning.
 - **Graph/question-generation work:** remains a consumer of active serving content and the canonical graph-build ledger. No synchronization or source-category contract is needed for W1/W2.
@@ -274,7 +292,7 @@ Each work PR must return a boundary packet containing:
 - review findings and verified dispositions from the simplifier, applicable slice reviewer, and final reviewer; invalidated evidence must be named rather than silently reused;
 - updated `Progress` entry and the next boundary candidate. Include the affected `.agents/skills/klicker-frontend-ui/SKILL.md` or an explicit reviewed no-change disposition. A green source/CI result is not a deployment or live-ingestion proof.
 
-The package's final review must explicitly verify that source type and material category remain independent, the bulk mutation is complete-KB and idempotent, replacement preserves resource identity and old serving content on failure, retained blobs are not deleted early, and graph/question-generation contracts remain unchanged.
+The package's final review must explicitly verify that source type and material category remain independent, the bulk mutation is complete-KB and idempotent, replacement preserves resource identity and active serving content on failure, expired pending uploads are cleaned safely, superseded source deletion cannot roll back confirmation, and graph/question-generation contracts remain unchanged.
 
 ## 12. Progress (append-only)
 
@@ -425,3 +443,45 @@ The package's final review must explicitly verify that source type and material 
 - `final-ai-review` and `final-ai-stack-review` fail with the repository's stacked-PR topology policy (stack root does not target the default branch), identical to the parent.
 - The PR description was refreshed through the description gates — whole-branch accounting for 17 commits, terminal CI readback, and earlier-head evidence re-labeled — and read back from the forge.
 - The stack-level merge blocker is now the parent layer's five failing e2e specs plus the lower dependency PR #5635; fixing parent-layer specs is outside this slice's authority. Merge remains withheld.
+
+### 2026-09-03 — W2 replacement contract simplified for the MVP
+
+- The initial W2 candidate/retained-source design was challenged before publication. Sol recommended a smaller canonical-source replacement that reuses the existing ingestion run, callback, serving identity, retry, source-gateway, and maintenance contracts. The user approved that simplification for the MVP.
+- The current contract uses dedicated target-bound request and confirmation mutations. Confirmation atomically replaces the canonical BLOB source, increments its version, preserves the row identity, title, category, and active serving fields, creates the existing UPSERT run, and dispatches ingestion immediately. Multiple upload tickets may exist, but expected-version fencing permits one winner.
+- A dispatch failure leaves the new source retryable through the ordinary row and bulk ingestion paths. Existing AI content remains active until normal settlement succeeds. The old source blob is deleted best-effort after confirmation and cannot be restored; this narrower source-file guarantee is explicit in the UI and docs.
+- The schema adds only nullable replacement target/version fields to `KBUploadTicket`, one relation/index, and one generated migration. No Hatchet workflow, data-ingestion, source-gateway, webhook, maintenance, graph, or question-generation code changes remain in the W2 diff.
+- The isolated devrouter workspace is retained as `rs-kb-resource-replacement-w2`. Source checks can run in its Node 24 container when OrbStack is healthy; the current host OrbStack VM RPC exits with `Post "http://vmrpc": EOF`, so browser handoff remains an environment recovery gate rather than source evidence.
+
+### 2026-09-03 — W2 implementation, integration, and review
+
+- W2 is committed on `rs/kb-resource-replacement-w2` and integrated once with `origin/v3-ai@fa7e707bdf76b8afadb2d640e2ad288991537660` at merge commit `722a5bb56d`. The 20-path package adds dedicated request/confirm replacement operations, target/version-fenced upload tickets, conservative byte quota accounting without a second resource slot, same-resource canonical source replacement, ordinary ingestion dispatch/retry, the BLOB-only Manage flow, focused tests, one generated migration, and the required wiki/skill updates.
+- Local source evidence before the integration pass is green: the six focused replacement and serving-cutover tests pass, the complete knowledge suite passes `63/63`, Prisma validation, GraphQL generation and checks, Knowledge Base management and Playwright TypeScript checks, repository `check:all`, build, migration reset/deploy/push, and diff/secret checks pass. The authenticated desktop browser flow covers BLOB replacement, URL action absence, explicit selection and confirmation, modal closure, and preservation of the active version while the replacement queues.
+- The simplifier and the source/data-integrity slice review found no blocking defect. The integrated final review at `722a5bb56d` passed with no findings across ownership, BLOB-only authorization, version fencing, concurrent confirmation, quota, migration, queue-failure retryability, old-blob cleanup, serving continuity, UI, tests, and docs.
+- A later `v3-ai` change at `7249e57eb7` adds chatbot owner preview. It overlaps only the shared English and German message files and merges without conflict; no repeated upstream integration is performed after the approved one-time pass. The PR interaction check and exact-head CI remain the publication gates.
+- Integrated runtime re-verification is blocked by environment state, not a reproduced W2 failure. Upstream moved Azurite into the boot-critical base service set; the existing managed runtime now requires exact delete-and-recreate recovery. The host also reports an unavailable OrbStack socket and insufficient free disk during analytics environment refresh. Recreating only `rs-kb-resource-replacement-w2` requires separate explicit deletion authority before the full stack can be left running for manual verification.
+- Push and draft PR creation against `v3-ai` are authorized next. Merge, deployment, live ingestion, graph generation, production action, secret access/write, cluster writes, and unrelated cleanup remain withheld.
+
+### 2026-09-03 — W2 exact-head review corrections
+
+- OpenCodeReview raised three current-layer inline findings at published head `359c92c943`. The verified corrections are committed at `3d4a188856`: resource hard-delete maintenance now defers tombstones that still have replacement tickets until the existing ticket-retention sweep removes the abandoned candidate; replacement refresh failures no longer keep the modal open; and the upload error mapping and serving-status fallback are flattened without changing behavior.
+- The maintenance regression asserts the replacement-ticket guard in both the selection and final compare-and-delete conditions. The existing browser scenario now makes the metrics refresh fail after a successful replacement and requires the modal to close.
+- Focused maintenance tests pass `22/22`. Hatchet, Knowledge Base management, and Playwright TypeScript checks pass; focused Biome, Prettier, diff, and staged gitleaks checks pass. The repository pre-commit gate passes all `29/29` checks. These host checks retain the documented Node 26 warning because the isolated Node 24 runtime is unavailable.
+- The previous head's hosted Playwright run `33792176794` failed all eight shards before any tests because the shared artifact omitted `@klicker-uzh/knowledge-graph/dist/index.js`. Current target head `v3-ai@7249e57eb7` fails its own run `33790494925` with the identical module-resolution error. This is a target-wide CI packaging defect, not replacement behavior evidence, and is not patched in W2.
+- The required final review, normal push, review-thread replies, PR refresh, and natural exact-head checks remain next. The PR stays draft. Merge, deployment, migration apply, live replacement, secret access, runtime deletion or recreation, and cleanup remain withheld.
+
+### 2026-09-03 — W2 final-review documentation correction
+
+- The integrated final reviewer found no implementation defect. It identified one documentation contradiction: earlier normative sections still described the superseded staged-candidate design after the approved MVP switched to canonical-source replacement.
+- The current orchestration contract, non-negotiables, known traps, primitive table, decision gates, dependency notes, and final-review expectations now describe the implemented contract. Confirmation atomically changes the canonical source and queues the next version; active serving identity changes only after normal settlement; old source deletion is best-effort; and expired pending tickets release their quota reservation through the existing maintenance sweep.
+- Historical Progress entries remain append-only evidence of the design evolution and are superseded by the approved 2026-09-03 simplification entry above.
+- Draft PR #5745 separately fixes the target-wide Playwright artifact omission by uploading `packages/knowledge-graph/dist`. Its ready-state run proves all workers start and seven of eight shards pass; the remaining shard 4 failure requires an independent disposition before that PR can advance. W2 does not duplicate or modify this CI fix.
+- Normal push, review-thread replies, PR refresh, and natural exact-head checks remain next. The PR stays draft. Merge, deployment, migration apply, live replacement, Playwright reruns, upstream integration, secret access, runtime deletion or recreation, and cleanup remain withheld.
+
+### 2026-09-04 — W2 publication and delivery reconciliation
+
+- W1 is merged as PR #5710 at source head `77d7018f34305ce713277f0c43793623098d7cd7` and merge commit `a0e32ade053ce5b8836cd9b99b45f557cb247cd4`. W2 is published as draft PR #5756 against `v3-ai`; its reviewed implementation head before this progress-only receipt is `037459d7df42263937ec8bf92b4e3d457160ddbc`.
+- The three current-layer review threads are resolved. The integrated final review remains accepted because the later commits only correct deterministic test fixtures and this progress record; they do not change the replacement contract or implementation.
+- Local evidence for `037459d7df` is green: focused Playwright TypeScript and formatting checks pass, repository `check:all` passes `29/29`, and the pre-push monorepo build passes `26/26`. Hosted CI passes the repository, GraphQL, MCP, gitleaks, GitGuardian, trusted-policy, fallback-build, and Playwright shard 1–7 checks. Shard 8 fails only the unrelated existing chat feature-access test, and its aggregate status mirrors that failure.
+- Exact-head OpenCodeReview run `33876150064`, job `101033487232`, failed before reviewing because all 14 provider requests returned HTTP 403; it produced no findings, tokens, or tool calls. The external final-AI status remains pending on the repository's manual `z-ai/glm-5.3-flash` route. Neither infrastructure result is treated as a replacement source defect, and no event is manufactured.
+- `origin/v3-ai` is two commits ahead of the W2 branch baseline. PR #5756 remains mergeable without conflicts, the target movement is unrelated to replacement behavior, and no additional upstream integration is performed.
+- The achieved layer is a reviewed draft PR with branch-relevant source and CI evidence. The remaining delivery boundary is the manual final-AI route, natural exact-head checks for this progress-only commit, and an explicit decision to mark ready or merge. The runtime was not started or touched during this reconciliation. Merge, deployment, migration apply, live replacement, upstream integration, secret access, runtime recovery, and cleanup remain withheld.

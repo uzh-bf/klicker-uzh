@@ -2078,6 +2078,37 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      requestKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileReplacement(args, ctx)
+        },
+      }),
+
+      confirmKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.confirmKbFileReplacement(args, ctx)
+        },
+      }),
+
       createKbUrlResource: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBResource,
