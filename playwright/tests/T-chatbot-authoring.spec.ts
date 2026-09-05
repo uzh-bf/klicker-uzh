@@ -3,7 +3,12 @@ import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
 import { fillEditorField } from '../util/fixtures/elements.js'
-import { COURSE_ID_TEST, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
+import {
+  COURSE_ID_TEST,
+  URL_CHAT,
+  URL_MANAGE,
+  USER_ID_TEST,
+} from '../util/constants.js'
 
 const CHATBOT_PREFIX = 'E2E Authoring'
 const FIRST_CHATBOT = `${CHATBOT_PREFIX} One`
@@ -166,6 +171,25 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
   test.afterEach(async () => {
     await cleanupAuthoringChatbots()
+  })
+
+  test('opens a draft owner preview with its effective modes', async ({
+    page,
+  }) => {
+    const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+    const previewPagePromise = page.context().waitForEvent('page')
+
+    await page.getByTestId('chatbot-owner-preview-link').click()
+    const previewPage = await previewPagePromise
+
+    await expect(previewPage).toHaveURL(
+      `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
+    )
+    await expect(previewPage.getByTestId('chat-error')).toHaveCount(0)
+    await expect(previewPage.getByTestId('chat-welcome-message')).toBeVisible()
+    await expect(previewPage.getByTestId('chat-welcome-mode')).toContainText(
+      'Tutor'
+    )
   })
 
   test('locks chatbot creation fields while the request is pending', async ({

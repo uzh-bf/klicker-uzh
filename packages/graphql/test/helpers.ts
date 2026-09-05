@@ -361,6 +361,7 @@ export async function testInitialization(
     prisma,
     featureFlags: {
       isEnabled: vi.fn((key) => key === 'ai-beta'),
+      refresh: vi.fn(async () => undefined),
     },
     hatchet,
     tasks,

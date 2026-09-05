@@ -11,7 +11,6 @@ import { KP_DATA as KP } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   clearEditorField,
-  clearRichTextField,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -62,7 +61,7 @@ test.describe('Test creation and editing functionalities for KPRIM elements', ()
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing option 2 disables save
-    await clearRichTextField(page.getByTestId('insert-answer-field-2'))
+    await clearEditorField(page, 'insert-answer-field-2')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 2, KP.choices[2])
     await page.getByTestId('insert-question-title').click()

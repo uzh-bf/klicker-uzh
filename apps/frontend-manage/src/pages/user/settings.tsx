@@ -7,7 +7,7 @@ import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
 import Layout from '../../components/Layout'
-import BetaFeaturesSetting from '../../components/user/BetaFeaturesSetting'
+import BetaEnrollmentSettings from '../../components/user/BetaEnrollmentSettings'
 import ChatAccountUsageSettings from '../../components/user/ChatAccountUsageSettings'
 import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettings'
 import EmailSetting from '../../components/user/EmailSetting'
@@ -33,7 +33,7 @@ function Settings() {
         <ShortnameSetting user={user.userProfile} />
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
-        {user.userProfile.catalyst && <BetaFeaturesSetting />}
+        <BetaEnrollmentSettings />
 
         {aiBetaEnabled && (
           <Suspense fallback={<Loader />}>
