@@ -185,7 +185,7 @@ operator boundary.
 
 ## Typed Json fields
 
-Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc comment on the field (e.g. `[PrismaElementOptions]` in `element.prisma`) maps to declarations in `packages/graphql/src/types/app.ts` (`declare global { namespace PrismaJson { … } }`), which import shapes from `@klicker-uzh/types`. Add the comment AND the declaration when introducing a typed Json field.
+Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc comment on the field (e.g. `[PrismaElementOptions]` in `element.prisma`) maps to declarations in `packages/graphql/src/types/app.ts` (`declare global { namespace PrismaJson { … } }`), which import shapes from `@klicker-uzh/types`. Add the comment AND the declaration when introducing a typed Json field. `Chatbot.standardModeConfig` follows this pattern with the shared `ChatbotStandardModeConfig` shape; `apps/chat/src/types/app.d.ts` declares the same mapping for Chat's generated Prisma payloads. Run `util/sync-schema.sh` after editing shared schema files so the Analytics mirror stays aligned (its owned generator and datasource files remain untouched).
 
 ## Schema-level gotchas
 

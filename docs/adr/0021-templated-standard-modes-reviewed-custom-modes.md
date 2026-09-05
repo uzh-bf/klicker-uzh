@@ -26,9 +26,21 @@ replacing:
   platform owns standard-mode labels and descriptions. A stored
   `enabled: false` explicitly opts a chatbot out of one mode without a schema
   migration.
-- Tutor and Explainer are general standard candidates. Quizzer is
-  capability-gated: it appears only when the server can resolve a restricted
-  course `doc_query` binding. An exact Quizzer MCP configuration takes
+- Tutor and Explainer also accept the bounded lecturer-owned fields `courseName`,
+  `subjectDomain`, `languageOfInstruction`, and `scopeNote`, plus explicit
+  `tutorEnabled`, `explainerEnabled`, and `quizzerEnabled` flags, in the nullable
+  typed `Chatbot.standardModeConfig` value. A valid mutation value requires all
+  three flags and must leave Tutor or Explainer enabled; Quizzer never satisfies
+  that invariant. Tutor and Explainer do not require a knowledge base. Missing
+  or malformed persisted values derive all three flags from legacy opt-outs and
+  defaults, while a valid pre-flag value with only Tutor and Explainer flags
+  derives Quizzer from its legacy opt-out/default. This keeps existing rows
+  compatible without a backfill. The owner-only replacement mutation trims and
+  bounds the fields, and the Manage owner projection returns only the combined
+  effective settings, never raw `systemPrompts`.
+- Tutor and Explainer are general standard candidates. Quizzer is independently
+  configurable but remains capability-gated: it appears only when the server
+  can resolve a restricted course `doc_query` binding. An exact Quizzer MCP configuration takes
   precedence per server. Otherwise Quizzer may inherit only a Tutor binding
   that exposes an exact `doc_query` tool or a required single-tool alias named
   `doc_query`; unrestricted and wildcard configurations are never inherited.
@@ -36,6 +48,9 @@ replacing:
   discovery, a Quizzer request fails closed with the existing required-tool
   response if no `doc_query` tool is available; optional retrieval outages keep
   their existing graceful-degradation behavior in Tutor and Explainer.
+  Runtime scope checks reject conflicting stored bindings across modes, while
+  authorizing the selected request from the effective configuration produced by
+  this inheritance rule.
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a
@@ -43,7 +58,11 @@ replacing:
 - Lecturers may later edit a small set of constrained persona fields — course
   name, subject domain, language of instruction, optional scope note — that
   the server compiles into standard prompts. No approval is needed because
-  these fields can only aim the bot, not disarm it.
+  these fields can only aim the bot, not disarm it. The Manage framing field
+  limits newly entered or edited scope notes to 200 characters, while the
+  persisted parser accepts up to 1000 characters so existing longer notes
+  survive mode-only saves unchanged. The compiler gives Tutor and Explainer
+  the complete typed persona; Quizzer receives only `scopeNote`.
 - **Custom modes** let a lecturer author a name, description, and free persona
   text. That text is compiled as the persona section on top of the same
   scaffolding; publication of a new or edited custom mode requires team
@@ -53,6 +72,11 @@ replacing:
   scope and evidence, privacy and safety, non-disclosure, epistemic integrity,
   Markdown/mathematics/code formatting, conditional citations, and the final
   language contract.
+- For Tutor and Explainer, the compiler places the normalized typed context
+  after legacy guidance and before the platform mode contract. It serializes
+  the context as one labelled JSON data value, so instruction-like field text
+  cannot gain prompt authority. Server course identity and the final
+  conversation-language policy remain authoritative.
 - Every compiled prompt identifies the owning course with the server-sourced
   `Course.displayName`. The compiler serializes it as JSON inside a labelled
   data section, so course text is context and never an instruction.
