@@ -32,10 +32,12 @@ export default {
         'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
         'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      fixedModelInfo:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
       usingPrimaryModel:
-        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -307,6 +309,8 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Entwurf',
+      statusDescription:
+        'Manueller Status: noch nicht fertig und in Bearbeitung.',
     },
     SCHEDULED: {
       statusLabel: 'Geplant',
@@ -329,51 +333,70 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manueller Status: Review angefragt.',
     },
     READY: {
       statusLabel: 'Bereit',
+      statusDescription:
+        'Manueller Status: als wiederverwendbar eingestuft; Standard für neue Elemente.',
     },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Studierende wählen genau eine der vorgegebenen Antwortmöglichkeiten.',
       text: 'Bitte eine einzige Option auswählen.',
       richtext: 'Bitte <b>eine einzige</b> Option auswählen.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Studierende wählen eine oder mehrere der vorgegebenen Antwortmöglichkeiten.',
       text: 'Bitte eine oder mehrere Optionen auswählen.',
       richtext: 'Bitte <b>eine oder mehrere</b> Optionen auswählen.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Studierende beurteilen genau vier Aussagen jeweils als richtig oder falsch.',
       text: 'Beurteile die Aussagen auf ihre Richtigkeit.',
       richtext: 'Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Freitext (FT)',
+      description:
+        'Studierende antworten in Freitext, optional begrenzt durch eine maximale Länge.',
       text: 'Bitte eine Antwort eingeben.',
       richtext: 'Bitte eine <b>Antwort</b> eingeben.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerisch (NR)',
+      description:
+        'Studierende antworten mit einer Zahl, optional begrenzt durch Bereich, Genauigkeit und Einheit.',
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Inhalt (CT)',
+      description:
+        'Stellt Studierenden zusätzliche Informationen bereit, ohne Frage.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Lernkarte (FC)',
+      description:
+        'Studierende üben Inhalte auswendig und bewerten selbst, ob sie diese erinnert haben.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Auswahl (SE)',
+      description:
+        'Studierende wählen eine bestimmte Anzahl von Elementen aus einer Antwort-Sammlung.',
       text: 'Bitte wählen Sie die richtigen Antworten aus der Liste.',
       richtext:
         'Bitte wählen Sie die <b>richtigen Antworten</b> aus der Liste.',
@@ -381,6 +404,8 @@ export default {
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Fallstudie (CS)',
+      description:
+        'Studierende bewerten Elemente anhand von Kriterien innerhalb einer oder mehrerer Fallszenarien.',
       text: 'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
       richtext:
         'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
@@ -845,6 +870,8 @@ export default {
       practicePoolPromotionDescription:
         'Bis zu 25 Fragensets aus allen Übungs-Quizzes. Deine bisherigen Antworten können die Reihenfolge beeinflussen.',
       startPracticePool: 'Übungspool starten',
+      practicePoolRoundComplete:
+        'Runde abgeschlossen! Starte eine weitere Runde, um weiter zu üben. Deine bisherigen Antworten können die Auswahl der Fragensets beeinflussen.',
       individualPracticeQuizzes: 'Einzelne Übungs-Quizzes',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
@@ -1581,6 +1608,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       status: 'Status',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
+      sortOrderAscending: 'Aufsteigend sortieren',
+      sortOrderDescending: 'Absteigend sortieren',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
@@ -2022,6 +2051,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
+      betaFeaturesDataUse:
+        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
+      betaFeaturesDescription:
+        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
+      betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
+      betaFeaturesEnrollment: 'Beta-Anmeldung',
+      betaFeaturesEnrollmentTooltip:
+        'Mit dieser optionalen Einstellung steuern Sie, ob Ihr Konto für die Beta-Kohorte angemeldet ist.',
+      betaFeaturesError:
+        'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
+      betaFeaturesRefreshFailure:
+        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+      betaFeaturesRefreshing:
+        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+      betaFeaturesSaved:
+        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+      betaFeaturesPending:
+        'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
+      betaFeaturesTitle: 'Beta-Features',
+      betaFeaturesUnavailable:
+        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:
@@ -2098,15 +2149,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
+      createLiveQuizDescription:
+        'Interagieren Sie während einer Veranstaltung direkt mit Ihren Teilnehmenden.',
       createMicrolearning: 'Microlearning erstellen',
+      createMicrolearningDescription:
+        'Planen Sie kurze Lernaktivitäten über einen festgelegten Zeitraum.',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
+      createPracticeQuizDescription:
+        'Lassen Sie Teilnehmende selbstständig im eigenen Tempo üben.',
       createGroupTask: 'Gruppenaktivität erstellen',
-      createElement: 'Element Erstellen',
+      createGroupTaskDescription:
+        'Lassen Sie Gruppen gemeinsam an einer Aufgabe arbeiten.',
+      createElementaryLabel: 'Elemente',
+      createActivitiesLabel: 'Aktivitäten',
+      createElement: 'Element erstellen',
+      emptyStateTitle: 'Erstellen Sie Ihr erstes Element',
+      emptyStateDescription:
+        'Elemente sind wiederverwendbare Fragen und Inhalte für Ihre Aktivitäten. Erstellen Sie eines, um loszulegen.',
+      clearSearch: 'Suche löschen',
+      elementsLoadError: 'Die Elemente konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
+      moreActions: 'Weitere Aktionen für {name}',
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
+      filterApplied: 'Filter aktiv',
       tags: 'Tags',
       selectOrType: 'Auswählen oder Eingeben...',
       untagged: 'Ohne Tags',
@@ -2172,12 +2241,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperationsElements: 'Elemente - Batch-Operationen',
       batchOperationsApplying: 'Batch-Operationen werden angewendet…',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Prüfen Sie die ausgewählten Elemente unten. Wählen Sie anschliessend die anzuwendenden Aktionen.',
       batchElementName: 'Element',
-      batchElementPermission: 'Ihre Berechtigung',
-      batchUpdateStatus: 'Eignung für Elementänderungen',
+      batchElementPermission: 'Berechtigung',
+      batchUpdateStatus: 'Änderungen',
       batchUpdateStatusInactive: 'Keine Elementänderung konfiguriert',
-      batchSharingStatus: 'Eignung für Elementfreigaben',
+      batchSharingStatus: 'Freigabe',
       actionApplies: 'Aktion wird angewendet',
       batchSharingApplies: 'Freigabe wird angewendet',
       modifyStatus: 'Status ändern',
@@ -2239,8 +2308,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateActivitiesBatchInfo:
         'Wählen Sie hier, ob die Änderungen, die an den ausgewählten Elementen vorgenommen werden, auch auf alle Aktivitäten im Entwurf- und Planungsstatus angewendet werden sollen. Optional können Sie auch Aktivitätsvorlagen mit diesem Element in das Update einbeziehen.',
       activityUpdates: 'Aktivitäts-Updates',
-      draftScheduledActivities: 'Entwurfs- und geplante Aktivitäten',
-      templateUpdates: 'Aktivitätsvorlagen-Updates',
+      batchUpdateInstancesConsequence:
+        'Änderungen auch auf entworfene und geplante Aktivitäten anwenden',
+      batchUpdateTemplateInstancesConsequence:
+        'Aktivitätsvorlagen ebenfalls aktualisieren',
       batchOperationSuccess:
         'Ihre Batch-Operation wurde erfolgreich durchgeführt.',
       batchOperationPartialSuccess:
@@ -2285,6 +2356,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyElement: 'Element bearbeiten',
       useElementInActivities: 'Element in Aktivitäten verwenden',
       elementType: 'Elementtyp',
+      elementTypeImmutableNotice:
+        'Der Elementtyp kann nach der Erstellung nicht mehr geändert werden. Sie können das Element duplizieren, um einen anderen Typ zu erstellen.',
       selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',
@@ -2469,6 +2542,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
+      confirmCancelTitle: 'Änderungen bei der Aktivitätserstellung verwerfen?',
+      confirmCancelBody:
+        'Sie haben Daten eingegeben, die noch nicht gespeichert sind. Beim Verwerfen werden die in diesem Wizard eingegebenen Daten endgültig entfernt.',
+      confirmCancelEditTitle: 'Änderungen an dieser Aktivität verwerfen?',
+      confirmCancelEditBody:
+        'Sie haben Änderungen eingegeben, die noch nicht gespeichert sind. Beim Verwerfen werden die an dieser Aktivität vorgenommenen Änderungen endgültig entfernt.',
+      confirmCancelDiscard: 'Verwerfen',
+      confirmCancelKeepEditing: 'Weiter bearbeiten',
+      continueToDescription: 'Weiter zur Beschreibung',
+      continueToSettings: 'Weiter zu den Einstellungen',
+      continueToQuestions: 'Weiter zu den Fragen',
+      temporaryStorageCreation:
+        'Der Erstellungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      temporaryStorageEditing:
+        'Der Bearbeitungsprozess der Aktivität wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
       activityDisplayName:
         'Bitte geben Sie einen Anzeigenamen für Ihre Aktivität ein.',
       considerFormErrors: 'Bitte beachten Sie die Fehlermeldungen im Formular',
@@ -2502,12 +2590,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
       newStack: 'Neuer Stack',
-      newBlockSelected: '1 Block mit {count} Elementen hinzufügen',
-      newStackSelected: '1 Stack mit {count} Elementen hinzufügen',
+      newBlockSelected:
+        '{count, plural, one {1 Block mit # Element hinzufügen} other {1 Block mit # Elementen hinzufügen}}',
+      newStackSelected:
+        '{count, plural, one {1 Stack mit # Element hinzufügen} other {1 Stack mit # Elementen hinzufügen}}',
       pasteSelection: '{count} Fragen hinzufügen',
-      pasteSelectionElements: '{count} Elemente hinzufügen',
-      pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
-      pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
+      pasteSelectionElements:
+        '{count, plural, one {# Element hinzufügen} other {# Elemente hinzufügen}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {# Block mit 1 Element hinzufügen} other {# Blöcke mit jeweils 1 Element hinzufügen}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {# Stack mit 1 Element hinzufügen} other {# Stacks mit jeweils 1 Element hinzufügen}}',
       pinProtected: 'PIN-Schutz',
       pinProtectedTooltip:
         'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
@@ -3912,6 +4005,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
       chatbotSetupBasics: 'Grundangaben',
       chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupModes: 'Lernmodi',
+      chatbotSetupModesDescription:
+        'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
+      chatbotSetupModesTitle: 'Lernmodi',
+      chatbotSetupModesDescriptionLong:
+        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
+      chatbotModeExplainer: 'Erklärer',
+      chatbotModeExplainerDescription:
+        'Erklärt Kurskonzepte direkt mit Definitionen und passenden Beispielen.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
+      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeQuizzerCapabilityNote:
+        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+      chatbotModeEnabled: 'Aktiviert',
+      chatbotModeDisabled: 'Deaktiviert',
+      chatbotFraming: 'Rahmung des Chatbots',
+      chatbotFramingDescription:
+        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+      chatbotFramingPlaceholder:
+        'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
+      chatbotFramingTooLong:
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+      chatbotModesSave: 'Lernmodi speichern',
+      chatbotModesSaving: 'Wird gespeichert…',
+      chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
+      chatbotModesSaveError:
+        'Die Lernmodi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotModesReadonly:
+        'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
       chatbotSetupReview: 'Prüfen und einreichen',
@@ -3985,7 +4112,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern Sie Änderungen in den Grundangaben, Lernmodi und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:
@@ -4059,17 +4186,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriod: 'Zurücksetzungsintervall',
       creditResetAmount: 'Zurücksetzungsmenge',
       creditMaxCredits: 'Maximale Credits',
-      modelSelection: 'Modellauswahl',
+      modelSelection: 'Modellauswahl durch Teilnehmende',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
       modelSelectionEnabledDescription:
-        'Teilnehmende können zwischen den erlaubten Modellen wählen.',
+        'Aktiv: Teilnehmende können eines der explizit ausgewählten Modelle wählen.',
       modelSelectionDisabledDescription:
-        'Die Modellauswahl erfolgt automatisch basierend auf der Credit-Verfügbarkeit.',
+        'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
+      modelSelectionFixedDescription:
+        'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      modelSelectionParticipantDescription:
+        'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
+      selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
+      reasoningEffort: 'Reasoning-Level',
       singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
       chatbotModelSettingsSave: 'Modelleinstellungen speichern',
       chatbotModelSettingsSaving: 'Speichern...',

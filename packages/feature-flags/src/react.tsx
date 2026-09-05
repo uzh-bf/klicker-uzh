@@ -3,7 +3,14 @@ import {
   useFeatureIsOn,
   useGrowthBook,
 } from '@growthbook/growthbook-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   type BrowserFeatureFlagConfig,
   createBrowserFeatureFlagClient,
@@ -23,12 +30,16 @@ type FeatureFlagProviderProps = {
   children: ReactNode
 }
 
+const FeatureFlagRefreshContext = createContext<() => Promise<boolean>>(
+  async () => false
+)
+
 export function FeatureFlagProvider({
   attributes,
   config,
   children,
 }: FeatureFlagProviderProps) {
-  const [{ growthbook, initialize, setAttributes }] = useState(() =>
+  const [{ growthbook, initialize, refresh, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
   const destroyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -58,7 +69,11 @@ export function FeatureFlagProvider({
   }, [growthbook, initialize])
 
   return (
-    <GrowthBookProvider growthbook={growthbook}>{children}</GrowthBookProvider>
+    <GrowthBookProvider growthbook={growthbook}>
+      <FeatureFlagRefreshContext.Provider value={refresh}>
+        {children}
+      </FeatureFlagRefreshContext.Provider>
+    </GrowthBookProvider>
   )
 }
 
@@ -82,4 +97,8 @@ export function useFeatureFlags(
   const growthbook = useGrowthBook<KlickerFeatureFlags>()
 
   return evaluateFeatureFlags(growthbook, keys)
+}
+
+export function useRefreshFeatureFlags(): () => Promise<boolean> {
+  return useContext(FeatureFlagRefreshContext)
 }
