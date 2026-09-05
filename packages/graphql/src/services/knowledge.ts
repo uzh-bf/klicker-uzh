@@ -1801,10 +1801,7 @@ export async function confirmKbFileReplacement(
         expiresAt: { gt: new Date() },
       },
     })
-    if (
-      !currentTicket ||
-      (currentTicket.sizeBytes !== 0 && currentTicket.sizeBytes !== sizeBytes)
-    ) {
+    if (!currentTicket || currentTicket.sizeBytes !== sizeBytes) {
       throw new GraphQLError('KB upload ticket is invalid', {
         extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
       })

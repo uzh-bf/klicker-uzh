@@ -73,7 +73,7 @@ function KnowledgeBaseFileDropzone({
           contentType,
           sizeBytes: file.size,
         }
-        const ticket = replaceResource
+        const uploadReservation = replaceResource
           ? (
               await requestReplacement({
                 variables: {
@@ -84,13 +84,16 @@ function KnowledgeBaseFileDropzone({
             ).data?.requestKbFileReplacement
           : (await requestUpload({ variables: requestVariables })).data
               ?.requestKbFileUpload
-        if (!ticket) throw new Error('Upload ticket was not returned')
+        if (!uploadReservation)
+          throw new Error('Upload reservation was not returned')
 
         const { BlobServiceClient } = await import('@azure/storage-blob')
-        const serviceClient = new BlobServiceClient(ticket.uploadSasURL)
+        const serviceClient = new BlobServiceClient(
+          uploadReservation.uploadSasURL
+        )
         const blockBlobClient = serviceClient
-          .getContainerClient(ticket.containerName)
-          .getBlockBlobClient(ticket.blobName)
+          .getContainerClient(uploadReservation.containerName)
+          .getBlockBlobClient(uploadReservation.blobName)
         await blockBlobClient.uploadData(file, {
           blobHTTPHeaders: { blobContentType: contentType },
         })
@@ -100,7 +103,7 @@ function KnowledgeBaseFileDropzone({
             variables: {
               kbId,
               resourceId: replaceResource.id,
-              blobName: ticket.blobName,
+              blobName: uploadReservation.blobName,
               originalFilename: file.name,
               mimeType: contentType,
               sizeBytes: file.size,
@@ -110,7 +113,7 @@ function KnowledgeBaseFileDropzone({
           await confirmUpload({
             variables: {
               kbId,
-              blobName: ticket.blobName,
+              blobName: uploadReservation.blobName,
               title: file.name,
               originalFilename: file.name,
               mimeType: contentType,
