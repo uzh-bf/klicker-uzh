@@ -772,6 +772,9 @@ export default {
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
+      entryAriaLabel: 'Rang {rank}: {name}, {points} Punkte',
+      selfPositionDivider: 'deine Position',
+      podiumEmpty: 'Noch keine Einträge auf dem Podest',
     },
     error: {
       '404': '404 Seite nicht gefunden',
