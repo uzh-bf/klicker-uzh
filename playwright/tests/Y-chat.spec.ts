@@ -2787,11 +2787,13 @@ test.describe('Chatbot Source Citations', () => {
       timeout: 15_000,
     })
     await expect(section).toHaveCount(0)
-    expect(
-      await viewport.evaluate(
-        (element) => element.scrollHeight > element.clientHeight
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
       )
-    ).toBe(true)
+      .toBe(true)
     await expect
       .poll(() => viewport.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(scrollTopBeforeText)
