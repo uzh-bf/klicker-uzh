@@ -9,6 +9,7 @@ BOOTSTRAP_MARKER_FILE="$BOOTSTRAP_STATE_DIR/bootstrap-complete"
 BOOTSTRAP_MARKER_TOKEN='klicker-devcontainer-bootstrap-v1'
 GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
+PRESERVE_NEXT_CACHE_FILE="$STATE_DIR/preserve-next-cache"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
 RUNTIME_APPS=("${NEXT_APPS[@]}" response-api)
@@ -199,15 +200,23 @@ probe_mode() {
   esac
 }
 
+require_cache_repair_allowed() {
+  if [ -e "$PRESERVE_NEXT_CACHE_FILE" ] || [ -L "$PRESERVE_NEXT_CACHE_FILE" ]; then
+    die 'Next.js cache repair is disabled by the preserve-next-cache marker.'
+  fi
+}
+
 request_repair() {
   local app="$1" generation pending updated
 
   valid_next_app "$app" || die "Unsupported Next.js repair target: $app"
+  require_cache_repair_allowed
   require_tool flock
   mkdir -p "$STATE_DIR"
   exec 9>"$STATE_DIR/lock"
   flock -w 10 9 || die "Timed out waiting for the runtime-state lock."
 
+  require_cache_repair_allowed
   generation="$(read_generation)"
   updated="$app"
   if [ -s "$REPAIR_REQUEST_FILE" ]; then
@@ -302,6 +311,7 @@ remove_next_dir() {
   local target="$1"
   local allowed=false app next_dir
 
+  require_cache_repair_allowed
   for app in "${NEXT_APPS[@]}"; do
     next_dir="$ROOT/apps/$app/.next"
     if [ "$target" = "$next_dir" ]; then
@@ -321,6 +331,7 @@ apply_cache_policy() {
   local repair_target
 
   if [ -f "$REPAIR_REQUEST_FILE" ]; then
+    require_cache_repair_allowed
     while IFS= read -r repair_target; do
       valid_next_app "$repair_target" ||
         die "Invalid pending repair target: $repair_target."

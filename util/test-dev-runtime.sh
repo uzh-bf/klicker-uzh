@@ -313,6 +313,35 @@ done
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
 assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '1'
 write_file "$ROOT/apps/chat/.next/dev/cache.bin" 'stale development cache'
+
+# Preservation refuses both new repairs and a pending repair from an earlier
+# run. A dangling symlink or directory also counts as an enabled marker.
+preserve_marker="$ROOT/.devcontainer/.runtime/preserve-next-cache"
+for marker_kind in file symlink directory; do
+  case "$marker_kind" in
+    file) touch "$preserve_marker" ;;
+    symlink) ln -s "$TEST_ROOT/missing-marker-target" "$preserve_marker" ;;
+    directory) mkdir "$preserve_marker" ;;
+  esac
+  if bash "$RUNTIME_SCRIPT" request-repair auth >/dev/null 2>&1; then
+    fail 'cache preservation accepted a new repair request'
+  fi
+  if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- \
+    touch "$TEST_ROOT/unexpected-start" >/dev/null 2>&1; then
+    fail 'cache preservation applied a pending repair'
+  fi
+  assert_absent "$TEST_ROOT/unexpected-start"
+  assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '1'
+  assert_equal "$(cat "$ROOT/.devcontainer/.runtime/next-repair-request")" 'chat'
+  assert_equal "$(cat "$ROOT/apps/chat/.next/dev/cache.bin")" 'stale development cache'
+  assert_exists "$ROOT/apps/auth/.next/production.bin"
+  if [ "$marker_kind" = directory ]; then
+    rmdir "$preserve_marker"
+  else
+    rm "$preserve_marker"
+  fi
+done
+
 bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- true
 assert_absent "$ROOT/apps/chat/.next"
 assert_exists "$ROOT/apps/auth/.next/production.bin"
