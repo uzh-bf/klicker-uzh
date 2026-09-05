@@ -376,7 +376,7 @@ function Header({
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        className="print:hidden! flex h-full w-full flex-row flex-wrap items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
@@ -408,7 +408,7 @@ function Header({
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          className={{ root: '-gap-1 ml-auto flex h-10 flex-row shadow-none' }}
         />
       </div>
       {showSupportModal && (

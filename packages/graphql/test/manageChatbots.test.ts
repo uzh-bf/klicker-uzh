@@ -1,5 +1,9 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { ChatbotStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotStatus,
+  CreditResetPeriod,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import type { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -8,6 +12,7 @@ import {
   getChatbotsInfo,
   saveChatbotDisclaimer,
   updateChatbot,
+  updateChatbotCreditPolicy,
   updateChatbotModelPolicy,
   updateChatbotModelSettings,
   updateChatbotStandardModeConfig,
@@ -238,6 +243,172 @@ describe('Integration tests for lecturer chatbot create/update', () => {
 
       await expect(
         updateChatbot({ id: chatbot.id, name: 'Blocked' }, userOneCtx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_NOT_EDITABLE' },
+      })
+    })
+  })
+
+  describe('updateChatbotCreditPolicy', () => {
+    async function seedOwnedChatbot(
+      status: ChatbotStatus = ChatbotStatus.DRAFT
+    ) {
+      const course = await seedCourse({}, userOneCtx)
+      return await prisma.chatbot.create({
+        data: {
+          name: `Credits ${status}`,
+          courseId: course.id,
+          ownerId: userOneCtx.user.sub,
+          status,
+        },
+      })
+    }
+
+    it.each([
+      ChatbotStatus.DRAFT,
+      ChatbotStatus.REJECTED,
+    ])('updates all credit-policy fields while %s', async (status) => {
+      const chatbot = await seedOwnedChatbot(status)
+
+      await expect(
+        updateChatbotCreditPolicy(
+          {
+            chatbotId: chatbot.id,
+            creditInitialCredits: 3,
+            creditResetPeriod: CreditResetPeriod.MONTHLY,
+            creditResetAmount: 4,
+            creditMaxCredits: 7,
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        creditInitialCredits: 3,
+        creditResetPeriod: CreditResetPeriod.MONTHLY,
+        creditResetAmount: 4,
+        creditMaxCredits: 7,
+      })
+    })
+
+    it('normalizes reset amount to zero when resets are disabled', async () => {
+      const chatbot = await seedOwnedChatbot()
+
+      await expect(
+        updateChatbotCreditPolicy(
+          {
+            chatbotId: chatbot.id,
+            creditInitialCredits: 0,
+            creditResetPeriod: CreditResetPeriod.NONE,
+            creditResetAmount: 99,
+            creditMaxCredits: 0,
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        creditInitialCredits: 0,
+        creditResetPeriod: CreditResetPeriod.NONE,
+        creditResetAmount: 0,
+        creditMaxCredits: 0,
+      })
+    })
+
+    it.each([
+      {
+        name: 'initial credits above the maximum',
+        initial: 6,
+        period: CreditResetPeriod.WEEKLY,
+        reset: 1,
+        max: 5,
+      },
+      {
+        name: 'reset amount above the maximum',
+        initial: 1,
+        period: CreditResetPeriod.WEEKLY,
+        reset: 6,
+        max: 5,
+      },
+      {
+        name: 'zero reset amount with recurring resets',
+        initial: 0,
+        period: CreditResetPeriod.WEEKLY,
+        reset: 0,
+        max: 5,
+      },
+      {
+        name: 'negative credits',
+        initial: -1,
+        period: CreditResetPeriod.NONE,
+        reset: 0,
+        max: 1,
+      },
+    ])('rejects $name', async ({ initial, period, reset, max }) => {
+      const chatbot = await seedOwnedChatbot()
+
+      await expect(
+        updateChatbotCreditPolicy(
+          {
+            chatbotId: chatbot.id,
+            creditInitialCredits: initial,
+            creditResetPeriod: period,
+            creditResetAmount: reset,
+            creditMaxCredits: max,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    })
+
+    it('returns null and makes no change for a non-owner', async () => {
+      const chatbot = await seedOwnedChatbot()
+
+      await expect(
+        updateChatbotCreditPolicy(
+          {
+            chatbotId: chatbot.id,
+            creditInitialCredits: 2,
+            creditResetPeriod: CreditResetPeriod.DAILY,
+            creditResetAmount: 2,
+            creditMaxCredits: 2,
+          },
+          userTwoCtx
+        )
+      ).resolves.toBeNull()
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+          select: {
+            creditInitialCredits: true,
+            creditResetPeriod: true,
+            creditResetAmount: true,
+            creditMaxCredits: true,
+          },
+        })
+      ).resolves.toEqual({
+        creditInitialCredits: 1,
+        creditResetPeriod: CreditResetPeriod.WEEKLY,
+        creditResetAmount: 1,
+        creditMaxCredits: 1,
+      })
+    })
+
+    it.each([
+      ChatbotStatus.PENDING_APPROVAL,
+      ChatbotStatus.PUBLISHED,
+      ChatbotStatus.PAUSED,
+    ])('rejects credit-policy changes while %s', async (status) => {
+      const chatbot = await seedOwnedChatbot(status)
+
+      await expect(
+        updateChatbotCreditPolicy(
+          {
+            chatbotId: chatbot.id,
+            creditInitialCredits: 1,
+            creditResetPeriod: CreditResetPeriod.WEEKLY,
+            creditResetAmount: 1,
+            creditMaxCredits: 1,
+          },
+          userOneCtx
+        )
       ).rejects.toMatchObject({
         extensions: { code: 'CHATBOT_NOT_EDITABLE' },
       })

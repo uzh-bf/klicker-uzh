@@ -33,7 +33,6 @@ type ChatbotPublicationRequestProps = {
 type PublicationFormValues = {
   useCase: string
   expectedStudentCount: string
-  proposedCredits: string
 }
 
 const MAX_SIGNED_INT32 = 2_147_483_647
@@ -99,10 +98,6 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
     chatbot.expectedStudentCount,
     t('shared.generic.unknown')
   )
-  const proposedCredits = readOnlyValue(
-    chatbot.creditInitialCredits,
-    t('shared.generic.unknown')
-  )
   const useCase = readOnlyValue(
     chatbot.publicationUseCase,
     t('shared.generic.unknown')
@@ -133,7 +128,7 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
       data-cy="chatbot-publication-readonly"
     >
       <UserNotification>{stateDescription}</UserNotification>
-      <dl className="grid gap-2 text-sm md:grid-cols-3">
+      <dl className="grid gap-2 text-sm md:grid-cols-2">
         <div>
           <dt className="font-medium text-gray-600">
             {t('manage.resources.chatbotPublicationUseCase')}
@@ -145,12 +140,6 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
             {t('manage.resources.chatbotPublicationExpectedStudentCount')}
           </dt>
           <dd className="mt-1 text-gray-900">{expectedStudentCount}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-gray-600">
-            {t('manage.resources.chatbotPublicationProposedCredits')}
-          </dt>
-          <dd className="mt-1 text-gray-900">{proposedCredits}</dd>
         </div>
       </dl>
       {chatbot.status === ChatbotStatus.Published ? (
@@ -211,10 +200,6 @@ function ChatbotPublicationRequest({
   const initialValues: PublicationFormValues = {
     useCase: chatbot.publicationUseCase ?? '',
     expectedStudentCount: chatbot.expectedStudentCount?.toString() ?? '',
-    proposedCredits:
-      chatbot.creditInitialCredits > 0
-        ? chatbot.creditInitialCredits.toString()
-        : '',
   }
 
   return (
@@ -237,16 +222,6 @@ function ChatbotPublicationRequest({
             t('manage.resources.chatbotPublicationExpectedStudentCountInvalid'),
             positiveInteger
           ),
-        proposedCredits: Yup.string()
-          .trim()
-          .required(
-            t('manage.resources.chatbotPublicationProposedCreditsRequired')
-          )
-          .test(
-            'positive-integer',
-            t('manage.resources.chatbotPublicationProposedCreditsInvalid'),
-            positiveInteger
-          ),
       })}
       onSubmit={async (values) => {
         setRequestError(null)
@@ -257,7 +232,6 @@ function ChatbotPublicationRequest({
               id: chatbot.id,
               useCase: values.useCase.trim(),
               expectedStudentCount: Number(values.expectedStudentCount),
-              proposedCredits: Number(values.proposedCredits),
             },
             refetchQueries: [
               { query: QGetChatbotsInfoWithStandardModesDocument },
@@ -327,28 +301,15 @@ function ChatbotPublicationRequest({
             label={t('manage.resources.chatbotPublicationUseCase')}
             data={{ cy: 'chatbot-publication-use-case' }}
           />
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormikNumberField
-              required
-              min={1}
-              precision={0}
-              disabled={isSubmitting || requestLoading}
-              name="expectedStudentCount"
-              label={t(
-                'manage.resources.chatbotPublicationExpectedStudentCount'
-              )}
-              data={{ cy: 'chatbot-publication-expected-student-count' }}
-            />
-            <FormikNumberField
-              required
-              min={1}
-              precision={0}
-              disabled={isSubmitting || requestLoading}
-              name="proposedCredits"
-              label={t('manage.resources.chatbotPublicationProposedCredits')}
-              data={{ cy: 'chatbot-publication-proposed-credits' }}
-            />
-          </div>
+          <FormikNumberField
+            required
+            min={1}
+            precision={0}
+            disabled={isSubmitting || requestLoading}
+            name="expectedStudentCount"
+            label={t('manage.resources.chatbotPublicationExpectedStudentCount')}
+            data={{ cy: 'chatbot-publication-expected-student-count' }}
+          />
 
           {requestError ? (
             <div role="alert">

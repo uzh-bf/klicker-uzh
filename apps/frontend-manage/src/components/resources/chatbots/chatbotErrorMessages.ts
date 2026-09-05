@@ -3,6 +3,7 @@ export type ChatbotMutation =
   | 'metadata'
   | 'standardMode'
   | 'disclaimer'
+  | 'credits'
   | 'publication'
 
 type ChatbotErrorCode =
@@ -23,11 +24,11 @@ export type ChatbotErrorMessageKey =
   | 'manage.resources.chatbotMetadataSaveError'
   | 'manage.resources.chatbotModesSaveError'
   | 'manage.resources.chatbotDisclaimerSaveError'
+  | 'manage.resources.chatbotCreditPolicySaveError'
   | 'manage.resources.chatbotPublicationRequestError'
   | 'manage.resources.chatbotPublicationUnauthorized'
   | 'manage.resources.chatbotPublicationUseCaseInvalid'
   | 'manage.resources.chatbotPublicationExpectedStudentCountInvalid'
-  | 'manage.resources.chatbotPublicationProposedCreditsInvalid'
   | 'manage.resources.chatbotPublicationDisclaimerRequired'
 
 const errorMessageKeys: Record<ChatbotErrorCode, ChatbotErrorMessageKey> = {
@@ -46,6 +47,7 @@ const fallbackMessageKeys: Record<ChatbotMutation, ChatbotErrorMessageKey> = {
   metadata: 'manage.resources.chatbotMetadataSaveError',
   standardMode: 'manage.resources.chatbotModesSaveError',
   disclaimer: 'manage.resources.chatbotDisclaimerSaveError',
+  credits: 'manage.resources.chatbotCreditPolicySaveError',
   publication: 'manage.resources.chatbotPublicationRequestError',
 }
 
@@ -118,9 +120,6 @@ export function getChatbotMutationErrorKey(
     }
     if (message?.includes('expectedStudentCount must be')) {
       return 'manage.resources.chatbotPublicationExpectedStudentCountInvalid'
-    }
-    if (message?.includes('proposedCredits must be')) {
-      return 'manage.resources.chatbotPublicationProposedCreditsInvalid'
     }
   }
 

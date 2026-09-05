@@ -1,7 +1,7 @@
 import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
 
 type ChatbotWorkspaceView = 'overview' | 'setup' | 'advanced' | 'usage'
-type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'review'
+type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
 
 type ChatbotWorkspaceState = {
   view: ChatbotWorkspaceView
@@ -23,6 +23,7 @@ const setupSteps: ChatbotSetupStep[] = [
   'basics',
   'modes',
   'disclaimer',
+  'credits',
   'review',
 ]
 

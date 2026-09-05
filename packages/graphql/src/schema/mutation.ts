@@ -7,8 +7,8 @@ import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
-import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
 import * as ElementService from '../services/elements.js'
@@ -121,6 +121,7 @@ import {
   Chatbot,
   ChatbotReasoningConfigInput,
   ChatbotStandardModeConfigInput,
+  CreditResetPeriod,
 } from './resource.js'
 import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
@@ -1515,6 +1516,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateChatbotCreditPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          creditInitialCredits: t.arg.int({ required: true }),
+          creditResetPeriod: t.arg({
+            type: CreditResetPeriod,
+            required: true,
+          }),
+          creditResetAmount: t.arg.int({ required: true }),
+          creditMaxCredits: t.arg.int({ required: true }),
+        },
+        resolve: (_, args, ctx) =>
+          ChatbotsService.updateChatbotCreditPolicy(args, ctx),
+      }),
+
       updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
@@ -1626,14 +1644,9 @@ export const Mutation = builder.mutationType({
             required: true,
             validate: { min: 1 },
           }),
-          proposedCredits: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublication(args, ctx)
-        },
+        resolve: (_, args, ctx) =>
+          ChatbotsService.requestChatbotPublication(args, ctx),
       }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({

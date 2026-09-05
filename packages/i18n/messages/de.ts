@@ -1928,6 +1928,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphQuotaInsufficient:
+      'Der ausgewählte Aufbau kostet schätzungsweise {estimate}, im Semesterkontingent sind jedoch nur noch {remaining} verfügbar. Wählen Sie wenn möglich eine günstigere Qualitätsstufe oder warten Sie auf die Zurücksetzung des Kontingents.',
     graphPreviewTitle: 'Veröffentlichter Graph',
     graphGenerateElements: 'Klicker-Elemente generieren',
     graphElementGenerationUnavailable:
@@ -2429,6 +2431,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
+      chatAccountUsageStale:
+        'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
+      chatAccountUsageUnavailable:
+        'Die aktuelle Nutzung konnte nicht geladen werden. Versuchen Sie es erneut, um die aktuellen Werte anzuzeigen.',
+      chatAccountUsageRetry: 'Erneut versuchen',
       usageBudget: 'Budget',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
@@ -4708,6 +4716,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
+      chatbotSetupCredits: 'Credits',
+      chatbotSetupCreditsDescription:
+        'Limiten und Zurücksetzungsintervall pro teilnehmende Person',
       chatbotSetupReview: 'Prüfen und einreichen',
       chatbotSetupReviewDescription:
         'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
@@ -4719,12 +4730,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
       chatbotSetupDisclaimerDescriptionLong:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
+      chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
+      chatbotSetupCreditsDescriptionLong:
+        'Konfigurieren Sie die Credits, die jede teilnehmende Person bei der Veröffentlichung des Chatbots erhält. Die Einstellungen sind während eines Veröffentlichungsantrags und nach der Veröffentlichung gesperrt.',
+      chatbotCreditPolicyDescription:
+        'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
+      chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
+      chatbotCreditAmountInvalid:
+        'Bitte geben Sie eine nicht negative ganze Zahl bis 2 147 483 647 ein.',
+      chatbotCreditResetPeriodRequired:
+        'Bitte wählen Sie ein Zurücksetzungsintervall.',
+      chatbotCreditResetAmountInvalid:
+        'Bitte geben Sie bei aktivierten Zurücksetzungen eine positive ganze Zahl ein.',
+      chatbotCreditInitialAboveMaximum:
+        'Die Start-Credits dürfen die maximalen Credits nicht überschreiten.',
+      chatbotCreditResetAboveMaximum:
+        'Die Zurücksetzungsmenge darf die maximalen Credits nicht überschreiten.',
+      chatbotCreditPolicySaveSuccess:
+        'Die Credit-Einstellungen für Teilnehmende wurden gespeichert.',
+      chatbotCreditPolicySaveError:
+        'Die Credit-Einstellungen für Teilnehmende konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotCreditPolicyReadonly:
+        'Die Credit-Einstellungen für Teilnehmende können nur im Entwurfsstatus oder nach einer Ablehnung bearbeitet werden.',
       chatbotSetupReviewTitle: 'Prüfen und einreichen',
       chatbotSetupReviewDescriptionLong:
         'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
       chatbotSetupEdit: 'Bearbeiten',
       chatbotSetupPublicationNote:
-        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und nicht separat gespeichert. Bis zum Einreichen können Sie sie bearbeiten.',
+        'Die Credit-Einstellungen für Teilnehmende werden separat gespeichert und hier zur Prüfung angezeigt. Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
       chatbotDiscardChangesConfirmation:
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:
@@ -4765,11 +4798,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie die erwartete Anzahl Studierender ein.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
-      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
-      chatbotPublicationProposedCreditsRequired:
-        'Bitte geben Sie die vorgeschlagenen Credits ein.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
       requestChatbotPublication: 'Veröffentlichung beantragen',
       resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
       chatbotPublicationSubmitted:
@@ -4779,7 +4807,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben, Lernmodi und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern Sie Änderungen in den Grundangaben, Lernmodi, im Disclaimer und bei den Credits oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:

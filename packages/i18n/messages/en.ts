@@ -1904,6 +1904,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphLoadError: 'The graph status could not be loaded.',
     graphRetry: 'Retry',
     graphBuildError: 'The graph build could not be started.',
+    graphQuotaInsufficient:
+      'The selected build is estimated at {estimate}, but only {remaining} remains in your semester quota. Choose a lower-cost quality level if available, or wait for the quota to reset.',
     graphPreviewTitle: 'Published graph',
     graphGenerateElements: 'Generate Klicker elements',
     graphElementGenerationUnavailable:
@@ -2398,6 +2400,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageRefreshing: 'Refreshing usage…',
+      chatAccountUsageStale:
+        'The latest usage could not be loaded. The values below may be out of date.',
+      chatAccountUsageUnavailable:
+        'The latest usage could not be loaded. Retry to show the current values.',
+      chatAccountUsageRetry: 'Retry',
       usageBudget: 'Budget',
       usageBudgetEmpty: 'No budget is set for this usage class.',
       usageBudgetExhausted: 'The monthly budget is exhausted.',
@@ -4613,6 +4621,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
+      chatbotSetupCredits: 'Credits',
+      chatbotSetupCreditsDescription:
+        'Per-participant limits and reset schedule',
       chatbotSetupReview: 'Review and submit',
       chatbotSetupReviewDescription:
         'Confirm saved details and request publication',
@@ -4624,12 +4635,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerTitle: 'Participant disclaimer',
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
+      chatbotSetupCreditsTitle: 'Participant credits',
+      chatbotSetupCreditsDescriptionLong:
+        'Configure the credit allowance each participant receives when the chatbot is published. Credit settings are locked while a publication request is pending and after publication.',
+      chatbotCreditPolicyDescription:
+        'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
+      chatbotCreditAmountRequired: 'Enter a credit amount.',
+      chatbotCreditAmountInvalid:
+        'Enter a non-negative whole number no greater than 2,147,483,647.',
+      chatbotCreditResetPeriodRequired: 'Select a reset period.',
+      chatbotCreditResetAmountInvalid:
+        'Enter a positive whole number when recurring resets are enabled.',
+      chatbotCreditInitialAboveMaximum:
+        'Initial credits cannot exceed maximum credits.',
+      chatbotCreditResetAboveMaximum:
+        'The reset amount cannot exceed maximum credits.',
+      chatbotCreditPolicySaveSuccess: 'Participant credit settings saved.',
+      chatbotCreditPolicySaveError:
+        'Could not save participant credit settings. Please try again.',
+      chatbotCreditPolicyReadonly:
+        'Participant credit settings can only be edited while the chatbot is a draft or has been rejected.',
       chatbotSetupReviewTitle: 'Review and submit',
       chatbotSetupReviewDescriptionLong:
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
-        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
+        'Participant credit settings are saved separately and shown here for review. Publication details are submitted with your request and can be edited until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
@@ -4666,10 +4697,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Enter the expected student count.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Enter a positive whole number for the expected student count.',
-      chatbotPublicationProposedCredits: 'Proposed credits',
-      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Enter a positive whole number for the proposed credits.',
       requestChatbotPublication: 'Request publication',
       resubmitChatbotPublication: 'Resubmit for approval',
       chatbotPublicationSubmitted: 'Publication request submitted for review.',
@@ -4678,7 +4705,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
+        'Save or wait for changes in Basics, Learning modes, Disclaimer, and Credits before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:

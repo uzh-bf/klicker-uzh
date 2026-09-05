@@ -16,6 +16,11 @@ import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import {
+  type ChatbotCreditPolicy,
+  MAX_SIGNED_INT32,
+  normalizeAndValidateCreditPolicy,
+} from './chatbotCreditPolicy.js'
 
 const chatModelSchema = z
   .object({
@@ -222,6 +227,11 @@ const disclaimerEditableStatuses: DB.ChatbotStatus[] = [
   DB.ChatbotStatus.REJECTED,
 ]
 
+const creditPolicyEditableStatuses: DB.ChatbotStatus[] = [
+  DB.ChatbotStatus.DRAFT,
+  DB.ChatbotStatus.REJECTED,
+]
+
 function chatbotError(message: string, code: string) {
   return new GraphQLError(message, { extensions: { code } })
 }
@@ -297,6 +307,15 @@ function assertDisclaimerEditable(status: DB.ChatbotStatus) {
   if (!disclaimerEditableStatuses.includes(status)) {
     throw chatbotError(
       `Cannot edit chatbot disclaimer from status ${status}`,
+      'CHATBOT_NOT_EDITABLE'
+    )
+  }
+}
+
+function assertCreditPolicyEditable(status: DB.ChatbotStatus) {
+  if (!creditPolicyEditableStatuses.includes(status)) {
+    throw chatbotError(
+      `Cannot edit chatbot credit policy from status ${status}`,
       'CHATBOT_NOT_EDITABLE'
     )
   }
@@ -1177,6 +1196,56 @@ export async function updateChatbot(
   return shapeChatbotResponse(updated)
 }
 
+export async function updateChatbotCreditPolicy(
+  args: { chatbotId: string } & ChatbotCreditPolicy,
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.chatbotId, ownerId: ctx.user.sub },
+    select: { id: true, status: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+
+  assertCreditPolicyEditable(chatbot.status)
+  const policy = normalizeAndValidateCreditPolicy({
+    creditInitialCredits: args.creditInitialCredits,
+    creditResetPeriod: args.creditResetPeriod,
+    creditResetAmount: args.creditResetAmount,
+    creditMaxCredits: args.creditMaxCredits,
+  })
+
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: chatbot.id,
+        ownerId: ctx.user.sub,
+        status: { in: creditPolicyEditableStatuses },
+      },
+      data: policy,
+    })
+
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot credit policy could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
+
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
 type UpdateChatbotStandardModeConfigArgs = {
   chatbotId: string
   config: ChatbotStandardModeConfigInput
@@ -1352,7 +1421,6 @@ type RequestChatbotPublicationArgs = {
   id: string
   useCase: string
   expectedStudentCount: number
-  proposedCredits: number
 }
 
 export async function requestChatbotPublication(
@@ -1366,6 +1434,10 @@ export async function requestChatbotPublication(
     select: {
       id: true,
       status: true,
+      creditInitialCredits: true,
+      creditResetPeriod: true,
+      creditResetAmount: true,
+      creditMaxCredits: true,
       disclaimer: { select: { title: true, introText: true } },
     },
   })
@@ -1385,18 +1457,19 @@ export async function requestChatbotPublication(
     typeof value === 'number' &&
     Number.isInteger(value) &&
     value >= 1 &&
-    value <= 2_147_483_647
+    value <= MAX_SIGNED_INT32
 
   if (!isPositiveSignedInt32(args.expectedStudentCount)) {
     throw new GraphQLError(
       'expectedStudentCount must be a positive signed 32-bit integer'
     )
   }
-  if (!isPositiveSignedInt32(args.proposedCredits)) {
-    throw new GraphQLError(
-      'proposedCredits must be a positive signed 32-bit integer'
-    )
-  }
+  normalizeAndValidateCreditPolicy({
+    creditInitialCredits: chatbot.creditInitialCredits,
+    creditResetPeriod: chatbot.creditResetPeriod,
+    creditResetAmount: chatbot.creditResetAmount,
+    creditMaxCredits: chatbot.creditMaxCredits,
+  })
 
   // Account-level capability gate (D1, ADR 0020): read the live User row, never
   // a JWT claim — ops flips this flag out of band after the token was issued.
@@ -1454,12 +1527,8 @@ export async function requestChatbotPublication(
       publicationUseCase: normalizedUseCase,
       expectedStudentCount: args.expectedStudentCount,
       reviewComment: null, // clear any prior rejection note on re-request
-      // Proposed credit budget (gated cost class, D2): flat model — initial =
-      // reset amount = max = proposedCredits; the reset period keeps its
-      // configured value. Student-inert until PUBLISHED (S4 gates access).
-      creditInitialCredits: args.proposedCredits,
-      creditResetAmount: args.proposedCredits,
-      creditMaxCredits: args.proposedCredits,
+      // The separately saved four-field policy remains untouched and stays
+      // student-inert until the chatbot is PUBLISHED (S4 gates access).
     },
   })
 

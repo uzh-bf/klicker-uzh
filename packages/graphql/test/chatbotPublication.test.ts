@@ -1,10 +1,10 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ChatbotStatus,
-  PrismaClient,
+  type PrismaClient,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import type { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   approveChatbotPublication,
@@ -104,7 +104,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
           id: bot.id,
           useCase: '  Course Q&A\n',
           expectedStudentCount: 120,
-          proposedCredits: 50,
         },
         userOneCtx
       )
@@ -113,10 +112,37 @@ describe('Integration tests for the chatbot publication workflow', () => {
         status: 'PENDING_APPROVAL',
         publicationUseCase: 'Course Q&A',
         expectedStudentCount: 120,
-        creditInitialCredits: 50,
-        creditResetAmount: 50,
-        creditMaxCredits: 50,
+        creditInitialCredits: 1,
+        creditResetAmount: 1,
+        creditMaxCredits: 1,
         reviewComment: null,
+      })
+    })
+
+    it('preserves the saved four-field credit policy', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT, {
+        creditInitialCredits: 2,
+        creditResetPeriod: 'MONTHLY',
+        creditResetAmount: 3,
+        creditMaxCredits: 8,
+      })
+
+      const result = await requestChatbotPublication(
+        {
+          id: bot.id,
+          useCase: 'Course Q&A',
+          expectedStudentCount: 120,
+        },
+        userOneCtx
+      )
+
+      expect(result).toMatchObject({
+        status: 'PENDING_APPROVAL',
+        creditInitialCredits: 2,
+        creditResetPeriod: 'MONTHLY',
+        creditResetAmount: 3,
+        creditMaxCredits: 8,
       })
     })
 
@@ -132,7 +158,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'Course Q&A',
             expectedStudentCount: 120,
-            proposedCredits: 50,
           },
           userOneCtx
         )
@@ -161,7 +186,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'Course Q&A',
             expectedStudentCount: 120,
-            proposedCredits: 50,
           },
           userOneCtx
         )
@@ -181,7 +205,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
           id: bot.id,
           useCase: 'Revised scope',
           expectedStudentCount: 30,
-          proposedCredits: 10,
         },
         userOneCtx
       )
@@ -233,7 +256,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'Course Q&A',
             expectedStudentCount: 10,
-            proposedCredits: 5,
           },
           gatedCtx
         ),
@@ -242,7 +264,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'Course Q&A',
             expectedStudentCount: 10,
-            proposedCredits: 5,
           },
           gatedCtx
         ),
@@ -272,7 +293,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'x',
             expectedStudentCount: 1,
-            proposedCredits: 1,
           },
           userOneCtx
         )
@@ -293,7 +313,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase,
             expectedStudentCount: 1,
-            proposedCredits: 1,
           },
           userOneCtx
         )
@@ -315,36 +334,11 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'Course Q&A',
             expectedStudentCount: value,
-            proposedCredits: 1,
           },
           userOneCtx
         )
       ).rejects.toThrow(
         'expectedStudentCount must be a positive signed 32-bit integer'
-      )
-    })
-
-    it.each([
-      ['zero', 0],
-      ['negative', -1],
-      ['non-integer', 1.5],
-      ['overflow', 2_147_483_648],
-    ])('rejects %s proposed credit count', async (_, value) => {
-      await enablePublishing()
-      const bot = await seedChatbot(ChatbotStatus.DRAFT)
-
-      await expect(
-        requestChatbotPublication(
-          {
-            id: bot.id,
-            useCase: 'Course Q&A',
-            expectedStudentCount: 1,
-            proposedCredits: value,
-          },
-          userOneCtx
-        )
-      ).rejects.toThrow(
-        'proposedCredits must be a positive signed 32-bit integer'
       )
     })
 
@@ -358,7 +352,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
             id: bot.id,
             useCase: 'x',
             expectedStudentCount: 1,
-            proposedCredits: 1,
           },
           userOneCtx
         )
@@ -380,7 +373,6 @@ describe('Integration tests for the chatbot publication workflow', () => {
           id: bot.id,
           useCase: 'x',
           expectedStudentCount: 1,
-          proposedCredits: 1,
         },
         userTwoCtx
       )

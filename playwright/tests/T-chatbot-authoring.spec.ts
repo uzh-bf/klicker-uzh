@@ -77,7 +77,7 @@ async function createChatbot(
 
 async function navigateToSetupStep(
   page: Parameters<typeof fillEditorField>[0],
-  step: 'basics' | 'modes' | 'disclaimer' | 'review'
+  step: 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
 ) {
   const url = new URL(page.url())
   url.searchParams.set('view', 'setup')
@@ -88,7 +88,13 @@ async function navigateToSetupStep(
 }
 
 async function expectSetupTriggers(page: Page) {
-  for (const section of ['basics', 'modes', 'disclaimer', 'review']) {
+  for (const section of [
+    'basics',
+    'modes',
+    'disclaimer',
+    'credits',
+    'review',
+  ]) {
     await expect(
       page.getByTestId(`chatbot-setup-trigger-${section}`)
     ).toBeVisible()
@@ -146,6 +152,9 @@ async function seedPublicationChatbot({
         status === 'DRAFT' ? undefined : 'Initial synthetic use case',
       expectedStudentCount: status === 'DRAFT' ? undefined : 20,
       creditInitialCredits: 10,
+      creditResetPeriod: 'WEEKLY',
+      creditResetAmount: 10,
+      creditMaxCredits: 100,
       reviewComment,
     },
   })
@@ -156,7 +165,6 @@ async function fillPublicationRequest(page: Page, useCase: string) {
   await page
     .getByTestId('chatbot-publication-expected-student-count')
     .fill('40')
-  await page.getByTestId('chatbot-publication-proposed-credits').fill('25')
 }
 
 test.describe.serial('Lecturer chatbot draft authoring', () => {
@@ -688,6 +696,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Synthetic disclaimer content for publication.'
     )
     await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-setup-credits')).toBeVisible()
+    await page.getByTestId('chatbot-credit-initial').fill('25')
+    await page.getByTestId('chatbot-credit-reset-amount').fill('15')
+    await page.getByTestId('chatbot-credit-maximum').fill('100')
+    await page.getByTestId('save-chatbot-credit-policy').click()
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
 
     await fillPublicationRequest(
@@ -704,7 +717,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(submitButton).toBeDisabled()
     await expect(
       page.getByText(
-        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.'
+        'Save or wait for changes in Basics, Learning modes, Disclaimer, and Credits before requesting publication.'
       )
     ).toBeVisible()
 
@@ -753,9 +766,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-expected-student-count')
     ).toBeDisabled()
-    await expect(
-      page.getByTestId('chatbot-publication-proposed-credits')
-    ).toBeDisabled()
+    await expect(page.getByTestId('chatbot-credit-initial')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-credit-reset-period')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-credit-reset-amount')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-credit-maximum')).toBeDisabled()
+    await expect(page.getByTestId('save-chatbot-credit-policy')).toBeDisabled()
 
     publicationRequestGate.release()
     await expect(
@@ -781,9 +796,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-expected-student-count')
     ).toHaveCount(0)
-    await expect(
-      page.getByTestId('chatbot-publication-proposed-credits')
-    ).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-credit-initial')).toHaveCount(0)
 
     const prisma = await getPrisma()
     const chatbot = await prisma.chatbot.findFirst({
@@ -794,6 +807,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         publicationUseCase: true,
         expectedStudentCount: true,
         creditInitialCredits: true,
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
       },
     })
     expect(chatbot).toMatchObject({
@@ -801,6 +817,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       publicationUseCase: 'Support students with a synthetic study aid.',
       expectedStudentCount: 40,
       creditInitialCredits: 25,
+      creditResetPeriod: 'WEEKLY',
+      creditResetAmount: 15,
+      creditMaxCredits: 100,
     })
 
     if (!chatbot) throw new Error('Expected the publication chatbot to exist')

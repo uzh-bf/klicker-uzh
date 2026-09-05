@@ -728,10 +728,11 @@ accepted count apply only when
 `requestChatbotPublication` still requires the live account capability from
 [ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
 linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
-`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
-to Catalyst and full-access lecturers; it does not expose account budget data.
-Submission never publishes automatically; the existing administrator approval
-remains a separate transition.
+`PENDING_APPROVAL` and preserves the separately saved four-field participant
+credit policy. A dedicated Boolean query exposes only the live publication
+capability to Catalyst and full-access lecturers; it does not expose account
+budget data. Submission never publishes automatically; the existing
+administrator approval remains a separate transition.
 
 Manage exposes draft preparation through
 `apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
@@ -739,28 +740,38 @@ limited to the lecturer's owned, non-archived courses, and the newly created
 chatbot is selected immediately. The workspace keeps chatbot selection in a
 persistent desktop rail and a compact mobile selector. Its URL identifies the
 selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
-setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
-as the initial accordion section hint. Invalid deep links fall back to the
-first valid lifecycle view or section. Published chatbots preserve any valid
-setup-section hint while keeping their read-only Disclaimer and Review
-contracts.
+setup view optionally uses `step=basics`, `step=disclaimer`, `step=credits`, or
+`step=review` as the initial accordion section hint. Invalid deep links fall
+back to the first valid lifecycle view or section. Published chatbots preserve
+any valid setup-section hint while keeping their read-only Disclaimer, Credits,
+and Review contracts.
 Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
 model-policy changes, and block while an affected mutation is pending.
 
 Draft and rejected chatbots use the setup view as one page with a multiple-open
-accordion containing Basics, Disclaimer, and Review and submit. Each section
-keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
-available while lecturers inspect another section. Basics saves the name and
-description, Disclaimer saves the lecturer-written introduction while showing
-the fixed participant preview, and Review and submit summarizes the saved
-configuration before showing the publication request form.
+accordion containing Basics, Disclaimer, Credits, and Review and submit. Each
+section keeps its form mounted when collapsed, so unsaved Formik and Slate input
+remains available while lecturers inspect another section. Basics saves the
+name and description, Disclaimer saves the lecturer-written introduction while
+showing the fixed participant preview, and Credits saves the initial credits,
+reset period, reset amount, and maximum credits granted independently to each
+participant. Review and submit summarizes the saved configuration before
+showing the publication request form.
 The course remains read-only after creation. Publication inputs are preparation
-fields in the Review and submit section and persist only when the lecturer submits the existing
-publication mutation. A successful Basics or Disclaimer save opens the next
-accordion section after the refetched chatbot is complete. Edit actions in the
-review section open the relevant accordion section, while the workspace
-navigation guard still prevents dirty or pending changes from being discarded
-silently.
+fields in the Review and submit section and persist only when the lecturer
+submits the publication mutation. A successful Basics, Disclaimer, or Credits
+save opens the next accordion section after the refetched chatbot is complete.
+Edit actions in the review section open the relevant accordion section, while
+the workspace navigation guard still prevents dirty or pending changes from
+being discarded silently.
+
+Participant credit amounts accept non-negative signed 32-bit integers. Initial
+credits and reset amount cannot exceed maximum credits. `NONE` normalizes reset
+amount to zero; every recurring period requires a positive reset amount. The
+owner can edit this policy only in `DRAFT` and `REJECTED`; it is frozen while
+pending, published, or paused. These credits are a per-participant product
+allowance and remain separate from the owner's monthly base/advanced chat
+account usage budget.
 
 The selected course is read-only. Name, description, and model settings follow
 the metadata lifecycle matrix above; the disclaimer title and introduction are
@@ -779,7 +790,10 @@ forms are present. While publication is pending, those sibling forms are
 locked so late edits cannot be lost during the lifecycle transition.
 `PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
 publication details, while a rejected request retains its review comment for
-correction and resubmission.
+correction and resubmission. The account-usage cards fetch from the network when
+settings opens and refetch on window focus. A failed background refresh retains
+the last known values, marks them as potentially stale, and offers an explicit
+retry.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
