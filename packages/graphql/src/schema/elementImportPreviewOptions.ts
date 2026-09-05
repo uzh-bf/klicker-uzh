@@ -31,9 +31,9 @@ export function createElementImportPackagePreviewOptions(
 }
 
 export const ElementImportPackagePreviewSCOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.SC>
-  >('ElementImportPackagePreviewSCOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.SC>>(
+    'ElementImportPackagePreviewSCOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -58,9 +58,9 @@ export const ElementImportPackagePreviewSCOptions = builder
   })
 
 export const ElementImportPackagePreviewMCOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.MC>
-  >('ElementImportPackagePreviewMCOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.MC>>(
+    'ElementImportPackagePreviewMCOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -85,9 +85,9 @@ export const ElementImportPackagePreviewMCOptions = builder
   })
 
 export const ElementImportPackagePreviewKPRIMOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.KPRIM>
-  >('ElementImportPackagePreviewKPRIMOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.KPRIM>>(
+    'ElementImportPackagePreviewKPRIMOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -112,9 +112,9 @@ export const ElementImportPackagePreviewKPRIMOptions = builder
   })
 
 export const ElementImportPackagePreviewNumericalOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.NUMERICAL>
-  >('ElementImportPackagePreviewNumericalOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.NUMERICAL>>(
+    'ElementImportPackagePreviewNumericalOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -154,9 +154,9 @@ export const ElementImportPackagePreviewNumericalOptions = builder
   })
 
 export const ElementImportPackagePreviewFreeTextOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.FREE_TEXT>
-  >('ElementImportPackagePreviewFreeTextOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.FREE_TEXT>>(
+    'ElementImportPackagePreviewFreeTextOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -179,9 +179,9 @@ export const ElementImportPackagePreviewFreeTextOptions = builder
   })
 
 export const ElementImportPackagePreviewContentOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.CONTENT>
-  >('ElementImportPackagePreviewContentOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.CONTENT>>(
+    'ElementImportPackagePreviewContentOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -192,9 +192,9 @@ export const ElementImportPackagePreviewContentOptions = builder
   })
 
 export const ElementImportPackagePreviewFlashcardOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.FLASHCARD>
-  >('ElementImportPackagePreviewFlashcardOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.FLASHCARD>>(
+    'ElementImportPackagePreviewFlashcardOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -205,9 +205,9 @@ export const ElementImportPackagePreviewFlashcardOptions = builder
   })
 
 export const ElementImportPackagePreviewSelectionOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.SELECTION>
-  >('ElementImportPackagePreviewSelectionOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.SELECTION>>(
+    'ElementImportPackagePreviewSelectionOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({
@@ -224,9 +224,9 @@ export const ElementImportPackagePreviewSelectionOptions = builder
   })
 
 export const ElementImportPackagePreviewCaseStudyOptions = builder
-  .objectRef<
-    PreviewOptionsWrapper<typeof DB.ElementType.CASE_STUDY>
-  >('ElementImportPackagePreviewCaseStudyOptions')
+  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.CASE_STUDY>>(
+    'ElementImportPackagePreviewCaseStudyOptions'
+  )
   .implement({
     fields: (t) => ({
       type: t.field({

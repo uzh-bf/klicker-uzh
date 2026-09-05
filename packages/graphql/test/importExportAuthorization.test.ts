@@ -66,14 +66,14 @@ describe('import/export runtime authorization', () => {
 
   afterEach(restoreEnvironment)
 
-  it.each([UserLoginScope.ACCOUNT_OWNER, UserLoginScope.FULL_ACCESS])(
-    'admits full authoring scope %s',
-    async (scope) => {
-      await expect(
-        canUseElementImportExport(createContext({ scope }))
-      ).resolves.toBe(true)
-    }
-  )
+  it.each([
+    UserLoginScope.ACCOUNT_OWNER,
+    UserLoginScope.FULL_ACCESS,
+  ])('admits full authoring scope %s', async (scope) => {
+    await expect(
+      canUseElementImportExport(createContext({ scope }))
+    ).resolves.toBe(true)
+  })
 
   it('admits an administrator with full authoring scope', async () => {
     await expect(

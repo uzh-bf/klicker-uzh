@@ -157,20 +157,20 @@ describe('import/export package manifest contract', () => {
   it.each([
     { count: 50, valid: true },
     { count: 51, valid: false },
-  ])(
-    'enforces the answer-collection count boundary at $count',
-    ({ count, valid }) => {
-      const result = manifestSchema.safeParse(
-        createManifest({
-          answerCollections: Array.from({ length: count }, (_, index) =>
-            createAnswerCollectionManifestEntry(index)
-          ),
-        })
-      )
+  ])('enforces the answer-collection count boundary at $count', ({
+    count,
+    valid,
+  }) => {
+    const result = manifestSchema.safeParse(
+      createManifest({
+        answerCollections: Array.from({ length: count }, (_, index) =>
+          createAnswerCollectionManifestEntry(index)
+        ),
+      })
+    )
 
-      expect(result.success).toBe(valid)
-    }
-  )
+    expect(result.success).toBe(valid)
+  })
 
   it.each([
     { count: 100, valid: true },
@@ -318,40 +318,42 @@ describe('import/export package manifest contract', () => {
 })
 
 describe('import/export package reference contract', () => {
-  it.each(['__proto__', '__PROTO__', 'prototype', 'Prototype', 'constructor'])(
-    'rejects reserved ref %s throughout package schemas',
-    (ref) => {
-      expect(packageRefSchema.safeParse(ref).success).toBe(false)
-      expect(
-        manifestSchema.safeParse(
-          createManifest({ elements: [{ ref, file: `elements/${ref}.json` }] })
-        ).success
-      ).toBe(false)
-      expect(
-        answerCollectionSchema.safeParse({
-          ...createAnswerCollection(),
-          ref,
-        }).success
-      ).toBe(false)
-      expect(
-        answerCollectionSchema.safeParse({
-          ...createAnswerCollection(),
-          entries: [{ ref, value: 'Item' }],
-        }).success
-      ).toBe(false)
-      expect(
-        mediaManifestEntrySchema.safeParse({
-          ...createMediaManifestEntry(0),
-          ref,
-          sourceHref: `klicker-package-media://${ref}`,
-        }).success
-      ).toBe(false)
-      expect(
-        elementSchema.safeParse({ ...createElement(ElementType.SC), ref })
-          .success
-      ).toBe(false)
-    }
-  )
+  it.each([
+    '__proto__',
+    '__PROTO__',
+    'prototype',
+    'Prototype',
+    'constructor',
+  ])('rejects reserved ref %s throughout package schemas', (ref) => {
+    expect(packageRefSchema.safeParse(ref).success).toBe(false)
+    expect(
+      manifestSchema.safeParse(
+        createManifest({ elements: [{ ref, file: `elements/${ref}.json` }] })
+      ).success
+    ).toBe(false)
+    expect(
+      answerCollectionSchema.safeParse({
+        ...createAnswerCollection(),
+        ref,
+      }).success
+    ).toBe(false)
+    expect(
+      answerCollectionSchema.safeParse({
+        ...createAnswerCollection(),
+        entries: [{ ref, value: 'Item' }],
+      }).success
+    ).toBe(false)
+    expect(
+      mediaManifestEntrySchema.safeParse({
+        ...createMediaManifestEntry(0),
+        ref,
+        sourceHref: `klicker-package-media://${ref}`,
+      }).success
+    ).toBe(false)
+    expect(
+      elementSchema.safeParse({ ...createElement(ElementType.SC), ref }).success
+    ).toBe(false)
+  })
 })
 
 describe('import/export answer-collection contract', () => {
@@ -403,12 +405,12 @@ describe('import/export element relation contract', () => {
     ).toBe(false)
   })
 
-  it.each([ElementType.SELECTION, ElementType.CASE_STUDY])(
-    'accepts applicable collection relation fields for %s elements',
-    (type) => {
-      expect(elementSchema.safeParse(createElement(type)).success).toBe(true)
-    }
-  )
+  it.each([
+    ElementType.SELECTION,
+    ElementType.CASE_STUDY,
+  ])('accepts applicable collection relation fields for %s elements', (type) => {
+    expect(elementSchema.safeParse(createElement(type)).success).toBe(true)
+  })
 
   it('requires collection relations for selection and case-study elements', () => {
     const selection = createElement(ElementType.SELECTION)

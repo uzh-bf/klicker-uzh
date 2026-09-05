@@ -128,14 +128,15 @@ function expectInvalid(callback: () => unknown) {
 }
 
 describe('canonical element domain', () => {
-  it.each(canonicalOptionsCases)(
-    'accepts canonical options for $type',
-    ({ type, options, relations }) => {
-      expect(() =>
-        canonicalizeElementOptions({ type, options, relations })
-      ).not.toThrow()
-    }
-  )
+  it.each(canonicalOptionsCases)('accepts canonical options for $type', ({
+    type,
+    options,
+    relations,
+  }) => {
+    expect(() =>
+      canonicalizeElementOptions({ type, options, relations })
+    ).not.toThrow()
+  })
 
   it('normalizes positional choices and strips disabled scoring fields', () => {
     const canonical = canonicalizeElementOptions({

@@ -219,230 +219,225 @@ async function cleanupBenchmarkResources({
   }
 }
 
-describe.sequential(
-  'real-backend maximum element import preview benchmark',
-  () => {
-    it('validates one 100-element/5,000-entry/5,000-selected-ref artifact five times and records resource evidence', async () => {
-      const originalEnvironment = new Map(
-        TEST_ENV_KEYS.map((key) => [key, process.env[key]])
+describe.sequential('real-backend maximum element import preview benchmark', () => {
+  it('validates one 100-element/5,000-entry/5,000-selected-ref artifact five times and records resource evidence', async () => {
+    const originalEnvironment = new Map(
+      TEST_ENV_KEYS.map((key) => [key, process.env[key]])
+    )
+    const ownerId = randomUUID()
+    let localPackageDir: string | undefined
+    let prisma: PrismaClient | undefined
+    let redis: Redis | undefined
+
+    try {
+      localPackageDir = await mkdtemp(
+        path.join(tmpdir(), 'klicker-import-preview-benchmark-')
       )
-      const ownerId = randomUUID()
-      let localPackageDir: string | undefined
-      let prisma: PrismaClient | undefined
-      let redis: Redis | undefined
+      process.env.IMPORT_EXPORT_ENABLED = 'true'
+      process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY = 'false'
+      process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'local'
+      process.env.IMPORT_EXPORT_TOKEN_SECRET =
+        'preview-benchmark-token-secret-with-sufficient-entropy'
+      process.env.LOCAL_IMPORT_EXPORT_PACKAGE_DIR = localPackageDir
+      delete process.env.ASSESSMENT_MODE
 
-      try {
-        localPackageDir = await mkdtemp(
-          path.join(tmpdir(), 'klicker-import-preview-benchmark-')
-        )
-        process.env.IMPORT_EXPORT_ENABLED = 'true'
-        process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY = 'false'
-        process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'local'
-        process.env.IMPORT_EXPORT_TOKEN_SECRET =
-          'preview-benchmark-token-secret-with-sufficient-entropy'
-        process.env.LOCAL_IMPORT_EXPORT_PACKAGE_DIR = localPackageDir
-        delete process.env.ASSESSMENT_MODE
+      const initialized = await initializePrisma()
+      prisma = initialized.prisma
+      redis = new Redis({
+        host: process.env.REDIS_HOST ?? '127.0.0.1',
+        port: Number(process.env.REDIS_PORT ?? 6379),
+      })
+      await prisma.user.create({
+        data: {
+          id: ownerId,
+          email: `import-preview-benchmark-${ownerId}@example.invalid`,
+          shortname: `preview-benchmark-${ownerId.slice(0, 12)}`,
+        },
+      })
+      const ctx = {
+        prisma,
+        redisExec: redis,
+        user: {
+          sub: ownerId,
+          role: UserRole.USER,
+          scope: UserLoginScope.FULL_ACCESS,
+          catalystInstitutional: false,
+          catalystIndividual: false,
+        },
+      } as ContextWithUser
+      await redis.del(...getOwnerRateLimitKeys(ownerId))
 
-        const initialized = await initializePrisma()
-        prisma = initialized.prisma
-        redis = new Redis({
-          host: process.env.REDIS_HOST ?? '127.0.0.1',
-          port: Number(process.env.REDIS_PORT ?? 6379),
-        })
-        await prisma.user.create({
-          data: {
-            id: ownerId,
-            email: `import-preview-benchmark-${ownerId}@example.invalid`,
-            shortname: `preview-benchmark-${ownerId.slice(0, 12)}`,
-          },
-        })
-        const ctx = {
-          prisma,
-          redisExec: redis,
-          user: {
-            sub: ownerId,
-            role: UserRole.USER,
-            scope: UserLoginScope.FULL_ACCESS,
-            catalystInstitutional: false,
-            catalystIndividual: false,
-          },
-        } as ContextWithUser
-        await redis.del(...getOwnerRateLimitKeys(ownerId))
+      const { buffer, manifest } = createMaximumPreviewPackage()
+      expect(manifest).not.toHaveProperty('tags')
+      expect(buffer.length).toBeLessThanOrEqual(MAX_IMPORT_EXPORT_PACKAGE_BYTES)
+      const packageSha256 = createHash('sha256').update(buffer).digest('hex')
 
-        const { buffer, manifest } = createMaximumPreviewPackage()
-        expect(manifest).not.toHaveProperty('tags')
-        expect(buffer.length).toBeLessThanOrEqual(
-          MAX_IMPORT_EXPORT_PACKAGE_BYTES
-        )
-        const packageSha256 = createHash('sha256').update(buffer).digest('hex')
+      const prepared = await prepareElementImportPackageUpload(
+        {
+          filename: 'maximum-import-preview-benchmark.zip',
+          bytes: buffer.length,
+        },
+        ctx
+      )
+      await uploadPreparedElementImportPackage(
+        {
+          artifactId: prepared.artifactId,
+          capability: prepared.uploadCapability,
+          contentLength: buffer.length,
+          contentType: 'application/zip',
+          stream: (async function* () {
+            yield buffer
+          })(),
+        },
+        ctx
+      )
 
-        const prepared = await prepareElementImportPackageUpload(
-          {
-            filename: 'maximum-import-preview-benchmark.zip',
-            bytes: buffer.length,
-          },
-          ctx
-        )
-        await uploadPreparedElementImportPackage(
-          {
-            artifactId: prepared.artifactId,
-            capability: prepared.uploadCapability,
-            contentLength: buffer.length,
-            contentType: 'application/zip',
-            stream: (async function* () {
-              yield buffer
-            })(),
-          },
-          ctx
-        )
+      const artifacts = await prisma.importExportPackageArtifact.findMany({
+        where: { ownerId },
+        select: {
+          id: true,
+          state: true,
+          storageBlob: true,
+          bytes: true,
+          sha256: true,
+        },
+      })
+      expect(artifacts).toEqual([
+        {
+          id: prepared.artifactId,
+          state: ImportExportPackageArtifactState.READY,
+          storageBlob: expect.any(String),
+          bytes: buffer.length,
+          sha256: packageSha256,
+        },
+      ])
+      const stored = await readLocalImportExportPackageBlob(
+        artifacts[0]!.storageBlob
+      )
+      expect(stored?.equals(buffer)).toBe(true)
 
-        const artifacts = await prisma.importExportPackageArtifact.findMany({
-          where: { ownerId },
-          select: {
-            id: true,
-            state: true,
-            storageBlob: true,
-            bytes: true,
-            sha256: true,
-          },
-        })
-        expect(artifacts).toEqual([
-          {
-            id: prepared.artifactId,
-            state: ImportExportPackageArtifactState.READY,
-            storageBlob: expect.any(String),
-            bytes: buffer.length,
-            sha256: packageSha256,
-          },
-        ])
-        const stored = await readLocalImportExportPackageBlob(
-          artifacts[0]!.storageBlob
-        )
-        expect(stored?.equals(buffer)).toBe(true)
+      collectGarbageIfExposed()
+      const baselineHeapUsedBytes = process.memoryUsage().heapUsed
+      const baselineMaxRssBytes = maxRssBytes()
+      const runs: BenchmarkRun[] = []
 
+      for (let run = 1; run <= VALIDATION_RUNS; run += 1) {
         collectGarbageIfExposed()
-        const baselineHeapUsedBytes = process.memoryUsage().heapUsed
-        const baselineMaxRssBytes = maxRssBytes()
-        const runs: BenchmarkRun[] = []
+        const heapUsedBeforeBytes = process.memoryUsage().heapUsed
+        const startedAt = performance.now()
+        const validation = await validateElementImportPackage(
+          { artifactId: prepared.artifactId },
+          ctx
+        )
+        const durationMs = performance.now() - startedAt
 
-        for (let run = 1; run <= VALIDATION_RUNS; run += 1) {
-          collectGarbageIfExposed()
-          const heapUsedBeforeBytes = process.memoryUsage().heapUsed
-          const startedAt = performance.now()
-          const validation = await validateElementImportPackage(
-            { artifactId: prepared.artifactId },
-            ctx
+        expect(validation.errors).toEqual([])
+        expect(validation.importToken).toEqual(expect.any(String))
+        expect(validation.warnings).toEqual([
+          'IMPORT_STATUS_NORMALIZED_TO_REVIEW',
+        ])
+        expect(validation.elements).toHaveLength(ELEMENT_COUNT)
+        expect(validation.answerCollections).toHaveLength(3)
+        expect(
+          validation.answerCollections.reduce(
+            (total, collection) => total + collection.entries.length,
+            0
           )
-          const durationMs = performance.now() - startedAt
-
-          expect(validation.errors).toEqual([])
-          expect(validation.importToken).toEqual(expect.any(String))
-          expect(validation.warnings).toEqual([
-            'IMPORT_STATUS_NORMALIZED_TO_REVIEW',
-          ])
-          expect(validation.elements).toHaveLength(ELEMENT_COUNT)
-          expect(validation.answerCollections).toHaveLength(3)
-          expect(
-            validation.answerCollections.reduce(
-              (total, collection) => total + collection.entries.length,
-              0
-            )
-          ).toBe(TOTAL_ENTRY_COUNT)
-          expect(
-            validation.elements.every(
-              (element) =>
-                !element.alreadyImported &&
-                element.answerCollectionItemIds.length ===
-                  SELECTED_REFS_PER_ELEMENT &&
-                element.answerCollectionItemIds[0] === 1 &&
-                element.answerCollectionItemIds.at(-1) ===
-                  SELECTED_REFS_PER_ELEMENT
-            )
-          ).toBe(true)
-
-          const responseBytes = Buffer.byteLength(
-            JSON.stringify(validation),
-            'utf8'
+        ).toBe(TOTAL_ENTRY_COUNT)
+        expect(
+          validation.elements.every(
+            (element) =>
+              !element.alreadyImported &&
+              element.answerCollectionItemIds.length ===
+                SELECTED_REFS_PER_ELEMENT &&
+              element.answerCollectionItemIds[0] === 1 &&
+              element.answerCollectionItemIds.at(-1) ===
+                SELECTED_REFS_PER_ELEMENT
           )
-          const heapUsedAfterBytes = process.memoryUsage().heapUsed
-          const additionalHeapBytes = Math.max(
-            0,
-            heapUsedAfterBytes - heapUsedBeforeBytes
-          )
-          const runMetrics = {
-            run,
-            durationMs,
-            responseBytes,
-            heapUsedBeforeBytes,
-            heapUsedAfterBytes,
-            additionalHeapBytes,
-            maxRssBytes: maxRssBytes(),
-          }
-          runs.push(runMetrics)
-        }
+        ).toBe(true)
 
-        const finalHeapUsedBytes = process.memoryUsage().heapUsed
-        const finalMaxRssBytes = maxRssBytes()
+        const responseBytes = Buffer.byteLength(
+          JSON.stringify(validation),
+          'utf8'
+        )
+        const heapUsedAfterBytes = process.memoryUsage().heapUsed
         const additionalHeapBytes = Math.max(
           0,
-          finalHeapUsedBytes - baselineHeapUsedBytes
+          heapUsedAfterBytes - heapUsedBeforeBytes
         )
-        const additionalMaxRssBytes = Math.max(
-          0,
-          finalMaxRssBytes - baselineMaxRssBytes
-        )
-        const sortedDurations = runs
-          .map(({ durationMs }) => durationMs)
-          .sort((left, right) => left - right)
-        const medianDurationMs = sortedDurations[Math.floor(runs.length / 2)]!
-        const worstDurationMs = Math.max(...sortedDurations)
-        const maximumPerRunAdditionalHeapBytes = Math.max(
-          ...runs.map((run) => run.additionalHeapBytes)
-        )
-
-        console.info(
-          '[ElementImportPreviewBackendBenchmark]',
-          JSON.stringify({
-            fixture: {
-              elements: ELEMENT_COUNT,
-              answerCollections: 3,
-              entries: TOTAL_ENTRY_COUNT,
-              sharedPoolEntries: SHARED_POOL_ENTRY_COUNT,
-              selectedRefsPerElement: SELECTED_REFS_PER_ELEMENT,
-              selectedRefs: TOTAL_SELECTED_REF_COUNT,
-            },
-            packageBytes: buffer.length,
-            packageSha256,
-            runs,
-            medianDurationMs,
-            worstDurationMs,
-            maximumResponseBytes: Math.max(
-              ...runs.map(({ responseBytes }) => responseBytes)
-            ),
-            memory: {
-              baselineHeapUsedBytes,
-              finalHeapUsedBytes,
-              additionalHeapBytes,
-              maximumPerRunAdditionalHeapBytes,
-              baselineMaxRssBytes,
-              finalMaxRssBytes,
-              additionalMaxRssBytes,
-              heapDefinition:
-                'Positive heapUsed delta from the pre-validation baseline to response completion; per-run deltas include the live result and its serialized response but are not transient allocation peaks.',
-              rssDefinition:
-                'Positive delta in Linux process.resourceUsage().maxRSS high-water bytes from the focused-process pre-validation baseline through all five runs.',
-            },
-          })
-        )
-      } finally {
-        await cleanupBenchmarkResources({
-          localPackageDir,
-          ownerId,
-          prisma,
-          redis,
-          originalEnvironment,
-        })
+        const runMetrics = {
+          run,
+          durationMs,
+          responseBytes,
+          heapUsedBeforeBytes,
+          heapUsedAfterBytes,
+          additionalHeapBytes,
+          maxRssBytes: maxRssBytes(),
+        }
+        runs.push(runMetrics)
       }
-    }, 60_000)
-  }
-)
+
+      const finalHeapUsedBytes = process.memoryUsage().heapUsed
+      const finalMaxRssBytes = maxRssBytes()
+      const additionalHeapBytes = Math.max(
+        0,
+        finalHeapUsedBytes - baselineHeapUsedBytes
+      )
+      const additionalMaxRssBytes = Math.max(
+        0,
+        finalMaxRssBytes - baselineMaxRssBytes
+      )
+      const sortedDurations = runs
+        .map(({ durationMs }) => durationMs)
+        .sort((left, right) => left - right)
+      const medianDurationMs = sortedDurations[Math.floor(runs.length / 2)]!
+      const worstDurationMs = Math.max(...sortedDurations)
+      const maximumPerRunAdditionalHeapBytes = Math.max(
+        ...runs.map((run) => run.additionalHeapBytes)
+      )
+
+      console.info(
+        '[ElementImportPreviewBackendBenchmark]',
+        JSON.stringify({
+          fixture: {
+            elements: ELEMENT_COUNT,
+            answerCollections: 3,
+            entries: TOTAL_ENTRY_COUNT,
+            sharedPoolEntries: SHARED_POOL_ENTRY_COUNT,
+            selectedRefsPerElement: SELECTED_REFS_PER_ELEMENT,
+            selectedRefs: TOTAL_SELECTED_REF_COUNT,
+          },
+          packageBytes: buffer.length,
+          packageSha256,
+          runs,
+          medianDurationMs,
+          worstDurationMs,
+          maximumResponseBytes: Math.max(
+            ...runs.map(({ responseBytes }) => responseBytes)
+          ),
+          memory: {
+            baselineHeapUsedBytes,
+            finalHeapUsedBytes,
+            additionalHeapBytes,
+            maximumPerRunAdditionalHeapBytes,
+            baselineMaxRssBytes,
+            finalMaxRssBytes,
+            additionalMaxRssBytes,
+            heapDefinition:
+              'Positive heapUsed delta from the pre-validation baseline to response completion; per-run deltas include the live result and its serialized response but are not transient allocation peaks.',
+            rssDefinition:
+              'Positive delta in Linux process.resourceUsage().maxRSS high-water bytes from the focused-process pre-validation baseline through all five runs.',
+          },
+        })
+      )
+    } finally {
+      await cleanupBenchmarkResources({
+        localPackageDir,
+        ownerId,
+        prisma,
+        redis,
+        originalEnvironment,
+      })
+    }
+  }, 60_000)
+})

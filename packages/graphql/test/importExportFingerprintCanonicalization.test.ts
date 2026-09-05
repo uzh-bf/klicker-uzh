@@ -153,38 +153,37 @@ describe('version 2 didactic fingerprint canonicalization', () => {
     expect(IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION).toBe(1)
   })
 
-  it.each(allElementTypes)(
-    'fingerprints canonical $type payloads',
-    (fixture) => {
-      const input = {
-        ...elementInput(fixture.type, fixture.options),
-        ...fixture.relations,
-      }
-      const result = computeElementDidacticFingerprint(input)
-
-      expect(result).toEqual({
-        version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
-        fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
-      })
-      expect(computePersistedElementDidacticFingerprint(input)).toEqual(result)
+  it.each(
+    allElementTypes
+  )('fingerprints canonical $type payloads', (fixture) => {
+    const input = {
+      ...elementInput(fixture.type, fixture.options),
+      ...fixture.relations,
     }
-  )
+    const result = computeElementDidacticFingerprint(input)
 
-  it.each([ElementType.CONTENT, ElementType.FLASHCARD])(
-    'normalizes legacy persisted scoring defaults for %s to the portable domain',
-    (type) => {
-      const portable = computeElementDidacticFingerprint({
-        ...elementInput(type),
-        basePoints: false,
-      })
-      const persisted = computePersistedElementDidacticFingerprint({
-        ...elementInput(type),
-        basePoints: true,
-      })
+    expect(result).toEqual({
+      version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    })
+    expect(computePersistedElementDidacticFingerprint(input)).toEqual(result)
+  })
 
-      expect(persisted).toEqual(portable)
-    }
-  )
+  it.each([
+    ElementType.CONTENT,
+    ElementType.FLASHCARD,
+  ])('normalizes legacy persisted scoring defaults for %s to the portable domain', (type) => {
+    const portable = computeElementDidacticFingerprint({
+      ...elementInput(type),
+      basePoints: false,
+    })
+    const persisted = computePersistedElementDidacticFingerprint({
+      ...elementInput(type),
+      basePoints: true,
+    })
+
+    expect(persisted).toEqual(portable)
+  })
 
   it('is deterministic across object-key and normalized set ordering', () => {
     const first = computeElementDidacticFingerprint({

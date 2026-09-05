@@ -129,10 +129,10 @@ describe('post-seed import/export fingerprint bootstrap', () => {
       'run-s --continue-on-error --npm-path pnpm seed:flashcards:raw seed:fingerprints'
     )
     expect(prismaDataPackage.scripts.seed).toContain(
-      '--env dev pnpm run seed:test'
+      '--env dev pnpm run seed:raw'
     )
     expect(prismaDataPackage.scripts['seed:raw']).toBe(
-      'ENV=development pnpm run seed:test'
+      'ENV=development run-s --continue-on-error --npm-path pnpm seed:test:raw seed:assessment-course seed:fingerprints'
     )
     expect(prismaDataPackage.scripts['seed:qa']).toContain(
       '--env stg pnpm run seed:test'

@@ -227,55 +227,52 @@ describe('public export containment ordering', () => {
   it.each([
     ['exceeded', ImportExportErrorCode.RATE_LIMITED],
     ['unavailable', ImportExportErrorCode.RATE_LIMIT_UNAVAILABLE],
-  ] as const)(
-    'rejects %s export limits before concurrency, reservation, or source work',
-    async (kind, code) => {
-      let rateLimitError: Error
-      const assertRateLimit = vi.fn(async () => {
-        throw rateLimitError
-      })
-      const withConcurrency = vi.fn()
-      const reserveExport = vi.fn()
-      const findMany = vi.fn()
+  ] as const)('rejects %s export limits before concurrency, reservation, or source work', async (kind, code) => {
+    let rateLimitError: Error
+    const assertRateLimit = vi.fn(async () => {
+      throw rateLimitError
+    })
+    const withConcurrency = vi.fn()
+    const reserveExport = vi.fn()
+    const findMany = vi.fn()
 
-      vi.doMock('../src/services/importExportAuthorization.js', () => ({
-        assertCanUseElementImportExport: vi.fn(async () => undefined),
-      }))
-      vi.doMock('../src/services/importExportRateLimit.js', async () => ({
-        ...(await vi.importActual<
-          typeof import('../src/services/importExportRateLimit.js')
-        >('../src/services/importExportRateLimit.js')),
-        assertImportExportRateLimit: assertRateLimit,
-      }))
-      vi.doMock('../src/services/importExportConcurrency.js', () => ({
-        withImportExportConcurrencyLease: withConcurrency,
-      }))
-      vi.doMock('../src/services/packageStorage.js', async () => ({
-        ...(await vi.importActual<
-          typeof import('../src/services/packageStorage.js')
-        >('../src/services/packageStorage.js')),
-        reserveElementExportPackageArtifact: reserveExport,
-      }))
+    vi.doMock('../src/services/importExportAuthorization.js', () => ({
+      assertCanUseElementImportExport: vi.fn(async () => undefined),
+    }))
+    vi.doMock('../src/services/importExportRateLimit.js', async () => ({
+      ...(await vi.importActual<
+        typeof import('../src/services/importExportRateLimit.js')
+      >('../src/services/importExportRateLimit.js')),
+      assertImportExportRateLimit: assertRateLimit,
+    }))
+    vi.doMock('../src/services/importExportConcurrency.js', () => ({
+      withImportExportConcurrencyLease: withConcurrency,
+    }))
+    vi.doMock('../src/services/packageStorage.js', async () => ({
+      ...(await vi.importActual<
+        typeof import('../src/services/packageStorage.js')
+      >('../src/services/packageStorage.js')),
+      reserveElementExportPackageArtifact: reserveExport,
+    }))
 
-      const { getElementExportPackageLink } = await import(
-        '../src/services/elementImportExport.js'
-      )
-      const { ImportExportRateLimitError } = await import(
-        '../src/services/importExportRateLimit.js'
-      )
-      rateLimitError = new ImportExportRateLimitError(kind)
-      const ctx = {
-        user: { sub: 'owner' },
-        prisma: { element: { findMany } },
-      } as any
+    const { getElementExportPackageLink } = await import(
+      '../src/services/elementImportExport.js'
+    )
+    const { ImportExportRateLimitError } = await import(
+      '../src/services/importExportRateLimit.js'
+    )
+    rateLimitError = new ImportExportRateLimitError(kind)
+    const ctx = {
+      user: { sub: 'owner' },
+      prisma: { element: { findMany } },
+    } as any
 
-      await expect(
-        getElementExportPackageLink({ elementIds: [1] }, ctx)
-      ).rejects.toMatchObject({ extensions: { code } })
-      expect(assertRateLimit).toHaveBeenCalledWith(ctx, 'export')
-      expect(withConcurrency).not.toHaveBeenCalled()
-      expect(reserveExport).not.toHaveBeenCalled()
-      expect(findMany).not.toHaveBeenCalled()
-    }
-  )
+    await expect(
+      getElementExportPackageLink({ elementIds: [1] }, ctx)
+    ).rejects.toMatchObject({ extensions: { code } })
+    expect(assertRateLimit).toHaveBeenCalledWith(ctx, 'export')
+    expect(withConcurrency).not.toHaveBeenCalled()
+    expect(reserveExport).not.toHaveBeenCalled()
+    expect(findMany).not.toHaveBeenCalled()
+  })
 })

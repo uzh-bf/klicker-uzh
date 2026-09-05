@@ -735,76 +735,76 @@ describe('import/export fingerprint maintenance batches', () => {
     )
   })
 
-  it.each(['ELEMENT', 'ANSWER_COLLECTION'] as const)(
-    'rollout-rescans every active %s after media classification',
-    async (resource) => {
-      const resources = Array.from({ length: 100 }, (_, index) => {
-        const id = index + 1
-        const dirtyVariant = id % 3
-        return {
-          id,
-          importFingerprint:
-            dirtyVariant === 0 ? null : `legacy-fingerprint-${id}`,
-          importFingerprintVersion:
-            dirtyVariant === 1
-              ? null
-              : dirtyVariant === 2
-                ? IMPORT_EXPORT_FINGERPRINT_VERSION + 1
-                : IMPORT_EXPORT_FINGERPRINT_VERSION,
-          isDeleted: false,
-        }
-      })
-      resources.push({
-        id: 101,
-        importFingerprint: 'current-fingerprint',
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+  it.each([
+    'ELEMENT',
+    'ANSWER_COLLECTION',
+  ] as const)('rollout-rescans every active %s after media classification', async (resource) => {
+    const resources = Array.from({ length: 100 }, (_, index) => {
+      const id = index + 1
+      const dirtyVariant = id % 3
+      return {
+        id,
+        importFingerprint:
+          dirtyVariant === 0 ? null : `legacy-fingerprint-${id}`,
+        importFingerprintVersion:
+          dirtyVariant === 1
+            ? null
+            : dirtyVariant === 2
+              ? IMPORT_EXPORT_FINGERPRINT_VERSION + 1
+              : IMPORT_EXPORT_FINGERPRINT_VERSION,
         isDeleted: false,
-      })
-      const findMany = createFingerprintFindMany(resources)
-      const prisma = {
-        element: {
-          findMany: resource === 'ELEMENT' ? findMany : vi.fn(),
+      }
+    })
+    resources.push({
+      id: 101,
+      importFingerprint: 'current-fingerprint',
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      isDeleted: false,
+    })
+    const findMany = createFingerprintFindMany(resources)
+    const prisma = {
+      element: {
+        findMany: resource === 'ELEMENT' ? findMany : vi.fn(),
+      },
+      answerCollection: {
+        findMany: resource === 'ANSWER_COLLECTION' ? findMany : vi.fn(),
+      },
+    } as unknown as Parameters<typeof backfillFingerprintBatch>[1]
+    const refresh =
+      resource === 'ELEMENT'
+        ? mocks.refreshElementDidacticFingerprintV1
+        : mocks.refreshAnswerCollectionDidacticFingerprintV1
+    refresh.mockImplementation(async (id) => {
+      markFingerprintCurrent(resources, id)
+      return {
+        status: 'updated',
+        computed: {
+          version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+          fingerprint: `fingerprint-${id}`,
         },
-        answerCollection: {
-          findMany: resource === 'ANSWER_COLLECTION' ? findMany : vi.fn(),
-        },
-      } as unknown as Parameters<typeof backfillFingerprintBatch>[1]
-      const refresh =
-        resource === 'ELEMENT'
-          ? mocks.refreshElementDidacticFingerprintV1
-          : mocks.refreshAnswerCollectionDidacticFingerprintV1
-      refresh.mockImplementation(async (id) => {
-        markFingerprintCurrent(resources, id)
-        return {
-          status: 'updated',
-          computed: {
-            version: IMPORT_EXPORT_FINGERPRINT_VERSION,
-            fingerprint: `fingerprint-${id}`,
-          },
-        }
+      }
+    })
+
+    const firstPage = await backfillFingerprintBatch({ resource }, prisma)
+    const continuation = await backfillFingerprintBatch(
+      { resource, afterId: firstPage.nextAfterId },
+      prisma
+    )
+    const secondRun = await backfillFingerprintBatch({ resource }, prisma)
+
+    expect(firstPage).toEqual({ processed: 100, nextAfterId: 100 })
+    expect(continuation).toEqual({ processed: 1, nextAfterId: undefined })
+    expect(secondRun).toEqual({ processed: 100, nextAfterId: 100 })
+    expect(refresh).toHaveBeenCalledTimes(201)
+    expect(findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.not.objectContaining({ OR: expect.anything() }),
+        orderBy: { id: 'asc' },
+        take: 100,
       })
-
-      const firstPage = await backfillFingerprintBatch({ resource }, prisma)
-      const continuation = await backfillFingerprintBatch(
-        { resource, afterId: firstPage.nextAfterId },
-        prisma
-      )
-      const secondRun = await backfillFingerprintBatch({ resource }, prisma)
-
-      expect(firstPage).toEqual({ processed: 100, nextAfterId: 100 })
-      expect(continuation).toEqual({ processed: 1, nextAfterId: undefined })
-      expect(secondRun).toEqual({ processed: 100, nextAfterId: 100 })
-      expect(refresh).toHaveBeenCalledTimes(201)
-      expect(findMany).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining({
-          where: expect.not.objectContaining({ OR: expect.anything() }),
-          orderBy: { id: 'asc' },
-          take: 100,
-        })
-      )
-    }
-  )
+    )
+  })
 
   it('refreshes a collection first and its linked dirty elements in bounded pages', async () => {
     const collectionId = 77

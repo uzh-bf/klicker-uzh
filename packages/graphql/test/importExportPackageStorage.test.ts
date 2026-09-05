@@ -379,38 +379,35 @@ describe('durable import/export package storage', () => {
       expectedCode: ImportExportErrorCode.UPLOAD_TOO_LARGE,
       streamed: Buffer.from('123456'),
     },
-  ])(
-    'removes the durable record and blob after a $label claimed upload',
-    async ({ expectedCode, streamed }) => {
-      const ctx = createContext(ownerId)
-      const prepared = await prepareElementImportPackageUpload(
-        { bytes: 5 },
-        ctx
-      )
+  ])('removes the durable record and blob after a $label claimed upload', async ({
+    expectedCode,
+    streamed,
+  }) => {
+    const ctx = createContext(ownerId)
+    const prepared = await prepareElementImportPackageUpload({ bytes: 5 }, ctx)
 
-      await expectPackageError(
-        uploadPreparedElementImportPackage(
-          {
-            artifactId: prepared.artifactId,
-            capability: prepared.uploadCapability,
-            contentLength: 5,
-            contentType: ZIP_CONTENT_TYPE,
-            stream: chunks(streamed),
-          },
-          ctx
-        ),
-        expectedCode
-      )
-      await expect(
-        prisma.importExportPackageArtifact.findUnique({
-          where: { id: prepared.artifactId },
-        })
-      ).resolves.toBeNull()
-      await expect(
-        readLocalImportExportPackageBlob(prepared.blobName)
-      ).rejects.toMatchObject({ code: 'ENOENT' })
-    }
-  )
+    await expectPackageError(
+      uploadPreparedElementImportPackage(
+        {
+          artifactId: prepared.artifactId,
+          capability: prepared.uploadCapability,
+          contentLength: 5,
+          contentType: ZIP_CONTENT_TYPE,
+          stream: chunks(streamed),
+        },
+        ctx
+      ),
+      expectedCode
+    )
+    await expect(
+      prisma.importExportPackageArtifact.findUnique({
+        where: { id: prepared.artifactId },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      readLocalImportExportPackageBlob(prepared.blobName)
+    ).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 
   it('retains the exact ledger and byte quota when a claimed storage write is indeterminate', async () => {
     const payload = Buffer.from('indeterminate storage write')

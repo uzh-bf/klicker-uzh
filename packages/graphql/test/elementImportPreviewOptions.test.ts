@@ -127,32 +127,29 @@ describe('element import preview option contract', () => {
     [ElementType.SC, 'ElementImportPackagePreviewSCOptions', 2],
     [ElementType.MC, 'ElementImportPackagePreviewMCOptions', 3],
     [ElementType.KPRIM, 'ElementImportPackagePreviewKPRIMOptions', 4],
-  ])(
-    'preserves %s choice review fields and nullable correctness',
-    async (type, name, choiceCount) => {
-      const choices = Array.from({ length: choiceCount }, (_, ix) => ({
-        ix,
-        value: `Choice ${ix + 1}`,
-      }))
-      const result = await executeOptions(
-        createChoiceOptionsSource(type, choices)
-      )
+  ])('preserves %s choice review fields and nullable correctness', async (type, name, choiceCount) => {
+    const choices = Array.from({ length: choiceCount }, (_, ix) => ({
+      ix,
+      value: `Choice ${ix + 1}`,
+    }))
+    const result = await executeOptions(
+      createChoiceOptionsSource(type, choices)
+    )
 
-      expect(result.errors).toBeUndefined()
-      expect(result.data?.options).toEqual({
-        __typename: name,
-        type,
-        displayMode: DisplayMode.LIST,
-        hasSampleSolution: false,
-        hasAnswerFeedbacks: false,
-        choices: choices.map((choice) => ({
-          ...choice,
-          correct: null,
-          feedback: null,
-        })),
-      })
-    }
-  )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.options).toEqual({
+      __typename: name,
+      type,
+      displayMode: DisplayMode.LIST,
+      hasSampleSolution: false,
+      hasAnswerFeedbacks: false,
+      choices: choices.map((choice) => ({
+        ...choice,
+        correct: null,
+        feedback: null,
+      })),
+    })
+  })
 
   it('preserves choice correctness and feedback when a scoring key exists', async () => {
     const result = await executeOptions({

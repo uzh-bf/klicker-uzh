@@ -154,16 +154,15 @@ describe('import/export runtime configuration', () => {
     ).toThrow('IMPORT_EXPORT_ENABLED')
   })
 
-  it.each(INTEGER_ENV_NAMES)(
-    'rejects empty, noncanonical, nonpositive, fractional, and unsafe %s',
-    (name) => {
-      for (const value of ['', '01', '0', '-1', '1.5', '9007199254740992']) {
-        expect(() =>
-          parseImportExportRuntimeConfig(productionEnv({ [name]: value }))
-        ).toThrow(name)
-      }
+  it.each(
+    INTEGER_ENV_NAMES
+  )('rejects empty, noncanonical, nonpositive, fractional, and unsafe %s', (name) => {
+    for (const value of ['', '01', '0', '-1', '1.5', '9007199254740992']) {
+      expect(() =>
+        parseImportExportRuntimeConfig(productionEnv({ [name]: value }))
+      ).toThrow(name)
     }
-  )
+  })
 
   it('enforces policy maxima and cross-field invariants', () => {
     expect(() =>
@@ -238,20 +237,21 @@ describe('import/export runtime configuration', () => {
       env: { ASSESSMENT_MODE: 'true', IMPORT_EXPORT_ENABLED: 'true' },
       expected: [false, false, false, false],
     },
-  ])(
-    'assigns $role startup responsibilities for $env',
-    ({ role, env, expected }) => {
-      const responsibilities = getImportExportStartupResponsibilities(
-        role,
-        parseImportExportRuntimeConfig(productionEnv(env))
-      )
-      expect([
-        responsibilities.userOperations,
-        responsibilities.maintenance,
-        responsibilities.requiresPackageStorage,
-        responsibilities.requiresTokenSecret,
-      ]).toEqual(expected)
-      expect(Object.isFrozen(responsibilities)).toBe(true)
-    }
-  )
+  ])('assigns $role startup responsibilities for $env', ({
+    role,
+    env,
+    expected,
+  }) => {
+    const responsibilities = getImportExportStartupResponsibilities(
+      role,
+      parseImportExportRuntimeConfig(productionEnv(env))
+    )
+    expect([
+      responsibilities.userOperations,
+      responsibilities.maintenance,
+      responsibilities.requiresPackageStorage,
+      responsibilities.requiresTokenSecret,
+    ]).toEqual(expected)
+    expect(Object.isFrozen(responsibilities)).toBe(true)
+  })
 })
