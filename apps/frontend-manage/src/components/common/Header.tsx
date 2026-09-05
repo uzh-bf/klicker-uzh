@@ -362,6 +362,9 @@ function Header({
         },
       ],
       className: {
+        // On narrow desktops the header cannot fit every label; the account
+        // menu keeps its icon and drops the username, which the menu repeats.
+        label: 'max-lg:hidden',
         content: 'mr-1',
       },
     },
