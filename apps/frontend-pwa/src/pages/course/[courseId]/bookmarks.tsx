@@ -66,9 +66,13 @@ function Bookmarks() {
     bookmarkedStacks?.getBookmarkedElementStacks,
   ])
 
+  // Every branch of this route marks itself as an answering surface, including
+  // the one rendered before the bookmarks have loaded: the layout decides on its
+  // first render whether a product update may appear, and a later branch cannot
+  // recall a request that the earlier one already sent.
   if (loadingBookmarks || loadingCourse) {
     return (
-      <Layout displayName={t('shared.generic.bookmarks')}>
+      <Layout activelyAnswering displayName={t('shared.generic.bookmarks')}>
         <Loader />
       </Layout>
     )
@@ -76,6 +80,7 @@ function Bookmarks() {
 
   return (
     <Layout
+      activelyAnswering
       course={courseData?.basicCourseInformation ?? undefined}
       displayName={t('shared.generic.bookmarks')}
     >
