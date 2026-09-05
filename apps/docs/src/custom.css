@@ -312,3 +312,10 @@
     }
   }
 }
+
+/* Keep long display equations scrollable without widening the page. */
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

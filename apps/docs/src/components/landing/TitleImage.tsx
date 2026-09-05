@@ -35,7 +35,7 @@ export function TitleImage() {
                   />
                 </h1>
                 <p className="mt-1 text-2xl leading-8 text-gray-600">
-                  Enhance your classroom experience.
+                  Bring students into the conversation.
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
                   <a
@@ -44,7 +44,7 @@ export function TitleImage() {
                     rel="noreferrer noopener"
                     className="inline-flex items-center justify-center rounded-md bg-primary-100 px-3.25 py-1.75 text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
                   >
-                    Sign Up / Login
+                    Sign up or log in
                   </a>
                   <a
                     href="/getting_started/welcome/"

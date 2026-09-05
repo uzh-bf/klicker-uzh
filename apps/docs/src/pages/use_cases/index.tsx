@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
-import { H2 } from '@uzh-bf/design-system'
+import { H1, H2 } from '@uzh-bf/design-system'
 import { USE_CASES, USE_CASE_CATEGORIES } from '../../constants'
 
 function Card({ slug, title, image, abstract }) {
@@ -71,8 +71,13 @@ const CATEGORY_ICONS = {
 
 function Index() {
   return (
-    <UseCaseLayout path="/use_cases">
+    <UseCaseLayout
+      path="/use_cases"
+      title="Use cases"
+      description="Explore how KlickerUZH supports teaching and learning activities."
+    >
       <div className="mt-4 flex flex-col gap-12 pb-8">
+        <H1 className={{ root: 'mb-0' }}>Use cases</H1>
         {Object.entries(USE_CASE_CATEGORIES).map(([categoryId, category]) => (
           <div key={categoryId}>
             <CategoryHeader

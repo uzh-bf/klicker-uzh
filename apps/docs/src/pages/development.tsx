@@ -14,12 +14,12 @@ const roadmapGroups: RoadmapGroup[] = [
   {
     title: 'Available',
     description:
-      'These capabilities are available on the public instance. Some features require Catalyst access or participation in the beta.',
+      'These capabilities are available on the public instance. Some require Catalyst access or beta participation.',
     tiles: [
       {
         title: 'Live interaction',
         content:
-          'Interact with participants during class and collect responses as the session runs.',
+          'Interact with participants during class and collect responses in real time.',
         useCases: [
           {
             content: 'Live Q&A',
@@ -28,7 +28,7 @@ const roadmapGroups: RoadmapGroup[] = [
           },
           {
             content: 'Real-Time Feedback',
-            href: '/use_cases/real_time_feedback',
+            href: '/tutorials/live_qa/#what-is-live-feedback',
             status: 'Available',
           },
           { content: 'Live Quizzes', status: 'Available' },
@@ -38,7 +38,7 @@ const roadmapGroups: RoadmapGroup[] = [
       {
         title: 'Asynchronous learning',
         content:
-          'Support learning outside class with activities that students can work through at their own pace.',
+          'Support learning outside class with activities students can complete at their own pace.',
         useCases: [
           {
             content: 'Practice Quizzes and Microlearning',
@@ -65,7 +65,7 @@ const roadmapGroups: RoadmapGroup[] = [
       {
         title: 'Question pool and activity management',
         content:
-          'Create and manage questions and activities from a central question pool.',
+          'Create and manage questions and activities in a central question pool.',
         useCases: [
           {
             content: 'Question Pool and Activity Management',
@@ -79,12 +79,12 @@ const roadmapGroups: RoadmapGroup[] = [
   {
     title: 'Upcoming v3.4 preview',
     description:
-      'We are preparing this work for the upcoming v3.4 preview. Some features require Catalyst access or participation in the beta. Access also depends on entitlement and publication approval.',
+      'We are preparing this work for the v3.4 preview. Some features require Catalyst access or beta participation. Access also depends on entitlement and publication approval.',
     tiles: [
       {
         title: 'Course chatbots',
         content:
-          'We are preparing tools for lecturers to author course chatbots. Publishing a chatbot for students remains subject to approval.',
+          'We are preparing tools for lecturers to author course chatbots. Publishing chatbots for students remains subject to approval.',
         useCases: [
           {
             content: 'Lecturer Chatbot Authoring',
@@ -114,8 +114,7 @@ const roadmapGroups: RoadmapGroup[] = [
       },
       {
         title: 'Further group activities',
-        content:
-          'Additional group activity formats remain under consideration.',
+        content: 'Additional group activity formats are under consideration.',
         useCases: [
           {
             content: 'Synchronous Group Activities',
@@ -127,7 +126,7 @@ const roadmapGroups: RoadmapGroup[] = [
       {
         title: 'Learning analytics',
         content:
-          'Planned work includes analytics that help lecturers and students reflect on learning.',
+          'Planned work includes analytics to help lecturers and students reflect on learning.',
         useCases: [
           {
             content: 'Learning Analytics for Lecturers',
@@ -140,7 +139,7 @@ const roadmapGroups: RoadmapGroup[] = [
       {
         title: 'AI support',
         content:
-          'Planned work includes AI support for question drafting and formative feedback on open-ended answers.',
+          'Planned AI support includes question drafting and formative feedback on open-ended answers.',
         useCases: [
           { content: 'AI Question Generation', status: 'Planned' },
           { content: 'AI Formative Feedback', status: 'Planned' },
@@ -153,7 +152,10 @@ const roadmapGroups: RoadmapGroup[] = [
 
 const Development = () => {
   return (
-    <Layout>
+    <Layout
+      title="KlickerUZH roadmap"
+      description="See what is available in KlickerUZH today, what is in preview, and what is planned."
+    >
       <div className="m-auto max-w-[1300px] p-8">
         <div className="mb-4 flex h-12 flex-row items-end justify-between">
           <H1>KlickerUZH roadmap</H1>
@@ -171,18 +173,19 @@ const Development = () => {
           </div>
         </div>
 
-        <p className="mb-2 text-sm text-gray-600">Reviewed 5 September 2026.</p>
+        <p className="mb-2 text-sm text-gray-600">
+          Last reviewed: 5 September 2026.
+        </p>
 
         <div className="mb-12">
           <p>
-            The work that shaped KlickerUZH was backed by swissuniversities and
+            The development of KlickerUZH was backed by swissuniversities and
             the Teaching Center at the Department of Finance at the University
             of Zurich.
           </p>
           <p className="mt-4">
-            This roadmap groups the capabilities available today, the upcoming
-            v3.4 preview, and planned work. You can help shape KlickerUZH by
-            joining our{' '}
+            This roadmap covers capabilities available today, the v3.4 preview,
+            and planned work. Help shape KlickerUZH by joining our{' '}
             <a
               href="https://community.klicker.uzh.ch/"
               target="_blank"

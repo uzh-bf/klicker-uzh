@@ -7,76 +7,41 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import { Prose } from '@uzh-bf/design-system'
-import { useEffect, useState } from 'react'
-import { animated, useTransition } from 'react-spring'
-
-const TEXTS = ['Standard', 'Catalyst']
 
 function Catalyst() {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const intervalId = setInterval(
-      () => setIndex((index) => (index + 1) % TEXTS.length),
-      3000 // every 3 seconds
-    )
-    return () => clearTimeout(intervalId)
-  }, [])
-
-  // Use useTransition to handle the cycling of texts
-  const transitions = useTransition(index, {
-    from: { opacity: 0, transform: 'translateY(20px)' },
-    enter: { opacity: 1, transform: 'translateY(0px)' },
-    leave: { opacity: 0, transform: 'translateY(-20px)' },
-    config: {
-      tension: 280,
-      friction: 60,
-    },
-  })
-
   return (
-    <Layout>
+    <Layout
+      title="Catalyst"
+      description="Learn about standard and Catalyst access for KlickerUZH."
+    >
       <div className="px-8 py-24">
         <div className="flex max-w-7xl flex-col items-center text-center md:mx-auto lg:px-8">
           <h1 className="md:text-5xl! mt-2 flex w-max flex-row gap-4">
-            <div>KlickerUZH</div>
-            <div className="relative flex h-12 items-center justify-center pr-48">
-              {transitions((style, currentIndex) => (
-                <animated.u
-                  style={{
-                    ...style,
-                    left: 0,
-                    position: 'absolute',
-                    whiteSpace: 'nowrap',
-                  }}
-                  className="decoration-[#3353b7]"
-                >
-                  {TEXTS[currentIndex]}
-                </animated.u>
-              ))}
-            </div>
+            <span>KlickerUZH</span>
+            <span className="decoration-[#3353b7]">
+              <u>Catalyst</u>
+            </span>
           </h1>
           <Prose className={{ root: 'prose w-full max-w-3xl' }}>
             <p>
-              The core components of our KlickerUZH instance are free to use for
-              everyone. Advanced functionalities are restricted to users at UZH
-              or sponsors ("catalysts") of the KlickerUZH open-source project.
+              The core components of KlickerUZH are free for everyone. Advanced
+              functionality is restricted to users at UZH or sponsors
+              ("catalysts") of the KlickerUZH open-source project.
             </p>
             <p>
-              We offer the advanced functionalities for free to individual
-              lecturers in small educational use cases or for piloting
-              KlickerUZH in an external organization. For broad use across a
-              larger organization, a sponsorship agreement is required.
+              We offer advanced functionality free to individual lecturers for
+              small educational use cases and for piloting KlickerUZH in an
+              external organization. Broad use across a larger organization
+              requires a sponsorship agreement.
             </p>
             <p>
-              You can contribute to the project in various ways, e.g., by
-              self-hosting and collaborating on the code base, or by sponsoring
-              the project financially.
+              You can contribute by self-hosting, collaborating on the codebase,
+              or sponsoring the project financially.
             </p>
             <p>
-              To get access, sign in to KlickerUZH Manage and open the support
-              dialog via the question-mark icon. There you can send us a direct
-              Catalyst access request.
+              To request access, sign in to KlickerUZH Manage and open the
+              support dialog with the question-mark icon. Send us a direct
+              Catalyst access request there.
             </p>
           </Prose>
 

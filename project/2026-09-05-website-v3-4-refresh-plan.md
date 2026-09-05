@@ -1,5 +1,15 @@
 # Website refresh for v3.4
 
+## Current amendment: broader website fixes and PR
+
+On 5 September 2026 the user requested the fixes from the completed website review, improved prose, and a PR. This amendment supersedes the earlier local-only terminal condition and publication exclusions. It authorizes local fixes and commits, push to `origin/rs/website-v3-4-refresh`, and a draft PR targeting `v3`. No upstream integration, merge, deployment, legal-policy change, or new external data flow is included.
+
+Fix confirmed mobile overflow, keyboard controls, broken links/images, missing headings/titles/alternatives and continuous animation. Replace empty pages with useful verified guidance. Improve public prose while preserving facts, references and access qualifications. Remove expired pilot recruitment without asserting outcomes. Qualify chatbot self-service as upcoming; source presence alone never proves live availability. Retain useful URLs and avoid nominal redirects between unrelated subjects. Detailed new lecturer tutorials remain outside this package.
+
+The UI executor owns remaining page/components and existing CSS. The documentation executor owns `constants.tsx` (including Figure) and review-identified MDX. Parent owns claim decisions, integration and verification because those checks cross both slices. No new dependencies are needed. Success requires production build, scoped formatting, no additional TypeScript diagnostic identities, and finding-specific browser checks: four overflow routes at 390px, math scrolling, image zoom, keyboard links and feature selection at tablet width, reduced motion, corrected routes/fragments, headings/titles and images. Preserve inherited root-check limitations. Run simplifier and integrated final review before authorized push and draft PR.
+
+Planner amendment review: DONE_WITH_CONCERNS; all corrections accepted (authority clarity, disjoint ownership, URL and availability preservation, finding-specific verification). No renewed human approval is needed because the user explicitly requested this extension and delivery. Progress: implementing the amendment; prior completion records below describe only the initial local package.
+
 ## Approval summary
 Prepare the public KlickerUZH website for the upcoming v3.4 release. Keep its visual identity while updating dependencies, homepage information, roadmap presentation and feedback guidance. Approved by the user on 2026-09-05.
 

@@ -17,7 +17,7 @@ export function CTA() {
     {
       title: 'Community',
       description:
-        'We strive to develop our roadmap and goals based on the needs of our users. If you would like to be involved in future developments, we welcome you to join our KlickerUZH community.',
+        'Join the KlickerUZH community to discuss teaching ideas, share experiences and help shape future development.',
       href: 'https://community.klicker.uzh.ch',
     },
   ]
@@ -34,7 +34,7 @@ export function CTA() {
               button.href.startsWith('http') ? 'noreferrer noopener' : undefined
             }
             target={button.href.startsWith('http') ? '_blank' : undefined}
-            className="group flex h-full cursor-pointer flex-col items-start rounded-xl bg-linear-to-br from-gray-50 to-gray-100 p-6 text-left text-lg shadow-lg transition-all duration-300 hover:scale-105 hover:from-gray-100 hover:to-gray-200 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
+            className="group flex h-full cursor-pointer flex-col items-start rounded-xl bg-linear-to-br from-gray-50 to-gray-100 p-6 text-left text-lg shadow-lg transition-[transform,box-shadow] duration-300 motion-safe:hover:scale-105 motion-reduce:transition-none hover:from-gray-100 hover:to-gray-200 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
           >
             <div className="text-primary-600 mb-2 font-bold">
               {button.title}
