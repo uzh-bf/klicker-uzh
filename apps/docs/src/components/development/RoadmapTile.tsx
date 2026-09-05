@@ -20,7 +20,7 @@ export interface RoadmapTileProps {
   title: string
   content: string
   useCases?: RoadmapUseCase[]
-  tags?: RoadmapTag[]
+  tags: RoadmapTag[]
   className?: string
 }
 
@@ -28,7 +28,7 @@ const RoadmapTile = ({
   title,
   content,
   useCases = [],
-  tags = [],
+  tags,
   className,
 }: RoadmapTileProps) => {
   const { isDarkTheme } = useColorMode()
@@ -86,7 +86,7 @@ const RoadmapTile = ({
         })}
       </div>
 
-      {tags.length > 0 && <div className="my-2 h-0.5 bg-gray-200" />}
+      <div className="my-2 h-0.5 bg-gray-200" />
 
       <div className="flex flex-row flex-wrap gap-2">
         {tags.map((tag) => (
