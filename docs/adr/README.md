@@ -25,10 +25,16 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0020](./0020-two-tier-chatbot-approval.md) — Two-tier approval: account AI capability plus per-chatbot publication
 - [0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — Standard modes compose with reviewed custom modes; capability-gated Quizzer and all personas layer over fixed scaffolding
 - [0022](./0022-no-student-text-in-manage.md) — The manage surface shows no student-authored text
-- [0046](./0046-native-product-updates-subsystem.md) — Build product updates as a native subsystem, not a changelog service
+- [0023](./0023-global-learning-analytics-choice-and-course-gate.md) — Global Learning Analytics choice with an independent course gate
+- [0024](./0024-research-export-release-boundary.md) — Research eligibility is checked at export release
+- [0025](./0025-assessment-account-usability-gate.md) — Assessment accounts remain unusable until required choices are complete
+- [0026](./0026-personal-elements-separate-participant-owned-model.md) — Personal elements are a separate participant-owned model
+- [0027](./0027-plan-first-retrieval-backed-card-generation.md) — Student card generation is plan-first and retrieval-backed per card
+- [0028](./0028-short-lived-qualified-rc-branch-for-ai-releases.md) — AI releases ship from a short-lived qualified RC branch with a clean-schema gate
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
+- [0046](./0046-native-product-updates-subsystem.md) — Build product updates as a native subsystem, not a changelog service
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because
