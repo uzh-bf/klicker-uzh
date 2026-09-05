@@ -303,7 +303,7 @@ substitute for source rollback.
 - Goal active; local execution requested by the user.
 - Created clean worktree from fetched `v3`; old worktrees remain untouched.
 - Baseline: 19 cache, route, and workflow-policy tests pass on host Node 26.8.1.
-  Repository-pinned Node 24 verification remains to be established.
+  Later focused checks use repository-pinned Node 24.17.0.
 - Planning review: three rounds returned REVISE. All substantive findings were
   incorporated. The last round found only a contradictory ownership sentence;
   it was corrected and checked by the main session. There is no terminal planner
@@ -312,5 +312,117 @@ substitute for source rollback.
 - Exact timing failure established; no token repair is indicated.
 - Active package: cache readiness and timing feedback. Dependency fingerprint
   regression fixtures pass on the repository-pinned Node 24.17.0 runtime.
-- Remaining packages and rollout obligations are listed above. No source
-  optimization, commit, publication, settings mutation, or live speedup yet.
+- Local cache commits: `870ee44ebe` separates dependency compatibility;
+  `2bd37d9266` wires dual-architecture seeds and compact telemetry retention.
+  Dependency keys also include the pinned image digest to isolate native
+  installation side effects. Public write permissions remain unchanged.
+- Verification: 48 focused Node 24 source tests pass, plus Biome, Prettier,
+  YAML parsing and cache-input placement checks. Staged gitleaks passes.
+  The broader 59-test command has 58 passes and one environment failure:
+  this worktree has no installed `node_modules/.bin/devrouter`. No application
+  runtime was started for source checks. Application hooks were replaced by
+  these scoped checks for the source-only commits.
+- Cache simplification audit found no justified reduction; independent cache
+  correctness/risk review passed the immutable two-commit range.
+- Local `c0a068eebc` repairs timing feedback and adds its 11 regression tests to
+  the code-check workflow. Main-session Python 3.12 verification passes with a
+  writable temporary uv cache. Existing Playwright JUnit reporter source confirms
+  the root and suite count fields used by validation.
+- Local `f0f3e53a60` adds pnpm-store caching to hosted GraphQL validation. YAML
+  checks confirm installation ordering; manual builds and tests are unchanged.
+- Timing simplification suggested dropping early failure-count rejection because
+  later comparisons also reject it. Retained the early checks: they stop invalid
+  reports before iterating testcases and preserve the established diagnostic.
+  Independent timing correctness and CI-wiring review passed the immutable
+  `2bd37d9266..f0f3e53a60` range. Integrated final source review is next.
+- No publication, settings mutation, host reconfiguration, or live speedup
+  is claimed. Later scheduling decisions remain gated on warmed-run evidence.
+
+### Disposition of remaining work
+
+| Improvement | Current evidence and next action |
+| --- | --- |
+| Candidate browser failures | ARM run `33964843484` used `138c6589ba88822530f29276360e474f5bfdad4f`; hosted run `33966579799` used `34c5948e31b281c050ee5419f5945725f0a10ac8`. Both feature-access specs differ from this `v3` baseline by 206 lines. The hosted branch belongs to PR #5782 targeting `v3-ai`. Do not import that branch's tests here. The wizard spec is identical, but application/fixture equivalence and browser reproduction remain unproven. |
+| Duplicate push and PR checks | The workflows use default PR merge-ref checkout, while push jobs check the branch tree. Same head SHA is not equivalence. Keep both until the surviving test subject and guaranteed trigger are proved; no suppression code added. |
+| Turbo replacement of hosted manual builds | pnpm caching is source-ready. Preserve manual build ordering until generated Prisma/GraphQL output equivalence is checked in an installed runtime. No new remote-cache credentials or cached database tests. |
+| Shard placement and smaller build unions | Existing telemetry already records queue and execution times. Retention now allows a weekly cohort. Warm-cache canaries must precede tuning; do not add another telemetry collector, scheduling service, or concurrency cap without evidence. |
+| Docker cache pilot | Separate proposed package after staging ownership clears. No changes to Docker builds, image publication, or deployment in this branch. |
+
+### Required-check proposal, not an applied policy
+
+Fresh API readback still shows `strict=true`, empty required contexts/checks and
+no effective branch rules for `v3`. Strictness alone does not require tests.
+Review the following proposed gates after confirming their exact emitted check
+names on current PRs. No branch protection or review requirements were changed.
+
+| Candidate gate | Producer and activation condition |
+| --- | --- |
+| Code validation | `check.yml`, job `check`; require after exact-head live proof |
+| Secret scan | `check-gitleaks.yml`; verify exact check name and fork lifecycle before requiring |
+| Playwright result | `test-playwright.yml`, job `test-playwright-status`; keep the always-reporting aggregate rather than matrix job names |
+| GraphQL validation | `test-graphql.yml`; establish reliable aggregate behavior for irrelevant-path skips before adding a required context |
+| Unit validation | `test-unit.yml`; its workflow-level path filters can prevent any check being created, so do not require the current job blindly |
+
+Image publication and advisory lint/Knip checks are not proposed new merge gates.
+Preserve the existing final-review convention. Merge queue remains deferred
+until equivalent `merge_group` triggering and public-runner trust handling exist.
+
+### Operator sequence after source delivery
+
+These commands are prepared, not executed. First merge the reviewed source
+package through normal PR checks. The reusable caller stays pinned to `v3`;
+running its branch PR does not activate the changed reusable definition.
+
+Record the prior rollout variables before changing anything:
+
+```bash
+gh variable list --repo uzh-bf/klicker-uzh --json name,value \
+  --jq '.[] | select(.name | startswith("PUBLIC_PR_"))'
+gh api orgs/uzh-bf/actions/runner-groups/4
+gh api orgs/uzh-bf/actions/runner-groups/4/repositories \
+  --jq '[.repositories[].full_name]'
+```
+
+Require selected visibility, public repositories enabled, workflow restriction
+enabled, exactly KlickerUZH, and exactly the `v3` reusable workflow stated above.
+An organization-permission error leaves policy verification incomplete; do not
+substitute assumptions or broaden the group.
+
+After explicit dispatch approval, seed both architectures from merged `v3`:
+
+```bash
+gh workflow run playwright-cache-seed.yml --repo uzh-bf/klicker-uzh --ref v3
+```
+
+Identify the resulting exact run and require both seed jobs to succeed. Inspect
+their matched keys, stored bytes and task-hit telemetry before enabling a cache
+canary. The ARM64 sample is approximately 634 MiB of pnpm data and 34 MiB of
+Turbo data. Assuming similar x64 sizes, one additional compatible seed adds
+about 667 MiB. This is a projection, not an x64 measurement. Existing 9.67 GiB
+cache occupancy means eviction pressure is already material; inspect actual
+retention and hit rates instead of deleting caches automatically.
+
+For a chosen existing PR, explicitly supply its number and activate only its
+cache read path after approval:
+
+```bash
+: "${CANARY_PR:?Set the approved existing PR number}"
+gh variable set PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR \
+  --repo uzh-bf/klicker-uzh --body "$CANARY_PR"
+gh variable get PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR --repo uzh-bf/klicker-uzh
+```
+
+Variables do not launch a run. Use the next normal approved PR update or a
+separately approved rerun; record exact candidate, workflow revision and attempt.
+Require cache enabled, compatible matched keys, actual Turbo task hits, complete
+build outputs and unchanged full ready coverage. An older candidate can have a
+different build fingerprint from the new seed; treat that as an ordinary cache
+miss, not as seed success for that candidate. Any candidate base integration
+still needs its own approval. Roll back by restoring the
+recorded prior value, or deleting this exact variable if it was previously absent.
+Do not delete an inherited organization setting as if it were repository-local.
+
+Only after ten accepted draft shadow comparisons, use the same canary procedure
+with `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR`. Verify draft selection and
+ready-for-review full coverage independently. Keep the global `_ENABLED`
+variables unchanged until the measured rollout gate passes.
