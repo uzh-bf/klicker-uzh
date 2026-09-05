@@ -85,6 +85,12 @@ interface ChatState {
   participationRequired: boolean
   participationMessage: string | null
   /**
+   * KG workspace entry point: a 403 on the knowledge-graph read means the
+   * guest/participant has no course participation. Delegates to the shared
+   * participation notice (or clears it when the read succeeds again).
+   */
+  setParticipationRequired: (required: boolean, message?: string) => void
+  /**
    * Set when `loadThreads` fails for a reason other than the 403
    * participation case (which `handleApiError` already surfaces via
    * `participationRequired`). Lets the thread list distinguish "no threads
@@ -168,6 +174,15 @@ export const useChatStore = create<ChatState>((set, get) => {
       // instead of an English string the store cannot translate.
       participationMessage: message?.trim() ? message : null,
     })
+  }
+
+  const setParticipationRequired = (required: boolean, message?: string) => {
+    if (required) {
+      markParticipationRequired(message)
+      return
+    }
+
+    clearParticipationNotice()
   }
 
   const clearParticipationNotice = () => {
@@ -266,6 +281,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
+    setParticipationRequired,
     threadsLoadError: false,
     ratingErrors: {},
 

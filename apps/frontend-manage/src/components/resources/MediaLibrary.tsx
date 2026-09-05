@@ -5,7 +5,7 @@ function MediaLibrary() {
   const t = useTranslations()
 
   return (
-    <div className="h-full w-full">
+    <div className="min-h-full w-full shrink-0">
       <H2>{t('manage.resources.mediaLibrary')}</H2>
       <UserNotification
         type="info"

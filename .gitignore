@@ -1,5 +1,9 @@
+.pnpm-store/
 **/__pycache__/
 **/.venv/
+**/.deepeval/
+**/.pytest_cache/
+**/.ruff_cache/
 **/node_modules/
 .pnpm-store/
 coverage/
@@ -18,6 +22,7 @@ secrets*.yaml
 
 **/.DS_Store
 *.pem
+.devcontainer/certs/
 
 /apps/functions/local.settings.json
 
@@ -65,9 +70,11 @@ output/
 /apps/docs/docs/.obsidian/
 
 .claude/worktrees
+.claude/scheduled_tasks.lock
 
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
+.devcontainer/.local-kb-services.env
 .devcontainer/.runtime/
 # Devrouter-generated selective Dev Container config (runtime state, not source)
 .devcontainer/devcontainer.devrouter.json

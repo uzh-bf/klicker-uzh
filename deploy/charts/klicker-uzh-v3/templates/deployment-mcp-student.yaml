@@ -1,0 +1,102 @@
+{{- if .Values.mcpStudent.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-mcp-student
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-student
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.mcpStudent.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.mcpStudent.autoscaling.enabled }}
+  replicas: {{ .Values.mcpStudent.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-student
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-mcp-student.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.mcpStudent.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mcp-student
+    spec:
+      priorityClassName: {{ $fullName }}-{{ .Values.mcpStudent.priorityClassName }}
+      automountServiceAccountToken: false
+      {{- with .Values.mcpStudent.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.mcpStudent.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mcp-student
+          securityContext:
+            {{- toYaml .Values.mcpStudent.securityContext | nindent 12 }}
+          image: "{{ .Values.mcpStudent.image.repository }}:{{ .Values.mcpStudent.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.mcpStudent.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mcpStudent.service.port }}
+              protocol: TCP
+          env:
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcpStudent.secret.name | default (printf "%s-secret-chat" $fullName) }}
+                  key: {{ .Values.mcpStudent.secret.appSecretKey }}
+            {{- with .Values.mcpStudent.secret.jwtSecretKey }}
+            {{- /* Dedicated MCP signing secret. Only referenced once the key
+                   exists in the cluster secret; the chart creates no secrets,
+                   so an unconditional ref would keep the pod from starting. */}}
+            - name: MCP_STUDENT_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.mcpStudent.secret.name | default (printf "%s-secret-chat" $fullName) }}
+                  key: {{ . }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config-global
+            - configMapRef:
+                name: {{ $fullName }}-config-mcp-student
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.mcpStudent.resources | nindent 12 }}
+      {{- with .Values.mcpStudent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpStudent.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpStudent.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpStudent.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

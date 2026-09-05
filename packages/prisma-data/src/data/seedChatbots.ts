@@ -6,13 +6,22 @@ export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 
 export const CHATBOT_AVATAR_HASH = '217ed4744160a52219711edc6636550d49b6d672'
 
+const SEEDED_CHATBOT_MODEL_IDS = [
+  'auto',
+  'gpt-5.6-luna',
+  'gpt-5.5',
+  'gpt-5.4',
+  'gpt-5.1',
+  'gpt-4.1',
+]
+
 const tutorPrompt = readFileSync(
-  './src/data/data/tutorMode.txt',
+  new URL('./data/tutorMode.txt', import.meta.url),
   'utf-8'
 ).trim()
 
 const explainerPrompt = readFileSync(
-  './src/data/data/explainerMode.txt',
+  new URL('./data/explainerMode.txt', import.meta.url),
   'utf-8'
 ).trim()
 
@@ -49,8 +58,8 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
   const testChatbot = await prisma.chatbot.upsert({
     where: { id: CHATBOT_ID_TEST },
     update: {
+      allowedModelIds: SEEDED_CHATBOT_MODEL_IDS,
       modelSelection: true,
-      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1'],
       // Repair status on reseed of an existing DB so the bot stays reachable.
       status: 'PUBLISHED',
     },
@@ -77,7 +86,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       creditResetAmount: 50, // Add 50 credits on reset
       creditMaxCredits: 100, // Max 100 credits
       modelSelection: true, // Allow model selection for testing
-      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1'],
+      allowedModelIds: SEEDED_CHATBOT_MODEL_IDS,
       disclaimerId: testDisclaimer.id,
       status: 'PUBLISHED', // seeded bot is live for participants
     },

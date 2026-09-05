@@ -6,21 +6,26 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import Layout from '../../../../../components/Layout'
+import { CourseChatDrawer } from '../../../../../components/chatbot/CourseChatDrawer'
+import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
+import { buildMicroLearningChatContext } from '../../../../../lib/chatbot/chatContext'
 
 function MicrolearningInstance() {
   const t = useTranslations()
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
+  const embedded = parseEmbedParam(router.query.embed)
 
   const { loading, data, error, subscribeToMore } = useQuery(
     GetMicroLearningDocument,
@@ -32,14 +37,34 @@ function MicrolearningInstance() {
   const { data: selfData } = useQuery(SelfDocument, {
     skip: data?.microLearning?.isOwner ?? false,
   })
+  const microLearning = data?.microLearning
+  const courseId = microLearning?.course?.id
+  const chatContext = useMemo(
+    () =>
+      courseId
+        ? buildMicroLearningChatContext({
+            courseId,
+            currentIx: Number.isFinite(ix) ? ix : undefined,
+            locale: router.locale ?? 'en',
+            microLearning: microLearning ?? null,
+            totalSteps: microLearning?.stacks?.length ?? 0,
+          })
+        : null,
+    [courseId, ix, microLearning, router.locale]
+  )
+  const nextQuery = embedded ? '?embed=true' : ''
 
   if (loading) {
-    return <Loader />
+    return (
+      <Layout embedded={embedded}>
+        <Loader />
+      </Layout>
+    )
   }
 
-  if (!data?.microLearning) {
+  if (!microLearning) {
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <UserNotification
           type="error"
           message={t('pwa.microLearning.notFound')}
@@ -49,10 +74,10 @@ function MicrolearningInstance() {
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return (
+      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
+    )
   }
-
-  const microLearning = data.microLearning
 
   // throw error if length of stacks is smaller than number
   if (!microLearning.stacks || !(ix <= (microLearning.stacks.length || -1))) {
@@ -61,7 +86,10 @@ function MicrolearningInstance() {
 
   const currentStack = microLearning.stacks[ix]
   const previewMode = microLearning.isOwner ?? undefined
-  const courseId = microLearning.course?.id
+
+  if (!courseId) {
+    throw new Error('Course not found')
+  }
 
   if (!currentStack) {
     throw new Error('Stack not found')
@@ -69,6 +97,7 @@ function MicrolearningInstance() {
 
   return (
     <Layout
+      embedded={embedded}
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
     >
@@ -97,6 +126,7 @@ function MicrolearningInstance() {
             />
           ) : null}
           <ElementStack
+            embedded={embedded}
             hideBookmark
             singleSubmission
             key={currentStack.id}
@@ -106,11 +136,15 @@ function MicrolearningInstance() {
             currentStep={ix + 1}
             totalSteps={microLearning.stacks?.length ?? 0}
             handleNextElement={() => {
-              router.push(`/course/${courseId}/microLearnings/${id}/${ix + 1}`)
+              router.push(
+                `/course/${courseId}/microLearnings/${id}/${ix + 1}${nextQuery}`
+              )
             }}
             onAllStacksCompletion={() => {
               // TODO: also mark the microlearning as completed with this action already?
-              router.push(`/course/${courseId}/microLearnings/${id}/evaluation`)
+              router.push(
+                `/course/${courseId}/microLearnings/${id}/evaluation${nextQuery}`
+              )
             }}
             withParticipant={
               !!selfData?.self &&
@@ -122,6 +156,14 @@ function MicrolearningInstance() {
           />
         </div>
       </div>
+      {courseId && chatContext && (
+        <CourseChatDrawer
+          courseId={courseId}
+          context={chatContext}
+          embedded={embedded}
+          enabled={selfData?.self?.role === UserRole.Participant}
+        />
+      )}
     </Layout>
   )
 }

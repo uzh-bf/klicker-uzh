@@ -9,18 +9,23 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useMemo } from 'react'
+import Layout from '../../../../../components/Layout'
+import { CourseChatDrawer } from '../../../../../components/chatbot/CourseChatDrawer'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
-import Layout from '../../../../../components/Layout'
+import { buildMicroLearningChatContext } from '../../../../../lib/chatbot/chatContext'
 
 function MicrolearningEvaluation() {
   const t = useTranslations()
   const router = useRouter()
   const id = router.query.id as string
+  const embedded = parseEmbedParam(router.query.embed)
 
   const { loading, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
@@ -36,13 +41,26 @@ function MicrolearningEvaluation() {
     useMutation(MarkMicroLearningCompletedDocument)
 
   const microlearning = data?.microLearning
+  const courseId = microlearning?.course?.id
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
+  const chatContext = useMemo(
+    () =>
+      courseId
+        ? buildMicroLearningChatContext({
+            courseId,
+            locale: router.locale ?? 'en',
+            microLearning: microlearning ?? null,
+            totalSteps: microlearning?.stacks?.length ?? 0,
+          })
+        : null,
+    [courseId, microlearning, router.locale]
+  )
 
   if (loading || !microlearning) {
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <Loader />
       </Layout>
     )
@@ -50,6 +68,7 @@ function MicrolearningEvaluation() {
 
   return (
     <Layout
+      embedded={embedded}
       displayName={microlearning.displayName}
       course={microlearning.course ?? undefined}
     >
@@ -160,6 +179,17 @@ function MicrolearningEvaluation() {
           </div>
         )}
       </div>
+      {courseId && chatContext && (
+        <CourseChatDrawer
+          courseId={courseId}
+          context={chatContext}
+          embedded={embedded}
+          enabled={
+            participant?.self?.role === UserRole.Participant &&
+            Boolean(participation?.getParticipation)
+          }
+        />
+      )}
     </Layout>
   )
 }

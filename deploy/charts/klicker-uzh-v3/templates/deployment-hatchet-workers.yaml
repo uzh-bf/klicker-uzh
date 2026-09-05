@@ -45,6 +45,14 @@ spec:
             {{- toYaml .Values.hatchet.workers.general.securityContext | nindent 12 }}
           image: "{{ .Values.hatchet.workers.general.image.repository }}:{{ .Values.hatchet.workers.general.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.general.image.pullPolicy }}
+          {{- if .Values.backendGraphql.elementGeneration.enabled }}
+          env:
+            - name: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

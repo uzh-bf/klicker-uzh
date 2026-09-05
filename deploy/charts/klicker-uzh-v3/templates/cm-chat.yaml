@@ -14,6 +14,9 @@ data:
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
   CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: {{ .Values.chat.accountUsageEnforcementEnabled | default false | quote }}
+  DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
+  DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
+  DOC_QUERY_SCOPE_KID: {{ .Values.chat.docQueryScope.keyId | quote }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
   {{- end }}
@@ -28,4 +31,18 @@ data:
   {{- end }}
   {{- if .Values.chat.allowedFrameAncestors }}
   ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}
+  {{- end }}
+  {{- if .Values.mcpStudent.enabled }}
+  {{- $mcpStudentPath := printf "/%s" (trimPrefix "/" .Values.mcpStudent.path) }}
+  MCP_STUDENT_SCHEME: {{ .Values.mcpStudent.service.scheme | default "http" | quote }}
+  MCP_STUDENT_HOST: {{ printf "%s-mcp-student" $fullName | quote }}
+  MCP_STUDENT_PORT: {{ .Values.mcpStudent.service.port | quote }}
+  MCP_STUDENT_PATH: {{ $mcpStudentPath | quote }}
+  {{- end }}
+  {{- if .Values.mcpLecturer.enabled }}
+  {{- $mcpLecturerPath := printf "/%s" (trimPrefix "/" .Values.mcpLecturer.path) }}
+  MCP_LECTURER_SCHEME: {{ .Values.mcpLecturer.service.scheme | default "http" | quote }}
+  MCP_LECTURER_HOST: {{ printf "%s-mcp-lecturer" $fullName | quote }}
+  MCP_LECTURER_PORT: {{ .Values.mcpLecturer.service.port | quote }}
+  MCP_LECTURER_PATH: {{ $mcpLecturerPath | quote }}
   {{- end }}

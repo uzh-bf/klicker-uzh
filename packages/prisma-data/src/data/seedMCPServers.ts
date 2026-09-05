@@ -11,7 +11,7 @@ interface MCPServerSeed {
   name: MCP_SERVER_NAMES
   description: string
   url: string
-  authType: 'bearer' | 'basic' | 'none' | 'custom'
+  authType: 'bearer' | 'basic' | 'none' | 'custom' | 'scope_token'
   authSecret?: string
   parameters?: any
   isActive?: boolean
@@ -34,9 +34,9 @@ const MCP_SERVERS: MCPServerSeed[] = [
     name: MCP_SERVER_NAMES.KB,
     description: 'A comprehensive knowledge base for various topics',
     url: 'http://localhost:1417/mcp',
-    authType: 'none',
+    authType: 'scope_token',
     isActive: true,
-    passChatbotId: true,
+    passChatbotId: false,
   },
 ]
 
@@ -58,7 +58,7 @@ const EXAMPLE_CONFIGURATIONS: ChatbotMCPConfigSeed[] = [
     chatMode: 'tutor',
     allowedTools: ['doc_query'],
     priority: 0,
-    isEnabled: true,
+    isEnabled: false,
   },
   {
     chatbotId: CHATBOT_ID_TEST,
@@ -66,7 +66,7 @@ const EXAMPLE_CONFIGURATIONS: ChatbotMCPConfigSeed[] = [
     chatMode: 'explainer',
     allowedTools: ['doc_query'],
     priority: 0,
-    isEnabled: true,
+    isEnabled: false,
   },
   {
     chatbotId: CHATBOT_ID_TEST,
@@ -151,7 +151,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   }
 
   // Validate auth type
-  const validAuthTypes = ['bearer', 'basic', 'none', 'custom']
+  const validAuthTypes = ['bearer', 'basic', 'none', 'custom', 'scope_token']
   if (!validAuthTypes.includes(serverConfig.authType)) {
     console.error(
       `Invalid auth type for ${serverConfig.name}: ${serverConfig.authType}`
@@ -195,6 +195,27 @@ export async function seedMCPServers(prisma: PrismaClient) {
       })
 
       if (existingServer) {
+        if (serverConfig.name === MCP_SERVER_NAMES.KB) {
+          const reconciledServer = await prisma.chatbotMCPServer.update({
+            where: { id: existingServer.id },
+            data: {
+              description: serverConfig.description,
+              url: serverConfig.url,
+              authType: serverConfig.authType,
+              authSecret: null,
+              parameters: serverConfig.parameters || {},
+              isActive: serverConfig.isActive ?? true,
+              passChatbotId: false,
+              chatbotIdHeader: null,
+            },
+          })
+          console.log(
+            `Reconciled MCP server '${serverConfig.name}' with scoped authentication`
+          )
+          createdServers.push(reconciledServer)
+          continue
+        }
+
         console.log(
           `MCP server '${serverConfig.name}' already exists, skipping`
         )
@@ -269,6 +290,14 @@ export async function seedChatbotMCPConfigurations(
         continue
       }
 
+      const enabledBinding =
+        config.mcpServerName === MCP_SERVER_NAMES.KB
+          ? await prisma.kBChatbot.findFirst({
+              where: { chatbotId: config.chatbotId, isEnabled: true },
+              select: { id: true },
+            })
+          : null
+
       const existingConfig = await prisma.chatbotMCPConfig.findUnique({
         where: {
           chatbotId_mcpServerId_chatMode: {
@@ -280,6 +309,21 @@ export async function seedChatbotMCPConfigurations(
       })
 
       if (existingConfig) {
+        if (config.mcpServerName === MCP_SERVER_NAMES.KB) {
+          await prisma.chatbotMCPConfig.update({
+            where: { id: existingConfig.id },
+            data: {
+              allowedTools: ['doc_query'],
+              priority: 0,
+              isEnabled: Boolean(enabledBinding),
+            },
+          })
+          console.log(
+            `Reconciled ${config.mcpServerName}/${config.chatMode} from its KB binding`
+          )
+          continue
+        }
+
         console.log(
           `Configuration for ${config.mcpServerName}/${config.chatMode} already exists, skipping`
         )
@@ -293,7 +337,10 @@ export async function seedChatbotMCPConfigurations(
           chatMode: config.chatMode,
           allowedTools: config.allowedTools,
           priority: config.priority,
-          isEnabled: config.isEnabled,
+          isEnabled:
+            config.mcpServerName === MCP_SERVER_NAMES.KB
+              ? Boolean(enabledBinding)
+              : config.isEnabled,
           parameters: config.parameters || {},
         },
       })

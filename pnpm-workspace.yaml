@@ -57,6 +57,9 @@ ignoredBuiltDependencies:
   # profile planning has no Docker or SSH path and must not build them in CI.
   - cpu-features
   - keytar
+  # Transitive of fastmcp -> mcp-proxy -> pipenet. Its install script refreshes a
+  # public-suffix list we never consult; neither MCP service uses pipenet.
+  - tldjs
   - ssh2
 
 onlyBuiltDependencies:
@@ -93,4 +96,5 @@ allowBuilds:
   protobufjs: true
   sharp: true
   ssh2: false
+  tldjs: false
   unrs-resolver: true

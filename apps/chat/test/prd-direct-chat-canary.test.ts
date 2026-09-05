@@ -3,11 +3,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
+
+const getAggregatedMCPToolsMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../src/services/mcpClients.js', () => ({
+  getAggregatedMCPTools: getAggregatedMCPToolsMock,
+}))
+
 import {
   classifyExpectedToolInventory,
   createReceiptStore,
   initialReceipt,
   probeFixedRoute,
+  runProof,
   runDirectChatCanaryTransaction,
   safeResult,
   suppressOutput,
@@ -96,6 +104,87 @@ test('counts the hashed long chunk-topic name as a chunk twin', () => {
     missingToolCount: 1,
     unexpectedToolCount: 1,
   })
+})
+
+test('uses and closes every aggregated MCP tools handle during proof', async () => {
+  const expertNames = [
+    'banking_expert',
+    'bf1_expert',
+    'cf1_expert',
+    'mat141_expert',
+    'mat182_expert',
+    'python_and_r_expert',
+    'fs26_intro_r_expert',
+    'bio144_expert',
+    'df_ap_expert',
+    'df_bf2_expert',
+    'df_cf2_expert',
+    'df_fineco_expert',
+    'df_qf_expert',
+    'mat183_expert',
+    'vorkurs_expert',
+    'informatik_und_wirtschaft_video_expert',
+    'radiosurfvet_expert',
+  ]
+  const names = [
+    ...expertNames.map((name) => `Klicker-compat_${name}`),
+    ...expertNames
+      .filter((name) => name !== 'informatik_und_wirtschaft_video_expert')
+      .map((name) => `Klicker-compat_${name}_chunk_topics`),
+    'Klicker-compat_informatik_und_wirtschaft_video_expert_c_246cf369',
+  ]
+  const tools = Object.fromEntries(
+    names.map((name) => [
+      name,
+      {
+        execute: vi.fn(async () => ({
+          content: [{ type: 'text', text: 'synthetic proof result' }],
+        })),
+      },
+    ])
+  )
+  const close = Array.from({ length: 4 }, () => vi.fn(async () => {}))
+  getAggregatedMCPToolsMock
+    .mockResolvedValueOnce({ tools, close: close[0] })
+    .mockResolvedValueOnce({ tools: {}, close: close[1] })
+    .mockResolvedValueOnce({ tools: {}, close: close[2] })
+    .mockResolvedValueOnce({ tools: {}, close: close[3] })
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(null, { status: 404 }))
+  )
+  vi.stubEnv('APP_SECRET', 'synthetic-app-secret-for-test')
+
+  try {
+    await expect(
+      runProof(
+        'http://127.0.0.1:1417/mcp/klicker',
+        {
+          id: 'candidate-server',
+          name: 'Klicker-compat',
+          authType: 'bearer',
+          authSecret: 'synthetic',
+          isActive: true,
+        },
+        'chatbot-id',
+        'synthetic'
+      )
+    ).resolves.toMatchObject({
+      status: 'passed',
+      toolCount: 34,
+      pairCount: 17,
+      retrieval: 'passed',
+      wrongBearer: 'passed',
+      missingBearer: 'passed',
+      wrongTenant: 'passed',
+      eduaiRoute: 'passed',
+    })
+    expect(getAggregatedMCPToolsMock).toHaveBeenCalledTimes(4)
+    close.forEach((closeClient) => expect(closeClient).toHaveBeenCalledOnce())
+  } finally {
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  }
 })
 
 type FakeRow = Record<string, any>

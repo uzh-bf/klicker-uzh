@@ -19,6 +19,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
 | React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+| Prisma seed reconciliation                                                        | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                                                                             |
 
 For the manage-list `All` page size, the focused browser evidence must cover
 the finite-to-All-to-50 state transition and explicit selection. A 200-record
@@ -27,6 +28,20 @@ usability, and returned mutation count; do not infer production performance or
 atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
+
+The focused `knowledge.test.ts`, `knowledgeIngestion.test.ts`, and `knowledgeWebhooks.test.ts` suites use real PostgreSQL but deliberately stub or avoid Hatchet, so they can verify owner-scoped binding replacement, MCP configuration, attempt-ledger, platform-refresh idempotency, current-attempt list projection, and serving-state transitions without a client token. Keep the full GraphQL suite on `test:local`.
+
+For KB deletion changes, add real-PostgreSQL coverage for owner-hidden tombstones and KB-first create/delete races, plus Hatchet unit coverage for the exact external delete request, operation fencing, empty-serving cutover, ticket expiry, blob-before-row ordering, and idempotent maintenance retry.
+
+For KB quota changes, use real PostgreSQL for exact 100-resource/500-MiB boundaries, concurrent reservations, ticket conversion, tombstone retention, and cleanup release. Use Hatchet tests for persisted KB-scope mismatch and locked URL replacement accounting (`usage - old size + observed size`) before dispatch.
+
+For KB pagination and bulk operations, use real PostgreSQL for tied keyset order, malformed/owner/filter-mismatched cursors, status changes between resource pages, exact grouped metrics, tombstone hiding, deterministic lock order, all-or-nothing active/foreign guards, input bounds, and independent post-commit dispatch failure. The KB UI has no component-test layer; use the real delegated-login browser for EN/DE desktop catalog and detail flows. Mobile layout is not a Manage-app priority.
+
+For the lecturer AI gate, verify the GrowthBook `ai-beta` flag and the live `User.aiFeaturesEnabled` entitlement independently, including fail-closed missing-account behavior and no entitlement query while the flag is off. Every lecturer KB service entry point and Manage chatbot operation returns `AI_BETA_ACCESS_REQUIRED` when the gate is closed; participant chatbot discovery and worker-only KB settlement stay available. Toggle `KB_INGESTION_DISABLED` at call time and prove it blocks upload-ticket issue, URL creation, and ingestion while leaving deletion available. Browser proof covers top-level AI navigation for an enabled lecturer and direct-route denial for a disabled one.
+
+For KB file-upload browser proof, use the managed DevPod's routed Azurite service. Upload a synthetic PDF/TXT/MD fixture through the real hidden `[data-cy="kb-file-input"]`, then verify the resource row, exact size, and cleared upload reservation. The browser flow must cover ticket issue, Blob PUT, and confirmation; a CORS preflight may supplement it, but never print the SAS query. This proves local upload and confirmation only, not external ingestion acceptance.
+
+For maintenance recovery, prove a stale `QUEUED` UPSERT with no external operation id re-dispatches the same stored attempt id, young/in-flight/tombstoned/DELETE rows are excluded, and a repeated sweep creates no replacement run. Source-gateway coverage uses real PostgreSQL to prove the exact version, non-tombstoned BLOB, digest, and QUEUED/PROCESSING predicate before Blob access; direct resolver tests cover loopback/private/link-local/IPv6 rejection without external network.
 
 For Git fixture or hook changes, run the focused Node test that exercises the
 fixture plus `pnpm run check:git-identity` and
@@ -136,6 +151,13 @@ callout.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
+For browser-facing `NEXT_PUBLIC_*` deployment changes, verify both the STG and
+PRD build inputs. Next.js snapshots those values into the browser bundle at
+build time, so a runtime ConfigMap or pod restart cannot repair an omitted
+value. Keep environment-specific mappings in the app's `.env.stg` and
+`.env.prd` files and add a build failure when silently omitting the value would
+withdraw a user-facing surface.
+
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
 The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
@@ -175,6 +197,11 @@ reasoning against the deployed LiteLLM router.
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
+For Chat/Knowledge graph workspace-switch placement, verify that standalone and
+embedded layouts show exactly one compact switch in the header, the standalone
+sidebar contains no duplicate, both destinations retain their active state, and
+the header does not overflow at desktop or mobile widths.
+
 For the seeded local MCP smoke test, verify
 `devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
 selecting `chat,ai,mcp`, keep `Auto Mode`
@@ -208,11 +235,17 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 
 For Hatchet deployment endpoint changes, render the target environment's Helm chart and inspect every generated `HATCHET_API_URL`. Separately confirm that the configured HTTP API service and the secret-backed gRPC host belong to the same active Hatchet installation. A connected worker validates only gRPC; it does not prove that programmatic scheduled runs can reach the HTTP API.
 
+For a staging source-branch or image-tag change, render the target environment's Helm chart from the exact branch ArgoCD will track and inspect every workload image tag. After an authorized sync, verify `Synced` and `Healthy` independently, then inspect non-ready pods for image-pull failures, restarts, and memory termination. A green image build or successful ArgoCD sync does not prove runtime readiness. See [CI & Deployment](../../../docs/ci-and-deployment.md#staging-promotion).
+
+For a Node ESM service that TypeScript emits without bundling, import the emitted module with Node after compilation. Source checks and Vitest can resolve package directories that the production Node ESM loader rejects. The student MCP package build includes this check for its Apollo-backed GraphQL client.
+
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Playwright compiler through its package `check` script. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 
 For a Prisma major or driver-adapter change, also run a frozen install; Prisma generate/check/build; local `*:raw` reset, push, migrate, diff, deploy, and explicit-seed command smokes as applicable; the guarded Auth adapter round-trip; both root build modes; relevant database-backed tests; and the Analytics Python generation/image build. Run destructive commands only against the isolated DevPod database and state every CI-only gap.
 
 The Office Add-in is a browser application bundled by Rollup. Its package check must use the workspace TypeScript version, `moduleResolution: Bundler`, `noEmit`, and explicit `types: ["office-js"]`. `build:docs` regenerates and replaces the deployable directory; `verify:docs` must then prove exact parity. Browser checks with an Office API stub verify the UI state machine only. Persistence, multi-instance behavior, and embedded evaluation rendering still require a real PowerPoint sideload.
+
+For KB graph lifecycle changes, use real PostgreSQL for quota-lock and settlement tests, including a valid metered non-success result that settles without publishing, the dispatch-claim ambiguity hold, and matching/stale/newer-build late-success reconciliation; apply the current migration to a disposable database before the seam tests. Use pure tests for the W1 result/cost contracts, PostgreSQL integer bounds, and quota-configuration drift; and use Hatchet unit tests for provider-status reconciliation and complete reservation identity before dispatch. A provider `COMPLETED` response without a versioned result must be asserted as fail-closed; it is not evidence of publication or cost settlement.
 
 ## Reporting
 

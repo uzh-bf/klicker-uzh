@@ -10,6 +10,7 @@ KLICKER_PROFILE_AUTH_ROOT='--filter=@klicker-uzh/auth'
 KLICKER_PROFILE_MANAGE_ROOT='--filter=@klicker-uzh/frontend-manage'
 KLICKER_PROFILE_PWA_ROOT='--filter=@klicker-uzh/frontend-pwa'
 KLICKER_PROFILE_CHAT_ROOT='--filter=@klicker-uzh/chat'
+KLICKER_PROFILE_MCP_LECTURER_ROOT='--filter=@klicker-uzh/mcp-lecturer'
 KLICKER_PROFILE_CONTROL_ROOT='--filter=@klicker-uzh/frontend-control'
 KLICKER_PROFILE_RESPONSE_ROOT='--filter=@klicker-uzh/response-api'
 KLICKER_PROFILE_WORKER_GENERAL_ROOT='--filter=@klicker-uzh/hatchet-worker-general'
@@ -73,6 +74,7 @@ profile_wants() {
 # 'full' starts every routed app plus both workers (turbo default: no filter).
 profile_turbo_filters() {
   local filters="" component components status
+  local wants_chat=false wants_manage=false
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
@@ -81,9 +83,15 @@ profile_turbo_filters() {
   for component in $components; do
     case "${component}" in
       full) return 0 ;;
-      manage) filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}" ;;
+      manage)
+        filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}"
+        wants_manage=true
+        ;;
       pwa) filters="${filters} ${KLICKER_PROFILE_PWA_ROOT}" ;;
-      chat) filters="${filters} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_PWA_ROOT}" ;;
+      chat)
+        filters="${filters} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_PWA_ROOT}"
+        wants_chat=true
+        ;;
       live-quiz)
         filters="${filters} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
@@ -91,6 +99,9 @@ profile_turbo_filters() {
       *) return 2 ;;
     esac
   done
+  if [ "$wants_chat" = true ] && [ "$wants_manage" = true ]; then
+    filters="${filters} ${KLICKER_PROFILE_MCP_LECTURER_ROOT}"
+  fi
   printf '%s %s %s\n' "${KLICKER_PROFILE_BACKEND_ROOT}" "${KLICKER_PROFILE_AUTH_ROOT}" "${filters}" \
     | tr ' ' '\n' | awk 'NF && !seen[$0]++' | paste -sd' ' -
 }
@@ -98,6 +109,7 @@ profile_turbo_filters() {
 # profile_readiness_apps: runtime apps whose semantic readiness must be proven.
 profile_readiness_apps() {
   local apps="" component components status
+  local wants_chat=false wants_manage=false
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
@@ -106,13 +118,22 @@ profile_readiness_apps() {
   for component in $components; do
     case "${component}" in
       full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
-      manage) apps="${apps} frontend-manage" ;;
+      manage)
+        apps="${apps} frontend-manage"
+        wants_manage=true
+        ;;
       pwa) apps="${apps} frontend-pwa" ;;
-      chat) apps="${apps} chat frontend-pwa" ;;
+      chat)
+        apps="${apps} chat frontend-pwa"
+        wants_chat=true
+        ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
       mcp|ai|email) ;;
       *) return 2 ;;
     esac
   done
+  if [ "$wants_chat" = true ] && [ "$wants_manage" = true ]; then
+    apps="${apps} mcp-lecturer"
+  fi
   printf 'auth %s\n' "$apps" | tr ' ' '\n' | awk 'NF && !seen[$0]++' | paste -sd' ' -
 }

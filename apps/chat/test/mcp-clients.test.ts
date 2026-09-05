@@ -1,22 +1,19 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
+const closeSDKMCPClientMock = vi.hoisted(() => vi.fn())
+const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
 }))
 
-vi.mock('@klicker-uzh/util', () => ({
-  safeDecrypt: (value: string) => value,
+vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
+  signDocQueryScopeToken: signDocQueryScopeTokenMock,
 }))
 
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: class {
-    constructor(
-      readonly url: URL,
-      readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {}
-  },
+vi.mock('@klicker-uzh/util', () => ({
+  safeDecrypt: (value: string) => value,
 }))
 
 import {
@@ -25,9 +22,22 @@ import {
 } from '../src/lib/server/mcpRuntimePolicy'
 import { isDocQueryToolName } from '../src/lib/sources/normalizeSources'
 import {
-  getAggregatedMCPTools,
+  getAggregatedMCPTools as getAggregatedMCPToolsHandle,
+  getMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
+
+const openHandles: Array<
+  Awaited<ReturnType<typeof getAggregatedMCPToolsHandle>>
+> = []
+
+async function getAggregatedMCPTools(
+  ...args: Parameters<typeof getAggregatedMCPToolsHandle>
+) {
+  const handle = await getAggregatedMCPToolsHandle(...args)
+  openHandles.push(handle)
+  return handle.tools
+}
 
 function createServer(
   overrides: Partial<MCPServerWithConfig['server']> = {},
@@ -51,6 +61,7 @@ function createServer(
 
 function setTools(rawTools: Record<string, unknown>) {
   createSDKMCPClientMock.mockResolvedValue({
+    close: closeSDKMCPClientMock,
     tools: vi.fn().mockResolvedValue(rawTools),
   })
 }
@@ -58,12 +69,157 @@ function setTools(rawTools: Record<string, unknown>) {
 describe('MCP runtime policy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+  })
+
+  afterEach(async () => {
+    await Promise.all(openHandles.splice(0).map((handle) => handle.close()))
+    vi.unstubAllEnvs()
   })
 
   test('keeps configs without reserved policy keys optional', () => {
     expect(parseMCPRuntimePolicy({ timeoutMs: 1000 })).toEqual({
       required: false,
     })
+  })
+
+  test('returns an empty cleanup handle when legacy MCP is not configured', async () => {
+    vi.stubEnv('MCP_URL', '')
+
+    const handle = await getMCPTools('chatbot-1', 'participant-1', 'account')
+
+    expect(handle.tools).toEqual({})
+    await expect(handle.close()).resolves.toBeUndefined()
+  })
+
+  test('uses the AI SDK HTTP transport configuration', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    await getAggregatedMCPTools(
+      [createServer()],
+      { chatbotId: 'chatbot-1', authMode: 'account' },
+      { requestTimeoutMs: 1_000 }
+    )
+
+    expect(createSDKMCPClientMock).toHaveBeenCalledWith({
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: { 'Content-Type': 'application/json' },
+        redirect: 'error',
+      },
+      initializationOptions: { timeout: 1_000 },
+    })
+  })
+
+  test('passes authentication headers through the AI SDK transport', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          authType: 'bearer',
+          authSecret: 'transport-token',
+        }),
+      ],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          authType: 'custom',
+          authSecret: JSON.stringify({
+            headers: { 'X-Custom-Auth': 'custom-token' },
+          }),
+        }),
+      ],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          name: 'KB',
+          authType: 'bearer',
+          authSecret: 'transport-token',
+        }),
+      ],
+      {
+        chatbotId: 'chatbot-1',
+        authMode: 'account',
+        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+        sessionId: 'session-1',
+      }
+    )
+
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(1, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer transport-token',
+        },
+        redirect: 'error',
+      },
+    })
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(2, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Auth': 'custom-token',
+        },
+        redirect: 'error',
+      },
+    })
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(3, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer transport-token',
+          'X-Doc-Query-Scope-Token': 'Bearer scope-token',
+        },
+        redirect: 'error',
+      },
+    })
+  })
+
+  test('returns an idempotent cleanup handle for every created client', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    const handle = await getAggregatedMCPToolsHandle(
+      [createServer(), createServer({ id: 'server-2', name: 'Second' })],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+
+    expect(Object.keys(handle.tools)).toEqual([
+      'IW_search_docs',
+      'Second_search_docs',
+    ])
+    await handle.close()
+    await handle.close()
+
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(2)
+  })
+
+  test('closes a client when tool discovery fails', async () => {
+    createSDKMCPClientMock.mockResolvedValue({
+      close: closeSDKMCPClientMock,
+      tools: vi.fn().mockRejectedValue(new Error('discovery failed')),
+    })
+
+    const handle = await getAggregatedMCPToolsHandle([createServer()], {
+      chatbotId: 'chatbot-1',
+      authMode: 'account',
+    })
+
+    expect(handle.tools).toEqual({})
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(1)
+    await handle.close()
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(1)
   })
 
   test('requires one exact aliased tool for strict configs', async () => {
@@ -81,7 +237,7 @@ describe('MCP runtime policy', () => {
           }
         ),
       ],
-      'chatbot-1'
+      { chatbotId: 'chatbot-1', authMode: 'account' }
     )
 
     expect(Object.keys(tools)).toEqual(['IW_doc_query'])
@@ -101,7 +257,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
@@ -116,7 +272,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
@@ -133,16 +289,16 @@ describe('MCP runtime policy', () => {
             { allowedTools: ['search*'] }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).resolves.toEqual({})
 
     setTools({ search_docs: { description: 'search' }, unrelated: {} })
     await expect(
-      getAggregatedMCPTools(
-        [createServer({}, { allowedTools: ['search*'] })],
-        'chatbot-1'
-      )
+      getAggregatedMCPTools([createServer({}, { allowedTools: ['search*'] })], {
+        chatbotId: 'chatbot-1',
+        authMode: 'account',
+      })
     ).resolves.toEqual({ IW_search_docs: { description: 'search' } })
   })
 
@@ -183,7 +339,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
   })
@@ -200,7 +356,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()
@@ -218,7 +374,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()
@@ -237,7 +393,7 @@ describe('MCP runtime policy', () => {
           }
         ),
       ],
-      'chatbot-1'
+      { chatbotId: 'chatbot-1', authMode: 'account' }
     )
 
     const [toolName] = Object.keys(tools)
@@ -261,13 +417,18 @@ describe('MCP runtime policy', () => {
 
     createSDKMCPClientMock
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ doc_query: {} }),
       })
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ video_expert: {} }),
       })
     await expect(
-      getAggregatedMCPTools([optional, required], 'chatbot-1')
+      getAggregatedMCPTools([optional, required], {
+        chatbotId: 'chatbot-1',
+        authMode: 'account',
+      })
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
     vi.clearAllMocks()
@@ -275,13 +436,18 @@ describe('MCP runtime policy', () => {
     required.config.priority = 0
     createSDKMCPClientMock
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ video_expert: {} }),
       })
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ doc_query: {} }),
       })
     await expect(
-      getAggregatedMCPTools([optional, required], 'chatbot-1')
+      getAggregatedMCPTools([optional, required], {
+        chatbotId: 'chatbot-1',
+        authMode: 'account',
+      })
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
   })
 
@@ -302,7 +468,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1', authMode: 'account' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()

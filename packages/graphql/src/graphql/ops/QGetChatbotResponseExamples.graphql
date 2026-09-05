@@ -1,0 +1,5 @@
+query GetChatbotResponseExamples($chatbotId: String!) {
+  getChatbotResponseExamples(chatbotId: $chatbotId) {
+    ...ResponseExampleSetData
+  }
+}

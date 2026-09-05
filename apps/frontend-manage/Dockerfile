@@ -50,6 +50,10 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=builder /app/out/full/ .
+# Next.js inlines the assistant target during this build. Both deployment
+# workflows replace .env.production first, so fail instead of silently hiding
+# the launcher when either environment loses the mapping.
+RUN grep -qx 'NEXT_PUBLIC_CHAT_URL=$APP_ORIGIN_CHAT' apps/frontend-manage/.env.production
 RUN pnpm run build --filter=@klicker-uzh/frontend-manage
 
 

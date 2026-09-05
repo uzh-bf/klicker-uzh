@@ -5,9 +5,11 @@ import {
 import type {
   BooleanFeatureFlagKey,
   FeatureFlagAttributes,
+  FeatureFlagEnvironment,
   KlickerFeatureFlags,
 } from './contracts.js'
 import {
+  forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
   sanitizeFeatureFlagAttributes,
 } from './contracts.js'
@@ -17,18 +19,32 @@ const DEFAULT_REFRESH_INTERVAL_MS = 30_000
 const DEFAULT_MAX_STALE_MS = 120_000
 const MIN_REFRESH_INTERVAL_MS = 100
 
-function normalizeApiHost(value: string | undefined): string | undefined {
+function normalizeApiHost(
+  value: string | undefined,
+  environment: FeatureFlagEnvironment
+): string | undefined {
   if (!value) return undefined
 
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:' || url.search || url.hash) return undefined
+    const isLocalDevelopmentHost =
+      (environment === 'development' || environment === 'test') &&
+      (url.hostname === '127.0.0.1' ||
+        url.hostname === 'localhost' ||
+        url.hostname === '[::1]')
+    if (
+      (url.protocol !== 'https:' &&
+        !(url.protocol === 'http:' && isLocalDevelopmentHost)) ||
+      url.search ||
+      url.hash
+    ) {
+      return undefined
+    }
     return value.replace(/\/$/, '')
   } catch {
     return undefined
   }
 }
-
 function normalizeDuration(
   value: number | undefined,
   fallback: number,
@@ -45,6 +61,9 @@ export type NodeFeatureFlagClientConfig = {
   fetch?: typeof globalThis.fetch
   maxStaleMs?: number
   refreshIntervalMs?: number
+  // Comma-separated flag keys to force on where no SDK connection exists.
+  // See `forcedFeatureFlagPayload` for the environments that honor it.
+  forcedOn?: string
   timeoutMs?: number
 }
 
@@ -73,7 +92,7 @@ export class NodeFeatureFlagClient<
 
   constructor(config: NodeFeatureFlagClientConfig) {
     this.environment = normalizeFeatureFlagEnvironment(config.environment)
-    this.apiHost = normalizeApiHost(config.apiHost)
+    this.apiHost = normalizeApiHost(config.apiHost, this.environment)
     this.clientKey = config.clientKey
     this.configured = Boolean(
       this.environment !== 'unknown' && this.apiHost && this.clientKey
@@ -94,7 +113,15 @@ export class NodeFeatureFlagClient<
       1
     )
     this.client = new GrowthBookClient<Features>()
-    this.client.initSync({ payload: { features: {} } })
+    if (!this.configured) {
+      this.client.initSync({
+        payload: {
+          features: forcedFeatureFlagPayload(config.forcedOn, this.environment),
+        },
+      })
+    } else {
+      this.client.initSync({ payload: { features: {} } })
+    }
   }
 
   async initialize(): Promise<boolean> {

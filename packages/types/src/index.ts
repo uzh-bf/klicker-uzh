@@ -17,6 +17,15 @@ export * from './assessmentReport.js'
 export * from './chatbotStandardModeConfig.js'
 export * from './hatchet.js'
 
+// ----- KNOWLEDGE GRAPH TYPES -----
+export * from './knowledgeGraph.js'
+
+// ----- GENERATED KLICKER ELEMENT TYPES -----
+export * from './elementGeneration.js'
+// Provider-wire compatibility types; product-facing code uses elementGeneration.
+export * from './questionGeneration.js'
+export * from './flashcardGeneration.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {
@@ -240,6 +249,7 @@ export type ElementManipulationInput = {
   name?: string | null
   content?: string | null
   explanation?: string | null
+  difficultyLevel?: number | null
   options?: ElementOptionsInput | null
   choicesOptions?: OptionsChoicesInput | null
   numericalOptions?: OptionsNumericalInput | null
@@ -1054,3 +1064,8 @@ export enum PointCorrectionType {
   MULTIPLE = 'MULTIPLE',
 }
 // #endregion
+
+export * from './chatContext.js'
+export * from './knowledgeGraph.js'
+export * from './manageAssistant.js'
+export * from './studentMcp.js'

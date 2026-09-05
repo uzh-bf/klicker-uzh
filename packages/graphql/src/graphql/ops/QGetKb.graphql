@@ -1,0 +1,21 @@
+query GetKb($id: ID!) {
+  getKb(id: $id) {
+    id
+    name
+    description
+    metrics {
+      visibleResourceCount
+      visibleSizeBytes
+      unknownSizeResourceCount
+      quotaResourceCount
+      quotaSizeBytes
+      resourceLimit
+      storageLimitBytes
+      pendingCleanupCount
+      pendingCleanupSizeBytes
+      reservedResourceCount
+      reservedSizeBytes
+      linkedConsumerCount
+    }
+  }
+}

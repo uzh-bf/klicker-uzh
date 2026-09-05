@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  closeMCPTools: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   deleteThread: vi.fn(),
@@ -83,7 +84,7 @@ import {
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 
-function createRequest(selectedMode?: string) {
+function createRequest(selectedMode?: string, threadId?: string) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -93,6 +94,7 @@ function createRequest(selectedMode?: string) {
       ],
       selectedModel: 'gpt-4.1',
       ...(selectedMode ? { selectedMode } : {}),
+      ...(threadId ? { threadId } : {}),
       assistantMessageId: 'assistant-1',
     }),
   })
@@ -133,6 +135,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
+    knowledgeBases: [],
     standardModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
     ...overrides,
@@ -142,7 +145,11 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
 describe('required MCP chat preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode: 'account',
+      chatbot: { courseId: 'course-1' },
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -164,6 +171,44 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValue(createChatbot())
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
+    )
+  })
+
+  test('refuses a thread id the caller does not own before MCP work', async () => {
+    mocks.findThread.mockResolvedValueOnce(null)
+
+    const response = await POST(createRequest(undefined, 'thread-foreign'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat thread not found',
+    })
+    expect(mocks.findThread).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'thread-foreign',
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+        },
+      })
+    )
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('scopes MCP discovery to an owned thread id', async () => {
+    mocks.findThread.mockResolvedValueOnce({ id: 'thread-owned' })
+
+    const response = await POST(createRequest(undefined, 'thread-owned'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sessionId: 'thread-owned' })
     )
   })
 
@@ -191,7 +236,13 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      'chatbot-1'
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: undefined,
+        sessionId: 'thread-1',
+      }
     )
     expect(mocks.getUserCredits).toHaveBeenCalledWith(
       'participant-1',
@@ -288,9 +339,11 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ name: 'KB' }),
         }),
       ],
-      'chatbot-1',
       {
-        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: KB_ID,
         sessionId: 'thread-1',
       }
     )
@@ -323,7 +376,10 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({ course: { displayName } })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
     mocks.compileSystemPrompt.mockImplementationOnce(() => {
       throw new Error('stop after prompt compilation')
     })
@@ -456,8 +512,13 @@ describe('required MCP chat preflight', () => {
           }),
         }),
       ],
-      'chatbot-1',
-      { kbId: KB_ID, sessionId: 'thread-1' }
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: KB_ID,
+        sessionId: 'thread-1',
+      }
     )
   })
 
@@ -473,7 +534,10 @@ describe('required MCP chat preflight', () => {
         ],
       })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
 
     const response = await POST(createRequest('quizzer'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -550,7 +614,13 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ id: 'server-1' }),
         }),
       ],
-      'chatbot-1'
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        kbId: undefined,
+        sessionId: 'thread-1',
+      }
     )
   })
 })

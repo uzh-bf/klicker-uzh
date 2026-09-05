@@ -3,7 +3,11 @@ import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBolt,
+  faUser,
+  faWandMagicSparkles,
+} from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
@@ -26,6 +30,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
@@ -41,6 +46,7 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const aiFeaturesEnabled = useAiFeaturesEnabled()
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
     betaSignupEnabled &&
@@ -69,17 +75,6 @@ function Header({
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview
-      ? [
-          {
-            key: 'chatbots-item',
-            type: 'link' as const,
-            label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
-            data: { cy: 'chatbots' },
-          },
-        ]
-      : []),
     {
       key: 'catalog-item',
       type: 'link' as const,
@@ -133,7 +128,7 @@ function Header({
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active: router.pathname === '/',
       data: { cy: 'library' },
     },
     {
@@ -141,7 +136,7 @@ function Header({
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -149,7 +144,7 @@ function Header({
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
 
@@ -159,8 +154,7 @@ function Header({
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
-        router.pathname == '/resources/answerCollections' ||
-        router.pathname === '/resources/chatbots' ||
+        router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
         router.pathname === '/resources/mediaLibrary',
@@ -174,6 +168,66 @@ function Header({
         content: 'flex flex-col gap-0.5',
       },
     },
+    ...(aiFeaturesEnabled
+      ? [
+          {
+            type: 'dropdown',
+            key: 'ai-menubar-item',
+            label: t('manage.general.ai'),
+            icon: faWandMagicSparkles,
+            active:
+              router.pathname.startsWith('/resources/knowledgeBases') ||
+              router.pathname === '/resources/chatbots' ||
+              router.pathname === '/elements/generate',
+            elements: [
+              {
+                key: 'element-generation-item',
+                type: 'link' as const,
+                label: t('manage.elementGeneration.title'),
+                onClick: () => router.push('/elements/generate'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'element-generation' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+              {
+                key: 'knowledge-bases-item',
+                type: 'link' as const,
+                label: t('kb.title'),
+                onClick: () => router.push('/resources/knowledgeBases'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'knowledge-bases' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+              {
+                key: 'chatbots-item',
+                type: 'link' as const,
+                label: t('manage.resources.chatbots'),
+                onClick: () => router.push('/resources/chatbots'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'chatbots' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+            ],
+            data: { cy: 'ai' },
+            className: {
+              icon: 'text-orange-400',
+              content: 'flex flex-col gap-0.5',
+            },
+          } as NavigationItemProps,
+        ]
+      : []),
   ]
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
@@ -309,7 +363,7 @@ function Header({
           type: 'link',
           label: t('shared.generic.logout'),
           onClick: () =>
-            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+            router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}/logout`),
           data: { cy: 'logout' },
         },
       ],

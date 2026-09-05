@@ -7,6 +7,7 @@ import {
 import { ManageUserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { type ReactNode, useMemo } from 'react'
+import { isPublicLiveQuizEvaluationRoute } from '../../lib/isPublicLiveQuizEvaluationRoute'
 
 interface ManageFeatureFlagProviderProps {
   children: ReactNode
@@ -16,17 +17,17 @@ const config = {
   apiHost: process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
   clientKey: process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,
   environment: process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV,
+  forcedOn: process.env.NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON,
 } satisfies BrowserFeatureFlagConfig
 
 function ManageFeatureFlagProvider({
   children,
 }: ManageFeatureFlagProviderProps) {
   const router = useRouter()
-  const skipUserProfile =
-    router.pathname === '/quizzes/[id]/evaluation' &&
-    (!router.isReady || router.query.hmac !== undefined)
-  const { data } = useQuery(ManageUserProfileDocument, {
+  const skipUserProfile = isPublicLiveQuizEvaluationRoute(router)
+  const { data, loading } = useQuery(ManageUserProfileDocument, {
     fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
     // HMAC evaluation links are public. An identity query on those links would
     // trigger Apollo's global Unauthorized redirect before the page can load.
     skip: skipUserProfile,
@@ -34,6 +35,7 @@ function ManageFeatureFlagProvider({
   const user = data?.userProfile
   const userId = user?.id
   const userRole = user?.role
+  const userProfileUnavailable = !skipUserProfile && !loading && !userId
   const userCatalyst = user?.catalyst
   const attributes = useMemo<FeatureFlagAttributes>(
     () =>
@@ -42,14 +44,21 @@ function ManageFeatureFlagProvider({
             id: userId,
             actorType: 'user',
             role: userRole,
-            catalyst: userCatalyst,
+            catalyst: Boolean(userCatalyst),
           }
         : { actorType: 'anonymous' },
-    [userId, userRole, userCatalyst]
+    [userCatalyst, userId, userRole]
   )
 
   return (
-    <FeatureFlagProvider config={config} attributes={attributes}>
+    <FeatureFlagProvider
+      config={config}
+      attributes={attributes}
+      attributesReady={
+        skipUserProfile || Boolean(userId) || userProfileUnavailable
+      }
+      evaluationAvailable={!userProfileUnavailable}
+    >
       {children}
     </FeatureFlagProvider>
   )

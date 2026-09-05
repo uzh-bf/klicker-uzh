@@ -27,8 +27,9 @@ project:
 managedRuntime:
   devcontainer:
     # Managed base: the DevPod primary `app` is implicit; postgres serves
-    # post-create reset/push/seed; hatchet is boot-critical for the backend.
-    baseServices: [postgres, hatchet]
+    # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
+    # boot-critical for the backend.
+    baseServices: [postgres, azurite, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
     # creates all three. LiteLLM and MailHog are opt-in capabilities.
@@ -132,6 +133,14 @@ apps:
     protocol: http
     runtime: proxy
     upstream: ${WORKSPACE}-app:7078
+
+  # Azurite Blob endpoint. The account name stays in the path so one
+  # workspace-namespaced host supports browser SAS uploads.
+  - name: blob
+    host: blob.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-azurite:10000
 
   # Postgres: db.klicker.localhost:5432 -> `klicker-db` (SNI). Connect with
   # direct-SSL so the ClientHello carries the SNI (libpq 17+): psql

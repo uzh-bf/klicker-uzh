@@ -1,7 +1,6 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import { createHash, randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
-import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   consumeStream,
@@ -11,17 +10,19 @@ import {
   type StepResult,
   streamText,
   type ToolSet,
+  tool,
 } from 'ai'
-import { createHash, randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
+  getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import {
@@ -39,13 +40,17 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -58,13 +63,28 @@ import {
   isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
+import {
+  formatKlickerChatContextForPrompt,
+  sanitizeKlickerChatContext,
+} from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
-import { resolveMcpScope } from '@/src/services/mcpScope'
+import {
+  resolveMcpScope,
+  resolveMcpScopeSessionId,
+} from '@/src/services/mcpScope'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from '@/src/services/studentPracticeMcp'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -125,88 +145,6 @@ const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
-
-type ModelRouting = {
-  source: 'custom' | 'default'
-  hasCustomKey: boolean
-  baseUrl: string | undefined
-}
-
-function getOpenAIModel(
-  provider: ReturnType<typeof createOpenAI>,
-  modelConfig: ChatModelConfig
-) {
-  return modelConfig.usesResponsesApi
-    ? provider.responses(modelConfig.deploymentId)
-    : provider.chat(modelConfig.deploymentId)
-}
-
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
-  // Use per-chatbot configuration if available
-  const hasCustomKey =
-    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
-  const hasCustomBaseUrl =
-    typeof chatbot.openaiBaseUrl === 'string' &&
-    chatbot.openaiBaseUrl.length > 0
-  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
-
-  if (hasCustomConfig) {
-    let apiKey: string | undefined
-    if (hasCustomKey) {
-      try {
-        apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
-        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
-      }
-    } else {
-      apiKey = process.env.OPENAI_API_KEY
-    }
-    const baseUrl = hasCustomBaseUrl
-      ? chatbot.openaiBaseUrl!
-      : process.env.OPENAI_BASE_URL
-
-    const routing: ModelRouting = {
-      source: 'custom',
-      hasCustomKey,
-      baseUrl,
-    }
-
-    return {
-      model: getOpenAIModel(
-        createOpenAI({
-          baseURL: baseUrl,
-          apiKey: apiKey || 'no-key',
-          fetch: createOpenAIFetch('custom'),
-        }),
-        modelConfig
-      ),
-      routing,
-    }
-  }
-
-  // Default: route through OpenAI-compatible endpoint
-  const routing: ModelRouting = {
-    source: 'default',
-    hasCustomKey: false,
-    baseUrl: process.env.OPENAI_BASE_URL,
-  }
-
-  return {
-    model: getOpenAIModel(
-      createOpenAI({
-        baseURL: process.env.OPENAI_BASE_URL,
-        apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: createOpenAIFetch('default'),
-      }),
-      modelConfig
-    ),
-    routing,
-  }
-}
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -609,7 +547,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode, chatbot: authChatbot } = authResult
 
   // check disclaimer acceptance
   try {
@@ -654,6 +592,7 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
@@ -687,7 +626,23 @@ export async function POST(
     assistantMessageId,
     allowRegeneration,
     images,
+    chatContext: rawChatContext,
   } = parsed
+
+  const sanitizedChatContext = sanitizeKlickerChatContext(rawChatContext)
+  const chatContext =
+    authChatbot && sanitizedChatContext?.courseId === authChatbot.courseId
+      ? sanitizedChatContext
+      : null
+
+  if (sanitizedChatContext && authChatbot && !chatContext) {
+    console.warn('Ignoring chat context for unrelated course', {
+      requestId,
+      chatbotId,
+      contextCourseId: sanitizedChatContext.courseId,
+      chatbotCourseId: authChatbot.courseId,
+    })
+  }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
     typeof image === 'string'
@@ -712,6 +667,7 @@ export async function POST(
     selectedModel: parsed.selectedModel,
     selectedMode: requestedMode,
     messageCount: messages.length,
+    hasChatContext: Boolean(chatContext),
   })
 
   let selectedModel = parsed.selectedModel
@@ -823,6 +779,23 @@ export async function POST(
     selectedModel = fallbackModelId
     selectedModelConfig = fallbackModelConfig
     return true
+  }
+
+  // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
+  // this after automatic and explicit selection so later credit handling
+  // cannot restore an advanced model for a guest with remaining credits.
+  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
+    const guestFallback = getModelsForChatbot(chatbot).find(
+      (modelConfig) => modelConfig.fallback
+    )
+    if (!guestFallback) {
+      return NextResponse.json(
+        { error: 'No fallback model available for guest access' },
+        { status: 503 }
+      )
+    }
+    selectedModel = guestFallback.id
+    selectedModelConfig = guestFallback
   }
 
   if (!selectedModelConfig.fallback) {
@@ -1056,16 +1029,35 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
+    const mcpScopeSessionId = resolveMcpScopeSessionId({
+      requestedThreadId: currentThreadId,
+      owningThreadId: owningThread.id,
+      fallbackId: requestId,
+    })
+    if (mcpScopeSessionId === null) {
+      await failOrDiscardUnstartedClaim('mcp.scope')
+      return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+    }
+
     let mcpTools: ToolSet
     try {
-      mcpTools = scopedKbId
-        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
-            kbId: scopedKbId,
-            sessionId: owningThread.id,
-          })
-        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
+        chatbotId,
+        participantId,
+        authMode,
+        kbId: scopedKbId,
+        sessionId: mcpScopeSessionId,
+      })
+      mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1080,7 +1072,127 @@ export async function POST(
       throw error
     }
 
-    const toolNames = Object.keys(mcpTools || {})
+    let responseExampleSummary = ''
+    let responseExampleSetDigest: string | null = null
+    let responseExampleProjectionDigest: string | null = null
+    const responseExampleTools: Record<string, any> = {}
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      if (Object.hasOwn(mcpTools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { requestId, chatbotId }
+        )
+      } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
+          responseExampleTool
+        responseExampleSummary = responseExampleSkill.summary
+        responseExampleSetDigest = responseExampleSkill.setDigest
+        responseExampleProjectionDigest = responseExampleSkill.projectionDigest
+      }
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        { requestId, chatbotId, error }
+      )
+    }
+
+    let practiceCandidatePrompt = ''
+    let practiceCandidateCount = 0
+    const practiceCandidateRefs = new Map<string, string>()
+
+    if (selectedMode === 'tutor') {
+      try {
+        const lookupResult = await lookupRelevantPracticeStacks({
+          authMode,
+          chatbotId,
+          courseId: authChatbot.courseId,
+          messages,
+          participantId,
+        })
+        const candidates = lookupResult?.candidates ?? []
+        practiceCandidateCount = candidates.length
+        candidates.forEach((candidate, index) => {
+          practiceCandidateRefs.set(
+            toPracticeCandidateId(index),
+            candidate.questionRef
+          )
+        })
+        practiceCandidatePrompt = formatPracticeCandidatesForPrompt(candidates)
+
+        logChatDev('studentPractice.lookup', {
+          requestId,
+          chatbotId,
+          participantId,
+          candidateCount: practiceCandidateCount,
+        })
+      } catch (error) {
+        console.warn(
+          'Student practice lookup failed; continuing without quiz candidates',
+          {
+            requestId,
+            chatbotId,
+            error,
+          }
+        )
+      }
+    }
+
+    const studentPracticeTools: Record<string, any> = {}
+    if (practiceCandidatePrompt) {
+      studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
+        description:
+          'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
+        inputSchema: z.object({
+          candidateId: z
+            .string()
+            .min(1)
+            .describe(
+              'Candidate id from the current practice candidate context'
+            ),
+        }),
+        execute: async ({ candidateId }) => {
+          const questionRef = practiceCandidateRefs.get(candidateId)
+          if (!questionRef) {
+            throw new Error('Unknown practice candidate id')
+          }
+
+          const payload = await getPracticeStackForQuiz({
+            authMode,
+            chatbotId,
+            participantId,
+            questionRef,
+          })
+          if (!payload) {
+            throw new Error('Student practice MCP is not configured')
+          }
+
+          return {
+            kind: 'student-practice-quiz',
+            ...payload,
+          }
+        },
+        toModelOutput: () => ({
+          type: 'text' as const,
+          value:
+            'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+        }),
+      })
+    }
+
+    const chatTools: Record<string, any> = {
+      ...(mcpTools || {}),
+      ...responseExampleTools,
+      ...studentPracticeTools,
+    }
+    const toolNames = Object.keys(chatTools)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer'
         ? toolNames.find(isDocQueryToolName)
@@ -1111,6 +1223,16 @@ export async function POST(
         standardModeConfig: chatbot.standardModeConfig,
       }
     )
+    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
+    const contextAwareSystemPrompt = chatContextPrompt
+      ? `${systemPrompt}\n\n${chatContextPrompt}`
+      : systemPrompt
+    const practiceAwareSystemPrompt = practiceCandidatePrompt
+      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
+      : contextAwareSystemPrompt
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
+      : practiceAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1143,7 +1265,7 @@ export async function POST(
         ? appliedReasoningEffort
         : undefined
 
-    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const { model, routing } = getChatModel(chatbot, selectedModelConfig)
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({
@@ -1151,8 +1273,8 @@ export async function POST(
             transport: selectedModelConfig.usesResponsesApi
               ? 'responses'
               : 'chat',
-            instructions: systemPrompt,
-            tools: mcpTools,
+            instructions: effectiveSystemPrompt,
+            tools: chatTools,
           })
         : null
 
@@ -1264,8 +1386,17 @@ export async function POST(
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,
-      systemPromptLength: systemPrompt.length,
-      systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+      practiceCandidateCount,
+      hasResponseExampleSkill: Boolean(
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+      ),
+      responseExampleSetDigest,
+      responseExampleProjectionDigest,
+      hasChatContext: Boolean(chatContextPrompt),
+      systemPromptLength: effectiveSystemPrompt.length,
+      systemPromptHash: effectiveSystemPrompt
+        ? hashSnippet(effectiveSystemPrompt)
+        : null,
       userPromptLengthTotal: userPrompt.length,
       userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
@@ -1527,7 +1658,24 @@ export async function POST(
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: Boolean(
+            responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+          ),
+          responseExampleSetDigest: responseExampleSetDigest ?? 'unavailable',
+          responseExampleProjectionDigest:
+            responseExampleProjectionDigest ?? 'unavailable',
+        },
+        telemetry: {
+          isEnabled: isAiTelemetryEnabled,
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: true,
+            responseExampleProjectionDigest: true,
+          },
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest
@@ -1543,7 +1691,7 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? mcpTools,
+        tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
         prepareStep: quizzerDocQueryToolName
@@ -1558,7 +1706,7 @@ export async function POST(
                 : {}
           : undefined,
         stopWhen: isStepCount(5),
-        instructions: systemPrompt,
+        instructions: effectiveSystemPrompt,
 
         abortSignal: req.signal,
 
@@ -1595,6 +1743,7 @@ export async function POST(
         },
 
         onEnd: async (result) => {
+          await closeMcpTools()
           sawFinish = true
           // ai@7 still flushes onEnd after an abort once at least one step
           // completed. onAbort already persisted the partial answer and charged
@@ -1685,6 +1834,7 @@ export async function POST(
         },
 
         onAbort: async (steps) => {
+          await closeMcpTools()
           sawAbort = true
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
@@ -1778,6 +1928,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -1826,6 +1977,7 @@ export async function POST(
       sendReasoning: true,
       consumeSseStream: consumeStream,
       onError: (error) => {
+        void closeMcpTools()
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
@@ -1868,6 +2020,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    await closeMcpTools()
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

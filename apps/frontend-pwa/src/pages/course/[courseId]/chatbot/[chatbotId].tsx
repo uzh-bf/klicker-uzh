@@ -6,11 +6,25 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
+import { mintPwaChatEmbedExchangeToken } from '../../../../lib/chatbot/embedAuth'
 import getParticipantToken from '../../../../lib/getParticipantToken'
 
 type ChatbotPageProps = {
   participationError?: boolean
   courseLink?: string
+}
+
+function getChatBaseUrl() {
+  const chatUrl =
+    process.env.NEXT_PUBLIC_CHAT_URL ?? process.env.APP_ORIGIN_CHAT
+
+  if (!chatUrl) return null
+
+  try {
+    return new URL(chatUrl)
+  } catch {
+    return null
+  }
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
@@ -32,7 +46,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
 
-    const { participantToken } = await getParticipantToken({
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       courseId,
       ctx,
@@ -40,11 +54,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const localePrefix = ctx.locale ? `/${ctx.locale}` : ''
     const coursePath = `${localePrefix}/course/${courseId}`
+    const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
+    const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
-    if (!participantToken) {
-      const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
-      const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
-
+    if (!participantToken || typeof participantToken !== 'string') {
       return {
         redirect: {
           destination: loginUrl,
@@ -85,12 +98,47 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    const chatBaseUrl = getChatBaseUrl()
+    if (!chatBaseUrl) {
+      console.error('Missing or invalid chat URL for chatbot redirect')
+
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/error`,
+          permanent: false,
+        },
+      }
+    }
+
     const chatDestination = new URL(
-      encodeURIComponent(chatbotId),
-      process.env.NEXT_PUBLIC_CHAT_URL
+      embedded ? '/auth/pwa-embed' : `/${encodeURIComponent(chatbotId)}`,
+      chatBaseUrl
     )
     if (embedded) {
+      let exchangeToken
+      try {
+        exchangeToken = await mintPwaChatEmbedExchangeToken({
+          chatbotId,
+          cookiesAvailable: cookiesAvailable !== false,
+          courseId,
+          participantToken,
+        })
+      } catch (err) {
+        console.error('Failed to mint PWA chat embed exchange token', {
+          chatbotId,
+          courseId,
+          err,
+        })
+        return {
+          redirect: {
+            destination: loginUrl,
+            permanent: false,
+          },
+        }
+      }
+
       chatDestination.searchParams.set('embed', 'true')
+      chatDestination.searchParams.set('token', exchangeToken)
     }
 
     return {
@@ -104,7 +152,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       redirect: {
-        destination: '/error',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/error`,
         permanent: false,
       },
     }

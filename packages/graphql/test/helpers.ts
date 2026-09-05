@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   type AnswerCollection,
@@ -19,11 +18,13 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  type BuildKBGraphInput,
   type CourseDeletionEvent,
   DisplayMode,
   type ElementData,
   type ElementInstanceOptions,
   type ElementInstanceResults,
+  type IngestKBResourceInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -133,8 +134,14 @@ export async function testInitialization(
   })
 
   const pubSub = createPubSub()
-  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
-  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
+  const redisExec = new Redis({
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  })
+  const redisAssessmentExec = new Redis({
+    host: process.env.REDIS_ASSESSMENT_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6380),
+  })
 
   const hatchetCtx = {
     hatchet,
@@ -148,6 +155,27 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    ingestKBResource: hatchet.task({
+      name: 'ingest-kb-resource',
+      fn: async (input: IngestKBResourceInput) => {
+        console.info('KB ingestion dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
+    buildKBGraph: hatchet.task({
+      name: 'build-kb-knowledge-graph',
+      fn: async (input: BuildKBGraphInput) => {
+        console.info('KB graph build dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
+    deleteKBResource: hatchet.task({
+      name: 'delete-kb-resource',
+      fn: async (input) => {
+        console.info('KB deletion dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({
@@ -331,6 +359,10 @@ export async function testInitialization(
       catalystIndividual: true,
     },
     prisma,
+    featureFlags: {
+      isEnabled: vi.fn((key) => key === 'ai-beta'),
+      refresh: vi.fn(async () => undefined),
+    },
     hatchet,
     tasks,
     emitter,
@@ -397,6 +429,9 @@ export async function testCleanup(prisma: PrismaClient) {
     )
   }
 
+  // upload tickets intentionally restrict KB deletion until retention cleanup
+  await prisma.kBUploadTicket.deleteMany()
+
   // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()
   await prisma.participant.deleteMany()
@@ -423,6 +458,7 @@ export async function initializePrisma() {
   try {
     // create EventEmitter for test context
     const emitter = new EventEmitter()
+    const { hatchetClient } = await import('@klicker-uzh/hatchet')
 
     return { prisma, hatchet: hatchetClient, emitter }
   } catch (error) {

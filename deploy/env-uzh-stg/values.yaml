@@ -22,12 +22,26 @@ hatchet:
   client:
     tlsStrategy: 'none'
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+  kbIngestion:
+    apiUrl: 'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000'
+    sourceGatewayUrl: 'http://app-klicker-klicker-uzh-v2-backend-graphql.stg-klicker.svc.cluster.local:3000'
+    workerDisabled: false
+  kbGraph:
+    disabled: false
+    hostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
+    apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+    tlsStrategy: 'none'
+    workflowName: 'course-kg-ingestion'
+    standardGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
   workers:
     general:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '66b27d0d521e'
+        rollout.klicker.uzh.ch/release: '795808d18e9d'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
@@ -52,7 +66,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '66b27d0d521e'
+        rollout.klicker.uzh.ch/release: '795808d18e9d'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -74,7 +88,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '66b27d0d521e'
+        rollout.klicker.uzh.ch/release: '795808d18e9d'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -108,7 +122,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -156,13 +170,14 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
+      cpu: 200m
       memory: 200Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -330,11 +345,87 @@ chat:
       cpu: 200m
       memory: 768Mi
 
+mcpStudent:
+  priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-student
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: Always
+    tag: v3-ai
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+mcpLecturer:
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
+    pullPolicy: Always
+    tag: v3-ai
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -378,15 +469,16 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      memory: 600Mi
+      cpu: 200m
+      memory: 200Mi
 
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -433,13 +525,14 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
+      cpu: 200m
       memory: 200Mi
 
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -486,12 +579,14 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
+      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -526,6 +621,38 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
+  kbIngestionDisabled: false
+  kbGraphDisabled: false
+
+  knowledgeGraph:
+    host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: '100'
+      highEstimateMinorUnits: '200'
+      maxCostMinorUnits: '250'
+      semesterQuotaMinorUnits: '1000'
+      pricingVersion: 'stg-canary-v1'
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: '2026-H2'
+
+  elementGeneration:
+    enabled: true
+    hatchetHostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
+    hatchetServerUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: '1'
+      flashcardMinorUnits: '1'
+      flashcardRetryMinorUnits: '1'
+      pricingVersion: 'stg-canary-v1'
 
   ingress:
     className: haproxy
@@ -551,15 +678,15 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      memory: 600Mi
+      memory: 1Gi
 
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -606,12 +733,13 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
+      cpu: 200m
       memory: 200Mi
 
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
   replicaCount: 1
 
   affinity:
@@ -660,7 +788,7 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+    rollout.klicker.uzh.ch/release: '795808d18e9d'
 
   replicaCount: 1
 
@@ -707,13 +835,14 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
+      cpu: 200m
       memory: 200Mi
 
 assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '66b27d0d521e'
+      rollout.klicker.uzh.ch/release: '795808d18e9d'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -768,15 +897,16 @@ assessment:
 
     resources:
       requests:
-        cpu: 100m
-        memory: 200Mi
+        cpu: 50m
+        memory: 50Mi
       limits:
-        memory: 600Mi
+        cpu: 200m
+        memory: 200Mi
 
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '66b27d0d521e'
+      rollout.klicker.uzh.ch/release: '795808d18e9d'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -842,10 +972,11 @@ assessment:
 
     resources:
       requests:
-        cpu: 100m
-        memory: 200Mi
+        cpu: 50m
+        memory: 50Mi
       limits:
-        memory: 600Mi
+        cpu: 200m
+        memory: 200Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
@@ -853,7 +984,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '66b27d0d521e'
+      rollout.klicker.uzh.ch/release: '795808d18e9d'
     replicaCount: 1
 
     autoscaling:
@@ -912,11 +1043,13 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
+        cpu: 200m
         memory: 200Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (floating selected source tag on stg).
 migrator:
+  databaseUrlOnly: true
   priorityClassName: staging-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm

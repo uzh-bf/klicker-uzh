@@ -1,9 +1,10 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { EventEmitter } from 'node:events'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import type {
   FeatureFlagAttributes,
   FeatureFlagKey,
 } from '@klicker-uzh/feature-flags'
-import {
+import type {
   PrismaClient,
   UserLoginScope,
   UserRole,
@@ -12,11 +13,16 @@ import type { PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
-import type { EventEmitter } from 'node:events'
+import type { QuestionGenerationRuntime } from '../services/questionGenerationRuntime.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
   res: Response
+}
+
+export interface FeatureFlagEvaluator {
+  isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
+  refresh(): Promise<void>
 }
 
 export interface Context extends BaseContext {
@@ -39,6 +45,8 @@ export interface Context extends BaseContext {
   tasks: PreparedHatchetTasks
   // request-local evaluations on a process-level, multi-user client
   featureFlags?: FeatureFlagEvaluator
+  // Catalyst adapter for generated Klicker elements and immutable artifacts.
+  elementGenerationRuntime?: QuestionGenerationRuntime
 }
 
 export interface ContextWithUser extends Context {
@@ -60,11 +68,6 @@ export type PrismaTransactionContextWithUser = Omit<
     PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   >
-}
-
-export interface FeatureFlagEvaluator {
-  isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
-  refresh(): Promise<void>
 }
 
 function enhanceContext(args = {}) {

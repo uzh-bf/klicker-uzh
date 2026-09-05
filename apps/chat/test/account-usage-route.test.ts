@@ -15,6 +15,10 @@ const mocks = vi.hoisted(() => ({
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  closeMCPTools: vi.fn(),
+  loadResponseExampleRuntimeSkill: vi.fn(),
+  createResponseExampleSearchTool: vi.fn(),
+  buildPromptCacheRequest: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   deleteThread: vi.fn(),
@@ -70,6 +74,12 @@ vi.mock('@/src/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
+vi.mock('@/src/lib/server/responseExampleRuntime', () => ({
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME: 'search_response_examples',
+  loadResponseExampleRuntimeSkill: mocks.loadResponseExampleRuntimeSkill,
+  createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,
+}))
+
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
@@ -105,7 +115,7 @@ vi.mock('@/src/lib/server/imagePreview', () => ({
 }))
 
 vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
-  buildPromptCacheRequest: vi.fn().mockResolvedValue(null),
+  buildPromptCacheRequest: mocks.buildPromptCacheRequest,
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
@@ -240,7 +250,20 @@ describe('account usage chat route', () => {
       accepted: true,
     })
     mocks.chatbotFindUnique.mockResolvedValue(chatbot())
-    mocks.getAggregatedMCPTools.mockResolvedValue({})
+    mocks.getAggregatedMCPTools.mockResolvedValue({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValue({
+      summary: '',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    mocks.createResponseExampleSearchTool.mockReturnValue({
+      description: 'Synthetic response-example search tool',
+    })
+    mocks.buildPromptCacheRequest.mockResolvedValue(null)
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
@@ -281,6 +304,192 @@ describe('account usage chat route', () => {
         },
       }
     })
+  })
+
+  test('adds the response-example summary and tool to the final cache identity', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    const responseExampleTool = {
+      description: 'Synthetic response-example search tool',
+    }
+    mocks.createResponseExampleSearchTool.mockReturnValueOnce(
+      responseExampleTool
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    )
+    expect(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      mocks.loadResponseExampleRuntimeSkill.mock.invocationCallOrder[0]
+    )
+    expect(mocks.loadResponseExampleRuntimeSkill).toHaveBeenCalledWith({
+      prisma: expect.anything(),
+      chatbotId: 'chatbot-1',
+      chatMode: 'tutor',
+      role: 'included',
+    })
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
+        tools: expect.objectContaining({
+          search_response_examples: responseExampleTool,
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
+        tools: expect.objectContaining({
+          search_response_examples: responseExampleTool,
+        }),
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: true,
+          responseExampleSetDigest: 'synthetic-set-digest',
+          responseExampleProjectionDigest: 'synthetic-projection-digest',
+        },
+        telemetry: expect.objectContaining({
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: true,
+            responseExampleProjectionDigest: true,
+          },
+        }),
+      })
+    )
+  })
+
+  test('continues the claimed turn when response-example loading fails', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockRejectedValueOnce(
+      new Error('synthetic response-example loader failure')
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.not.stringContaining('Response-example skill'),
+        tools: expect.not.objectContaining({
+          search_response_examples: expect.anything(),
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
+      })
+    )
+    expect(streamCallbacks()).not.toHaveProperty(
+      'tools.search_response_examples'
+    )
+    expect(console.warn).toHaveBeenCalledWith(
+      'Response-example skill loading failed; continuing without response examples',
+      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    )
+  })
+
+  test('omits the whole skill when response-example tool construction fails', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    mocks.createResponseExampleSearchTool.mockImplementationOnce(() => {
+      throw new Error('synthetic response-example tool failure')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.not.stringContaining(
+          'Synthetic lecturer guidance.'
+        ),
+        tools: expect.not.objectContaining({
+          search_response_examples: expect.anything(),
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
+      })
+    )
+  })
+
+  test('preserves an MCP tool collision and omits the response-example skill', async () => {
+    const mcpTool = { description: 'Synthetic MCP-owned tool' }
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: { search_response_examples: mcpTool },
+      close: mocks.closeMCPTools,
+    })
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.not.stringContaining(
+          'Synthetic lecturer guidance.'
+        ),
+        tools: expect.objectContaining({ search_response_examples: mcpTool }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: expect.objectContaining({ search_response_examples: mcpTool }),
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
+      })
+    )
+    expect(console.warn).toHaveBeenCalledWith(
+      'Response-example skill name conflicts with an existing tool; continuing without response examples',
+      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    )
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {
@@ -465,7 +674,10 @@ describe('account usage chat route', () => {
         ],
       })
     )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: { KB_doc_query: {} },
+      close: mocks.closeMCPTools,
+    })
 
     const response = await POST(createRequest({ selectedMode: 'quizzer' }), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -616,6 +828,7 @@ describe('account usage chat route', () => {
     }
     await streamCallbacks().onEnd(result)
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -742,6 +955,7 @@ describe('account usage chat route', () => {
       })
     ).resolves.toBeUndefined()
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({ rawCreditsUsed: null })
     )
@@ -825,6 +1039,7 @@ describe('account usage chat route', () => {
       steps,
     })
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -845,6 +1060,7 @@ describe('account usage chat route', () => {
 
     await streamCallbacks().onError(new Error('synthetic provider failure'))
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
       assistantMessageId: 'assistant-1',
       threadId: 'thread-1',

@@ -94,7 +94,10 @@ export async function mockGrowthBookLearningAnalytics(
   page: Page,
   enabled: boolean
 ) {
-  await mockGrowthBookFeatureFlags(page, { learningAnalytics: enabled })
+  await mockGrowthBookFeatureFlags(page, {
+    aiBeta: true,
+    learningAnalytics: enabled,
+  })
 }
 
 export async function mockBetaEnrollmentGraphQL(
@@ -269,6 +272,14 @@ export async function prepareSeededAnalyticsActivities() {
   await prisma.practiceQuiz.update({
     where: { id: practiceQuiz.id },
     data: { status: PublicationStatus.PUBLISHED },
+  })
+}
+
+export async function updateLecturerAiAccess(enabled: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { aiFeaturesEnabled: enabled },
   })
 }
 

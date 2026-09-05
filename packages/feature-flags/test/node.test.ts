@@ -258,8 +258,63 @@ describe('NodeFeatureFlagClient', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  it('honors a forced flag in development but never in production', () => {
+    const attributes: FeatureFlagAttributes = { actorType: 'user' }
+
+    const development = new NodeFeatureFlagClient({
+      environment: 'development',
+      forcedOn: 'ai-beta',
+    })
+    expect(development.isEnabled('ai-beta', attributes)).toBe(true)
+
+    const production = new NodeFeatureFlagClient({
+      environment: 'production',
+      forcedOn: 'ai-beta',
+    })
+    expect(production.isEnabled('ai-beta', attributes)).toBe(false)
+  })
+
+  // GrowthBook is authoritative wherever it is reachable: a configured client
+  // fetches its payload and the override never enters the picture.
+  it('ignores a forced flag once an SDK connection is configured', async () => {
+    const client = new NodeFeatureFlagClient({
+      apiHost: 'https://growthbook.example',
+      clientKey: 'sdk-key',
+      environment: 'development',
+      fetch: mockFetch,
+      forcedOn: 'ai-beta',
+      refreshIntervalMs: 0,
+    })
+
+    await client.initialize()
+
+    expect(client.isEnabled('ai-beta', { actorType: 'user' })).toBe(false)
+  })
+
+  it('allows an HTTP loopback API host in the test environment', async () => {
+    const client = createClient({ apiHost: 'http://127.0.0.1:4010/' })
+
+    expect(await client.initialize()).toBe(true)
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://127.0.0.1:4010/api/features/sdk-test',
+      expect.objectContaining({ redirect: 'error' })
+    )
+    expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(true)
+  })
+
   it.each([
-    'http://growthbook.test',
+    ['a non-loopback host in test', 'http://growthbook.test', 'test'],
+    ['a loopback host in staging', 'http://127.0.0.1:4010', 'staging'],
+    ['a loopback host in production', 'http://localhost:4010', 'production'],
+  ])('fails closed for HTTP on %s', async (_label, apiHost, environment) => {
+    const client = createClient({ apiHost, environment })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.getStatus().configured).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
     'not-a-url',
     'https://growthbook.test?source=invalid',
     'https://growthbook.test/#invalid',

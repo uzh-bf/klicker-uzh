@@ -1,0 +1,961 @@
+import { useApolloClient } from '@apollo/client'
+import {
+  faArrowUpRightFromSquare,
+  faRotateRight,
+  faSpinner,
+  faUpRightAndDownLeftFromCenter,
+  faWandMagicSparkles,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  MANAGE_CLOSE_REQUEST_MESSAGE_TYPE,
+  MANAGE_CONTEXT_MESSAGE_TYPE,
+  MANAGE_CONTEXT_READY_MESSAGE_TYPE,
+} from '@klicker-uzh/types'
+import { Tooltip, toast } from '@uzh-bf/design-system'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import {
+  type ChangeEvent as ReactChangeEvent,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
+import { createPortal } from 'react-dom'
+import { twMerge } from 'tailwind-merge'
+
+import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
+import {
+  buildManageAssistantElementEditRoute,
+  buildManageAssistantUrl,
+  MANAGE_ASSISTANT_APP_CONTENT_ID,
+} from './manageAssistantConfig'
+import {
+  buildManageAssistantContext,
+  type ManageAssistantContext,
+} from './manageAssistantContext'
+import {
+  createManageAssistantFrameState,
+  MANAGE_ASSISTANT_LOADING_DEADLINE_MS,
+  type ManageAssistantFramePhase,
+  reduceManageAssistantFrameState,
+} from './manageAssistantFrameState'
+import {
+  clampManageAssistantPanelSize,
+  DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
+  getManageAssistantKeyboardResizeDelta,
+  getManageAssistantPanelPresetSize,
+  type ManageAssistantPanelPreset,
+  type ManageAssistantPanelSize,
+  parseManageAssistantPanelSize,
+  resizeManageAssistantPanelFromTopLeft,
+} from './manageAssistantPanelSize'
+import {
+  isManageElementCreatedMessage,
+  sanitizeManageElementCreatedPayload,
+} from './manageElementCreatedMessage'
+import {
+  isManageElementOpenRequestMessage,
+  sanitizeManageElementOpenRequestPayload,
+} from './manageElementOpenRequestMessage'
+
+const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
+const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
+  'klicker-manage-assistant-panel-size-v1'
+type ManageAssistantOverlayContent =
+  | {
+      kind: 'spinner'
+      dataCy: string
+      labelKey: 'manage.assistant.loading' | 'manage.assistant.retrying'
+    }
+  | {
+      kind: 'error'
+      dataCy: string
+      titleKey: 'manage.assistant.delayedTitle' | 'manage.assistant.failedTitle'
+      descriptionKey:
+        | 'manage.assistant.delayedDescription'
+        | 'manage.assistant.failedDescription'
+    }
+
+const MANAGE_ASSISTANT_OVERLAY_CONTENT: Record<
+  ManageAssistantFramePhase,
+  ManageAssistantOverlayContent
+> = {
+  // `ready` never renders an error panel directly: the widget remaps it to
+  // the loading state below, which also covers the post-paint window while
+  // a URL switch to the next frame generation is in flight.
+  ready: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  loading: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  retrying: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.retrying',
+  },
+  delayed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-delayed',
+    titleKey: 'manage.assistant.delayedTitle',
+    descriptionKey: 'manage.assistant.delayedDescription',
+  },
+  failed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-failed',
+    titleKey: 'manage.assistant.failedTitle',
+    descriptionKey: 'manage.assistant.failedDescription',
+  },
+}
+const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
+const MANAGE_ASSISTANT_FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe:not([tabindex="-1"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+export function ManageAssistantWidget() {
+  const t = useTranslations()
+  const router = useRouter()
+  const apolloClient = useApolloClient()
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const panelRef = useRef<HTMLElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const shouldRestoreFocusRef = useRef(false)
+  const pointerDownInsidePanelRef = useRef(false)
+  const resizeSessionRef = useRef<{
+    pointerId: number
+    startSize: ManageAssistantPanelSize
+    startX: number
+    startY: number
+  } | null>(null)
+  const [open, setOpen] = useState(false)
+  const [hasOpened, setHasOpened] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
+  const [panelSize, setPanelSize] = useState(
+    DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+  )
+  const [panelSizeInitialized, setPanelSizeInitialized] = useState(false)
+  const [panelPreset, setPanelPreset] = useState<
+    ManageAssistantPanelPreset | 'custom'
+  >('custom')
+
+  // Mounted app-wide rather than inside Layout, so the login screen has to be
+  // excluded explicitly: every other Manage route requires a signed-in user.
+  const assistantEnabled = useAiFeaturesEnabled()
+  const enabled = assistantEnabled && router.pathname !== '/login'
+  const assistantUrl = useMemo(
+    () =>
+      buildManageAssistantUrl({
+        chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+        locale: router.locale,
+        parentOrigin:
+          typeof window !== 'undefined' ? window.location.origin : undefined,
+      }),
+    [router.locale]
+  )
+  const [frameState, dispatchFrameState] = useReducer(
+    reduceManageAssistantFrameState,
+    assistantUrl,
+    createManageAssistantFrameState
+  )
+  const handleFrameError = useCallback(() => {
+    dispatchFrameState({
+      generation: frameState.generation,
+      type: 'error',
+    })
+  }, [frameState.generation])
+  // React wires an iframe load listener but not its non-bubbling error
+  // listener. Attach the latter directly as a best-effort early signal;
+  // Chromium still relies on the loading deadline when navigation fails.
+  const setIframeRef = useCallback(
+    (frame: HTMLIFrameElement | null) => {
+      iframeRef.current?.removeEventListener('error', handleFrameError)
+      iframeRef.current = frame
+      frame?.addEventListener('error', handleFrameError)
+    },
+    [handleFrameError]
+  )
+  const frameReady =
+    frameState.phase === 'ready' && frameState.url === assistantUrl
+  // The url-changed effect only runs after paint. Deriving the overlay
+  // phase from the URL keeps a navigation on the loading state instead of
+  // briefly painting the previous phase's error panel with retry actions.
+  const overlayPhase: ManageAssistantFramePhase =
+    frameState.url === assistantUrl ? frameState.phase : 'loading'
+  const overlay = frameReady
+    ? null
+    : MANAGE_ASSISTANT_OVERLAY_CONTENT[overlayPhase]
+  // A clean, non-embedded URL for the "open in new tab" link: the embedded
+  // URL hides the assistant's login CTA and other affordances that only make
+  // sense when Manage itself provides the surrounding chrome.
+  const assistantNewTabUrl = useMemo(
+    () =>
+      buildManageAssistantUrl({
+        chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+        locale: router.locale,
+        embed: false,
+      }),
+    [router.locale]
+  )
+  const assistantOrigin = useMemo(
+    () => getUrlOrigin(assistantUrl),
+    [assistantUrl]
+  )
+  const assistantContext = useMemo(
+    () =>
+      buildManageAssistantContext({
+        asPath: router.asPath,
+        locale: router.locale,
+        pathname: router.pathname,
+        query: router.query,
+      }),
+    [router.asPath, router.locale, router.pathname, router.query]
+  )
+  const assistantContextRef = useRef(assistantContext)
+  useEffect(() => {
+    assistantContextRef.current = assistantContext
+  }, [assistantContext])
+
+  useEffect(() => {
+    dispatchFrameState({ type: 'url-changed', url: assistantUrl })
+  }, [assistantUrl])
+
+  useEffect(() => {
+    if (
+      !open ||
+      !assistantUrl ||
+      frameState.url !== assistantUrl ||
+      (frameState.phase !== 'loading' && frameState.phase !== 'retrying')
+    ) {
+      return
+    }
+
+    const generation = frameState.generation
+    const deadline = window.setTimeout(() => {
+      dispatchFrameState({
+        generation,
+        type: 'deadline',
+      })
+    }, MANAGE_ASSISTANT_LOADING_DEADLINE_MS)
+
+    return () => window.clearTimeout(deadline)
+  }, [
+    assistantUrl,
+    frameState.generation,
+    frameState.phase,
+    frameState.url,
+    open,
+  ])
+
+  // Post the current context to the iframe. The call site already sits
+  // behind an assistantOrigin guard; the check here is for type safety only.
+  const sendCurrentContext = useCallback(() => {
+    if (!assistantOrigin) return
+    postManageContext(
+      iframeRef.current,
+      assistantContextRef.current,
+      assistantOrigin
+    )
+  }, [assistantOrigin])
+
+  const closeWidget = useCallback((restoreFocus = true) => {
+    shouldRestoreFocusRef.current = restoreFocus
+    setOpen(false)
+  }, [])
+
+  const openConfirmedElement = useCallback(
+    (id: number) => {
+      const route = buildManageAssistantElementEditRoute(id)
+      if (!route) return
+
+      // Let the Manage editor own focus before changing the route. The
+      // assistant must not return focus to its launcher during this handoff.
+      closeWidget(false)
+      void router.push(route, undefined, { shallow: true })
+    },
+    [closeWidget, router]
+  )
+
+  useEffect(() => {
+    if (open || !shouldRestoreFocusRef.current) return
+    shouldRestoreFocusRef.current = false
+    triggerRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    closeButtonRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeWidget()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closeWidget, open])
+
+  useEffect(() => {
+    if (!open || isDesktop || !enabled || !assistantUrl) return
+
+    const panel = panelRef.current
+    if (!panel) return
+    const panelElement = panel
+
+    function getFocusableElements() {
+      return Array.from(
+        panelElement.querySelectorAll<HTMLElement>(
+          MANAGE_ASSISTANT_FOCUSABLE_SELECTOR
+        )
+      ).filter((element) => !element.hidden && element.getClientRects().length)
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Tab') return
+
+      const focusableElements = getFocusableElements()
+      if (focusableElements.length === 0) {
+        event.preventDefault()
+        panelElement.focus()
+        return
+      }
+
+      const first = focusableElements[0]
+      const last = focusableElements[focusableElements.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+
+    function handleFocusIn(event: FocusEvent) {
+      const target = event.target
+      if (!(target instanceof Node) || panelElement.contains(target)) return
+
+      // A click on a non-focusable panel surface can transiently focus the
+      // document body. Keep the user's existing focus in that case, while
+      // still redirecting keyboard or iframe focus that genuinely escaped.
+      if (target === document.body && pointerDownInsidePanelRef.current) {
+        return
+      }
+
+      pointerDownInsidePanelRef.current = false
+      closeButtonRef.current?.focus()
+    }
+
+    function handlePointerDown() {
+      pointerDownInsidePanelRef.current = true
+    }
+
+    function clearPointerDown() {
+      pointerDownInsidePanelRef.current = false
+    }
+
+    function handleIframeBlur() {
+      if (pointerDownInsidePanelRef.current) return
+
+      window.requestAnimationFrame(() => {
+        if (!open || isDesktop) return
+        const activeElement = document.activeElement
+        if (
+          !(activeElement instanceof Node) ||
+          !panelElement.contains(activeElement)
+        ) {
+          closeButtonRef.current?.focus()
+        }
+      })
+    }
+
+    panelElement.addEventListener('keydown', handleKeyDown)
+    panelElement.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('focusin', handleFocusIn)
+    window.addEventListener('pointerup', clearPointerDown)
+    window.addEventListener('pointercancel', clearPointerDown)
+    const iframe = iframeRef.current
+    iframe?.addEventListener('blur', handleIframeBlur)
+    return () => {
+      panelElement.removeEventListener('keydown', handleKeyDown)
+      panelElement.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('focusin', handleFocusIn)
+      window.removeEventListener('pointerup', clearPointerDown)
+      window.removeEventListener('pointercancel', clearPointerDown)
+      iframe?.removeEventListener('blur', handleIframeBlur)
+      pointerDownInsidePanelRef.current = false
+    }
+  }, [assistantUrl, enabled, frameState.generation, isDesktop, open])
+
+  useEffect(() => {
+    if (!open || isDesktop || !enabled || !assistantUrl) return
+
+    const appContent = document.getElementById(MANAGE_ASSISTANT_APP_CONTENT_ID)
+    if (!appContent) return
+
+    const previousAriaHidden = appContent.getAttribute('aria-hidden')
+    const previousInert = appContent.inert
+    appContent.setAttribute('aria-hidden', 'true')
+    appContent.inert = true
+
+    return () => {
+      appContent.inert = previousInert
+      if (previousAriaHidden === null) {
+        appContent.removeAttribute('aria-hidden')
+      } else {
+        appContent.setAttribute('aria-hidden', previousAriaHidden)
+      }
+    }
+  }, [assistantUrl, enabled, isDesktop, open])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY)
+    const initialSize = mediaQuery.matches
+      ? (readStoredPanelSize() ?? DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE)
+      : DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+    const viewport = {
+      height: window.innerHeight,
+      width: window.innerWidth,
+    }
+    setIsDesktop(mediaQuery.matches)
+    setPanelSize(
+      mediaQuery.matches
+        ? clampManageAssistantPanelSize(initialSize, viewport)
+        : initialSize
+    )
+    setPanelSizeInitialized(true)
+
+    function handleMediaChange(event: MediaQueryListEvent) {
+      setIsDesktop(event.matches)
+      setPanelPreset('custom')
+      if (event.matches) {
+        setPanelSize((currentSize) =>
+          clampManageAssistantPanelSize(readStoredPanelSize() ?? currentSize, {
+            height: window.innerHeight,
+            width: window.innerWidth,
+          })
+        )
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleMediaChange)
+    return () => mediaQuery.removeEventListener('change', handleMediaChange)
+  }, [])
+
+  useEffect(() => {
+    if (
+      !panelSizeInitialized ||
+      !isDesktop ||
+      !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
+    ) {
+      return
+    }
+    writeStoredPanelSize(panelSize)
+  }, [isDesktop, panelSize, panelSizeInitialized])
+
+  useEffect(() => {
+    function handleResize() {
+      if (!isDesktop || !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches) {
+        return
+      }
+      setPanelPreset('custom')
+      setPanelSize((currentSize) =>
+        clampManageAssistantPanelSize(currentSize, {
+          height: window.innerHeight,
+          width: window.innerWidth,
+        })
+      )
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isDesktop])
+
+  const handleResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0 || !isDesktop) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      resizeSessionRef.current = {
+        pointerId: event.pointerId,
+        startSize: panelSize,
+        startX: event.clientX,
+        startY: event.clientY,
+      }
+    },
+    [isDesktop, panelSize]
+  )
+
+  const handleResizePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const session = resizeSessionRef.current
+      if (!isDesktop || !session || session.pointerId !== event.pointerId) {
+        return
+      }
+
+      setPanelSize(
+        resizeManageAssistantPanelFromTopLeft({
+          deltaX: event.clientX - session.startX,
+          deltaY: event.clientY - session.startY,
+          size: session.startSize,
+          viewport: { height: window.innerHeight, width: window.innerWidth },
+        })
+      )
+      setPanelPreset('custom')
+    },
+    [isDesktop]
+  )
+
+  const handleResizePointerEnd = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (resizeSessionRef.current?.pointerId !== event.pointerId) return
+      resizeSessionRef.current = null
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+    },
+    []
+  )
+
+  const handleResizeKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+      const delta = getManageAssistantKeyboardResizeDelta(event.key)
+      if (!delta) return
+      if (!isDesktop) return
+      event.preventDefault()
+      setPanelSize((currentSize) =>
+        resizeManageAssistantPanelFromTopLeft({
+          ...delta,
+          size: currentSize,
+          viewport: { height: window.innerHeight, width: window.innerWidth },
+        })
+      )
+      setPanelPreset('custom')
+    },
+    [isDesktop]
+  )
+
+  const handlePanelPresetChange = useCallback(
+    (event: ReactChangeEvent<HTMLSelectElement>) => {
+      if (!isDesktop) return
+
+      const preset = event.target.value
+      if (preset !== 'default' && preset !== 'wide' && preset !== 'max') {
+        return
+      }
+
+      setPanelSize(
+        getManageAssistantPanelPresetSize(
+          preset as ManageAssistantPanelPreset,
+          {
+            height: window.innerHeight,
+            width: window.innerWidth,
+          }
+        )
+      )
+      setPanelPreset(preset as ManageAssistantPanelPreset)
+    },
+    [isDesktop]
+  )
+
+  useEffect(() => {
+    if (!assistantOrigin || !assistantUrl) return
+    const readyGeneration = frameState.generation
+
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== assistantOrigin) return
+
+      const frameWindow = iframeRef.current?.contentWindow
+      if (!frameWindow || event.source !== frameWindow) return
+
+      if (isManageCloseRequestMessage(event.data)) {
+        closeWidget()
+        return
+      }
+
+      if (isManageElementOpenRequestMessage(event.data)) {
+        const payload = sanitizeManageElementOpenRequestPayload(
+          event.data.payload
+        )
+        if (!payload) return
+
+        openConfirmedElement(payload.id)
+        return
+      }
+
+      // The iframe announces readiness once its listener exists. Re-send the
+      // current context then: this handshake alone is enough to deliver the
+      // context to a slow-hydrating iframe, without a timed retry burst.
+      if (isManageContextReadyMessage(event.data)) {
+        dispatchFrameState({
+          generation: readyGeneration,
+          type: 'ready',
+        })
+        sendCurrentContext()
+        return
+      }
+
+      // A confirmed proposal created a new question-pool element. The
+      // payload crossed a postMessage boundary from the iframe, so treat it
+      // as untrusted data rather than an instruction: validate its shape
+      // before using it for anything, and never render it as HTML.
+      if (isManageElementCreatedMessage(event.data)) {
+        const element = sanitizeManageElementCreatedPayload(event.data.payload)
+        if (!element) return
+
+        apolloClient.refetchQueries({ include: [GetUserElementsDocument] })
+        toast({
+          type: 'success',
+          message: t('manage.assistant.elementCreatedToast', {
+            name: element.name,
+          }),
+        })
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [
+    apolloClient,
+    assistantOrigin,
+    assistantUrl,
+    closeWidget,
+    frameState.generation,
+    openConfirmedElement,
+    sendCurrentContext,
+    t,
+  ])
+
+  // Send later route changes after the validated readiness handshake. The
+  // handshake itself sends the initial context, including after a locale
+  // change loads a new iframe URL.
+  useEffect(() => {
+    if (!frameReady || !assistantOrigin || !iframeRef.current) {
+      return
+    }
+    postManageContext(iframeRef.current, assistantContext, assistantOrigin)
+  }, [assistantContext, assistantOrigin, frameReady])
+
+  if (!enabled || !assistantUrl) {
+    return null
+  }
+
+  return (
+    <>
+      {!open && (
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-controls={MANAGE_ASSISTANT_PANEL_ID}
+          aria-expanded={open}
+          aria-haspopup={!isDesktop ? 'dialog' : undefined}
+          aria-label={t('manage.assistant.open')}
+          onClick={() => {
+            setHasOpened(true)
+            setOpen(true)
+          }}
+          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-12 items-center justify-center rounded-full p-1 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6"
+          data-cy="manage-assistant-open"
+        >
+          <AssistantAvatar className="text-uzh-blue size-10 border border-white/40 bg-white" />
+        </button>
+      )}
+
+      {(open || hasOpened) &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <aside
+            id={MANAGE_ASSISTANT_PANEL_ID}
+            role={isDesktop ? 'complementary' : 'dialog'}
+            aria-hidden={!open ? true : undefined}
+            aria-modal={!isDesktop && open ? true : undefined}
+            aria-label={t('manage.assistant.title')}
+            inert={!open}
+            ref={panelRef}
+            tabIndex={-1}
+            style={
+              {
+                '--manage-assistant-height': `${panelSize.height}px`,
+                '--manage-assistant-width': `${panelSize.width}px`,
+              } as CSSProperties
+            }
+            className={twMerge(
+              'fixed inset-0 z-40 flex h-dvh w-screen flex-col overflow-hidden overscroll-contain bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:top-auto md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border md:border-gray-200',
+              !open && 'hidden'
+            )}
+            data-cy="manage-assistant-drawer"
+          >
+            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:pl-12 md:pt-3">
+              <button
+                type="button"
+                className="focus-visible:outline-uzh-blue-40 absolute left-0 top-0 hidden size-11 touch-none cursor-nwse-resize items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 md:inline-flex"
+                aria-label={t('manage.assistant.resize')}
+                aria-describedby="manage-assistant-resize-hint"
+                data-cy="manage-assistant-resize"
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={handleResizePointerEnd}
+                onPointerCancel={handleResizePointerEnd}
+                onKeyDown={handleResizeKeyDown}
+              >
+                <FontAwesomeIcon
+                  icon={faUpRightAndDownLeftFromCenter}
+                  aria-hidden
+                  className="size-3"
+                />
+              </button>
+              <span id="manage-assistant-resize-hint" className="sr-only">
+                {t('manage.assistant.resizeHint')}
+              </span>
+              <AssistantAvatar className="text-uzh-blue mt-0.5 size-11 border border-gray-200 bg-gray-50" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">
+                  {t('manage.assistant.title')}
+                </div>
+                <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-800">
+                  <span className="truncate">
+                    {t('manage.assistant.subtitle')}
+                  </span>
+                </div>
+              </div>
+              <label
+                className="sr-only"
+                htmlFor="manage-assistant-panel-preset"
+              >
+                {t('manage.assistant.panelSize')}
+              </label>
+              <select
+                id="manage-assistant-panel-preset"
+                aria-label={t('manage.assistant.panelSize')}
+                value={panelPreset}
+                onChange={handlePanelPresetChange}
+                className="border-border bg-background text-foreground focus-visible:ring-ring hidden h-11 max-w-28 shrink-0 rounded-md border px-2 text-xs focus-visible:outline-none focus-visible:ring-2 md:block"
+                data-cy="manage-assistant-panel-preset"
+              >
+                <option value="custom" disabled={panelPreset !== 'custom'}>
+                  {t('manage.assistant.panelSizeCustom')}
+                </option>
+                <option value="default">
+                  {t('manage.assistant.panelSizeDefault')}
+                </option>
+                <option value="wide">
+                  {t('manage.assistant.panelSizeWide')}
+                </option>
+                <option value="max">
+                  {t('manage.assistant.panelSizeMax')}
+                </option>
+              </select>
+              <Tooltip
+                tooltip={t('manage.assistant.openInNewTab')}
+                delay={0}
+                className={{ tooltip: 'z-50 max-w-xs' }}
+              >
+                <a
+                  href={assistantNewTabUrl ?? assistantUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  aria-label={t('manage.assistant.openInNewTab')}
+                  data-cy="manage-assistant-new-tab"
+                >
+                  <FontAwesomeIcon
+                    icon={faArrowUpRightFromSquare}
+                    aria-hidden
+                  />
+                </a>
+              </Tooltip>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => closeWidget()}
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                aria-label={t('shared.generic.close')}
+                data-cy="manage-assistant-close"
+              >
+                <FontAwesomeIcon icon={faXmark} aria-hidden />
+              </button>
+            </div>
+
+            <div className="relative min-h-0 flex-1 bg-white">
+              {overlay ? (
+                <div
+                  role={overlay.kind === 'error' ? 'alert' : 'status'}
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-white px-6 text-sm text-gray-600"
+                  data-cy={overlay.dataCy}
+                >
+                  {overlay.kind === 'spinner' ? (
+                    <div className="flex items-center gap-3">
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        spin
+                        aria-hidden
+                        className="text-uzh-blue size-5"
+                      />
+                      <span>{t(overlay.labelKey)}</span>
+                    </div>
+                  ) : (
+                    <div className="max-w-md text-center">
+                      <div className="font-semibold text-gray-900">
+                        {t(overlay.titleKey)}
+                      </div>
+                      <p className="mt-2">{t(overlay.descriptionKey)}</p>
+                      <div className="mt-4 flex flex-col items-stretch justify-center gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Retry removes this button from the DOM, so move
+                            // focus to persistent widget chrome first.
+                            closeButtonRef.current?.focus()
+                            dispatchFrameState({
+                              type: 'retry',
+                            })
+                          }}
+                          className="bg-uzh-blue hover:bg-uzh-blue-80 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-retry"
+                        >
+                          <FontAwesomeIcon icon={faRotateRight} aria-hidden />
+                          {t('manage.assistant.retry')}
+                        </button>
+                        <a
+                          href={assistantNewTabUrl ?? assistantUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-uzh-blue inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-fallback"
+                        >
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            aria-hidden
+                          />
+                          {t('manage.assistant.openFreshConversation')}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+              <iframe
+                key={`${assistantUrl}:${frameState.generation}`}
+                ref={setIframeRef}
+                src={assistantUrl}
+                title={t('manage.assistant.title')}
+                aria-hidden={!frameReady}
+                tabIndex={frameReady ? undefined : -1}
+                className={twMerge(
+                  'h-full min-h-0 w-full border-0 transition-opacity',
+                  frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
+                )}
+                data-cy="manage-assistant-frame"
+              />
+            </div>
+          </aside>,
+          document.body
+        )}
+    </>
+  )
+}
+
+function postManageContext(
+  iframe: HTMLIFrameElement | null,
+  context: ManageAssistantContext,
+  assistantOrigin: string
+) {
+  if (!iframe?.contentWindow) return
+
+  iframe.contentWindow.postMessage(
+    {
+      type: MANAGE_CONTEXT_MESSAGE_TYPE,
+      payload: context,
+    },
+    assistantOrigin
+  )
+}
+
+function isManageContextReadyMessage(data: unknown): data is {
+  type: typeof MANAGE_CONTEXT_READY_MESSAGE_TYPE
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === MANAGE_CONTEXT_READY_MESSAGE_TYPE
+  )
+}
+
+function isManageCloseRequestMessage(data: unknown): data is {
+  type: typeof MANAGE_CLOSE_REQUEST_MESSAGE_TYPE
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === MANAGE_CLOSE_REQUEST_MESSAGE_TYPE
+  )
+}
+
+function readStoredPanelSize(): ManageAssistantPanelSize | null {
+  try {
+    return parseManageAssistantPanelSize(
+      window.localStorage.getItem(MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY)
+    )
+  } catch {
+    return null
+  }
+}
+
+function writeStoredPanelSize(size: ManageAssistantPanelSize) {
+  try {
+    window.localStorage.setItem(
+      MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY,
+      JSON.stringify(size)
+    )
+  } catch {
+    // The dock remains usable when browser privacy settings block storage.
+  }
+}
+
+function getUrlOrigin(url: string | null) {
+  try {
+    return url ? new URL(url).origin : null
+  } catch {
+    return null
+  }
+}
+
+function AssistantAvatar({ className }: { className?: string }) {
+  return (
+    <span
+      className={twMerge(
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full',
+        className
+      )}
+      aria-hidden
+    >
+      <span className="flex size-full items-center justify-center bg-gradient-to-br from-white via-blue-50 to-cyan-50">
+        <FontAwesomeIcon icon={faWandMagicSparkles} className="size-5" />
+      </span>
+    </span>
+  )
+}

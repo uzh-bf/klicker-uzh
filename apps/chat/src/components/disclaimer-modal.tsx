@@ -20,6 +20,7 @@ interface DisclaimerModalProps {
   isOpen: boolean
   onAccept: () => void
   onDecline: () => void
+  stacked?: boolean
   errorMessage?: string | null
 }
 
@@ -28,6 +29,7 @@ export const DisclaimerModal = ({
   isOpen,
   onAccept,
   onDecline,
+  stacked = false,
   errorMessage,
 }: DisclaimerModalProps) => {
   const t = useTranslations()
@@ -114,7 +116,13 @@ export const DisclaimerModal = ({
       escapeDisabled
     >
       <div data-cy="chat-disclaimer-content" className="space-y-6">
-        <div className="flex flex-col gap-6 md:flex-row md:gap-12">
+        <div
+          className={
+            stacked
+              ? 'flex flex-col gap-6'
+              : 'flex flex-col gap-6 md:flex-row md:gap-12'
+          }
+        >
           {/* Custom Introduction */}
           {disclaimer.introText && (
             <Markdown

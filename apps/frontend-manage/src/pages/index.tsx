@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faListCheck,
+  faWandMagicSparkles,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
@@ -32,6 +35,7 @@ import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
+import { useAiFeaturesEnabled } from '../lib/hooks/useAiFeaturesEnabled'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
@@ -39,6 +43,7 @@ import useSortingAndFiltering, {
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const aiFeaturesEnabled = useAiFeaturesEnabled()
 
   // search, filter and pagination states
   const [searchInput, setSearchInput] = useState('')
@@ -431,6 +436,18 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
+                {aiFeaturesEnabled ? (
+                  <Button
+                    onClick={() => router.push('/elements/generate')}
+                    data={{ cy: 'generate-elements' }}
+                    className={{ root: 'h-9 font-bold' }}
+                  >
+                    <Button.Icon icon={faWandMagicSparkles} />
+                    <Button.Label>
+                      {t('manage.elementGeneration.actions.generate')}
+                    </Button.Label>
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -518,7 +535,7 @@ function Index() {
                     pageSize={pageSize}
                     setPageSize={setPageSize}
                     showAll
-                    className="flex-none"
+                    className="flex-none pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 md:pr-56"
                   />
                 )}
               </div>

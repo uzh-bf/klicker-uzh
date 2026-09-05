@@ -179,6 +179,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    mcp-lecturer) echo 'http://localhost:7081/healthz' ;;
     response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
@@ -194,6 +195,7 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
+    mcp-lecturer) echo 'health-text' ;;
     response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
@@ -303,11 +305,17 @@ classify_response() {
       echo "ready: HTTP $status $content_type"
       return 0
     fi
+  elif [ "$mode" = 'health-text' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == text/plain* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+  if [ "$mode" != 'health-json' ] && [ "$mode" != 'health-text' ] &&
+    [ "$status" = '404' ] &&
     [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"
@@ -460,7 +468,7 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json|health-text> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor

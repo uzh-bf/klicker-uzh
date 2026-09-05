@@ -60,12 +60,20 @@ spec:
           image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
           # DATABASE_URL comes from the externally-provisioned backend-graphql Secret.
-          # Only the Secret is referenced (not the app ConfigMaps): a PreSync hook runs
-          # before the Sync phase, so it must not depend on Sync-phase ConfigMaps that
-          # would not yet exist on a fresh install. The external Secret is always present.
+          # A PreSync hook must not depend on Sync-phase ConfigMaps.
+          {{- if .Values.migrator.databaseUrlOnly }}
+          # Staging restricts the hook to the single credential it consumes.
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
+          {{- else }}
           envFrom:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend-graphql
+          {{- end }}
           resources:
             {{- toYaml .Values.migrator.resources | nindent 12 }}
       {{- with .Values.migrator.nodeSelector }}

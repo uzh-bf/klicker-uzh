@@ -506,6 +506,68 @@ export async function grantPrivatePreviewAccess(
   return 0
 }
 
+export async function getUsersAiFeatures(ctx: ContextWithUser) {
+  // verify that the user has ADMIN permissions
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!user || user.role !== DB.UserRole.ADMIN) {
+    return []
+  }
+
+  const users = await ctx.prisma.user.findMany({
+    where: { aiFeaturesEnabled: true },
+    select: { shortname: true, email: true },
+  })
+
+  return users.map((user) => ({
+    shortname: user.shortname,
+    email: user.email,
+  }))
+}
+
+// Unlike the private preview grant above, this one can also be withdrawn: it
+// records that an account has a cost center to bill AI usage to, and that
+// arrangement can end. Returns 0 when the setting changed, 1 when no account
+// carries the address, and 2 when it already had the requested value.
+export async function setAiFeatures(
+  { email, enabled }: { email: string; enabled: boolean },
+  ctx: ContextWithUser
+) {
+  // verify that the user has ADMIN permissions (can change AI access)
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+  if (!user || user.role !== DB.UserRole.ADMIN) {
+    return null
+  }
+
+  const targetUser = await ctx.prisma.user.findUnique({
+    where: { email },
+  })
+  if (!targetUser) {
+    return 1
+  }
+
+  if (targetUser.aiFeaturesEnabled === enabled) {
+    return 2
+  }
+
+  await ctx.prisma.user.update({
+    where: { id: targetUser.id },
+    data: { aiFeaturesEnabled: enabled },
+  })
+  await sendTeamsNotification({
+    scope: 'graphql/setAiFeatures',
+    text: `User ${targetUser.shortname} (${targetUser.email}) ${
+      enabled ? 'enabled' : 'disabled'
+    } for AI features`,
+  })
+
+  return 0
+}
+
 export async function changeParticipantLocale(
   { locale }: { locale: DB.Locale },
   ctx: Context

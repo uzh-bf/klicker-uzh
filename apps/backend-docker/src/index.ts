@@ -1,39 +1,48 @@
+import { EventEmitter } from 'node:events'
+// import * as Sentry from '@sentry/node'
+// import '@sentry/tracing'
+import { type Cache, createInMemoryCache } from '@envelop/response-cache'
+import { createRedisCache } from '@envelop/response-cache-redis'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
+  createElementGenerationRuntimeFromEnv,
   enhanceContext,
   getChatModelRegistry,
   handlers,
   schema,
+  settleKbKnowledgeGraphResult,
 } from '@klicker-uzh/graphql'
+import {
+  getKBGraphTerminalResult,
+  hatchetClient,
+  prepareHatchetTasks,
+} from '@klicker-uzh/hatchet'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
-// import * as Sentry from '@sentry/node'
-// import '@sentry/tracing'
-import { createInMemoryCache, type Cache } from '@envelop/response-cache'
-import { createRedisCache } from '@envelop/response-cache-redis'
-import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
-import { EventEmitter } from 'node:events'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { parseRefreshInterval } from './featureFlags.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
-
 const featureFlags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+  forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
   refreshIntervalMs: parseRefreshInterval(
     process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
   ),
 })
 process.once('exit', () => featureFlags.destroy())
+const elementGenerationRuntime = createElementGenerationRuntimeFromEnv(
+  process.env
+)
 
-let prisma = prismaBase
+const prisma = prismaBase
 
 // if (
 //   process.env.NODE_ENV === 'development' &&
@@ -153,6 +162,18 @@ const tasks = prepareHatchetTasks({
   redisExec,
   redisAssessmentExec,
   handlers,
+  getKBGraphTerminalResult,
+  settleKBGraphTerminalResult: ({
+    buildId,
+    result,
+    finishedAt,
+    allowLateSuccess,
+  }) =>
+    settleKbKnowledgeGraphResult(
+      prisma,
+      { buildId, result, allowLateSuccess },
+      finishedAt
+    ),
 })
 
 console.log('Hatchet tasks initialized.', Object.keys(tasks))
@@ -167,6 +188,7 @@ const { app, yogaApp } = prepareApp({
   cache,
   emitter,
   hatchet: hatchetClient,
+  elementGenerationRuntime,
   tasks,
   featureFlags,
 })
@@ -194,6 +216,7 @@ const server = app.listen(3000, () => {
         redisAssessmentExec,
         pubSub,
         emitter,
+        elementGenerationRuntime,
         tasks,
         featureFlags,
       }),

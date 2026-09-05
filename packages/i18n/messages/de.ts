@@ -82,6 +82,120 @@ export default {
       disclaimerDeclinedMessage:
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+      newConversation: 'Neue Konversation starten',
+      confirmNewConversation: 'Neue Konversation wirklich starten',
+      confirmNewConversationShort: 'Neu starten?',
+      newConversationWait:
+        'Warte, bis die aktuelle Antwort vollständig generiert wurde',
+      newConversationArmed:
+        'Bestätigung erforderlich: Aktiviere die Schaltfläche erneut, um eine neue Konversation zu starten.',
+    },
+    manageAssistant: {
+      welcome: 'Hallo! Wie kann ich helfen?',
+      manageContext: 'Verwalten',
+      context: {
+        surface: {
+          questionPool: 'Fragepool',
+          elementEditor: 'Frageneditor',
+          courseDashboard: 'Kursübersicht',
+          activityCreation: 'Aktivität einrichten',
+          evaluation: 'Auswertung',
+          general: 'Verwalten',
+        },
+        course: 'Kurs {id}',
+        activity: 'Aktivität {id}',
+        question: 'Frage {id}',
+        changed: 'Der Manage-Kontext wurde zu {context} geändert',
+        cleared: 'Der aktuelle Manage-Kontext ist nicht mehr verfügbar',
+      },
+      capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
+      capabilityDraft:
+        'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityNoSaveDraft:
+        'Fragenentwürfe vorbereiten, ohne sie zu speichern',
+      capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
+      capabilityDocumentation:
+        'Gängige KlickerUZH-Abläufe anhand eines kuratierten Verzeichnisses der Dokumentation und Anleitungen erklären',
+      capabilityChecking:
+        'Verfügbarkeit von Live-Daten und Entwurfsfunktionen wird geprüft…',
+      capabilityReadOnly:
+        'Live-Abfragen sind verfügbar, aber in dieser Sitzung können keine Entwurfsvorschläge gespeichert werden. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityUnavailable:
+        'Live-Werkzeuge für Kurse und die Fragensammlung sind vorübergehend nicht verfügbar. Entwürfe ohne Speicherung und Hilfe zur Dokumentation bleiben verfügbar.',
+      capabilityRetry: 'Erneut versuchen',
+      suggestions: {
+        'question-pool-draft': 'Frage entwerfen',
+        'question-pool-find': 'Fragen finden',
+        'question-pool-feedback': 'Feedback verbessern',
+        'element-editor-improve': 'Diese Frage verbessern',
+        'element-editor-variant': 'Variante entwerfen',
+        'element-editor-feedback': 'Besseres Feedback',
+        'course-dashboard-summarize': 'Diesen Kurs zusammenfassen',
+        'course-dashboard-draft': 'Kursfrage entwerfen',
+        'course-dashboard-find': 'Kursmaterial finden',
+        'activity-creation-draft': 'Quizfragen entwerfen',
+        'activity-creation-reuse': 'Fragen wiederverwenden',
+        'activity-creation-balance': 'Schwierigkeit ausgleichen',
+        'evaluation-explain': 'Resultate erklären',
+        'evaluation-followup': 'Vertiefungsfrage',
+        'evaluation-similar': 'Ähnliche Fragen',
+        'general-draft': 'Frage entwerfen',
+        'general-find': 'Fragen finden',
+        'general-feedback': 'Feedback verbessern',
+        planQuestion: 'Frage planen',
+        planQuizQuestions: 'Quizfragen planen',
+        planCourseQuestion: 'Kursfrage planen',
+        planVariant: 'Variante planen',
+        planFollowUp: 'Vertiefungsfrage planen',
+        improveFeedback: 'Feedback verbessern',
+        documentation: 'KlickerUZH Hilfe',
+      },
+      limitsNote:
+        'Die Dokumentationshilfe nutzt ein kuratiertes Verzeichnis und keine vollständige Suche. Der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      degradedLimitsNote:
+        'Gib fehlende Inhalte direkt an, wenn die Live-Abfrage nicht verfügbar ist. Ohne Vorschlagskarte und Deine Bestätigung wird nichts gespeichert.',
+      proposalReview: {
+        reviewLabel: 'Fragenentwurf prüfen',
+        draftQuestion: 'Fragenentwurf',
+        question: 'Frage',
+        correctAnswer: 'Richtige Antwort',
+        correctAnswers: 'Richtige Antworten',
+        correct: 'Richtig',
+        incorrect: 'Falsch',
+        answerFeedback: 'Antwortfeedback',
+        notProvided: 'Nicht angegeben',
+        sampleSolution: 'Beispiellösung',
+        maximumResponseLength: 'Maximale Antwortlänge: {maxLength} Zeichen',
+        generalExplanation: 'Allgemeine Erklärung',
+        singleChoice: 'Single Choice',
+        multipleChoice: 'Multiple Choice',
+        freeText: 'Freitext',
+      },
+      proposal: {
+        dismissed: 'Verworfen: {summary}',
+        draftCreated: 'Entwurf erstellt',
+        confirmationRequired: 'Bestätigung erforderlich',
+        draft: 'Entwurf',
+        createDraft: 'Entwurf erstellen',
+        dismiss: 'Verwerfen',
+        draftCreatedInQuestionPool: 'Entwurf im Fragepool erstellt',
+        openDraft: 'Entwurf öffnen',
+        confirmationFailed:
+          'Der Entwurf konnte nicht erstellt werden. Versuche es erneut.',
+        showRawJson: 'Rohes JSON anzeigen',
+      },
+    },
+    ownerPreview: {
+      badge: 'Eigentümer-Vorschau',
+      description:
+        'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
+      backToManage: 'Zurück zu den Chatbot-Einstellungen',
+      loginTitle: 'Anmeldung für Dozierende erforderlich',
+      loginMessage:
+        'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
+      loginButton: 'KlickerUZH Manage öffnen',
+      opensInNewTab:
+        '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
@@ -893,6 +1007,21 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
+      courseChat: 'Kurs-Chatbot',
+      selectChatbot: 'Chatbot auswählen',
+      openInNewTab: 'Chat in neuem Tab öffnen',
+      activeContext: 'Nutzt den aktuellen Seitenkontext',
+      questionContext: 'Frage {currentStep}/{totalSteps}',
+      noCourseChatbot: 'Für diesen Kurs ist noch kein Kurs-Chatbot verfügbar.',
+      retrieval: {
+        searching: 'Vorlesungsinhalte werden nach „{query}“ durchsucht…',
+        errorTitle: 'Suche nicht verfügbar',
+        errorDescription:
+          'Die Vorlesungsinhalte konnten nicht durchsucht werden. Bitte versuchen Sie es erneut.',
+        contentTitle: 'Vorlesungsinhalte',
+        questionLabel: 'Frage',
+        noContent: 'Keine Inhalte verfügbar',
+      },
     },
     insights: {
       noCourseDataAvailable:
@@ -1541,7 +1670,305 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cohortSizeLabel: 'Vergleichsgruppe: {count} aktive Teilnehmende',
     },
   },
+  kb: {
+    title: 'Wissensdatenbanken',
+    create: 'Wissensdatenbank erstellen',
+    nameLabel: 'Name',
+    descriptionLabel: 'Beschreibung (optional)',
+    createSuccess: 'Wissensdatenbank wurde erstellt.',
+    createError: 'Die Wissensdatenbank konnte nicht erstellt werden.',
+    deleteTitle: 'Wissensdatenbank löschen',
+    deleteDescription:
+      '„{name}“ wird sofort ausgeblendet. Gespeicherte Dateien und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteSuccess:
+      'Wissensdatenbank wurde entfernt. Die Bereinigung läuft im Hintergrund.',
+    deleteError: 'Die Wissensdatenbank konnte nicht gelöscht werden.',
+    emptyTitle: 'Noch keine Wissensdatenbanken',
+    emptyDescription:
+      'Erstellen Sie eine Wissensdatenbank, um erste Ressourcen hinzuzufügen.',
+    noDescription: 'Keine Beschreibung',
+    loadError: 'Die Wissensdatenbanken konnten nicht geladen werden.',
+    searchKnowledgeBases: 'Wissensdatenbanken suchen',
+    searchKnowledgeBasesPlaceholder: 'Nach Name oder Beschreibung suchen',
+    noSearchResults: 'Keine passenden Wissensdatenbanken',
+    noSearchResultsDescription:
+      'Versuchen Sie es mit einem anderen Namen oder einer anderen Beschreibung.',
+    searchResultCount:
+      '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
+    catalogMetrics:
+      '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    loadMore: 'Weitere Wissensdatenbanken laden',
+    notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
+    detailFallbackTitle: 'Wissensdatenbank',
+    backToList: 'Zurück zu den Wissensdatenbanken',
+    metricsTitle: 'Nutzung und Verknüpfungen',
+    metricVisibleResources: 'Sichtbare Ressourcen',
+    metricReservedResources:
+      '{count, plural, =0 {Keine Upload-Reservierungen} one {# Upload-Reservierung} other {# Upload-Reservierungen}}',
+    metricStorage: 'Speicherlimit',
+    metricStorageBreakdown:
+      '{visible} sichtbar · {reserved} für Uploads reserviert',
+    unknownSizesReserved:
+      '{count, plural, one {# ältere Ressource reserviert bis zu 25 MiB} other {# ältere Ressourcen reservieren je bis zu 25 MiB}}',
+    metricPendingCleanup: 'Ausstehende Bereinigung',
+    metricPendingCleanupSize: '{size} warten auf die Bereinigung',
+    metricLinkedConsumers: 'Verknüpfte Chatbots',
+    metricQuotaResources: '{count} Ressourcen werden dem Limit angerechnet',
+    quotaReleaseMessage:
+      'Gelöschte Ressourcen werden dem Limit weiterhin angerechnet, bis die Bereinigung im Hintergrund abgeschlossen ist.',
+    fileUploadTitle: 'Datei hochladen',
+    fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
+    fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
+    fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
+    uploading: 'Wird hochgeladen…',
+    fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
+    fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
+    fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    replaceFile: 'Datei ersetzen',
+    replaceFileTitle: 'Datei ersetzen',
+    replaceAndIngest: 'Ersetzen und verarbeiten',
+    replaceFileDescription:
+      'Wählen Sie eine neue Datei für «{title}». Kategorie und Identität bleiben gleich, die Verarbeitung startet sofort, und die bisherigen KI-Inhalte bleiben verfügbar, bis die Ersetzung bereit ist. Die bisherige Quelldatei kann nicht wiederhergestellt werden.',
+    replaceFileSuccess:
+      'Ersetzung eingeplant. Die bisherige Version bleibt verfügbar, bis die neue Datei bereit ist.',
+    linkTitle: 'Link hinzufügen',
+    linkDescription:
+      'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
+    resourceTitleLabel: 'Titel',
+    materialType: 'Materialkategorie',
+    materialTypeUnclassified: 'Nicht klassifiziert',
+    materialTypeCourseContent: 'Kursinhalt',
+    materialTypeAdministrative: 'Administrativ',
+    urlLabel: 'URL',
+    invalidUrl:
+      'Geben Sie eine gültige URL ein, die mit http:// oder https:// beginnt.',
+    linkSuccess: 'Link wurde zur Wissensdatenbank hinzugefügt.',
+    linkError: 'Der Link konnte nicht hinzugefügt werden.',
+    resourcesTitle: 'Ressourcen',
+    resourceColumn: 'Ressource',
+    resourceActions: 'Aktionen',
+    resourcesLoadError: 'Die Ressourcen konnten nicht geladen werden.',
+    searchResources: 'Ressourcen suchen',
+    searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
+    filterType: 'Typ',
+    filterStatus: 'Letzte Verarbeitung',
+    filterMaterialType: 'Kategorie',
+    filterAll: 'Alle',
+    typeFile: 'Datei',
+    typeUrl: 'Link',
+    addResource: 'Ressource hinzufügen',
+    addResourceTitle: 'Ressource hinzufügen',
+    addResourceDescription:
+      'Wählen Sie, wie Sie diese Ressource hinzufügen möchten.',
+    addWebsite: 'Website',
+    addWebsiteDescription: 'Eine Website-URL zur Verarbeitung registrieren.',
+    addDocument: 'Dokument',
+    addDocumentDescription: 'Eine PDF-, TXT- oder Markdown-Datei hochladen.',
+    addVideo: 'Video',
+    comingSoon: 'Demnächst verfügbar',
+    configure: 'Konfigurieren',
+    backToResourceTypes: 'Zurück',
+    noResourceResults: 'Keine Ressourcen entsprechen diesen Filtern.',
+    resourceResultCount:
+      '{count, plural, =0 {Keine Ressourcen} one {# Ressource} other {# Ressourcen}}',
+    selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
+    selectResource: '„{title}“ auswählen',
+    loadMoreResources: 'Weitere Ressourcen laden',
+    noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
+    emptyResourceHint:
+      'Verwenden Sie oben «Ressource hinzufügen», um eine Website oder ein Dokument hinzuzufügen.',
+    updatedAtLabel: 'Aktualisiert',
+    updatedAt: 'Aktualisiert {date}',
+    statusAdded: 'Hinzugefügt',
+    statusQueued: 'In Warteschlange',
+    statusProcessing: 'In Verarbeitung',
+    statusReady: 'Bereit',
+    statusFailed: 'Fehlgeschlagen',
+    deleteResourceTitle: 'Ressource löschen',
+    deleteResourceDescription:
+      '„{title}“ wird sofort ausgeblendet. Die gespeicherte Datei und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteResourceSuccess:
+      'Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.',
+    deleteResourceError: 'Die Ressource konnte nicht gelöscht werden.',
+    bulkDelete: 'Ausgewählte löschen ({count})',
+    bulkDeleteTitle:
+      '{count, plural, one {# Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteConfirm:
+      '{count, plural, one {Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteDescription:
+      '{count, plural, one {Die ausgewählte Ressource wird sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.} other {Die # ausgewählten Ressourcen werden sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.}}',
+    bulkDeleteSuccess:
+      '{count, plural, one {Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.} other {# Ressourcen wurden entfernt. Die Bereinigung läuft im Hintergrund.}}',
+    bulkDeleteError:
+      'Das Löschen konnte nicht bestätigt werden. Aktualisieren Sie die Liste, bevor Sie es erneut versuchen.',
+    ingestResource: 'Verarbeiten',
+    retryIngestion: 'Erneut versuchen',
+    reingestResource: 'Neu verarbeiten',
+    ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
+    ingestResourceError:
+      'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
+    ingestAll: 'Alle verarbeiten',
+    ingestAllTitle: 'Alle Ressourcen verarbeiten',
+    ingestAllDescription:
+      '{count, plural, one {Der Server plant # Ressource ein, die in ihrer aktuellen Form noch nicht verfügbar ist. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.} other {Der Server plant # Ressourcen ein, die in ihrer aktuellen Form noch nicht verfügbar sind. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.}}',
+    ingestAllConfirm: 'Verarbeitung starten',
+    ingestAllNeeds: 'Verarbeitung nötig',
+    ingestAllFailed: 'Fehlgeschlagene Versuche',
+    ingestAllInProgress: 'In Verarbeitung',
+    ingestAllSummary:
+      '{needs} benötigen Verarbeitung · {failed} fehlgeschlagene Versuche · {inProgress} bereits in Verarbeitung',
+    ingestAllSuccess:
+      '{queued} Ressourcen eingeplant. {retried} fehlgeschlagene Ressourcen erneut versucht. {current} waren bereits aktuell und {inProgress} bereits in Verarbeitung. {failed} konnten nicht eingeplant werden.',
+    ingestAllError:
+      'Die Ressourcen konnten nicht zur Verarbeitung eingeplant werden.',
+    updateMaterialTypeSuccess: 'Materialkategorie aktualisiert.',
+    updateMaterialTypeError:
+      'Die Materialkategorie konnte nicht aktualisiert werden.',
+    operationStatus: 'Letzte Verarbeitung',
+    operationInProgress:
+      'Dieser Vorgang läuft im Hintergrund. Sie können diese Seite verlassen.',
+    backgroundOperationsMessage:
+      'Ein oder mehrere Vorgänge laufen noch. Die Status werden automatisch aktualisiert und Sie können diese Seite sicher verlassen.',
+    servingStatus: 'Für KI verfügbar',
+    notServing: 'Noch nicht verfügbar',
+    servingCurrentVersion: 'Aktuelle Version {version}',
+    servingPreviousVersion: 'Version {version} bleibt verfügbar',
+    servingNewerVersion: 'Version {version} (extern aktualisiert)',
+    servingSince: 'Verfügbar seit {date}',
+    version: 'Version {version}',
+    recentAttempts: 'Letzte Versuche',
+    noRecentAttempts: 'Noch keine Verarbeitungsversuche.',
+    historyLoadError: 'Die letzten Versuche konnten nicht geladen werden.',
+    runStatusQueued: 'In Warteschlange',
+    runStatusProcessing: 'In Verarbeitung',
+    runStatusSucceeded: 'Erfolgreich',
+    runStatusFailed: 'Fehlgeschlagen',
+    runStatusSuperseded: 'Ersetzt',
+    ingestionStartError:
+      'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
+    storageLimitError:
+      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+    resourceLimitError:
+      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+    uploadMismatchError:
+      'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
+    ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
+    ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    inspectResource: 'Details',
+    inspectorTitle: 'Ressourcendetails',
+    sourceType: 'Quelltyp',
+    sourceLocation: 'Quell-URL',
+    fileName: 'Ursprünglicher Dateiname',
+    mimeType: 'Medientyp',
+    fileSize: 'Dateigrösse',
+    createdAt: 'Erstellt',
+    chatbotsTitle: 'Verknüpfte Chatbots',
+    chatbotsDescription:
+      'Wählen Sie, welcher Chatbot diese Wissensdatenbank verwenden kann. Ein Chatbot kann jeweils eine Wissensdatenbank verwenden.',
+    chatbotsLoadError: 'Die Chatbots konnten nicht geladen werden.',
+    noChatbots:
+      'Erstellen Sie einen Chatbot, bevor Sie eine Wissensdatenbank verknüpfen.',
+    chatbotSelectLabel: 'Chatbot',
+    chatbotSelectPlaceholder: 'Chatbot auswählen',
+    attachChatbot: 'Chatbot verknüpfen',
+    replaceChatbot: 'Wissensdatenbank ersetzen',
+    detachChatbot: 'Verknüpfung aufheben',
+    linkedChatbots: 'Verwendet diese Wissensdatenbank',
+    noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
+    chatbotReplacementWarning:
+      'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotAttachSuccess: 'Chatbot wurde mit der Wissensdatenbank verknüpft.',
+    chatbotAttachError: 'Der Chatbot konnte nicht verknüpft werden.',
+    chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
+    chatbotDetachError:
+      'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
+    previewAccessError:
+      'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
+    graphTitle: 'Wissensgraph',
+    graphDescription:
+      'Erstellen Sie aus den Ressourcen der Wissensdatenbank einen Graphen und prüfen Sie das veröffentlichte Ergebnis.',
+    graphQualityTierLabel: 'Qualität des Aufbaus',
+    graphQualityStandard: 'Standard (geringere Kosten)',
+    graphQualityHigh: 'Hoch (höhere Kosten)',
+    graphBuild: 'Graph erstellen',
+    graphRebuild: 'Graph neu erstellen',
+    graphBuildCost: 'Geschätzte Kosten für diesen Aufbau: {amount}.',
+    graphEnableLabel: 'Wissensgraph für diese Wissensdatenbank aktivieren',
+    graphEnabledDescription:
+      'Ein veröffentlichter Graph kann von aktivierten Chatbot-Verknüpfungen dieser Wissensdatenbank verwendet werden.',
+    graphDisabledDescription:
+      'Aktivieren Sie die Wissensdatenbank, bevor Sie einen Graphen erstellen oder für Studierende bereitstellen.',
+    graphCostUnavailable:
+      'Die Kostenkontrollen für Graphen sind noch nicht konfiguriert. Der Aufbau bleibt deaktiviert.',
+    graphEnableError:
+      'Die Einstellung des Wissensgraphen konnte nicht aktualisiert werden.',
+    graphBillingLabel: 'Abrechnungsmodus',
+    graphBillingSemesterQuota: 'Semesterkontingent',
+    graphBillingProvider: 'Durch Anbieter abgerechnet',
+    graphRemainingQuota: 'Verbleibendes Semesterkontingent',
+    graphWorstCaseBalance: 'Kontostand nach dem maximalen Aufbau',
+    graphMaxCost: 'Maximal reservierte Kosten',
+    graphCostStatus: 'Kostenreservierung',
+    graphCostStatusReserved: 'Reserviert',
+    graphCostStatusSettled: 'Abgerechnet',
+    graphCostStatusReleased: 'Freigegeben',
+    graphCostStatusNeedsHumanReview: 'Zur manuellen Prüfung zurückgehalten',
+    graphActualCost: 'Tatsächliche Kosten',
+    graphActualUsage:
+      'Tatsächliche Nutzung: {requests} Anfragen, {inputTokens} Eingabetoken, {outputTokens} Ausgabetoken, {embeddingTokens} Embedding-Token.',
+    graphStatusLabel: 'Status',
+    graphStatusEmpty: 'Kein Aufbau',
+    graphStatusQueued: 'In Warteschlange',
+    graphStatusProcessing: 'In Verarbeitung',
+    graphStatusSucceeded: 'Erfolgreich',
+    graphStatusFailed: 'Fehlgeschlagen',
+    graphStale: 'Veraltet',
+    graphBuildId: 'Aufbau {buildId}',
+    graphLoading: 'Graphstatus wird geladen…',
+    graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
+    graphRetry: 'Erneut versuchen',
+    graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphPreviewTitle: 'Veröffentlichter Graph',
+    graphGenerateElements: 'Klicker-Elemente generieren',
+    graphElementGenerationUnavailable:
+      'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
+    graphPreviewUnavailable:
+      'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
+    ingestionDisabledError:
+      'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
+  },
   manage: {
+    assistant: {
+      open: 'Assistent',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
+      openInNewTab:
+        'Neue Unterhaltung in einem neuen Tab ohne Kontext dieser Seite starten',
+      openFreshConversation: 'Separate Unterhaltung starten',
+      loading: 'Assistent wird geladen…',
+      retrying: 'Assistent wird neu geladen…',
+      retry: 'Assistent neu laden',
+      delayedTitle: 'Der Assistent benötigt länger als erwartet',
+      delayedDescription:
+        'Sie können weiter warten, den eingebetteten Assistenten neu laden oder eine separate Unterhaltung ohne Kontext dieser Seite starten.',
+      failedTitle: 'Der Assistent konnte nicht geladen werden',
+      failedDescription:
+        'Laden Sie den eingebetteten Assistenten neu oder starten Sie eine separate Unterhaltung ohne Kontext dieser Seite.',
+      resize: 'Grösse des Assistenten ändern',
+      resizeHint:
+        'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      panelSize: 'Grösse des Assistentenfensters',
+      panelSizeCustom: 'Benutzerdefiniert',
+      panelSizeDefault: 'Standard',
+      panelSizeWide: 'Breit',
+      panelSizeMax: 'Maximal',
+      elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
+    },
+    ai: {
+      unavailableTitle: 'KI-Funktionen nicht verfügbar',
+      unavailableDescription:
+        'Die KI-Funktionen befinden sich in der Beta-Phase und sind für Ihr Konto noch nicht verfügbar. Bitte wenden Sie sich für den Zugang an Ihre Administratorin oder Ihren Administrator.',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
@@ -1552,6 +1979,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       resources: 'Ressourcen',
+      ai: 'KI',
+      betaFeatures: 'Beta-Funktionen',
       catalog: 'Katalog',
       mediaLibrary: 'Mediathek',
       userGroups: 'Benutzergruppen',
@@ -1611,6 +2040,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der angegebene Benutzer existiert nicht. Bitte überprüfen Sie die E-Mail-Adresse und stellen Sie sicher, dass sich der Benutzer mindestens einmal bei KlickerUZH angemeldet hat.',
       grantAccessError:
         'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
+      aiFeaturesAvailability: 'Verfügbarkeit: KI-Funktionen',
+      aiFeaturesDescription:
+        'Alle Benutzer in der folgenden Liste dürfen die KI-Funktionen nutzen, welche Modellbudget verbrauchen. Aktivieren Sie ein Konto erst, wenn eine Kostenstelle vorliegt, der die Nutzung verrechnet werden kann. Die Aktivierung und Deaktivierung erfolgt über die Eingabe der E-Mail-Adresse (primäre Edu-ID-E-Mail).',
+      aiFeaturesEnable: 'Aktivieren',
+      aiFeaturesDisable: 'Deaktivieren',
+      aiFeaturesEnabled:
+        'Der angegebene Benutzer wurde für die KI-Funktionen aktiviert.',
+      aiFeaturesDisabled:
+        'Der angegebene Benutzer wurde für die KI-Funktionen deaktiviert.',
+      aiFeaturesUnchanged:
+        'Der angegebene Benutzer hatte die gewünschte Einstellung für die KI-Funktionen bereits.',
+      aiFeaturesError:
+        'Beim Ändern der Einstellung für die KI-Funktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
     },
     activities: {
       activityType: 'Aktivitätstyp',
@@ -2053,6 +2495,320 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       remainingValidity: 'Verbleibende Gültigkeit:',
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
+    },
+    generationStatus: {
+      title: 'Generierung im Hintergrund',
+      description:
+        'Sie können weiterarbeiten, während diese Vorgänge im Hintergrund ausgeführt werden.',
+      starting: 'Wird gestartet…',
+      graphQueued: 'Wissensgraph ist eingereiht',
+      graphProcessing: 'Wissensgraph wird generiert',
+      elementProgress:
+        '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
+      succeeded: '{label} ist bereit.',
+      failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
+      open: 'Ergebnis öffnen',
+    },
+    elementGeneration: {
+      eyebrow: 'KI-unterstützte Erstellung',
+      title: 'Elemente generieren',
+      description:
+        'Erstellen Sie Klicker-Elemente aus einem veröffentlichten Wissensgraphen. Single Choice, Multiple Choice, KPRIM und Karteikarten verwenden denselben Ablauf.',
+      actions: {
+        generate: 'Elemente generieren',
+        newGeneration: 'Neue Generierung',
+        retry: 'Erneut versuchen',
+        publishIncomplete: 'Generierte Elemente verwenden',
+      },
+      configure: {
+        sourceTitle: 'Wissensquelle',
+        sourceHelp:
+          'Wählen Sie eine Wissensbasis mit einem veröffentlichten Graphen. Die Generierung bleibt für die Nachvollziehbarkeit mit diesem Graph-Build verknüpft.',
+        sourceCount: '{count, plural, one {# Quelle} other {# Quellen}}',
+        indexedAt: 'Veröffentlicht {date}',
+        staleGraph: 'Aktualisierung verfügbar',
+        staleGraphHelp:
+          'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
+        sourceDetails: 'Enthaltene Quellen',
+        completeSource: 'Die vollständige Quelle wird verwendet.',
+        pageFrom: 'Von Seite',
+        pageTo: 'Bis Seite',
+        elementTypeTitle: 'Klicker-Elementtyp',
+        elementTypeHelp:
+          'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
+        bloomTitle: 'Blooms Taxonomie',
+        bloomHelp:
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+        bloomLevel: 'Stufe {level}',
+        bloomSelected: 'Ausgewählt',
+        bloomSelect: 'Stufe auswählen',
+        settingsTitle: 'Einstellungen der Generierung',
+        elementCount: 'Anzahl Elemente',
+        language: 'Sprache',
+        difficulty: 'Schwierigkeitsstufe',
+        difficultyHelp:
+          'Wählen Sie den Denkaufwand für alle generierten Elemente. Die Schwierigkeit entsteht durch die Aufgabe, nicht durch verwirrende Formulierungen.',
+        objectives: 'Lernziele',
+        objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
+        objectiveHint: 'Formulieren Sie beobachtbare, konkrete Lernziele.',
+        objectiveFormula:
+          'Hilfreiches Muster: Handlungsverb + Lerngegenstand + Situation oder Bedingung.',
+        objectiveExampleOne:
+          'Erklären, warum Diversifikation das idiosynkratische Risiko reduziert.',
+        objectiveExampleTwo:
+          'Die Kapitalwertregel anwenden, um zwei Investitionsprojekte zu vergleichen.',
+        objectivePlaceholder:
+          'Z. B. Analysieren, wie ein Zinsanstieg Anleihenkurse beeinflusst.',
+        addObjective: 'Lernziel hinzufügen',
+        remove: 'Entfernen',
+        start: 'Elemente generieren',
+        starting: 'Wird gestartet…',
+        noSources: 'Kein veröffentlichter Wissensgraph verfügbar',
+        noSourcesHelp:
+          'Erstellen Sie eine Wissensbasis und veröffentlichen Sie ihren Wissensgraphen, bevor Sie Elemente generieren.',
+      },
+      elementTypes: {
+        SC: {
+          label: 'Single Choice',
+          description:
+            'Eine richtige Option aus mehreren Auswahlmöglichkeiten.',
+        },
+        MC: {
+          label: 'Multiple Choice',
+          description: 'Eine oder mehrere richtige Optionen.',
+        },
+        KPRIM: {
+          label: 'KPRIM',
+          description: 'Vier Aussagen als richtig oder falsch beurteilen.',
+        },
+        FLASHCARD: {
+          label: 'Karteikarte',
+          description:
+            'Ein Element mit Vorder- und Rückseite zum aktiven Abrufen.',
+        },
+      },
+      language: {
+        de: 'Deutsch',
+        en: 'Englisch',
+      },
+      bloom: {
+        remember: 'Erinnern',
+        understand: 'Verstehen',
+        apply: 'Anwenden',
+        analyze: 'Analysieren',
+        evaluate: 'Bewerten',
+      },
+      bloomExamples: {
+        remember: 'Nennen · definieren · wiedergeben',
+        understand: 'Erklären · zusammenfassen · einordnen',
+        apply: 'Berechnen · demonstrieren · anwenden',
+        analyze: 'Vergleichen · unterscheiden · verknüpfen',
+        evaluate: 'Beurteilen · begründen · empfehlen',
+      },
+      difficulty: {
+        D1: {
+          label: 'Sehr leicht',
+          description: 'Direktes Erinnern oder Wiedererkennen.',
+        },
+        D2: {
+          label: 'Leicht',
+          description: 'Eine routinemässige Anwendung oder Interpretation.',
+        },
+        D3: {
+          label: 'Mittel',
+          description: 'Zwei verknüpfte Schritte oder eine relevante Auswahl.',
+        },
+        D4: {
+          label: 'Schwierig',
+          description:
+            'Mehrere abhängige Schritte oder eine Mehrkonzeptanalyse.',
+        },
+        D5: {
+          label: 'Sehr schwierig',
+          description:
+            'Nicht routinemässige Synthese oder Bewertung unter Bedingungen.',
+        },
+        EASY: 'Leicht',
+        MIXED: 'Gemischt',
+        HARD: 'Schwer',
+      },
+      summary: {
+        title: 'Zusammenfassung',
+        source: 'Wissensbasis',
+        type: 'Elementtyp',
+        count: 'Elemente',
+      },
+      validation: {
+        sourceRequired: 'Wählen Sie eine Wissensquelle.',
+        sourceScopeRequired: 'Wählen Sie mindestens eine Quelle.',
+        countRange: 'Wählen Sie zwischen 1 und 20 Elementen.',
+        pagePair:
+          'Geben Sie für einen Seitenbereich die erste und letzte Seite an.',
+        pageRange: 'Verwenden Sie einen gültigen Seitenbereich ab Seite 1.',
+        bloomRequired: 'Wählen Sie mindestens eine Bloom-Stufe.',
+      },
+      statuses: {
+        QUEUED: 'Eingereiht',
+        RUNNING: 'In Bearbeitung',
+        PREPARING_INPUT: 'Eingabe wird vorbereitet',
+        DESIGNING: 'Design wird erstellt',
+        WAITING_FOR_DESIGN_REVIEW: 'Designprüfung',
+        WAITING_FOR_PLAN_REVIEW: 'Planprüfung',
+        GENERATING_ITEMS: 'Elemente werden generiert',
+        FINALIZING: 'Wird abgeschlossen',
+        AWAITING_INCOMPLETE_PUBLICATION: 'Entscheidung erforderlich',
+        PUBLISHING_INCOMPLETE: 'Verfügbare Elemente werden vorbereitet',
+        COMPLETED: 'Zur Prüfung bereit',
+        INCOMPLETE: 'Teilweise bereit',
+        FAILED: 'Fehlgeschlagen',
+        REJECTED: 'Abgelehnt',
+      },
+      build: {
+        title: 'Generierung: {type}',
+        stage: 'Aktuelle Phase: {stage}',
+        generatedCount: '{generated} von {requested} generiert',
+        generated: 'Generiert',
+        unresolved: 'Ungelöst',
+        warnings: 'Warnungen',
+        retries: 'Wiederholungen',
+        processing: 'Die Elemente werden vorbereitet',
+        processingHelp:
+          'Diese Seite wird automatisch aktualisiert. Sie können sie verlassen und über dieselbe URL zurückkehren.',
+        failed: 'Generierung fehlgeschlagen',
+        failedHelp: 'Der Worker konnte die Generierung nicht abschliessen.',
+        incompleteTitle: 'Einige Elemente konnten nicht generiert werden',
+        incompleteHelp:
+          '{generated} von {requested} Elementen sind verfügbar. Versuchen Sie es erneut oder fahren Sie mit den verfügbaren Elementen fort.',
+        incompleteAcknowledge:
+          'Ich verstehe, dass das Ergebnis weniger Elemente als angefordert enthält.',
+        rejected: 'Diese Generierung wurde bei der Prüfung abgelehnt.',
+        noDrafts: 'Die Generierung wurde ohne prüfbare Elemente abgeschlossen.',
+      },
+      gate: {
+        eyebrow: 'Prüfschritt',
+        designTitle: 'Generierungsdesign prüfen',
+        designDescription:
+          'Prüfen Sie die Verteilung der angeforderten Elemente auf Module und Lernziele, bevor die Generierung fortgesetzt wird.',
+        planTitle: 'Elementplan prüfen',
+        planDescription:
+          'Prüfen Sie geplante Aufgaben, kognitive Stufen, Schwierigkeit und Quellenabdeckung, bevor die Generierung fortgesetzt wird.',
+        elementCount: '{count, plural, one {# Element} other {# Elemente}}',
+        elementNumber: 'Element {number}',
+        objectives: 'Lernziele',
+        noObjectives: 'Keine expliziten Lernziele.',
+        difficulty: 'Schwierigkeit {difficulty}',
+        warnings: '{count, plural, one {# Warnung} other {# Warnungen}}',
+        acknowledgeWarnings: 'Ich habe diese Warnungen geprüft und bestätigt.',
+        reject: 'Generierung ablehnen',
+        approve: 'Genehmigen und fortfahren',
+        submitting: 'Wird übermittelt…',
+      },
+      review: {
+        title: 'Generierte Elemente prüfen',
+        editTitle: 'Generiertes Element prüfen',
+        countSummary:
+          '{all} insgesamt · {open} zu prüfen · {attention, plural, one {# benötigt Aufmerksamkeit} other {# benötigen Aufmerksamkeit}} · {kept} behalten · {discarded} verworfen',
+        filterLabel: 'Generierte Elemente filtern',
+        filters: {
+          all: 'Alle ({count})',
+          open: 'Zu prüfen ({count})',
+          attention: 'Aufmerksamkeit nötig ({count})',
+          kept: 'Behalten ({count})',
+          discarded: 'Verworfen ({count})',
+        },
+        columns: {
+          element: 'Element',
+          type: 'Typ',
+          source: 'Ursprüngliche Quelle',
+          learningDesign: 'Lerndesign',
+          status: 'Status',
+          updated: 'Aktualisiert',
+          actions: 'Aktionen',
+        },
+        bloomLevel: 'Bloom: {level}',
+        difficultyLevel: 'Schwierigkeit: {level}',
+        qualityAttention: 'Qualitätsprüfung empfohlen',
+        notApplicable: 'Nicht anwendbar',
+        sourceUnavailable: 'Quelle nicht verfügbar',
+        sourcesTitle: 'Quellen',
+        sourceTypes: {
+          URL: 'Webseite',
+          BLOB: 'Dokument',
+        },
+        sourcePage: 'Seite {page}',
+        sourcePages: 'Seiten {from}–{to}',
+        open: 'Öffnen',
+        openSaved: 'Gespeichertes Element öffnen',
+        restore: 'Wiederherstellen',
+        keep: 'Element behalten',
+        discard: 'Verwerfen',
+        discardChangesTitle: 'Ungespeicherte Änderungen verwerfen?',
+        discardChangesMessage:
+          'Ihre Änderungen an diesem generierten Element wurden noch nicht behalten.',
+        discardChangesConfirm: 'Änderungen verwerfen',
+        emptyFilter: 'Keine generierten Elemente entsprechen diesem Filter.',
+        states: {
+          OPEN: 'Zu prüfen',
+          ATTENTION: 'Aufmerksamkeit nötig',
+          ACCEPTED: 'Behalten',
+          REJECTED: 'Verworfen',
+        },
+        recoverLegacy: 'Angenommene Elemente wiederherstellen',
+        summary:
+          '{total} insgesamt · {accepted} angenommen · {open} noch offen',
+        elementNumber: 'Element {number}',
+        copy: 'Kopie {number}',
+        name: 'Interner Name',
+        prompt: 'Aufgabenstellung',
+        front: 'Vorderseite',
+        back: 'Rückseite',
+        context: 'Kontext',
+        choices: 'Antwortoptionen',
+        correctChoice: 'Antwort {label} als richtig markieren',
+        explanation: 'Erklärung',
+        cardType: 'Karteikartentyp',
+        tags: 'Tags',
+        tagsPlaceholder: 'Tags mit Kommas trennen',
+        qualityFlags:
+          '{count, plural, one {Qualitätshinweis} other {Qualitätshinweise}}',
+        citations:
+          '{count, plural, one {# Quellenbeleg} other {# Quellenbelege}}',
+        accept: 'Annehmen',
+        reject: 'Ablehnen',
+        duplicate: 'Duplizieren',
+        saveDraft: 'Änderungen speichern',
+        savingDraft: 'Wird gespeichert…',
+        saveElements: '{count} in Bibliothek speichern',
+        savingElements: 'Elemente werden gespeichert…',
+        savedElements:
+          '{count, plural, one {# Element ist in Ihrer Bibliothek.} other {# Elemente sind in Ihrer Bibliothek.}}',
+        actionError:
+          'Das Element konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
+        saveElementsError:
+          'Die angenommenen Elemente konnten nicht gespeichert werden. Versuchen Sie es erneut.',
+      },
+      decisions: {
+        OPEN: 'Offen',
+        ACCEPTED: 'Angenommen',
+        REJECTED: 'Abgelehnt',
+      },
+      cardTypes: {
+        definition: 'Definition',
+        formula: 'Formel',
+        calculation: 'Berechnung',
+      },
+      errors: {
+        load: 'Die Einstellungen zur Elementgenerierung konnten nicht geladen werden.',
+        notConfigured:
+          'Die Elementgenerierung ist für diese Umgebung nicht konfiguriert.',
+        start:
+          'Die Generierung konnte nicht gestartet werden. Versuchen Sie es erneut.',
+        buildLoad: 'Diese Generierung konnte nicht geladen werden.',
+        action:
+          'Die Generierung konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
+        withCode:
+          'Der Vorgang ist fehlgeschlagen ({code}). Versuchen Sie es erneut.',
+      },
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
@@ -3892,6 +4648,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mediaLibraryAvailableSoon:
         'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
       chatbots: 'Chatbots',
+      resources: 'Ressourcen',
+      switchChatbot: 'Chatbot wechseln',
+      chatbotNotFound:
+        'Dieser Chatbot wurde nicht gefunden oder Ihnen fehlt der Zugriff.',
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
       createChatbot: 'Chatbot erstellen',
@@ -4138,6 +4898,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
       mcpConfigurations: 'MCP-Konfigurationen',
+      knowledgeBase: 'Wissensdatenbank',
+      noEnabledKnowledgeBase:
+        'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
       noMcpConfigurations: 'Keine MCP-Konfigurationen.',
       mcpServerActive: 'Server aktiv',
       mcpServerInactive: 'Server inaktiv',
@@ -4148,6 +4911,69 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpPriority: 'Priorität',
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
+      openOwnerPreview: 'Eigentümer-Vorschau öffnen',
+      responseExamples: 'Antwortbeispiele',
+      responseExamplesDescription:
+        'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',
+      responseExamplesLoading: 'Antwortbeispiele werden geladen ...',
+      responseExamplesError:
+        'Die Antwortbeispiele konnten nicht geladen werden. Bitte versuchen Sie es erneut.',
+      responseExamplesEmpty:
+        'Für diesen Chatbot sind keine Antwortbeispiele verfügbar.',
+      responseExampleCandidate: 'Vorschlag',
+      responseExampleApproved: 'Freigegeben',
+      responseExampleRejected: 'Abgelehnt',
+      responseExampleNeedsReview: 'Überprüfung erforderlich',
+      responseExampleQuestion: 'Frage',
+      responseExampleReferenceAnswer: 'Erwartete Chatbot-Antwort',
+      responseExampleResponseStyle: 'Antwortstil',
+      responseExampleSources: 'Quellennachweise',
+      responseExampleSourcesDescription:
+        'Diese Verweise zeigen, worauf sich die Zitate beziehen. Der Quelleninhalt wird hier nicht angezeigt.',
+      responseExampleCitationParityComplete:
+        'Alle hinterlegten Nachweise sind in dieser Antwort zitiert.',
+      responseExampleCitationParityIncomplete:
+        'Nachweise und Zitate müssen vor der Freigabe geprüft werden.',
+      responseExampleNoSources: 'Es sind keine Quellennachweise hinterlegt.',
+      responseExampleSourceId: 'Quellen-ID',
+      responseExampleChunkId: 'Chunk-ID',
+      responseExampleCitationIndex: 'Zitat',
+      responseExampleCitationAnchor: 'Zitationsanker',
+      responseExampleContentHash: 'Inhaltshash',
+      responseExampleSourceDetails: 'Technische Quelldetails',
+      responseExampleCitationLabel: 'Zitat {index}',
+      responseExampleSourceAvailable: 'Nachweis ist zugelassen',
+      responseExampleSourceUnavailable: 'Nachweis muss geprüft werden',
+      responseExampleStyleGuidedQuestions: 'Leitende Fragen stellen',
+      responseExampleStyleStepByStepExplanation: 'Schritt für Schritt erklären',
+      responseExampleStyleConciseAnswer: 'Kurz antworten',
+      responseExampleStyleClarifyingQuestion: 'Rückfrage stellen',
+      responseExampleStyleWorkedExample: 'An einem Beispiel erklären',
+      responseExampleStyleCompareOptions: 'Optionen vergleichen',
+      responseExampleSourcesRequired:
+        'Vor der Freigabe muss eine Quelle hinterlegt und als [1], [2], ... zitiert sein.',
+      responseExampleModeUnavailable:
+        'Wählen Sie einen verfügbaren Chat-Modus dieses Chatbots.',
+      responseExampleDuplicate:
+        'Ein Antwortbeispiel mit dieser Frage existiert für diesen Chat-Modus bereits.',
+      responseExampleApprove: 'Freigeben',
+      responseExampleEditAndApprove: 'Bearbeiten und freigeben',
+      responseExampleReject: 'Ablehnen',
+      responseExampleEditTitle: 'Antwortbeispiel bearbeiten',
+      responseExampleEditChatMode: 'Chat-Modus',
+      responseExampleEditQuestion: 'Frage',
+      responseExampleEditReferenceAnswer: 'Erwartete Chatbot-Antwort',
+      responseExampleEditReferenceAnswerPlaceholder:
+        'Schreiben Sie die erwartete Chatbot-Antwort aus. Formatierung wird automatisch angewendet; Quellen als [1], [2], ... zitieren.',
+      responseExampleEditReferenceAnswerLength: '{count} / {max} Zeichen',
+      responseExampleEditResponseStyle: 'Antwortstil',
+      responseExampleSave: 'Speichern und freigeben',
+      responseExampleReviewActionError:
+        'Dieses Antwortbeispiel konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.',
+      responseExampleStaleUpdate:
+        'Dieses Beispiel wurde während Ihrer Bearbeitung geändert. Ihr Entwurf ist weiterhin geöffnet. Schliessen Sie den Dialog und öffnen Sie das Beispiel erneut, bevor Sie wieder speichern.',
+      responseExampleReviewForbidden:
+        'Nur die Eigentümerin oder der Eigentümer des Chatbots kann Antwortbeispiele überprüfen.',
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Um bestehende Antwort-Sammlungen anderer Nutzer zu importieren oder Zugriff auf diese zu beantragen, besuchen Sie bitte den <link>Katalog</link>.',

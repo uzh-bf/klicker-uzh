@@ -19,7 +19,8 @@ import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CourseChatDrawer } from '../../../../components/chatbot/CourseChatDrawer'
 import Footer from '../../../../components/common/Footer'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
@@ -47,6 +48,7 @@ import {
   type PracticeQuizProgressState,
   summarizePracticeQuizCompletion,
 } from '../../../../components/practiceQuiz/progress'
+import { buildPracticeQuizChatContext } from '../../../../lib/chatbot/chatContext'
 
 function PracticeQuizPage({
   courseId,
@@ -116,6 +118,17 @@ function PracticeQuizPage({
   })
 
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const chatContext = useMemo(
+    () =>
+      buildPracticeQuizChatContext({
+        courseId,
+        currentIx,
+        locale: router.locale ?? 'en',
+        practiceQuiz: data?.practiceQuiz ?? null,
+        totalSteps,
+      }),
+    [courseId, currentIx, data?.practiceQuiz, router.locale, totalSteps]
+  )
 
   useEffect(() => {
     if (!embedded) return
@@ -412,6 +425,12 @@ function PracticeQuizPage({
           previewOnly={data.practiceQuiz.isOwner ?? undefined}
         />
       )}
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
+      />
       {!embedded && (
         <Footer
           browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}

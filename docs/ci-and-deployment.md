@@ -39,6 +39,7 @@ neither Node nor pnpm.
 - **Format + lint**: `check` runs blocking Biome + Prettier formatting and the blocking Turbo/ESLint safety net. Biome lint remains advisory. The same job also runs `check:prisma-sync`, `check:agents-md`, and `check:removed-doc-artifacts`.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
+- **SonarCloud suppressions must live in `sonar-project.properties`.** Sonar reports rules such as `typescript:S3776` on the function declaration line, and Biome always moves a trailing `NOSONAR` comment onto its own line, so an inline marker silently stops suppressing after formatting. Use a scoped `sonar.issue.ignore.multicriteria` entry instead (current example: the chat POST handler's cognitive complexity).
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 - **AI review**: While a PR is a draft, OpenCodeReview runs the low-cost DeepSeek V4 Flash 0731 model (`deepseek/deepseek-v4-flash-0731`) through OpenRouter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new cheap reviews. OpenRouter is an external model provider, so review diffs cross that provider boundary and incur usage cost.
@@ -50,13 +51,17 @@ neither Node nor pnpm.
 
 ## Image builds
 
-13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`) push ARM64
-images to ghcr.io through their `-arm` jobs. The legacy `-amd` image jobs stay
-defined but use an always-false job condition, so they publish no AMD64 images.
-Keeping the skipped `build-amd` job preserves the required status context while
-branch protection still requires that name. The no-op `Build Fallback`
-`build-amd` job remains enabled for pull requests that do not start an app image
-workflow.
+Per-app stg and prd image workflows (`v3_<app>-{stg,prd}.yml`) publish the
+ARM64 images. The PWA has both an ordinary and an assessment pair, and
+`v3_backend-docker-{stg,prd}.yml` additionally builds
+`backend-docker-migrator` (see [Deployment migrations](#deployment-migrations)).
+This includes `mcp-lecturer` and `mcp-student`, which also have full chart
+workloads (`deployment-`, `service-`, `cm-`, `hpa-`,
+`pdb-mcp-{lecturer,student}.yaml`). The legacy `-amd` jobs stay defined but use
+an always-false job condition, so they publish no AMD64 images. Keeping the
+skipped `build-amd` job preserves the required status context while branch
+protection still requires that name. The no-op `Build Fallback` `build-amd` job
+remains enabled for pull requests that do not start an app image workflow.
 
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
 - **prd**: tags `v*.*.*` only.
@@ -75,6 +80,14 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+The Manage assistant target is also build-time browser configuration.
+`apps/frontend-manage/.env.stg` and `.env.prd` both map
+`NEXT_PUBLIC_CHAT_URL` from their environment-specific `APP_ORIGIN_CHAT`.
+`apps/frontend-manage/Dockerfile` checks that exact mapping after the STG or PRD
+workflow has installed its file as `.env.production`; an image build fails
+instead of producing a Manage bundle that silently hides the assistant
+launcher.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
@@ -90,6 +103,9 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
+- **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
+- **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
+- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state. The readiness layer requires both ingestion kill switches; the activation layer requires those false-valued keys to be absent. Both layers require the exact cluster-local ingestion and source-gateway endpoints, both graph kill switches, response-processor isolation, and no ingestion secret keys in ConfigMaps.
 
 ## Deployment migrations
 

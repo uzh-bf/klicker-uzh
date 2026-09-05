@@ -1,12 +1,86 @@
+import {
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+  PWA_CHAT_EMBED_SESSION_SCOPE,
+} from '@/src/lib/pwaEmbedAuth'
+import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
+import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
+import { decodeJWT } from '@klicker-uzh/util'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+export type { AuthMode }
+
+type ParticipantIdentity = {
+  participantId: string
+  authMode: AuthMode
+  pwaEmbedScope?: {
+    chatbotId: string
+    courseId: string
+  }
+}
+
+// Token order: chat_participant_token, scoped PWA embed token, then
+// participant_token.
+// Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
+// account cookie stays. Guest-first ordering means the switch takes effect
+// without clearing the account cookie or changing this code.
+//
+// Authorization header fallback (`Bearer <token>`) supports the
+// CHIPS-unsupported-browser path: client-side `authedFetch` reads a chat-owned
+// scoped token from sessionStorage and attaches it to API calls. Raw
+// participant_token header fallback remains unsupported.
+export async function getParticipantId(
+  req: NextRequest
+): Promise<ParticipantIdentity | { response: NextResponse }> {
+  const headerToken = extractBearerToken(req.headers.get('authorization'))
+  const chatGuestCookieToken = req.cookies.get('chat_participant_token')?.value
+  if (chatGuestCookieToken) {
+    try {
+      const payload = await verifyChatGuestToken(chatGuestCookieToken)
+      if (payload.sub) {
+        return { participantId: payload.sub, authMode: 'anonymous' }
+      }
+    } catch (error) {
+      console.error('Chat guest token verification failed:', error)
+      // Fall through to PWA embed / participant_token below.
+    }
+  }
+
+  const pwaEmbedCookieToken = req.cookies.get(
+    PWA_CHAT_EMBED_SESSION_COOKIE
+  )?.value
+  if (pwaEmbedCookieToken) {
+    try {
+      const payload = await verifyPwaEmbedSessionToken(pwaEmbedCookieToken)
+      return {
+        participantId: payload.sub,
+        authMode: 'account',
+        pwaEmbedScope: {
+          chatbotId: payload.chatbotId,
+          courseId: payload.courseId,
+        },
+      }
+    } catch (error) {
+      console.error('PWA embed session token verification failed:', error)
+      // Fall through to header / participant_token below.
+    }
+  }
+
+  if (headerToken) {
+    const headerIdentity = await getHeaderTokenIdentity(headerToken)
+    if (headerIdentity) return headerIdentity
+  }
+
+  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
+}
+
 export async function getParticipantIdFromToken(
   participantToken: string | undefined
-): Promise<{ participantId: string } | { response: NextResponse }> {
+): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (!participantToken) {
     return {
       response: NextResponse.json(
@@ -16,10 +90,20 @@ export async function getParticipantIdFromToken(
     }
   }
 
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) {
+    return {
+      response: NextResponse.json(
+        { error: 'Server misconfigured' },
+        { status: 500 }
+      ),
+    }
+  }
+
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
+      new TextEncoder().encode(appSecret)
     )
     const participantId =
       typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub
@@ -35,7 +119,7 @@ export async function getParticipantIdFromToken(
       }
     }
 
-    return { participantId }
+    return { participantId, authMode: 'account' }
   } catch (error) {
     console.error('JWT verification failed:', error)
     return {
@@ -44,6 +128,49 @@ export async function getParticipantIdFromToken(
         { status: 401 }
       ),
     }
+  }
+}
+
+async function getHeaderTokenIdentity(
+  token: string
+): Promise<ParticipantIdentity | null> {
+  const scope = decodeHeaderTokenScope(token)
+
+  if (scope === 'CHAT_GUEST') {
+    try {
+      const payload = await verifyChatGuestToken(token)
+      if (payload.sub) {
+        return { participantId: payload.sub, authMode: 'anonymous' }
+      }
+    } catch {
+      return null
+    }
+  }
+
+  if (scope === PWA_CHAT_EMBED_SESSION_SCOPE) {
+    try {
+      const payload = await verifyPwaEmbedSessionToken(token)
+      return {
+        participantId: payload.sub,
+        authMode: 'account',
+        pwaEmbedScope: {
+          chatbotId: payload.chatbotId,
+          courseId: payload.courseId,
+        },
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+function decodeHeaderTokenScope(token: string): unknown {
+  try {
+    return decodeJWT(token).scope
+  } catch {
+    return null
   }
 }
 
@@ -104,7 +231,7 @@ export async function withChatbotAuth(
   req: NextRequest,
   chatbotId: string
 ): Promise<
-  | { participantId: string; chatbot: { courseId: string } }
+  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
   return withChatbotTokenAuth(
@@ -117,18 +244,32 @@ export async function withChatbotTokenAuth(
   participantToken: string | undefined,
   chatbotId: string
 ): Promise<
-  | { participantId: string; chatbot: { courseId: string } }
+  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
   const participantResult = await getParticipantIdFromToken(participantToken)
   if ('response' in participantResult) {
     return participantResult
   }
-  const { participantId } = participantResult
+  const { participantId, authMode } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
   if ('response' in chatbotResult) {
     return chatbotResult
+  }
+
+  if (
+    participantResult.pwaEmbedScope &&
+    (participantResult.pwaEmbedScope.chatbotId !== chatbotId ||
+      participantResult.pwaEmbedScope.courseId !==
+        chatbotResult.chatbot.courseId)
+  ) {
+    return {
+      response: NextResponse.json(
+        { error: 'Embed session is not valid for this chatbot' },
+        { status: 403 }
+      ),
+    }
   }
 
   const participationResult = await requireParticipation(
@@ -139,7 +280,7 @@ export async function withChatbotTokenAuth(
     return participationResult
   }
 
-  return { participantId, chatbot: chatbotResult.chatbot }
+  return { participantId, authMode, chatbot: chatbotResult.chatbot }
 }
 
 export async function requireParticipation(

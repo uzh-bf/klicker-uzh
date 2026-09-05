@@ -20,6 +20,7 @@ securityContext: {}
 # running sync (upstream argo-cd#24187 / #27507).
 migrator:
   enabled: true
+  databaseUrlOnly: false
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
     pullPolicy: Always
@@ -86,6 +87,22 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbIngestion:
+    apiUrl: ""
+    projectId: "klicker-course-materials"
+    sourceGatewayUrl: ""
+    workerDisabled: false
+  kbGraph:
+    disabled: false
+    hostPort: ""
+    apiUrl: ""
+    tlsStrategy: ""
+    workflowName: ""
+    timeoutSeconds: "21600"
+    standardGenerationModel: ""
+    standardCleaningModel: ""
+    highGenerationModel: ""
+    highCleaningModel: ""
   workers:
     general:
       replicaCount: 1
@@ -209,6 +226,11 @@ chat:
   mcp:
     key: ''
 
+  docQueryScope:
+    issuer: ''
+    audience: ''
+    keyId: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always
@@ -242,6 +264,113 @@ chat:
   tolerations: []
 
   affinity: {}
+
+mcpStudent:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+  questionRefTtlSeconds: 1200
+
+  secret:
+    name: ''
+    appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the same secret.
+    # Empty means the service falls back to APP_SECRET, which is today the only
+    # working setting: the practice tools forward the caller's own MCP token to
+    # the backend GraphQL API, and the backend verifies incoming bearer tokens
+    # with APP_SECRET alone. Pointing this at a genuinely different value
+    # therefore breaks practice lookup, retrieval, and submission until that
+    # forwarded call mints its own backend token instead.
+    jwtSecretKey: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    scheme: http
+    port: 7080
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
+
+mcpLecturer:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+
+  secret:
+    appSecretName: ''
+    appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the app secret.
+    # Empty means the service falls back to APP_SECRET; set it only once the
+    # cluster secret actually carries the key. This service reads the database
+    # directly and forwards no token onward, so the value may differ from
+    # APP_SECRET without breaking anything downstream.
+    jwtSecretKey: ''
+    databaseName: ''
+    databaseUrlKey: DATABASE_URL
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    scheme: http
+    port: 7081
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
 
 frontendPWA:
   priorityClassName: production-workload
@@ -363,6 +492,49 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
+  kbIngestionDisabled: false
+  kbGraphDisabled: false
+
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    # One shared semester ledger covers graph builds and element-generation
+    # dispatches. These values are non-secret and must be explicit before either
+    # producer is enabled.
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: ''
+      highEstimateMinorUnits: ''
+      maxCostMinorUnits: ''
+      semesterQuotaMinorUnits: ''
+      pricingVersion: ''
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: ''
+
+  # Non-secret coordinates for the unified Klicker-element generation adapter.
+  # The dedicated Hatchet token and Azure connection string must be supplied by
+  # the externally managed backend-graphql Secret before enabling this block.
+  # The chart projects only the storage credential into the maintenance worker.
+  elementGeneration:
+    enabled: false
+    hatchetHostPort: ''
+    hatchetServerUrl: ''
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: ''
+      flashcardMinorUnits: ''
+      flashcardRetryMinorUnits: ''
+      pricingVersion: ''
+
+  # Id of the GrowthBook saved group backing the lecturer beta opt-in. Leave
+  # empty to disable the opt-in switch entirely: the setting hides itself when
+  # the backend cannot resolve a group.
   betaSavedGroupId: ''
 
   replicaCount: 3

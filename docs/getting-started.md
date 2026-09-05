@@ -22,13 +22,17 @@ Code-quality tooling (config-derived) runs on the host and in CI, never baked in
 
 Compiler settings follow the code's runtime and build owner:
 
-| Role                                       | Compiler contract                                                                                                                                                                   |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                   |
-| Emitted Node application or library        | `module: NodeNext`; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
-| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                        |
-| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
-| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
+| Role                                       | Compiler contract                                                                                                                                                                                                                                |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                                                                                |
+| Emitted Node application or library        | `module: NodeNext`; declare `types: ["node"]` when the build needs Node globals; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
+| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                                                                                     |
+| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                                                                                          |
+| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                                                                                |
+
+Two TypeScript 6 traps show up in emitting Node configs. A check config whose `include` covers `vitest.config.ts` can stay green while the emitting build has lost Node ambient types — always run the emitting build itself after config or dependency changes, and declare `types: ["node"]` when the build needs Node globals rather than relying on automatic type-root discovery ([solution note](./solutions/build-error/emitting-tsconfig-loses-node-types.md); the actual breakage there was an inconsistent pnpm install state, not the `baseUrl` removal). And under `module: NodeNext`, importing a JSON file needs an import attribute: `import hashes from '@klicker-uzh/graphql/dist/client.json' with { type: 'json' }` (`apps/mcp-student/src/graphqlClient.ts`).
+
+`apps/mcp-lecturer` and `apps/mcp-student` declare `engines.node: 20.x` while the workspace runs Node 24; their `volta` block extends the root pin, so this is a stale declaration that only surfaces as an install warning — do not copy it into a new app.
 
 The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
 
@@ -43,6 +47,7 @@ EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
 routed app plus the two Hatchet workers. Dependency-aware profiles select only
 the needed app roots, optional services, and managed processes while keeping
 Postgres and Hatchet as the boot-critical base.
+The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP server (`apps/mcp-student`, port 7080) start automatically with the rest of the stack (`package.json:dev:container`); both have no external route, and `apps/chat` reaches them in-container.
 
 1. **Start and prove the checkout:**
    ```bash
@@ -60,6 +65,7 @@ Postgres and Hatchet as the boot-critical base.
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+4. **Browser E2E:** Run Playwright from the host with `pnpm playwright:host -- --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 Choose an application profile such as `manage`, `pwa`, `chat`, or
 `live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
@@ -158,6 +164,8 @@ Run the read-only semantic check inside the exact workspace:
 devrouter exec . -- pnpm run dev:doctor
 ```
 
+Run `pnpm run test:dev-runtime` for the shell-level guard checks.
+
 ### Path B: Host-based Setup (Legacy)
 
 Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse proxy), mkcert, `/etc/hosts` configurations, and Infisical for secret injection.
@@ -173,14 +181,15 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 
 ## Failure signatures (fresh clone / wrong state)
 
-| Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
-| `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
-| ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                              | `pnpm run build` once, then check                                 |
-| A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                    | `devrouter ensure .`; it verifies and repairs this signature once |
+| Exact error                                                                                                                   | Cause                                                                                                                                          | Fix                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                                                                         | `pnpm install` (pnpm 11)                                                                        |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge                                                       | `pnpm install --config.confirmModulesPurge=false`                                               |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile                                                                  | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11                                  |
+| `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                                                                       | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack                                        |
+| ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                                                                                    | `pnpm run build` once, then check                                                               |
+| A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                                                                          | `devrouter ensure .`; it verifies and repairs this signature once                               |
+| Manage assistant answers 500; chat log shows `OPENAI_API_KEY is required for the Manage assistant`                            | the devcontainer sets `OPENAI_BASE_URL` but never `OPENAI_API_KEY`; the Manage route throws instead of falling back like the participant route | set any non-empty `OPENAI_API_KEY` for `apps/chat` (the local LiteLLM proxy accepts any bearer) |
 
 ## Infrastructure (Docker Compose)
 

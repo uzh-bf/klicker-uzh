@@ -36,7 +36,24 @@ offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
 200 data rows before submission, and must verify page totals and page-one reset
 after import or deletion.
 
+The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, terminal-event ordering, material-category defaults and filtering, complete-KB ingestion summaries, bulk freshness reconciliation, conditional claims, repeated calls, and per-resource queue-failure compensation.
+
+KB quota coverage must use real PostgreSQL for parent-row lock serialization, exact count/byte boundaries, pending tickets, tombstones, confirmation conversion, and cleanup release. Hatchet unit coverage owns persisted KB-scope rejection plus URL-size replacement arithmetic and the no-dispatch `KB_STORAGE_LIMIT_REACHED` transition.
+
+KB graph accounting coverage also uses real PostgreSQL: `packages/graphql/test/knowledgeGraphAccounting.test.ts` proves same-owner semester-quota lock serialization, one-time success settlement, metered non-success settlement without publication, dispatch-failure release, cleanup-fenced late success, matching/stale/newer-build late-success reconciliation, bounded actual token/request aggregation, publication only after contract validation, and reservation hold on an invalid result. The disposable migration applies the durable dispatch-claim column before these tests. Pure W1 terminal-result, database-integer-bound, cost-configuration, and quota-drift validation remains in `kbGraphContract.test.ts`, `knowledgeGraphCost.test.ts`, and `knowledgeGraphConfig.test.ts`; `packages/hatchet/test/kbGraphIngestion.test.ts` proves worker-side kill-switch/opt-in/complete-reservation gates, pre-accounting fencing, accepted-but-uncorrelated dispatch holds, provider-status-only reconciliation failure, abort-before-slot-reuse for eight concurrent provider calls, and versioned-result handoff to the settlement callback.
+
+Element-generation accounting also runs against real PostgreSQL. `packages/graphql/test/elementGenerationAccounting.test.ts` proves owner-semester lock serialization, idempotent concurrent starts, one-time settlement, unclaimed and stale-claim release, graph/element shared-quota enforcement, complete price configuration, legacy-row fencing, and an independent spend for every flashcard retry. Focused dispatch and lifecycle tests cover accepted-but-not-yet-visible question/initial-flashcard/retry fencing, exact retry recovery, deterministic preflight before spend claim, terminal success-without-artifact handling, and bounded Blob downloads.
+
+KB scale coverage uses real PostgreSQL for tied keyset traversal, cursor/filter binding, owner isolation, tombstone hiding, immutable resource-page order during status changes, exact derived metrics, and all-or-nothing bounded bulk deletion. UI appearance and interaction have no component-test layer in this repository: verify the generated-operation typechecks, then exercise catalog/detail search, filters, inspector, selection/confirmation, active polling, EN/DE, and desktop/390 px layouts through the real delegated-login browser path.
+
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
+
+The response-example foundation test uses the GraphQL local database suite and
+creates its candidate and evidence rows directly inside the test fixture.
+The development seed and focused Playwright journey also add deterministic
+synthetic chatbot/examples for local review; none of these paths mutate
+production data. A green GraphQL test proves the owner lifecycle and cascade
+contract without relying on the development seed.
 
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` first. It injects an
@@ -122,6 +139,16 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
+The Playwright stack starts
+`playwright/util/mockGrowthBookServer.mjs` alongside the applications. The
+test-origin wrapper points backend SDK evaluation at this synthetic feature
+endpoint, while each browser test still controls its own public SDK
+response with Playwright routing. This separation lets the learning-analytics
+allow and deny tests exercise the real browser → persisted GraphQL →
+backend-entitlement path without a live GrowthBook deployment or management
+credential. The test wrapper shortens backend polling to 250 ms; production
+keeps the package's 30-second default.
+
 For authoring specifics, helper patterns, and failure triage, use the `klicker-playwright-e2e` skill ([.agents/skills/](../.agents/skills/)).
 
 ## E2E environment dependencies
@@ -149,7 +176,24 @@ provider-level acceptance check.
   response-processor worker descendants before reporting ready. Without those
   processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
   accept answers that never reach cockpit/evaluation.
+- The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, desktop and embedded-mobile close controls, and both missing-participation and no-chatbot entry fallbacks.
+- The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, compact modal isolation and focus restoration, cross-origin Escape and focus restoration, persistent context and change announcements, short mobile viewports, desktop-only size persistence, viewport-clamped size presets, breakpoint transitions that preserve the conversation, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, localized draft confirmation and parent-owned editor navigation, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
+- Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
+- `evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
+
+## Lecturer MCP smoke tests
+
+`apps/mcp-lecturer` has two smoke scripts on top of its mocked vitest unit tests (`pnpm --filter @klicker-uzh/mcp-lecturer run test:run`), both built on shared helpers in `util/mcpSmokeClient.mts`:
+
+- `smoke:local` (`scripts/smoke.ts`) — happy path: initialize, list tools, walk every read/draft tool against the seeded lecturer (`USER_ID_TEST`/`COURSE_ID_TEST` from `packages/prisma-data/src/data/constants.ts`, created by `seedTEST.ts`).
+- `smoke:negative` (`scripts/smoke-negative.ts`) — authZ/negative paths: garbage/wrong-secret/wrong-issuer/wrong-purpose/wrong-role/expired/no-lecturer-scope bearer tokens (all rejected with HTTP 401 at `initialize`, since FastMCP authenticates once per session and never re-checks the token on `tools/call`), a `manage:read`-only token (read tool succeeds; the draft tools are absent from `tools/list` and calling one by name comes back as an unknown tool, because scope is enforced by each tool's `canAccess` predicate at session creation), an unknown-but-well-formed course UUID (non-enumerating `FORBIDDEN`), a malformed course id (schema-validation rejection), a foreign `sub` (zero courses, not an error), and a leak check that none of the captured error messages expose a stack trace, `node_modules` path, or `DATABASE_URL`.
+
+Both scripts need a migrated + seeded Postgres and a running `apps/mcp-lecturer` on the configured URL, with `APP_SECRET`/`APP_ORIGIN_AUTH` matching what the server booted with (`--help` on either script documents the env vars and defaults).
+
+In the devcontainer, `APP_ORIGIN_AUTH` is the trap. The scripts default to the plain value in `.devcontainer/devcontainer.env`, but `post-start.sh` namespaces every origin per workspace before starting the services, so the running server's JWT issuer is `https://auth.klicker.<workspace>.localhost`. Export the namespaced value before running either script — read it off the live process with `tr '\0' '\n' < /proc/$(pgrep -f mcp-student | head -1)/environ | grep APP_ORIGIN_AUTH`. A mismatch does not fail loudly: every negative case still passes (the token is rejected, just for the wrong reason) and only the cases needing a _valid_ token fail, so treat those cases as the run's positive control and never read an all-negative pass as success on its own.
+
+`apps/mcp-student` has mocked vitest units (`pnpm --filter @klicker-uzh/mcp-student test`) plus its own `smoke:local` (`scripts/smoke.ts`), which additionally needs a reachable GraphQL API because the server reads elements through the persisted client rather than Prisma. Its `smoke:negative` (`scripts/smoke-negative.ts`) mirrors the lecturer's: empty/garbage/wrong-secret/wrong-issuer/wrong-role/expired tokens, a plain participant session token (no `purpose`, `scope`, or `actor` claims — the case the purpose claim exists to reject), a lecturer MCP token, an unknown `actor` value, a token with no student scope, a `student:practice:read`-only token (`submit_practice_stack_answer` neither advertised nor callable), a forged `questionRef`, an unenrolled participant (no candidates), and the same leak check. **There is no `test-mcp-student` CI workflow** — only `test-mcp-lecturer` exists — so student-MCP changes get no automated service-level signal; run the smoke script locally before merging.
 
 ## CI matrix
 
@@ -198,6 +242,10 @@ service artifact, or land the trusted artifact-contract change on `v3` first;
 inspect the downloaded artifact when a built package is missing at shard
 startup.
 
+`test-mcp-lecturer` remains a separate path-filtered service workflow. It runs
+unit tests, migrates and seeds Postgres, boots the built server, then executes
+`smoke:local` and `smoke:negative`. Its required always-reporting
+`test-mcp-lecturer-status` gate stays separate from the consolidated unit suites.
 Each CI shard also carries an explicit runtime profile from
 `playwright/profiles.json`. Every active spec must appear in that manifest
 exactly once; missing, stale, or duplicate entries fail the shard-plan check.
@@ -249,6 +297,18 @@ build or cache restore. The Auth adapter round-trip is intentionally separate
 because it writes and removes disposable local rows. The expectation before a
 PR: `check:all` + build + targeted tests for touched logic + browser evidence
 for UI changes; CI is the real e2e gate.
+
+For the assistant release matrix, run the two targeted specs explicitly:
+
+```bash
+PLAYWRIGHT_RELEASE_MATRIX=true \
+pnpm --filter @klicker-uzh/playwright exec playwright test \
+  tests/Y-manage-assistant.spec.ts \
+  tests/Y-course-chat-drawer.spec.ts \
+  --project=firefox --project=webkit
+```
+
+Keep this separate from the ordinary eight-shard Chromium matrix so normal PR cost does not triple. Use the official Playwright 1.58.2 runtime or another environment with matching browser binaries and record the browser versions.
 
 Root typecheck includes the Playwright compiler surface through its package `check` script. Compiler/toolchain upgrades also cover the test build and Docs production build; the exact commands live in `klicker-testing-verification`. Playwright uses strict TypeScript compilation.
 

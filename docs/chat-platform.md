@@ -38,6 +38,9 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
+- `packages/util/src/citations.ts` — the shared, React-free Markdown citation
+  parser and opt-in `[n]` marker transformer used by response-example checks
+  and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
   `[n–m]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
@@ -51,6 +54,22 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
   fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
   `chat` intentionally starts neither optional capability.
+
+## Owner-governed response examples
+
+Klicker stores one canonical `ResponseExampleSet` per chatbot. Each current
+example carries the exact `chatMode`, the student's message, a Markdown
+reference answer, an intuitive response-style choice, an approval status, and
+source/chunk/content-hash/citation-index/citation-anchor lineage. Approved
+edits replace the current row immediately; there is no revision-history model.
+The set digest changes with canonical example or lineage content, not reviewer
+timestamps.
+
+The owner-only GraphQL surface is the source of truth for lecturer review:
+the owner can inspect the set, approve, edit and approve, or reject an entry.
+Non-owners receive `null`, and no production GraphQL or chat runtime path
+creates candidates or marks evidence eligible. Local/test fixtures may seed
+synthetic candidates and evidence solely to exercise the review lifecycle.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
@@ -125,6 +144,120 @@ cache hits, latency, or cost savings.
 ## Auth guard pattern (route handlers)
 
 The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) verifies the participant JWT, checks the published chatbot, and confirms that a `Participation` row exists for its course. It covers the standard `{ courseId: true }` case — use it for new routes and fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Existence of a `Participation` authorizes access; `isActive` is the leaderboard opt-in and is never part of this guard ([Domain model](./domain-model.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+
+The embedded lecturer assistant is a separate route family under `src/app/api/manage/`. It verifies the lecturer's NextAuth cookie, mints a short-lived internal bearer token for `apps/mcp-lecturer`, and confirms signed draft proposals through the authenticated chat route. This is an internal service exchange, not an OAuth client flow; the complete trust boundary is documented in [Auth Model](./auth-model.md#lecturer-mcp-and-manage-assistant).
+
+**One gate with two conditions covers the assistant, and it is enforced server side.** `isManageAiEnabled` in `src/lib/server/featureFlags.ts` requires the `ai-beta` GrowthBook flag _and_ the account's `aiFeaturesEnabled` column, which records that an administrator has a cost center to bill the resulting model usage to. It covers the launcher in `apps/frontend-manage` (`src/components/Layout.tsx`, `src/components/assistant/ManageAssistantWidget.tsx`), the `/manage` page in `apps/chat`, `POST /api/manage/chat`, the lecturer MCP tools that route loads, and `POST /api/manage/proposals/confirm` — so a proposal token minted while the gate was open stops being redeemable the moment either condition is withdrawn. The API routes evaluate it per request, so hiding the launcher is not what protects them.
+
+The entitlement is read live from the database rather than from the session token, so withdrawing it takes effect on the next request instead of at the lecturer's next sign-in. It is administered by email on the Manage admin panel (`setAiFeatures`), separately from `privatePreview`: one decides which unreleased features an account may see, the other whether it may spend model budget.
+
+`GET /api/manage/capabilities` is an authenticated, private, no-store advisory
+preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
+classifies the actual session-filtered inventory as `draft-and-read`,
+`read-only`, or `unavailable`, then starts best-effort client teardown without
+letting a slow close extend the response deadline.
+The three-second server budget remains below the browser's five-second deadline,
+and a best-effort per-pod limit allows 30 preflights per lecturer in five minutes
+before returning a private, retryable `429`. The response exposes no tool names,
+scopes, configuration, or failure detail.
+The client starts in the conservative unavailable state. While the preflight is
+checking, the welcome stays neutral: it does not advertise persistence or flash
+degraded no-save limits. Once the preflight settles, curated-index documentation
+help and explicit no-save authoring remain available in degraded states, and the
+localized starter labels follow the active Manage locale. The client can retry
+without reloading the iframe. A client-side preflight deadline
+intentionally settles as retryable unavailable instead of auto-retrying in the
+background; its parent-cancellation and timeout signals are composed without
+requiring newer browser-only `AbortSignal.any` support. Every chat turn repeats
+the same inventory classification; its
+response header replaces stale preflight state, so the preflight never grants
+write authority or promises a missing proposal tool. Chat requests reserve a
+monotonic revision when they start, so only the latest-started response can
+replace capability state even when concurrent responses finish out of order. A
+latest chat response without a valid capability header, or a failed chat fetch,
+settles the client as retryable unavailable instead of leaving it checking.
+Canceling a chat request does not downgrade an already settled capability.
+Before the inventory is passed to the model, the adapter keeps only the known read tools for
+`read-only`, the known read and draft tools for `draft-and-read`, and no tools
+for `unavailable`; unknown or mismatched tools fail closed so service-version
+skew cannot contradict the advertised capability.
+
+Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
+
+The two chat surfaces also differ in how they handle a missing model key. The participant route falls back to `apiKey: process.env.OPENAI_API_KEY || 'no-key'` (`src/app/api/chatbots/[chatbotId]/chat/route.ts`), which the local LiteLLM proxy accepts, while `createManageAssistantModel` (`src/app/api/manage/chat/route.ts`) throws `OPENAI_API_KEY is required for the Manage assistant`. The devcontainer sets `OPENAI_BASE_URL` but no `OPENAI_API_KEY`, so the Manage assistant returns 500 there until the variable is set ([Getting Started](./getting-started.md#failure-signatures-fresh-clone--wrong-state)).
+
+The Manage chat route authenticates before admitting work, and applies its per-lecturer rate limit only after it acquires the pod's request slot; a busy rejection therefore does not consume the lecturer's rate budget. It is excluded from the Next middleware matcher so Next does not clone and truncate the body at its default 10 MiB buffer; the route therefore owns the full stream and enforces a 16 MiB serialized-body ceiling. Both declared and chunked oversized requests fail with a generic `413`, a body that exceeds the 30-second read deadline fails with a generic `408`, and malformed or structurally invalid requests retain the generic `400`. The request shape remains capped at 50 messages and also bounds aggregate parts, text, and individual encoded image/data parts before AI SDK conversion or MCP/model work.
+
+After the resource checks, the route uses the AI SDK's message validator before opening the lecturer MCP client. Browser-supplied system messages, unsupported user parts, non-user files, malformed tool states, and invalid image base64 are rejected. Every accepted message is reconstructed from allowlisted fields, dropping browser-owned provider metadata and other extra fields. Previous assistant prose is retained for conversational continuity, but browser-supplied assistant tool, data, reasoning, and file parts are removed before model conversion; only tool results produced inside the current server-owned MCP loop reach the model as tool history.
+
+One narrow exception supports conversational revisions such as “make this question German” without trusting browser-owned proposal JSON. Validation extracts only the opaque token from the exact signed-proposal tool part. The route verifies its signature, issuer, expiry, purpose, subject, and schema without consuming the token's replay identifier, then reconstructs a bounded canonical proposal block for the system prompt. The block uses the same unpredictable per-request data fence and structural forgery neutralizer as lecturer MCP results, because signing proves provenance but does not make lecturer-authored question text a trusted instruction. Invalid, expired, foreign, or fabricated tokens are ignored and ordinary chat continues. Raw tool output, token metadata, and browser payloads never reach the model; only the confirmation route claims the replay identifier, so creating a draft remains single-use. This continuity lasts no longer than the existing 15-minute proposal token.
+
+A total 60-second abort deadline covers body parsing, the MCP transport's actual composed fetch signal, model streaming, and the response-lifetime slot, because self-hosted Next does not itself enforce the route's exported `maxDuration`.
+
+Signed question proposals render as static lecturer reviews rather than interactive student previews. Choice questions show every option with explicit “Correct” or “Incorrect” text and its answer feedback; free-text questions show sample solutions and response-length restrictions. Both forms show the general explanation and use the sanitized Markdown renderer. The raw canonical JSON remains available only as an optional disclosure for diagnosis.
+
+The Manage embed is an in-session assistant dock, not a history surface. Closing and reopening the dock preserves its mounted runtime, while **Start a new conversation** clears the current assistant-ui thread plus unsent text and attachments after an inline confirmation when content exists. Reloading the page still starts a fresh runtime; there is no durable lecturer chat history, thread list, database model, or retention contract. The composer is an in-flow sibling of the transcript so a long proposal can scroll fully above it instead of being clipped by an overlay.
+
+The embedded Manage context is shown in persistent localized chrome above the
+conversation, so it remains available after the welcome message scrolls away.
+The first validated context establishes the session silently; later
+JSON-distinct route or identifier changes are announced politely. The payload
+remains the same sanitized route metadata and identifiers used by the Manage
+chat request.
+
+After a signed draft proposal is confirmed, the embedded card offers **Open
+draft**. That action sends only the positive integer element id to the
+validated Manage parent, which closes the dock and owns navigation to the
+question editor. Standalone Chat does not expose this Manage-only action, and
+confirmation failures use a localized generic message rather than displaying
+server or provider error details.
+
+The parent Manage shell treats the validated context-ready message as the only
+readiness signal. A bounded deadline changes an unanswered load into an honest
+“taking longer” state while keeping the iframe alive so a late valid handshake
+can recover it. Retry remounts exactly one embedded iframe generation; an
+actual iframe load error uses a separate failed state. Both states retain
+close, Escape, retry, and a standalone fallback explicitly labelled as a new
+conversation without the current page context. The focused local
+`chat,manage` devrouter profile starts and probes `mcp-lecturer`; the separate
+`mcp` profile remains the deterministic read-only fixture.
+On desktop the parent shell is a resizable, non-modal complementary dock whose
+readable Chat content remains centred as the viewport grows. Below the desktop
+breakpoint it becomes a full-viewport modal sheet with contained focus and
+safe-area-aware composer spacing; crossing that breakpoint preserves the
+mounted conversation and restores Manage interaction.
+
+Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
+
+The Manage assistant's response-quality guardrails are part of the system prompt:
+single-question or single-element lookups stay scoped to the requested status,
+type, and content unless the lecturer asks for related metadata, and SC/MC
+drafts must keep every option-feedback pair consistent with the stem and answer
+key. The live evaluator measures these behaviors through E3 grounding and E4
+proposal-quality judge cases; the current DeepEval 4.1.5 / `gpt-5.6-luna`
+baseline is recorded in `evaluation/manage-assistant/README.md`.
+
+## Student practice MCP (`apps/mcp-student`)
+
+Participant practice questions reach the chat through a second FastMCP server, not through the chat's own Prisma access. `apps/mcp-student` (default port 7080, `/mcp`) authenticates a **participant** JWT minted by `mintParticipantMcpJwt` (`src/lib/server/mcpAuthMint.ts`) and reads element data through the persisted GraphQL client rather than Prisma (`apps/mcp-student/src/graphqlClient.ts`).
+
+`verifyParticipantSession` (`apps/mcp-student/src/auth.ts`) requires four things of the token, not just a participant subject:
+
+- `purpose: student-mcp`. Without it, an ordinary participant session cookie would open the MCP service directly: it is signed with the same secret, for the same subject, with the same `PARTICIPANT` role, and only the issuer value differed. The purpose claim is what makes "minted by the chatbot" an explicit assertion rather than an environment-variable coincidence.
+- `role: PARTICIPANT`, so a lecturer token cannot cross over.
+- `actor`, either `account` or `anonymous`, carrying which participant kind the chatbot is acting for (the same `AuthMode` distinction as `src/lib/server/ltiGuest.ts`, so an LTI guest stays visible to tool policy). Both kinds mint the same scopes today.
+- at least one recognized scope (`student:practice:read`, `student:practice:submit`). Which tools a scope actually reaches is decided per tool: `toolDefinition` (`apps/mcp-student/src/toolPolicy.ts`) derives each tool's `canAccess` predicate from its own `rbacScope` entry, and fastmcp only puts a tool into a session's dispatch table when the session satisfies it — so a read-only token neither sees `submit_practice_stack_answer` in `tools/list` nor can call it by name.
+
+`pnpm --filter @klicker-uzh/mcp-student smoke:negative` exercises those rejections against a running service (the lecturer service has a matching `smoke:negative`). Answers are addressed by short-lived signed `questionRef` values (`MCP_STUDENT_QUESTION_REF_TTL_SECONDS`, default 20 min), so the chat never handles raw element ids or answer keys.
+
+Three properties matter when debugging it:
+
+- The lookup runs **only in `tutor` mode** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`); other modes never register `start_student_practice_quiz`.
+- Student practice authorization requires a matching chatbot/course pair and an
+  existing `Participation` row for the participant. `Participation.isActive`
+  is only the course-leaderboard opt-in and must not gate MCP practice access.
+- A failed lookup degrades silently: the route logs `Student practice lookup failed; continuing without quiz candidates` and answers without the tool. A missing practice quiz is therefore an infrastructure symptom, not necessarily a model one.
+- `getStudentPracticeMcpUrl` falls back to `http://localhost:7080` **only** when `NODE_ENV=development`; in production an unset `MCP_STUDENT_URL`/`MCP_STUDENT_HOST` yields `null` and the feature is simply off. The devcontainer starts both `mcp-student` and `mcp-lecturer` through `package.json:dev:container`, so tutor-mode practice tools and lecturer tools are available without a separate MCP process.
 
 ## Model registry and credits
 
@@ -229,6 +362,11 @@ internal.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
+Keep the `v3-ai` staging values aligned with this block when resolving merges:
+`CHAT_PRIMARY_MODEL_ID=auto`, the `auto` registry entry targets
+`klickeruzh/azure/auto-router`, and that entry sets `usesResponsesApi: true`.
+This repository controls those consumer values but does not prove that the
+external LiteLLM key or team is authorized for the deployment.
 Model registry capabilities separate the student-facing reasoning-effort
 selector from the provider protocol: `supportsReasoning` controls whether the
 effort picker is offered, while `usesResponsesApi` selects OpenAI Responses so
@@ -698,8 +836,13 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. Embedded mode shows the loading state and compact credit/model
-information through the shared settings components. Direct thread URL
+header grid. The Chat/Knowledge graph workspace switch appears once in that
+header's right-hand control cluster in standalone and embedded layouts; the
+sidebar and content area do not repeat it
+(`src/components/assistant.tsx:SidebarMain`,
+`src/components/assistant.tsx:AssistantLayout`). Embedded mode shows the
+loading state and compact credit/model information through the shared settings
+components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
 without overriding a mode manually chosen afterward.
 
@@ -955,12 +1098,28 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
+- **Embedded Manage dock**: the Manage launcher portals a labelled, non-modal complementary region to `document.body`. It leaves `#__app` interactive, moves focus to its close control on open, preserves close and Escape in loading/recovery states, and restores launcher focus on close. Keep the iframe mounted across ordinary close/reopen so the in-session conversation survives.
 - **Static assets need a middleware allowlist entry.** `src/middleware.ts` matches `/:path*` and passes through only `/noLogin`, `/KlickerLogo.png`, `/user-solid.svg`, `/_next…`, `/api…`, and `/favicon…`. Any other file added to `apps/chat/public/` is redirected to the login page for requests without a valid participant token (authenticated participants still get it served) — assets referenced from unauthenticated pages like `/noLogin` therefore break silently, so add new public files to that allowlist in the same change.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 - **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
 - **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
+
+## Scoped KB retrieval
+
+The chat route derives the enabled knowledge-base id from the authenticated chatbot in PostgreSQL; it never accepts a client-supplied KB id. `src/services/mcpClients.ts` passes that id with the chatbot and session context only to the configured `KB` MCP server. For rollout and rollback compatibility, the new Chat runtime recognizes that server by its reserved `KB` name even when the persisted row still has its legacy auth type. It sends the short-lived scoped token in `X-Doc-Query-Scope-Token` by default, while preserving a configured transport bearer in `Authorization` when the `KB` row has one. A scope-only `KB` row remains supported for explicitly standalone deployments; shared multi-tenant deployments must provide the transport bearer required by the service ingress. Without an enabled binding, complete signer configuration, or the exact KB server, KB tools stay unavailable while other MCP servers continue to load.
+
+`src/lib/server/docQueryScopeToken.ts:signDocQueryScopeToken` signs a five-minute ES256 token with `DOC_QUERY_SCOPE_PRIVATE_KEY`, `DOC_QUERY_SCOPE_KID`, `DOC_QUERY_SCOPE_ISSUER`, and `DOC_QUERY_SCOPE_AUDIENCE`. Claims bind `kb_id`, `chatbot_id`, session subject, and a unique `jti`; participant identity is intentionally absent. Scope-token requests carry the scoped bearer in `X-Doc-Query-Scope-Token` and retain `Authorization` only for transport authentication; they never use the legacy `Chatbot-ID` header for retrieval scope. Existing participant-JWT MCP authentication is unchanged.
+
+The staging isolation verifier keeps positive and negative evidence asymmetric:
+positive markers may appear in returned source references or chunk content, but
+each `foreign.forbidReferences` marker must identify a stable
+`source.reference` unique to the foreign corpus. Never use a shared subject
+term as negative evidence; related courses can legitimately retrieve the same
+terminology without crossing the signed knowledge-base boundary.
+
+The assistant UI registers the retrieval card through `src/components/tools-ui/rag-tool-ui.tsx:RAGToolUI`. Its registration uses `src/services/mcpScope.ts:DOC_QUERY_TOOL_NAME` (`KB_doc_query`), matching the namespaced runtime tool name. The card is localized through `pwa.chatbot.retrieval` and renders only a generic failure state; raw retrieval-service errors must never reach participants.
 
 ## Testing
 

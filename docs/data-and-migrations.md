@@ -33,9 +33,20 @@ The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
+### Chatbot response-example state
+
+The `chat.prisma` response-example models are current-state only: one
+`ResponseExampleSet` per chatbot, scoped entries, stable evidence lineage, and
+a digest. Candidate creation and evidence-eligibility writes are confined to
+local and test fixtures; no production seed or runtime caller may create them.
+The owner lifecycle is documented in the [GraphQL API layer](./graphql-api-layer.md#chatbot-response-examples).
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+
+The KB resource material category is an additive enum column with a database default of `UNCLASSIFIED`, so existing rows and legacy callers remain valid. Keep this kind of model change in one reviewable migration, run `prisma:sync` for the Analytics twin, and regenerate the shared client before building GraphQL dependents. The migration named `20260831165143_kb_resource_material_type` was isolated from unrelated pre-existing local drift because the development database was not schema-clean; do not reset that database to manufacture a migration.
+
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations
@@ -191,6 +202,13 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **One enabled KB per chatbot is a SQL invariant**: Prisma cannot express the partial unique index `KBChatbot_one_enabled_per_chatbot_key`. Preserve it in `packages/prisma/src/prisma/schema/migrations/20260825190000_kb_management_foundation/migration.sql` and any replacement migration. The migration deliberately leaves an existing KB MCP server row unchanged so the previous Chat runtime remains usable during rollout and rollback. The new runtime identifies the reserved `KB` server by name, sends the scoped token in its dedicated header, and preserves an existing transport bearer in `Authorization`. `packages/prisma-data/src/data/seedMCPServers.ts:seedMCPServers` reconciles new or explicitly reseeded environments to `scope_token` auth and leaves KB MCP configs disabled unless an enabled binding exists; a shared multi-tenant deployment still needs its transport bearer configured separately from the scope token.
+- **KB upload tickets are quota reservations**: `KBUploadTicket.sizeBytes` is the declared byte reservation. New tickets always persist the exact positive upload size; the database default exists only so pre-W6 ephemeral tickets migrate safely. Quota aggregates include every retained resource and ticket until W5 cleanup removes it.
+- **Unknown-size KB URLs reserve the maximum**: `packages/graphql/src/services/knowledge.ts:createKbUrlResource` charges one resource plus 25 MiB under the parent lock. When the worker observes the exact body size, replacement accounting swaps that conservative claim for the measured size; never create an unmeasured URL row with a zero-byte claim.
+- **KB list order and bulk locks are deterministic**: resource pagination uses immutable `(createdAt DESC, id DESC)` keys, while bulk deletion locks the live parent KB and then the selected resource UUIDs in sorted order. Preserve `createdAt` as an immutable cursor key and the KB-first lock order when extending list operations.
+- **User deletion cannot rely on the KB cascade**: `packages/prisma/src/prisma/schema/knowledge.prisma:KB.owner` has `onDelete: Cascade`, which would remove KB resources and ingestion runs before external and Blob cleanup completes. There is no current user hard-delete path. Any future account-deletion/GDPR implementation must first drive each KB through its tombstone lifecycle and verify cleanup before deleting the User.
+- **The source-gateway key is deliberately tenant-wide**: `packages/graphql/src/services/knowledgeSourceGateway.ts:handleKBSourceGateway` authenticates the ingestion bridge with one shared `KB_SOURCE_GATEWAY_KEY`, then resolves the Blob container from the resource's persisted KB owner. It is not a per-owner credential; a valid key plus exact eligible resource id/version crosses owner containers by design. Preserve the live BLOB/digest/status/tombstone predicate before Blob access, and treat key exposure as all-tenant blast radius.
+- **KB graph cost accounting is integer-only and transactional**: `KBGraphQuota` is unique per owner and semester, and `reserveKBGraphCost` inserts the row with `ON CONFLICT DO NOTHING`, locks it, and increments `reservedMinorUnits` only after checking the configured limit. `KBGraphBuild.costStatus` is the idempotency fence, while `dispatchClaimedAt` is the durable claim that distinguishes an unattempted dispatch from a provider-accepted run whose correlation is ambiguous. A valid W1 success result settles and publishes; a valid non-success result with metering settles actual usage without publishing; a non-success result without metering releases only an ordinary reservation. Malformed, mismatched, overflowed, or cleanup-fenced results move to `NEEDS_HUMAN_REVIEW` without publishing. A timed-out late success is eligible for publication only after an atomic no-newer-build and current-digest check under the KB/resource lock order; stale or superseded results still settle usage without publication. The worker also refuses active builds unless the reservation fields and linked quota identity are complete, which is the compatibility guard for pre-accounting rows; deploy the schema with old graph dispatch drained or behind a two-phase rollout so an old writer cannot create an unreserved run during migration. Keep `meteredCost` aligned with the typed `PrismaKBGraphMeteredCost` declaration and run `prisma:sync` after editing the shared schema.
 
 ## Adjacent: export package (`packages/export`)
 

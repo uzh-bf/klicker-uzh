@@ -8,6 +8,10 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getManageProposalResult } from '../services/manageProposalResult'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { ManageProposalCard } from './manage-proposal-card'
+import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 import {
   isDocQueryToolName,
   normalizeSourcesFromParts,
@@ -219,6 +223,21 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isRunning = status.type === 'running'
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
+
+  if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
+    return <StudentPracticeQuizCard result={result} status={status} />
+  }
+
+  const manageProposalResult = getManageProposalResult(result)
+  if (manageProposalResult) {
+    return (
+      <ManageProposalCard
+        result={manageProposalResult}
+        status={status}
+        toolName={toolName}
+      />
+    )
+  }
   const isDocQuery = isDocQueryToolName(toolName)
 
   const docQueryState = isDocQuery

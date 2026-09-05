@@ -1,0 +1,9 @@
+mutation UpdateKbResourceMaterialType(
+  $id: ID!
+  $materialType: KBResourceMaterialType!
+) {
+  updateKbResourceMaterialType(id: $id, materialType: $materialType) {
+    id
+    materialType
+  }
+}

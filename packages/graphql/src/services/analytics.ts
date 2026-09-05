@@ -1,20 +1,23 @@
-import { ContextWithUser } from '@/lib/context.js'
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityFeedback,
-  ActivityPerformance,
+  type ActivityFeedback,
+  type ActivityPerformance,
   ActivityType,
-  InstanceFeedback,
-  InstancePerformance,
-  InstanceQuizAnalytics,
-  ParticipantActivityPerformance,
+  type InstanceFeedback,
+  type InstancePerformance,
+  type InstanceQuizAnalytics,
+  type ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
+import type { ContextWithUser } from '@/lib/context.js'
+import { requireFeatureFlagAccess } from '../lib/featureFlags.js'
 
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  requireFeatureFlagAccess(ctx, 'learning-analytics')
+
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
@@ -77,6 +80,8 @@ export async function getCourseWeeklyActivity(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  requireFeatureFlagAccess(ctx, 'learning-analytics')
+
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
@@ -474,6 +479,8 @@ export async function getCoursePerformanceAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  requireFeatureFlagAccess(ctx, 'learning-analytics')
+
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
@@ -563,6 +570,8 @@ export async function getActivityAnalytics(
   { activityId }: { activityId: string },
   ctx: ContextWithUser
 ) {
+  requireFeatureFlagAccess(ctx, 'learning-analytics')
+
   const activityIncludes = {
     stacks: {
       include: {

@@ -15,6 +15,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 
 const chatModelSchema = z
   .object({
@@ -128,6 +129,45 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     usageClass: 'BASE',
     apiVersion: 'preview',
     cost: { input: 0.2, output: 1.2 },
+  },
+  {
+    id: 'gpt-5.5',
+    deploymentId: 'gpt-5.5',
+    name: 'GPT-5.5',
+    description: 'OpenAI frontier reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh'],
+    maxOutputTokens: 4096,
+    apiVersion: 'preview',
+    cost: { input: 5.0, output: 30.0 },
+  },
+  {
+    id: 'gpt-5.4',
+    deploymentId: 'gpt-5.4',
+    name: 'GPT-5.4',
+    description: 'OpenAI frontier reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh'],
+    maxOutputTokens: 4096,
+    apiVersion: 'preview',
+    cost: { input: 2.5, output: 15.0 },
+  },
+  {
+    id: 'gpt-5.1',
+    deploymentId: 'gpt-5.1',
+    name: 'GPT-5.1',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['none', 'minimal', 'low', 'medium', 'high'],
+    maxOutputTokens: 4096,
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1',
@@ -340,6 +380,11 @@ const toNumber = (value: unknown): number | null => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+export async function getManageChatModelRegistry(ctx: ContextWithUser) {
+  await assertManageAiEnabled(ctx)
+  return getChatModelRegistry()
+}
+
 export async function getParticipantCourseChatbots(
   { courseId }: { courseId: string },
   ctx: Context
@@ -509,6 +554,7 @@ export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
+  await assertManageAiEnabled(ctx)
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
@@ -532,6 +578,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
             },
           },
         },
+      },
+      knowledgeBases: {
+        where: { isEnabled: true },
+        select: {
+          kb: { select: { id: true, name: true } },
+        },
+        take: 1,
       },
     },
     orderBy: { updatedAt: 'desc' },
@@ -665,6 +718,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
+      enabledKnowledgeBase: chatbot.knowledgeBases[0]?.kb ?? null,
     }
   })
 }
@@ -683,6 +737,7 @@ export async function updateChatbotModelSettings(
   args: UpdateChatbotModelSettingsArgs,
   ctx: ContextWithUser
 ) {
+  await assertManageAiEnabled(ctx)
   const chatbot = await ctx.prisma.chatbot.findFirst({
     where: {
       id: args.chatbotId,

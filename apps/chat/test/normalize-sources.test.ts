@@ -332,6 +332,25 @@ describe('normalizeSourcesFromParts', () => {
     expect(result).toEqual([])
   })
 
+  test('does not expose response-example anchors as current answer sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('search_response_examples', {
+        degraded: false,
+        examples: [
+          {
+            id: '00000000-0000-4000-8000-000000000001',
+            referenceAnswer: 'Example guidance [example-source-1].',
+            sourceAnchors: [
+              { citationIndex: 1, citationAnchor: 'Synthetic page 4' },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
   test('ignores tool-call parts flagged as isError', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart(

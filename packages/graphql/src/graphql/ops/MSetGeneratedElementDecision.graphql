@@ -1,0 +1,9 @@
+mutation SetGeneratedElementDecision(
+  $input: SetGeneratedElementDecisionInput!
+) {
+  setGeneratedElementDecision(input: $input) {
+    id
+    decision
+    updatedAt
+  }
+}
