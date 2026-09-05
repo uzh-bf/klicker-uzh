@@ -1877,6 +1877,43 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
       reportTimeZone: 'Europe/Zurich',
     },
+    productTours: {
+      // Placeholder copy: the onboarding wording is still awaiting editorial
+      // review, the mechanics around it are not.
+      next: 'Next',
+      previous: 'Back',
+      done: 'Done',
+      skip: 'Skip tour',
+      progress: 'Step {current} of {total}',
+      replayTitle: 'Take the tour',
+      replayDesc: 'A short walk through the KlickerUZH interface',
+      onboarding: {
+        welcomeTitle: 'Welcome to KlickerUZH',
+        welcomeBody:
+          'A short tour shows you where everything lives. You can leave it at any time and start it again from the account menu.',
+        welcomeLink: 'Getting started',
+        navigationTitle: 'Library, activities and courses',
+        navigationBody:
+          'Your questions live in the library, activities are what students work on, and courses bring both together.',
+        elementCreationTitle: 'Create your first element',
+        elementCreationBody:
+          'Elements are the questions and content blocks every activity is built from. This button starts a new one and files it in your library.',
+        elementCreationLink: 'Managing elements',
+        activityTypesTitle: 'Four kinds of activity',
+        activityTypesBody:
+          'A live quiz runs during the lecture, a microlearning follows it in a short window, a practice quiz stays open for repetition, and a group activity has students solve it together.',
+        activityTypesLink: 'Core concepts',
+        analyticsTitle: 'Learning analytics',
+        analyticsBody:
+          'Once a course is running, this menu shows how your students are doing.',
+        updatesTitle: 'Product updates',
+        updatesBody:
+          'New features are announced here. The dot means something is waiting to be read.',
+        supportTitle: 'Help and account',
+        supportBody:
+          'Documentation, feedback and your account settings are in this corner, including this tour if you want to see it again.',
+      },
+    },
     productUpdates: {
       feedTitle: 'New in KlickerUZH',
       pageTitle: 'Product Updates',

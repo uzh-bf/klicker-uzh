@@ -27,8 +27,12 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { featureTargetProps } from '../onboarding/featureTargets'
+import {
+  TOUR_REPLAY_HREF,
+  useManageOnboardingTour,
+} from '../onboarding/useManageOnboardingTour'
 import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
-import { spotlightTargetProps } from '../productUpdates/spotlightTargets'
 import { useProductUpdateSpotlight } from '../productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../productUpdates/useProductUpdates'
 import SupportModal from './SupportModal'
@@ -51,9 +55,14 @@ function Header({
   const unreadCount = productUpdates.unreadCount
   // The header is the one place that auto-presents: it renders on every manage
   // page, so the once-per-session cap belongs to exactly this mount.
+  const tour = useManageOnboardingTour()
   const { replaySpotlight } = useProductUpdateSpotlight({
     updates: productUpdates,
     autoPresent: true,
+    // The tour and the spotlight share one slot per tab. The spotlight waits
+    // for the tour's decision so that a lecturer who has never been onboarded
+    // gets the tour rather than whichever query answered first.
+    autoPresentReady: tour.autoStartSettled,
   })
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
@@ -329,6 +338,17 @@ function Header({
             ]
           : []),
         {
+          // The same entry the chat sidebar offers, so the introduction is
+          // where a user looks for account-level actions on either surface.
+          // The design-system dropdown item carries no icon slot, so this one
+          // is label-only where the chat entry shows a compass.
+          key: 'onboarding-tour',
+          type: 'link',
+          label: t('manage.productTours.replayTitle'),
+          onClick: () => router.push(TOUR_REPLAY_HREF),
+          data: { cy: 'menu-start-tour' },
+        },
+        {
           key: 'separator-token-logout',
           type: 'separator',
         },
@@ -368,12 +388,12 @@ function Header({
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          {/* The wrapper exists so a product update spotlight can point at the
-              main navigation, which holds the Resources menu with the chatbots:
-              the design-system navigation does not forward unknown attributes. */}
+          {/* The wrapper exists so an onboarding overlay can find the main
+              navigation: the design-system navigation does not forward unknown
+              attributes. */}
           <div
             className="flex"
-            {...spotlightTargetProps('manage-header-main-nav')}
+            {...featureTargetProps('manage-header-main-nav')}
           >
             <Navigation
               items={leftNavigation}
@@ -385,7 +405,7 @@ function Header({
               unknown attributes, and the menu itself renders in two branches. */}
           <div
             className="flex"
-            {...spotlightTargetProps('manage-header-analytics')}
+            {...featureTargetProps('manage-header-analytics')}
           >
             {learningAnalyticsEnabled ? (
               analyticsMenu
@@ -402,31 +422,50 @@ function Header({
           </div>
         </div>
         <div className="flex flex-row items-center">
-          <NotificationBadgeWrapper
-            showBadge={unreadCount > 0}
-            size="sm"
-            // Even the design system's smallest badge is a full 16px circle,
-            // sized to hold a count. This badge never shows one, so it is
-            // shrunk to a corner dot that marks the icon without covering it.
-            className={{
-              root: 'flex items-center',
-              badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
-            }}
-            data={{ cy: 'product-updates-badge' }}
+          <div
+            className="flex"
+            {...featureTargetProps('manage-header-product-updates')}
+          >
+            <NotificationBadgeWrapper
+              showBadge={unreadCount > 0}
+              size="sm"
+              // Even the design system's smallest badge is a full 16px circle,
+              // sized to hold a count. This badge never shows one, so it is
+              // shrunk to a corner dot that marks the icon without covering it.
+              className={{
+                root: 'flex items-center',
+                badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
+              }}
+              data={{ cy: 'product-updates-badge' }}
+            >
+              <Navigation
+                items={productUpdatesNavigation}
+                className={{ root: 'shadow-none' }}
+              />
+            </NotificationBadgeWrapper>
+          </div>
+          <div
+            className="flex"
+            {...featureTargetProps('manage-header-account')}
           >
             <Navigation
-              items={productUpdatesNavigation}
-              className={{ root: 'shadow-none' }}
+              items={rightNavigation}
+              className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
             />
-          </NotificationBadgeWrapper>
-          <Navigation
-            items={rightNavigation}
-            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-          />
+          </div>
         </div>
       </div>
       {showSupportModal && (
-        <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+        <SupportModal
+          onClose={() => setShowSupportModal(false)}
+          onStartTour={() => {
+            setShowSupportModal(false)
+            // Both replay entry points take the same route, so the tour a
+            // lecturer gets does not depend on which one they found.
+            router.push(TOUR_REPLAY_HREF)
+          }}
+          user={user}
+        />
       )}
       {showProductUpdates && (
         <ProductUpdateFeedModal

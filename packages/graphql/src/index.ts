@@ -20,6 +20,7 @@ import './schema/productUpdates.js'
 import './schema/resource.js'
 import './schema/sharing.js'
 import './schema/template.js'
+import './schema/tours.js'
 import './schema/user.js'
 import './schema/verification.js'
 
