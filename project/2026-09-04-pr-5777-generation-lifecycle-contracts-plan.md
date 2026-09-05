@@ -162,6 +162,8 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ### Completion extension: local qualification complete
 
+Integrated final review: DONE on 208e97d38e6abfd13d997d48200077febc8c1445..801a04f7110486ffb09d45555a298c0fc7fa553b, all 13 changed paths, no reportable findings. Report: project/\_local/reviews/2026-09-05-element-completion-integrated-final-review.md. Main verified and accepted the result; reviewer closed. This closeout changes only Progress. Approved push to origin/rs/generation-lifecycle-contracts and update of the existing draft PR follow; hosted qualification remains pending. Runtime remains Stopped with zero routes.
+
 The source head f901f7f16ca39029ff18bb59e30d658e0e4e731f passes the focused tests, business sentinels, native checks and full build recorded below. Slice review: done — project/\_local/reviews/2026-09-05-element-completion-slice-review.md, no findings. Simplifier: done — project/\_local/reviews/2026-09-05-element-completion-simplifier.md, no justified changes. Both children are closed. The exact task runtime has been stopped; route readback has zero routes and the owned app container is exited. Data and worktree remain preserved. Integrated final review of the full branch and approved own-branch draft publication remain next. Hosted checks and final AI review remain separate; inherited UI failures and hosted-review authentication are parked, not accepted as passing. No merge, upstream integration or deployment occurred.
 
 ### Earlier extension checkpoints
