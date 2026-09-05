@@ -275,6 +275,11 @@ Phase 2 is a separate task with explicit delivery and operations authority.
   frozen-render evidence below is historical, not the ongoing test contract.
   Route: main session because diagnosis and acceptance are tightly coupled.
   Test obligation: replace existing coverage; no additional test cases.
+  The simplifier removed the temporary values file in favor of explicit Helm
+  flags. All four tests pass with both Helm versions after that correction.
+  Independent slice and integrated source-only final reviews passed with no
+  findings on `b74bac96e0b1530fa0901faca88558a8e28162e6`. The repair is committed
+  locally; publishing the updated PR head remains a separate approval boundary.
 - `Current:` Commits `ed3b236bfa` and `43e84ba3a5` implement and harden
   selected-source SHA tags and publish-once guards. Commit `b7b381812d` adds
   optional `global.imageTag` precedence across all 18 first-party images and
