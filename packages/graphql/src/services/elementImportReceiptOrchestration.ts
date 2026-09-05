@@ -116,7 +116,7 @@ function getCompletedImportReceiptResult(receipt: ElementImportReceiptRecord) {
   return {
     importedElements: createdElementIds.length,
     importedAnswerCollections: createdAnswerCollectionIds.length,
-    skippedElements: 0,
+    skippedElements: receipt.skippedElementRefs?.length ?? 0,
   }
 }
 

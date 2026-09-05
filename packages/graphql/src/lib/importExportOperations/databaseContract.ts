@@ -7,6 +7,7 @@ export const IMPORT_EXPORT_MIGRATIONS = [
   '20260713130636_import_export_duplicate_lookup_indexes',
   '20260716085603_import_export_fingerprint_repair_indexes',
   '20260722100000_import_export_null_fingerprint_repair_indexes',
+  '20260905121345_spreadsheet_import_receipts',
 ] as const
 
 export const REQUIRED_IMPORT_EXPORT_COLUMNS = [
@@ -16,6 +17,7 @@ export const REQUIRED_IMPORT_EXPORT_COLUMNS = [
   ['Element', 'importFingerprintVersion', 'integer'],
   ['MediaFile', 'contentHash', 'text'],
   ['MediaFile', 'importFingerprintVersion', 'integer'],
+  ['ElementImportReceipt', 'skippedElementRefs', 'ARRAY', 'ARRAY[]::text[]'],
 ] as const
 
 export const REQUIRED_IMPORT_EXPORT_INDEXES = [
@@ -238,6 +240,7 @@ export const REQUIRED_IMPORT_EXPORT_CONSTRAINTS = [
     constraintName: 'ElementImportReceipt_state_fields_check',
     constraintType: 'c',
     keyColumns: [
+      'skippedElementRefs',
       'state',
       'leaseId',
       'leaseExpiresAt',

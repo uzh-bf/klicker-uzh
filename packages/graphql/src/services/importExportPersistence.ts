@@ -38,6 +38,7 @@ const elementImportReceiptReplaySelect = {
   leaseExpiresAt: true,
   createdElementIds: true,
   createdAnswerCollectionIds: true,
+  skippedElementRefs: true,
   completedAt: true,
   retentionExpiresAt: true,
   ownerId: true,
@@ -675,6 +676,7 @@ export async function completeElementImportReceipt({
   leaseId,
   createdElementIds,
   createdAnswerCollectionIds,
+  skippedElementRefs = [],
   completedAt = new Date(),
   retentionExpiresAt,
 }: {
@@ -683,10 +685,20 @@ export async function completeElementImportReceipt({
   leaseId: string
   createdElementIds: number[]
   createdAnswerCollectionIds: number[]
+  skippedElementRefs?: string[]
   completedAt?: Date
   retentionExpiresAt: Date
 }) {
-  if (createdElementIds.length === 0 || retentionExpiresAt <= completedAt) {
+  if (
+    (createdElementIds.length === 0 && skippedElementRefs.length === 0) ||
+    retentionExpiresAt <= completedAt ||
+    new Set(skippedElementRefs).size !== skippedElementRefs.length ||
+    skippedElementRefs.some(
+      (ref) =>
+        !PACKAGE_REF_PATTERN.test(ref) ||
+        RESERVED_PACKAGE_REFS.has(ref.toLowerCase())
+    )
+  ) {
     throw new TypeError('Invalid completed import receipt state.')
   }
 
@@ -703,6 +715,7 @@ export async function completeElementImportReceipt({
       leaseExpiresAt: null,
       createdElementIds,
       createdAnswerCollectionIds,
+      skippedElementRefs,
       completedAt,
       retentionExpiresAt,
     },

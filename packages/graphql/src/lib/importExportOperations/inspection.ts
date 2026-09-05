@@ -54,14 +54,14 @@ export function evaluateImportExportInspection(
   }
 
   const columnsReady = REQUIRED_IMPORT_EXPORT_COLUMNS.every(
-    ([tableName, columnName, dataType]) =>
+    ([tableName, columnName, dataType, defaultValue = null]) =>
       inspection.columns.some(
         (column) =>
           column.table_name === tableName &&
           column.column_name === columnName &&
           column.data_type === dataType &&
           column.is_nullable === 'YES' &&
-          column.column_default === null &&
+          column.column_default === defaultValue &&
           column.is_identity === 'NO' &&
           column.is_generated === 'NEVER'
       )

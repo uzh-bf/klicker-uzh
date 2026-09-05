@@ -1,0 +1,152 @@
+mutation ValidateElementSpreadsheet($artifactId: String!) {
+  validateElementSpreadsheet(artifactId: $artifactId) {
+    importToken
+    sources {
+      ref
+      sheet
+      row
+      name
+    }
+    issues {
+      sheet
+      row
+      ref
+      field
+      code
+    }
+    answerCollections {
+      ref
+      name
+      description
+      alreadyImported
+      existingAnswerCollectionId
+      existingAnswerCollectionName
+      entries {
+        id
+        value
+      }
+    }
+    elements {
+      ref
+      name
+      content
+      type
+      options {
+        __typename
+        ... on ElementImportPackagePreviewSCOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewMCOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewKPRIMOptions {
+          type
+          displayMode
+          hasSampleSolution
+          hasAnswerFeedbacks
+          choices {
+            ix
+            value
+            correct
+            feedback
+          }
+        }
+        ... on ElementImportPackagePreviewNumericalOptions {
+          type
+          hasSampleSolution
+          accuracy
+          placeholder
+          unit
+          restrictions {
+            min
+            max
+          }
+          solutionRanges {
+            min
+            max
+          }
+          exactSolutions
+        }
+        ... on ElementImportPackagePreviewFreeTextOptions {
+          type
+          hasSampleSolution
+          restrictions {
+            maxLength
+          }
+          solutions
+        }
+        ... on ElementImportPackagePreviewContentOptions {
+          type
+        }
+        ... on ElementImportPackagePreviewFlashcardOptions {
+          type
+        }
+        ... on ElementImportPackagePreviewSelectionOptions {
+          type
+          hasSampleSolution
+          numberOfInputs
+        }
+        ... on ElementImportPackagePreviewCaseStudyOptions {
+          type
+          hasSampleSolution
+          criteria {
+            id
+            name
+            order
+            min
+            max
+            step
+            unit
+            labels {
+              min
+              mid
+              max
+            }
+          }
+          cases {
+            id
+            title
+            description
+            order
+            solutions {
+              itemId
+              criteriaSolutions {
+                criterionId
+                min
+                max
+              }
+            }
+          }
+        }
+      }
+      pointsMultiplier
+      basePoints
+      explanation
+      status
+      alreadyImported
+      existingElementId
+      existingElementName
+      answerCollectionId
+      answerCollectionRef
+      answerCollectionItemIds
+    }
+  }
+}

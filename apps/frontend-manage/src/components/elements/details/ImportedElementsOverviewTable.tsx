@@ -101,6 +101,7 @@ function ImportedElementsOverviewTable({
   importing,
   commitError,
   onImport,
+  duplicatePolicy = 'copy',
 }: {
   elements: Record<string, ElementFormTypes>
   elementMeta: Record<string, PackagePreviewElementMeta>
@@ -112,6 +113,7 @@ function ImportedElementsOverviewTable({
   importing: boolean
   commitError: string | null
   onImport: (selectedElementRefs: string[]) => Promise<void>
+  duplicatePolicy?: 'copy' | 'skip'
 }) {
   const t = useTranslations()
   const commitErrorRef = useRef<HTMLDivElement | null>(null)
@@ -313,7 +315,9 @@ function ImportedElementsOverviewTable({
                   <UserNotification
                     type="warning"
                     message={t(
-                      'manage.elements.elementImportDuplicateSummary',
+                      duplicatePolicy === 'skip'
+                        ? 'manage.elements.spreadsheetDuplicateSummary'
+                        : 'manage.elements.elementImportDuplicateSummary',
                       { count: selectedDuplicateCount }
                     )}
                     className={{
@@ -327,6 +331,11 @@ function ImportedElementsOverviewTable({
 
               <PackageAnswerCollectionOverview
                 mode="import"
+                descriptionOverride={
+                  duplicatePolicy === 'skip'
+                    ? t('manage.elements.spreadsheetCollections')
+                    : undefined
+                }
                 collections={collectionsWithSelectedElements}
                 selectedCollectionRefs={requiredCollectionRefs}
                 dataCy="element-import-answer-collections-overview"

@@ -708,12 +708,12 @@ describe('database operation safety', () => {
       missingMigrations: [],
       tableSizes: [],
       columns: REQUIRED_IMPORT_EXPORT_COLUMNS.map(
-        ([table_name, column_name, data_type]) => ({
+        ([table_name, column_name, data_type, column_default = null]) => ({
           table_name,
           column_name,
           data_type,
           is_nullable: 'YES' as const,
-          column_default: null,
+          column_default,
           is_identity: 'NO' as const,
           is_generated: 'NEVER' as const,
         })

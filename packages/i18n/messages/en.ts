@@ -2438,10 +2438,55 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       optionsImportDescription: 'Options',
       importElements: 'Import elements',
       exportElements: 'Export elements',
+      spreadsheetTitle: 'Excel',
+      spreadsheetInfo:
+        'Import the fixed Klicker or Kahoot Excel template. Klicker supports all nine element types. Valid elements can be imported even when other rows need correction.',
+      spreadsheetTemplate: 'Download Klicker template',
+      spreadsheetExport: 'Export selected elements to Excel',
+      spreadsheetKahootTemplate: 'Kahoot template',
+      spreadsheetUpload: 'Upload an Excel workbook',
+      spreadsheetWorking: 'Processing workbook…',
+      spreadsheetFailure:
+        'The workbook operation failed. Check the template and try again. If an import was interrupted, retrying is safe.',
+      spreadsheetFileRequirements:
+        'Choose a non-empty .xlsx workbook of at most 5 MiB.',
+      spreadsheetDuplicatePolicy:
+        'Exact duplicates are skipped automatically. Names, tags and status do not affect duplicate matching. Existing elements are never overwritten.',
+      spreadsheetDuplicateSummary:
+        '{count, plural, one {# selected element matches content in this workbook or your library.} other {# selected elements match content in this workbook or your library.}} Matches are checked again and skipped at import.',
+      spreadsheetCollections:
+        'Required answer collections are copied only for elements that are actually imported.',
+      spreadsheetIssues: 'Rows and conversion notes',
+      spreadsheetRow: 'row {row}',
+      spreadsheetImageDependency:
+        'The original public image link is retained. The image depends on the source blob remaining available.',
+      spreadsheetTimerOmitted:
+        'Kahoot time limits are not imported into elements.',
+      spreadsheetImagesOmitted:
+        'Images in the Kahoot workbook are not imported.',
+      spreadsheetInvalidRow:
+        'This row or its related element cannot be imported. Correct the indicated field and its related rows.',
+      spreadsheetInvalidOrder:
+        'Order must start at 0 and increase by 1 without gaps or duplicates.',
+      spreadsheetDuplicateRef:
+        'This reference is used more than once. Give each item a unique reference.',
+      spreadsheetUnknownRef:
+        'The referenced item does not exist. Check the reference and its related worksheet.',
+      spreadsheetDisabledSolution:
+        'Answers or feedback are supplied while their setting is disabled. Enable hasSampleSolution (and hasAnswerFeedbacks for feedback), or remove the disabled data.',
+      spreadsheetAmbiguousSolution:
+        'Supply either an exact value or a minimum/maximum range for this solution.',
+      spreadsheetInvalidImage:
+        'Use a valid public Klicker image URL or remove this image reference.',
+      spreadsheetUnsupportedCell:
+        'Use a plain text, number or TRUE/FALSE cell. Formula and hyperlink cells are unsupported.',
+      spreadsheetImported: 'Imported elements: {count}',
+      spreadsheetSkipped: 'Not imported because they are exact duplicates:',
+      spreadsheetNoValidElements: 'No valid elements are available to import.',
       importElementsInfo:
         'Imported packages create private new elements and answer collections in your question pool. Original IDs, tags, permissions, activity results, and private metadata are not preserved.',
       elementImportCopyrightSolutionsDisclosure:
-        'Packages can contain solutions and copyrighted teaching material. Import content only when you have the right to use it.',
+        'Imported content can contain solutions and copyrighted teaching material. Import content only when you have the right to use it.',
       elementExportCopyrightSolutionsDisclosure:
         'Packages can contain solutions and copyrighted teaching material. Share or redistribute content only when you have the right to do so.',
       elementImportPsychometricDisclosure:

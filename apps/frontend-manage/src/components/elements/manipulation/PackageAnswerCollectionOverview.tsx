@@ -130,6 +130,7 @@ function PackageAnswerCollectionOverview({
   dataCy,
   selectedCollectionRefs,
   onRetry,
+  descriptionOverride,
 }: {
   collections: readonly OverviewAnswerCollection[]
   mode: 'export' | 'import'
@@ -138,6 +139,7 @@ function PackageAnswerCollectionOverview({
   dataCy: string
   selectedCollectionRefs?: ReadonlySet<string>
   onRetry?: () => void
+  descriptionOverride?: string
 }) {
   const t = useTranslations()
   const overviewRef = useRef<HTMLElement | null>(null)
@@ -178,7 +180,8 @@ function PackageAnswerCollectionOverview({
         </H4>
         {!loading && !error ? (
           <div className="text-sm text-slate-600">
-            {t(descriptionKey, { numCollections: visibleCollections.length })}
+            {descriptionOverride ??
+              t(descriptionKey, { numCollections: visibleCollections.length })}
           </div>
         ) : null}
       </div>
