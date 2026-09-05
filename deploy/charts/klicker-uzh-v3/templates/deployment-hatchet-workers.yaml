@@ -55,16 +55,31 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
+          ports:
+            - name: health
+              containerPort: {{ .Values.hatchet.workers.general.health.port }}
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: health
+            periodSeconds: {{ .Values.hatchet.workers.general.health.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.hatchet.workers.general.health.startupProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            periodSeconds: {{ .Values.hatchet.workers.general.health.readinessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.hatchet.workers.general.health.readinessProbe.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: health
+            periodSeconds: {{ .Values.hatchet.workers.general.health.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.hatchet.workers.general.health.livenessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.hatchet.workers.general.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.general.nodeSelector }}

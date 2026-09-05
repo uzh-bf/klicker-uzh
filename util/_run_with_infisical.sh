@@ -42,7 +42,9 @@ done
 # --- Validate environment ---
 case "$ENV" in
     "dev"|"dev-assessment"|"dev-playwright"|"dev-cleverreach"|"stg"|"prd")
-        echo "🎯 Target environment: $ENV"
+        if [[ "${INFISICAL_WRAPPER_QUIET:-false}" != "true" ]]; then
+            echo "🎯 Target environment: $ENV"
+        fi
         ;;
     "")
         echo "❌ Missing --env argument."
@@ -66,13 +68,32 @@ if [[ ${#ARGS[@]} -eq 0 ]]; then
     exit 1
 fi
 
+# --- Select one-shot or watch mode ---
+WATCH_MODE="${INFISICAL_WRAPPER_WATCH:-true}"
+case "$WATCH_MODE" in
+    "true")
+        ;;
+    "false")
+        ;;
+    *)
+        echo "❌ INFISICAL_WRAPPER_WATCH must be 'true' or 'false'." >&2
+        exit 1
+        ;;
+esac
+
 # --- Select Infisical project ---
 ROOT_DIR=$(git rev-parse --show-toplevel)
 CONFIG_FILE="$ROOT_DIR/.infisical.json"
 PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
-echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"
-echo "▶️ Command: ${ARGS[*]}"
+if [[ "${INFISICAL_WRAPPER_QUIET:-false}" != "true" ]]; then
+    echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"
+    echo "▶️ Command: ${ARGS[*]}"
+fi
 
 # --- Execute command with secrets ---
-infisical run --watch --env="$ENV" --project-config-dir="$CONFIG_FILE" --projectId="$PROJECT_ID" -- "${ARGS[@]}"
+if [[ "$WATCH_MODE" == "true" ]]; then
+    infisical run --watch --env="$ENV" --project-config-dir="$CONFIG_FILE" --projectId="$PROJECT_ID" -- "${ARGS[@]}"
+else
+    infisical run --env="$ENV" --project-config-dir="$CONFIG_FILE" --projectId="$PROJECT_ID" -- "${ARGS[@]}"
+fi

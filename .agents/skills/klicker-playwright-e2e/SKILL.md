@@ -165,6 +165,7 @@ Cleanup dialogs:
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.
+- Import/export browser cases require the general worker's `http://127.0.0.1:8081/ready` endpoint in `SERVICE_ENDPOINTS`; a running process can still be registering workflows and is not sufficient readiness evidence.
 - If Postgres logs `role "root" does not exist`, a startup/reset path is connecting without the intended `DATABASE_URL`. Ensure every DB-touching step gets the explicit CI database URL — and GitHub service `pg_isready` health checks must pass `-U` and `-d` for the same reason.
 - Make service wait scripts configurable by host/port env vars; keep localhost defaults for non-container local runs. The Playwright container may lack `nc` — use `.github/scripts/wait-for-services.sh`'s `check_tcp` helper instead of raw `nc -z`.
 - `util/_create_hatchet_token_test.sh` must keep its Hatchet HTTP API fallback: the Playwright container has no Docker, so the Docker token path only works for local compose runs.
