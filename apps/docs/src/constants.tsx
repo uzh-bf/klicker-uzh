@@ -11,12 +11,16 @@ interface FigureProps {
 
 function Figure({ imgSrc, caption, width }: FigureProps) {
   return (
-    <figure className="m-0 mb-4 mt-2 text-left">
+    <figure
+      className="m-0 mb-4 mt-2 max-w-full text-left"
+      style={{ width: width ?? 400 }}
+    >
       <Zoom zoomMargin={100}>
         <Image
           img={imgSrc}
-          className={'p-1 shadow'}
-          style={{ maxWidth: `${width ?? 400}px` }}
+          alt={caption}
+          className="w-full p-1 shadow"
+          style={{ width: '100%', maxWidth: '100%' }}
         />
       </Zoom>
       <figcaption className="mt-2 text-sm text-gray-600">{caption}</figcaption>
@@ -27,15 +31,15 @@ function Figure({ imgSrc, caption, width }: FigureProps) {
 export const FEATURES = [
   {
     title: 'Interactive Learning',
-    text: 'KlickerUZH offers a range of interactive features such as live quizzes, live Q&A and group activities promoting active student engagement and participation.',
+    text: 'Use Live Quizzes, Live Q&A and Group Activities to involve students in class and give them opportunities to contribute.',
   },
   {
     title: 'Timely Feedback',
-    text: 'Instantaneous feedback on questions in a synchronous and asynchronous settings allows students to gauge their understanding and address any misconceptions promptly.',
+    text: 'Give students feedback during class and independent practice so they can check their understanding and revisit mistakes.',
   },
   {
     title: 'Gamification',
-    text: 'With a built-in gamification system, KlickerUZH motivates students to actively participate, earn points, and unlock achievements, fostering a dynamic and rewarding learning environment.',
+    text: 'Use points, levels and leaderboards to make participation and progress visible across learning activities.',
   },
   {
     title: 'Various Question Types',
@@ -71,13 +75,13 @@ export const USE_CASE_CATEGORIES = {
   interaction: {
     title: 'Interaction',
     description:
-      'Foster meaningful dialogue and collaboration between students and teachers through synchronous and asynchronous learning activities.',
+      'Create opportunities for questions, discussion and collaboration during class and between sessions.',
     useCases: ['live_qa', 'live_quiz', 'group_activity', 'flipped_classroom'],
   },
   engagement: {
     title: 'Engagement',
     description:
-      'Promote active learning and sustained student motivation through structured activities and personalized learning paths.',
+      'Support practice and participation with structured activities, progress indicators and revision.',
     useCases: [
       'microlearning',
       'practice_quiz',
@@ -88,7 +92,7 @@ export const USE_CASE_CATEGORIES = {
   ai_enhanced_learning: {
     title: 'AI-Enhanced Learning',
     description:
-      'Support teaching and learning processes with artificial intelligence to provide personalized experiences and reduce administrative overhead.',
+      'Explore how AI could support tutoring, practice content and formative feedback. Availability depends on the capability and its development status.',
     useCases: [
       'ai_practice_content',
       'ai_formative_feedback',
@@ -1858,22 +1862,17 @@ export const USE_CASES = {
     learnings: (
       <>
         <p>
-          Our preliminary research on implementing Learning Analytics in
-          KlickerUZH has yielded substantial initial insights. These findings
-          emerge from two complementary sources: a comprehensive survey (n=11)
-          with lecturers and teaching assistants from various disciplines and
-          the methodological challenges encountered during the development of
-          the LA.
+          Our preliminary work on Learning Analytics in KlickerUZH draws on a
+          survey of 11 lecturers and teaching assistants from different
+          disciplines, alongside challenges encountered during development.
+          These early findings inform the design; they do not establish the
+          effectiveness of the proposed tools.
         </p>
         <p>
-          To systematically validate and further extend these findings, we will
-          conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
-            https://forms.office.com/e/K8CXM2pKhJ
-          </a>{' '}
-          so that we may contact you. The results of the piloting will be
-          evaluated and summarized as part of this use case.
+          This use case describes our research and design approach. For current
+          development plans and access information, see the{' '}
+          <a href="/development/">roadmap</a>. The examples below do not imply
+          that every described capability is available on the public instance.
         </p>
         <ul>
           <li>
@@ -2138,21 +2137,15 @@ export const USE_CASES = {
           the semester.
         </p>
         <p>
-          To systematically validate and further extend these findings, we will
-          conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
-            https://forms.office.com/e/K8CXM2pKhJ
-          </a>{' '}
-          so that we may contact you. The results of the piloting will be
-          evaluated and summarized as part of this use case.
+          This use case describes our research and design approach. For current
+          development plans and access information, see the{' '}
+          <a href="/development/">roadmap</a>. The examples below do not imply
+          that every described capability is available on the public instance.
         </p>
         <p>
-          Our initial assessment of this use case has also provided several
-          significant insights and preliminary learnings regarding the general
-          use of AI that are relevant for lecturers regarding the implementation
-          of AI use cases. Information about the associated challenges,
-          limitations, and remediation strategies for IT can be found here .
+          Our initial assessment identified challenges that lecturers should
+          consider when using AI in teaching. The following points outline
+          limitations and ways to address them.
         </p>
         <p>Some of our most important preliminary findings include:</p>
         <ul>
@@ -2427,22 +2420,16 @@ export const USE_CASES = {
           approaches directly in KlickerUZH.
         </p>
         <p>
-          To systematically validate and further extend these findings, we will
-          conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
-            https://forms.office.com/e/K8CXM2pKhJ
-          </a>{' '}
-          so that we may contact you. The results of the piloting will be
-          evaluated and summarized as part of this use case.
+          This use case describes our research and design approach. For current
+          development plans and access information, see the{' '}
+          <a href="/development/">roadmap</a>. The examples below do not imply
+          that every described capability is available on the public instance.
         </p>
 
         <p>
-          Our initial assessment of this use case has also provided several
-          significant insights and preliminary learnings regarding the general
-          use of AI that are relevant for lecturers regarding the implementation
-          of AI use cases. Information about the associated challenges,
-          limitations, and remediation strategies for IT can be found here .
+          Our initial assessment identified challenges that lecturers should
+          consider when using AI in teaching. The following points outline
+          limitations and ways to address them.
         </p>
         <p>Some of our most important preliminary findings include:</p>
 
@@ -2762,21 +2749,15 @@ export const USE_CASES = {
           and preliminary insights from our pilot implementations.
         </p>
         <p>
-          To systematically validate and further extend these findings, we will
-          conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
-            https://forms.office.com/e/K8CXM2pKhJ
-          </a>{' '}
-          so that we may contact you. The results of the piloting will be
-          evaluated and summarized as part of this use case.
+          This use case describes our research and design approach. For current
+          development plans and access information, see the{' '}
+          <a href="/development/">roadmap</a>. The examples below do not imply
+          that every described capability is available on the public instance.
         </p>
         <p>
-          Our initial assessment of this use case has also provided several
-          significant insights and preliminary learnings regarding the general
-          use of AI that are relevant for lecturers regarding the implementation
-          of AI use cases. Information about the associated challenges,
-          limitations, and remediation strategies for IT can be found here .
+          Our initial assessment identified challenges that lecturers should
+          consider when using AI in teaching. The following points outline
+          limitations and ways to address them.
         </p>
         <p>Some of our most important preliminary findings include:</p>
         <ul>
