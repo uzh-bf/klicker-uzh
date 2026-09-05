@@ -3,6 +3,7 @@ import type {
   ActivityLogModificationDetails,
   AssessmentReportSnapshot,
   AvatarSettings,
+  ChatbotStandardModeConfig,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
@@ -86,6 +87,7 @@ declare global {
     type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
     type PrismaElementGenerationProvenance =
       QuestionGenerationQuestionProvenance
+    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
   }
 }
 // #endregion

@@ -180,6 +180,9 @@ model Chatbot {
   // TODO: add JSON types
   systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
 
+  /// [PrismaChatbotStandardModeConfig]
+  standardModeConfig Json?
+
   // Credit configuration per chatbot
   creditInitialCredits Int               @default(1)
   creditResetPeriod    CreditResetPeriod @default(WEEKLY)
@@ -187,7 +190,7 @@ model Chatbot {
   creditMaxCredits     Int               @default(1)
 
   // Model selection control
-  modelSelection                 Boolean  @default(false) // Whether users can select models (false = automatic selection)
+  modelSelection                 Boolean  @default(false) // Whether participants can select models (false = lecturer-fixed model)
   allowedModelIds                String[] @default([]) // Restrict to these registry model IDs (empty = all models)
   allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
