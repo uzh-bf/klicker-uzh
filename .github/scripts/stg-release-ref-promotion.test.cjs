@@ -368,21 +368,7 @@ test('all first-party chart images prefer the optional global tag', () => {
   )
 })
 
-test('rendered images preserve per-image fallbacks and prefer the global tag', (t) => {
-  const fixtureRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'stg-release-chart-baseline-')
-  )
-  t.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }))
-
-  const fixtureValuesPath = path.join(fixtureRoot, 'values.json')
-  fs.writeFileSync(
-    fixtureValuesPath,
-    JSON.stringify({
-      mcpStudent: { enabled: true },
-      mcpLecturer: { enabled: true },
-      migrator: { enabled: true },
-    })
-  )
+test('rendered images preserve per-image fallbacks and prefer the global tag', () => {
   const imageArguments = Object.entries(IMAGE_VALUES).flatMap(([key, name]) => [
     '--set-string',
     `${key}.image.repository=ghcr.io/uzh-bf/klicker-uzh/${name}`,
@@ -391,7 +377,9 @@ test('rendered images preserve per-image fallbacks and prefer the global tag', (
   ])
   const renderImages = (extraArguments = []) =>
     renderedImages(
-      renderChart(CHART_DIR, fixtureValuesPath, [
+      renderChart(CHART_DIR, path.join(CHART_DIR, 'values.yaml'), [
+        '--set',
+        'mcpStudent.enabled=true,mcpLecturer.enabled=true,migrator.enabled=true',
         ...imageArguments,
         ...extraArguments,
       ])
