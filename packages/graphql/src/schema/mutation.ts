@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
@@ -92,6 +93,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -106,6 +108,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -1488,6 +1491,41 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
         nullable: true,
         type: ChatAccountUsageOverviewRef,
@@ -1878,6 +1916,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 
