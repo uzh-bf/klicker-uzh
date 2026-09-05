@@ -4,7 +4,8 @@ export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
 export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
 
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const MAX_DOC_QUERY_KB_IDS = 32
 
 export interface MCPScopedConfiguration {
   chatMode?: unknown
@@ -26,7 +27,8 @@ function requiredScopeError(): never {
 type ResolvedMcpScope = {
   chatMode: string
   serverId: string
-  kbId: string
+  kbIds: string[]
+  representation: 'kb_id' | 'kb_ids'
 }
 
 /**
@@ -41,6 +43,70 @@ export function normalizeDocQueryKbId(value: unknown): string {
   if (!UUID_PATTERN.test(normalized)) requiredScopeError()
 
   return normalized
+}
+
+/**
+ * Normalizes and bounds the multi-knowledge-base scope used by Doc Query.
+ * Sorting makes mode comparisons deterministic while retaining singleton
+ * compatibility at the JWT boundary.
+ */
+export function normalizeDocQueryKbIds(value: unknown): string[] {
+  if (!Array.isArray(value)) requiredScopeError()
+  if (value.length < 1 || value.length > MAX_DOC_QUERY_KB_IDS) {
+    requiredScopeError()
+  }
+
+  const normalized = value.map(normalizeDocQueryKbId)
+  if (new Set(normalized).size !== normalized.length) requiredScopeError()
+
+  return [...normalized].sort((left, right) => left.localeCompare(right))
+}
+
+type ResolvedDocQueryParameters = Pick<
+  ResolvedMcpScope,
+  'kbIds' | 'representation'
+>
+
+function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
+  const parameters = isRecord(value) ? value : null
+  const hasKbId = parameters !== null && Object.hasOwn(parameters, 'kb_id')
+  const hasKbIds = parameters !== null && Object.hasOwn(parameters, 'kb_ids')
+  if (
+    parameters === null ||
+    hasKbId === hasKbIds ||
+    parameters.required !== true ||
+    parameters.toolAlias !== 'doc_query'
+  ) {
+    requiredScopeError()
+  }
+
+  if (hasKbId) {
+    return {
+      kbIds: [normalizeDocQueryKbId(parameters.kb_id)],
+      representation: 'kb_id',
+    }
+  }
+  if (!Array.isArray(parameters.kb_ids) || parameters.kb_ids.length < 2) {
+    requiredScopeError()
+  }
+  return {
+    kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
+    representation: 'kb_ids',
+  }
+}
+
+export function assertDocQueryRequestScope(
+  parameters: unknown,
+  requestedKbIds: unknown
+): void {
+  const configured = resolveDocQueryParameters(parameters).kbIds
+  const requested = normalizeDocQueryKbIds(requestedKbIds)
+  if (
+    configured.length !== requested.length ||
+    configured.some((kbId, index) => kbId !== requested[index])
+  ) {
+    requiredScopeError()
+  }
 }
 
 function isInternalTransportHost(hostname: string): boolean {
@@ -96,10 +162,12 @@ function resolveKbConfiguration(
   const serverName = server?.name
   const serverId = server?.id
   const hasKbId = parameters !== null && Object.hasOwn(parameters, 'kb_id')
+  const hasKbIds = parameters !== null && Object.hasOwn(parameters, 'kb_ids')
+  if (hasKbId && hasKbIds) requiredScopeError()
 
   // The reserved binding is meaningful only on the exact KB server. This
   // prevents a typo or copied parameter from silently scoping another MCP.
-  if (hasKbId && serverName !== DOC_QUERY_MCP_SERVER_NAME) {
+  if ((hasKbId || hasKbIds) && serverName !== DOC_QUERY_MCP_SERVER_NAME) {
     requiredScopeError()
   }
 
@@ -107,9 +175,6 @@ function resolveKbConfiguration(
 
   if (
     parameters === null ||
-    !Object.hasOwn(parameters, 'kb_id') ||
-    parameters.required !== true ||
-    parameters.toolAlias !== 'doc_query' ||
     typeof config?.chatMode !== 'string' ||
     config.chatMode.trim().length === 0 ||
     typeof serverId !== 'string' ||
@@ -118,17 +183,31 @@ function resolveKbConfiguration(
     requiredScopeError()
   }
 
+  const { representation, kbIds } = resolveDocQueryParameters(parameters)
+
   return {
     chatMode: config.chatMode,
     serverId,
-    kbId: normalizeDocQueryKbId(parameters.kb_id),
+    kbIds,
+    representation,
   }
 }
 
 function assertOneScope(configurations: ResolvedMcpScope[]): void {
   const serverIds = new Set(configurations.map(({ serverId }) => serverId))
-  const kbIds = new Set(configurations.map(({ kbId }) => kbId))
-  if (serverIds.size !== 1 || kbIds.size !== 1) requiredScopeError()
+  const representations = new Set(
+    configurations.map(({ representation }) => representation)
+  )
+  const firstKbIds = configurations[0]?.kbIds
+  const hasSameKbSet = configurations.every(
+    ({ kbIds }) =>
+      firstKbIds !== undefined &&
+      kbIds.length === firstKbIds.length &&
+      kbIds.every((kbId, index) => kbId === firstKbIds[index])
+  )
+  if (serverIds.size !== 1 || representations.size !== 1 || !hasSameKbSet) {
+    requiredScopeError()
+  }
 }
 
 function assertOneConfigurationPerMode(
@@ -155,14 +234,18 @@ function assertEffectiveConfigurationMatchesScope(
     configurations.length !== 1 ||
     configurations[0].chatMode !== selectedMode ||
     configurations[0].serverId !== expected.serverId ||
-    configurations[0].kbId !== expected.kbId
+    configurations[0].representation !== expected.representation ||
+    configurations[0].kbIds.length !== expected.kbIds.length ||
+    configurations[0].kbIds.some(
+      (kbId, index) => kbId !== expected.kbIds[index]
+    )
   ) {
     requiredScopeError()
   }
 }
 
 /**
- * Resolves the one knowledge-base scope shared by the enabled configuration
+ * Resolves the knowledge-base scope shared by the enabled configuration
  * snapshot. A chatbot becomes scoped as soon as an enabled KB configuration
  * is present, and every KB mode must then have one consistent binding.
  */
@@ -170,7 +253,7 @@ export function resolveMcpScope(
   configurations: readonly MCPScopedConfiguration[],
   selectedMode: string,
   effectiveConfigurations: readonly MCPScopedConfiguration[]
-): string | undefined {
+): string[] | undefined {
   if (
     !Array.isArray(configurations) ||
     !Array.isArray(effectiveConfigurations) ||
@@ -203,5 +286,5 @@ export function resolveMcpScope(
     kbConfigurations[0]
   )
 
-  return kbConfigurations[0].kbId
+  return [...kbConfigurations[0].kbIds]
 }
