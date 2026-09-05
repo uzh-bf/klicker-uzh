@@ -2437,6 +2437,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
+      uploadImageFailed:
+        'Der Medien-Upload konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
+      uploadImageInvalidFileType:
+        'Wählen Sie ein Bild im PNG-, JPEG- oder GIF-Format aus.',
+      uploadImageTooLarge:
+        'Das ausgewählte Bild ist zu gross. Laden Sie ein Bild mit höchstens {maxSizeMiB} MiB hoch.',
       updateInstances:
         'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
       includeTemplateInstanceUpdates:

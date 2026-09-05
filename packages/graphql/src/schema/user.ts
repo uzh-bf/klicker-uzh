@@ -107,20 +107,3 @@ export const MediaFile = MediaFileRef.implement({
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
-
-export interface IFileUploadSAS {
-  uploadSasURL: string
-  uploadHref: string
-  containerName: string
-  fileName: string
-}
-export const FileUploadSASRef =
-  builder.objectRef<IFileUploadSAS>('FileUploadSAS')
-export const FileUploadSAS = FileUploadSASRef.implement({
-  fields: (t) => ({
-    uploadSasURL: t.exposeString('uploadSasURL'),
-    uploadHref: t.exposeString('uploadHref'),
-    containerName: t.exposeString('containerName'),
-    fileName: t.exposeString('fileName'),
-  }),
-})

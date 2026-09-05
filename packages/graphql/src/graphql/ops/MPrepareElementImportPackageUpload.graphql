@@ -1,0 +1,7 @@
+mutation PrepareElementImportPackageUpload($filename: String!, $bytes: Int!) {
+  prepareElementImportPackageUpload(filename: $filename, bytes: $bytes) {
+    uploadURL
+    uploadCapability
+    artifactId
+  }
+}

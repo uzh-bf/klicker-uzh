@@ -1,4 +1,5 @@
 query UserProfile {
+  canUseElementImportExport
   userProfile {
     id
     email

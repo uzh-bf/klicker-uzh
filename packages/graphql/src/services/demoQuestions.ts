@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type { PrismaTransactionContextWithUser } from '../lib/context.js'
+import {
+  ensureAnswerCollectionFingerprintCurrent,
+  ensureElementFingerprintCurrent,
+} from './importExportFingerprints.js'
 
 export async function seedDemoSelectionAndCaseStudyElements(
   ctx: PrismaTransactionContextWithUser
@@ -191,6 +195,13 @@ export async function seedDemoSelectionAndCaseStudyElements(
     { elementId: questionCS.id, userId: ctx.user.sub },
     ctx.prisma
   )
+
+  await ensureAnswerCollectionFingerprintCurrent(
+    answerCollection.id,
+    ctx.prisma
+  )
+  await ensureElementFingerprintCurrent(questionSE.id, ctx.prisma)
+  await ensureElementFingerprintCurrent(questionCS.id, ctx.prisma)
 
   return { questionSE, questionCS }
 }

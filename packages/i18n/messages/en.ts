@@ -2416,6 +2416,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
+      uploadImageFailed:
+        'The media upload could not be completed. Please try again.',
+      uploadImageInvalidFileType: 'Select a PNG, JPEG, or GIF image.',
+      uploadImageTooLarge:
+        'The selected image is too large. Upload an image no larger than {maxSizeMiB} MiB.',
       updateInstances: 'Update element instances in KlickerUZH activities',
       includeTemplateInstanceUpdates:
         'Include instances in template activities for update',

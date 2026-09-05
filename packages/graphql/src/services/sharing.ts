@@ -16,6 +16,12 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.js'
+import {
+  ensureAnswerCollectionFingerprintCurrent,
+  ensureElementFingerprintCurrent,
+  lockElementFingerprintDependencies,
+} from './importExportFingerprints.js'
 
 // ! Helper functions
 // #region
@@ -5203,6 +5209,8 @@ export async function copyAnswerCollectionToAccount(
       },
     })
 
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
+
     // trigger recomputation of derived permissions for the object within the transaction
     await recomputeDerivedPermissions(
       { answerCollectionId: newCollection.id, userId: ctx.user.sub },
@@ -5281,6 +5289,14 @@ export async function copyElementToAccount(
   })
 
   await ctx.prisma.$transaction(async (prisma) => {
+    await lockElementFingerprintDependencies(
+      {
+        ...element,
+        requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
+      },
+      prisma
+    )
+
     // create new element with the content of the original one
     const newElement = await prisma.element.create({
       data: {
@@ -5319,6 +5335,7 @@ export async function copyElementToAccount(
       { elementId: newElement.id, userId: ctx.user.sub },
       prisma
     )
+    await ensureElementFingerprintCurrent(newElement.id, prisma)
 
     // if an answer collection is linked to the element, recompute the corresponding derived permissions
     if (newElement.answerCollectionId !== null) {

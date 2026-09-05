@@ -1,6 +1,22 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
-export { default as enhanceContext } from './lib/context.js'
+export { default as enhanceContext, type Context } from './lib/context.js'
+export {
+  getImportExportErrorCode,
+  ImportExportErrorCode,
+} from './lib/importExportErrors.js'
+export {
+  getImportExportStartupResponsibilities,
+  initializeImportExportRuntimeConfig,
+} from './lib/importExportRuntimeConfig.js'
+export { assertImportExportTokenSecretConfig } from './lib/importExportTokenSecret.js'
+export { getLocalImportedMediaDownload } from './services/mediaStorage.js'
+export {
+  assertImportExportPackageStorageConfig,
+  downloadLocalElementExportPackage,
+  isLocalImportExportPackageStorageEnabled,
+  uploadPreparedElementImportPackage,
+} from './services/packageStorage.js'
 export { getChatModelRegistry } from './services/chatbots.js'
 
 import builder from './builder.js'
@@ -11,8 +27,10 @@ import './schema/assessment.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
+import './schema/elementImportExport.js'
 import './schema/evaluation.js'
 import './schema/groupActivity.js'
+import './schema/mediaUpload.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
 import './schema/participantInvitation.js'
@@ -53,6 +71,10 @@ import {
   handleUpdateGroupAverageScores,
 } from './services/groups.js'
 import {
+  handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
+} from './services/importExportFingerprintMaintenance.js'
+import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
   handleStandardLiveQuizBlockClosureAggregation,
@@ -65,6 +87,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from './services/notifications.js'
+import { handleCleanupImportExportPackages } from './services/packageStorage.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
@@ -75,12 +98,15 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
   handleSendPushNotifications,
   handleSendTeamsNotification,
   handleUpdateWeeklyTimelineEntries,
+  handleCleanupImportExportPackages,
   handleEndExpiredGroupActivity,
   handleEndExpiredMicroLearning,
   handlePublishScheduledLiveQuiz,

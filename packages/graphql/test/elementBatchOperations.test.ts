@@ -15,6 +15,7 @@ import {
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import { applyElementBatchOperations } from '../src/services/elements.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
@@ -55,16 +56,12 @@ describe('Unit tests batch operations on elements', () => {
   afterEach(async () => await testCleanup(prisma))
 
   async function seedElement(args: { [x: string]: any }, prisma: PrismaClient) {
-    // Randomly choose one of the values of ElementType
-    const elementTypes = Object.values(ElementType)
-    const randomType =
-      elementTypes[Math.floor(Math.random() * elementTypes.length)]!
-
     const element = await prisma.element.create({
       data: {
         name: uuid(),
         content: uuid(),
-        type: randomType,
+        explanation: 'Seeded explanation',
+        type: ElementType.CONTENT,
         options: {} as ElementOptions,
         ownerId: userOneCtx.user.sub,
         ...args,
@@ -1118,5 +1115,55 @@ describe('Unit tests batch operations on elements', () => {
     )
     expect(updatedInstanceWithUpdate?.elementData.pointsMultiplier).toEqual(3)
     expect(updatedInstanceWithUpdate?.options.pointsMultiplier).toEqual(6)
+  })
+
+  it('persists a current fingerprint for a didactic batch write without Hatchet', async () => {
+    const elementId = await seedElement(
+      {
+        type: ElementType.SC,
+        options: { hasSampleSolution: true },
+        pointsMultiplier: 1,
+        importFingerprint: 'a'.repeat(64),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      },
+      prisma
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
+      .mockRejectedValue(new Error('Hatchet unavailable'))
+
+    try {
+      await expect(
+        applyElementBatchOperations(
+          {
+            elementIds: [elementId],
+            multiplier: 2,
+            archive: false,
+            unarchive: false,
+            updateInstances: false,
+            updateTemplateInstances: false,
+          },
+          userOneCtx
+        )
+      ).resolves.toBe(1)
+
+      expect(runNoWait).not.toHaveBeenCalled()
+      await expect(
+        prisma.element.findUniqueOrThrow({
+          where: { id: elementId },
+          select: {
+            pointsMultiplier: true,
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toMatchObject({
+        pointsMultiplier: 2,
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
+    } finally {
+      runNoWait.mockRestore()
+    }
   })
 })
