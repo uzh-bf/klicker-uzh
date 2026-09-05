@@ -161,7 +161,7 @@ jobs:
           name: playwright-execution-plan
           path: playwright-execution-plan.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload route metadata
         uses: actions/upload-artifact@v4
@@ -169,7 +169,7 @@ jobs:
           name: playwright-route-metadata
           path: route.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload selector shadow plan
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
@@ -178,7 +178,7 @@ jobs:
           name: playwright-selector-shadow
           path: playwright-selector-shadow.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   build-and-compile-hosted:
     needs: prepare

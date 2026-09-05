@@ -7,6 +7,7 @@ const test = require('node:test')
 const {
   BUILD_IMAGE_DIGEST,
   buildFingerprint,
+  dependencyFingerprint,
   relevantFiles,
 } = require('./playwright-cache-contract.cjs')
 
@@ -44,6 +45,43 @@ test('the cache contract includes package manifests and fixed compatibility file
       'turbo.json',
     ]
   )
+})
+
+test('dependency cache survives orchestration changes but tracks installation inputs', (t) => {
+  const files = {
+    'package.json': '{"dependencies":{"example":"1.0.0"}}',
+    'pnpm-lock.yaml': 'lockfileVersion: 9.0',
+    'pnpm-workspace.yaml': 'packages: []',
+    '.npmrc': 'verify-store-integrity=true',
+    '.pnpmfile.cjs': 'module.exports = {}',
+    'patches/example.patch': 'original patch',
+    'turbo.json': '{"tasks":{}}',
+    '.github/actions/playwright-build/action.yml': 'original workflow',
+  }
+  const root = fixtureRoot(files)
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const input = { root, files: Object.keys(files) }
+  const original = dependencyFingerprint(input)
+  assert.notEqual(
+    original,
+    dependencyFingerprint({ ...input, buildImageDigest: 'different-image' })
+  )
+  assert.equal(
+    original,
+    dependencyFingerprint({ ...input, files: [...input.files].reverse() })
+  )
+  for (const file of [
+    'turbo.json',
+    '.github/actions/playwright-build/action.yml',
+  ]) {
+    fs.writeFileSync(path.join(root, file), 'changed orchestration')
+  }
+  assert.equal(original, dependencyFingerprint(input))
+  for (const file of Object.keys(files).slice(0, 6)) {
+    fs.writeFileSync(path.join(root, file), `${files[file]}\nchanged`)
+    assert.notEqual(original, dependencyFingerprint(input), file)
+    fs.writeFileSync(path.join(root, file), files[file])
+  }
 })
 
 test('the fingerprint is deterministic and includes the image digest', (t) => {
