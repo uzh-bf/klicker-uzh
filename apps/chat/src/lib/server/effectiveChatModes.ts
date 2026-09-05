@@ -1,3 +1,4 @@
+import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
@@ -172,6 +173,31 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
+function isTypedStandardMode(
+  mode: string
+): mode is 'tutor' | 'explainer' | 'quizzer' {
+  return mode === 'tutor' || mode === 'explainer' || mode === 'quizzer'
+}
+
+function isStandardModeEnabled(
+  standardModeConfig: unknown,
+  systemPrompts: unknown,
+  mode: string
+): boolean {
+  const normalizedConfig = normalizeChatbotStandardModeConfig(
+    standardModeConfig,
+    systemPrompts
+  )
+
+  if (isTypedStandardMode(mode)) {
+    if (mode === 'tutor') return normalizedConfig.tutorEnabled
+    if (mode === 'explainer') return normalizedConfig.explainerEnabled
+    return normalizedConfig.quizzerEnabled
+  }
+
+  return !isModeExplicitlyDisabled(systemPrompts, mode)
+}
+
 function getModeDescription(systemPrompts: unknown, mode: string): string {
   const defaultDescription = (
     DEFAULT_MODE_DESCRIPTIONS as Record<string, string>
@@ -186,7 +212,8 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
 
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
-  mcpConfigurations: readonly ChatModeMCPConfiguration[]
+  mcpConfigurations: readonly ChatModeMCPConfiguration[],
+  standardModeConfig: unknown = null
 ): Record<string, string> {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
@@ -199,7 +226,9 @@ export function resolveEffectiveChatModeOptions(
 
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
-    if (isModeExplicitlyDisabled(systemPrompts, mode)) continue
+    if (!isStandardModeEnabled(standardModeConfig, systemPrompts, mode)) {
+      continue
+    }
 
     const effectiveConfigurations = resolveEffectiveMCPConfigurations(
       mcpConfigurations,
