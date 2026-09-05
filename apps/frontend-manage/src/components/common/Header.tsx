@@ -3,7 +3,7 @@ import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faBullhorn, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
@@ -19,6 +19,7 @@ import {
   type NavigationItemProps,
   type NavigationMenuItemProps,
   type NavigationSubmenuProps,
+  NotificationBadgeWrapper,
   Tooltip,
 } from '@uzh-bf/design-system'
 import Image from 'next/image'
@@ -26,6 +27,8 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
+import { useProductUpdates } from '../productUpdates/useProductUpdates'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
@@ -40,7 +43,9 @@ function Header({
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const [showProductUpdates, setShowProductUpdates] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const { unreadCount } = useProductUpdates()
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
     betaSignupEnabled &&
@@ -232,6 +237,20 @@ function Header({
     />
   )
 
+  // Kept out of the navigation array below and rendered on its own: an
+  // icon-only navigation button cannot carry the notification prop, so the
+  // unread dot has to come from the badge wrapper around it.
+  const productUpdatesNavigation: NavigationItemProps[] = [
+    {
+      type: 'button',
+      key: 'product-updates-menubar-item',
+      icon: faBullhorn,
+      onClick: () => setShowProductUpdates(true),
+      data: { cy: 'product-updates-menubar-item' },
+      className: { icon: '-mx-1', root: 'px-3' },
+    },
+  ]
+
   const rightNavigation: NavigationItemProps[] = [
     {
       type: 'button',
@@ -314,6 +333,9 @@ function Header({
         },
       ],
       className: {
+        // On narrow desktops the header cannot fit every label; the account
+        // menu keeps its icon and drops the username, which the menu repeats.
+        label: 'max-lg:hidden',
         content: 'mr-1',
       },
     },
@@ -322,7 +344,9 @@ function Header({
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        // The gap keeps the left and right navigation groups apart on narrow
+        // desktop widths, where they would otherwise touch label to icon.
+        className="print:hidden! flex h-full w-full flex-row items-center justify-between gap-x-2 border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
@@ -352,13 +376,35 @@ function Header({
             </Tooltip>
           )}
         </div>
-        <Navigation
-          items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-        />
+        <div className="flex flex-row items-center">
+          <NotificationBadgeWrapper
+            showBadge={unreadCount > 0}
+            size="sm"
+            // Even the design system's smallest badge is a full 16px circle,
+            // sized to hold a count. This badge never shows one, so it is
+            // shrunk to a corner dot that marks the icon without covering it.
+            className={{
+              root: 'flex items-center',
+              badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
+            }}
+            data={{ cy: 'product-updates-badge' }}
+          >
+            <Navigation
+              items={productUpdatesNavigation}
+              className={{ root: 'shadow-none' }}
+            />
+          </NotificationBadgeWrapper>
+          <Navigation
+            items={rightNavigation}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+        </div>
       </div>
       {showSupportModal && (
         <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+      )}
+      {showProductUpdates && (
+        <ProductUpdateFeedModal onClose={() => setShowProductUpdates(false)} />
       )}
     </>
   )
