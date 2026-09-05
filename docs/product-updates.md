@@ -15,7 +15,7 @@ entry may be shown — never what it says.** The catalog is editorial content
 reviewed in the same pull request as the feature it describes, so an entry
 cannot drift away from the capability it announces. The decision and the
 rejected alternatives are in
-[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
 
 ## The catalog package
 
@@ -96,5 +96,5 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-Per-actor read state and the in-app feed surfaces do not exist yet; ADR 0028
+Per-actor read state and the in-app feed surfaces do not exist yet; ADR 0046
 describes their intended shape.
