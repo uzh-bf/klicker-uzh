@@ -62,6 +62,39 @@ export default {
       fallbackNotice:
         'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
     },
+    productUpdates: {
+      title: 'Neuigkeiten',
+      unreadCount: '{count} ungelesen',
+      dismiss: 'Neuigkeit ausblenden',
+      details: 'Mehr erfahren',
+    },
+    // PLATZHALTER-TEXTE — die Einführungskarten warten auf das Lektorat.
+    // Die Schlüsselstruktur ist gesetzt und entspricht en.ts, die Formulierung
+    // noch nicht.
+    onboarding: {
+      title: 'Willkommen im KlickerUZH-Chat',
+      replay: 'Tour starten',
+      progress: 'Schritt {current} von {total}',
+      previous: 'Zurück',
+      next: 'Weiter',
+      skip: 'Tour überspringen',
+      done: 'Chat starten',
+      modesTitle: 'Zwei Arten zu fragen',
+      modesBody:
+        'Wechsle zwischen dem Tutor-Modus, der Dich zur Antwort hinführt, und dem Explainer-Modus, der direkt antwortet. Das Menü dafür ist im Kopfbereich jeder Konversation.',
+      sourcesTitle: 'Antworten nennen ihre Quellen',
+      sourcesBody:
+        'Wenn eine Antwort auf Kursmaterial beruht, gibt sie es an. Öffne eine Quellenangabe, um die Stelle zu lesen und selbst zu prüfen.',
+      attachmentsTitle: 'Eigenes Material mitbringen',
+      attachmentsBody:
+        'Hänge ein Bild oder ein Dokument an eine Nachricht an, wenn sich Deine Frage darauf bezieht.',
+      historyTitle: 'Deine Konversationen bleiben',
+      historyBody:
+        'Jede Konversation wird in der Seitenleiste aufbewahrt. So machst Du später weiter oder beginnst jederzeit eine neue.',
+      creditsTitle: 'Credits',
+      creditsBody:
+        'Jede Antwort verbraucht Credits aus dem Budget Deines Kurses. In der Seitenleiste siehst Du, wie viele übrig sind.',
+    },
     sidebar: {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',

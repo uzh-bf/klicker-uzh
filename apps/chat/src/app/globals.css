@@ -1,10 +1,20 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* The product-tour overlay ships unlayered CSS, which would otherwise beat
+   every Tailwind utility (they live in `@layer utilities`) no matter how
+   specific the utility is. Pulling it into a layer here — rather than
+   importing it from a component — keeps the shared popover styling
+   overridable. */
+@import "driver.js/dist/driver.css" layer(components);
 @plugin "@tailwindcss/typography";
 
 @custom-variant fine-pointer (@media (hover: hover) and (pointer: fine));
 
 @source "../../node_modules/@uzh-bf/design-system/src";
+/* The tour popover's classes live in the shared package, outside this app's
+   own source tree, so Tailwind would not otherwise emit the utilities it
+   names. */
+@source "../../../../packages/product-tours/src";
 
 @theme inline {
   /* UZH fonts */
@@ -41,6 +51,12 @@
   --color-uzh-yellow-60: #fcec7c;
   --color-uzh-yellow-40: #fdf3a8;
   --color-uzh-yellow-20: #fef9d3;
+
+  /* The brand scale under the name the lecturer and student apps use for
+     it, so shared UI — the product tour popover — can name one token and
+     get the same colour in all three apps. */
+  --color-primary-100: var(--color-uzh-blue-100);
+  --color-primary-80: var(--color-uzh-blue-80);
 
   /* Chat-specific theme colors */
   --color-background: var(--background);

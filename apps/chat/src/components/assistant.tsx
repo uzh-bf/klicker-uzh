@@ -17,11 +17,13 @@ import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useEmbedded } from '../hooks/useEmbedded'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
+import { ChatOnboardingProvider } from './chat-onboarding'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
+import { featureTargetProps } from './onboarding/featureTargets'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -117,12 +119,20 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
   return (
     <>
       <ChatUiProvider>
-        <RuntimeProvider
-          chatbotId={chatbot.id}
-          initialModeOptions={initialModeOptions}
-        >
-          <AssistantLayout chatbot={chatbot} />
-        </RuntimeProvider>
+        {/* The onboarding tour lives inside this provider and therefore
+            ahead of the disclaimer modal below: it has to claim the composer's
+            focus gate in the same commit in which the disclaimer releases it.
+            `showDisclaimerModal` is exactly "the disclaimer still stands", so
+            the tour waits for an acceptance and never stacks on top of a
+            decision the participant has not made yet. */}
+        <ChatOnboardingProvider disclaimerPending={showDisclaimerModal}>
+          <RuntimeProvider
+            chatbotId={chatbot.id}
+            initialModeOptions={initialModeOptions}
+          >
+            <AssistantLayout chatbot={chatbot} />
+          </RuntimeProvider>
+        </ChatOnboardingProvider>
       </ChatUiProvider>
 
       {/* Disclaimer Modal */}
@@ -519,7 +529,7 @@ function SidebarMain({
           )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
-        <ModeSwitcher />
+        <ModeSwitcher targetProps={featureTargetProps('chat-mode-switcher')} />
         <Tooltip>
           <TooltipTrigger asChild>
             <button
