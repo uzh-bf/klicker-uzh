@@ -78,10 +78,49 @@ test('dependency cache survives orchestration changes but tracks installation in
   }
   assert.equal(original, dependencyFingerprint(input))
   for (const file of Object.keys(files).slice(0, 6)) {
-    fs.writeFileSync(path.join(root, file), `${files[file]}\nchanged`)
+    fs.writeFileSync(
+      path.join(root, file),
+      file === 'package.json'
+        ? '{"dependencies":{"example":"2.0.0"}}'
+        : `${files[file]}\nchanged`
+    )
     assert.notEqual(original, dependencyFingerprint(input), file)
     fs.writeFileSync(path.join(root, file), files[file])
   }
+})
+
+test('task scripts preserve the store key while installation hooks invalidate it', (t) => {
+  const root = fixtureRoot({ 'package.json': '{}' })
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const input = { root, files: ['package.json'] }
+  const original = dependencyFingerprint(input)
+  fs.writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify({ scripts: { 'test:dev-runtime': 'node test.mjs' } })
+  )
+  assert.equal(dependencyFingerprint(input), original)
+  const build = buildFingerprint(input)
+  fs.writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify({ scripts: { 'test:dev-runtime': 'node other-test.mjs' } })
+  )
+  assert.equal(dependencyFingerprint(input), original)
+  assert.notEqual(buildFingerprint(input), build)
+  for (const hook of [
+    'preinstall',
+    'install',
+    'postinstall',
+    'prepare',
+    'pnpm:devPreinstall',
+  ]) {
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({ scripts: { [hook]: 'node install.mjs' } })
+    )
+    assert.notEqual(dependencyFingerprint(input), original, hook)
+  }
+  fs.writeFileSync(path.join(root, 'package.json'), '{invalid')
+  assert.throws(() => dependencyFingerprint(input), SyntaxError)
 })
 
 test('the fingerprint is deterministic and includes the image digest', (t) => {

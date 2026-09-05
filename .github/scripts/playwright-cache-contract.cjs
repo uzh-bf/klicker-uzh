@@ -98,7 +98,7 @@ function dependencyFingerprint({
   const hash = crypto.createHash('sha256')
   hash.update(
     JSON.stringify({
-      schema: 1,
+      schema: 2,
       node: NODE_VERSION,
       pnpm: PNPM_VERSION,
       buildImageDigest,
@@ -119,9 +119,30 @@ function dependencyFingerprint({
     hash.update('\0')
     hash.update(file)
     hash.update('\0')
-    hash.update(fs.readFileSync(path.join(root, file)))
+    let contents = fs.readFileSync(path.join(root, file))
+    if (isPackageManifest(file)) {
+      const manifest = JSON.parse(contents.toString('utf8'))
+      // The pnpm store is reused before a fresh frozen install, not as node_modules.
+      // Keep installation hooks and all other fields; omit routine task scripts.
+      manifest.scripts = Object.fromEntries(
+        Object.entries(manifest.scripts ?? {}).filter(([name]) =>
+          [
+            'pnpm:devPreinstall',
+            'preinstall',
+            'install',
+            'postinstall',
+            'prepublish',
+            'preprepare',
+            'prepare',
+            'postprepare',
+          ].includes(name)
+        )
+      )
+      contents = JSON.stringify(manifest)
+    }
+    hash.update(contents)
   }
-  return `v1-${hash.digest('hex').slice(0, 32)}`
+  return `v2-${hash.digest('hex').slice(0, 32)}`
 }
 
 function main(argv = process.argv.slice(2)) {
