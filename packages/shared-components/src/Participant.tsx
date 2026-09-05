@@ -1,7 +1,7 @@
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import type { KeyboardEvent, PropsWithChildren } from 'react'
+import { Children, type KeyboardEvent, type PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // medal-styled rank badges for the top three positions
@@ -39,6 +39,10 @@ function Participant({
 }: PropsWithChildren<ParticipantProps>) {
   const t = useTranslations()
   const isInteractive = typeof onClick !== 'undefined'
+  // a row that renders its own controls (join/leave) must not become a
+  // button itself, since nested interactive controls are invalid
+  const hasNestedControls = Children.toArray(children).length > 0
+  const isButtonRow = isInteractive && !hasNestedControls
   const medalStyle =
     typeof rank === 'number' ? rankMedalStyles[rank] : undefined
 
@@ -60,14 +64,18 @@ function Participant({
         className
       )}
       onClick={onClick}
-      onKeyDown={isInteractive ? handleKeyDown : undefined}
-      role={isInteractive ? 'button' : undefined}
-      tabIndex={isInteractive ? 0 : undefined}
-      aria-label={t('shared.leaderboard.entryAriaLabel', {
-        rank: rank ?? '-',
-        name: pseudonym ?? '',
-        points: points ?? 0,
-      })}
+      onKeyDown={isButtonRow ? handleKeyDown : undefined}
+      role={isButtonRow ? 'button' : undefined}
+      tabIndex={isButtonRow ? 0 : undefined}
+      aria-label={
+        isButtonRow
+          ? t('shared.leaderboard.entryAriaLabel', {
+              rank: rank ?? '-',
+              name: pseudonym ?? '',
+              points: points ?? 0,
+            })
+          : undefined
+      }
       data-cy={`leaderboard-entry-${pseudonym}`}
     >
       <div className="flex flex-1 flex-row items-center gap-2">
