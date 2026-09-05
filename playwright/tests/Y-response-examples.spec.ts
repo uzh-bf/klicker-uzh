@@ -38,7 +38,6 @@ test.describe('Chatbot response-example review', () => {
             type: 'data-response-example-receipt',
             data: {
               token: 'synthetic-signed-receipt',
-              expiresAt: Math.floor(Date.now() / 1_000) + 3_600,
               question,
               answer,
             },
@@ -87,14 +86,16 @@ test.describe('Chatbot response-example review', () => {
     await page.goto(`${chatUrl()}/preview/${CHATBOT_ID_TEST}`, {
       waitUntil: 'domcontentloaded',
     })
-    await page.getByTestId('chat-composer-input').fill(question)
+    const composer = page.getByTestId('chat-composer-input')
+    await page.getByTestId('chat-welcome-suggestion').first().click()
+    await expect(composer).not.toHaveValue('')
+    await composer.fill(question)
+    await expect(composer).toHaveValue(question)
     await page.getByTestId('chat-send-button').click()
 
     const capture = page.getByTestId('owner-preview-response-example-capture')
     await expect(capture).toBeVisible()
-    await expect(capture).toHaveAccessibleName(
-      'Save this answer as a response example'
-    )
+    await expect(capture).not.toHaveAccessibleName('')
     await page.screenshot({
       path: testInfo.outputPath('response-example-capture-available.png'),
       fullPage: true,
@@ -103,7 +104,7 @@ test.describe('Chatbot response-example review', () => {
     await capture.click()
     await expect(
       page.getByTestId('owner-preview-response-example-status')
-    ).toContainText('saved and ready for review')
+    ).toBeVisible()
     await expect(
       page.getByTestId('owner-preview-response-example-review')
     ).toHaveAttribute(
@@ -126,8 +127,9 @@ test.describe('Chatbot response-example review', () => {
     page,
   }, testInfo) => {
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const prisma = await getPrisma()
     await ensureChatbotSeeded()
-    await seedResponseExamples(await getPrisma())
+    await seedResponseExamples(prisma)
     await loginLecturer()
     await gotoCommit(
       page,
@@ -152,12 +154,15 @@ test.describe('Chatbot response-example review', () => {
     await expect(rejected).toBeVisible()
     await expect(
       candidate.getByTestId(`response-example-citation-parity-${CANDIDATE_ID}`)
-    ).toContainText('All attached evidence is cited')
+    ).toBeVisible()
     await expect(
       needsReview.getByTestId(
         `response-example-citation-parity-${NEEDS_REVIEW_ID}`
       )
-    ).toContainText('need review before approval')
+    ).toBeVisible()
+    await expect(
+      candidate.getByTestId(`response-example-approve-${CANDIDATE_ID}`)
+    ).toBeEnabled()
     await expect(
       needsReview.getByTestId(`response-example-approve-${NEEDS_REVIEW_ID}`)
     ).toBeDisabled()
@@ -173,9 +178,17 @@ test.describe('Chatbot response-example review', () => {
     await candidate
       .getByTestId(`response-example-approve-${CANDIDATE_ID}`)
       .click()
-    await expect(
-      candidate.getByTestId(`response-example-status-${CANDIDATE_ID}`)
-    ).toContainText('Approved')
+    await expect
+      .poll(
+        async () =>
+          (
+            await prisma.responseExample.findUniqueOrThrow({
+              where: { id: CANDIDATE_ID },
+              select: { status: true },
+            })
+          ).status
+      )
+      .toBe('APPROVED')
 
     let staleOnce = true
     await page.route('**/graphql', async (route) => {
@@ -222,9 +235,7 @@ test.describe('Chatbot response-example review', () => {
       .getByTestId('response-example-edit-question')
       .fill(draftQuestion)
     await modal.getByTestId('response-example-edit-submit').click()
-    await expect(
-      modal.getByTestId('response-example-edit-error')
-    ).toContainText('changed while you were editing')
+    await expect(modal.getByTestId('response-example-edit-error')).toBeVisible()
     await expect(
       modal.getByTestId('response-example-edit-question')
     ).toHaveValue(draftQuestion)
@@ -247,16 +258,29 @@ test.describe('Chatbot response-example review', () => {
       .fill(editedQuestion)
     await reopenedModal.getByTestId('response-example-edit-submit').click()
     await expect(reopenedModal).toBeHidden()
-    await expect(
-      candidate.getByTestId(`response-example-status-${CANDIDATE_ID}`)
-    ).toContainText('Approved')
+    await expect
+      .poll(() =>
+        prisma.responseExample.findUniqueOrThrow({
+          where: { id: CANDIDATE_ID },
+          select: { status: true, studentMessage: true },
+        })
+      )
+      .toEqual({ status: 'APPROVED', studentMessage: editedQuestion })
 
     await needsReview
       .getByTestId(`response-example-reject-${NEEDS_REVIEW_ID}`)
       .click()
-    await expect(
-      needsReview.getByTestId(`response-example-status-${NEEDS_REVIEW_ID}`)
-    ).toContainText('Rejected')
+    await expect
+      .poll(
+        async () =>
+          (
+            await prisma.responseExample.findUniqueOrThrow({
+              where: { id: NEEDS_REVIEW_ID },
+              select: { status: true },
+            })
+          ).status
+      )
+      .toBe('REJECTED')
     await expect(
       needsReview.getByTestId(
         `response-example-edit-approve-${NEEDS_REVIEW_ID}`

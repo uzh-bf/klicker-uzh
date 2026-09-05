@@ -15,7 +15,6 @@ export const RESPONSE_EXAMPLE_RECEIPT_DATA_PART =
 
 export interface PreviewResponseExampleReceiptData {
   token: string
-  expiresAt: number
   question: string
   answer: string
 }
@@ -104,7 +103,7 @@ export async function issuePreviewResponseExampleReceipt({
   const environment = getReceiptEnvironment()
   if (!environment) return { unavailable: true }
 
-  const signedReceipt = await signResponseExampleReceipt({
+  const { token } = await signResponseExampleReceipt({
     ...environment,
     ownerId,
     chatbotId,
@@ -119,5 +118,5 @@ export async function issuePreviewResponseExampleReceipt({
   // text travels alongside it only so the preview action can submit exactly
   // the content that was checked before signing, without reconstructing it
   // from rendered assistant-ui parts.
-  return { ...signedReceipt, question, answer }
+  return { token, question, answer }
 }

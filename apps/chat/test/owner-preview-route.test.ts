@@ -353,7 +353,6 @@ describe('POST owner preview chat', () => {
   it('appends an eligible receipt before the stream finishes', async () => {
     mocks.issuePreviewResponseExampleReceipt.mockResolvedValue({
       token: 'signed-receipt',
-      expiresAt: 1_788_437_400,
     })
 
     const response = await POST(request(), {
