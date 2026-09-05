@@ -34,7 +34,7 @@ function Home() {
 
       <FeatureSection
         title="Asynchronous Interaction"
-        description="Foster engagement and interaction with your contents outside of class."
+        description="Support engagement and interaction with your students outside class."
         features={[
           {
             title: 'Microlearning',

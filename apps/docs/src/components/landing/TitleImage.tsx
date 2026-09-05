@@ -1,5 +1,3 @@
-import { Button } from '@uzh-bf/design-system'
-
 export function TitleImage() {
   return (
     <div className="bg-white">
@@ -17,48 +15,43 @@ export function TitleImage() {
 
             <div className="relative px-6 py-12 sm:py-40 md:py-32 lg:px-8 lg:py-56 lg:pr-0">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
-                <div className="hidden sm:mb-10 sm:flex">
-                  <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
-                    KlickerUZH v3.2 has been released with brand new features
+                <div className="mb-6 flex sm:mb-10">
+                  <div className="relative flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-full px-3 py-1 text-xs leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20 sm:text-sm">
+                    <span>Preparing for KlickerUZH v3.4</span>
                     <a
-                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
-                      className="whitespace-nowrap font-semibold"
-                      target="_blank"
-                      style={{ marginLeft: '0.75rem' }}
+                      href="/development/"
+                      className="whitespace-nowrap font-semibold text-gray-900 hover:underline"
                     >
-                      <span className="absolute inset-0" aria-hidden="true" />
-                      What's new? <span aria-hidden="true">&rarr;</span>
+                      See what's coming <span aria-hidden="true">&rarr;</span>
                     </a>
                   </div>
                 </div>
 
-                <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
+                <h1 className="m-0">
+                  <img
+                    className="-ml-2 w-80"
+                    src="/img/logos/KlickerLogo.png"
+                    alt="KlickerUZH"
+                  />
+                </h1>
                 <p className="mt-1 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
-                  <a href="https://manage.klicker.uzh.ch" target="_blank">
-                    <Button primary className={{ root: 'border-none text-lg' }}>
-                      Sign Up / Login
-                    </Button>
+                  <a
+                    href="https://manage.klicker.uzh.ch"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center justify-center rounded-md bg-primary-100 px-3.25 py-1.75 text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
+                  >
+                    Sign Up / Login
                   </a>
                   <a
-                    href="/getting_started/welcome"
+                    href="/getting_started/welcome/"
                     className="text-lg font-semibold leading-6 text-gray-900"
                   >
                     Get started <span aria-hidden="true">→</span>
                   </a>
-                </div>
-                <div className="mt-4 rounded-md bg-slate-100 px-3 py-2 shadow">
-                  We are now regularly offering introductory courses through UZH
-                  Central IT. For more details see{' '}
-                  <a
-                    target="_blank"
-                    href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257"
-                  >
-                    the following page
-                  </a>
-                  .
                 </div>
               </div>
             </div>
@@ -68,7 +61,7 @@ export function TitleImage() {
           <img
             className="aspect-3/2 object-cover lg:aspect-auto lg:h-full lg:w-full"
             src="/img/landing/hero.jpg"
-            alt=""
+            alt="A participant answering a KlickerUZH question on a phone"
           />
         </div>
       </div>
