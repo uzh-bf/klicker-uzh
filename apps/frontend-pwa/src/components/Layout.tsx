@@ -1,4 +1,6 @@
 import { useQuery } from '@apollo/client'
+import { faBullhorn } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type Course,
   SelfDocument,
@@ -6,12 +8,16 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import type React from 'react'
-import type { Dispatch, SetStateAction } from 'react'
+import { type Dispatch, type SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
-
 import MobileMenuBar from './common/MobileMenuBar'
+import PwaOnboardingTour from './onboarding/PwaOnboardingTour'
+import ProductUpdateFeedModal from './productUpdates/ProductUpdateFeedModal'
+import { useProductUpdates } from './productUpdates/useProductUpdates'
 
 export const LAYOUT_SCROLL_CONTAINER_ID = 'layout-scroll-container'
 
@@ -35,6 +41,14 @@ interface LayoutProps {
     SetStateAction<'questions' | 'feedbacks' | 'leaderboard'>
   >
   liveQuizId?: string
+  // Set by the pages on which a student works through questions at their own
+  // pace. A live quiz announces itself through `liveQuizId`, but self-paced
+  // answering has no such marker, and interrupting an answer with a product
+  // announcement is exactly what the subsystem must not do.
+  activelyAnswering?: boolean
+  // Set by the overview page once it has its data. The onboarding tour walks
+  // over that page's sections, so it is hosted there and nowhere else.
+  withOnboardingTour?: boolean
   className?: { header?: string; body?: string }
 }
 
@@ -47,8 +61,14 @@ function Layout({
   mobileMenuItems,
   setActiveMobilePage,
   liveQuizId,
+  activelyAnswering = false,
+  withOnboardingTour = false,
   className,
 }: LayoutProps) {
+  const t = useTranslations()
+  const router = useRouter()
+  const [showProductUpdates, setShowProductUpdates] = useState(false)
+
   const { data: dataParticipant } = useQuery(SelfDocument, {
     variables: { liveQuizId },
     fetchPolicy: 'cache-and-network',
@@ -58,6 +78,41 @@ function Layout({
   const pageInFrame =
     global?.window &&
     global?.window?.location !== global?.window?.parent.location
+
+  // Product updates reach registered participants who are reading the app, and
+  // nobody else: not the assessment build, not a page embedded in a learning
+  // management system, not somebody answering questions in a live quiz or at
+  // their own pace, and not a temporary or anonymous participant. A suppressed
+  // surface asks the backend nothing.
+  const productUpdatesEnabled =
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+    !embedded &&
+    !pageInFrame &&
+    !liveQuizId &&
+    !activelyAnswering &&
+    !router.pathname.startsWith('/session') &&
+    dataParticipant?.self?.role === UserRole.Participant
+
+  const { unreadCount } = useProductUpdates({
+    enabled: productUpdatesEnabled,
+  })
+
+  // The onboarding tour reaches exactly the actors the feed reaches, for the
+  // same reasons and through the same decision — it is unsolicited and it
+  // blocks pointer events on the whole document while it runs — plus the page
+  // its steps describe. Mounting is the whole gate: a surface that must stay
+  // free of the tour never mounts it and therefore never asks the backend
+  // whether this actor has already seen it.
+  const onboardingTourEnabled = productUpdatesEnabled && withOnboardingTour
+
+  const productUpdatesMenuItem = {
+    label: t('pwa.productUpdates.menuLabel'),
+    icon: <FontAwesomeIcon icon={faBullhorn} size="lg" />,
+    value: 'productUpdates',
+    onClick: () => setShowProductUpdates(true),
+    showBadge: unreadCount > 0,
+    data: { cy: 'mobile-menu-product-updates' },
+  }
 
   return (
     <>
@@ -90,6 +145,12 @@ function Layout({
             title={displayName}
             course={course}
             liveQuizId={liveQuizId}
+            onOpenProductUpdates={
+              productUpdatesEnabled
+                ? () => setShowProductUpdates(true)
+                : undefined
+            }
+            unreadProductUpdates={unreadCount}
           />
         </div>
       )}
@@ -111,7 +172,11 @@ function Layout({
       {!embedded && (
         <div className="flex-none md:hidden">
           <MobileMenuBar
-            menuItems={mobileMenuItems}
+            menuItems={
+              productUpdatesEnabled
+                ? [...(mobileMenuItems ?? []), productUpdatesMenuItem]
+                : mobileMenuItems
+            }
             onClick={(value) => setActiveMobilePage?.(value as any)}
             participantMissing={
               !dataParticipant?.self ||
@@ -120,6 +185,12 @@ function Layout({
           />
         </div>
       )}
+
+      {showProductUpdates && (
+        <ProductUpdateFeedModal onClose={() => setShowProductUpdates(false)} />
+      )}
+
+      {onboardingTourEnabled && <PwaOnboardingTour />}
     </>
   )
 }

@@ -1,8 +1,8 @@
 import { faHome } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, NotificationBadgeWrapper } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Router, { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 
 interface MobileMenuBarProps {
@@ -12,6 +12,9 @@ interface MobileMenuBarProps {
     value: string
     unseenItems?: number
     showBadge?: boolean
+    // Items that act on their own instead of switching the mobile page, such as
+    // the home shortcut below and the product update feed.
+    onClick?: () => void
     data?: {
       cy?: string
       test?: string

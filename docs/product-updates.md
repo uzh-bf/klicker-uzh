@@ -162,9 +162,8 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-The lecturer feed in `frontend-manage` is described below. The student surface in
-`frontend-pwa` does not exist yet; ADR 0046 describes its intended shape, and the
-read-state API above is already in place for it.
+The lecturer feed in `frontend-manage` and the student feed in `frontend-pwa`
+are described below.
 
 ## The lecturer feed
 
@@ -322,10 +321,13 @@ otherwise fight over the page.
 ## Onboarding tours
 
 A spotlight announces one feature. A tour orients someone who has just arrived:
-several steps over the parts of an interface that are always on screen. Manage
-has one today (`manage-onboarding-v1`); the student app and the chat app are
-meant to follow, which is why the mechanics live in a package instead of next to
-the manage header.
+several steps over the parts of an interface a newcomer needs to find. Manage
+has `manage-onboarding-v1` and the student app has `pwa-onboarding-v1`; the chat
+app is meant to follow, which is why the mechanics live in a package instead of
+next to the manage header. The two tours differ in where they may run: the
+lecturer tour points at header elements that every manage page carries, while
+the student tour points at the sections of one page and is therefore hosted by
+that page alone.
 
 ### The shared package
 
@@ -413,3 +415,106 @@ replaying does not change what the account has already recorded.
 Step copy lives under `manage.productTours` in the shared message files, in both
 locales, and is escaped before it reaches a popover for the reason described in
 the spotlight section.
+
+## The student feed
+
+`apps/frontend-pwa/src/components/productUpdates/` mirrors the lecturer surface
+for audience `student` on surface `pwa`: the same hook shape, the same card, the
+same funnel events, with its chrome under `pwa.productUpdates`. The card and the
+hook are copies rather than shared code, because the two applications do not
+share a component package for this.
+
+`apps/frontend-pwa/src/components/Layout.tsx` owns the surface. It decides
+whether product updates may appear at all, reads the feed once, hands the unread
+count and the opener to the header bullhorn, adds a badged item to the mobile
+menu bar, and renders the feed modal for both entry points. The modal is
+`fullScreen`, which gives a phone the whole viewport for a card while the
+desktop keeps the usual modal width.
+
+| Excluded when                                              | Because                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_IS_ASSESSMENT` is `true`                      | The assessment build shows no product news at all                                            |
+| The page is embedded, or runs inside a frame               | Announcements must not appear inside a learning management system                            |
+| A live quiz is being answered (`liveQuizId`, `/session/…`) | Nothing may compete with an open question                                                    |
+| The page sets `activelyAnswering`                          | Practice quizzes, microlearnings, and group activities carry no other marker for answering   |
+| `self.role` is not `PARTICIPANT`                           | Temporary and anonymous participants are outside the subsystem, and the API rejects them too |
+
+Suppression is complete, not cosmetic: an excluded surface issues no
+product-update query, no mutation, and no identity query for flag targeting.
+An answering page opts out explicitly through `activelyAnswering` instead of the
+layout matching a list of paths, so a new answering route states its own
+requirement rather than inheriting one it does not know about. Every branch of
+such a page sets the flag, including the loading and error branches: the layout
+decides on its first render, and the read-state query it sends there cannot be
+recalled once the answering branch takes over. The reliable trigger is the
+`PracticeQuiz` component: every page that mounts it is an answering surface, as
+are the microlearning and group activity routes, and any future page that lets a
+student work through questions has to set the flag on all of its branches.
+
+`PwaFeatureFlagProvider` (`apps/frontend-pwa/src/components/featureFlags/`) is
+mounted in `_app.tsx` inside the Apollo provider and sets
+`{ id, actorType: 'participant' }` for a registered participant and
+`{ actorType: 'anonymous' }` otherwise. It stays mounted even in the assessment
+build, where it is constructed **without** an API host and client key: the
+GrowthBook hooks throw when no provider is above them, while a client without
+credentials starts from an empty payload and never reaches the network, so every
+flag reads as false.
+
+A card reports its presentation and its read one after the other rather than
+together. Both writes create the state row when an entry is seen for the first
+time, and the backend cannot absorb two concurrent inserts of the same row — the
+second one fails on the unique constraint and its timestamp is lost, which for a
+participant meant the entry stayed unread forever.
+
+## The student tour
+
+`pwa-onboarding-v1` walks over the overview page: a centered welcome card, the
+self-paced practice entries, the course list, the learning insights, the header
+bullhorn and the avatar with the level ring. Its copy lives under
+`pwa.productTours` in both locales, and it uses the same shared hook, session
+slot and completion semantics as the lecturer tour.
+
+**The mount is the whole gate.** The layout renders
+`apps/frontend-pwa/src/components/onboarding/PwaOnboardingTour.tsx` only when
+the product-update exclusion table above allows an unsolicited surface **and**
+the page declares itself the tour's host through `withOnboardingTour`. Only the
+overview page declares that, and only from the branch that has its data — the
+loading branch would offer a page whose sections do not exist yet. Everything
+else follows: an assessment build, an embedded page, a live quiz, a page where
+questions are being answered and a temporary participant never mount the
+component, so they never send a `TourStates` query. That matters more here than
+in manage, because the backend refuses tour state for a temporary participant,
+and an ungated query would fail on every page view.
+
+Hosting the tour on one page is a deliberate difference from the lecturer tour.
+Four of its six steps point at sections that only the overview page renders, and
+the shared hook silently drops a step whose element is missing. A tour that
+started wherever a student happened to land would therefore run two or three
+steps, record completion, and never offer the rest again.
+
+The student app keeps its own target registry
+(`apps/frontend-pwa/src/components/onboarding/featureTargets.ts`). It uses the
+same `data-product-feature` attribute as manage but its own key set: the two
+applications never render each other's markup, and the same key would mean
+different things on a lecturer and a student screen.
+
+**Replays navigate.** "Take the tour" on the profile page pushes `/?tour=1`
+rather than starting a tour on the profile page, for the reason above. The host
+component consumes the parameter once, starts the tour, and strips the parameter
+with a shallow replace so that a reload or a back navigation does not restart
+it. As in manage, a replay ignores both caps and does not change the stored
+`completedAt`.
+
+**Phones.** Driver.js positions a popover purely from the target's bounding
+rectangle, so a step near the bottom of the viewport can end up under the mobile
+menu bar. The insights step therefore asks for `side: 'top'`, and both header
+steps ask for `align: 'end'` because their targets sit at the right edge, where
+a centered popover would hang off a narrow screen. Targets that exist at one
+breakpoint only — the mobile menu bar is `md:hidden` — are not used at all: they
+are in the DOM with an empty rectangle on the other breakpoint, which driver.js
+would happily highlight.
+
+Seeded participants carry a completed `pwa-onboarding-v1` row for the same
+reason the seeded lecturers carry the manage one: they represent established
+students, and an overlay that blocks pointer events on the whole document would
+break every PWA end-to-end spec that logs in and interacts right away.

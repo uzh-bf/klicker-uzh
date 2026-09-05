@@ -8,14 +8,15 @@ import {
 } from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
+import PwaFeatureFlagProvider from '@components/featureFlags/PwaFeatureFlagProvider'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
-import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
+import { Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 
 import '../globals.css'
@@ -101,7 +102,9 @@ function App({ Component, pageProps }: AppProps) {
       >
         <ApolloProvider client={apolloClient}>
           <Toaster closeButton position="top-right" />
-          <Component {...pageProps} />
+          <PwaFeatureFlagProvider>
+            <Component {...pageProps} />
+          </PwaFeatureFlagProvider>
         </ApolloProvider>
       </NextIntlClientProvider>
       <style>{`
