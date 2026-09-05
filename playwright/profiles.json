@@ -43,6 +43,11 @@
       "specs": [
         "C-control.spec.ts",
         "MA-elements-operations.spec.ts",
+        "MA-import-export-didactic-performance.spec.ts",
+        "MA-import-export-media-upload.spec.ts",
+        "MA-import-export-security-errors.spec.ts",
+        "MA-import-export-workflow.spec.ts",
+        "MA-import-export.spec.ts",
         "N-course.spec.ts",
         "O1-live-quiz-core.spec.ts",
         "O2-live-quiz-collaboration.spec.ts",
