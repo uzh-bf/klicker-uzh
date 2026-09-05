@@ -49,12 +49,27 @@ async function setSessionCookie(
   await context.clearCookies()
 
   const target = redirectUrl ?? process.env.URL_MANAGE ?? URL_MANAGE
-  await setSessionCookieForUrl({
-    context,
-    cookieName,
-    targetUrl: target,
-    tokenData,
-  })
+  const sessionUrls = new Set(
+    [
+      target,
+      process.env.NEXT_PUBLIC_API_URL,
+      process.env.NEXT_PUBLIC_API_URL_SSR,
+      process.env.API_URL,
+      process.env.API_URL_SSR,
+      'http://127.0.0.1:3000/api/graphql',
+      'https://api.klicker.com/api/graphql',
+    ].filter(Boolean) as string[]
+  )
+
+  for (const targetUrl of sessionUrls) {
+    await setSessionCookieForUrl({
+      context,
+      cookieName,
+      targetUrl,
+      tokenData,
+    })
+  }
+
   await page.goto(target)
   // Clear storage after navigating so we are on the same origin (avoids
   // SecurityError on about:blank or cross-origin pages).
@@ -311,13 +326,7 @@ export const test = base.extend<KlickerUZHFixtures>({
 
   logoutUser: async ({ context }, use) => {
     await use(async () => {
-      const cookies = await context.cookies()
-      const sessionCookie = cookies.find(
-        (c) => c.name === 'next-auth.session-token'
-      )
-      if (sessionCookie) {
-        await context.clearCookies()
-      }
+      await context.clearCookies()
     })
   },
 

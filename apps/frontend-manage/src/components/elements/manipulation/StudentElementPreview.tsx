@@ -7,7 +7,7 @@ import useArtificialElementInstance from './useArtificialElementInstance'
 interface StudentElementPreviewProps {
   values: ElementFormTypes
   elementDataTypename?: ElementData['__typename']
-  answerCollectionEntries?: { id: number; value: string }[]
+  answerCollectionEntries?: readonly { id: number; value: string }[]
 }
 
 function StudentElementPreview({

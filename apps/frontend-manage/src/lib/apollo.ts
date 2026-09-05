@@ -21,6 +21,7 @@ import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
+import { getImportExportGraphQLErrorCode } from './importExportErrors'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -56,22 +57,35 @@ function createIsomorphLink() {
           ),
         ]
 
-  const errorLink = onError(({ graphQLErrors, networkError }) => {
+  const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
     if (graphQLErrors)
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
-        console.log(
-          `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
-            locations,
-            false,
-            null,
-            true
-          )}, Path: ${path}, Extensions: ${util.inspect(
-            extensions,
-            false,
-            null,
-            true
-          )}`
-        )
+        const importExportCode = getImportExportGraphQLErrorCode({
+          extensions,
+        })
+        if (importExportCode) {
+          console.warn(
+            `[GraphQL error]: Operation: ${operation.operationName}, Code: ${importExportCode}`
+          )
+        } else if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[GraphQL error]: Message: ${message}, Locations: ${util.inspect(
+              locations,
+              false,
+              null,
+              true
+            )}, Path: ${path}, Extensions: ${util.inspect(
+              extensions,
+              false,
+              null,
+              true
+            )}`
+          )
+        } else {
+          console.warn(
+            `[GraphQL error]: Operation: ${operation.operationName ?? 'unknown'}`
+          )
+        }
 
         // redirect the user to the login page on errors
         if (isBrowser && message === 'Unauthorized') {
@@ -84,7 +98,15 @@ function createIsomorphLink() {
           )
         }
       })
-    if (networkError) console.log(`[Network error]`, networkError)
+    if (networkError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Network error]', networkError)
+      } else {
+        console.warn(
+          `[Network error]: Operation: ${operation.operationName ?? 'unknown'}`
+        )
+      }
+    }
   })
 
   let link: ApolloLink = new HttpLink({

@@ -30,7 +30,12 @@ function SelectedElementsList({
   )
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div
+      role="region"
+      aria-label={t('shared.generic.elements')}
+      tabIndex={0}
+      className="min-h-0 flex-1 overflow-auto rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    >
       <ShadcnTable className="mt-2">
         <ShadcnTableHeader>
           <ShadcnTableRow>

@@ -38,6 +38,7 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
   options: {
     hasSampleSolution: boolean
     accuracy?: number | null
+    placeholder?: string | null
     unit?: string | null
     restrictions?: {
       min?: number | string | null
