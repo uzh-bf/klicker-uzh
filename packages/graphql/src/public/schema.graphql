@@ -760,6 +760,7 @@ type Chatbot {
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
+  standardModeConfig: ChatbotStandardModeConfig
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
@@ -801,6 +802,26 @@ type ChatbotReasoningConfig {
 input ChatbotReasoningConfigInput {
   efforts: [String!]!
   modelId: String!
+}
+
+type ChatbotStandardModeConfig {
+  courseName: String
+  explainerEnabled: Boolean!
+  languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
+  scopeNote: String
+  subjectDomain: String
+  tutorEnabled: Boolean!
+}
+
+input ChatbotStandardModeConfigInput {
+  courseName: String
+  explainerEnabled: Boolean!
+  languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
+  scopeNote: String
+  subjectDomain: String
+  tutorEnabled: Boolean!
 }
 
 enum ChatbotStatus {
@@ -2149,7 +2170,9 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateChatbot(avatar: String, description: String, id: String!, name: String): Chatbot
+  updateChatbotModelPolicy(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
+  updateChatbotStandardModeConfig(chatbotId: String!, config: ChatbotStandardModeConfigInput!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant

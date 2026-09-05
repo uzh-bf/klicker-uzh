@@ -16,6 +16,7 @@
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@langfuse/otel": "4.6.1",
     "@langfuse/tracing": "4.6.1",

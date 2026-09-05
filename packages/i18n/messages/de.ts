@@ -32,10 +32,12 @@ export default {
         'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
         'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      fixedModelInfo:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
       usingPrimaryModel:
-        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -3910,6 +3912,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
       chatbotSetupBasics: 'Grundangaben',
       chatbotSetupBasicsDescription: 'Name, Kurs und Beschreibung',
+      chatbotSetupModes: 'Lernmodi',
+      chatbotSetupModesDescription:
+        'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
+      chatbotSetupModesTitle: 'Lernmodi',
+      chatbotSetupModesDescriptionLong:
+        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
+      chatbotModeExplainer: 'Erklärer',
+      chatbotModeExplainerDescription:
+        'Erklärt Kurskonzepte direkt mit Definitionen und passenden Beispielen.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
+      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeQuizzerCapabilityNote:
+        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+      chatbotModeEnabled: 'Aktiviert',
+      chatbotModeDisabled: 'Deaktiviert',
+      chatbotFraming: 'Rahmung des Chatbots',
+      chatbotFramingDescription:
+        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+      chatbotFramingPlaceholder:
+        'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
+      chatbotFramingTooLong:
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+      chatbotModesSave: 'Lernmodi speichern',
+      chatbotModesSaving: 'Wird gespeichert…',
+      chatbotModesSaveSuccess: 'Lernmodi gespeichert.',
+      chatbotModesSaveError:
+        'Die Lernmodi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      chatbotModesReadonly:
+        'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
       chatbotSetupReview: 'Prüfen und einreichen',
@@ -3983,7 +4019,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern Sie Änderungen in den Grundangaben, Lernmodi und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:
@@ -4057,17 +4093,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creditResetPeriod: 'Zurücksetzungsintervall',
       creditResetAmount: 'Zurücksetzungsmenge',
       creditMaxCredits: 'Maximale Credits',
-      modelSelection: 'Modellauswahl',
+      modelSelection: 'Modellauswahl durch Teilnehmende',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
       modelSelectionEnabledDescription:
-        'Teilnehmende können zwischen den erlaubten Modellen wählen.',
+        'Aktiv: Teilnehmende können eines der explizit ausgewählten Modelle wählen.',
       modelSelectionDisabledDescription:
-        'Die Modellauswahl erfolgt automatisch basierend auf der Credit-Verfügbarkeit.',
+        'Inaktiv: Der Chatbot verwendet genau ein von der Lehrperson ausgewähltes Modell.',
+      modelSelectionFixedDescription:
+        'Teilnehmende verwenden dieses Modell. Neue Chatbots starten mit Auto.',
+      modelSelectionParticipantDescription:
+        'Teilnehmende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
+      selectedModel: 'Ausgewähltes Modell',
       allowedModels: 'Erlaubte Modelle',
       allowedModelsAll: 'Alle',
       chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
       reasoningEffortsByModel: 'Reasoning-Level pro Modell',
+      reasoningEffort: 'Reasoning-Level',
       singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
       chatbotModelSettingsSave: 'Modelleinstellungen speichern',
       chatbotModelSettingsSaving: 'Speichern...',
