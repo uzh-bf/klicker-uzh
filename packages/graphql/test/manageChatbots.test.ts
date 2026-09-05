@@ -54,6 +54,33 @@ describe('Integration tests for lecturer chatbot create/update', () => {
 
   afterEach(async () => await testCleanup(prisma))
 
+  function createConflictingTransaction() {
+    const transaction = vi.fn(
+      async (
+        callback: (tx: {
+          chatbot: {
+            updateMany: () => Promise<{ count: number }>
+            findUniqueOrThrow: () => Promise<never>
+          }
+        }) => Promise<unknown>
+      ) =>
+        await callback({
+          chatbot: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+            findUniqueOrThrow: vi.fn(),
+          },
+        })
+    )
+    const testPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transaction
+          : Reflect.get(target, property, receiver)
+      },
+    })
+    return { transaction, testPrisma }
+  }
+
   describe('createChatbot', () => {
     it('creates a DRAFT chatbot with platform modes owned by the caller', async () => {
       const course = await seedCourse({}, userOneCtx)
@@ -562,29 +589,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
 
     it('reports a compare-and-set conflict when status changes during save', async () => {
       const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
-      const transaction = vi.fn(
-        async (
-          callback: (tx: {
-            chatbot: {
-              updateMany: () => Promise<{ count: number }>
-              findUniqueOrThrow: () => Promise<never>
-            }
-          }) => Promise<unknown>
-        ) =>
-          await callback({
-            chatbot: {
-              updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-              findUniqueOrThrow: vi.fn(),
-            },
-          })
-      )
-      const testPrisma = new Proxy(prisma, {
-        get(target, property, receiver) {
-          return property === '$transaction'
-            ? transaction
-            : Reflect.get(target, property, receiver)
-        },
-      })
+      const { transaction, testPrisma } = createConflictingTransaction()
 
       await expect(
         updateChatbotModelPolicy(
@@ -760,29 +765,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
 
     it('reports a compare-and-set conflict when status changes during save', async () => {
       const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
-      const transaction = vi.fn(
-        async (
-          callback: (tx: {
-            chatbot: {
-              updateMany: () => Promise<{ count: number }>
-              findUniqueOrThrow: () => Promise<never>
-            }
-          }) => Promise<unknown>
-        ) =>
-          await callback({
-            chatbot: {
-              updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-              findUniqueOrThrow: vi.fn(),
-            },
-          })
-      )
-      const testPrisma = new Proxy(prisma, {
-        get(target, property, receiver) {
-          return property === '$transaction'
-            ? transaction
-            : Reflect.get(target, property, receiver)
-        },
-      })
+      const { transaction, testPrisma } = createConflictingTransaction()
 
       await expect(
         updateChatbotStandardModeConfig(
