@@ -35,6 +35,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
           {features.map((feature, ix) => (
             <div
               key={feature.title}
+              onMouseEnter={() => setHoveredFeatureIx(ix)}
               className={twMerge(
                 'flex cursor-pointer flex-row items-center gap-6 p-6 pl-9',
                 hoveredFeatureIx === ix && 'rounded-xl bg-gray-100'
@@ -53,7 +54,6 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                     className="border-0 bg-transparent p-0 font-semibold text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
                     onClick={() => setHoveredFeatureIx(ix)}
                     onFocus={() => setHoveredFeatureIx(ix)}
-                    onMouseEnter={() => setHoveredFeatureIx(ix)}
                   >
                     {feature.title}
                   </button>
