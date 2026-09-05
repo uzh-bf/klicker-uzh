@@ -43,6 +43,9 @@ jobs:
           python-version: '3.12'
           enable-cache: false
 
+      - name: Test Playwright timing aggregation
+        run: uv run --no-project --python 3.12 python -m unittest discover -s .github/scripts -p test_update_playwright_timings.py
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
