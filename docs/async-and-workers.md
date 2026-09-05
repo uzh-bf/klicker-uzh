@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-09-02'
+timestamp: '2026-09-05'
 tags:
   - backend
   - hatchet
@@ -89,6 +89,15 @@ release functions in [elementGenerationLease.ts](../packages/graphql/src/service
 The callers retain their status predicates, failure handling and transitions;
 the short synchronization lease does not replace the durable dispatch and
 accounting claims that fence external generation effects.
+
+Initial question and flashcard results complete through
+[elementGenerationCompletion.ts](../packages/graphql/src/services/elementGenerationCompletion.ts).
+One transaction inserts review drafts and conditionally completes the build;
+losing the lease or failing the draft-count check rolls back both operations.
+Provider-specific content conversion, accepted source states and draft-count
+rules remain distinct compatibility constraints within this shared Element
+operation. Completion creates drafts, not ordinary Elements, and does not
+settle usage or dispatch another generation run.
 
 ## Course duplication operations
 

@@ -9,9 +9,8 @@ import type {
 } from '@klicker-uzh/types'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { completeElementGeneration } from '../src/services/elementGenerationCompletion.js'
 import { acquireElementGenerationLease } from '../src/services/elementGenerationLease.js'
-import { persistInitialGeneratedFlashcardDrafts } from '../src/services/flashcardGenerationDrafts.js'
-import { persistInitialGeneratedQuestionDrafts } from '../src/services/questionGenerationDrafts.js'
 
 const NOW = new Date('2026-09-05T10:00:00Z')
 const artifact: QuestionGenerationArtifactRef = {
@@ -100,8 +99,9 @@ function complete(
   ctx = context()
 ) {
   return variant === 'question'
-    ? persistInitialGeneratedQuestionDrafts(
+    ? completeElementGeneration(
         {
+          kind: 'questions',
           buildId,
           leaseOwner,
           questions: [{ ...question(), provenance: null }],
@@ -111,8 +111,9 @@ function complete(
         },
         ctx
       )
-    : persistInitialGeneratedFlashcardDrafts(
+    : completeElementGeneration(
         {
+          kind: 'flashcards',
           buildId,
           leaseOwner,
           cards: [card],
@@ -278,8 +279,9 @@ describe('initial Element completion', () => {
       ...current
     } = generated
     const { provenance: _provenance, ...original } = generated
-    await persistInitialGeneratedQuestionDrafts(
+    await completeElementGeneration(
       {
+        kind: 'questions',
         buildId: build.id,
         leaseOwner: build.syncLeaseOwner!,
         questions: [generated],
@@ -330,8 +332,9 @@ describe('initial Element completion', () => {
     resultStatus,
   }) => {
     const build = await createBuild('flashcard', { status })
-    await persistInitialGeneratedFlashcardDrafts(
+    await completeElementGeneration(
       {
+        kind: 'flashcards',
         buildId: build.id,
         leaseOwner: build.syncLeaseOwner!,
         cards: [card],

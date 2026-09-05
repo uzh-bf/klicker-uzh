@@ -20,6 +20,7 @@ import {
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
 } from './elementGenerationAccounting.js'
+import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
 import {
   acquireElementGenerationLease,
@@ -49,7 +50,6 @@ import {
   QuestionGenerationConfigurationError,
   type QuestionGenerationConfigurationInput,
 } from './questionGenerationConfiguration.js'
-import { persistInitialGeneratedQuestionDrafts } from './questionGenerationDrafts.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -783,8 +783,9 @@ async function synchronizeLeasedBuild(
             questions
           )
         }
-        await persistInitialGeneratedQuestionDrafts(
+        await completeElementGeneration(
           {
+            kind: 'questions',
             buildId: build.id,
             leaseOwner,
             questions,

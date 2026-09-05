@@ -19,6 +19,7 @@ import {
   releaseUnclaimedElementGenerationSpend,
   reserveFlashcardRetrySpend,
 } from './elementGenerationAccounting.js'
+import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
 import {
   acquireElementGenerationLease,
@@ -35,7 +36,6 @@ import {
   normalizeFlashcardGenerationConfiguration,
 } from './flashcardGenerationConfiguration.js'
 import {
-  persistInitialGeneratedFlashcardDrafts,
   setGeneratedFlashcardDecision,
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
@@ -733,8 +733,9 @@ async function synchronizeLeasedBuild(
         result.status === 'incomplete' ? 'incomplete' : 'complete',
       checkpointSnapshot: result.checkpointSnapshot,
     })
-    await persistInitialGeneratedFlashcardDrafts(
+    await completeElementGeneration(
       {
+        kind: 'flashcards',
         buildId: build.id,
         leaseOwner,
         cards: bank.cards,
