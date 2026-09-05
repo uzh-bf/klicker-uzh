@@ -12,6 +12,9 @@ import type {
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
+export const ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES = 10 * 1024 * 1024
+export const DIRECT_MEDIA_UPLOAD_MAX_BYTES = 256 * 1024 * 1024
+
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './assessmentReport.js'
 export * from './chatbotStandardModeConfig.js'

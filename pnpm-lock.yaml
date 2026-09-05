@@ -1739,6 +1739,9 @@ importers:
       '@pothos/plugin-zod':
         specifier: 4.1.0
         version: 4.1.0(@pothos/core@4.3.0(graphql@16.11.0))(graphql@16.11.0)(zod@3.25.76)
+      '@prisma/adapter-pg':
+        specifier: 7.8.0
+        version: 7.8.0
       axios:
         specifier: 1.16.1
         version: 1.16.1
@@ -1766,12 +1769,18 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
+      mdast-util-from-markdown:
+        specifier: 2.0.2
+        version: 2.0.2
       node-schedule:
         specifier: 2.1.1
         version: 2.1.1
       nodemailer:
         specifier: 6.9.15
         version: 6.9.15
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
       remark-gfm:
         specifier: 4.0.1
         version: 4.0.1
@@ -1857,6 +1866,9 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.23
         version: 6.4.23
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.15.5
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -2525,6 +2537,9 @@ importers:
 
   playwright:
     devDependencies:
+      '@axe-core/playwright':
+        specifier: ~4.12.1
+        version: 4.12.1(playwright-core@1.58.2)
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../packages/prisma
@@ -2543,6 +2558,9 @@ importers:
       bcryptjs:
         specifier: ~2.4.3
         version: 2.4.3
+      ioredis:
+        specifier: ~5.4.1
+        version: 5.4.1
       jose:
         specifier: ~5.9.4
         version: 5.9.4
@@ -2861,6 +2879,11 @@ packages:
     resolution: {integrity: sha512-GyNEUNtrPgDPs0M4xX6F5i7jTsCKwU6BXV9zutctcoo6K1Ud+juckrmQS11uyNgeWsw6sliextHbU/e+8lsizQ==}
     peerDependencies:
       '@prisma/client': '>=2.26.0 || >=3 || >=4 || >=5 || >=6'
+
+  '@axe-core/playwright@4.12.1':
+    resolution: {integrity: sha512-rMd7xriptqKpP+w5265i4Hdkv2X5kbu6uiBi/B2I7uf3hieRBM3qDCfaKPtxfiYb2mKXfF+yLODJwIx+Jv1GDw==}
+    peerDependencies:
+      playwright-core: '>= 1.0.0'
 
   '@azure-rest/core-client@2.5.0':
     resolution: {integrity: sha512-KMVIPxG6ygcQ1M2hKHahF7eddKejYsWTjoLIfTWiqnaj42dBkYzj4+S8rK9xxmlOaEHKZHcMrRbm0NfN4kgwHw==}
@@ -10845,6 +10868,10 @@ packages:
 
   axe-core@4.11.4:
     resolution: {integrity: sha512-KunSNx+TVpkAw/6ULfhnx+HWRecjqZGTOyquAoWHYLRSdK1tB5Ihce1ZW+UY3fj33bYAFWPu7W/GRSmmrCGuxA==}
+    engines: {node: '>=4'}
+
+  axe-core@4.12.1:
+    resolution: {integrity: sha512-s7iGf5GaVMxEG0ENN9x+xTr7GFZCb1ZP/1uATUpCEK2X78nDB3RwbtFCo9pGAf9ru+VwoQ464DkaLEeRM08wJA==}
     engines: {node: '>=4'}
 
   axios@0.32.0:
@@ -20618,6 +20645,11 @@ snapshots:
       - '@simplewebauthn/server'
       - nodemailer
 
+  '@axe-core/playwright@4.12.1(playwright-core@1.58.2)':
+    dependencies:
+      axe-core: 4.12.1
+      playwright-core: 1.58.2
+
   '@azure-rest/core-client@2.5.0':
     dependencies:
       '@azure/abort-controller': 2.1.2
@@ -30120,6 +30152,8 @@ snapshots:
   aws-ssl-profiles@1.1.2: {}
 
   axe-core@4.11.4: {}
+
+  axe-core@4.12.1: {}
 
   axios@0.32.0(debug@4.4.1):
     dependencies:
