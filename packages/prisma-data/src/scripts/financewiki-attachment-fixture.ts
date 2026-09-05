@@ -229,7 +229,9 @@ export async function verifyFinanceWikiAttachmentFixture(
     { version: 1, targets },
     emptyReceiptStore
   )
-  const plannedAuthorizedKbIds = [BASE_KB_ID, FINANCEWIKI_KB_ID].sort()
+  const plannedAuthorizedKbIds = [BASE_KB_ID, FINANCEWIKI_KB_ID].sort(
+    (left, right) => left.localeCompare(right)
+  )
   if (
     plan.status !== 'ready' ||
     plan.targetCount !== fixture.configs.length ||

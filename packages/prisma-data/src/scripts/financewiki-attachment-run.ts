@@ -67,7 +67,7 @@ export function parseFinanceWikiAttachmentCliArgs(
       argument === 'rollback' ||
       argument === 'readback'
     ) {
-      if (action !== 'plan' || (argument !== 'plan' && index !== 0)) {
+      if (index !== 0) {
         failArguments('choose one attachment action')
       }
       action = argument
@@ -223,6 +223,15 @@ export async function runFinanceWikiAttachmentCli(
     if (error instanceof FinanceWikiAttachmentError) {
       write(
         JSON.stringify({ error: { code: error.code, message: error.message } })
+      )
+    } else if (error instanceof Error && error.message === 'SESSION_LOCKED') {
+      write(
+        JSON.stringify({
+          error: {
+            code: 'SESSION_LOCKED',
+            message: 'another attachment session holds the receipt lock',
+          },
+        })
       )
     } else {
       write(
