@@ -1,0 +1,11 @@
+query ProductUpdateStates($updateIds: [String!]!) {
+  productUpdateStates(updateIds: $updateIds) {
+    id
+    updateId
+    firstPresentedAt
+    lastPresentedAt
+    presentationCount
+    readAt
+    dismissedAt
+  }
+}

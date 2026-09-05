@@ -1,0 +1,11 @@
+mutation RecordProductUpdatePresentation($updateId: String!) {
+  recordProductUpdatePresentation(updateId: $updateId) {
+    id
+    updateId
+    firstPresentedAt
+    lastPresentedAt
+    presentationCount
+    readAt
+    dismissedAt
+  }
+}
