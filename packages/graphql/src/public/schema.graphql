@@ -448,6 +448,12 @@ type AwardEntry {
   type: String!
 }
 
+type BetaEnrollmentCapability {
+  mayChange: Boolean!
+  membership: Boolean
+  signupAvailable: Boolean!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -754,6 +760,7 @@ type Chatbot {
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
+  standardModeConfig: ChatbotStandardModeConfig
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
@@ -795,6 +802,26 @@ type ChatbotReasoningConfig {
 input ChatbotReasoningConfigInput {
   efforts: [String!]!
   modelId: String!
+}
+
+type ChatbotStandardModeConfig {
+  courseName: String
+  explainerEnabled: Boolean!
+  languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
+  scopeNote: String
+  subjectDomain: String
+  tutorEnabled: Boolean!
+}
+
+input ChatbotStandardModeConfigInput {
+  courseName: String
+  explainerEnabled: Boolean!
+  languageOfInstruction: LocaleType
+  quizzerEnabled: Boolean!
+  scopeNote: String
+  subjectDomain: String
+  tutorEnabled: Boolean!
 }
 
 enum ChatbotStatus {
@@ -2127,6 +2154,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
@@ -2145,7 +2173,9 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateChatbot(avatar: String, description: String, id: String!, name: String): Chatbot
+  updateChatbotModelPolicy(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
+  updateChatbotStandardModeConfig(chatbotId: String!, config: ChatbotStandardModeConfigInput!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -2603,6 +2633,7 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
+  betaEnrollment: BetaEnrollmentCapability!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkTemplateElementExists(name: String!): Boolean!

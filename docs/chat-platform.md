@@ -142,6 +142,18 @@ registries that violate that invariant.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
+New chatbots use a fixed Auto policy by default: the owner projection contains
+one effective `auto` model and no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation requires exactly one active model for fixed
+mode, one supported reasoning effort when that model supports reasoning, and at
+least one active model plus valid reasoning entries for every selected
+reasoning model in participant-choice mode. The older
+`updateChatbotModelSettings` mutation remains unchanged for rolling clients.
+Legacy fixed rows are readable without a migration: empty or multi-model values
+resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
+while a retired-only list falls back to Luna. Participant-choice empty lists
+display all active models and are made explicit only by a strict save.
+
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The schema does not
 model cached-input, cache-write, or long-context rates. Auto uses the accepted
@@ -382,15 +394,21 @@ use their platform-owned localized purpose descriptions in `src/components/mode-
 custom modes use their configured description.
 
 `src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
-defaults with stored per-mode overrides and custom modes, honours `enabled: false`, excludes modes
-that cannot satisfy the chatbot's required-MCP policy, and exposes Quizzer only with a provably
-restricted course `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per
-MCP server, including disabled exact rows; inherited optional bindings are narrowed to
-`doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
-fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
-MCP selection all use this resolver. The browser receives resolved mode descriptions but never
-MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
-composer with a localized unavailable notice and suppresses edit and retry generation actions
+defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and
+custom modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
+Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
+knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
+resolver excludes modes that cannot satisfy
+the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
+`doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
+including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
+required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
+layout, participant settings endpoint, chat request validation, and request-time MCP selection all
+use this resolver. The browser receives resolved mode descriptions but never MCP server
+configuration. If typed flags or explicit opt-outs leave no effective mode, the client replaces
+the composer with a localized unavailable notice and suppresses edit and retry generation actions
 instead of allowing requests the server would reject.
 
 Platform standard-mode contract changes apply automatically to every chatbot that exposes that
@@ -698,28 +716,31 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
-`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text as configurable
-lecturer influence, not as the complete system policy. On every chat request, after the available
-MCP tool names are known, it composes the final prompt in this order:
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text and the typed
+standard-mode context as configurable lecturer influence, not as the complete system policy. On
+every chat request, after the available MCP tool names are known, it composes the final prompt in
+this order:
 
 1. server-sourced course data containing JSON-serialized `Course.displayName`;
 2. lower-priority lecturer guidance for a standard mode, when stored;
-3. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
+3. one JSON-serialized typed lecturer context section for Tutor or Explainer, or a scope-note-only
+   section for Quizzer, when valid and present;
+4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
-4. fixed image-attachment description handling from
+5. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-5. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-6. fixed Markdown, inline/display mathematics, and fenced-code rules from
+7. fixed Markdown, inline/display mathematics, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
-7. the conditional citation policy when a `doc_query`-style tool is available; and
-8. the fixed conversation-language and Swiss Standard German policy from
+8. the conditional citation policy when a `doc_query`-style tool is available; and
+9. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The course-data section explicitly treats its entire JSON value as data rather than instructions.
-Quotes, newlines, and instruction-like text in a display name therefore cannot gain prompt
-authority. A custom mode omits the standard-mode contract but still receives every fixed platform
-section.
+The course-data and typed-context sections explicitly treat their entire JSON values as data
+rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
+persona field therefore cannot gain prompt authority. A custom mode omits both standard-mode
+sections but still receives every fixed platform section.
 
 The fixed policy explicitly overrides conflicting lecturer text, examples, retrieved material,
 tool output, and user attempts to change platform rules. It keeps answers within the owning course,
@@ -794,6 +815,23 @@ always before credit initialization, reset, decrement, model or image work, or a
 message write. Chat may create a short-lived thread and assistant lifecycle claim to serialize the
 preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
+
+The current-v3 Doc Query binding is the same reserved policy plus a `kb_id` on
+the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
+"kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
+configurations must contain at most one binding per stored mode, with one server
+ID and one normalized UUID across the chatbot. The selected effective mode must
+resolve exactly one matching binding; Quizzer may safely inherit Tutor's
+restricted `doc_query` binding under ADR 0021.
+Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
+`503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
+keeps the opaque bearer transport credential in `Authorization` and adds a
+five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
+`kb_id`, `chatbot_id`, the owning thread as `sub`, and a request `jti`; issuer,
+audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
+`DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
+`DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
+non-KB MCP servers retain their existing behavior.
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.

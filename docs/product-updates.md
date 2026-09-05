@@ -15,7 +15,7 @@ entry may be shown — never what it says.** The catalog is editorial content
 reviewed in the same pull request as the feature it describes, so an entry
 cannot drift away from the capability it announces. The decision and the
 rejected alternatives are in
-[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
 
 ## The catalog package
 
@@ -93,7 +93,7 @@ empty state, button labels) does belong in the i18n message files.
 (`packages/prisma/src/prisma/schema/productUpdate.prisma`) hold one row per actor
 and entry. Why the state is in the database, split across two tables, and keyed
 per entry is recorded in
-[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
 
 `updateId` is a plain string with no foreign key, since the catalog is code, so
 the service validates every id against `PRODUCT_UPDATES` before writing.
@@ -203,5 +203,5 @@ must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
 The in-app feed surfaces in `frontend-manage` and `frontend-pwa` do not exist
-yet; ADR 0028 describes their intended shape. The read-state API above is
+yet; ADR 0046 describes their intended shape. The read-state API above is
 already in place for them.
