@@ -131,8 +131,10 @@ and document the new release-ref contract.
 
 ## Progress
 
-- `Current:` the accepted controller correction is implemented and verified on
-  exact local baseline `3079761289a4e0bb54380bfc7792c7c0295dbf11`.
+- `Current:` the accepted controller is rebased onto exact target
+  `origin/v3@468f05b91503b133670dda235be9a4b38bba2155`; implementation head
+  `0f643e48b99a512ca225b0826f6d3e00ec023d0a` is six commits ahead and zero
+  behind that target.
 - `Correction:` preserve a receipt after every successful Git push, add bounded
   post-push readback retries and explicit verification state, verify registry
   digest headers against raw manifest bytes and accepted content types, remove
@@ -151,12 +153,18 @@ and document the new release-ref contract.
   checks pass. Deterministic tests write and verify canonical fixture receipts
   and checksums before rejecting exhausted or mismatched post-push readback.
   Staged Gitleaks and focused personal-data review complete before commit.
-- `Review:` the execution owner completed a bounded trust-boundary and diff
-  review. The global integration owner still owns the independent cross-branch
-  review and contract matrix after all Phase 1 worktrees are available.
-- `Remaining:` no implementation remains in this assigned worktree. Activation
-  still requires the separately owned selected-source SHA publishers, chart
-  override and runtime mirror, the private platform change, a receipt-backed
-  initial ref creation, runtime proof, and separate authorization of
-  `STG_RELEASE_PROMOTION_ENABLED=true`.
+- `Review:` the independent final review passed on pre-rebase head
+  `4a81e8e10bb5f1b8b8c3b7af275e7b14425767dc`. `git range-diff` confirms all
+  executable controller commits replayed unchanged. The documentation commit
+  only retained the newer target-branch GrowthBook beta-enrollment wording, so
+  the content-based review remains valid.
+- `Integration:` the approved one-time rebase completed without a conflict.
+  Promoter tests pass 20/20, final-review tests pass 56/56, and the seven
+  mirrored runtime and policy blobs still match the selected-source branch
+  7/7.
+- `Remaining:` no implementation remains in this assigned worktree. Phase 1
+  selected-source publishers, chart override, and runtime mirror are complete
+  locally. Activation still requires the private platform change, a
+  receipt-backed initial ref creation, runtime proof, and separate
+  authorization of `STG_RELEASE_PROMOTION_ENABLED=true`.
 - `External state:` unchanged.
