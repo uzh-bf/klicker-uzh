@@ -6,6 +6,8 @@ title: Course Chatbot
 
 ## What is the course chatbot?
 
+Course chatbots are **AI beta features** made available by your lecturer. Your lecturer creates and configures the chatbot and requests publication before sharing it with the course.
+
 The course chatbot is an AI assistant for a specific course. You can ask it questions about the course content and receive answers in a chat interface. Depending on how your lecturer has set it up, the chatbot can guide you with questions, explain topics directly, or refer to the materials of your course. This section describes the **student view**; lecturers can find the corresponding information in the [chatbot tutorial](/tutorials/chatbot/).
 
 :::warning
@@ -32,13 +34,27 @@ Type your question in the input field at the bottom and send it. The answer is s
 4. **Editing a message:** You can edit one of your earlier messages. The assistant then generates a new answer variant, and a small pager lets you switch back and forth between the variants.
 5. **Images:** For models that support images, a button lets you attach up to three images to a message. The assistant describes the image and takes it into account in follow-up answers, which are marked with an "Image analyzed" indicator.
 
+## Which learning mode should I use?
+
+- **Tutor:** Ask for hints and work through a topic step by step.
+- **Explainer:** Ask for a direct explanation of a concept or an example.
+- **Quizzer:** Practise course questions one at a time and receive feedback on your answers.
+
+The modes offered depend on your course chatbot. Quizzer requires connected course-material capabilities, so it may not appear. Switching modes affects your next message.
+
+## Can I ask for help during a practice quiz?
+
+If your course offers the integrated chatbot, open **AI tutor** while working on a practice quiz. You can ask for a hint or an explanation without leaving the quiz. The panel can use the current question as context. If several chatbots are available, choose the one you want to use in the panel.
+
+For example, ask: "Give me a hint for this question without revealing the answer." Check the response against the course materials and submit your answer in the quiz itself.
+
 ## How do I choose a model and reasoning effort?
 
 If your lecturer has enabled model selection, you can choose the AI model in the settings panel of the chat. The available models depend on the course and on the deployment, so what you see may differ from what other courses offer.
 
 ![Settings panel of the chat with the model selection; the offered models depend on the course configuration](/img/chatbot/chat_settings.png)
 
-- **Without model selection:** The model is chosen automatically. If your credits run out, the chatbot falls back to a smaller model.
+- **Without model selection:** The chatbot uses the model configured for your course. If your credits run out, it falls back to a smaller model.
 - **With model selection:** You pick a model from the list your lecturer has allowed. In addition, a small fallback model always stays available, so you are never left without an option.
 - **Reasoning effort:** Models that support reasoning additionally offer a choice of effort level. A higher effort can improve answers to difficult questions, but the answer takes longer and consumes more credits.
 
@@ -60,7 +76,7 @@ If your chatbot is connected to a knowledge base with course materials, answers 
 
 ## In which language does the chatbot answer?
 
-The chat interface follows the language of the KlickerUZH application you came from, so there is no separate language switcher inside the chat. In German, the interface uses the informal "Du" and Swiss spelling. The language of the answers depends on how your chatbot has been configured: typically, the assistant answers in German and switches to English when you write your question in English.
+The chat interface follows the language of the KlickerUZH application you came from. The chatbot answers in the language of your message, or the language you explicitly request. Short acknowledgements keep the conversation's existing language. German answers use Swiss spelling.
 
 ## What happens with my data?
 

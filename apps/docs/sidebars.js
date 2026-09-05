@@ -3,10 +3,14 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
+      'getting_started/beta_features',
     ],
     'Lecturer - Content': [
       'tutorials/supported_element_types',
       'tutorials/element_management',
+      'tutorials/ai_element_generation',
+      'tutorials/ai_assistant',
+      'tutorials/knowledge_bases',
       'tutorials/course_management',
       'tutorials/element_stacks',
       'tutorials/answer_collections',
