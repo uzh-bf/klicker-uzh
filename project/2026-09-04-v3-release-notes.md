@@ -27,7 +27,9 @@ Local verification reports all 183 migrations applied. The Chat test suite passe
 
 ## Local release hardening
 
-The preparation branch patches Next.js to 16.2.11 and next-auth to 4.24.15, preserving unrelated dependency versions. Frozen installation, full repository checks, and production/test-mode builds of all six affected apps pass. The dependency review found no blocking defect. These changes are committed locally but are not yet merged into v3. The citation test now waits for the streamed answer's layout to overflow before checking follow-scroll behavior; its browser verification remains pending because the isolated managed runtime failed startup.
+The preparation branch patches Next.js to 16.2.11 and next-auth to 4.24.15, preserving unrelated dependency versions. Frozen installation, full repository checks, and production/test-mode builds of all six affected apps pass. The dependency review found no blocking defect. These changes are committed locally but are not yet merged into v3. The citation test now waits for the streamed answer's layout to overflow before checking follow-scroll behavior; it passes three consecutive Chromium runs with retries disabled.
+
+Focused browser verification passes for student sign-in, lecturer session routing, return-target protection, expired-session recovery, beta enrollment discovery and opt-out, hidden usage without its flag, and Chat access/recovery. The lecturer test injects a synthetic session cookie; a separate browser check completes the actual delegated credentials form and reaches the authenticated Manage library. Control's five-test quiz workflow passes without retries after a bounded repair of stale local generated routes. The initial cross-app run had two dependent Control failures; the passing rerun does not hide that diagnostic history. Auth's stale API-route cache also needed bounded repair before the real login check. No application source changed for the local runtime repairs.
 
 ## Feature and compatibility notes
 
