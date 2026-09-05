@@ -181,6 +181,7 @@
     },
     "dev:docs": {
       "cache": false,
+      "dependsOn": ["@klicker-uzh/product-updates#build"],
       "persistent": true
     },
     "dev:test": {
