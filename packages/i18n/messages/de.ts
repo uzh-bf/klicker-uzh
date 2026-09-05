@@ -1896,6 +1896,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showAll: 'Alle Produkt-Updates ansehen',
       readMore: 'Mehr erfahren',
       dismiss: 'Ausblenden',
+      showMeWhere: 'Zeig mir wo',
+      spotlightConfirm: 'Zeig es mir',
+      spotlightDismiss: 'Nicht mehr anzeigen',
       maturity: {
         preview: 'Vorschau',
         pilot: 'Pilot',
