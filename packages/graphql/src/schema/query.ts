@@ -217,16 +217,7 @@ export const Query = builder.queryType({
       userMediaFiles: t.withAuth(asUser).field({
         nullable: true,
         type: [MediaFile],
-        resolve: async (_, __, ctx) => {
-          const user = await ctx.prisma.user.findUnique({
-            where: { id: ctx.user.sub },
-            include: { mediaFiles: { orderBy: { createdAt: 'desc' } } },
-          })
-
-          if (!user) return []
-
-          return user.mediaFiles
-        },
+        resolve: (_, __, ctx) => ElementService.getUserMediaFiles(ctx),
       }),
 
       feedbacks: t.field({

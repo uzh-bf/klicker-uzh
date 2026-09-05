@@ -43,6 +43,9 @@ declare global {
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
+    type PrismaElementImportSelectedRefs = string[]
+    type PrismaElementImportCreatedElementIds = number[]
+    type PrismaElementImportCreatedAnswerCollectionIds = number[]
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
     type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
   }
