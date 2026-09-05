@@ -10,15 +10,15 @@ const { parse } = require('yaml')
 const ROOT = path.join(__dirname, '../..')
 const WORKFLOW_DIR = path.join(ROOT, '.github/workflows')
 const CHART_DIR = path.join(ROOT, 'deploy/charts/klicker-uzh-v3')
-const PARENT_SHA = '1765a2d6394fc9a3f18bddd330dda70438510e23'
+const PARENT_SHA = '208e97d38e6abfd13d997d48200077febc8c1445'
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const SENTINEL_TAG = 'stg-release-ref-sentinel'
 
 const BASELINE_RENDER_DIGESTS = {
   'deploy/env-uzh-prd/values.yaml':
-    '0ec440b0e11ddea51a5c325a0b21d041ed3c51decb5780660d844724ccad0533',
+    '07bebd9e0801ecea68d8875425262158bb5132dd32125425c96332d312cae92a',
   'deploy/env-uzh-stg/values.yaml':
-    'a6ee9ad6b2353045b99a4054473867284d14c2b99d5cf7e388de1875b12911e0',
+    '78f21724a35e500c9c24391853e4e4e732f4d22814fdc229a9e77cd33e4abd7e',
 }
 
 const EXPECTED_RUNTIME_IMAGE_JOB_MAP = {

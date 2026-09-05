@@ -298,11 +298,27 @@ Phase 2 is a separate task with explicit delivery and operations authority.
   which this chart does not render. Production values and workflows receive no
   override, staging and production environment values remain unchanged, and
   `stg-release` does not match the `v3` or `v3*` image-build filters.
-- `Terminal condition:` Phase 1 is complete with three clean, reviewed local
-  branches and no external state change. Fresh target inspection shows the
-  controller branch is six commits ahead and two behind `origin/v3`, while the
-  selected-source branch is eight ahead and sixteen behind `origin/v3-ai`.
-  Both prospective integrations have one textual conflict, confined to
-  `docs/ci-and-deployment.md`; no workflow, chart, or runtime path overlaps.
-  Upstream integration remains separately permission-gated.
+- `Upstream integration:` the approved one-time rebases completed onto
+  `origin/v3@468f05b91503b133670dda235be9a4b38bba2155` and
+  `origin/v3-ai@208e97d38e6abfd13d997d48200077febc8c1445`. The controller replayed
+  cleanly. The selected-source branch resolved its sole conflict in
+  `docs/ci-and-deployment.md` by preserving both the immutable staging-release
+  contract and the target branch's newer GrowthBook beta-enrollment wording.
+  Both branches are now zero commits behind their targets.
+- `Integration verification:` `git range-diff` confirms every executable
+  commit replayed unchanged. The seven mirrored runtime and policy blobs still
+  match 7/7. Promoter tests pass 20/20 on both branches, final-review tests pass
+  56/56 on both branches, both Helm lints pass, and the selected-source contract
+  passes 4/4 after moving its frozen baseline to the integrated target. The new
+  independent no-override render digests are `78f21724a35e` for staging and
+  `07bebd9e0801` for production; sentinel coverage remains 18/18.
+- `Review reuse:` the approved rebase changes no executable behavior or
+  operational contract. The only manual resolution is documentation-only, and
+  the frozen-baseline update is assertion-only while preserving the reviewed
+  test contract. The three completed final reviews therefore remain valid.
+- `Terminal condition:` Phase 1 is complete with three clean, reviewed and
+  target-integrated local branches and no external state change. Push, pull
+  requests, ref creation or movement, repository variables, private platform
+  changes, registry/live Argo inspection, and deployment remain separately
+  permission-gated.
 - `External state:` Unchanged.
