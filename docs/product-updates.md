@@ -15,7 +15,7 @@ entry may be shown — never what it says.** The catalog is editorial content
 reviewed in the same pull request as the feature it describes, so an entry
 cannot drift away from the capability it announces. The decision and the
 rejected alternatives are in
-[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
 
 ## The catalog package
 
@@ -93,7 +93,7 @@ empty state, button labels) does belong in the i18n message files.
 (`packages/prisma/src/prisma/schema/productUpdate.prisma`) hold one row per actor
 and entry. Why the state is in the database, split across two tables, and keyed
 per entry is recorded in
-[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
 
 `updateId` is a plain string with no foreign key, since the catalog is code, so
 the service validates every id against `PRODUCT_UPDATES` before writing.
@@ -203,7 +203,7 @@ must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
 The lecturer feed in `frontend-manage` is described below. The student surface in
-`frontend-pwa` does not exist yet; ADR 0028 describes its intended shape, and the
+`frontend-pwa` does not exist yet; ADR 0046 describes its intended shape, and the
 read-state API above is already in place for it.
 
 ## The lecturer feed
@@ -236,7 +236,7 @@ cannot carry it.
 A card reports both a presentation and a read once it actually enters the
 viewport, through an `IntersectionObserver` guarded by a per-mount ref. Two
 consequences are deliberate. Opening the feed does not mark entries below the
-fold as read, which is the read semantics ADR 0028 requires. And because the feed
+fold as read, which is the read semantics ADR 0046 requires. And because the feed
 modal unmounts when it closes, `presentationCount` counts feed openings that
 reached the card, not renders. Reporting waits until the stored states have
 arrived, because that query response replaces the whole cached state array and

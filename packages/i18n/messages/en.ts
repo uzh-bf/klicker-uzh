@@ -32,10 +32,11 @@ export default {
         'Uses fewer credits and remains available when your credits run out.',
       autoSelectionInfo:
         'KlickerUZH chooses a suitable model for each message.',
+      fixedModelInfo: 'Your lecturer fixed this model for all participants.',
       usingPrimaryModel:
-        'The standard model is used while credits are available.',
+        'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. Some models may no longer be available.',
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -337,6 +338,7 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Draft',
+      statusDescription: 'Manual status: unfinished and still being prepared.',
     },
     SCHEDULED: {
       statusLabel: 'Scheduled',
@@ -359,57 +361,78 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manual status: review requested.',
     },
     READY: {
       statusLabel: 'Ready',
+      statusDescription:
+        'Manual status: considered reusable; the default for new elements.',
     },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Students select exactly one of the provided answer options.',
       text: 'Please select a single option.',
       richtext: 'Please select a <b>single</b> option.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Students select one or more of the provided answer options.',
       text: 'Please select one or more options.',
       richtext: 'Please select <b>one or more</b> options.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Students mark each of exactly four statements as correct or incorrect.',
       text: 'Evaluate the statements for correctness.',
       richtext: 'Evaluate the statements for <b>correctness</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Free Text (FT)',
+      description:
+        'Students answer by typing free text, optionally restricted by a maximum length.',
       text: 'Please enter your answer.',
       richtext: 'Please enter your <b>answer</b>.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerical (NR)',
+      description:
+        'Students answer by typing a number, optionally restricted by range, precision and unit.',
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Content (CT)',
+      description:
+        'Presents additional information to students, without a question.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
+      description:
+        'Students practice content by heart and self-assess whether they remembered it.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Selection (SE)',
+      description:
+        'Students select a specific number of items from an answer collection.',
       text: 'Please select the correct answer from the list.',
       richtext: 'Please select the <b>correct answer</b> from the list.',
     },
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Case Study (CS)',
+      description:
+        'Students evaluate items against criteria within one or more case scenarios.',
       text: 'Please evaluate all options with respect to the given criteria.',
       richtext:
         'Please evaluate all options with respect to the given criteria.',
@@ -872,6 +895,8 @@ export default {
       practicePoolPromotionDescription:
         'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
       startPracticePool: 'Start Practice Pool',
+      practicePoolRoundComplete:
+        'Round completed! Start another round to continue practicing. Your previous answers can influence the selection of question sets.',
       individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
@@ -1568,6 +1593,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortOrderAscending: 'Sort ascending',
+      sortOrderDescending: 'Sort descending',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -2003,6 +2030,28 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
+      betaFeaturesDataUse:
+        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
+      betaFeaturesDescription:
+        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesConvergedOff: 'Beta access is no longer active.',
+      betaFeaturesConvergedOn: 'Beta access is now active.',
+      betaFeaturesEnrollment: 'Beta enrollment',
+      betaFeaturesEnrollmentTooltip:
+        'This optional setting controls whether your account is enrolled in the beta cohort.',
+      betaFeaturesError:
+        'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
+      betaFeaturesRefreshFailure:
+        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+      betaFeaturesRefreshing:
+        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+      betaFeaturesSaved:
+        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+      betaFeaturesPending:
+        'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
+      betaFeaturesTitle: 'Beta features',
+      betaFeaturesUnavailable:
+        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -2078,15 +2127,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createLiveQuizDescription: 'Engage participants live during a session.',
       createMicrolearning: 'Create microlearning',
+      createMicrolearningDescription:
+        'Schedule short learning activities over a defined period.',
       createPracticeQuiz: 'Create practice quiz',
+      createPracticeQuizDescription:
+        'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
+      createGroupTaskDescription: 'Let groups collaborate on a shared task.',
+      createElementaryLabel: 'Elements',
+      createActivitiesLabel: 'Activities',
       createElement: 'Create Element',
+      emptyStateTitle: 'Create your first element',
+      emptyStateDescription:
+        'Elements are reusable questions and content for your activities. Create one to get started.',
+      clearSearch: 'Clear search',
+      elementsLoadError: 'The elements could not be loaded.',
+      retry: 'Retry',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
+      moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
+      filterApplied: 'Filter applied',
       tags: 'Tags',
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
@@ -2151,12 +2216,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       batchOperationsElements: 'Elements - Batch Operations',
       batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'Review the selected elements below. Then choose the actions to apply.',
       batchElementName: 'Element',
-      batchElementPermission: 'Your permission',
-      batchUpdateStatus: 'Element update eligibility',
+      batchElementPermission: 'Permission',
+      batchUpdateStatus: 'Changes',
       batchUpdateStatusInactive: 'No element update configured',
-      batchSharingStatus: 'Element sharing eligibility',
+      batchSharingStatus: 'Sharing',
       actionApplies: 'Action applies',
       batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
@@ -2217,8 +2282,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       updateActivitiesBatchInfo:
         'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
       activityUpdates: 'Activity updates',
-      draftScheduledActivities: 'Draft and scheduled activities',
-      templateUpdates: 'Activity template updates',
+      batchUpdateInstancesConsequence:
+        'Also apply these changes to draft and scheduled activities',
+      batchUpdateTemplateInstancesConsequence: 'Also update activity templates',
       batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
         'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
@@ -2262,6 +2328,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyElement: 'Modify Element',
       useElementInActivities: 'Use Element in Activities',
       elementType: 'Element type',
+      elementTypeImmutableNotice:
+        'The element type cannot be changed after creation. You can duplicate the element to create a different type.',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
@@ -2443,6 +2511,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
+      confirmCancelTitle: 'Discard changes to this activity creation?',
+      confirmCancelBody:
+        'You have entered data that has not been saved yet. Discarding will permanently remove the data you entered in this wizard.',
+      confirmCancelEditTitle: 'Discard changes to this activity?',
+      confirmCancelEditBody:
+        'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
+      confirmCancelDiscard: 'Discard',
+      confirmCancelKeepEditing: 'Keep editing',
+      continueToDescription: 'Continue to description',
+      continueToSettings: 'Continue to settings',
+      continueToQuestions: 'Continue to questions',
+      temporaryStorageCreation:
+        'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
+      temporaryStorageEditing:
+        'The activity editing process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       activityDisplayName:
         'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
@@ -2476,12 +2559,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newStack: 'New stack',
-      newBlockSelected: 'Add 1 block with {count} elements',
-      newStackSelected: 'Add 1 stack with {count} elements',
+      newBlockSelected:
+        '{count, plural, one {Add 1 block with # element} other {Add 1 block with # elements}}',
+      newStackSelected:
+        '{count, plural, one {Add 1 stack with # element} other {Add 1 stack with # elements}}',
       pasteSelection: 'Add {count} questions',
-      pasteSelectionElements: 'Add {count} elements',
-      pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
-      pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pasteSelectionElements:
+        '{count, plural, one {Add # element} other {Add # elements}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {Add # block with 1 element} other {Add # blocks with 1 element each}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {Add # stack with 1 element} other {Add # stacks with 1 element each}}',
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
@@ -3843,6 +3931,39 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
       chatbotSetupBasics: 'Basics',
       chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupModes: 'Learning modes',
+      chatbotSetupModesDescription:
+        'Choose which standard modes participants can use',
+      chatbotSetupModesTitle: 'Learning modes',
+      chatbotSetupModesDescriptionLong:
+        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Guides participants with questions, hints, and formative feedback.',
+      chatbotModeExplainer: 'Explainer',
+      chatbotModeExplainerDescription:
+        'Explains course concepts directly with definitions and grounded examples.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Practises exam-style course questions one at a time with formative feedback.',
+      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeQuizzerCapabilityNote:
+        'Quizzer may still be hidden when its course-material capability is unavailable.',
+      chatbotModeEnabled: 'Enabled',
+      chatbotModeDisabled: 'Disabled',
+      chatbotFraming: 'Chatbot framing',
+      chatbotFramingDescription:
+        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+      chatbotFramingPlaceholder:
+        'For example: First-year organic chemistry for medical students.',
+      chatbotFramingTooLong:
+        'Chatbot framing must be 200 characters or fewer when edited.',
+      chatbotModesSave: 'Save learning modes',
+      chatbotModesSaving: 'Saving…',
+      chatbotModesSaveSuccess: 'Learning modes saved.',
+      chatbotModesSaveError: 'Could not save learning modes. Please try again.',
+      chatbotModesReadonly:
+        'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
       chatbotSetupReview: 'Review and submit',
@@ -3910,7 +4031,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
+        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:
@@ -3980,17 +4101,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Model selection',
+      modelSelection: 'Let participants choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'Participants can choose among the allowed models.',
+        'On: participants can choose one of the explicitly selected models.',
       modelSelectionDisabledDescription:
-        'Model selection is automatic and based on credit availability.',
+        'Off: the chatbot uses exactly one model selected by the lecturer.',
+      modelSelectionFixedDescription:
+        'Participants use this model. New chatbots start with Auto.',
+      modelSelectionParticipantDescription:
+        'Participants can choose among these models. Select at least one.',
+      selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
+      reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
       chatbotModelSettingsSave: 'Save model settings',
       chatbotModelSettingsSaving: 'Saving...',

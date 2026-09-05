@@ -70,6 +70,13 @@ describe('chat model registry provider protocol', () => {
       'CHAT_MODEL_REGISTRY_JSON',
       JSON.stringify([
         {
+          id: 'auto',
+          deploymentId: 'auto-router',
+          name: 'Auto',
+          maxOutputTokens: 4096,
+          cost: { input: 1, output: 1 },
+        },
+        {
           id: 'advanced-primary',
           deploymentId: 'advanced-primary',
           name: 'Advanced Primary',
@@ -130,6 +137,13 @@ describe('chat model registry provider protocol', () => {
     vi.stubEnv(
       'CHAT_MODEL_REGISTRY_JSON',
       JSON.stringify([
+        {
+          id: 'auto',
+          deploymentId: 'auto-router',
+          name: 'Auto',
+          maxOutputTokens: 4096,
+          cost: { input: 1, output: 1 },
+        },
         {
           id: 'advanced-primary',
           deploymentId: 'advanced-primary',

@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
@@ -129,7 +130,14 @@ import {
   TemplateElementInformation,
 } from './template.js'
 import { TourState } from './tours.js'
-import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
+import {
+  BetaEnrollmentCapability,
+  MediaFile,
+  User,
+  UserInfo,
+  UserLogin,
+  UserLoginScope,
+} from './user.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -259,6 +267,13 @@ export const Query = builder.queryType({
         type: UserLoginScope,
         resolve: (_, __, ctx) => {
           return ctx.user.scope
+        },
+      }),
+
+      betaEnrollment: t.withAuth(asUser).field({
+        type: BetaEnrollmentCapability,
+        resolve: async (_, __, ctx) => {
+          return await BetaEnrollmentService.getBetaEnrollment({}, ctx)
         },
       }),
 
