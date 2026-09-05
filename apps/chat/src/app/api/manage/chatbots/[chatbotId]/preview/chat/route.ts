@@ -145,9 +145,9 @@ export async function POST(
         select: { displayName: true },
       },
       knowledgeBases: {
-        where: { isEnabled: true },
+        where: { isEnabled: true, kb: { deletedAt: null } },
         select: { kbId: true },
-        take: 1,
+        take: 2,
       },
       mcpConfigurations: {
         where: { isEnabled: true },
@@ -375,7 +375,10 @@ export async function POST(
               isAborted: completedResponse.isAborted,
               ownerId: auth.userId,
               chatbotId,
-              kbId: chatbot.knowledgeBases[0]?.kbId,
+              kbId:
+                chatbot.knowledgeBases.length === 1
+                  ? chatbot.knowledgeBases[0]?.kbId
+                  : undefined,
               chatMode: selectedMode,
             })
             if (receipt) {

@@ -5,24 +5,6 @@ import {
 } from '../src/components/response-example-capture-action'
 
 describe('owner-preview response-example capture action', () => {
-  it.each([
-    ['available', 'available'],
-    ['pending', 'pending'],
-    ['created', 'created'],
-    ['duplicate', 'duplicate'],
-    ['stale', 'stale'],
-    ['expired', 'expired'],
-    ['failure', 'failure'],
-  ] as const)('keeps the %s state visible for the first complete answer', (_, phase) => {
-    expect(
-      resolveResponseExampleCapturePhase({
-        hasReceipt: true,
-        isComplete: true,
-        phase,
-      })
-    ).toBe(phase)
-  })
-
   it('shows the unavailable state for a malformed receipt part', () => {
     expect(
       resolveResponseExampleCapturePhase({

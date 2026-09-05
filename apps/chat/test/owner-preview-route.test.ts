@@ -365,6 +365,39 @@ describe('POST owner preview chat', () => {
     expect(body.indexOf('data-response-example-receipt')).toBeLessThan(
       body.indexOf('"type":"finish"')
     )
+    expect(mocks.findChatbot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          knowledgeBases: {
+            where: { isEnabled: true, kb: { deletedAt: null } },
+            select: { kbId: true },
+            take: 2,
+          },
+        }),
+      })
+    )
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({ kbId: 'kb-id' })
+    )
+  })
+
+  it.each([
+    { knowledgeBases: [] },
+    { knowledgeBases: [{ kbId: 'first-kb' }, { kbId: 'second-kb' }] },
+  ])('withholds the receipt KB scope without exactly one live binding: $knowledgeBases', async ({
+    knowledgeBases,
+  }) => {
+    const chatbot = await mocks.findChatbot()
+    mocks.findChatbot.mockResolvedValue({ ...chatbot, knowledgeBases })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({ kbId: undefined })
+    )
   })
 
   it('appends an unavailable capture state before the stream finishes', async () => {
