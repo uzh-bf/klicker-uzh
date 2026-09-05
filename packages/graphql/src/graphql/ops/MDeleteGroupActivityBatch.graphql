@@ -1,0 +1,5 @@
+mutation DeleteGroupActivityBatch($id: String!) {
+  deleteGroupActivity(id: $id, onlyIfUnpublished: true) {
+    id
+  }
+}

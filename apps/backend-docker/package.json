@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.4.0-alpha.64",
+  "version": "3.4.0-alpha.73",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
     "@graphql-yoga/plugin-response-cache": "1.9.1",
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
@@ -28,9 +29,6 @@
     "@opentelemetry/sdk-trace-base": "1.26.0",
     "@opentelemetry/sdk-trace-node": "1.26.0",
     "@opentelemetry/semantic-conventions": "1.27.0",
-    "@prisma/adapter-pg": "6.16.1",
-    "@prisma/extension-optimize": "2.0.1",
-    "@prisma/instrumentation": "6.14.0",
     "@sentry/node": "7.103.0",
     "@sentry/tracing": "7.114.0",
     "cookie-parser": "1.4.7",
@@ -40,11 +38,10 @@
     "graphql-ws": "5.16.0",
     "graphql-yoga": "3.9.1",
     "ioredis": "5.4.1",
-    "next-auth": "4.24.14",
+    "next-auth": "4.24.15",
     "ws": "8.18.0"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "~3.14.6",
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
@@ -62,11 +59,10 @@
     "nodemon": "~3.1.14",
     "npm-run-all": "~4.1.5",
     "nyc": "~17.1.0",
-    "prisma": "~6.16.1",
     "rollup": "~4.34.9",
     "source-map-support": "~0.5.21",
     "tsx": "~4.19.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm build:ts",
@@ -86,8 +82,8 @@
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config dist/index.js",
-    "test": "tsx --test test/**/*.test.ts",
-    "test:run": "tsx --test test/**/*.test.ts"
+    "test": "tsx --test \"src/**/*.test.ts\" \"test/**/*.test.ts\"",
+    "test:run": "tsx --test \"src/**/*.test.ts\" \"test/**/*.test.ts\""
   },
   "engines": {
     "node": "=24"

@@ -12,7 +12,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -20,7 +20,12 @@ import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import Pagination from '../components/common/Pagination'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
+import { computeResultRange } from '@lib/resultRange'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -57,17 +62,21 @@ function Index() {
     !loadingFeatureAccess && featureAccess?.canUseElementImportExport === true
 
   // search, filter and pagination states
+  const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
   // initialize page size from local storage (if available)
-  const [pageSize, setPageSize] = useState(() => {
+  const [pageSize, setPageSize] = useState<PaginationPageSize>(() => {
     // only try to access localStorage when on the client
     if (typeof window !== 'undefined') {
       try {
         const storedPageSize = localStorage.getItem('elements-page-size')
         if (storedPageSize) {
-          return JSON.parse(storedPageSize)
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (isPaginationPageSize(parsedPageSize)) {
+            return parsedPageSize
+          }
         }
       } catch (error) {
         console.error(
@@ -162,6 +171,7 @@ function Index() {
 
   const {
     loading: loadingElements,
+    error: errorElements,
     data: dataElements,
     refetch: refetchElements,
   } = useQuery(GetUserElementsDocument, {
@@ -181,8 +191,8 @@ function Index() {
       sortByType: sort.by,
       sortByAsc: sort.asc,
       showArchived: filters.archive,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
+      numEntries: pageSize === 'all' ? undefined : pageSize,
+      offset: pageSize === 'all' ? undefined : (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
@@ -211,6 +221,9 @@ function Index() {
     setUploadElements(false)
     setDownloadElements(null)
   }, [canUseElementImportExport])
+  const refetchElementsForChildren = useCallback(async () => {
+    await refetchElements()
+  }, [refetchElements])
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -223,7 +236,8 @@ function Index() {
   useEffect(() => {
     if (loadingElements) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfElements / pageSize))
+    const maxPage =
+      pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
@@ -235,7 +249,13 @@ function Index() {
   }, [filters, sort, searchString])
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfElements / pageSize))
+  const totalPages =
+    pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
+  const resultRange = computeResultRange({
+    currentPage,
+    pageSize,
+    numOfElements,
+  })
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -341,11 +361,32 @@ function Index() {
   )
   const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
+  const handleApplySearch = useCallback((value: string) => {
+    setSearchString(value)
+    setCurrentPage(1)
+  }, [])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('')
+    setSearchString('')
+    setCurrentPage(1)
+  }, [])
+
+  const handleCreateElement = useCallback(() => {
+    const value = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
+
+    if (value) {
+      setShowRecoveryPrompt(true)
+    } else {
+      setIsElementCreationModalOpen(true)
+    }
+  }, [])
+
   return (
     <Layout
       displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
-      className={{ children: 'pb-2' }}
+      className={{ children: 'pb-2 sm:overflow-y-auto' }}
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
@@ -354,25 +395,48 @@ function Index() {
       )}
 
       {creationMode && (
-        <>
-          <ActivityCreation
-            creationMode={creationMode}
-            closeWizard={() => {
-              router.push('/')
-              setCreationMode(() => undefined)
-            }}
-            activityId={router.query.elementId as string}
-            editMode={router.query.editMode as ActivityType}
-            conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElements}
-            resetSelection={() => setSelectedElements({})}
-          />
-        </>
+        <ActivityCreation
+          creationMode={creationMode}
+          closeWizard={() => {
+            setSelectedElements({})
+            router.push('/')
+            setCreationMode(() => undefined)
+          }}
+          activityId={router.query.elementId as string}
+          editMode={router.query.editMode as ActivityType}
+          conversionMode={router.query.conversionMode as string}
+          duplicationMode={router.query.duplicationMode as ActivityType}
+          selection={selectedElements}
+          resetSelection={() => setSelectedElements({})}
+          restoreSelection={(selection) =>
+            setSelectedElements(
+              Object.fromEntries(
+                Object.entries(selection).filter(
+                  ([, element]) => element.isManager ?? false
+                )
+              )
+            )
+          }
+        />
       )}
 
-      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        <div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto sm:flex-row">
+        <aside
+          className="flex w-full shrink-0 flex-col items-start gap-3 sm:w-56"
+          data-cy="element-library-sidebar"
+          aria-label={t('manage.questionPool.createElementaryLabel')}
+        >
+          <Button
+            fluid
+            primary={!creationMode}
+            onClick={handleCreateElement}
+            data={{ cy: 'create-question' }}
+            className={{ root: 'h-9 font-bold' }}
+          >
+            <Button.Label>
+              {t('manage.questionPool.createElement')}
+            </Button.Label>
+          </Button>
           <FilterList
             key={creationMode}
             defaultValue={
@@ -391,23 +455,25 @@ function Index() {
             toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
             handleToggleArchive={handleToggleArchive}
             isArchiveActive={filters.archive}
-            refetchElements={async () => {
-              await refetchElements()
-            }}
+            refetchElements={refetchElementsForChildren}
           />
-        </div>
+        </aside>
 
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between gap-2 pb-2.5">
-              <div className="flex w-full flex-row flex-wrap items-center gap-1.5 sm:w-auto">
+              <div className="flex min-w-0 w-full flex-row flex-wrap items-center gap-1.5 sm:w-auto">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
                   setSelectedElements={setSelectedElements}
                   creationMode={creationMode}
                 />
-                <ElementListSearch setSearchString={setSearchString} />
+                <ElementListSearch
+                  value={searchInput}
+                  onValueChange={setSearchInput}
+                  onApplySearch={handleApplySearch}
+                />
                 <ElementListSorting
                   sort={sort}
                   handleSortByChange={handleSortByChange}
@@ -473,34 +539,43 @@ function Index() {
                     </Button>
                   </>
                 ) : null}
-                <Button
-                  primary
-                  onClick={() => {
-                    const value = localStorage.getItem(
-                      'autosave-element-creation'
-                    )
-
-                    if (value) {
-                      setShowRecoveryPrompt(true)
-                    } else {
-                      setIsElementCreationModalOpen(true)
-                    }
-                  }}
-                  data={{ cy: 'create-question' }}
-                  className={{ root: 'h-9 font-bold' }}
-                >
-                  {t('manage.questionPool.createElement')}
-                </Button>
               </div>
             </div>
 
-            <div className="h-full overflow-y-auto">
-              {!dataElements || loadingElements ? (
-                <div className="flex h-full items-center justify-center">
-                  <Loader />
+            {errorElements && (
+              <UserNotification
+                type="error"
+                message={t('manage.questionPool.elementsLoadError')}
+                className={{ root: 'ml-7 text-sm' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => refetchElements()}
+                  data-cy="elements-error-retry"
+                  className="cursor-pointer font-bold underline"
+                >
+                  {t('manage.questionPool.retry')}
+                </button>
+              </UserNotification>
+            )}
+            {!errorElements && (!dataElements || loadingElements) && (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader />
+              </div>
+            )}
+            {!errorElements && dataElements && !loadingElements && (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div
+                  data-cy="result-range-summary-top"
+                  className="text-muted-foreground flex-none pb-2 text-xs"
+                >
+                  {t('manage.general.showingResults', {
+                    start: resultRange.start,
+                    end: resultRange.end,
+                    total: resultRange.total,
+                  })}
                 </div>
-              ) : (
-                <>
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
@@ -535,25 +610,27 @@ function Index() {
                       })
                     }
                     handleFilterReset={handleResetCleanURL}
-                    refetchElements={async () => {
-                      await refetchElements()
-                    }}
+                    hasActiveSearch={searchString.trim() !== ''}
+                    onClearSearch={handleClearSearch}
+                    onCreateElement={handleCreateElement}
+                    refetchElements={refetchElementsForChildren}
                   />
+                </div>
 
-                  {elements.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfElements}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {elements.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfElements}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    showAll
+                    className="flex-none"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
@@ -561,6 +638,7 @@ function Index() {
       {isElementCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsElementCreationModalOpen}
+          preserveDraftOnDismiss
           triggerSuccessToast={() =>
             toast({
               type: 'success',
@@ -570,9 +648,7 @@ function Index() {
           }
           isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {modificationModalOpen && router.query.editElementId && (
@@ -589,9 +665,7 @@ function Index() {
           }
           elementId={parseInt(router.query.editElementId as string, 10)}
           mode={ElementEditMode.EDIT}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {canUseElementImportExport && downloadElements && (
@@ -613,9 +687,7 @@ function Index() {
           selectedElements={Object.values(selectedElements)}
           onClose={() => setBatchOperationsOpen(false)}
           resetSelectedElements={() => setSelectedElements({})}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {showRecoveryPrompt && (
@@ -625,7 +697,7 @@ function Index() {
             setIsElementCreationModalOpen(true)
           }}
           onDiscard={() => {
-            localStorage.removeItem('autosave-element-creation')
+            localStorage.removeItem(ELEMENT_CREATION_AUTOSAVE_KEY)
             setShowRecoveryPrompt(false)
             setIsElementCreationModalOpen(true)
           }}
@@ -633,9 +705,7 @@ function Index() {
       )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       </Suspense>
     </Layout>

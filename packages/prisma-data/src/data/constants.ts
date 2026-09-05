@@ -9,3 +9,5 @@ export const COURSE_ID_TEST3 = 'efd54f15-ba92-4291-8ea8-911f365ae10b'
 export const COURSE_ID_TEST4 = '156d1069-434c-4f5a-b541-5637987ee504'
 export const COURSE_ID_TEST5 = 'd60a72a2-7e1d-4c6f-846f-68eb163a31b0'
 export const COURSE_ID_CALENDAR = 'b79b1c94-5ad3-4839-b4c0-240c6bca5b98'
+export const COURSE_ID_DUPLICATION_STRESS =
+  '4f8e2e21-3c7c-4c94-8f19-9a96f1529a53'

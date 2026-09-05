@@ -1,4 +1,5 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import type {
   FlashcardCorrectness,
   SingleQuestionResponseChoices,
@@ -10,8 +11,6 @@ import dayjs from 'dayjs'
 import { evaluateAnswerCorrectness } from '../services/practiceQuizzes.js'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   const startTime = new Date().getTime()
 
   // reset isMigrated flag

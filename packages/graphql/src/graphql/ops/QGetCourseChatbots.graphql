@@ -1,0 +1,8 @@
+query GetCourseChatbots($courseId: String!) {
+  courseChatbots(courseId: $courseId) {
+    id
+    name
+    description
+    avatar
+  }
+}

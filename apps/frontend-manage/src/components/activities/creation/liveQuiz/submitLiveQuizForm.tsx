@@ -57,6 +57,7 @@ async function submitLiveQuizForm({
       return {
         order: ix,
         timeLimit: block.timeLimit,
+        randomSelection: block.randomSelection,
         elements: block.elements.map((element, ix) => {
           return {
             elementId: element.id,

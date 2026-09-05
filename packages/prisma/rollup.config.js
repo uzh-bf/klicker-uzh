@@ -23,6 +23,10 @@ const config = defineConfig([
         declaration: true,
         declarationDir: 'dist',
         outputToFilesystem: true,
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
       // copy({
       //   targets: [

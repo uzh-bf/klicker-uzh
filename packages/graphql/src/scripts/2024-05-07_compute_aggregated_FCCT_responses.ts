@@ -1,4 +1,5 @@
-import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { Element, ElementType } from '@klicker-uzh/prisma/client'
 import {
   FlashcardCorrectness,
   SingleQuestionResponseContent,
@@ -7,8 +8,6 @@ import {
 import { getInitialElementResults } from '@klicker-uzh/util'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   const startTime = new Date().getTime()
 
   let offset = 0

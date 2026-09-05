@@ -4,7 +4,11 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -12,16 +16,23 @@ import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course } from './course.js'
+import { asChatbotAuthor } from './authScopes.js'
+import {
+  Course,
+  CourseDeletionRequestPayload,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -61,6 +72,11 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  AssessmentParticipantInvitation,
+  AssessmentParticipantInvitationInput,
+  CreateAssessmentParticipantInvitationsPayload,
+} from './participantInvitation.js'
+import {
   ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
@@ -72,13 +88,16 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
+  ElementBatchSharingResult,
   ObjectAccess,
   ObjectType,
   PermissionInfo,
@@ -87,6 +106,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   LocaleType,
   User,
   UserInfo,
@@ -107,13 +127,30 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
+    const courseCreationArgs = {
+      name: t.arg.string({ required: true }),
+      displayName: t.arg.string({ required: true }),
+      description: t.arg.string({ required: false }),
+      color: t.arg.string({ required: false }),
+      startDate: t.arg({ type: 'Date', required: true }),
+      endDate: t.arg({ type: 'Date', required: true }),
+      isGroupCreationEnabled: t.arg.boolean({ required: true }),
+      groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+      maxGroupSize: t.arg.int({ required: true }),
+      preferredGroupSize: t.arg.int({ required: true }),
+      language: t.arg({ type: LocaleType, required: true }),
+      notificationEmail: t.arg.string({
+        required: false,
+        validate: { email: true },
+      }),
+    }
 
     return {
       // ----- ANONYMOUS OPERATIONS -----
@@ -640,15 +677,22 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      deleteCourse: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
-        args: { id: t.arg.string({ required: true }) },
+        type: CourseDeletionRequestPayload,
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return { courseId: request.courseId }
           }
         ),
       }),
@@ -1270,6 +1314,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      shareElementsBatch: t.withAuth(asUserFullAccess).field({
+        type: ElementBatchSharingResult,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          shortnameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.shareElementsBatch(args, ctx)
+        },
+      }),
+
       applyActivityBatchOperations: t.withAuth(asUserFullAccess).int({
         args: {
           activityIds: t.arg.stringList({ required: true }),
@@ -1326,26 +1383,59 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Course,
         args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          color: t.arg.string({ required: false }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          isGroupCreationEnabled: t.arg.boolean({ required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
-          maxGroupSize: t.arg.int({ required: true }),
-          preferredGroupSize: t.arg.int({ required: true }),
-          language: t.arg({ type: LocaleType, required: true }),
-          notificationEmail: t.arg.string({
-            required: false,
-            validate: { email: true },
-          }),
+          ...courseCreationArgs,
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          sourceCourseId: t.arg.string({ required: false }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await CourseService.createCourse(args, ctx)
+          if (!args.sourceCourseId) {
+            return await CourseService.createCourse(args, ctx)
+          }
+
+          return await withPermission<
+            unknown,
+            typeof args,
+            Awaited<ReturnType<typeof CourseDuplicationService.duplicateCourse>>
+          >(
+            (duplicationArgs) => ({
+              courseId: duplicationArgs.sourceCourseId!,
+            }),
+            DB.PermissionLevel.ADMIN,
+            async (_root, duplicationArgs, duplicationCtx) =>
+              CourseDuplicationService.duplicateCourse(
+                duplicationArgs,
+                duplicationCtx
+              )
+          )(_, args, ctx)
         },
+      }),
+
+      startCourseDuplication: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CourseDuplicationStatus,
+        args: {
+          ...courseCreationArgs,
+          isGamificationEnabled: t.arg.boolean({ required: false }),
+          sourceCourseId: t.arg.string({ required: true }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.sourceCourseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseDuplicationService.startCourseDuplication(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       updateCourseSettings: t.withAuth(asUserFullAccess).field({
@@ -1377,7 +1467,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asUser).field({
+      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
@@ -1391,6 +1481,153 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: true }),
+          baseBudgetCredits: t.arg.float({ required: true }),
+          advancedBudgetCredits: t.arg.float({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.setChatAccountUsageBudgets(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      createChatbot: t.withAuth(asChatbotAuthor).field({
+        type: Chatbot,
+        args: {
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.createChatbot(args, ctx)
+        },
+      }),
+
+      updateChatbot: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({
+            required: false,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
+
+      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedDisclaimerId: t.arg.string({ required: false }),
+          title: t.arg.string({ required: true }),
+          introText: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
+        },
+      }),
+
+      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          proposedCredits: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
+
+      approveChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.approveChatbotPublication(args, ctx)
+        },
+      }),
+
+      rejectChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.rejectChatbotPublication(args, ctx)
         },
       }),
 
@@ -1462,6 +1699,56 @@ export const Mutation = builder.mutationType({
           }
         ),
       }),
+
+      createAssessmentParticipantInvitations: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: CreateAssessmentParticipantInvitationsPayload,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitations: t.arg({
+              type: [AssessmentParticipantInvitationInput],
+              required: true,
+              validate: {
+                minLength: 1,
+                maxLength:
+                  ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
+              },
+            }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.createAssessmentParticipantInvitations(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
+
+      deletePendingAssessmentParticipantInvitation: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: AssessmentParticipantInvitation,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitationId: t.arg.int({ required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.deletePendingAssessmentParticipantInvitation(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
       correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({
         nullable: true,
@@ -1610,6 +1897,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 
@@ -3031,10 +3326,10 @@ export const Mutation = builder.mutationType({
       }),
       // #endregion
 
-      // ----- USER WITH CATALYST -----
+      // ----- USER WITH STANDARD ACTIVITY ACCESS -----
       // #region
       createPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3060,7 +3355,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3091,7 +3386,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3111,7 +3406,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3139,7 +3434,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3157,7 +3452,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3172,7 +3467,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3193,7 +3488,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3219,7 +3514,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3237,7 +3532,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3255,7 +3550,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3270,7 +3565,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3285,7 +3580,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3303,37 +3598,55 @@ export const Mutation = builder.mutationType({
         }),
 
       deletePracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await PracticeQuizService.deletePracticeQuiz(args, ctx)
+              return await PracticeQuizService.deletePracticeQuiz(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       deleteMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await MicroLearningService.deleteMicroLearning(args, ctx)
+              return await MicroLearningService.deleteMicroLearning(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       publishGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3348,7 +3661,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3363,7 +3676,7 @@ export const Mutation = builder.mutationType({
         }),
 
       openGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3378,7 +3691,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3393,22 +3706,31 @@ export const Mutation = builder.mutationType({
         }),
 
       deleteGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await GroupService.deleteGroupActivity(args, ctx)
+              return await GroupService.deleteGroupActivity(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       gradeGroupActivitySubmission: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivityInstance,
@@ -3430,7 +3752,7 @@ export const Mutation = builder.mutationType({
         }),
 
       finalizeGroupActivityGrading: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3478,6 +3800,23 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
+        },
+      }),
+
+      requestCatalystAccess: t.withAuth(asUserOwner).field({
+        type: 'Boolean',
+        args: {
+          institution: t.arg.string({
+            required: true,
+            validate: { minLength: 2, maxLength: 160 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 20, maxLength: 2000 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SupportService.requestCatalystAccess(args, ctx)
         },
       }),
 

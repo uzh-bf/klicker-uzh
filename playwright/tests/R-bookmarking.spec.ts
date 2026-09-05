@@ -1,4 +1,4 @@
-import bookmarkingData from '../../cypress/cypress/fixtures/R-bookmarking.json' with { type: 'json' }
+import bookmarkingData from '../fixtures/R-bookmarking.json' with { type: 'json' }
 import { cleanupTest } from '../util/cleanup.js'
 import { LECTURER_ID, URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'

@@ -1,0 +1,21 @@
+query GetAssessmentParticipantInvitations(
+  $courseId: String!
+  $numEntries: Int
+  $offset: Int
+) {
+  assessmentParticipantInvitations(
+    courseId: $courseId
+    numEntries: $numEntries
+    offset: $offset
+  ) {
+    totalCount
+    invitations {
+      id
+      email
+      matriculationNumber
+      status
+      invitedAt
+      acceptedAt
+    }
+  }
+}

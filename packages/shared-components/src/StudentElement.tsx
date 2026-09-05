@@ -5,7 +5,6 @@ import type {
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
-import React from 'react'
 import CaseStudyQuestion from './CaseStudyQuestion'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'

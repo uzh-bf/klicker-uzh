@@ -1,0 +1,99 @@
+---
+title: Course Chatbot
+hide_title: true
+---
+
+import CatalystTitle from '../../src/components/CatalystTitle'
+
+<CatalystTitle title="Course Chatbot" />
+
+## What is the Course Chatbot?
+
+![Course chatbot with the conversation sidebar on the left and a streamed answer to a student question](/img/chatbot/chat_overview.png)
+
+The course chatbot is an AI assistant that you can offer to the students of a specific course. Students open it through a course-specific link, ask questions about the course content and receive answers in a familiar chat interface. Every chatbot is scoped to one course: only students who are logged in and enrolled in that course can use it.
+
+A chatbot can be configured with one or several **conversation modes** (for example a tutor mode that guides students with questions, or an explainer mode that answers directly), and it can optionally be connected to a knowledge base with your course materials. Usage is limited through a **credit** system, so a chatbot cannot consume an unlimited amount of resources.
+
+:::warning
+AI-generated answers can be wrong or incomplete. Please inform your students that they should verify important information against the official course materials. The chat interface itself also displays a corresponding hint.
+:::
+
+## How do I get a chatbot for my course?
+
+Chatbots are not self-serve: there is currently no interface to create one yourself. A chatbot and its configuration are set up **together with the KlickerUZH team**.
+
+1. **Get in touch:** Contact the KlickerUZH team and describe the course, the intended use of the chatbot and the materials you would like it to work with.
+2. **Agree on the configuration:** Together, you define the conversation modes, the credit settings (initial amount, reset period and maximum) and whether a knowledge base with course materials should be connected.
+3. **Receive the chatbot:** Once the chatbot has been set up, it appears in the "Chatbots" area under "Resources" in your KlickerUZH management interface, and you can share the access link with your students.
+
+Any later change to the modes, the credit settings or the connected materials is made in the same way, by contacting the KlickerUZH team.
+
+## How do I manage my chatbot?
+
+To inspect your chatbots, navigate to the **"Resources"** section and open the **"Chatbots"** area. For each chatbot, the overview shows:
+
+- The **credit settings** that apply to the students of the course (initial amount, reset period and maximum).
+- The number of students who have **accepted or declined the disclaimer**.
+- The **connected tools** the chatbot can use while answering.
+
+These values are read-only and are maintained by the KlickerUZH team. One block is editable by you:
+
+**Model settings:**
+
+1. **Allow model selection:** Decide whether students may choose the AI model themselves. If this is disabled, the model is selected automatically for every message.
+2. **Allowed models:** If model selection is enabled, select which models your students can choose from. In addition to the models you allow, a small fallback model always remains available, so students are never left without an option.
+3. **Reasoning effort:** For models that support reasoning, define which effort levels students may select. A higher effort can improve answers to difficult questions, but takes longer and consumes more credits.
+
+![Student-facing settings panel with the model selection; the offered models depend on your chatbot configuration](/img/chatbot/chat_settings.png)
+
+:::tip
+If you are unsure which models to allow, start with model selection disabled. The chatbot then always uses the automatically selected model, and students do not have to make a technical decision before asking their first question.
+:::
+
+## How do students access the chatbot?
+
+Each chatbot has an **access link** per linked course, which you can open from the chatbot overview under "Resources" and copy from your browser. Opening the link enrols a logged-in student in the corresponding course and redirects them into the chat application, so a single link is enough to get students started.
+
+You can use the link in two ways:
+
+1. **Share it directly:** Post the link on your course page, in a slide deck or in an announcement to your students.
+2. **Embed it in your LMS:** The chat interface can be embedded in a page of your learning management system (for example OpenOLAT or Moodle), so that students reach it without leaving the course environment.
+
+:::info
+Embedding is only possible on domains that are on the allow-list of KlickerUZH. If you would like to embed a chatbot on a learning management system that is not yet used with KlickerUZH, please contact the KlickerUZH team so that the allow-list can be extended for your domain.
+:::
+
+## What do students see?
+
+The student view is described in detail in the [student documentation on the course chatbot](/student_tutorials/chatbot/). In short, students can:
+
+- Hold **several parallel conversations**, rename them and delete them.
+- **Switch between conversation modes**, if your chatbot offers more than one. The mode switcher only appears in that case, and a changed mode applies to the next message a student sends.
+- **Edit an earlier message**, which creates a new answer variant that students can page through.
+- **Attach images** to a question (up to three per message) if the selected model supports them. The assistant then describes the image and takes it into account in follow-up answers.
+- **Rate answers** as helpful or not helpful, and change or retract that rating later.
+
+Only the current rating of an answer is stored, without free text. There is currently no rating dashboard or export for lecturers; the stored ratings allow the KlickerUZH team to review answer quality over time.
+
+## How do credits work?
+
+Every student has an individual credit balance per chatbot. The cost of a turn depends on the selected model and on the length of the conversation, so it is not one credit per message. A long conversation with many previous messages consumes more credits than a short question.
+
+Students see their remaining balance in the sidebar of the chat interface, together with the date of the next refill or with the information that credits do not refill automatically. When the balance reaches zero, the chatbot keeps working, but falls back to a smaller model.
+
+The credit settings (initial amount, reset period and maximum) are part of the chatbot configuration and are defined together with the KlickerUZH team.
+
+## Can the chatbot cite course materials?
+
+:::info
+If your chatbot is connected to a course knowledge base, its answers can cite the materials it used. Numbered markers such as `[1]` in the answer refer to source cards displayed underneath it, which point to the corresponding file and page or to a link. If your chatbot is not connected to a knowledge base, the assistant answers based on the AI model alone and no sources are shown. Whether a knowledge base is connected is part of the configuration you agree on with the KlickerUZH team.
+:::
+
+## What about data protection and the disclaimer?
+
+Before students can send their first message, they have to accept a **disclaimer**. If a student declines, the chatbot remains blocked for them; the decision can be changed later when the student opens the chatbot directly (the corresponding button is not shown in a view embedded in a learning management system). In the chatbot overview under "Resources", you can see how many students have accepted and how many have declined.
+
+Conversations are processed by an AI model provider and may be reviewed in anonymised form to improve the offering. Please encourage your students not to share personal data in their prompts. The binding privacy statement is provided separately and is not part of this documentation.
+
+The chat interface follows the language of the KlickerUZH application the student came from, and there is no separate language switcher inside the chat. The language of the answers depends on the prompts configured for your chatbot; the default prompts answer in German and switch to English when a student writes in English.

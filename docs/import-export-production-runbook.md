@@ -123,7 +123,7 @@ The named release coordinator must record each approval before a named operator 
 1. verify recorded approvals and runner versions;
 2. inspect migration rows/checksums/step counts (including failed or duplicate active attempts), exact required column shapes, structural index definitions, CHECK/FK column shapes plus migration-sealed canonical CHECK expressions, ownership/immutability trigger event/update-column bindings plus repository-matched function bodies, locks, and stale versions, including the immutable `20260716085603_import_export_fingerprint_repair_indexes` migration and its `20260722100000_import_export_null_fingerprint_repair_indexes` follow-up, all four ready/valid repair-scan indexes (including the two active-null partial indexes), and `Element_answer_collection_deleted_id_idx`;
 3. record exactly one DBA-selected branch: `measured-small`, `large-indexes-precreated`, or `partial-history-reconciled`;
-4. run immutable `prisma migrate deploy` through the environment wrapper;
+4. let the reviewed ArgoCD PreSync migrator run immutable `prisma migrate deploy` after the approved target pre-steps; use the environment wrapper only for the documented break-glass path;
 5. inspect the database again;
 6. require the previous-image ordinary Element/AnswerCollection/MediaFile read-write smoke attestation;
 7. store redacted inspection/branch evidence even after failure.

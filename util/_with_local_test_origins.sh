@@ -32,6 +32,8 @@ export NEXT_PUBLIC_LTI_URL="$APP_ORIGIN_LTI"
 export NEXT_PUBLIC_CHAT_URL="$APP_ORIGIN_CHAT"
 export NEXT_PUBLIC_ASSESSMENT_URL="$APP_ORIGIN_ASSESSMENT_PWA"
 export NEXT_PUBLIC_ASSESSMENT_API_URL="$APP_ORIGIN_ASSESSMENT_API"
+export NEXT_PUBLIC_GROWTHBOOK_API_HOST='https://growthbook.test'
+export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY='sdk-test'
 
 export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 export AUTH_STUDENT_ALLOWED_HOSTS='127.0.0.1:3001'
@@ -41,6 +43,8 @@ export AUTH_PWA_HOSTS='127.0.0.1:3000'
 export IMPORT_EXPORT_ENABLED='true'
 export IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY='true'
 export IMPORT_EXPORT_PACKAGE_STORAGE='local'
+# Keep test runs deterministic: register request-driven workflows without repair/cleanup crons.
+export HATCHET_WORKFLOWS='refreshImportExportFingerprints,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry,processCourseDuplication,processCourseDeletion'
 
 unset EDUID_CLIENT_SECRET
 

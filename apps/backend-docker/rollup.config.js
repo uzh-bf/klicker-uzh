@@ -2,6 +2,20 @@ import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 
+function isBundledFeatureFlagDependency(id) {
+  return (
+    id === '@klicker-uzh/feature-flags/node' ||
+    id === '@growthbook/growthbook' ||
+    id.includes('/@growthbook/growthbook/')
+  )
+}
+
+function isExternalDependency(id) {
+  if (isBundledFeatureFlagDependency(id)) return false
+
+  return id.startsWith('@klicker-uzh/') || id.includes('/node_modules/')
+}
+
 const config = defineConfig([
   {
     // Main build configuration
@@ -21,10 +35,26 @@ const config = defineConfig([
       nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
-        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+        rootDir: '.',
+        filterRoot: '.',
+        // Keep Rollup independent from stale TypeScript incremental metadata.
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
+        include: [
+          'src/**/*.cts',
+          'src/**/*.mts',
+          'src/**/*.ts',
+          'src/**/*.tsx',
+          'instrumented/**/*.cts',
+          'instrumented/**/*.mts',
+          'instrumented/**/*.ts',
+          'instrumented/**/*.tsx',
+        ],
       }),
     ],
-    external: [/@klicker-uzh*/, /node_modules/],
+    external: isExternalDependency,
   },
 ])
 

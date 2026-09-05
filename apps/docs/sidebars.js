@@ -22,6 +22,7 @@ module.exports = {
       // 'tutorials/activity_templates',
       'tutorials/activity_batch_operations',
       'tutorials/element_updates_activities',
+      'tutorials/chatbot',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
@@ -37,6 +38,7 @@ module.exports = {
     'Student - Application': [
       'student_tutorials/student_accounts',
       'student_tutorials/klickeruzh_app',
+      'student_tutorials/chatbot',
       'student_tutorials/live_quiz',
       'student_tutorials/practice_quiz',
       'student_tutorials/microlearning',

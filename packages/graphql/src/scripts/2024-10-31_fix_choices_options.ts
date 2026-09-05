@@ -1,4 +1,5 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 
 interface Choice {
   ix: number
@@ -40,7 +41,6 @@ function validateChoices(
 }
 
 async function run() {
-  const prisma = new PrismaClient()
   const verbose = true
 
   // ! VALIDATION

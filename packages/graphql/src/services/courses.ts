@@ -1,40 +1,43 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import {
-  ActivityStudentPerformance,
+  type ActivityStudentPerformance,
   ActivityType,
-  AssessmentResultsCourse,
-  AssessmentResultsLiveQuiz,
+  type AssessmentResultsCourse,
+  type AssessmentResultsLiveQuiz,
   PointCorrectionType,
   SharingType,
-  StudentAssessmentBlockResponse,
-  StudentAssessmentInstanceResponse,
-  StudentAssessmentResultsItem,
-  StudentPointCorrection,
+  type StudentAssessmentBlockResponse,
+  type StudentAssessmentInstanceResponse,
+  type StudentAssessmentResultsItem,
+  type StudentPointCorrection,
 } from '@klicker-uzh/types'
 import {
   levelFromXp,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
+import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { orderStacks } from '../lib/util.js'
+import { computeRanks, orderStacks } from '../lib/util.js'
+import {
+  calculateAssessmentCourseScores,
+  getInstanceAvailablePoints,
+} from './assessmentScores.js'
+import { hardDeleteLiveQuiz } from './liveQuizzes.js'
 import { checkAccess } from './sharing.js'
 
-// custom date parser
-dayjs.extend(customParseFormat)
-
+const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: { owner: true },
   })
 
@@ -50,7 +53,11 @@ export async function joinCourseWithPin(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin, isAssessmentEnabled: false },
+    where: {
+      pinCode: pin,
+      isAssessmentEnabled: false,
+      deletionRequestedAt: null,
+    },
   })
 
   if (
@@ -96,6 +103,13 @@ export async function joinCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, deletionRequestedAt: null },
+    select: { id: true },
+  })
+
+  if (!course) return null
+
   // upsert or activate participation in the course
   const participation = await ctx.prisma.participation.upsert({
     where: {
@@ -156,7 +170,7 @@ export async function ensureParticipation(
 ) {
   try {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, deletionRequestedAt: null },
       select: { id: true },
     })
 
@@ -270,6 +284,10 @@ export async function getCourseOverviewData(
       },
     })
 
+    if (participation?.course.deletionRequestedAt) {
+      return null
+    }
+
     if (participation) {
       const allGroupEntries = participation.course.participantGroups.reduce<{
         mapped: (DB.ParticipantGroup & { score: number; isMember: boolean })[]
@@ -302,9 +320,7 @@ export async function getCourseOverviewData(
         [prop('name'), 'asc']
       )
 
-      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        return { ...entry, rank: ix + 1 }
-      })
+      const filteredGroupEntries = computeRanks(sortedGroupEntries)
 
       const groupCreationPoolEntry =
         await ctx.prisma.groupAssignmentPoolEntry.findUnique({
@@ -335,7 +351,7 @@ export async function getCourseOverviewData(
   }
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       awards: { include: { participant: true, participantGroup: true } },
     },
@@ -355,50 +371,6 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
-  }
-}
-
-function getInstanceScoringInfo({
-  instance,
-}: {
-  instance: DB.ElementInstance
-}) {
-  const { elementData } = instance
-  const hasSampleSolution =
-    'options' in elementData &&
-    'hasSampleSolution' in elementData.options &&
-    (elementData.options.hasSampleSolution ?? false)
-
-  // compute the available points based on the instance information
-  const hasBasePoints =
-    instance.elementType !== DB.ElementType.FLASHCARD &&
-    instance.elementType !== DB.ElementType.CONTENT &&
-    (instance.options.basePoints ?? false)
-  const pointsMultiplier = instance.options.pointsMultiplier ?? 1
-
-  return { hasSampleSolution, hasBasePoints, pointsMultiplier }
-}
-
-function getInstanceAvailablePoints({
-  instance,
-  activityBasePoints,
-  activityCorrectnessPoints,
-  activityBonusPoints,
-}: {
-  instance: DB.ElementInstance
-  activityBasePoints: number
-  activityCorrectnessPoints: number
-  activityBonusPoints: number
-}) {
-  const { hasSampleSolution, hasBasePoints, pointsMultiplier } =
-    getInstanceScoringInfo({ instance })
-
-  return {
-    basePoints: hasBasePoints ? activityBasePoints : 0,
-    correctnessPoints: hasSampleSolution
-      ? pointsMultiplier * activityCorrectnessPoints
-      : 0,
-    bonusPoints: hasSampleSolution ? pointsMultiplier * activityBonusPoints : 0,
   }
 }
 
@@ -524,7 +496,7 @@ function getStudentAssessmentQuizPerformance({
   )
 
   // deduplicate the corrections on quiz level -> only one entry per correction on student view
-  let deduplicatedCorrections: (StudentPointCorrection & {
+  const deduplicatedCorrections: (StudentPointCorrection & {
     createdAt: Date
   })[] = []
   if (quizResults.corrections.length > 0) {
@@ -559,7 +531,7 @@ function getStudentAssessmentQuizPerformance({
           return acc
         },
         {
-          id: parseInt(correctionId),
+          id: parseInt(correctionId, 10),
           createdAt: corrections[0]!.createdAt,
           lecturerReason: corrections[0]!.lecturerReason,
           studentReason: corrections[0]!.studentReason,
@@ -602,25 +574,38 @@ export async function getStudentAssessmentResults(
     }
   )
 
-  // verify that the student is logged in as an assessment participant and has a participation in the course
+  // Participant access is backed by the accepted course invitation, independent
+  // of the login mechanism used for the current session.
   if (!isAssessmentCourseAdmin) {
-    if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+    if (participantId !== ctx.user.sub) {
       throw new Error(
-        'Only logged in assessment participants can access assessment results'
+        'Participants can only access their own assessment results'
       )
     }
 
-    const participation = await ctx.prisma.participation.findUnique({
+    const participation = await ctx.prisma.participation.findFirst({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
+        courseId,
+        participantId,
+        participant: { isActive: true },
+        course: {
+          isAssessmentEnabled: true,
+          participantInvitations: {
+            some: {
+              participantId,
+              status: DB.InvitationStatus.ACCEPTED,
+              acceptedAt: { not: null },
+            },
+          },
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {
-      throw new Error('Participation not found')
+      throw new Error(
+        'Assessment participation with an accepted invitation not found'
+      )
     }
   }
 
@@ -756,6 +741,10 @@ export async function getAssessmentResultsLiveQuiz(
     acc[participation.participantId] = {
       participantId: participation.participantId,
       participantEmail: email,
+      assessmentGivenName: participation.assessmentGivenName,
+      assessmentSurname: participation.assessmentSurname,
+      assessmentMatriculationNumber:
+        participation.assessmentMatriculationNumber,
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
@@ -810,6 +799,9 @@ export async function getAssessmentResultsLiveQuiz(
               quizAcc.students[response.participantId] = {
                 participantId: response.participantId,
                 participantEmail: email,
+                assessmentGivenName: null,
+                assessmentSurname: null,
+                assessmentMatriculationNumber: null,
                 basePoints: response.basePoints,
                 correctnessPoints: response.correctnessPoints,
                 bonusPoints: response.bonusPoints,
@@ -859,153 +851,60 @@ export async function getAssessmentResultsCourse(
   }: { courseId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ): Promise<AssessmentResultsCourse | null> {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isAssessmentEnabled: true },
-    include: {
-      liveQuizzes: {
-        where: {
-          status: DB.PublicationStatus.ENDED,
-          isDeleted: false,
-          isAssessmentEnabled: true,
-        },
-        include: {
-          blocks: {
-            include: {
-              elements: {
-                include: {
-                  liveQuizResponses: {
-                    include: {
-                      participant: {
-                        include: {
-                          accounts: {
-                            where: { ssoType: preferredAffiliation },
-                          },
-                        },
-                      },
-                    },
-                  },
-                  _count: { select: { corrections: true } },
-                },
-              },
-            },
-          },
-          _count: { select: { corrections: true } },
-        },
+  const scores = await calculateAssessmentCourseScores({ courseId }, ctx)
+  if (!scores) return null
+
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      courseId,
+      participantId: {
+        in: scores.studentResults.map((result) => result.participantId),
       },
-      participations: {
-        include: {
-          participant: {
-            include: {
-              accounts: {
-                where: { ssoType: preferredAffiliation },
-              },
-            },
+    },
+    select: {
+      participantId: true,
+      assessmentGivenName: true,
+      assessmentSurname: true,
+      assessmentMatriculationNumber: true,
+      participant: {
+        select: {
+          email: true,
+          accounts: {
+            where: { ssoType: preferredAffiliation },
+            select: { ssoEmail: true },
+            take: 1,
           },
         },
       },
     },
   })
-
-  if (!course) return null
-
-  // initial student results object with all participants in the course
-  const initialStudentResults = course.participations.reduce<{
-    [participantId: string]: StudentAssessmentResultsItem
-  }>((acc, participation) => {
-    const email =
-      participation.participant.accounts[0]?.ssoEmail ??
-      participation.participant.email ??
-      'Missing E-Mail'
-    acc[participation.participantId] = {
-      participantId: participation.participantId,
-      participantEmail: email,
-      basePoints: 0,
-      correctnessPoints: 0,
-      bonusPoints: 0,
-    }
-    return acc
-  }, {})
-
-  // aggregate the points over all activities contained in the course
-  const courseResults = course.liveQuizzes.reduce<
-    Omit<AssessmentResultsCourse, 'studentResults'> & {
-      studentResults: { [participantId: string]: StudentAssessmentResultsItem }
-    }
-  >(
-    (courseAcc, lq) => {
-      lq.blocks.forEach((block) => {
-        block.elements.forEach((instance) => {
-          // get the available points for the instance
-          const { basePoints, correctnessPoints, bonusPoints } =
-            getInstanceAvailablePoints({
-              instance,
-              activityBasePoints: lq.defaultPoints,
-              activityCorrectnessPoints: lq.defaultCorrectPoints,
-              activityBonusPoints: lq.maxBonusPoints,
-            })
-
-          // increment the overall available points in the course
-          courseAcc.availableBasePoints += basePoints
-          courseAcc.availableCorrectnessPoints += correctnessPoints
-          courseAcc.availableBonusPoints += bonusPoints
-
-          // increment the number of point corrections in the course
-          courseAcc.numberOfCorrections += instance._count.corrections
-
-          // iterate over the student responses and aggregate them into the course results object
-          instance.liveQuizResponses
-            .filter(
-              (response) => response.elementBlockExecution === block.execution
-            )
-            .forEach((response) => {
-              // get the student's affiliation email, if available
-              const email =
-                response.participant.accounts[0]?.ssoEmail ??
-                response.participant.email ??
-                'Missing E-Mail'
-
-              // check if the student already has an entry in the results object and set it otherwise
-              if (courseAcc.studentResults[response.participantId]) {
-                // increment the results object with the student response content
-                courseAcc.studentResults[response.participantId]!.basePoints +=
-                  response.basePoints
-                courseAcc.studentResults[
-                  response.participantId
-                ]!.correctnessPoints += response.correctnessPoints
-                courseAcc.studentResults[response.participantId]!.bonusPoints +=
-                  response.bonusPoints
-              } else {
-                // set up a new student entry in the results object with the response content
-                courseAcc.studentResults[response.participantId] = {
-                  participantId: response.participantId,
-                  participantEmail: email,
-                  basePoints: response.basePoints,
-                  correctnessPoints: response.correctnessPoints,
-                  bonusPoints: response.bonusPoints,
-                }
-              }
-            })
-        })
-      })
-
-      // increment the number of point corrections in the course
-      courseAcc.numberOfCorrections += lq._count.corrections
-
-      return courseAcc
-    },
-    {
-      name: course.name,
-      availableBasePoints: 0,
-      availableCorrectnessPoints: 0,
-      availableBonusPoints: 0,
-      numberOfCorrections: 0,
-      studentResults: initialStudentResults,
-    }
+  const participantData = new Map(
+    participations.map((participation) => [
+      participation.participantId,
+      {
+        participantEmail:
+          participation.participant.accounts[0]?.ssoEmail ??
+          participation.participant.email ??
+          'Missing E-Mail',
+        assessmentGivenName: participation.assessmentGivenName,
+        assessmentSurname: participation.assessmentSurname,
+        assessmentMatriculationNumber:
+          participation.assessmentMatriculationNumber,
+      },
+    ])
   )
 
   return {
-    ...courseResults,
-    studentResults: Object.values(courseResults.studentResults),
+    ...scores,
+    studentResults: scores.studentResults.map((result) => ({
+      ...result,
+      ...(participantData.get(result.participantId) ?? {
+        participantEmail: 'Missing E-Mail',
+        assessmentGivenName: null,
+        assessmentSurname: null,
+        assessmentMatriculationNumber: null,
+      }),
+    })),
   }
 }
 
@@ -2177,7 +2076,7 @@ export async function getPreviousPointCorrections(
 
     return instance?.corrections
       ? instance.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           let participants = correction.participants
           if (!participant && !participants) return correction
 
@@ -2261,7 +2160,7 @@ export async function getPreviousPointCorrections(
     const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
       block.elements.flatMap((element) =>
         element.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           let participants = correction.participants
           if (!participant && !participants)
             return { ...correction, instance: element }
@@ -2289,7 +2188,7 @@ export async function getPreviousPointCorrections(
     )
 
     const quizCorrections = liveQuiz?.corrections.map((correction) => {
-      let participant = correction.participant
+      const participant = correction.participant
       let participants = correction.participants
       if (!participant && !participants) return correction
 
@@ -2363,7 +2262,7 @@ export async function getPreviousPointCorrections(
     lq.blocks.flatMap((block) =>
       block.elements.flatMap((element) =>
         element.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           if (!participant) return { ...correction, instance: element }
 
           participant['email'] =
@@ -2383,7 +2282,7 @@ export async function getPreviousPointCorrections(
 
   const quizCorrections = course?.liveQuizzes.flatMap((lq) =>
     lq.corrections.map((correction) => {
-      let participant = correction.participant
+      const participant = correction.participant
       if (!participant) return correction
 
       participant['email'] =
@@ -2414,7 +2313,7 @@ async function computeRollingLeaderboardEntries(
   const detailsLatest = dayjs().subtract(days, 'days').toDate()
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       // fetch live quizzes where the leaderboard entries are not part of the timeline entries
       liveQuizzes: {
@@ -2513,10 +2412,12 @@ async function computeRollingLeaderboardEntries(
   })
 
   // sort the leaderboard entries and add rank, level, and compute statistics
-  const sortedScores = sortBy(
-    Object.values(leaderboardScores),
-    [prop('score'), 'desc'],
-    [prop('username'), 'asc']
+  const sortedScores = computeRanks(
+    sortBy(
+      Object.values(leaderboardScores),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
+    )
   )
   const { leaderboardEntries, count, sum } = sortedScores.reduce<{
     leaderboardEntries: {
@@ -2532,7 +2433,7 @@ async function computeRollingLeaderboardEntries(
     count: number
     sum: number
   }>(
-    (acc, scoreEntry, ix) => {
+    (acc, scoreEntry) => {
       acc.leaderboardEntries.push({
         id: Math.floor(random(1000000000)),
         participantId: scoreEntry.participantId,
@@ -2540,7 +2441,7 @@ async function computeRollingLeaderboardEntries(
         avatar: scoreEntry.avatar,
         score: scoreEntry.score,
         isSelf: scoreEntry.isSelf,
-        rank: ix + 1,
+        rank: scoreEntry.rank,
         level: levelFromXp(scoreEntry.xp),
       })
       acc.count += 1
@@ -2563,15 +2464,17 @@ export async function getStudentCourseLeaderboard(
     ctx.user.role === DB.UserRole.PARTICIPANT &&
     mode === 'course'
   ) {
-    const participation = await ctx.prisma.participation.findUnique({
+    const participation = await ctx.prisma.participation.findFirst({
       where: {
-        courseId_participantId: { courseId, participantId: ctx.user.sub },
+        courseId,
+        participantId: ctx.user.sub,
+        course: { deletionRequestedAt: null },
       },
       include: { participant: true },
     })
 
     const course = ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, deletionRequestedAt: null },
     })
 
     const lbEntries =
@@ -2632,17 +2535,18 @@ export async function getStudentCourseLeaderboard(
         }
       )
 
-      const sortedEntries = sortBy(
-        allEntries.mapped,
-        [prop('score'), 'desc'],
-        [prop('username'), 'asc']
+      const sortedEntries = computeRanks(
+        sortBy(
+          allEntries.mapped,
+          [prop('score'), 'desc'],
+          [prop('username'), 'asc']
+        )
       )
 
-      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.participantId === ctx.user?.sub)
-          return { ...entry, rank: ix + 1 }
-        return []
-      })
+      // keep the top 10 entries, plus the requesting participant's own entry
+      const filteredEntries = sortedEntries.filter(
+        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      )
 
       return {
         leaderboard: filteredEntries,
@@ -2682,7 +2586,10 @@ export async function getStudentCourseLeaderboard(
   }
 }
 
-interface CreateCourseArgs {
+export interface CourseCreationArgs {
+  // Async course duplication uses the job id as a stable course id so a retry
+  // can detect a transaction that committed before Redis status publication.
+  courseId?: string
   name: string
   displayName: string
   description?: string | null
@@ -2701,6 +2608,7 @@ interface CreateCourseArgs {
 
 export async function createCourse(
   {
+    courseId,
     name,
     displayName,
     description,
@@ -2715,8 +2623,9 @@ export async function createCourse(
     notificationEmail,
     isGamificationEnabled,
     isAssessmentEnabled,
-  }: CreateCourseArgs,
-  ctx: ContextWithUser
+  }: CourseCreationArgs,
+  ctx: ContextWithUser,
+  transactionPrisma?: PrismaTransactionClient
 ) {
   // TODO: ensure that PINs are unique
   // Assessment courses don't get PINs - they use invitations instead
@@ -2730,55 +2639,63 @@ export async function createCourse(
 
   const defaultMaxGroupSize = 5
   const defaultPreferredGroupSize = 3
-  const course = await ctx.prisma.$transaction(
-    async (prisma) => {
-      const newCourse = await prisma.course.create({
-        data: {
-          name: name.trim(),
-          displayName: displayName.trim(),
-          description,
-          language,
-          color: color ?? '#CCD5ED',
-          startDate: startDate,
-          endDate: endDate,
-          isGroupCreationEnabled: isGroupCreationEnabled ?? true,
-          groupDeadlineDate: groupDeadlineDate ?? endDate,
-          maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
-          preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
-          notificationEmail: notificationEmail,
-          isGamificationEnabled: isGamificationEnabled,
-          isAssessmentEnabled: isAssessmentEnabled ?? false,
-          pinCode: randomPin,
-          owner: {
-            connect: {
-              id: ctx.user.sub,
-            },
+
+  const persistCourse = async (prisma: PrismaTransactionClient) => {
+    const newCourse = await prisma.course.create({
+      data: {
+        id: courseId,
+        name: name.trim(),
+        displayName: displayName.trim(),
+        description,
+        language,
+        color: color ?? '#CCD5ED',
+        startDate: startDate,
+        endDate: endDate,
+        isGroupCreationEnabled: isGroupCreationEnabled ?? true,
+        groupDeadlineDate: groupDeadlineDate ?? endDate,
+        maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+        preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
+        notificationEmail: notificationEmail,
+        isGamificationEnabled: isGamificationEnabled,
+        isAssessmentEnabled: isAssessmentEnabled ?? false,
+        pinCode: randomPin,
+        authType: isAssessmentEnabled
+          ? DB.CourseAuthType.SSO
+          : DB.CourseAuthType.PIN,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
           },
         },
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      {
+        courseId: newCourse.id,
+        userId: ctx.user.sub,
+      },
+      prisma
+    )
+
+    return {
+      ...newCourse,
+      derivedAccess: false,
+      numSharedUsers: 0,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      isOwner: true,
+      isManager: true,
+      isEditor: true,
+      isShared: false,
+      isRemovable: false,
+    }
+  }
+
+  const course = transactionPrisma
+    ? await persistCourse(transactionPrisma)
+    : await ctx.prisma.$transaction(persistCourse, {
+        timeout: CREATE_COURSE_TRANSACTION_TIMEOUT,
       })
-
-      await recomputeDerivedPermissions(
-        {
-          courseId: newCourse.id,
-          userId: ctx.user.sub,
-        },
-        prisma
-      )
-
-      return {
-        ...newCourse,
-        derivedAccess: false,
-        numSharedUsers: 0,
-        permissionLevel: DB.PermissionLevel.OWNER,
-        isOwner: true,
-        isManager: true,
-        isEditor: true,
-        isShared: false,
-        isRemovable: false,
-      }
-    },
-    { timeout: 60000 }
-  )
 
   return course
 }
@@ -2986,7 +2903,10 @@ export async function getUserCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null } },
+        where: {
+          courseId: { not: null },
+          course: { deletionRequestedAt: null },
+        },
         include: {
           directPermission: true,
           course: {
@@ -3051,7 +2971,11 @@ export async function getActiveUserCourses(
       objects: {
         where: {
           courseId: { not: null },
-          course: { endDate: { gte: new Date() }, isArchived: false },
+          course: {
+            endDate: { gte: new Date() },
+            isArchived: false,
+            deletionRequestedAt: null,
+          },
         },
         include: { course: true },
         orderBy: [
@@ -3156,6 +3080,10 @@ export async function getActiveUserCourses(
       activityCourse = groupActivity!.course
     }
 
+    if (activityCourse?.deletionRequestedAt) {
+      activityCourse = null
+    }
+
     // deduplicate the course linked to the activity with the other user courses and sort it accordingly
     if (activityCourse) {
       const userHasActivityCourseAssess = courses.some(
@@ -3192,8 +3120,15 @@ export async function getCourseSummary(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
+      liveQuizzes: {
+        where: {
+          isDeleted: false,
+          status: DB.PublicationStatus.DRAFT,
+        },
+        select: { id: true },
+      },
       _count: {
         select: {
           liveQuizzes: { where: { isDeleted: false } },
@@ -3213,6 +3148,7 @@ export async function getCourseSummary(
   return {
     numOfParticipations: course._count.participations,
     numOfLiveQuizzes: course._count.liveQuizzes,
+    numOfDraftLiveQuizzes: course.liveQuizzes.length,
     numOfPracticeQuizzes: course._count.practiceQuizzes,
     numOfMicroLearnings: course._count.microLearnings,
     numOfGroupActivities: course._count.groupActivities,
@@ -3221,17 +3157,57 @@ export async function getCourseSummary(
   }
 }
 
-export async function deleteCourse(
-  { id }: { id: string },
-  ctx: ContextWithUser
+export interface CourseDeletionRequestToken {
+  deletionRequestedAt: Date
+  requestedById: string
+}
+
+// Clear the deletion request marker so the course becomes visible again.
+// Only the request identified by `deletionRequestedAt` is cleared, so a
+// newer request on the same course is left untouched.
+export async function cancelCourseDeletionRequest(
+  { id, deletionRequestedAt }: { id: string; deletionRequestedAt: Date },
+  ctx: Pick<Context, 'prisma' | 'emitter'>
 ) {
+  const cleared = await ctx.prisma.course.updateMany({
+    where: { id, deletionRequestedAt },
+    data: { deletionRequestedAt: null },
+  })
+
+  if (cleared.count > 0) {
+    ctx.emitter.emit('invalidate', { typename: 'Course', id })
+  }
+
+  return cleared.count > 0
+}
+
+export async function deleteCourse(
+  {
+    id,
+    deleteDraftActivities,
+    request,
+  }: {
+    id: string
+    deleteDraftActivities?: boolean | null
+    // when set, the deletion only proceeds while this request is still the
+    // pending one on the course and its safety conditions still hold
+    request?: CourseDeletionRequestToken | null
+  },
+  ctx: Pick<Context, 'prisma' | 'hatchet' | 'emitter'>
+) {
+  const deletionRequestedAt = request?.deletionRequestedAt
+
   // updates of derived permissions on the course and some cascaded objects are automatic (since course is hard-deleted)
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
   const course = await ctx.prisma.course.findUnique({
-    where: { id, isAssessmentEnabled: false },
+    where: {
+      id,
+      isAssessmentEnabled: false,
+      ...(deletionRequestedAt ? { deletionRequestedAt } : {}),
+    },
     include: {
-      liveQuizzes: true,
+      liveQuizzes: { include: { blocks: { include: { elements: true } } } },
       practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
       microLearnings: { include: { stacks: { include: { elements: true } } } },
       groupActivities: { include: { stacks: { include: { elements: true } } } },
@@ -3239,18 +3215,110 @@ export async function deleteCourse(
   })
 
   if (!course) {
+    if (deletionRequestedAt) {
+      // the request is stale or the course switched to assessment mode; make
+      // sure the course is not left hidden
+      await cancelCourseDeletionRequest({ id, deletionRequestedAt }, ctx)
+      return null
+    }
     throw new Error('Course not found or permission denied')
   }
 
+  const draftLiveQuizzes = deleteDraftActivities
+    ? course.liveQuizzes.filter(
+        (liveQuiz) =>
+          !liveQuiz.isDeleted && liveQuiz.status === DB.PublicationStatus.DRAFT
+      )
+    : []
+  const draftLiveQuizIds = new Set(
+    draftLiveQuizzes.map((liveQuiz) => liveQuiz.id)
+  )
+  const retainedLiveQuizzes = course.liveQuizzes.filter(
+    (liveQuiz) => !draftLiveQuizIds.has(liveQuiz.id)
+  )
+
   const deletedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (request) {
+        // Claim the course row for this request. Besides rejecting stale events,
+        // the update holds the row lock until the transaction completes.
+        const claimed = await prisma.course.updateMany({
+          where: {
+            id,
+            isAssessmentEnabled: false,
+            deletionRequestedAt: request.deletionRequestedAt,
+          },
+          data: { deletionRequestedAt: request.deletionRequestedAt },
+        })
+
+        if (claimed.count === 0) {
+          return { deleted: null, deletionCancelled: false }
+        }
+
+        // Lock linked live quizzes so a concurrent publication either commits
+        // before this check or waits until the deletion has completed.
+        await prisma.$queryRaw(
+          Prisma.sql`
+            SELECT "id"
+            FROM "LiveQuiz"
+            WHERE "courseId" = ${id}::uuid
+            FOR UPDATE
+          `
+        )
+
+        const publishedLiveQuiz = await prisma.liveQuiz.findFirst({
+          where: {
+            courseId: id,
+            isDeleted: false,
+            status: DB.PublicationStatus.PUBLISHED,
+          },
+          select: { id: true },
+        })
+        const requesterPermission = await prisma.derivedPermission.findFirst({
+          where: {
+            courseId: id,
+            userId: request.requestedById,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+          select: { id: true },
+        })
+
+        if (!requesterPermission || publishedLiveQuiz) {
+          await prisma.course.updateMany({
+            where: { id, deletionRequestedAt: request.deletionRequestedAt },
+            data: { deletionRequestedAt: null },
+          })
+          return { deleted: null, deletionCancelled: true }
+        }
+      }
+
+      // optionally hard-delete linked draft live quizzes instead of
+      // disconnecting them from the course
+      for (const liveQuiz of draftLiveQuizzes) {
+        await hardDeleteLiveQuiz(
+          {
+            liveQuiz,
+            courseId: id,
+            statuses: [DB.PublicationStatus.DRAFT],
+          },
+          prisma
+        )
+      }
+
       // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
-      // live quizzes are disconnected from the course on deletion
-      const deleted = await prisma.course.delete({ where: { id } })
+      // retained live quizzes are disconnected from the course on deletion
+      const deleted = await prisma.course.delete({
+        where: {
+          id,
+          ...(deletionRequestedAt ? { deletionRequestedAt } : {}),
+        },
+      })
 
       // trigger a recomputation of all permissions related to the live quizzes of the course
       // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
-      for (const liveQuiz of course.liveQuizzes) {
+      for (const liveQuiz of retainedLiveQuizzes) {
         await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
       }
 
@@ -3280,10 +3348,17 @@ export async function deleteCourse(
         await recomputeDerivedPermissions({ elementId }, prisma)
       }
 
-      return deleted
+      return { deleted, deletionCancelled: false }
     },
     { timeout: 60000 }
   )
+
+  if (!deletedCourse.deleted) {
+    if (deletedCourse.deletionCancelled) {
+      ctx.emitter.emit('invalidate', { typename: 'Course', id })
+    }
+    return null
+  }
 
   // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
   for (const pq of course.practiceQuizzes) {
@@ -3338,8 +3413,11 @@ export async function deleteCourse(
     }
   }
 
+  for (const liveQuiz of draftLiveQuizzes) {
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: liveQuiz.id })
+  }
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
-  return deletedCourse
+  return deletedCourse.deleted
 }
 
 export async function removeCourse(
@@ -3398,13 +3476,22 @@ export async function getParticipantCourses(ctx: ContextWithUser) {
     include: { participations: { include: { course: true } } },
   })
 
-  return participantCourses?.participations.map((p) => p.course) ?? []
+  return (
+    participantCourses?.participations
+      .filter((p) => !p.course.deletionRequestedAt)
+      .map((p) => p.course) ?? []
+  )
 }
 
 export async function getControlCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
-    include: { courses: { orderBy: { createdAt: 'desc' } } },
+    include: {
+      courses: {
+        where: { deletionRequestedAt: null },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
   })
 
   return user?.courses ?? []
@@ -3448,7 +3535,7 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, deletionRequestedAt: null },
     include: {
       _count: { select: { participantGroups: true, permissions: true } },
       permissions: {
@@ -3822,7 +3909,7 @@ export async function getCourseLeaderboard(
 ) {
   if (courseSelection) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, deletionRequestedAt: null },
       include: {
         leaderboard: {
           include: { participation: { include: { participant: true } } },
@@ -3899,7 +3986,7 @@ export async function getCourseLeaderboard(
     const startDateUTC = convertDateToUTCDatetime(startDate)
     const endDateUTC = convertDateToUTCDatetime(endDate)
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, deletionRequestedAt: null },
       include: {
         timelineEntries: {
           where: {
@@ -4071,7 +4158,7 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, deletionRequestedAt: null },
     include: {
       liveQuizzes: {
         where: { isDeleted: false },
@@ -4101,7 +4188,7 @@ export async function checkValidCoursePin(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin },
+    where: { pinCode: pin, deletionRequestedAt: null },
   })
 
   if (!course || course.pinCode !== pin) {
@@ -4116,7 +4203,7 @@ export async function getCoursePracticeQuiz(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       elementStacks: {
         include: {
@@ -4187,7 +4274,7 @@ export async function getCourseActivities(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       practiceQuizzes: {
         where: { isDeleted: false, status: DB.PublicationStatus.PUBLISHED },
@@ -4215,7 +4302,7 @@ export async function getEndedLiveQuizzesCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       liveQuizzes: {
         where: { isDeleted: false, status: DB.PublicationStatus.ENDED },

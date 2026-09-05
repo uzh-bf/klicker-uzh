@@ -17,6 +17,7 @@ export {
   isLocalImportExportPackageStorageEnabled,
   uploadPreparedElementImportPackage,
 } from './services/packageStorage.js'
+export { getChatModelRegistry } from './services/chatbots.js'
 
 import builder from './builder.js'
 
@@ -32,10 +33,12 @@ import './schema/groupActivity.js'
 import './schema/mediaUpload.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
+import './schema/participantInvitation.js'
 import './schema/resource.js'
 import './schema/sharing.js'
 import './schema/template.js'
 import './schema/user.js'
+import './schema/verification.js'
 
 import './schema/mutation.js'
 import './schema/query.js'
@@ -55,6 +58,11 @@ import './schema/subscription.js'
 //   })
 // }
 
+import { handleProcessCourseDeletion } from './services/courseDeletion.js'
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from './services/courseDuplication.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
@@ -107,4 +115,7 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+  handleProcessCourseDeletion,
 }

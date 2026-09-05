@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY . .
 
@@ -22,7 +22,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
@@ -35,6 +35,11 @@ ARG EDUID_CLIENT_ID
 ARG EDUID_WELL_KNOWN
 ARG NEXT_PUBLIC_EDUID_ID
 ARG NEXT_PUBLIC_ENV=production
+ARG NEXT_PUBLIC_GROWTHBOOK_API_HOST
+ARG NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY
+ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
+ENV NEXT_PUBLIC_GROWTHBOOK_API_HOST=${NEXT_PUBLIC_GROWTHBOOK_API_HOST}
+ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/auth

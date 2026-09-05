@@ -63,9 +63,9 @@ export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
 }
 
 /**
- * Get the next reset time for a given period
+ * Get the next reset time for a given period, or null when it never resets
  */
-export function getNextResetTime(resetPeriod: CreditResetPeriod): Date {
+export function getNextResetTime(resetPeriod: CreditResetPeriod): Date | null {
   const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
 
   switch (resetPeriod) {
@@ -88,8 +88,7 @@ export function getNextResetTime(resetPeriod: CreditResetPeriod): Date {
 
     case CreditResetPeriod.NONE:
     default:
-      // No reset - return far future date
-      return new Date('2099-12-31T23:59:59.999Z')
+      return null
   }
 }
 
@@ -108,27 +107,6 @@ export function isPeriodExpired(
 
   // If the user's period started before the current period, they need a reset
   return periodStartedAt.getTime() < currentPeriodStart.getTime()
-}
-
-/**
- * Get human-readable description of when the next reset will occur
- */
-export function getNextResetDescription(
-  resetPeriod: CreditResetPeriod
-): string {
-  switch (resetPeriod) {
-    case CreditResetPeriod.DAILY:
-      return 'Daily at 00:00 UTC'
-    case CreditResetPeriod.WEEKLY:
-      return 'Weekly on Mondays at 00:00 UTC'
-    case CreditResetPeriod.BIWEEKLY:
-      return 'Biweekly on Mondays at 00:00 UTC'
-    case CreditResetPeriod.MONTHLY:
-      return 'Monthly on the 1st at 00:00 UTC'
-    case CreditResetPeriod.NONE:
-    default:
-      return 'No automatic reset'
-  }
 }
 
 /**

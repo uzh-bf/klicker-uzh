@@ -2,7 +2,6 @@
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"],
   "compilerOptions": {
-    "baseUrl": ".",
     "rootDir": "src",
     /* Base Options: */
     "esModuleInterop": true,
@@ -24,8 +23,8 @@
     "sourceMap": true,
     /* AND if you're building for a library: */
     "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
+    /* Incremental build cache: */
+    "incremental": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */

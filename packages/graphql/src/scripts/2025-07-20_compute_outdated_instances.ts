@@ -1,15 +1,14 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   Element,
   ElementInstance,
-  PrismaClient,
+  type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 
 const DEBUG = false
 
 // ! Script to compute whether an instance is outdated w.r.t. the latest version of the element
 async function run() {
-  const prisma = new PrismaClient()
-
   // get the activity counts
   const liveQuizCount = await prisma.liveQuiz.count({
     where: { isDeleted: false },

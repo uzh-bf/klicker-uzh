@@ -9,33 +9,210 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 ## Route the change
 
-| You changed…                                                    | Run                                                                                                                                      |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                          |
-| `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize |
-| UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green     |
-| React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                 |
+| You changed…                                                                      | Run                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
+| Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
+| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
+| React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
+| UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
+| React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
+| Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 
-Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
+For the manage-list `All` page size, the focused browser evidence must cover
+the finite-to-All-to-50 state transition and explicit selection. A 200-record
+fixture is a bounded acceptance probe: verify the rendered count, batch-modal
+usability, and returned mutation count; do not infer production performance or
+atomicity from it.
+
+Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
+
+For Git fixture or hook changes, run the focused Node test that exercises the
+fixture plus `pnpm run check:git-identity` and
+`bash util/check-git-identity.sh current`. The guard test covers synthetic
+normal, fixture-author, and fixture-trailer commit ranges. The guard's explicit
+range mode is also the pull-request CI entry point. It must reject the exact
+fixture identity without rejecting ordinary GitHub or human commit identities.
+
+For OpenAI-compatible chat stream changes, run
+`apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
+fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
+and proves public tool-call/finish conversion without a model key; it does not
+replace a real-upstream staging smoke test.
+
+For OpenAI-compatible request-policy or prompt-cache changes, run
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts` after the streaming fixture;
+see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
+for contract details and evidence boundaries.
+
+For the external synthetic evaluation wrapper, run
+`bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
+Then validate all FineCo Markdown cases against
+`evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
+approved secret manager or masked CI variables for live judge checks. Require
+caller-provided `LITELLM_API_BASE` and a visible namespaced model first;
+`LITELLM_API_KEY` is optional because the wrapper fetches
+`PIPELINES_LITELLM_API_KEY` with the standard Infisical CLI (klicker-uzh
+project, `stg` environment; targets CLI 0.43.x flags) when it is unset, and the
+wrapper test suite covers that fetch path. Require the wrapper to fail fast on
+a missing CLI, a failed fetch, or an empty key before starting the evaluator,
+and require its metrics, tools, and ground-truth preflights to fail before
+invoking the evaluator. Eval mode judges an existing QA artifact; it does not
+query Klicker's authenticated AI-SDK chat route and is not live
+product-quality evidence.
+
+For local Klicker target evaluation, start the exact worktree after the VPN is
+active. Map the developer Foundry values to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The wrapper
+fetches its own judge key via the standard Infisical CLI when
+`LITELLM_API_KEY` is unset, so no personal operator is needed; the Infisical
+and CI examples are documented in `evaluation/README.md`.
+
+If the LiteLLM container already exists with different upstream values, stop
+the exact checkout and rerun this command. Run the wrapper fake-runtime test
+before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
+KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
+shell; the wrapper keeps them out of the evaluator child and creates an
+ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+one in-flight request.
+
+The KB_doc_query canary is only synthetic transport evidence. It proves the
+local authentication, disclaimer, thread/message persistence, mode, and
+expected-tool gates, but it does not prove FineCo quality. Do not run the
+20-case FineCo phase unless EXPERT_df_fineco_expert is already reachable through
+an authorized synthetic binding with a finite response bound; otherwise record
+delivery_pending and do not establish a tunnel or substitute the canary. Keep
+caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` for the judge path
+separate from the developer-Foundry values injected into the local Chat
+container. Stop and verify the exact devrouter checkout after the run.
+
+For course-chat prompt compiler or fixed-policy changes, use
+`apps/chat/test/system-prompt-compiler.test.ts` as the primary composition
+seam. Also run `language-instructions.test.ts` or
+`citation-instructions.test.ts` when those contracts change, and the focused
+chat-route test when its selected chatbot data or compiler context changes.
+These static tests prove section ownership, ordering, and required text; they
+do not prove model obedience. Pure prompt-source changes do not by themselves
+require a runtime or browser, but the normal package check, formatting, lint,
+build, and focused tests remain required before merge.
+
+For chat conversation-rendering changes, `playwright/util/chat.ts` supports
+`textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
+`ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
+intermediate state until the test releases it. Use that seam to test the assistant
+row while it is still streaming, and capture DOM identity around feedback clicks
+when the bug concerns remounts or flicker. A passing final-text assertion alone
+does not prove that the conversation stayed mounted.
+
+For the active-branch chat history rail, keep the projection contract in
+`apps/chat/test/history-rail.test.ts`: adjacent user/assistant messages form one
+turn, orphan messages remain standalone, complete text is preserved for the
+popover, and reasoning/tool/error parts never become rail landmarks. Verify
+navigation in the browser at desktop and mobile widths. The browser check must
+cover the bounded desktop tick rail ("md" and up) and the mobile history-trigger
+dialog flow below "md", complete-text hover/focus popovers that are
+hidden otherwise, click/focus behavior, current-entry highlighting, rapid
+second-target navigation, collapsed tool groups remaining closed, and the
+matching EN/DE labels; a local environment without an upstream model key can
+still prove the rail's error-state rendering and navigation, but not
+model-backed reasoning or tool content.
+
+For chat Markdown or KaTeX streaming changes, `apps/chat/src/components/markdown-text.tsx`
+uses the dependency-free `src/lib/markdown/streamingMath.ts` scanner to hide only unmatched
+math tails while a text part is running. The browser contract must pause before a closing
+delimiter, assert that preceding prose remains visible while raw delimiters, partial formula
+text, and `.katex-error` remain absent, then release the stream and assert the complete KaTeX
+node, surrounding Markdown, and stable assistant-row identity. Keep persisted multiline display
+math coverage as well: a final formula count alone does not prove that prose or links after the
+formula were not consumed by malformed fences.
+
+For message-presentation changes, include a heading-rich answer and both explicit
+and silent streamed failures in the focused browser contract: headings should
+remain hierarchical and proportional, while failed assistant turns should not
+expose reload, rating, or relative-time metadata alongside their dedicated retry
+callout.
+
+Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
+
+For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
+
+The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
+
+Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
+cache action. They must not spend post-job time uploading pnpm or Turbo caches
+from public PR code. Keep the build at four concurrent Turbo tasks for the
+four-runner, 16-vCPU host layout, and keep service health polling at five
+seconds so container readiness is detected promptly.
 
 ## Decide whether e2e is warranted locally
 
-CI runs Cypress (8-way split) and Playwright (5-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
+CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
-- You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
-- Tear down afterwards (`./_down.sh`); leave the machine as you found it.
+- Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
+- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
+
+For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
+separate proof gate: start `devrouter ensure . --profile chat,ai`, adding `mcp`
+only for the seeded tool path. Check LiteLLM liveness and the chat credits
+payload before browser interaction. The local Auto Mode maps to
+LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
+probes, then inspect logs for the expected `semantic_keyword_match` or
+`llm_classifier` cause and routed model. A successful answer after a classifier
+or embedding failure is only heuristic fallback and does not prove Auto V2.
+The local aliases and generic upstream differ from deployment infrastructure,
+so never report local routing as live production behaviour
+([docs/chat-platform.md](../../../docs/chat-platform.md)).
+For Auto reasoning, use the Responses endpoint and omit a request-level effort:
+require the routed target alias to retain its configured effort, a reasoning
+summary part to reach the Chat stream, and the reasoning-effort selector to
+remain absent for Auto. Staging/production compatibility remains unproven until
+an authorized staging smoke covers Responses storage, tool continuation, and
+reasoning against the deployed LiteLLM router.
+Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
+report the live-answer gap explicitly.
+
+For the seeded local MCP smoke test, verify
+`devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
+selecting `chat,ai,mcp`, keep `Auto Mode`
+selected in Benibot, and send
+the prompt recorded in `AGENTS.md`. Require a completed
+`KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
+card in a non-empty final answer both before and after reloading the thread.
+During the live stream, a completed tool chip may precede answer text, but the
+source section must stay absent for the assistant message's entire running
+state, including after answer text begins. A terminal incomplete or aborted
+tool-only turn must still expose valid completed sources after reload.
+Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
+
+For source citation presentation changes, the browser pass must verify that
+source cards keep the source name and locator visible while excerpts stay in
+hover/focus tooltips, and that inline citation chips expose the same preview
+content plus their existing navigation hint. Keep touch verification scoped to
+the compact card and existing URL/in-page citation actions because Radix
+tooltips do not provide a separate tap disclosure contract.
 
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:
 
-1. `pnpm run check:all` — typecheck + format + lint + syncpack (same as pre-commit hook).
+1. `pnpm run check:all` — typecheck + format + lint + syncpack + AGENTS.md validation + Prisma-sync validation (same as pre-commit hook). The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
 2. `pnpm run build` — same as pre-push hook; also refreshes generated artifacts.
 3. Targeted tests per the routing table above — quote failures exactly; never delete/weaken a test to pass.
-4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).
+4. **Codegen verified** if any `.graphql` op or schema changed: run `pnpm --filter @klicker-uzh/graphql generate`, confirm the ignored typed documents and persisted-query maps exist, and confirm the tracked `packages/graphql/src/public/schema.graphql` has no unstaged generated diff.
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
-6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
+6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser@0.32.2` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
+
+For Hatchet deployment endpoint changes, render the target environment's Helm chart and inspect every generated `HATCHET_API_URL`. Separately confirm that the configured HTTP API service and the secret-backed gRPC host belong to the same active Hatchet installation. A connected worker validates only gRPC; it does not prove that programmatic scheduled runs can reach the HTTP API.
+
+For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Playwright compiler through its package `check` script. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
+
+For a Prisma major or driver-adapter change, also run a frozen install; Prisma generate/check/build; local `*:raw` reset, push, migrate, diff, deploy, and explicit-seed command smokes as applicable; the guarded Auth adapter round-trip; both root build modes; relevant database-backed tests; and the Analytics Python generation/image build. Run destructive commands only against the isolated DevPod database and state every CI-only gap.
+
+The Office Add-in is a browser application bundled by Rollup. Its package check must use the workspace TypeScript version, `moduleResolution: Bundler`, `noEmit`, and explicit `types: ["office-js"]`. `build:docs` regenerates and replaces the deployable directory; `verify:docs` must then prove exact parity. Browser checks with an Office API stub verify the UI state machine only. Persistence, multi-instance behavior, and embedded evaluation rendering still require a real PowerPoint sideload.
 
 ## Reporting
 

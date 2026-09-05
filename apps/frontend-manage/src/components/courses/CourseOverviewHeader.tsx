@@ -1,15 +1,19 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
+import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faEllipsis,
   faFilePen,
   faLink,
   faMessage,
   faPencil,
   faShare,
+  faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
-  Course,
+  type Course,
   GetSingleCourseDocument,
   ObjectType,
   UpdateCourseSettingsDocument,
@@ -17,14 +21,18 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
 import getLTIAccessLink from './getLTIAccessLink'
+import CourseDuplicationModal, {
+  type CourseDuplicationFormData,
+} from './modals/CourseDuplicationModal'
 import CourseManipulationModal, {
-  CourseManipulationFormData,
+  type CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
 import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
@@ -41,6 +49,15 @@ interface CourseOverviewHeaderProps {
   containsGroups: boolean
 }
 
+function courseActionMenuLabel(icon: React.ReactNode, label: string) {
+  return (
+    <span className="flex items-center gap-2">
+      {icon}
+      <span>{label}</span>
+    </span>
+  )
+}
+
 function CourseOverviewHeader({
   course,
   earliestGroupDeadline,
@@ -51,11 +68,16 @@ function CourseOverviewHeader({
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
   const router = useRouter()
+  const { isSourceCourseDuplicating, startCourseDuplication } =
+    useCourseDuplicationStatus()
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
+  const [duplicationModal, setDuplicationModal] = useState(false)
+  const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -102,43 +124,132 @@ function CourseOverviewHeader({
     }),
   ]
 
+  const courseActionMenuItems = [
+    ...(course.isManager && user?.privatePreview
+      ? [
+          {
+            id: 'course-share',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faShare} className="h-4 w-4" />,
+              t('manage.course.shareCourse')
+            ),
+            onClick: () => setSharingModal(true),
+            data: { cy: 'course-share-button' },
+          },
+        ]
+      : []),
+    ...(course.isManager
+      ? [
+          {
+            id: 'course-duplicate',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faCopy} className="h-4 w-4" />,
+              t('manage.course.duplicateCourse')
+            ),
+            onClick: () => setDuplicationModal(true),
+            data: { cy: 'course-duplicate-button' },
+          },
+        ]
+      : []),
+    {
+      id: 'course-learning-analytics',
+      label: courseActionMenuLabel(
+        <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
+        t('manage.course.learningAnalytics')
+      ),
+      onClick: (event: React.MouseEvent) => {
+        if (!learningAnalyticsEnabled) {
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+
+        window.open(`/analytics/${course.id}/activity`, '_blank')
+      },
+      disabled: !learningAnalyticsEnabled,
+      tooltip: !learningAnalyticsEnabled
+        ? t('manage.analytics.featureUnavailable')
+        : undefined,
+      className: {
+        // The disabled item remains inert, but its explanation still needs to
+        // receive pointer input through the design-system tooltip trigger.
+        item: !learningAnalyticsEnabled
+          ? 'data-disabled:pointer-events-auto'
+          : undefined,
+      },
+      data: { cy: 'course-learning-analytics-link' },
+    },
+    ...(course.isAssessmentEnabled && course.isManager
+      ? [
+          {
+            id: 'assessment-course-participant-invitations',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />,
+              t('manage.course.participantInvitations')
+            ),
+            onClick: () => {
+              router.push(`/courses/${course.id}/assessment/invitations`)
+            },
+            data: { cy: 'assessment-course-participant-invitations' },
+          },
+          {
+            id: 'assessment-course-point-corrections',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faPenToSquare} className="h-4 w-4" />,
+              t('manage.course.pointCorrections')
+            ),
+            onClick: () => setCorrectionsModal(true),
+            data: { cy: 'assessment-course-point-corrections' },
+          },
+        ]
+      : []),
+    {
+      id: 'course-lti-links',
+      type: 'submenu' as const,
+      label: courseActionMenuLabel(
+        <FontAwesomeIcon icon={faLink} className="h-4 w-4" />,
+        t('manage.course.ltiLinks')
+      ),
+      data: { cy: 'course-lti-links' },
+      items: ltiDropdownItems,
+    },
+  ]
+
   return (
-    <div className="flex flex-row flex-wrap items-center justify-between">
-      <H1
-        data={{ cy: 'course-name-with-pin' }}
-        className={{ root: 'flex-1 whitespace-nowrap' }}
-      >
-        {course.name}
-      </H1>
-      <div className="mb-2 flex flex-row items-center gap-3">
+    <div className="flex flex-row flex-wrap items-center gap-x-4">
+      <div className="min-w-0 flex-1">
+        <H1
+          data={{ cy: 'course-name-with-pin' }}
+          className={{ root: 'min-w-0 break-words' }}
+        >
+          {course.name}
+        </H1>
         <div className="italic">
           {t('manage.course.nParticipants', {
             number: course.numOfParticipants ?? 0,
           })}
         </div>
+      </div>
+      <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 sm:flex-initial sm:basis-auto">
         {course.isEditor ? (
           <Button
+            basic
             onClick={() => setCourseSettingsModal(true)}
-            className={{ root: 'h-8' }}
+            className={{
+              root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
+            }}
             data={{ cy: 'course-settings-button' }}
           >
             <Button.Icon icon={faPencil} />
             <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
           </Button>
         ) : null}
-        {course.isManager && user?.privatePreview ? (
-          <Button
-            onClick={() => setSharingModal(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-share-button' }}
-          >
-            <Button.Icon icon={faShare} />
-            <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
-          </Button>
-        ) : null}
         <Button
+          basic
           onClick={() => setIsActivityLogOpen(true)}
-          className={{ root: 'h-8' }}
+          className={{
+            root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
+          }}
           data={{ cy: 'course-activity-log-button' }}
         >
           <Button.Icon icon={faMessage} />
@@ -146,7 +257,7 @@ function CourseOverviewHeader({
         </Button>
         {!course.isAssessmentEnabled && course.pinCode && (
           <QRCodePopover
-            triggerStyle="button"
+            triggerStyle="primary"
             triggerText={t('manage.course.joinCourse')}
             infoComponent={
               <UserNotification
@@ -158,58 +269,58 @@ function CourseOverviewHeader({
             data={{ cy: `course-join-qr-code` }}
           />
         )}
-        {user?.publicPreview ? (
-          <Button
-            primary
-            onClick={() => {
-              window.open(`/analytics/${course.id}/activity`, '_blank')
-            }}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-learning-analytics-link' }}
-          >
-            <Button.Icon icon={faChartPie} />
-            <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
-          </Button>
-        ) : null}
         {course.isAssessmentEnabled && course.isManager ? (
           <Button
+            primary
             className={{ root: 'h-8' }}
             onClick={() => {
               router.push(`/courses/${course.id}/assessment/results`)
             }}
+            data={{ cy: 'assessment-course-results' }}
           >
             <Button.Icon icon={faFilePen} />
             <Button.Label>{t('manage.course.assessmentResults')}</Button.Label>
           </Button>
         ) : null}
-        {course.isAssessmentEnabled && course.isManager ? (
-          <Button
-            onClick={() => setCorrectionsModal(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'assessment-course-point-corrections' }}
-          >
-            <Button.Icon icon={faPenToSquare} />
-            <Button.Label>{t('manage.course.pointCorrections')}</Button.Label>
-          </Button>
-        ) : null}
         <Dropdown
-          data={{ cy: `course-lti-links` }}
+          data={{ cy: 'course-actions-menu' }}
           className={{
-            item: 'p-1 hover:bg-gray-200',
-            viewport: 'z-10 bg-white',
-            trigger: 'h-8',
+            item: 'py-0.5 text-sm',
+            viewport: 'z-20 bg-white',
+            trigger: 'h-8 w-8 border-none bg-transparent p-0 text-sm',
           }}
           align="end"
           trigger={
             <>
-              <Button.Icon icon={faLink} />
-              <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+              <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
+              <span className="sr-only">
+                {t('manage.course.moreCourseActions')}
+              </span>
             </>
           }
-          items={ltiDropdownItems}
+          items={courseActionMenuItems}
         />
       </div>
+      {duplicationModal && (
+        <CourseDuplicationModal
+          initialValues={course}
+          isDuplicating={courseDuplicationInProgress}
+          onModalClose={() => setDuplicationModal(false)}
+          onSubmit={async (values: CourseDuplicationFormData, onError) => {
+            const jobStarted = await startCourseDuplication({
+              course,
+              values,
+              onError,
+            })
 
+            if (jobStarted) {
+              setDuplicationModal(false)
+            }
+
+            return jobStarted
+          }}
+        />
+      )}
       {courseSettingsModal && (
         <CourseManipulationModal
           initialValues={course}
@@ -284,7 +395,7 @@ function CourseOverviewHeader({
             } catch (error) {
               onError()
               setSubmitting(false)
-              console.log(error)
+              console.error(error)
             }
           }}
         />

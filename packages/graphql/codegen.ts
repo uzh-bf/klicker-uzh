@@ -20,9 +20,6 @@ const config: CodegenConfig = {
         useTypeImports: true,
       },
     },
-    './src/ops.schema.json': {
-      plugins: ['introspection'],
-    },
     './src/public/schema.graphql': {
       plugins: ['schema-ast'],
       config: {

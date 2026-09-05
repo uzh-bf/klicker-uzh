@@ -31,10 +31,7 @@ import {
 
 function readFixture(name: string) {
   return JSON.parse(
-    fs.readFileSync(
-      new URL(`../../cypress/cypress/fixtures/${name}`, import.meta.url),
-      'utf8'
-    )
+    fs.readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')
   )
 }
 
@@ -1937,8 +1934,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId('delete-answer-collection'),
       'exist'
     )
-    await page.keyboard.press('Escape')
-    await clickAnswerCollectionAction(duplicateName, 'edit-answer-collection')
+    await page.getByTestId('edit-answer-collection').click()
     await expectByAssertion(
       page.getByTestId('answer-collection-name'),
       'have.value',

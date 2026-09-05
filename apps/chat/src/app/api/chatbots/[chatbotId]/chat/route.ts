@@ -1,35 +1,71 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  type ChatModelConfig,
+  getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
+} from '@/src/lib/server/effectiveChatModes'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import {
+  getParentSpanContext,
+  getTraceIdForMessage,
+  isAiTelemetryEnabled,
+} from '@/src/lib/server/langfuseTracing'
+import {
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
+} from '@/src/lib/server/mcpRuntimePolicy'
+import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import {
+  buildAbortedAssistantContent,
+  mapAssistantStepContent,
+} from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import {
+  CHAT_TURN_ALREADY_COMPLETED_CODE,
+  ChatTurnConflictError,
+  claimChatTurn,
+  failChatTurn,
+  finalizeChatTurn,
+  isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
+  roundChatUsageCredits,
+} from '@/src/services/accountUsage'
+import { CreditsService } from '@/src/services/credits'
+import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  generateText,
-  stepCountIs,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
-import { type ReasoningEffort } from 'src/lib/config/reasoning'
-import { CreditsService } from 'src/services/credits'
-import { DisclaimersService } from 'src/services/disclaimers'
-import { ThreadService } from 'src/services/threads'
-import { z } from 'zod'
+import { resolveMcpScope } from '@/src/services/mcpScope'
+import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
 
@@ -47,6 +83,34 @@ type ChatRouteModelMessage = {
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
 }
 
+export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
+export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
+
+function chatModelUnavailableResponse(
+  usageClass: ChatModelConfig['usageClass']
+) {
+  return NextResponse.json(
+    {
+      error: 'Chat model usage is unavailable',
+      code:
+        usageClass === 'BASE'
+          ? CHAT_MODEL_UNAVAILABLE_BASE
+          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
+    },
+    { status: 403 }
+  )
+}
+
+function completedTurnResponse() {
+  return NextResponse.json(
+    {
+      error: 'Chat turn already completed',
+      code: CHAT_TURN_ALREADY_COMPLETED_CODE,
+    },
+    { status: 409 }
+  )
+}
+
 if (!process.env.OPENAI_BASE_URL) {
   console.warn(
     '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
@@ -59,43 +123,8 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
-const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
-
-/**
- * Custom fetch that patches Responses API request body to add
- * `status: "completed"` and `type: "message"` on assistant messages.
- * AI SDK omits these fields but some strict Responses API providers require them.
- *
- * Workaround for: https://github.com/vercel/ai/issues/12754
- */
-const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
-  if (init?.body && typeof init.body === 'string') {
-    try {
-      const body = JSON.parse(init.body)
-      if (Array.isArray(body.input)) {
-        body.input = body.input.map((item: Record<string, unknown>) =>
-          item.role === 'assistant'
-            ? { ...item, type: 'message', status: 'completed' }
-            : item
-        )
-        init = { ...init, body: JSON.stringify(body) }
-      }
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        // not JSON, pass through
-      } else {
-        console.error(
-          '[responsesApiFetch] Unexpected error patching body:',
-          error
-        )
-        throw error
-      }
-    }
-  }
-  return globalThis.fetch(input, init)
-}
 
 type ModelRouting = {
   source: 'custom' | 'default'
@@ -107,7 +136,7 @@ function getOpenAIModel(
   provider: ReturnType<typeof createOpenAI>,
   modelConfig: ChatModelConfig
 ) {
-  return modelConfig.supportsReasoning
+  return modelConfig.usesResponsesApi
     ? provider.responses(modelConfig.deploymentId)
     : provider.chat(modelConfig.deploymentId)
 }
@@ -151,7 +180,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
         createOpenAI({
           baseURL: baseUrl,
           apiKey: apiKey || 'no-key',
-          fetch: responsesApiFetch,
+          fetch: createOpenAIFetch('custom'),
         }),
         modelConfig
       ),
@@ -171,7 +200,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
       createOpenAI({
         baseURL: process.env.OPENAI_BASE_URL,
         apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: responsesApiFetch,
+        fetch: createOpenAIFetch('default'),
       }),
       modelConfig
     ),
@@ -565,94 +594,6 @@ const joinReasoningFromSteps = (
     )
     .join('\n\n')
 
-type PersistedAssistantContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'reasoning'; text: string }
-  | {
-      type: 'tool-call'
-      toolCallId: string
-      toolName: string
-      args?: unknown
-      result?: unknown
-    }
-
-const mapAssistantStepContent = (
-  steps: Array<{ content?: unknown[] }> | undefined
-): PersistedAssistantContentPart[] => {
-  const content: PersistedAssistantContentPart[] = []
-  const toolCallIndexById = new Map<string, number>()
-
-  for (const step of steps ?? []) {
-    if (!Array.isArray(step.content)) continue
-
-    for (const rawPart of step.content) {
-      if (!rawPart || typeof rawPart !== 'object') continue
-
-      const part = rawPart as {
-        type?: unknown
-        text?: unknown
-        toolCallId?: unknown
-        toolName?: unknown
-        input?: unknown
-        output?: unknown
-      }
-
-      if (part.type === 'text' && typeof part.text === 'string') {
-        content.push({ type: 'text', text: part.text })
-        continue
-      }
-
-      if (part.type === 'reasoning' && typeof part.text === 'string') {
-        content.push({ type: 'reasoning', text: part.text })
-        continue
-      }
-
-      if (
-        part.type === 'tool-call' &&
-        typeof part.toolCallId === 'string' &&
-        typeof part.toolName === 'string'
-      ) {
-        const nextToolCall = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: part.input,
-        }
-        content.push(nextToolCall)
-        toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
-        continue
-      }
-
-      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
-        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
-        if (toolCallIndex !== undefined) {
-          const existingToolCall = content[toolCallIndex]
-          if (existingToolCall?.type === 'tool-call') {
-            existingToolCall.result = part.output
-          }
-          continue
-        }
-
-        if (typeof part.toolName !== 'string') {
-          continue
-        }
-
-        const toolCallWithResult = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: {},
-          result: part.output,
-        }
-        content.push(toolCallWithResult)
-        toolCallIndexById.set(part.toolCallId, content.length - 1)
-      }
-    }
-  }
-
-  return content
-}
-
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
@@ -711,14 +652,11 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
+    selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
+    allowRegeneration: z.boolean().optional().default(false),
     images: z
       .array(
         z.union([
@@ -733,7 +671,7 @@ export async function POST(
       .optional()
       .default([]),
   })
-  let parsed
+  let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
@@ -743,10 +681,11 @@ export async function POST(
   const {
     messages,
     threadId,
-    selectedMode,
+    selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
+    allowRegeneration,
     images,
   } = parsed
 
@@ -757,9 +696,6 @@ export async function POST(
           imagePreviewBase64: null,
         }
       : image
-  )
-  const resolvedImages = await Promise.all(
-    normalizedImages.map((image) => ensureImagePreviewBase64(image))
   )
 
   const userPrompt = messages
@@ -774,7 +710,7 @@ export async function POST(
     threadId,
     assistantMessageId,
     selectedModel: parsed.selectedModel,
-    selectedMode,
+    selectedMode: requestedMode,
     messageCount: messages.length,
   })
 
@@ -783,8 +719,9 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch chatbot with MCP configurations and system prompt
-  let systemPrompt = ''
+  // Fetch every MCP configuration so an explicitly disabled Quizzer row can
+  // block inheritance from the matching Tutor server. Only effective enabled
+  // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
 
@@ -792,11 +729,10 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        course: {
+          select: { displayName: true },
+        },
         mcpConfigurations: {
-          where: {
-            chatMode: selectedMode,
-            isEnabled: true,
-          },
           include: {
             mcpServer: true,
           },
@@ -804,44 +740,6 @@ export async function POST(
         },
       },
     })
-
-    if (chatbot) {
-      // Extract system prompt
-      const systemPrompts = chatbot.systemPrompts as Record<
-        string,
-        Record<string, string>
-      >
-      if (systemPrompts && systemPrompts[selectedMode]) {
-        systemPrompt =
-          systemPrompts[selectedMode].prompt ||
-          DEFAULT_PROMPT[selectedMode]?.prompt ||
-          ''
-      } else {
-        systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
-      }
-
-      // Prepare MCP server configurations
-      mcpServersWithConfigs =
-        chatbot.mcpConfigurations
-          ?.filter((config) => config.mcpServer?.isActive === true)
-          ?.map((config) => ({
-            server: {
-              id: config.mcpServer.id,
-              name: config.mcpServer.name,
-              url: config.mcpServer.url,
-              authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret ?? '',
-              parameters: config.mcpServer.parameters,
-              passChatbotId: config.mcpServer.passChatbotId,
-              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-            },
-            config: {
-              allowedTools: config.allowedTools as string[] | undefined,
-              parameters: config.parameters,
-              priority: config.priority,
-            },
-          })) || []
-    }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
       requestId,
@@ -849,41 +747,21 @@ export async function POST(
     })
   }
 
-  // create a new thread if none exists
-  if (!currentThreadId && messages.length > 0) {
-    try {
-      const newThread = await ThreadService.createThread(
-        participantId,
-        chatbotId,
-        null
-      )
-      currentThreadId = newThread.id
-    } catch (error) {
-      console.error('Failed to create thread:', { requestId, error })
-    }
-  }
-
-  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
-  if (lastMessage?.role === 'user') {
-    userMessageId = lastMessage.id
-  }
-
-  // track partial content for cancelled streams
-  let partialContent = ''
-  let partialReasoningContent = ''
-  let assistantReasoningContent: string | null = null
-
-  const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-  }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
-
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
+  )
+  const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
+    return NextResponse.json(
+      { error: `Unsupported chat mode: ${requestedMode}` },
+      { status: 400 }
+    )
   }
 
   const modelRegistry = getChatModelRegistry()
@@ -891,31 +769,43 @@ export async function POST(
     chatbot.allowedModelIds.length > 0
       ? new Set(chatbot.allowedModelIds as string[])
       : null
+  const hasActiveAllowedModel =
+    allowedIds === null ||
+    modelRegistry.some((model) => allowedIds.has(model.id))
+  let automaticModelId: string | null = null
 
-  // Override model selection if modelSelection is disabled
-  let userCredits: { current: number; total: number } | null = null
   if (!chatbot.modelSelection) {
-    // Get current user credits to determine automatic model selection
-    userCredits = await CreditsService.getUserCredits(participantId, chatbotId)
-    selectedModel = getAutomaticModelId(
-      userCredits,
-      chatbot.allowedModelIds as string[]
-    )
+    automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
+    if (!automaticModelId) {
+      return NextResponse.json(
+        { error: 'No model is available for this chatbot' },
+        { status: 400 }
+      )
+    }
+    selectedModel = automaticModelId
   }
 
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
+  const initialModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!initialModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
       { status: 400 }
     )
   }
+  // Declared non-optional so closures that swap the fallback model cannot
+  // widen later uses back to `undefined`; every assignment below is checked.
+  let selectedModelConfig: ChatModelConfig = initialModelConfig
 
   // Enforce per-chatbot model allow-list
+  // Automatic selection is authoritative when a persisted allow-list contains
+  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // unconditional base fallback, so the stale list must not reject the turn.
   if (
     allowedIds &&
     !allowedIds.has(selectedModelConfig.id) &&
-    !selectedModelConfig.fallback
+    selectedModelConfig.id !== automaticModelId &&
+    (hasActiveAllowedModel ||
+      selectedModelConfig.id !== getParticipantFallbackModelId())
   ) {
     return NextResponse.json(
       { error: `Model not available for this chatbot: ${selectedModel}` },
@@ -923,812 +813,1065 @@ export async function POST(
     )
   }
 
-  const maxOutputTokens = selectedModelConfig.maxOutputTokens
-
-  // Enforce fallback-only usage when the user has no credits left.
-  // This prevents bypassing credit gating by manually calling the API.
-  if (chatbot.modelSelection && !selectedModelConfig.fallback) {
-    userCredits =
-      userCredits ??
-      (await CreditsService.getUserCredits(participantId, chatbotId))
-    if (userCredits.current <= 0) {
-      selectedModel = getAutomaticModelId(
-        userCredits,
-        chatbot.allowedModelIds as string[]
-      )
-      selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-      if (!selectedModelConfig) {
-        return NextResponse.json(
-          { error: `Unknown model: ${selectedModel}` },
-          { status: 400 }
-        )
-      }
-    }
-  }
-
-  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
-    selectedModelConfig,
-    chatbot.allowedReasoningEffortsByModel
-  )
-  const appliedReasoningEffort: ReasoningEffort | null =
-    allowedReasoningEfforts.length > 0
-      ? allowedReasoningEfforts.includes(requestedReasoningEffort)
-        ? requestedReasoningEffort
-        : getDefaultReasoningEffort(allowedReasoningEfforts)
-      : null
-
-  const providerReasoningEffort =
-    appliedReasoningEffort && appliedReasoningEffort !== 'none'
-      ? appliedReasoningEffort
-      : undefined
-
-  const { model, routing } = getModel(chatbot, selectedModelConfig)
-
-  // create image descriptions if images attached
-  let imageDescriptionCost: number = 0
-  const imageAttachments: {
-    imageBase64: string
-    imagePreviewBase64: string | null
-    imageDescription: string | null
-  }[] = []
-  if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
-    const descriptionPrompt = (userContent: string | undefined) =>
-      `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
-
-    const results = await Promise.allSettled(
-      resolvedImages.map(async (image) => {
-        const descriptionResult = await generateText({
-          model: model,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'image', image: image.imageBase64 },
-                {
-                  type: 'text',
-                  text: descriptionPrompt(lastMessage?.content),
-                },
-              ],
-            },
-          ],
-          maxOutputTokens: 1000,
-        })
-        return { image, descriptionResult }
-      })
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
     )
+    if (!fallbackModelId || !fallbackModelConfig) return false
 
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        const { image, descriptionResult } = result.value
-        imageAttachments.push({
-          imageBase64: image.imageBase64,
-          imagePreviewBase64: image.imagePreviewBase64,
-          imageDescription: descriptionResult.text,
-        })
-        if (descriptionResult.usage) {
-          imageDescriptionCost += calcCost(
-            selectedModelConfig.cost,
-            descriptionResult.usage.inputTokens || 0,
-            descriptionResult.usage.outputTokens || 0
-          )
-        }
-      } else {
-        console.error('Failed to generate image description:', {
-          requestId,
-          error: result.reason,
-        })
-        // find the corresponding image from the original array
-        const idx = results.indexOf(result)
-        imageAttachments.push({
-          imageBase64: normalizedImages[idx].imageBase64,
-          imagePreviewBase64: normalizedImages[idx].imagePreviewBase64,
-          imageDescription:
-            'The user attached an image that could not be described automatically.',
-        })
-      }
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    return true
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
     }
+  }
 
-    const lastMessageIndex = messages.length - 1
-    if (lastMessageIndex >= 0) {
-      const messageText = messages[lastMessageIndex]?.content
+  const accountUsageAvailableForSelectedModel = async () => {
+    try {
+      return await isChatAccountUsageAvailable({
+        ownerId: chatbot.ownerId,
+        usageClass: selectedModelConfig.usageClass,
+      })
+    } catch (error) {
+      console.error('Failed to check account chat usage:', {
+        requestId,
+        error,
+      })
+      return false
+    }
+  }
 
-      modelMessages[lastMessageIndex] = {
-        ...modelMessages[lastMessageIndex],
-        content: [
-          ...(messageText
-            ? [{ type: 'text' as const, text: messageText }]
-            : []),
-          ...resolvedImages.map((image) => ({
-            type: 'image' as const,
-            image: image.imageBase64,
-          })),
-        ],
+  if (isChatAccountUsageEnforcementEnabled()) {
+    if (!(await accountUsageAvailableForSelectedModel())) {
+      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+    }
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      if (!selectParticipantFallback()) {
+        return chatModelUnavailableResponse('BASE')
+      }
+      if (
+        isChatAccountUsageEnforcementEnabled() &&
+        !(await accountUsageAvailableForSelectedModel())
+      ) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
     }
   }
 
-  const logEvent = (
-    event: string,
-    context: Record<string, unknown>,
-    level: 'info' | 'error' = 'info'
-  ) => logChatDev(event, { requestId, ...context }, level)
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
+    (config) => config.isEnabled !== false
+  )
+  const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations ?? [],
+    selectedMode
+  )
 
-  logEvent('request.context', {
-    chatbotId,
-    participantId,
-    threadId: currentThreadId,
-    assistantMessageId,
-    selectedModel,
-    resolvedModelId: selectedModelConfig.id,
-    deploymentId: selectedModelConfig.deploymentId,
-    routing,
-    selectedMode,
-    reasoningEffort: appliedReasoningEffort,
-    allowedReasoningEfforts,
-    maxOutputTokens: maxOutputTokens ?? null,
-    toolCount: toolNames.length,
-    toolNames,
-    systemPromptLength: systemPrompt.length,
-    systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
-    userPromptLengthTotal: userPrompt.length,
-    userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
-    imageAttachmentCount: images.length,
-    imageAttachmentSizes: resolvedImages.map((image) =>
-      Buffer.byteLength(image.imageBase64, 'utf8')
-    ),
-    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
-  })
+  let scopedKbId: string | undefined
+  try {
+    scopedKbId = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      selectedMCPConfigurations
+    )
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
 
-  const owningThread = currentThreadId
-    ? await prisma.chatThread.findFirst({
-        where: {
-          id: currentThreadId,
+  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
+    server: {
+      id: config.mcpServer.id,
+      name: config.mcpServer.name,
+      url: config.mcpServer.url,
+      authType: config.mcpServer.authType,
+      authSecret: config.mcpServer.authSecret ?? '',
+      parameters: config.mcpServer.parameters,
+      isActive: config.mcpServer.isActive,
+      passChatbotId: config.mcpServer.passChatbotId,
+      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+    },
+    config: {
+      allowedTools: config.allowedTools as string[] | undefined,
+      parameters: config.parameters,
+      priority: config.priority,
+    },
+  }))
+
+  // Resolve the participant-owned thread before the provider-work boundary.
+  // Lifecycle-enabled deployments claim the assistant key here; the initial
+  // mixed-version rollout performs only the same ownership validation.
+  let createdThreadId: string | null = null
+  if (!currentThreadId && messages.length > 0) {
+    try {
+      currentThreadId = await ThreadService.findFailedTurnThreadId(
+        participantId,
+        chatbotId,
+        assistantMessageId
+      )
+      if (!currentThreadId) {
+        const newThread = await ThreadService.createThread(
           participantId,
           chatbotId,
-        },
-        select: { id: true },
-      })
-    : null
-
-  logEvent('thread.resolved', {
-    hasOwningThread: Boolean(owningThread),
-    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
-  })
-
-  // inject image descriptions from prior messages into model context; fetch from DB
-  const priorMessageIds = messages
-    .filter(
-      (m) =>
-        m.role === 'user' &&
-        !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
-    )
-    .map((m) => m.id)
-  if (owningThread && priorMessageIds.length > 0) {
-    try {
-      const priorAttachments = await prisma.chatAttachment.findMany({
-        where: {
-          messageId: { in: priorMessageIds },
-          imageDescription: { not: null },
-          message: { threadId: owningThread.id },
-        },
-        select: { messageId: true, imageDescription: true },
-        orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
-      })
-      const descriptionsByMsgId = new Map<string, string[]>()
-      for (const a of priorAttachments) {
-        // get existing descriptions for this message, append if exist, or create new array
-        const existing = descriptionsByMsgId.get(a.messageId) ?? []
-        existing.push(a.imageDescription!)
-        descriptionsByMsgId.set(a.messageId, existing)
-      }
-      for (let i = 0; i < messages.length; i++) {
-        const descs = descriptionsByMsgId.get(messages[i].id)
-        if (descs && descs.length > 0) {
-          // append all descriptions for this message into the content
-          const suffix =
-            descs.length === 1
-              ? `\n\n[Attached image description: ${descs[0]}]`
-              : '\n\n' +
-                descs
-                  .map(
-                    (d, idx) => `[Attached image ${idx + 1} description: ${d}]`
-                  )
-                  .join('\n\n')
-          modelMessages[i] = {
-            ...modelMessages[i],
-            content: `${modelMessages[i].content}${suffix}`,
-          }
-        }
+          null
+        )
+        currentThreadId = newThread.id
+        createdThreadId = newThread.id
       }
     } catch (error) {
-      console.error('Failed to fetch prior image descriptions:', {
+      console.error('Failed to resolve or create thread:', {
         requestId,
         error,
       })
     }
   }
+  if (!currentThreadId) {
+    return NextResponse.json(
+      { error: 'Unable to resolve chat thread' },
+      { status: 500 }
+    )
+  }
 
-  // save user message to database (after effective model selection)
-  if (
-    currentThreadId &&
-    owningThread &&
-    lastMessage?.role === 'user' &&
-    userMessageId
-  ) {
+  const discardCreatedThread = async (phase: string): Promise<boolean> => {
+    if (!createdThreadId) return false
+
+    const threadIdToDelete = createdThreadId
+    createdThreadId = null
     try {
-      const metadata = {
-        chatMode: selectedMode,
-        modelId: selectedModelConfig.id,
-        reasoningEffort: appliedReasoningEffort,
-      }
-
-      const persistAttachments = async (messageId: string) => {
-        if (imageAttachments.length === 0) return
-
-        // delete existing attachments for this message, then create new ones
-        await prisma.$transaction([
-          prisma.chatAttachment.deleteMany({ where: { messageId } }),
-          prisma.chatAttachment.createMany({
-            data: imageAttachments.map((att, position) => ({
-              type: 'IMAGE' as const,
-              messageId,
-              position,
-              imageBase64: att.imageBase64 ?? null,
-              imagePreviewBase64: att.imagePreviewBase64 ?? null,
-              imageDescription: att.imageDescription ?? null,
-            })),
-          }),
-        ])
-      }
-
-      const updated = await prisma.chatMessage.updateMany({
-        where: { id: userMessageId, threadId: currentThreadId },
-        data: metadata,
+      return await ThreadService.deleteThread(
+        threadIdToDelete,
+        participantId,
+        chatbotId
+      )
+    } catch (error) {
+      console.error('Failed to discard a newly created chat thread:', {
+        requestId,
+        phase,
+        error,
       })
+      return false
+    }
+  }
 
-      if (updated.count === 0) {
-        const existingMessage = await prisma.chatMessage.findUnique({
-          where: { id: userMessageId },
-          select: { id: true },
-        })
-        if (existingMessage) {
-          console.warn(
-            'Skipping user message update: message exists outside current thread',
-            {
-              requestId,
-              phase: 'persist.userMessage',
-              messageId: userMessageId,
-              threadId: currentThreadId,
-            }
-          )
-        } else {
-          await prisma.chatMessage.create({
-            data: {
-              id: lastMessage.id,
-              threadId: currentThreadId,
-              parentId: parentId || null,
-              role: lastMessage.role,
-              content: [{ type: 'text', text: lastMessage.content }],
-              ...metadata,
-            },
-          })
+  let owningThread: { id: string } | null
+  try {
+    owningThread = await prisma.chatThread.findFirst({
+      where: {
+        id: currentThreadId,
+        participantId,
+        chatbotId,
+      },
+      select: { id: true },
+    })
+  } catch (error) {
+    await discardCreatedThread('thread.ownership.error')
+    throw error
+  }
+  if (!owningThread) {
+    await discardCreatedThread('thread.ownership')
+    return NextResponse.json(
+      { error: 'Chat thread not found' },
+      { status: 404 }
+    )
+  }
 
-          await persistAttachments(lastMessage.id)
-        }
-      } else {
-        await persistAttachments(userMessageId)
-      }
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+  if (lastMessage?.role === 'user') {
+    userMessageId = lastMessage.id
+  }
 
-      // update thread's timestamp
-      await prisma.chatThread.update({
-        where: { id: currentThreadId },
-        data: { updatedAt: new Date() },
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
+  try {
+    turnClaim = await claimChatTurn({
+      ownerId: chatbot.ownerId,
+      chatbotId,
+      threadId: owningThread.id,
+      assistantMessageId,
+      parentId: userMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
+    })
+  } catch (error) {
+    if (error instanceof ChatTurnConflictError) {
+      await discardCreatedThread('claim.conflict')
+      return completedTurnResponse()
+    }
+    await discardCreatedThread('claim.error')
+    throw error
+  }
+  if (turnClaim.outcome === 'completed') {
+    await discardCreatedThread('claim.completed')
+    return completedTurnResponse()
+  }
+  if (turnClaim.outcome === 'in_progress') {
+    await discardCreatedThread('claim.in_progress')
+    return completedTurnResponse()
+  }
+  const lifecycleAttemptId = turnClaim.lifecycleAttemptId
+
+  const failAssistantClaim = async (phase: string) => {
+    try {
+      await failChatTurn({
+        assistantMessageId,
+        threadId: owningThread.id,
+        lifecycleAttemptId,
       })
     } catch (error) {
-      console.error('Failed to save user message:', {
+      console.error('Failed to mark assistant lifecycle attempt as failed:', {
+        requestId,
+        phase,
+        error,
+      })
+    }
+  }
+
+  const failOrDiscardUnstartedClaim = async (phase: string) => {
+    // Keep a transient claim IN_PROGRESS until its request-owned thread is
+    // deleted. Marking it failed first would let a concurrent retry reclaim the
+    // attempt while cleanup is still able to delete the shared thread.
+    if (await discardCreatedThread(phase)) return
+    await failAssistantClaim(phase)
+  }
+
+  let providerStreamStarted = false
+  try {
+    // Discover MCP tools only after read-only participant authorization.
+    let mcpTools: ToolSet
+    try {
+      mcpTools = scopedKbId
+        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
+            kbId: scopedKbId,
+            sessionId: owningThread.id,
+          })
+        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+    } catch (error) {
+      if (error instanceof RequiredMCPUnavailableError) {
+        await failOrDiscardUnstartedClaim('mcp.discovery')
+        return NextResponse.json(
+          {
+            error: 'Required MCP tool unavailable',
+            code: REQUIRED_MCP_UNAVAILABLE_CODE,
+          },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
+
+    const toolNames = Object.keys(mcpTools || {})
+    const quizzerDocQueryToolName =
+      selectedMode === 'quizzer'
+        ? toolNames.find(isDocQueryToolName)
+        : undefined
+
+    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
+    // Compile the full system prompt only after course metadata and effective
+    // tool names are known. The compiler owns the fixed authority order.
+    // Assigning the finished value here (rather than a separate `instructions`
+    // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
+    // below truthful to what is actually sent to the model.
+    const systemPrompt = compileSystemPrompt(
+      chatbot.systemPrompts,
+      selectedMode,
+      {
+        courseDisplayName: chatbot.course.displayName,
+        toolNames,
+        standardModeConfig: chatbot.standardModeConfig,
+      }
+    )
+
+    // track partial content for cancelled streams
+    let partialContent = ''
+    let partialReasoningContent = ''
+    let currentStepContent: Array<
+      { type: 'text'; text: string } | { type: 'reasoning'; text: string }
+    > = []
+    let assistantReasoningContent: string | null = null
+
+    const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }))
+
+    const maxOutputTokens = selectedModelConfig.maxOutputTokens
+
+    const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+      selectedModelConfig,
+      chatbot.allowedReasoningEffortsByModel
+    )
+    const appliedReasoningEffort: ReasoningEffort | null =
+      allowedReasoningEfforts.length > 0
+        ? allowedReasoningEfforts.includes(requestedReasoningEffort)
+          ? requestedReasoningEffort
+          : getDefaultReasoningEffort(allowedReasoningEfforts)
+        : null
+
+    const providerReasoningEffort =
+      appliedReasoningEffort && appliedReasoningEffort !== 'none'
+        ? appliedReasoningEffort
+        : undefined
+
+    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const promptCacheRequest =
+      routing.source === 'default'
+        ? await buildPromptCacheRequest({
+            deploymentId: selectedModelConfig.deploymentId,
+            transport: selectedModelConfig.usesResponsesApi
+              ? 'responses'
+              : 'chat',
+            instructions: systemPrompt,
+            tools: mcpTools,
+          })
+        : null
+
+    const resolvedImages = await Promise.all(
+      normalizedImages.map((image) => ensureImagePreviewBase64(image))
+    )
+
+    // create image descriptions if images attached
+    let imageDescriptionCost: number = 0
+    const imageAttachments: {
+      imageBase64: string
+      imagePreviewBase64: string | null
+      imageDescription: string | null
+    }[] = []
+    if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
+      const descriptionPrompt = (userContent: string | undefined) =>
+        `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
+
+      const results = await Promise.allSettled(
+        resolvedImages.map(async (image) => {
+          const descriptionResult = await generateText({
+            model: model,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'image', image: image.imageBase64 },
+                  {
+                    type: 'text',
+                    text: descriptionPrompt(lastMessage?.content),
+                  },
+                ],
+              },
+            ],
+            maxOutputTokens: 1000,
+          })
+          return { image, descriptionResult }
+        })
+      )
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const { image, descriptionResult } = result.value
+          imageAttachments.push({
+            imageBase64: image.imageBase64,
+            imagePreviewBase64: image.imagePreviewBase64,
+            imageDescription: descriptionResult.text,
+          })
+          if (descriptionResult.usage) {
+            imageDescriptionCost += calcCost(
+              selectedModelConfig.cost,
+              descriptionResult.usage.inputTokens || 0,
+              descriptionResult.usage.outputTokens || 0
+            )
+          }
+        } else {
+          console.error('Failed to generate image description:', {
+            requestId,
+            error: result.reason,
+          })
+          // find the corresponding image from the original array
+          const idx = results.indexOf(result)
+          imageAttachments.push({
+            imageBase64: normalizedImages[idx].imageBase64,
+            imagePreviewBase64: normalizedImages[idx].imagePreviewBase64,
+            imageDescription:
+              'The user attached an image that could not be described automatically.',
+          })
+        }
+      }
+
+      const lastMessageIndex = messages.length - 1
+      if (lastMessageIndex >= 0) {
+        const messageText = messages[lastMessageIndex]?.content
+
+        modelMessages[lastMessageIndex] = {
+          ...modelMessages[lastMessageIndex],
+          content: [
+            ...(messageText
+              ? [{ type: 'text' as const, text: messageText }]
+              : []),
+            ...resolvedImages.map((image) => ({
+              type: 'image' as const,
+              image: image.imageBase64,
+            })),
+          ],
+        }
+      }
+    }
+
+    const logEvent = (
+      event: string,
+      context: Record<string, unknown>,
+      level: 'info' | 'error' = 'info'
+    ) => logChatDev(event, { requestId, ...context }, level)
+
+    logEvent('request.context', {
+      chatbotId,
+      participantId,
+      threadId: currentThreadId,
+      assistantMessageId,
+      selectedModel,
+      resolvedModelId: selectedModelConfig.id,
+      deploymentId: selectedModelConfig.deploymentId,
+      routing,
+      selectedMode,
+      reasoningEffort: appliedReasoningEffort,
+      allowedReasoningEfforts,
+      maxOutputTokens: maxOutputTokens ?? null,
+      toolCount: toolNames.length,
+      toolNames,
+      systemPromptLength: systemPrompt.length,
+      systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+      userPromptLengthTotal: userPrompt.length,
+      userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
+      imageAttachmentCount: images.length,
+      imageAttachmentSizes: resolvedImages.map((image) =>
+        Buffer.byteLength(image.imageBase64, 'utf8')
+      ),
+      elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+    })
+
+    logEvent('thread.resolved', {
+      hasOwningThread: true,
+      elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+    })
+
+    // inject image descriptions from prior messages into model context; fetch from DB
+    const priorMessageIds = messages
+      .filter(
+        (m) =>
+          m.role === 'user' &&
+          !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
+      )
+      .map((m) => m.id)
+    if (owningThread && priorMessageIds.length > 0) {
+      try {
+        const priorAttachments = await prisma.chatAttachment.findMany({
+          where: {
+            messageId: { in: priorMessageIds },
+            imageDescription: { not: null },
+            message: { threadId: owningThread.id },
+          },
+          select: { messageId: true, imageDescription: true },
+          orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
+        })
+        const descriptionsByMsgId = new Map<string, string[]>()
+        for (const a of priorAttachments) {
+          // get existing descriptions for this message, append if exist, or create new array
+          const existing = descriptionsByMsgId.get(a.messageId) ?? []
+          existing.push(a.imageDescription!)
+          descriptionsByMsgId.set(a.messageId, existing)
+        }
+        for (let i = 0; i < messages.length; i++) {
+          const descs = descriptionsByMsgId.get(messages[i].id)
+          if (descs && descs.length > 0) {
+            // append all descriptions for this message into the content
+            const suffix =
+              descs.length === 1
+                ? `\n\n[Attached image description: ${descs[0]}]`
+                : '\n\n' +
+                  descs
+                    .map(
+                      (d, idx) =>
+                        `[Attached image ${idx + 1} description: ${d}]`
+                    )
+                    .join('\n\n')
+            modelMessages[i] = {
+              ...modelMessages[i],
+              content: `${modelMessages[i].content}${suffix}`,
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch prior image descriptions:', {
+          requestId,
+          error,
+        })
+      }
+    }
+
+    // save user message to database (after effective model selection)
+    if (
+      currentThreadId &&
+      owningThread &&
+      lastMessage?.role === 'user' &&
+      userMessageId
+    ) {
+      try {
+        const metadata = {
+          chatMode: selectedMode,
+          modelId: selectedModelConfig.id,
+          reasoningEffort: appliedReasoningEffort,
+        }
+
+        const persistAttachments = async (messageId: string) => {
+          if (imageAttachments.length === 0) return
+
+          // delete existing attachments for this message, then create new ones
+          await prisma.$transaction([
+            prisma.chatAttachment.deleteMany({ where: { messageId } }),
+            prisma.chatAttachment.createMany({
+              data: imageAttachments.map((att, position) => ({
+                type: 'IMAGE' as const,
+                messageId,
+                position,
+                imageBase64: att.imageBase64 ?? null,
+                imagePreviewBase64: att.imagePreviewBase64 ?? null,
+                imageDescription: att.imageDescription ?? null,
+              })),
+            }),
+          ])
+        }
+
+        const updated = await prisma.chatMessage.updateMany({
+          where: { id: userMessageId, threadId: currentThreadId },
+          data: metadata,
+        })
+
+        if (updated.count === 0) {
+          const existingMessage = await prisma.chatMessage.findUnique({
+            where: { id: userMessageId },
+            select: { id: true },
+          })
+          if (existingMessage) {
+            console.warn(
+              'Skipping user message update: message exists outside current thread',
+              {
+                requestId,
+                phase: 'persist.userMessage',
+                messageId: userMessageId,
+                threadId: currentThreadId,
+              }
+            )
+          } else {
+            await prisma.chatMessage.create({
+              data: {
+                id: lastMessage.id,
+                threadId: currentThreadId,
+                parentId: parentId || null,
+                role: lastMessage.role,
+                content: [{ type: 'text', text: lastMessage.content }],
+                ...metadata,
+              },
+            })
+
+            await persistAttachments(lastMessage.id)
+          }
+        } else {
+          await persistAttachments(userMessageId)
+        }
+
+        // update thread's timestamp
+        await prisma.chatThread.update({
+          where: { id: currentThreadId },
+          data: { updatedAt: new Date() },
+        })
+      } catch (error) {
+        console.error('Failed to save user message:', {
+          requestId,
+          phase: 'persist.userMessage',
+          error,
+        })
+      }
+    } else if (currentThreadId && !owningThread && userMessageId) {
+      console.warn('Skipping user message save: thread ownership mismatch', {
         requestId,
         phase: 'persist.userMessage',
-        error,
+        messageId: userMessageId,
+        threadId: currentThreadId,
       })
     }
-  } else if (currentThreadId && !owningThread && userMessageId) {
-    console.warn('Skipping user message save: thread ownership mismatch', {
-      requestId,
-      phase: 'persist.userMessage',
-      messageId: userMessageId,
-      threadId: currentThreadId,
-    })
-  }
 
-  const streamStartedAtMs = Date.now()
-  let hasLoggedFirstChunk = false
-  let firstError: SerializedStreamError | null = null
-  let sawAbort = false
-  let sawFinish = false
-  let finalEmitted = false
+    const normalizeCredits = (
+      rawCreditsUsed: number | null,
+      phase: 'complete' | 'abort' | 'metadata'
+    ) => {
+      if (rawCreditsUsed === null) {
+        return { rawCreditsUsed: null, creditsUsed: null }
+      }
 
-  const emitFinalOnce = (
-    status: 'success' | 'error' | 'aborted',
-    payload: Record<string, unknown>
-  ) => {
-    if (finalEmitted) return
-    finalEmitted = true
-    logEvent('stream.final', {
-      status,
-      sawFinish,
-      sawAbort,
-      hadError: Boolean(firstError),
-      ...payload,
-    })
-  }
-
-  logEvent('stream.start', {
-    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
-  })
-
-  const result = streamText({
-    model,
-    maxOutputTokens,
-    experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
-    providerOptions: {
-      openai: {
-        ...(selectedModelConfig.supportsReasoning && {
-          store: getOpenAIResponsesStore(),
-        }),
-        ...(providerReasoningEffort && {
-          reasoningEffort: providerReasoningEffort,
-          reasoningSummary: 'auto',
-        }),
-      },
-    },
-    messages: modelMessages as ModelMessage[],
-    tools: mcpTools,
-    toolChoice: 'auto',
-    stopWhen: stepCountIs(5),
-    system: systemPrompt,
-
-    abortSignal: req.signal,
-
-    onChunk: ({ chunk }) => {
-      if (!hasLoggedFirstChunk) {
-        hasLoggedFirstChunk = true
-        logEvent('stream.chunk.first', {
-          firstChunkType: chunk.type,
-          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+      try {
+        return {
+          rawCreditsUsed,
+          creditsUsed: roundChatUsageCredits(rawCreditsUsed).toNumber(),
+        }
+      } catch (error) {
+        console.error('Failed to normalize chat usage credits:', {
+          requestId,
+          phase,
+          errorType: error instanceof Error ? error.name : typeof error,
         })
+        return { rawCreditsUsed: null, creditsUsed: null }
       }
+    }
 
-      if (chunk.type === 'text-delta' && chunk.text) {
-        partialContent += chunk.text
-      }
-      if (chunk.type === 'reasoning-delta' && chunk.text) {
-        partialReasoningContent += chunk.text
-      }
-    },
+    const streamStartedAtMs = Date.now()
+    let hasLoggedFirstChunk = false
+    let firstError: SerializedStreamError | null = null
+    let sawAbort = false
+    let sawFinish = false
+    let finalEmitted = false
 
-    onFinish: async (result) => {
-      sawFinish = true
-      const creditsUsed = result.totalUsage
-        ? calcCost(
-            selectedModelConfig.cost,
-            result.totalUsage.inputTokens || 0,
-            result.totalUsage.outputTokens || 0
-          ) + imageDescriptionCost
-        : null
-      const finishedReasoningContent =
-        normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
-        normalizeReasoningContent(
-          result.reasoningText ||
-            result.steps
-              .map((step) => step.reasoningText || '')
-              .filter((value) => value.length > 0)
-              .join('\n\n')
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = finishedReasoningContent
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(result)?.providerMetadata
-      )
-      const finishOutputTokens = result.totalUsage?.outputTokens || 0
-
-      logEvent('stream.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        usage: result.totalUsage
-          ? {
-              inputTokens: result.totalUsage.inputTokens || 0,
-              outputTokens: result.totalUsage.outputTokens || 0,
-              totalTokens: result.totalUsage.totalTokens || 0,
-            }
-          : null,
-        creditsUsed,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? finishOutputTokens >= providerReasoningTokens
-            : null,
-        stepsCount: result.steps?.length ?? 0,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-        hadPriorError: Boolean(firstError),
-        hadAbort: sawAbort,
-      })
-
-      // save assistant response to database
-      if (
-        currentThreadId &&
-        owningThread &&
-        result.steps &&
-        result.steps.length > 0
-      ) {
-        try {
-          const content = mapAssistantStepContent(result.steps)
-          // save assistant message to db
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: finishedReasoningContent,
-            creditsUsed,
+    const finalizeAssistantLifecycle = async ({
+      content,
+      reasoningContent,
+      rawCreditsUsed,
+      phase,
+    }: {
+      content: ReturnType<typeof mapAssistantStepContent>
+      reasoningContent: string | null
+      rawCreditsUsed: number | null
+      phase: 'complete' | 'abort'
+    }) => {
+      try {
+        await finalizeChatTurn({
+          ownerId: chatbot.ownerId,
+          chatbotId,
+          participantId,
+          usageClass: selectedModelConfig.usageClass,
+          threadId: owningThread.id,
+          assistantMessageId,
+          lifecycleAttemptId,
+          parentId: userMessageId,
+          content: content as Prisma.InputJsonValue,
+          chatMode: selectedMode,
+          modelId: selectedModelConfig.id,
+          reasoningEffort: appliedReasoningEffort,
+          reasoningContent,
+          rawCreditsUsed,
+        })
+      } catch (error) {
+        console.error(
+          'Failed to finalize assistant message and account usage:',
+          {
+            requestId,
+            phase,
+            error,
           }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content,
-              ...metadata,
-            },
-          })
+        )
+        await failAssistantClaim(`finalize.${phase}`)
+      }
+    }
 
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
+    const emitFinalOnce = (
+      status: 'success' | 'error' | 'aborted',
+      payload: Record<string, unknown>
+    ) => {
+      if (finalEmitted) return
+      finalEmitted = true
+      logEvent('stream.final', {
+        status,
+        sawFinish,
+        sawAbort,
+        hadError: Boolean(firstError),
+        ...payload,
+      })
+    }
+
+    logEvent('stream.start', {
+      elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+    })
+
+    // Langfuse v4 addresses traces by OTel trace id, so the id is derived from the
+    // assistant message id here and re-derived when a rating comes in later.
+    const traceId = isAiTelemetryEnabled
+      ? await getTraceIdForMessage(assistantMessageId)
+      : null
+
+    const startStream = () => {
+      providerStreamStarted = true
+      return streamText({
+        model,
+        maxOutputTokens,
+        telemetry: { isEnabled: isAiTelemetryEnabled },
+        providerOptions: {
+          openai: {
+            ...(promptCacheRequest
+              ? { promptCacheKey: promptCacheRequest.promptCacheKey }
+              : {}),
+            ...(selectedModelConfig.usesResponsesApi && {
+              store: getOpenAIResponsesStore(),
+            }),
+            ...(providerReasoningEffort && {
+              reasoningEffort: providerReasoningEffort,
+              reasoningSummary: 'auto',
+            }),
+          },
+        },
+        messages: modelMessages as ModelMessage[],
+        tools: promptCacheRequest?.tools ?? mcpTools,
+        toolOrder: promptCacheRequest?.toolOrder,
+        toolChoice: 'auto',
+        prepareStep: quizzerDocQueryToolName
+          ? ({ stepNumber }) =>
+              stepNumber === 0
+                ? {
+                    toolChoice: {
+                      type: 'tool' as const,
+                      toolName: quizzerDocQueryToolName,
+                    },
+                  }
+                : {}
+          : undefined,
+        stopWhen: isStepCount(5),
+        instructions: systemPrompt,
+
+        abortSignal: req.signal,
+
+        onChunk: ({ chunk }) => {
+          if (!hasLoggedFirstChunk) {
+            hasLoggedFirstChunk = true
+            logEvent('stream.chunk.first', {
+              firstChunkType: chunk.type,
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             })
+          }
 
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.assistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
-                }
-              )
+          if (chunk.type === 'text-delta' && chunk.text) {
+            partialContent += chunk.text
+            const previous = currentStepContent.at(-1)
+            if (previous?.type === 'text') {
+              previous.text += chunk.text
             } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: content,
-                  ...metadata,
-                },
+              currentStepContent.push({ type: 'text', text: chunk.text })
+            }
+          }
+          if (chunk.type === 'reasoning-delta' && chunk.text) {
+            partialReasoningContent += chunk.text
+            const previous = currentStepContent.at(-1)
+            if (previous?.type === 'reasoning') {
+              previous.text += chunk.text
+            } else {
+              currentStepContent.push({
+                type: 'reasoning',
+                text: chunk.text,
               })
             }
           }
+        },
 
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
-          })
-        } catch (error) {
-          console.error('Failed to save assistant message:', {
-            requestId,
-            phase: 'persist.assistantMessage',
-            error,
-          })
-        }
-      } else if (currentThreadId && !owningThread) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
-            requestId,
-            phase: 'persist.assistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
+        onEnd: async (result) => {
+          sawFinish = true
+          // ai@7 still flushes onEnd after an abort once at least one step
+          // completed. onAbort already persisted the partial answer and charged
+          // the per-step cost, so continuing here would overwrite it with
+          // completed-steps-only content and re-run the credit deduction.
+          if (sawAbort) {
+            logEvent('stream.finish', {
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+              stepsCount: result.steps?.length ?? 0,
+              hadPriorError: Boolean(firstError),
+              hadAbort: true,
+              skippedAfterAbort: true,
+              // Keep the log shape stable for operators filtering on this
+              // field; null means not-applicable on a cancelled turn.
+              reasoningTokensIncludedInOutput: null,
+            })
+            return
           }
-        )
-      }
-
-      // deduct credits
-      if (creditsUsed !== null) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            creditsUsed
+          const computedRawCreditsUsed = result.usage
+            ? calcCost(
+                selectedModelConfig.cost,
+                result.usage.inputTokens || 0,
+                result.usage.outputTokens || 0
+              ) + imageDescriptionCost
+            : null
+          const { rawCreditsUsed, creditsUsed } = normalizeCredits(
+            computedRawCreditsUsed,
+            'complete'
           )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
-      }
+          const finishedReasoningContent =
+            normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
+            normalizeReasoningContent(
+              result.reasoningText ||
+                result.steps
+                  .map((step) => step.reasoningText || '')
+                  .filter((value) => value.length > 0)
+                  .join('\n\n')
+            ) ??
+            normalizeReasoningContent(partialReasoningContent)
+          assistantReasoningContent = finishedReasoningContent
+          const providerReasoningTokens = extractReasoningTokens(
+            asObject(result)?.providerMetadata
+          )
+          const finishOutputTokens = result.usage?.outputTokens || 0
 
-      if (!firstError && !sawAbort) {
-        emitFinalOnce('success', {
-          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          usage: result.totalUsage
-            ? {
-                inputTokens: result.totalUsage.inputTokens || 0,
-                outputTokens: result.totalUsage.outputTokens || 0,
-                totalTokens: result.totalUsage.totalTokens || 0,
-              }
-            : null,
-          stepsCount: result.steps?.length ?? 0,
-        })
-      }
-    },
-
-    onAbort: async (steps) => {
-      sawAbort = true
-      let creditsUsed: number | null = null
-      if (steps && Array.isArray(steps.steps)) {
-        let totalCost = 0
-        let hasUsage = false
-        const costBase = selectedModelConfig.cost
-
-        for (const step of steps.steps) {
-          if (step.usage) {
-            hasUsage = true
-            totalCost += calcCost(
-              costBase,
-              step.usage.inputTokens || 0,
-              step.usage.outputTokens || 0
-            )
-          }
-        }
-
-        if (hasUsage) {
-          creditsUsed = totalCost + imageDescriptionCost
-        }
-
-        if (creditsUsed !== null && creditsUsed > 0) {
-          try {
-            await CreditsService.decrementCredits(
-              participantId,
-              chatbotId,
-              creditsUsed
-            )
-          } catch (error) {
-            console.error('Failed to deduct credits:', {
-              requestId,
-              phase: 'credits.decrement',
-              error,
-            })
-          }
-        }
-      }
-
-      const abortedReasoningContent =
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps) ? joinReasoningFromSteps(steps.steps) : ''
-        ) ??
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps)
-            ? steps.steps
-                .map((step) => step.reasoningText || '')
-                .filter((value) => value.length > 0)
-                .join('\n\n')
-            : ''
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = abortedReasoningContent
-
-      logEvent('stream.abort', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
-        creditsUsed,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-      })
-
-      // save partial message
-      if (
-        currentThreadId &&
-        owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        try {
-          const partialAssistantContent: PersistedAssistantContentPart[] = []
-          if (partialContent.trim()) {
-            partialAssistantContent.push({ type: 'text', text: partialContent })
-          }
-          if (abortedReasoningContent) {
-            partialAssistantContent.push({
-              type: 'reasoning',
-              text: abortedReasoningContent,
-            })
-          }
-
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: abortedReasoningContent,
-            creditsUsed,
-          }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content: partialAssistantContent,
-              ...metadata,
-            },
-          })
-
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
-            })
-
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.partialAssistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
+          logEvent('stream.finish', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            usage: result.usage
+              ? {
+                  inputTokens: result.usage.inputTokens || 0,
+                  outputTokens: result.usage.outputTokens || 0,
+                  totalTokens: result.usage.totalTokens || 0,
                 }
-              )
-            } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: partialAssistantContent,
-                  ...metadata,
-                },
-              })
+              : null,
+            creditsUsed,
+            reasoningTokens: providerReasoningTokens,
+            reasoningTokensIncludedInOutput:
+              providerReasoningTokens !== null
+                ? finishOutputTokens >= providerReasoningTokens
+                : null,
+            stepsCount: result.steps?.length ?? 0,
+            partialTextLength: partialContent.length,
+            partialReasoningLength: partialReasoningContent.length,
+            hadPriorError: Boolean(firstError),
+            hadAbort: sawAbort,
+          })
+
+          await finalizeAssistantLifecycle({
+            content: mapAssistantStepContent(result.steps),
+            reasoningContent: finishedReasoningContent,
+            rawCreditsUsed,
+            phase: 'complete',
+          })
+
+          if (!firstError) {
+            emitFinalOnce('success', {
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+              usage: result.usage
+                ? {
+                    inputTokens: result.usage.inputTokens || 0,
+                    outputTokens: result.usage.outputTokens || 0,
+                    totalTokens: result.usage.totalTokens || 0,
+                  }
+                : null,
+              stepsCount: result.steps?.length ?? 0,
+            })
+          }
+        },
+
+        onAbort: async (steps) => {
+          sawAbort = true
+          let rawCreditsUsed: number | null = null
+          if (steps && Array.isArray(steps.steps)) {
+            let totalCost = 0
+            let hasUsage = false
+            const costBase = selectedModelConfig.cost
+
+            for (const step of steps.steps) {
+              if (step.usage) {
+                hasUsage = true
+                totalCost += calcCost(
+                  costBase,
+                  step.usage.inputTokens || 0,
+                  step.usage.outputTokens || 0
+                )
+              }
+            }
+
+            if (hasUsage) {
+              rawCreditsUsed = totalCost + imageDescriptionCost
             }
           }
+          const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
+            normalizeCredits(rawCreditsUsed, 'abort')
 
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
+          const abortedAssistantContent = buildAbortedAssistantContent(
+            Array.isArray(steps?.steps) ? steps.steps : undefined,
+            currentStepContent
+          )
+          const abortedReasoningContent = normalizeReasoningContent(
+            abortedAssistantContent
+              .flatMap((part) => (part.type === 'reasoning' ? [part.text] : []))
+              .join('\n\n')
+          )
+          assistantReasoningContent = abortedReasoningContent
+
+          logEvent('stream.abort', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+            creditsUsed,
+            partialTextLength: partialContent.length,
+            partialReasoningLength: partialReasoningContent.length,
           })
-        } catch (error) {
-          console.error('Failed to save partial message:', {
-            requestId,
-            phase: 'persist.partialAssistantMessage',
-            error,
+
+          // The marker-only result still closes an aborted lifecycle when the
+          // provider reports no reliable usage.
+          await finalizeAssistantLifecycle({
+            content: abortedAssistantContent,
+            reasoningContent: abortedReasoningContent,
+            rawCreditsUsed: normalizedRawCreditsUsed,
+            phase: 'abort',
           })
-        }
-      } else if (
-        currentThreadId &&
-        !owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
+
+          emitFinalOnce('aborted', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          })
+        },
+
+        onStepEnd: async (step) => {
+          currentStepContent = []
+          const diagnostics = collectStepToolDiagnostics(step)
+          const toolCallNames = Array.from(
+            new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
+          )
+          const toolCallsCount = diagnostics.length
+          const providerReasoningTokens = extractReasoningTokens(
+            asObject(step)?.providerMetadata
+          )
+          const stepOutputTokens = step.usage?.outputTokens || 0
+          logEvent('stream.step.finish', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            finishReason: step.finishReason,
+            warningsCount: step.warnings?.length ?? 0,
+            usage: step.usage
+              ? {
+                  inputTokens: step.usage.inputTokens || 0,
+                  outputTokens: step.usage.outputTokens || 0,
+                  totalTokens: step.usage.totalTokens || 0,
+                }
+              : null,
+            reasoningTokens: providerReasoningTokens,
+            reasoningTokensIncludedInOutput:
+              providerReasoningTokens !== null
+                ? stepOutputTokens >= providerReasoningTokens
+                : null,
+            toolCallsCount,
+            toolCallNames,
+            toolDiagnostics: diagnostics,
+          })
+        },
+
+        onError: async (error) => {
+          const serializedError = serializeStreamError(error)
+          firstError = firstError ?? serializedError
+          const classification = classifyStreamError(serializedError)
+
+          logEvent(
+            'stream.error',
+            {
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+              ...serializedError,
+              classification: classification.classification,
+              retryable: classification.retryable,
+              suggestedAction: classification.suggestedAction,
+            },
+            'error'
+          )
+
+          console.error('Error during streaming response:', {
             requestId,
-            phase: 'persist.partialAssistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
-          }
-        )
-      }
+            error: serializedError,
+          })
 
-      emitFinalOnce('aborted', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          emitFinalOnce('error', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            classification: classification.classification,
+          })
+          await failAssistantClaim('stream.error')
+        },
       })
-    },
+    }
 
-    onStepFinish: async (step) => {
-      const diagnostics = collectStepToolDiagnostics(step)
-      const toolCallNames = Array.from(
-        new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-      )
-      const toolCallsCount = diagnostics.length
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(step)?.providerMetadata
-      )
-      const stepOutputTokens = step.usage?.outputTokens || 0
-      logEvent('stream.step.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        finishReason: step.finishReason,
-        warningsCount: step.warnings?.length ?? 0,
-        usage: step.usage
-          ? {
-              inputTokens: step.usage.inputTokens || 0,
-              outputTokens: step.usage.outputTokens || 0,
-              totalTokens: step.usage.totalTokens || 0,
-            }
-          : null,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? stepOutputTokens >= providerReasoningTokens
-            : null,
-        toolCallsCount,
-        toolCallNames,
-        toolDiagnostics: diagnostics,
-      })
-    },
+    // The wrapper span only exists to put the derived trace id on the context the
+    // AI SDK reads when it opens its own spans; it is created and closed around
+    // the synchronous streamText call, while the spans it parents keep streaming.
+    const result = traceId
+      ? startActiveObservation('chat.stream', startStream, {
+          parentSpanContext: getParentSpanContext(traceId),
+        })
+      : startStream()
 
-    onError: async (error) => {
-      const serializedError = serializeStreamError(error)
-      firstError = firstError ?? serializedError
-      const classification = classifyStreamError(serializedError)
+    logEvent('response.stream.created', {
+      stage: 'response-object-created',
+      elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+    })
 
-      logEvent(
-        'stream.error',
-        {
-          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          ...serializedError,
+    return result.toUIMessageStreamResponse({
+      sendReasoning: true,
+      consumeSseStream: consumeStream,
+      onError: (error) => {
+        const serializedError = serializeStreamError(error)
+        const classification = classifyStreamError(serializedError)
+
+        console.error('Error while streaming UI message response:', {
+          requestId,
+          error: serializedError,
           classification: classification.classification,
           retryable: classification.retryable,
           suggestedAction: classification.suggestedAction,
-        },
-        'error'
-      )
+        })
+        void failAssistantClaim('response.stream.error')
 
-      console.error('Error during streaming response:', {
-        requestId,
-        error: serializedError,
-      })
+        return 'An error occurred while processing the request.'
+      },
+      messageMetadata: ({ part }) => {
+        if (part.type !== 'finish') {
+          return undefined
+        }
 
-      emitFinalOnce('error', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        classification: classification.classification,
-      })
-    },
-  })
+        const computedRawCreditsUsed = part.totalUsage
+          ? calcCost(
+              selectedModelConfig.cost,
+              part.totalUsage.inputTokens || 0,
+              part.totalUsage.outputTokens || 0
+            ) + imageDescriptionCost
+          : null
+        const { creditsUsed } = normalizeCredits(
+          computedRawCreditsUsed,
+          'metadata'
+        )
 
-  logEvent('response.stream.created', {
-    stage: 'response-object-created',
-    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
-  })
-
-  return result.toUIMessageStreamResponse({
-    sendReasoning: true,
-    onError: (error) => {
-      const serializedError = serializeStreamError(error)
-      const classification = classifyStreamError(serializedError)
-
-      console.error('Error while streaming UI message response:', {
-        requestId,
-        error: serializedError,
-        classification: classification.classification,
-        retryable: classification.retryable,
-        suggestedAction: classification.suggestedAction,
-      })
-
-      return 'An error occurred while processing the request.'
-    },
-    messageMetadata: ({ part }) => {
-      if (part.type !== 'finish') {
-        return undefined
-      }
-
-      const creditsUsed = part.totalUsage
-        ? calcCost(
-            selectedModelConfig.cost,
-            part.totalUsage.inputTokens || 0,
-            part.totalUsage.outputTokens || 0
-          ) + imageDescriptionCost
-        : null
-
-      return {
-        finishReason: part.finishReason,
-        chatMode: selectedMode,
-        modelId: selectedModelConfig.id,
-        reasoningEffort: appliedReasoningEffort,
-        reasoningContent: assistantReasoningContent,
-        creditsUsed,
-      }
-    },
-  })
+        return {
+          finishReason: part.finishReason,
+          chatMode: selectedMode,
+          modelId: selectedModelConfig.id,
+          reasoningEffort: appliedReasoningEffort,
+          reasoningContent: assistantReasoningContent,
+          creditsUsed,
+        }
+      },
+    })
+  } catch (error) {
+    if (providerStreamStarted) await failAssistantClaim('request')
+    else await failOrDiscardUnstartedClaim('request')
+    throw error
+  }
 }
 
 // Function to calculate cost based on token usage and model pricing

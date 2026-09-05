@@ -1,7 +1,6 @@
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
-import { signJWT, verifyJWT } from '@klicker-uzh/util'
-import bodyParser from 'body-parser'
+import { verifyJWT } from '@klicker-uzh/util'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
@@ -14,7 +13,7 @@ export default async function getParticipantToken({
   courseId?: string
   ctx: GetServerSidePropsContext
 }) {
-  const { req, res, query } = ctx
+  const { query } = ctx
   const cookies = nookies.get(ctx)
 
   // if the user already has a participant token, skip registration
@@ -25,12 +24,7 @@ export default async function getParticipantToken({
       : cookies['participant_token']) ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
-  if (
-    participantToken &&
-    !cookies['lti-token'] &&
-    !query.jwt &&
-    !(req.method === 'POST')
-  ) {
+  if (participantToken && !cookies['lti-token'] && !query.jwt) {
     return {
       participantToken,
       cookiesAvailable:
@@ -72,57 +66,6 @@ export default async function getParticipantToken({
           })
         }
       } catch (e) {}
-    }
-    // LTI 1.1 authentication flow
-    else if (req.method === 'POST') {
-      // extract the body from the LTI request
-      // if there is a body, request a participant token
-      // TODO: verify that there is an LTI body and that it is valid
-      const { request }: any = await new Promise((resolve) => {
-        bodyParser.urlencoded({ extended: true })(req, res, () => {
-          bodyParser.json()(req, res, () => {
-            resolve({ request: req })
-          })
-        })
-      })
-
-      if (request?.body?.lis_person_sourcedid) {
-        const pwaOrigin =
-          process.env.ASSESSMENT_MODE === 'true'
-            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
-            : process.env.APP_ORIGIN_PWA
-        if (!pwaOrigin) {
-          throw new Error(
-            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
-          )
-        }
-
-        // send along a JWT to ensure only the next server is allowed to register participants from LTI
-        const signedLtiData = await signJWT(
-          {
-            sub: request?.body?.lis_person_sourcedid,
-            email: request?.body?.lis_person_contact_email_primary,
-            scope: 'LTI1.1',
-          },
-          process.env.APP_SECRET as string,
-          {
-            algorithm: 'HS256',
-            expiresIn: '5m',
-            issuer:
-              process.env.ASSESSMENT_MODE === 'true'
-                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
-                : process.env.APP_ORIGIN_PWA,
-          }
-        )
-
-        result = await apolloClient.mutate({
-          mutation: LoginParticipantWithLtiDocument,
-          variables: {
-            signedLtiData,
-            courseId,
-          },
-        })
-      }
     }
 
     const ltiParticipantToken =

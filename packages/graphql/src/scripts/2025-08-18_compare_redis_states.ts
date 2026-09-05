@@ -6,10 +6,9 @@
  * Usage: pnpm run script src/scripts/2025-08-18_compare_redis_states.ts [quizId]
  */
 
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
 import Redis from 'ioredis'
 
-const prisma = new PrismaClient()
 const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),

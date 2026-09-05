@@ -1,14 +1,14 @@
-// import { PrismaPg } from '@prisma/adapter-pg'
+// NOTE: the migrator image (packages/prisma/Dockerfile) copies this file into a
+// container where ONLY the `prisma` package is installed. Imports here must stay
+// limited to `prisma/config` — a workspace dependency (e.g. @prisma/adapter-pg)
+// would build green and then fail module resolution in the ArgoCD PreSync hook.
 import { defineConfig } from 'prisma/config'
 
 export default defineConfig({
-  // experimental: {
-  //   adapter: true,
-  // },
   schema: 'src/prisma/schema',
   migrations: {
     path: 'src/prisma/schema/migrations',
-    seed: 'pnpm run seed',
+    seed: 'pnpm --filter @klicker-uzh/prisma-data run seed:raw',
   },
   views: {
     path: 'src/prisma/schema/views',
@@ -16,10 +16,10 @@ export default defineConfig({
   typedSql: {
     path: 'src/prisma/schema/queries',
   },
-  // TODO: switch to using adapter instead of datasource at some point (was buggy when tested)
-  // async adapter() {
-  //   return new PrismaPg({
-  //     connectionString: process.env.DATABASE_URL,
-  //   })
-  // },
+  datasource: {
+    url: process.env.DATABASE_URL ?? '',
+    ...(process.env.SHADOW_DATABASE_URL
+      ? { shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL }
+      : {}),
+  },
 })

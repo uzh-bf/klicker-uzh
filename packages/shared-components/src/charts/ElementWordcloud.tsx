@@ -5,7 +5,7 @@ import {
 import type { LayoutWord } from '@klicker-uzh/word-cloud'
 import { Select, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   removeStopwords,
   deu as stopwordsDeu,

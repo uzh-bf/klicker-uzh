@@ -109,16 +109,16 @@ wait_for_port localhost 6379 "Redis exec" || exit 1
 wait_for_port localhost 6380 "Redis assessment" || exit 1
 wait_for_port localhost 6381 "Redis cache" || exit 1
 
-# Generate Hatchet token
-echo "Generating Hatchet client token..."
-TOKEN=$(docker compose -f test/docker/docker-compose.test.yml exec -T hatchet /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | xargs)
+# Fetch Hatchet client token automatically created by hatchet-lite-dev
+echo "Reading Hatchet client token from container..."
+TOKEN=$(docker compose -f test/docker/docker-compose.test.yml exec -T hatchet cat /config/authdisabled-token | tr -d '[:space:]')
 
 if [ -z "$TOKEN" ]; then
-  echo "Failed to generate Hatchet token. Exiting."
+  echo "Failed to read Hatchet token from /config/authdisabled-token. Exiting."
   exit 1
 fi
 
-echo "Hatchet token generated successfully: ${TOKEN:0:20}..."
+echo "Hatchet token retrieved successfully: ${TOKEN:0:20}..."
 
 # Set up environment variables
 export DATABASE_URL="postgresql://klicker:klicker@localhost:5432/klicker-prod"

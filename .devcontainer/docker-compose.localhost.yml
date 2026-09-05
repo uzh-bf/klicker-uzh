@@ -1,12 +1,16 @@
-# Fallback overlay for running the devcontainer without devrouter.
-# This publishes fixed host ports (bound to 127.0.0.1 for security), so only one
-# localhost-mode stack can run per machine. For parallel worktrees, use
-# docker-compose.devrouter.yml instead.
+# Primary-checkout overlay selected by `devrouter ensure`.
+# Fixed host ports remain bound to 127.0.0.1, while stable devnet aliases let
+# devrouter prove and route the same container. Only one primary checkout can
+# run per machine; linked worktrees use docker-compose.devrouter.yml instead.
 
 services:
   postgres:
     ports:
       - '127.0.0.1:5432:5432'
+    networks:
+      devnet:
+        aliases:
+          - klicker-uzh-db
 
   mailhog:
     ports:
@@ -18,6 +22,10 @@ services:
       - '127.0.0.1:7077:7077'
 
   app:
+    networks:
+      devnet:
+        aliases:
+          - klicker-uzh-app
     ports:
       - '127.0.0.1:3000:3000' # api / assessment-api
       - '127.0.0.1:3001:3001' # pwa / assessment-pwa

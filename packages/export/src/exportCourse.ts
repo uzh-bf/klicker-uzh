@@ -2,9 +2,6 @@ import { chmodSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import ExcelJS from 'exceljs'
-import { type PiiContext, type PiiMode, FULL_PII, makePiiSalt } from './pii.js'
-import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
-
 import {
   CORRECTION_HEADERS,
   fetchCorrections,
@@ -18,31 +15,33 @@ import {
   transformElementInstance,
 } from './elementInstances.js'
 import {
-  INVITATION_HEADERS,
   fetchInvitations,
+  INVITATION_HEADERS,
   transformInvitation,
 } from './invitations.js'
 import {
+  fetchLiveQuizResponses,
   LIVE_QUIZ_RESPONSE_DATE_COLUMNS,
   LIVE_QUIZ_RESPONSE_HEADERS,
-  fetchLiveQuizResponses,
   transformLiveQuizResponse,
 } from './liveQuizResponses.js'
 import {
+  fetchLiveQuizzes,
   LIVE_QUIZ_DATE_COLUMNS,
   LIVE_QUIZ_HEADERS,
-  fetchLiveQuizzes,
   transformLiveQuiz,
 } from './liveQuizzes.js'
 import { writeManifest } from './manifest.js'
 import {
-  PARTICIPANT_HEADERS,
   fetchParticipants,
+  PARTICIPANT_HEADERS,
   transformParticipant,
 } from './participants.js'
+import { FULL_PII, makePiiSalt, type PiiContext, type PiiMode } from './pii.js'
+import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 // 0-based date-column indices for sheets whose headers live in this file's flow.
-const PARTICIPANT_DATE_COLUMNS = [3, 7]
+const PARTICIPANT_DATE_COLUMNS = [6, 10]
 const INVITATION_DATE_COLUMNS = [4, 5]
 const CORRECTION_DATE_COLUMNS = [18]
 

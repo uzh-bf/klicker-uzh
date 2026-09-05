@@ -37,17 +37,17 @@ For more code commonality between different projects at the Teaching Center and 
 
 ## Roadmap / Issues
 
-The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/development). Please feel free to add any issues or feature requests you might have to the [Roadmap](https://klicker-uzh.feedbear.com) and [Bug reports](https://klicker-uzh.feedbear.com/boards/bug-reports) or start a new discussion in our [Community](https://community.klicker.uzh.ch/).
+The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/development). Please feel free to share ideas, positive experiences, or problems on our [feedback platform](https://klicker-uzh.feedback.df-app.ch/) or start a new discussion in our [Community](https://community.klicker.uzh.ch/).
 
 ## Important Links
 
 The following resources might be of special interest to you:
 
 - [User Documentation](https://www.klicker.uzh.ch/getting_started/welcome)
-- [Engineering Wiki](docs/index.md) (agent-facing, for working on this codebase)
+- [Engineering Wiki](docs/) (agent-facing, for working on this codebase)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
-- [Roadmap](https://klicker-uzh.feedbear.com)
+- [Roadmap](https://www.klicker.uzh.ch/development)
 
 ## Deployment
 
@@ -61,5 +61,4 @@ We welcome any contributions to the KlickerUZH project. Before considering any c
 
 The KlickerUZH and all of its subprojects are licensed under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.de.html).
 
-[![klicker-uzh](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/y436dx/v3&style=for-the-badge&logo=cypress)](https://cloud.cypress.io/projects/y436dx/runs)
 [![Coverage Status](https://coveralls.io/repos/github/uzh-bf/klicker-uzh/badge.svg?branch=v3)](https://coveralls.io/github/uzh-bf/klicker-uzh?branch=v3)

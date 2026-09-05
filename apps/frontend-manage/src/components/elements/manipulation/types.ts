@@ -149,7 +149,7 @@ export const INITIAL_ELEMENT_BATCH_OPERATIONS: ElementBatchOperationActions = {
   status: undefined,
   multiplier: undefined,
   basePoints: undefined,
-  updateInstances: true,
+  updateInstances: false,
   updateTemplateInstances: false,
 }
 

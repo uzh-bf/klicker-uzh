@@ -1,10 +1,10 @@
+import type EventEmitter from 'node:events'
 import type {
   Context,
   HatchetClient,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
-import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
@@ -39,9 +39,19 @@ export interface HatchetHandlerGlobalContext {
   redisAssessmentExec: Redis
   redisCache?: Redis
   prisma: PrismaClient
+  tasks: PreparedHatchetTasks
 }
 
 // Shared contract for Hatchet task handler injections.
+// Payload of the `process-course-deletion` event. The request marker on the
+// course is the only persisted state; requester and options travel here.
+export type CourseDeletionEvent = {
+  courseId: string
+  deletionRequestedAt: string
+  requestedById: string
+  deleteDraftActivities: boolean
+}
+
 export interface HatchetHandlers {
   handleRepairImportExportFingerprints: (
     input: {},
@@ -57,24 +67,24 @@ export interface HatchetHandlers {
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
-  ) => Promise<unknown> | void
+  ) => Promise<unknown> | undefined
   handleUpdateGroupAverageScores: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleRunningRandomGroupAssignments: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleFinalRandomGroupAssignments: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleUpdateWeeklyTimelineEntries: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -84,7 +94,7 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleSendPushNotifications: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -125,6 +135,21 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
   handleStandardLiveQuizBlockClosureAggregation: (
     { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleProcessCourseDuplication: (
+    { jobId }: { jobId: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleSweepStaleCourseDuplications: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleProcessCourseDeletion: (
+    input: CourseDeletionEvent,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -182,4 +207,16 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   cleanupImportExportPackages: TaskWorkflowDeclaration<{}, { success: boolean }>
+  processCourseDuplication: TaskWorkflowDeclaration<
+    { jobId: string },
+    { success: boolean }
+  >
+  sweepStaleCourseDuplications: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
+  processCourseDeletion: TaskWorkflowDeclaration<
+    CourseDeletionEvent,
+    { success: boolean }
+  >
 }

@@ -1,8 +1,17 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
+import type {
+  ChatbotStandardModeConfigInput as ChatbotStandardModeConfigInputShape,
+  ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
+  SharingType as SharingTypeEnum,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { type ICourseListEntry, CourseListEntryRef } from './course.js'
+import type {
+  ChatAccountUsageLane,
+  ChatAccountUsageOverview,
+} from '../services/chatAccountUsage.js'
+import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
+import { LocaleType } from './user.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -94,6 +103,42 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
   values: Object.values(DB.CreditResetPeriod),
 })
 
+export const ChatbotStatus = builder.enumType('ChatbotStatus', {
+  values: Object.values(DB.ChatbotStatus),
+})
+
+export const ChatUsageClass = builder.enumType('ChatUsageClass', {
+  values: Object.values(DB.ChatUsageClass),
+})
+
+export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
+  'ChatAccountUsageLane'
+)
+export const ChatAccountUsageLaneType = ChatAccountUsageLaneRef.implement({
+  fields: (t) => ({
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
+    budgetCredits: t.exposeFloat('budgetCredits'),
+    usedCredits: t.exposeFloat('usedCredits'),
+    remainingCredits: t.exposeFloat('remainingCredits'),
+    resetAt: t.expose('resetAt', { type: 'Date' }),
+  }),
+})
+
+export const ChatAccountUsageOverviewRef =
+  builder.objectRef<ChatAccountUsageOverview>('ChatAccountUsageOverview')
+export const ChatAccountUsageOverviewType =
+  ChatAccountUsageOverviewRef.implement({
+    fields: (t) => ({
+      authorized: t.exposeBoolean('authorized'),
+      baseModelUsage: t.expose('baseModelUsage', {
+        type: ChatAccountUsageLaneRef,
+      }),
+      advancedModelUsage: t.expose('advancedModelUsage', {
+        type: ChatAccountUsageLaneRef,
+      }),
+    }),
+  })
+
 export interface IChatbotReasoningConfig {
   modelId: string
   efforts: string[]
@@ -125,6 +170,45 @@ export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
   }),
 })
 
+export const ChatbotStandardModeConfigInputRef =
+  builder.inputRef<ChatbotStandardModeConfigInputShape>(
+    'ChatbotStandardModeConfigInput'
+  )
+export const ChatbotStandardModeConfigInput =
+  ChatbotStandardModeConfigInputRef.implement({
+    fields: (t) => ({
+      tutorEnabled: t.boolean({ required: true }),
+      explainerEnabled: t.boolean({ required: true }),
+      quizzerEnabled: t.boolean({ required: true }),
+      courseName: t.string({ required: false }),
+      subjectDomain: t.string({ required: false }),
+      languageOfInstruction: t.field({
+        type: LocaleType,
+        required: false,
+      }),
+      scopeNote: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotStandardModeConfigRef =
+  builder.objectRef<ChatbotStandardModeConfigShape>('ChatbotStandardModeConfig')
+export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
+  {
+    fields: (t) => ({
+      tutorEnabled: t.exposeBoolean('tutorEnabled'),
+      explainerEnabled: t.exposeBoolean('explainerEnabled'),
+      quizzerEnabled: t.exposeBoolean('quizzerEnabled'),
+      courseName: t.exposeString('courseName', { nullable: true }),
+      subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
+      languageOfInstruction: t.expose('languageOfInstruction', {
+        type: LocaleType,
+        nullable: true,
+      }),
+      scopeNote: t.exposeString('scopeNote', { nullable: true }),
+    }),
+  }
+)
+
 export interface IChatModelCapability {
   id: string
   name: string
@@ -153,6 +237,7 @@ export interface IChatbot {
   name: string
   description?: string | null
   avatar?: string | null
+  standardModeConfig?: ChatbotStandardModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
@@ -160,6 +245,11 @@ export interface IChatbot {
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
   creditMaxCredits: number
+  status: DB.ChatbotStatus
+  publicationUseCase?: string | null
+  expectedStudentCount?: number | null
+  reviewComment?: string | null
+  publishedAt?: Date | null
   courses?: ICourseListEntry[]
   createdAt?: Date | null
   updatedAt?: Date | null
@@ -167,6 +257,23 @@ export interface IChatbot {
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
 }
+
+export interface IChatbotPublic {
+  id: string
+  name: string
+  description?: string | null
+  avatar?: string | null
+}
+export const ChatbotPublicRef =
+  builder.objectRef<IChatbotPublic>('ChatbotPublic')
+export const ChatbotPublic = ChatbotPublicRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+  }),
+})
 
 export interface IChatbotUsageSummary {
   threadCount: number
@@ -202,6 +309,7 @@ export interface IChatbotDisclaimerSummary {
   id: string
   name: string
   title: string
+  introText?: string | null
   acceptedCount: number
   declinedCount: number
   pendingCount: number
@@ -214,6 +322,7 @@ export const ChatbotDisclaimerSummary = ChatbotDisclaimerSummaryRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     title: t.exposeString('title'),
+    introText: t.exposeString('introText', { nullable: true }),
     acceptedCount: t.exposeInt('acceptedCount'),
     declinedCount: t.exposeInt('declinedCount'),
     pendingCount: t.exposeInt('pendingCount'),
@@ -258,6 +367,11 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.standardModeConfig ?? null,
+    }),
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     allowedReasoningEffortsByModel: t.field({
@@ -270,6 +384,15 @@ export const Chatbot = ChatbotRef.implement({
     }),
     creditResetAmount: t.exposeInt('creditResetAmount'),
     creditMaxCredits: t.exposeInt('creditMaxCredits'),
+    status: t.expose('status', { type: ChatbotStatus }),
+    publicationUseCase: t.exposeString('publicationUseCase', {
+      nullable: true,
+    }),
+    expectedStudentCount: t.exposeInt('expectedStudentCount', {
+      nullable: true,
+    }),
+    reviewComment: t.exposeString('reviewComment', { nullable: true }),
+    publishedAt: t.expose('publishedAt', { type: 'Date', nullable: true }),
     courses: t.field({
       type: [CourseListEntryRef],
       resolve: (chatbot) => chatbot.courses ?? [],

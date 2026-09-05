@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const participationsWithBookmarks = await prisma.participation.findMany({
     include: {
       course: true,

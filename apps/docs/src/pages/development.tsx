@@ -148,13 +148,20 @@ const Development = () => {
         </div>
 
         <div>
-          <div className="mb-4 text-3xl font-bold">Public Roadmap</div>
-          <iframe
-            className="overflow-hidden rounded border border-solid border-gray-300"
-            src="https://klicker-uzh.feedbear.com/roadmap?embed=true"
-            width="100%"
-            height="900px"
-          ></iframe>
+          <div className="mb-4 text-3xl font-bold">Feedback</div>
+          <p>
+            We welcome ideas, positive experiences, and problems. Share your
+            feedback on our{' '}
+            <a
+              href="https://klicker-uzh.feedback.df-app.ch/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-primary-600 underline"
+            >
+              public feedback platform
+            </a>
+            . Please do not include personal or course data.
+          </p>
         </div>
       </div>
     </Layout>

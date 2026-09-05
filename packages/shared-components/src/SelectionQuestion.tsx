@@ -2,7 +2,7 @@ import type {
   SelectionElementOptions,
   SelectionInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
 import SEEValuation from './evaluation/SEEvaluation'

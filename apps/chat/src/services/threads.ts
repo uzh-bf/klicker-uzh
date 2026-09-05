@@ -6,6 +6,7 @@ export interface Thread {
   title: string | null
   createdAt: string
   updatedAt: string
+  lastChatMode: string | null
 }
 
 /**
@@ -13,14 +14,20 @@ export interface Thread {
  */
 export class ThreadService {
   /**
-   * Map Prisma thread object to API response format
+   * Map Prisma thread object to API response format.
+   * `lastChatMode` is only authoritative from `getAllThreads` (which loads the
+   * latest message's mode); other callers pass the default `null`.
    */
-  private static mapThreadToResponse(thread: ChatThread): Thread {
+  private static mapThreadToResponse(
+    thread: ChatThread,
+    lastChatMode: string | null = null
+  ): Thread {
     return {
       id: thread.id,
       title: thread.title,
       createdAt: thread.createdAt.toISOString(),
       updatedAt: thread.updatedAt.toISOString(),
+      lastChatMode,
     }
   }
 
@@ -48,6 +55,28 @@ export class ThreadService {
   }
 
   /**
+   * Finds the participant-owned thread for a failed assistant attempt so a
+   * retry without a thread ID can reclaim the original lifecycle key.
+   */
+  static async findFailedTurnThreadId(
+    participantId: string,
+    chatbotId: string,
+    assistantMessageId: string
+  ): Promise<string | null> {
+    const message = await prisma.chatMessage.findFirst({
+      where: {
+        id: assistantMessageId,
+        role: 'assistant',
+        lifecycleStatus: 'FAILED',
+        thread: { participantId, chatbotId },
+      },
+      select: { threadId: true },
+    })
+
+    return message?.threadId ?? null
+  }
+
+  /**
    * Retrieves all threads for a specific participant and chatbot ordered by most recently updated
    */
   static async getAllThreads(
@@ -60,9 +89,21 @@ export class ThreadService {
         chatbotId,
       },
       orderBy: { updatedAt: 'desc' },
+      // Pull only the most recent message's mode so the sidebar can badge each
+      // thread with the mode it was last used in (D6).
+      include: {
+        messages: {
+          where: { lifecycleStatus: 'COMPLETED' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { chatMode: true },
+        },
+      },
     })
 
-    return threads.map((thread) => this.mapThreadToResponse(thread))
+    return threads.map((thread) =>
+      this.mapThreadToResponse(thread, thread.messages[0]?.chatMode ?? null)
+    )
   }
 
   /**
@@ -118,26 +159,14 @@ export class ThreadService {
     participantId: string,
     chatbotId: string
   ): Promise<boolean> {
-    // verify ownership
-    const existingThread = await this.getThreadById(
-      threadId,
-      participantId,
-      chatbotId
-    )
-
-    if (!existingThread) return false
-
-    // delete messages first
-    await prisma.chatMessage.deleteMany({
-      where: { threadId },
+    // One ownership-scoped parent deletion lets the database cascade messages
+    // atomically, so no retry can insert a new claim between child and parent
+    // cleanup.
+    const result = await prisma.chatThread.deleteMany({
+      where: { id: threadId, participantId, chatbotId },
     })
 
-    // then delete thread
-    await prisma.chatThread.delete({
-      where: { id: threadId },
-    })
-
-    return true
+    return result.count > 0
   } /**
    * Updates thread's updatedAt timestamp
    */

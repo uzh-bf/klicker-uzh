@@ -1,10 +1,9 @@
-import { LeaderboardType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { LeaderboardType } from '@klicker-uzh/prisma/client'
 
 import { mockExam } from '../data/mockExam'
 
 async function main() {
-  const prisma = new PrismaClient()
-
   const results = (
     await Promise.all(
       Object.entries(mockExam).flatMap(async ([username, points]) => {

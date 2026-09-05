@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Runs on every container start. Launches the core apps (turbo dev) in the
-# background so they are reachable through devrouter without a manual step.
+# devrouter:managed devcontainer
+# Invoked by host-side `devrouter ensure` after it validates the exact container.
+# Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
-cd /workspaces/klicker-uzh
+ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)"
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap
+cd "$ROOT"
 
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
-. /workspaces/klicker-uzh/.devcontainer/devcontainer.env
-[ -f /workspaces/klicker-uzh/.devcontainer/.hatchet.env ] && . /workspaces/klicker-uzh/.devcontainer/.hatchet.env
+# shellcheck source=/dev/null
+. "$ROOT/.devcontainer/devcontainer.env"
+# shellcheck source=/dev/null
+[ -f "$ROOT/.devcontainer/.hatchet.env" ] && . "$ROOT/.devcontainer/.hatchet.env"
 set +a
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
@@ -33,6 +39,7 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
   export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=http://localhost:3002/__growthbook__
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
 elif [ -n "${WORKSPACE:-}" ]; then
@@ -56,6 +63,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://manage.klicker.${WORKSPACE}.localhost/__growthbook__
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
   export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
   export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
@@ -68,37 +76,310 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Double-start guard. The dev command runs `turbo run dev`, so the supervisor
-# shows as "turbo run dev" in ps.
-if pgrep -f "turbo run dev" >/dev/null 2>&1; then
-  echo "[post-start] Dev servers already running."
-  exit 0
+# Profile selection (devrouter >= 0.0.40). DEVROUTER_PROFILE is injected by
+# `devrouter ensure --profile <name>`; empty means the config default (`full`).
+# The profile is part of the process fingerprint so switching profiles replaces
+# the owned turbo process group instead of mixing two app sets.
+: "${DEVROUTER_PROFILE:=full}"
+export DEVROUTER_PROFILE
+echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
+
+: "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
+
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+
+# Resolve the complete selection first through the pure table in
+# util/profile-resolver.sh: exact turbo roots, readiness apps, and process
+# markers. An unknown component fails closed before any process or service
+# changes. Pure capability selections (ai/mcp/email) start no turbo process.
+# shellcheck source=/dev/null
+. ./util/profile-resolver.sh
+PROFILE_DEV_STATUS=0
+profile_wants klicker-dev || PROFILE_DEV_STATUS=$?
+[ "$PROFILE_DEV_STATUS" -le 1 ] || {
+  echo "[post-start] ERROR: unknown profile component in '${DEVROUTER_PROFILE}'." >&2
+  exit 2
+}
+PROFILE_WANTS_DEV=$([ "$PROFILE_DEV_STATUS" -eq 0 ] && echo yes || echo no)
+if profile_wants klicker-local-mcp; then
+  PROFILE_WANTS_MCP=yes
+else
+  PROFILE_WANTS_MCP=no
+fi
+DEV_TURBO_FILTERS="$(profile_turbo_filters)"
+READINESS_APPS="$(profile_readiness_apps)"
+export READINESS_APPS
+if profile_wants klicker-workers; then
+  PROFILE_WANTS_WORKERS=yes
+else
+  PROFILE_WANTS_WORKERS=no
 fi
 
-echo "[post-start] Starting apps in the background (logs: /tmp/dev.log)..."
-# PHASE 1 core: backend + auth + frontend-pwa/manage/control.
-# PHASE 2 Tier 1: + olat-api & response-api (routed) + the two hatchet workers
-# (no port/route — they consume the hatchet event queue). Still NOT chat/lti/
-# analytics. Bypass the Infisical wrapper the root `dev` script uses — the
-# container owns its env. Fully detach so the DevPod agent pipe is released
-# (else `devpod up` hangs). (GOTCHAS #2)
-DEV_CMD='pnpm exec turbo run dev \
-  --filter=@klicker-uzh/backend-docker \
-  --filter=@klicker-uzh/auth \
-  --filter=@klicker-uzh/frontend-pwa \
-  --filter=@klicker-uzh/frontend-manage \
-  --filter=@klicker-uzh/frontend-control \
-  --filter=@klicker-uzh/olat-api \
-  --filter=@klicker-uzh/response-api \
-  --filter=@klicker-uzh/lti-service \
-  --filter=@klicker-uzh/chat \
-  --filter=@klicker-uzh/hatchet-worker-general \
-  --filter=@klicker-uzh/hatchet-worker-response-processor \
-  --concurrency 30'
-setsid bash -c "$DEV_CMD" >/tmp/dev.log 2>&1 </dev/null &
-disown 2>/dev/null || true
+# Hatchet can mint its token just after post-create's bounded capture window on
+# a cold workspace. Application profiles need it before any backend or worker
+# process starts, so close that race here after the managed Hatchet service is
+# running. Capability-only profiles do not wait for a token they never consume.
+if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
+  HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
+  for attempt in $(seq 1 60); do
+    if [ -s /config/authdisabled-token ]; then
+      HATCHET_CLIENT_TOKEN=$(tr -d '[:space:]' < /config/authdisabled-token)
+      export HATCHET_CLIENT_TOKEN
+      printf 'HATCHET_CLIENT_TOKEN=%s\n' "$HATCHET_CLIENT_TOKEN" > "$HATCHET_ENV"
+      echo '[post-start] Captured the late Hatchet token before application startup.'
+      break
+    fi
+    if [ "$attempt" -eq 60 ]; then
+      echo '[post-start] ERROR: Hatchet token was not available before application startup.' >&2
+      exit 1
+    fi
+    sleep 1
+  done
+fi
 
-if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
+# The test seed connects Benibot's Tutor and Explainer modes to this local,
+# read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
+# selection drops it, stop the exact owned process instead of leaving it stale.
+if [ "$PROFILE_WANTS_MCP" = yes ]; then
+  MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
+  MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-local-mcp \
+    --match 'apps/chat/scripts/local-mcp-server.mjs' \
+    --log /tmp/local-mcp.log \
+    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
+
+  # Keep startup bounded: this fixture check must not delay managed-app readiness.
+  for attempt in $(seq 1 20); do
+    if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
+      break
+    fi
+    if [ "$attempt" -eq 20 ]; then
+      echo '[post-start] ERROR: local MCP fixture did not become healthy.' >&2
+      exit 1
+    fi
+    sleep 1
+  done
+else
+  "$DEVROUTER_PROCESS_HELPER" stop --name klicker-local-mcp >/dev/null 2>&1 || true
+fi
+
+# Run the profile's apps (or everything for `full`) without Infisical. Devrouter
+# owns generic locking, process-group identity, and bounded replacement; this
+# repository owns only the application command and environment above.
+start_managed_runtime() {
+  local runtime_fingerprint runtime_generation
+
+  runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
+  runtime_generation="$(bash ./util/dev-runtime.sh generation)"
+  if [ -n "${DEV_TURBO_FILTERS}" ]; then
+    # shellcheck disable=SC2086 # intentional word splitting of filter flags
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'turbo run dev' \
+      --log /tmp/dev.log \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
+  else
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'turbo run dev' \
+      --log /tmp/dev.log \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm run dev:container
+  fi
+}
+
+if [ "$PROFILE_WANTS_DEV" = yes ]; then
+  start_managed_runtime
+else
+  # Pure capability selection: stop the exact owned app process; no Turbo run.
+  "$DEVROUTER_PROCESS_HELPER" stop --name klicker-dev >/dev/null 2>&1 || true
+fi
+
+# Probe the profile's application readiness contracts. Status 20 is reserved
+# for a confirmed stale Next.js route; any other failure fails closed without
+# cache cleanup. Collect every stale Next app first so one managed restart
+# repairs them together instead of restarting once per app. The app list comes
+# from READINESS_APPS because a profile intentionally does not start the rest.
+STALE_NEXT_APPS=()
+run_readiness_pass() {
+  local app status=0
+
+  STALE_NEXT_APPS=()
+  for app in ${READINESS_APPS}; do
+    status=0
+    bash ./util/dev-runtime.sh wait-app "$app" || status=$?
+    if [ "$status" -eq 20 ]; then
+      STALE_NEXT_APPS+=("$app")
+    elif [ "$status" -ne 0 ]; then
+      echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2
+      echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+      return "$status"
+    fi
+  done
+
+  if [ "${#STALE_NEXT_APPS[@]}" -gt 0 ]; then
+    echo "[post-start] Confirmed stale Next.js route state: ${STALE_NEXT_APPS[*]}." >&2
+    return 20
+  fi
+  return 0
+}
+
+READINESS_STATUS=0
+run_readiness_pass || READINESS_STATUS=$?
+if [ "$READINESS_STATUS" -eq 20 ]; then
+  echo "[post-start] Repairing the confirmed stale .next caches once: ${STALE_NEXT_APPS[*]}."
+  for app in "${STALE_NEXT_APPS[@]}"; do
+    bash ./util/dev-runtime.sh request-repair "$app"
+  done
+  start_managed_runtime
+
+  READINESS_STATUS=0
+  run_readiness_pass || READINESS_STATUS=$?
+  if [ "$READINESS_STATUS" -ne 0 ]; then
+    echo '[post-start] ERROR: The runtime remained unhealthy after its one repair attempt.' >&2
+    echo '[post-start] Inspect /tmp/dev.log; no further cache cleanup was attempted.' >&2
+    exit 1
+  fi
+elif [ "$READINESS_STATUS" -ne 0 ]; then
+  exit 1
+fi
+
+# Turbo gives each package task its own process group, so worker liveness cannot
+# be inferred from the managed root process group. Prove instead that each
+# runtime worker is a live descendant of the exact process-helper-owned root.
+is_descendant_of() {
+  local candidate="$1" ancestor="$2" parent
+
+  while [[ "$candidate" =~ ^[0-9]+$ ]] && [ "$candidate" -gt 1 ]; do
+    [ "$candidate" = "$ancestor" ] && return 0
+    parent="$(ps -o ppid= -p "$candidate" 2>/dev/null | tr -d '[:space:]')"
+    [[ "$parent" =~ ^[0-9]+$ ]] || return 1
+    [ "$parent" != "$candidate" ] || return 1
+    candidate="$parent"
+  done
+  return 1
+}
+
+worker_runtime_pid() {
+  local worker="$1" managed_pid="$2" proc pid cwd state cmdline
+
+  for proc in /proc/[0-9]*; do
+    pid="${proc##*/}"
+    cwd="$(readlink "$proc/cwd" 2>/dev/null || true)"
+    [ "$cwd" = "$ROOT/apps/$worker" ] || continue
+    state="$(ps -o stat= -p "$pid" 2>/dev/null | tr -d '[:space:]')"
+    [ -n "$state" ] && [[ "$state" != Z* ]] || continue
+    cmdline="$(tr '\0' ' ' <"$proc/cmdline" 2>/dev/null || true)"
+    cmdline="${cmdline% }"
+    [ "$cmdline" = 'node --env-file .env dist/index.js' ] || continue
+    is_descendant_of "$pid" "$managed_pid" || continue
+    printf '%s\n' "$pid"
+    return 0
+  done
+  return 1
+}
+
+wait_for_worker_runtime() {
+  local worker="$1" state_file=/tmp/devrouter-process-klicker-dev.state
+  local managed_pid worker_pid attempt
+
+  [ -s "$state_file" ] || {
+    echo "[post-start] ERROR: managed process state is missing while waiting for $worker." >&2
+    return 1
+  }
+  read -r managed_pid _ <"$state_file"
+  if ! [[ "$managed_pid" =~ ^[0-9]+$ ]] ||
+    ! kill -0 "$managed_pid" 2>/dev/null; then
+    echo "[post-start] ERROR: managed process root is not live while waiting for $worker." >&2
+    return 1
+  fi
+
+  echo "[post-start] Waiting for the $worker runtime process..."
+  for attempt in $(seq 1 90); do
+    if worker_pid="$(worker_runtime_pid "$worker" "$managed_pid")"; then
+      echo "[post-start] $worker runtime is live (PID $worker_pid)."
+      return 0
+    fi
+    [ "$attempt" -eq 90 ] || sleep 1
+  done
+  echo "[post-start] ERROR: $worker did not become live within 90 seconds." >&2
+  return 1
+}
+
+if [ "$PROFILE_WANTS_WORKERS" = yes ]; then
+  wait_for_worker_runtime hatchet-worker-general || exit 1
+  wait_for_worker_runtime hatchet-worker-response-processor || exit 1
+fi
+
+# Next's development server compiles fallback dynamic routes on their first
+# request. Prime the Manage course routes before a browser can request them so
+# a cold Turbopack start cannot turn the first course visit into a 404. Keep
+# both probes inside one short deadline so devrouter retains startup ownership.
+# Only profiles that actually start Manage pay the warm-up cost.
+if [ "$PROFILE_WANTS_DEV" = yes ] && [[ "${READINESS_APPS}" == *frontend-manage* ]]; then
+  # Linked-worktree routes are published only after post-start completes, so
+  # warm the Next.js process directly instead of depending on its future route.
+  manage_warmup_origin=http://localhost:3002
+  manage_probe_deadline=$((SECONDS + 60))
+  manage_list_ready=false
+  manage_course_ready=false
+  manage_list_path="${manage_warmup_origin}/courses"
+  manage_course_path="${manage_warmup_origin}/courses/__devrouter_warmup"
+  probe_manage_route() {
+    local remaining_seconds=$((manage_probe_deadline - SECONDS))
+    if (( remaining_seconds <= 0 )); then
+      printf '000 0'
+      return
+    fi
+
+    local max_time=5
+    if (( remaining_seconds < max_time )); then
+      max_time=$remaining_seconds
+    fi
+
+    local probe_args=(
+      --location
+      --silent
+      --show-error
+      --max-time "$max_time"
+      --output /dev/null
+      --write-out '%{http_code} %{size_download}'
+    )
+    curl "${probe_args[@]}" "$1" || true
+  }
+
+  manage_list_probe='000 0'
+  manage_course_probe='000 0'
+  while (( SECONDS < manage_probe_deadline )); do
+    if [[ "$manage_list_ready" == false ]]; then
+      manage_list_probe=$(probe_manage_route "$manage_list_path")
+      [[ "$manage_list_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_list_ready=true
+    fi
+    if [[ "$manage_course_ready" == false ]]; then
+      manage_course_probe=$(probe_manage_route "$manage_course_path")
+      [[ "$manage_course_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_course_ready=true
+    fi
+    [[ "$manage_list_ready" == true && "$manage_course_ready" == true ]] && break
+    remaining_seconds=$((manage_probe_deadline - SECONDS))
+    (( remaining_seconds > 0 )) && sleep 1
+  done
+
+  if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
+    echo "[post-start] WARN: Manage course-route warm-up did not finish; list=${manage_list_probe} (${manage_list_path}), course=${manage_course_probe} (${manage_course_path}); leaving readiness to devrouter." >&2
+  fi
+fi
+
+if [ "$PROFILE_WANTS_DEV" != yes ]; then
+  cat <<EOF
+[post-start] Capability-only selection '${DEVROUTER_PROFILE}': no application process started.
+[post-start]   LiteLLM (ai) -> http://litellm:4000 (in-network) when selected
+[post-start]   MCP (mcp)   -> http://localhost:1417/mcp when selected
+[post-start]   MailHog     -> http://localhost:8025 (email) when selected
+[post-start] Lifecycle -> on the host: devrouter ensure <this-checkout> [--profile <selection>]
+EOF
+elif [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
 [post-start] Apps (via devrouter; first compile can take a minute):
 [post-start]   API          -> ${APP_ORIGIN_API}
@@ -110,9 +391,10 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   Response API -> ${NEXT_PUBLIC_ADD_RESPONSE_URL}
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "\$a"${WORKSPACE:+ --workspace ${WORKSPACE}}; done
-[post-start] Logs    -> tail -f /tmp/dev.log
+[post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 else
   cat <<'EOF'
@@ -126,7 +408,8 @@ else
 [post-start]   Response API -> http://localhost:7078
 [post-start]   LTI Service  -> http://localhost:4000
 [post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Logs    -> tail -f /tmp/dev.log
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 fi

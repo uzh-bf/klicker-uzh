@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
@@ -31,9 +32,6 @@ interface MessageAttachmentsProps {
   className?: string
 }
 
-const HYDRATION_ERROR_MESSAGE =
-  'Image attachments for this message could not be loaded. Please try again.'
-
 export function MessageAttachments({
   attachments,
   messageId,
@@ -41,6 +39,7 @@ export function MessageAttachments({
   variant = 'history',
   className = '',
 }: MessageAttachmentsProps) {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const ensureFullImageAttachments = useChatStore(
@@ -85,7 +84,7 @@ export function MessageAttachments({
       const hydratedAttachments = hydratedMessage?.imageAttachments ?? []
 
       if (!hasAllImageAttachmentsHydrated(hydratedAttachments)) {
-        setViewerError(HYDRATION_ERROR_MESSAGE)
+        setViewerError(t('chat.attachments.hydrationError'))
       }
     } finally {
       setIsHydrating(false)
@@ -128,7 +127,8 @@ export function MessageAttachments({
             canHydratePersistedAttachment,
           })
           const label =
-            attachment.imageDescription?.trim() || `Attached image ${index + 1}`
+            attachment.imageDescription?.trim() ||
+            t('chat.attachments.attachedImageAlt', { index: index + 1 })
 
           return (
             <button

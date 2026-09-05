@@ -16,6 +16,8 @@ export const ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES = 10 * 1024 * 1024
 export const DIRECT_MEDIA_UPLOAD_MAX_BYTES = 256 * 1024 * 1024
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
+export * from './chatbotStandardModeConfig.js'
 export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----
@@ -65,6 +67,7 @@ export enum SharingType {
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
+  randomSelection?: number | null
   elements: ElementInstanceInput[]
 }
 
@@ -1004,6 +1007,9 @@ export type StudentPointCorrection = {
 export type StudentAssessmentResultsItem = {
   participantId: string
   participantEmail: string
+  assessmentGivenName: string | null
+  assessmentSurname: string | null
+  assessmentMatriculationNumber: string | null
   basePoints: number
   correctnessPoints: number
   bonusPoints: number

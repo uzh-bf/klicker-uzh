@@ -1,0 +1,15 @@
+mutation SaveChatbotDisclaimer(
+  $chatbotId: String!
+  $expectedDisclaimerId: String
+  $title: String!
+  $introText: String!
+) {
+  saveChatbotDisclaimer(
+    chatbotId: $chatbotId
+    expectedDisclaimerId: $expectedDisclaimerId
+    title: $title
+    introText: $introText
+  ) {
+    id
+  }
+}

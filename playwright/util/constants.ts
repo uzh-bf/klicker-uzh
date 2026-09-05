@@ -10,6 +10,29 @@ export const USER_ID_TEST7 = '2437de71-b552-48c8-865a-1d9c12fb7975'
 export const COURSE_ID_TEST = 'b8b1305e-bfe8-458b-bf26-9082fdca953f'
 export const COURSE_ID_TEST2 = 'e364455a-8eab-428b-b939-21b556e4ab82'
 export const COURSE_ID_TEST3 = 'efd54f15-ba92-4291-8ea8-911f365ae10b'
+export const COURSE_ID_ASSESSMENT_REPORT =
+  '2e44f7cd-f841-41c8-a46e-49870a729d69'
+export const LIVE_QUIZ_ID_ASSESSMENT_REPORT =
+  '6cd47c82-957e-4d03-a5a4-8aca3811e217'
+export const ASSESSMENT_REPORT_COURSE_NAME = 'Credential Assessment Course'
+export const ASSESSMENT_REPORT_COURSE_REFERENCE = 'credential-assessment-course'
+export const ASSESSMENT_REPORT_SUBJECT_EMAIL =
+  'assessment-report-student@example.org'
+// Freely editable profile address, deliberately different from the invitation
+// email, so tests can prove it never reaches the credential.
+export const ASSESSMENT_REPORT_PROFILE_EMAIL =
+  'assessment-report-profile@example.org'
+export const ASSESSMENT_REPORT_EDUID_GIVEN_NAME = 'Ada'
+export const ASSESSMENT_REPORT_EDUID_SURNAME = 'Lovelace'
+export const ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER = '00-123-456'
+export const ASSESSMENT_REPORT_PARTICIPANT_IDS = Array.from(
+  { length: 10 },
+  (_, index) => `a1000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+)
+export const ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS = Array.from(
+  { length: 30 },
+  (_, index) => `a2000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+)
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',

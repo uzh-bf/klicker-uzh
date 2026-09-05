@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs'
+
+assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
 
@@ -41,11 +44,10 @@ export default defineConfig({
     testIdAttribute: 'data-cy',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: isCI ? 'off' : 'retain-on-failure',
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,
-    // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
       args: ['--lang=en-US'],
     },

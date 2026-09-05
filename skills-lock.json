@@ -1,18 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "cypress-author": {
-      "source": "cypress-io/ai-toolkit",
-      "sourceType": "github",
-      "skillPath": "skills/cypress-author/SKILL.md",
-      "computedHash": "f537b3a2e715270c7600b062bbd35d7035bdcdd0b7ec1134949f391b9d83e103"
-    },
-    "klicker-cypress-e2e": {
-      "source": ".agents/skills/klicker-cypress-e2e",
-      "sourceType": "local",
-      "skillPath": "SKILL.md",
-      "computedHash": "4fd33ea288e5af5c03a5e617a72d5ad1f33d9ddbaf3396f191a8260ad529bf8e"
-    },
     "klicker-playwright-e2e": {
       "source": ".agents/skills/klicker-playwright-e2e",
       "sourceType": "local",

@@ -1,8 +1,9 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import { DEFAULT_PROMPT } from '../lib/config/prompts'
+import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -11,6 +12,12 @@ export interface ModeOption {
 }
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
+let creditsRequestGeneration = 0
+let creditsLoadedChatbotId: string | null = null
+let modeOptionsRequestGeneration = 0
+const SAFE_FALLBACK_MODE_OPTIONS = {
+  tutor: DEFAULT_MODE_DESCRIPTIONS.tutor,
+}
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -52,18 +59,28 @@ interface SettingsState {
   credits: {
     current: number
     total: number
+    // ISO timestamp of the next refill; null when the chatbot never refills.
+    nextResetAt: string | null
   }
+  // False until a credits fetch has succeeded. The placeholder credits below
+  // would otherwise read as "0 left, never refills", which is a claim we
+  // cannot make before the server has answered.
+  creditsLoaded: boolean
   modelSelectionEnabled: boolean
 
   // Available options
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
+  modeOptionsChatbotId: string | null
 
   // Actions
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
-  loadModeOptions: (chatbotId: string) => Promise<void>
+  loadModeOptions: (
+    chatbotId: string,
+    initialModeOptions?: Record<string, string>
+  ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
   resetCredits: () => void
@@ -79,9 +96,12 @@ export const useSettingsStore = create<SettingsState>()(
       credits: {
         current: 0.0,
         total: 0.0,
+        nextResetAt: null,
       },
+      creditsLoaded: false,
       modelSelectionEnabled: false,
       modeOptions: {},
+      modeOptionsChatbotId: null,
 
       // available options
       modelOptions: [],
@@ -115,81 +135,89 @@ export const useSettingsStore = create<SettingsState>()(
           return { selectedReasoningEffort: resolvedEffort }
         }),
 
-      loadModeOptions: async (chatbotId: string) => {
+      loadModeOptions: async (
+        chatbotId: string,
+        initialModeOptions?: Record<string, string>
+      ) => {
+        const requestGeneration = ++modeOptionsRequestGeneration
+        const hasInitialModeOptions = initialModeOptions !== undefined
+        const fallbackModeOptions = hasInitialModeOptions
+          ? initialModeOptions
+          : SAFE_FALLBACK_MODE_OPTIONS
+        const applyFallbackModeOptions = () =>
+          set((state) => ({
+            modeOptions: fallbackModeOptions,
+            modeOptionsChatbotId: chatbotId,
+            selectedMode: resolveSelectedMode(
+              fallbackModeOptions,
+              state.selectedMode
+            ),
+            modelSelectionEnabled: false,
+          }))
+        set({
+          modeOptions: {},
+          modeOptionsChatbotId: null,
+          modelSelectionEnabled: false,
+        })
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
           if (!response.ok) {
             console.warn(
-              'No valid mode options found, falling back to defaults.'
+              'No valid mode options found, falling back to initial or default mode options.'
             )
-            set((state) => ({
-              modeOptions: Object.fromEntries(
-                Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                  key,
-                  (value as { description: string }).description,
-                ])
-              ),
-              selectedMode:
-                Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
-              modelSelectionEnabled: false,
-            }))
+            applyFallbackModeOptions()
             return
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const modes: Record<string, string> = {}
-          if (responseData.systemPrompts) {
-            for (const [key, value] of Object.entries(
-              responseData.systemPrompts
-            )) {
-              const description = (value as { description?: string })
-                ?.description
-              modes[key] = typeof description === 'string' ? description : ''
-            }
+          const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
+          if (!resolvedModeOptions) {
+            throw new Error('Invalid mode options response')
           }
 
-          const resolvedModeOptions: Record<string, string> =
-            Object.keys(modes).length > 0
-              ? modes
-              : Object.fromEntries(
-                  Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                    key,
-                    (value as { description: string }).description,
-                  ])
-                )
-
           set((state) => {
-            let selectedMode = state.selectedMode
-            if (!resolvedModeOptions[selectedMode]) {
-              selectedMode = Object.keys(resolvedModeOptions)[0] ?? selectedMode
-            }
-
             return {
               modeOptions: resolvedModeOptions,
+              modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
-              selectedMode,
+              selectedMode: resolveSelectedMode(
+                resolvedModeOptions,
+                state.selectedMode
+              ),
             }
           })
         } catch (error) {
           console.error('Error fetching mode options:', error)
-          set((state) => ({
-            modeOptions: Object.fromEntries(
-              Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                key,
-                (value as { description: string }).description,
-              ])
-            ),
-            selectedMode: Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
-            modelSelectionEnabled: false,
-          }))
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
+          applyFallbackModeOptions()
         }
       },
 
       loadCredits: async (chatbotId: string) => {
+        // `creditsLoaded` is sticky once a load has succeeded FOR THIS
+        // chatbot: a refresh (or a failed one) keeps the last known balance
+        // visible instead of hiding the footer for the rest of the session.
+        // A different chatbot id must not inherit the stickiness, or a failed
+        // cross-chatbot load would pin the previous chatbot's balance.
+        const requestGeneration = ++creditsRequestGeneration
+        if (
+          creditsLoadedChatbotId !== null &&
+          creditsLoadedChatbotId !== chatbotId
+        ) {
+          creditsLoadedChatbotId = null
+          set({ creditsLoaded: false })
+        }
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          if (requestGeneration !== creditsRequestGeneration) return
+
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
             return
@@ -200,11 +228,15 @@ export const useSettingsStore = create<SettingsState>()(
           const creditsData = {
             current: data.current ?? 0,
             total: data.total ?? 0,
+            nextResetAt: data.nextResetAt ?? null,
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
 
           set((state) => {
+            if (requestGeneration !== creditsRequestGeneration) return state
+            creditsLoadedChatbotId = chatbotId
+
             let selectedModel = state.selectedModel
 
             if (!state.modelSelectionEnabled) {
@@ -229,6 +261,7 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               credits: creditsData,
+              creditsLoaded: true,
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,

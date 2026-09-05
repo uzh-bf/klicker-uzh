@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), canonical element invariants, status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-22'
+timestamp: '2026-09-05'
 tags:
   - backend
   - prisma
@@ -24,6 +24,14 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 | Role enum | `USER` / `ADMIN`          | `PARTICIPANT` / `TEMPORARY_PARTICIPANT`            |
 
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
+
+`Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Assessment participant invitations
+
+`ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.
+
+Invitation creation normalizes emails and matriculation numbers, reports invalid rows without failing the rest of a batch, and immediately accepts an invitation only when exactly one active `Participant` is identified through verified **affiliation** `ParticipantAccount` records (`packages/graphql/src/services/participantInvitations.ts:createParticipantInvitations`). Assessment-course imports accept at most 200 rows per request; larger files must be split before submission. A duplicate email does not create a second row; a newly supplied matriculation number updates only a `PENDING` invitation, while accepted admission records remain immutable. Unexpected database failures surface through GraphQL instead of becoming row-level success data. Lecturer-side deletion is deliberately narrower than course deletion: only `PENDING` invitations can be removed (`packages/graphql/src/services/participantInvitations.ts:deletePendingAssessmentParticipantInvitation`).
 
 ## Content hierarchy
 
@@ -64,6 +72,39 @@ Per-type invariants are:
 
 `packages/graphql/test/elementDomain.test.ts` is the pure valid/invalid regression matrix for these rules.
 
+## Course chatbots
+
+`Chatbot` belongs to one owning `User` and one `Course`. Its lifecycle is
+`DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
+can access only a published chatbot when a `Participation` exists for the
+owning course. Publication approval is separate from account-level AI usage
+authorization.
+
+The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
+Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+course name, subject domain, language of instruction, and an optional scope
+note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
+replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
+Explainer to remain enabled, and uses a status compare-and-set so a concurrent
+lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+a knowledge base; Quizzer remains independently configurable but is filtered by
+the safe course-material capability gate. Missing or malformed persisted values
+derive all three flags from legacy mode opt-outs/defaults, while valid legacy
+two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
+Manage projection exposes the combined effective settings, never raw
+`systemPrompts`. Participant GraphQL projections expose only the resolved mode
+options, never this owner configuration or raw system prompts. The chat compiler
+keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
+model policy with no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants; the previous model
+settings mutation remains available for rolling clients. Legacy fixed rows
+resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
+retired-only lists use Luna without a migration. Manage exposes one optional
+Chatbot framing field with a 200-character UI limit. The persisted parser
+accepts up to 1000 characters so an existing longer framing note survives a
+mode-only save, while Quizzer compilation receives only that scope note.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.
@@ -78,7 +119,50 @@ Lifecycle enums:
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
+`ElementStatus` is manually controlled advisory metadata on an Element. `DRAFT`
+means unfinished, `REVIEW` means review requested, and `READY` means considered
+reusable. New Elements default to `READY`. The value does not gate activity use,
+auto-transition, reset after an edit, or imply reviewer assignment or approval;
+users with at least read access retain the deliberate permission to change it.
+This is separate from activity `PublicationStatus` and the activity
+`ReviewStatus` flow.
+
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Course deletion
+
+**Deleting a non-assessment course does not normally delete its live quizzes.**
+The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
+hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
+`SetNull`, so linked live quizzes are disconnected and remain in the activity
+list. The optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` additionally
+hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
+every other status are still disconnected. The lecturer UI keeps this option
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
+(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
+`requestCourseDeletion` accepts the deletion request by setting
+`Course.deletionRequestedAt` and handing the requester id and draft-live-quiz
+option to the `process-course-deletion` Hatchet event. The marker immediately
+excludes the course and all of its activities from user-facing reads; it is not
+a user-visible progress state. Retained live quizzes reappear as unassigned
+activities once the worker has completed the permanent deletion. Published live
+quizzes block acceptance, and the worker clears the marker instead of deleting
+if a live quiz was published, the course switched to assessment mode, or the
+requester lost ADMIN/OWNER permission in the meantime.
+
+## Course duplication
+
+**Copies share Elements with the source — only the instances are new.** The manage frontend starts duplication through `startCourseDuplication`, which stores a Redis-backed job status, emits the `process-course-duplication` Hatchet event, and returns the job id immediately. The frontend persists that id in `localStorage`, polls `courseDuplicationStatuses`, and shows a success notification with an explicit action to open the copied course when the job reaches `COMPLETED`; it never navigates automatically. Failed, missing, or stale jobs are removed from the active notification UI. The worker still calls `packages/graphql/src/services/courseDuplication.ts:duplicateCourse`, which runs the actual copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. The legacy `createCourse(sourceCourseId: …)` path still routes directly to `duplicateCourse` for compatibility. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:getCourseDuplicationErrorMessage`).
+
+- **Permission contract (fail-closed):** course-level ADMIN (checked, then re-checked after `recomputeDerivedPermissions`), ADMIN on every selected activity, and ADMIN/OWNER **derived** permission on the Element behind every selected instance (`courseDuplication.ts:assertCourseDuplicationActivityAccess`, `courseDuplication.ts:assertCourseDuplicationInstanceAccess`). Any missing permission aborts the whole duplication.
+- **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. If a non-owner ADMIN duplicates, the source owner is granted ADMIN on the copy (`courseDuplication.ts:grantDuplicatedCourseAccessToSourceOwner`); the duplicator becomes OWNER.
+- **Not copied:** participants/participations, groups, results, leaderboards, responses. Copies land in DRAFT with zeroed `results`/`anonymousResults` and fresh `instanceStatistics` (`packages/util/src/elements.ts:getActivityInstanceConnectOrCreate`, duplication branch). Live-quiz PINs are regenerated, never reused; a SSO course's `pinCode` is nulled.
+- **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
+- **Date shifting:** The duplication dialog requires a new start date; the end date is derived from the original course duration and cannot be edited in the dialog. MicroLearning/GroupActivity schedules shift by the local calendar-day delta between old and new course start while preserving the Europe/Zurich wall-clock time across DST changes (`courseDuplication.ts:getCourseStartDayDelta`, `courseDuplication.ts:applyCourseStartDelta`). The dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).
 
 ## Gamification details
 

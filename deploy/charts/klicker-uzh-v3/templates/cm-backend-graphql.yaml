@@ -14,6 +14,9 @@ data:
   APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  {{- if .Values.backendGraphql.betaSavedGroupId }}
+  GROWTHBOOK_BETA_SAVED_GROUP_ID: {{ .Values.backendGraphql.betaSavedGroupId | quote }}
+  {{- end }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}
@@ -44,6 +47,11 @@ data:
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
+  {{- if and .Values.chat .Values.chat.modelRegistry }}
+  # Shared with the chat pod (cm-chat.yaml) so the lecturer-facing model
+  # allow-list offers exactly the models the chat app can actually serve.
+  CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
+  {{- end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

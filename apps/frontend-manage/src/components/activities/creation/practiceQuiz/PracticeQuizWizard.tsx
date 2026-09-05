@@ -2,23 +2,33 @@ import { useMutation } from '@apollo/client'
 import {
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
-  Element,
+  type Element,
   ElementOrderType,
   ElementType,
-  PracticeQuiz,
-  PublicationStatus,
+  type PracticeQuiz,
+  type PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  resolveActivityWizardMode,
+  useActivityWizardRecovery,
+} from '@lib/activityWizardRecovery'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
-import { FormikProps } from 'formik'
+import type { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ActivityCreation'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
+import WizardLayout, { type PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 import PracticeQuizSettingsStep from './PracticeQuizSettingsStep'
@@ -35,7 +45,7 @@ export interface PracticeQuizWizardStepProps {
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
   assessmentCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: PracticeQuizFormValues) => void
+  onSubmit?: (newValues: PracticeQuizFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: PracticeQuizFormValues) => void
   onNextStep?: (newValues: PracticeQuizFormValues) => void
@@ -69,6 +79,8 @@ interface PracticeQuizWizardProps {
   }
   selection: Record<number, Element>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
+  recoverySourceId?: string
   conversion: boolean
   editMode: boolean
   duplicationMode: boolean
@@ -81,6 +93,8 @@ function PracticeQuizWizard({
   initialValues,
   selection,
   resetSelection,
+  restoreSelection,
+  recoverySourceId,
   conversion,
   editMode,
   duplicationMode,
@@ -248,6 +262,24 @@ function PracticeQuizWizard({
         : formDefaultValues.resetTimeDays,
   })
 
+  const { recoveryProps, closeWizardAndClearSnapshot } =
+    useActivityWizardRecovery({
+      snapshot: {
+        mode: resolveActivityWizardMode({
+          editMode,
+          duplicationMode,
+          conversionMode: conversion,
+        }),
+        activityType: 'PRACTICE_QUIZ',
+        sourceId:
+          recoverySourceId ??
+          (initialValues?.id ? String(initialValues.id) : undefined),
+      },
+      form: { data: formData, ref: formRef, setData: setFormData },
+      elements: { selected: selection, restore: restoreSelection },
+      lifecycle: { isCompleted: isWizardCompleted, close: closeWizard },
+    })
+
   const [createPracticeQuiz, { data: creationData }] = useMutation(
     CreatePracticeQuizDocument
   )
@@ -255,8 +287,8 @@ function PracticeQuizWizard({
     EditPracticeQuizDocument
   )
   const handleSubmit = useCallback(
-    async (values: PracticeQuizFormValues) => {
-      submitPracticeQuizForm({
+    (values: PracticeQuizFormValues) => {
+      return submitPracticeQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,
@@ -302,6 +334,7 @@ function PracticeQuizWizard({
       disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
       workflowItems={workflowItems}
       isCompleted={isWizardCompleted}
+      {...recoveryProps}
       completionStep={
         <CompletionStep
           completionSuccessMessage={(elementName) => (
@@ -331,7 +364,7 @@ function PracticeQuizWizard({
           }}
           resetForm={() => setFormData(formDefaultValues)}
           setStepNumber={setActiveStep}
-          onCloseWizard={closeWizard}
+          onCloseWizard={closeWizardAndClearSnapshot}
         />
       }
       steps={[
@@ -353,7 +386,7 @@ function PracticeQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep + 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <PracticeQuizDescriptionStep
           key="practice-quiz-description-step"
@@ -373,7 +406,7 @@ function PracticeQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <PracticeQuizSettingsStep
           key="practice-quiz-settings-step"
@@ -396,7 +429,7 @@ function PracticeQuizWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <StackCreationStep
           key="practice-quiz-stack-step"
@@ -418,7 +451,7 @@ function PracticeQuizWizard({
           onSubmit={(newValues: PracticeQuizFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
       ]}
       saveFormData={() => {

@@ -10,7 +10,6 @@ query UserProfile {
     firstLogin
     catalyst
     catalystTier
-    publicPreview
     privatePreview
     numChatbots
   }

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   hasAllImageAttachmentsHydrated,
   mergeHydratedAttachments,
+  parentMessageHasImageAttachment,
   sortAttachmentsByPosition,
 } from '../src/lib/attachments/attachmentState'
 
@@ -158,5 +159,59 @@ describe('attachmentState', () => {
         },
       ])
     ).toBe(true)
+  })
+
+  test('parentMessageHasImageAttachment is true when the parent turn attached an image', () => {
+    const messages = [
+      {
+        id: 'user-1',
+        parentId: null,
+        imageAttachments: [{ imageBase64: 'full-1' }],
+      },
+      { id: 'assistant-1', parentId: 'user-1' },
+    ]
+
+    expect(parentMessageHasImageAttachment(messages, 'assistant-1')).toBe(true)
+  })
+
+  test('parentMessageHasImageAttachment is false when the parent turn has no image attachments', () => {
+    const messages = [
+      { id: 'user-1', parentId: null, imageAttachments: [] },
+      { id: 'assistant-1', parentId: 'user-1' },
+    ]
+
+    expect(parentMessageHasImageAttachment(messages, 'assistant-1')).toBe(false)
+  })
+
+  test('parentMessageHasImageAttachment is false for a preview-only attachment (no image data yet)', () => {
+    const messages = [
+      {
+        id: 'user-1',
+        parentId: null,
+        imageAttachments: [{ imageBase64: null, imagePreviewBase64: null }],
+      },
+      { id: 'assistant-1', parentId: 'user-1' },
+    ]
+
+    expect(parentMessageHasImageAttachment(messages, 'assistant-1')).toBe(false)
+  })
+
+  test('parentMessageHasImageAttachment is false for a root message (no parent)', () => {
+    const messages = [{ id: 'user-1', parentId: null }]
+
+    expect(parentMessageHasImageAttachment(messages, 'user-1')).toBe(false)
+  })
+
+  test('parentMessageHasImageAttachment is false when messageId is missing or not found', () => {
+    const messages = [
+      {
+        id: 'user-1',
+        parentId: null,
+        imageAttachments: [{ imageBase64: 'full-1' }],
+      },
+    ]
+
+    expect(parentMessageHasImageAttachment(messages, undefined)).toBe(false)
+    expect(parentMessageHasImageAttachment(messages, 'missing')).toBe(false)
   })
 })

@@ -32,9 +32,6 @@ import {
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
 const legacyPersistedOperations = require('@klicker-uzh/graphql/dist/legacy-server.json')
-declare namespace global {
-  let __coverage__: any
-}
 
 type PrepareAppContext = Omit<Context, 'req' | 'res' | 'tasks' | 'user'> & {
   tasks: PreparedHatchetTasks
@@ -48,6 +45,7 @@ function prepareApp({
   emitter,
   hatchet,
   tasks,
+  featureFlags,
 }: PrepareAppContext) {
   const importExportConfig = initializeImportExportRuntimeConfig()
   const importExportResponsibilities = getImportExportStartupResponsibilities(
@@ -81,15 +79,6 @@ function prepareApp({
     registerImportExportPreflightRoute(app, {
       manageOrigin: importExportManageOrigin,
     })
-  }
-
-  /* istanbul ignore next */
-  if (global.__coverage__) {
-    try {
-      require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {
-      console.error(e)
-    }
   }
 
   app.use(
@@ -231,6 +220,7 @@ function prepareApp({
       emitter,
       hatchet,
       tasks,
+      featureFlags,
     }),
     logging: true,
     cors: false,

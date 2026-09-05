@@ -1,14 +1,11 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from './client.js'
 
+export * from './chatAccountUsage.js'
+
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'
 // const pool = new Pool(poolConfig)
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-  // TODO other optimization params? move prisma optimize etc. here?
-})
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
@@ -32,12 +29,19 @@ const getLogLevels = (): Array<PrismaLogLevel> => {
   return levels.length > 0 ? levels : ['warn', 'error']
 }
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+function createPrismaClient(): PrismaClient {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    // TODO other optimization params? move prisma optimize etc. here?
+  })
+
+  return new PrismaClient({
     adapter,
     log: getLogLevels(),
   })
+}
+
+export const prisma = globalForPrisma.prisma || createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma

@@ -1,6 +1,11 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
+import {
+  getChatbotOr404,
+  withChatbotTokenAuth,
+} from '../../lib/server/apiGuards'
+import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -13,24 +18,50 @@ export default async function ChatLayout({
 }: ChatLayoutProps) {
   const { chatbotId } = await params
 
-  try {
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { id: true, name: true, avatar: true },
-    })
+  const cookieStore = await cookies()
+  const authResult = await withChatbotTokenAuth(
+    cookieStore.get('participant_token')?.value,
+    chatbotId
+  )
+  if ('response' in authResult) notFound()
 
-    if (!chatbot) notFound()
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    id: true,
+    name: true,
+    avatar: true,
+    systemPrompts: true,
+    standardModeConfig: true,
+    mcpConfigurations: {
+      select: {
+        allowedTools: true,
+        chatMode: true,
+        isEnabled: true,
+        parameters: true,
+        priority: true,
+        mcpServer: { select: { id: true } },
+      },
+    },
+  })
+  if ('response' in chatbotResult) notFound()
+  const { chatbot } = chatbotResult
 
-    return (
-      <>
-        <Assistant
-          chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
-        />
-        {children}
-      </>
-    )
-  } catch (error) {
-    console.error('Error fetching chatbot:', error)
-    notFound()
-  }
+  const initialModeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
+  )
+
+  return (
+    <>
+      <Assistant
+        chatbot={{
+          id: chatbot.id,
+          name: chatbot.name,
+          avatar: chatbot.avatar ?? undefined,
+        }}
+        initialModeOptions={initialModeOptions}
+      />
+      {children}
+    </>
+  )
 }

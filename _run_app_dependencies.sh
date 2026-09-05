@@ -68,18 +68,18 @@ trap cleanup INT TERM HUP EXIT
 ## Determine mode from first argument
 # Modes:
 # - local (default): normal dev and Playwright dependencies, no forced DB reset
-# - cypress: Cypress dependencies, including Cypress Hatchet token + forced DB reset
+# - test: CI/test dependencies, including the test Hatchet token + forced DB reset
 MODE="local"
 case "${1:-}" in
-	test|cypress)
-		MODE="cypress"
+	test)
+		MODE="test"
 		;;
 	""|local|dev|playwright)
 		MODE="local"
 		;;
 	*)
 		echo "Unknown mode: $1" >&2
-		echo "Usage: ./_run_app_dependencies.sh [local|dev|playwright|test|cypress]" >&2
+		echo "Usage: ./_run_app_dependencies.sh [local|dev|playwright|test]" >&2
 		exit 1
 		;;
 esac
@@ -114,10 +114,10 @@ else
 	echo "Skipping pnpm run build"
 fi
 
-# create hatchet client token (switch script for cypress/test mode)
-if [ "$MODE" = "cypress" ]; then
-	echo "Using cypress hatchet token script"
-	./util/_create_hatchet_token_cypress.sh
+# create hatchet client token (switch script for test mode)
+if [ "$MODE" = "test" ]; then
+	echo "Using test hatchet token script"
+	./util/_create_hatchet_token_test.sh
 
 	# reset prisma database after tokens are created
 	echo "Resetting Prisma database (pnpm run prisma:reset)"

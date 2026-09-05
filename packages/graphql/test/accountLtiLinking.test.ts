@@ -46,7 +46,7 @@ async function createSignedLtiData({
 }: {
   sub: string
   email?: string
-  scope?: 'LTI1.1' | 'LTI1.3'
+  scope?: string
 }) {
   return signJWT(
     {
@@ -212,6 +212,68 @@ describe('LTI participant linking and creation', () => {
       where: { ssoId: ssoIdFor('idempotent') },
     })
     expect(accounts).toHaveLength(1)
+  })
+
+  it('rejects retired LTI 1.1 launches even when the ssoId matches an existing account', async () => {
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('lti11-ssoid'),
+        username: usernameFor('lti11-ssoid'),
+        password: await bcrypt.hash('password123', 10),
+        isSSOAccount: false,
+        accounts: {
+          create: {
+            ssoId: ssoIdFor('lti11-ssoid'),
+            ssoType: 'LTI1.1',
+            ssoEmail: emailFor('lti11-ssoid'),
+          },
+        },
+      },
+    })
+
+    const signedLtiData = await createSignedLtiData({
+      sub: ssoIdFor('lti11-ssoid'),
+      email: emailFor('lti11-ssoid'),
+      scope: 'LTI1.1',
+    })
+
+    const result = await loginParticipantWithLti({ signedLtiData }, createCtx())
+
+    expect(result).toBeNull()
+
+    // the pre-existing LTI 1.1 link must survive untouched -- retirement blocks
+    // the login, it does not rewrite historical account rows
+    const accounts = await prisma.participantAccount.findMany({
+      where: { participantId: participant.id },
+    })
+    expect(accounts).toHaveLength(1)
+    expect(accounts[0]?.ssoType).toBe('LTI1.1')
+  })
+
+  it('rejects retired LTI 1.1 launches that would match an existing participant by email', async () => {
+    await prisma.participant.create({
+      data: {
+        email: emailFor('lti11-email'),
+        username: usernameFor('lti11-email'),
+        password: await bcrypt.hash('password123', 10),
+        isSSOAccount: false,
+      },
+    })
+
+    const signedLtiData = await createSignedLtiData({
+      sub: ssoIdFor('lti11-email-attacker'),
+      email: emailFor('lti11-email'),
+      scope: 'LTI1.1',
+    })
+
+    const result = await loginParticipantWithLti({ signedLtiData }, createCtx())
+
+    expect(result).toBeNull()
+
+    const accounts = await prisma.participantAccount.findMany({
+      where: { ssoId: ssoIdFor('lti11-email-attacker') },
+    })
+    expect(accounts).toHaveLength(0)
   })
 
   it('returns null for LTI login when no existing participant can be matched and auto-create is disabled', async () => {

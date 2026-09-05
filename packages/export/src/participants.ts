@@ -1,9 +1,12 @@
-import { type PiiContext, FULL_PII, applyPii } from './pii.js'
+import { applyPii, FULL_PII, type PiiContext } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const PARTICIPANT_HEADERS = [
   'participantId',
   'email',
+  'assessmentGivenName',
+  'assessmentSurname',
+  'assessmentMatriculationNumber',
   'participationIsActive',
   'participationCreatedAt',
   'ssoType',
@@ -21,6 +24,9 @@ export async function fetchParticipants(
     select: {
       isActive: true,
       createdAt: true,
+      assessmentGivenName: true,
+      assessmentSurname: true,
+      assessmentMatriculationNumber: true,
       participant: {
         select: {
           id: true,
@@ -69,6 +75,9 @@ export function transformParticipant(
   return [
     row.participant.id,
     applyPii(row.participant.email, ctx),
+    applyPii(row.assessmentGivenName, ctx),
+    applyPii(row.assessmentSurname, ctx),
+    applyPii(row.assessmentMatriculationNumber, ctx),
     row.isActive,
     row.createdAt.toISOString(),
     account?.ssoType ?? '',

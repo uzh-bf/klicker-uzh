@@ -1,10 +1,8 @@
 // @ts-nocheck
 
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const learningElements = await prisma.learningElement.findMany({
     include: {
       instances: true,

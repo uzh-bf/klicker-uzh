@@ -5,6 +5,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // The suite runs in a single fork, so a vi.stubGlobal left behind by one
+    // file (fetch, URL, window, ...) leaks into whichever file the scheduler
+    // runs next. Restore real globals before every test.
+    unstubGlobals: true,
     testTimeout: 30000,
     silent: false,
     reporters: ['verbose'],

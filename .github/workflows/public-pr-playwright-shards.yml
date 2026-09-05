@@ -1,0 +1,417 @@
+name: Playwright execution envelope
+
+on:
+  workflow_call:
+    inputs:
+      route_hint:
+        description: Must remain auto so the trusted workflow recomputes routing
+        required: false
+        type: string
+        default: auto
+    outputs:
+      should_run:
+        description: Whether the canonical Playwright plan contains tests
+        value: ${{ jobs.prepare.outputs.should_run }}
+      route:
+        description: Selected backend route
+        value: ${{ jobs.prepare.outputs.route }}
+      mode:
+        description: Canonical selector mode
+        value: ${{ jobs.prepare.outputs.mode }}
+      shard_matrix:
+        description: Canonical shard matrix
+        value: ${{ jobs.prepare.outputs.shard_matrix }}
+
+permissions:
+  contents: read
+
+env:
+  PLAYWRIGHT_CACHE_ENABLED: ${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      should_run: ${{ steps.metadata.outputs.should_run }}
+      route: ${{ steps.metadata.outputs.route }}
+      mode: ${{ steps.metadata.outputs.mode }}
+      selector_pr_state: ${{ steps.metadata.outputs.selector_pr_state }}
+      shard_matrix: ${{ steps.metadata.outputs.shard_matrix }}
+      reason_codes: ${{ steps.metadata.outputs.reason_codes }}
+    steps:
+      - name: Check out trusted CI control
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .ci-control
+          persist-credentials: false
+
+      - name: Check out candidate as data
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: .candidate
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Decide backend and selector state
+        id: route
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUBLIC_ROLLOUT_ENABLED: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}
+          PUBLIC_ROLLOUT_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}
+          SMART_DRAFT_ENABLED: ${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED }}
+          SMART_DRAFT_CANARY_PR: ${{ vars.PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR }}
+          FORCE_HOSTED_CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR }}
+          ROUTE_HINT: ${{ inputs.route_hint }}
+        run: node .ci-control/.github/scripts/playwright-route.cjs --output route.json
+
+      - name: Fetch the exact base object
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = 'pull_request' ]; then
+            git -C .candidate remote add base "https://github.com/$BASE_REPOSITORY.git"
+            git -C .candidate fetch --no-tags base "$BASE_SHA" --depth=1
+          fi
+          test "$(git -C .candidate rev-parse HEAD)" = "$HEAD_SHA"
+
+      - name: Build canonical execution plan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          PR_STATE=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync("route.json", "utf8")).selectorPrState)')
+          node .ci-control/.github/scripts/playwright-selector.cjs \
+            --control-root .ci-control \
+            --candidate-root .candidate \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --pr-state "$PR_STATE" \
+            --output playwright-execution-plan.json
+
+      - name: Build draft selector shadow plan
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          node .ci-control/.github/scripts/playwright-selector.cjs \
+            --control-root .ci-control \
+            --candidate-root .candidate \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --pr-state draft \
+            --output playwright-selector-shadow.json
+
+      - name: Validate plan and expose workflow outputs
+        id: metadata
+        shell: bash
+        run: |
+          node .ci-control/.github/scripts/playwright-plan-metadata.cjs \
+            --plan playwright-execution-plan.json \
+            --route route.json \
+            --output "$GITHUB_OUTPUT"
+
+      - name: Summarize canonical plan
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const route = JSON.parse(fs.readFileSync('route.json', 'utf8'))
+          const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8'))
+          const summary = [
+            '### Playwright execution envelope',
+            '',
+            `- Route: \`${route.route}\``,
+            `- Selector state: \`${route.selectorPrState}\``,
+            `- Mode: \`${plan.mode}\``,
+            `- Reasons: \`${plan.reasonCodes.join(',')}\``,
+            `- Candidate specs: \`${plan.candidateSpecs.length}\``,
+            `- Selected specs: \`${plan.selectedSpecs.length}\``,
+            `- Shards: \`${plan.shardCount}\``,
+            '',
+            'Hosted and public execution jobs consume this same plan artifact.',
+          ]
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary.join('\n')}\n`)
+          NODE
+
+      - name: Upload canonical execution plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-execution-plan
+          path: playwright-execution-plan.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload route metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-route-metadata
+          path: route.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload selector shadow plan
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-selector-shadow
+          path: playwright-selector-shadow.json
+          if-no-files-found: error
+          retention-days: 1
+
+  build-and-compile-hosted:
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build shared Playwright artifact
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
+        with:
+          route: hosted
+          mode: ${{ needs.prepare.outputs.mode }}
+          cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
+
+  build-and-compile-public-pr:
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    runs-on:
+      group: public-pr-arm64
+      labels: [linux, arm64, docker, public-pr-arm64, playwright]
+    timeout-minutes: 120
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build shared Playwright artifact
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
+        with:
+          route: public-pr
+          mode: ${{ needs.prepare.outputs.mode }}
+          cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
+
+  test-playwright-hosted:
+    needs: [prepare, build-and-compile-hosted]
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+      volumes:
+        - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker-prod
+          POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+      redis_cache:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_assessment_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://hatchet:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        volumes:
+          - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run shared Playwright shard
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
+        with:
+          route: hosted
+          mode: ${{ needs.prepare.outputs.mode }}
+          shard-index: ${{ matrix.shardIndex }}
+          shard-total: ${{ matrix.shardTotal }}
+          cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
+
+  test-playwright-public-pr:
+    needs: [prepare, build-and-compile-public-pr]
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    runs-on:
+      group: public-pr-arm64
+      labels: [linux, arm64, docker, public-pr-arm64, playwright]
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+      volumes:
+        - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.shard_matrix) }}
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker-prod
+          POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+      redis_cache:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_assessment_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://hatchet:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        volumes:
+          - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run shared Playwright shard
+        uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3
+        with:
+          route: public-pr
+          mode: ${{ needs.prepare.outputs.mode }}
+          shard-index: ${{ matrix.shardIndex }}
+          shard-total: ${{ matrix.shardTotal }}
+          cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}

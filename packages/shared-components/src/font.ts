@@ -1,13 +1,15 @@
-import { JetBrains_Mono, Source_Sans_3 } from 'next/font/google'
+import localFont from 'next/font/local'
 
-export const sourceSansPro = Source_Sans_3({
-  subsets: ['latin'],
+export const sourceSansPro = localFont({
+  src: './fonts/source-sans-3/SourceSans3-Latin.woff2',
+  weight: '300 700',
+  adjustFontFallback: 'Arial',
   variable: '--source-sans-pro',
-  weight: ['300', '400', '600', '700'],
 })
 
-export const monoSpaceFont = JetBrains_Mono({
-  subsets: ['latin'],
+export const monoSpaceFont = localFont({
+  src: './fonts/jetbrains-mono/JetBrainsMono-Latin.woff2',
+  weight: '300 700',
+  adjustFontFallback: 'Arial',
   variable: '--mono-space-font',
-  weight: ['300', '400', '700'],
 })
