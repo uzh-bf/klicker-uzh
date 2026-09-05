@@ -62,6 +62,35 @@ blobStorage:
   accountName: ''
   accessKey: ''
 
+importExport:
+  enabled: false
+  privatePreviewOnly: true
+  packageStorage: azure
+  packageTtlHours: 24
+  rateLimitWindowSeconds: 900
+  rateLimits:
+    preview: 30
+    export: 30
+    upload: 30
+    validate: 30
+    import: 5
+  concurrency:
+    leaseTtlMs: 120000
+    previewPerUser: 2
+    previewGlobal: 8
+    uploadPerUser: 1
+    uploadGlobal: 4
+    validatePerUser: 2
+    validateGlobal: 8
+    importPerUser: 1
+    importGlobal: 4
+    exportPerUser: 2
+    exportGlobal: 8
+  timeouts:
+    uploadBodyMs: 60000
+    azureMetadataMs: 10000
+    azureTransferMs: 60000
+
 vapid:
   publicKey: ''
   privateKey: ''
@@ -90,6 +119,18 @@ hatchet:
     general:
       replicaCount: 1
       priorityClassName: production-workload
+      workflows: "refreshImportExportFingerprints,repairImportExportFingerprints,updateGroupAverageScores,runningRandomGroupAssignments,finalRandomGroupAssignments,updateWeeklyTimelineEntries,cleanupImportExportPackages,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry,processCourseDuplication,sweepStaleCourseDuplications,processCourseDeletion"
+      health:
+        port: 8081
+        startupProbe:
+          periodSeconds: 2
+          failureThreshold: 30
+        readinessProbe:
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          periodSeconds: 10
+          failureThreshold: 3
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always

@@ -18,6 +18,9 @@ export APP_ORIGIN_AUTH='http://127.0.0.1:3010'
 export APP_ORIGIN_CHAT='http://127.0.0.1:3004'
 export APP_ORIGIN_ASSESSMENT_API="$APP_ORIGIN_API"
 export APP_ORIGIN_ASSESSMENT_PWA="$APP_ORIGIN_PWA"
+export APP_MANAGE_SUBDOMAIN='127.0.0.1:3002'
+export APP_STUDENT_SUBDOMAIN='127.0.0.1:3001'
+export APP_CONTROL_SUBDOMAIN='127.0.0.1:3003'
 
 export NEXT_PUBLIC_API_URL="$APP_ORIGIN_API/api/graphql"
 export NEXT_PUBLIC_API_URL_SSR="$NEXT_PUBLIC_API_URL"
@@ -36,6 +39,12 @@ export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 export AUTH_STUDENT_ALLOWED_HOSTS='127.0.0.1:3001'
 export AUTH_LECTURER_ALLOWED_HOSTS='127.0.0.1:3002'
 export AUTH_PWA_HOSTS='127.0.0.1:3000'
+
+export IMPORT_EXPORT_ENABLED='true'
+export IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY='true'
+export IMPORT_EXPORT_PACKAGE_STORAGE='local'
+# Keep test runs deterministic: register request-driven workflows without repair/cleanup crons.
+export HATCHET_WORKFLOWS='refreshImportExportFingerprints,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry,processCourseDuplication,processCourseDeletion'
 
 unset EDUID_CLIENT_SECRET
 
