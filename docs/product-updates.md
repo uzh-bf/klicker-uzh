@@ -400,10 +400,15 @@ session's single overlay.
 
 ### Replays
 
-"Take the tour" in the support modal starts it on request. Replays ignore both
-caps, and because the server never rewrites `completedAt`, replaying does not
-change what the account has already recorded. The support entry renders as a
-button rather than a link, since it acts on the current page.
+Two entry points replay the tour on request: a "Take the tour" item in the
+account menu and the matching entry in the support modal. Both navigate to
+`/?tour=1` (`TOUR_REPLAY_HREF`) instead of starting in place, because the two
+steps about creating elements and activities only resolve on the home page and
+a replay started elsewhere would silently be shorter than promised. The hook
+spends the query parameter the moment it sees it and strips it from the URL in
+the same step, so a reload or a bookmarked link does not reopen the tour.
+Replays ignore both caps, and because the server never rewrites `completedAt`,
+replaying does not change what the account has already recorded.
 
 Step copy lives under `manage.productTours` in the shared message files, in both
 locales, and is escaped before it reaches a popover for the reason described in
