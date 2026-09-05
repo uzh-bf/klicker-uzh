@@ -303,7 +303,8 @@ substitute for source rollback.
 - Goal active; local execution requested by the user.
 - Created clean worktree from fetched `v3`; old worktrees remain untouched.
 - Baseline: 19 cache, route, and workflow-policy tests pass on host Node 26.8.1.
-  Later focused checks use repository-pinned Node 24.17.0.
+  Earlier focused checks used Node 24.17.0; the final rerun uses the actual
+  repository pin, Node 24.16.0, and all 48 focused tests pass.
 - Planning review: three rounds returned REVISE. All substantive findings were
   incorporated. The last round found only a contradictory ownership sentence;
   it was corrected and checked by the main session. There is no terminal planner
@@ -311,7 +312,7 @@ substitute for source rollback.
   integrated review must assess this complete corrected plan and implementation.
 - Exact timing failure established; no token repair is indicated.
 - Active package: cache readiness and timing feedback. Dependency fingerprint
-  regression fixtures pass on the repository-pinned Node 24.17.0 runtime.
+  regression fixtures pass on Node 24.17.0 and repository-pinned Node 24.16.0.
 - Local cache commits: `870ee44ebe` separates dependency compatibility;
   `2bd37d9266` wires dual-architecture seeds and compact telemetry retention.
   Dependency keys also include the pinned image digest to isolate native
