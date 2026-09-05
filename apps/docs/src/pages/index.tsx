@@ -7,10 +7,12 @@ import { TitleImage } from '../components/landing/TitleImage'
 function Home() {
   return (
     <Layout description="Live participation and independent practice for your course. Explore Live Quizzes, Practice Quizzes, reusable teaching content and the v3.4 preview.">
-      <TitleImage />
-      <FeatureSection />
-      <ReleaseUpdates />
-      <LandingFooter />
+      <main>
+        <TitleImage />
+        <FeatureSection />
+        <ReleaseUpdates />
+        <LandingFooter />
+      </main>
       {/* <FeatureFocusSection
         title={'Coming Soon'}
         description={
