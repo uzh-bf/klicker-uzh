@@ -15,6 +15,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 const chatModelSchema = z
   .object({
@@ -509,6 +510,8 @@ export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
+  if (!isFeatureFlagEnabled(ctx, 'ai-beta')) return null
+
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {

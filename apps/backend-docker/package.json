@@ -81,7 +81,7 @@
     "script": "../../util/_run_with_infisical.sh --env dev tsx",
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config dist/index.js",
+    "start:test": "nyc --silent node -r dotenv/config --import ./scripts/playwright-feature-flags.mjs dist/index.js",
     "test:run": "tsx --test \"src/**/*.test.ts\""
   },
   "engines": {

@@ -1978,6 +1978,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
         'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
       chatAccountUsageDescription:

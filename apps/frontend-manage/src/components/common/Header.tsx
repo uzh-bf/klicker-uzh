@@ -41,6 +41,7 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
     betaSignupEnabled &&
@@ -69,7 +70,10 @@ function Header({
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview
+    ...(aiBetaEnabled &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
       ? [
           {
             key: 'chatbots-item',
