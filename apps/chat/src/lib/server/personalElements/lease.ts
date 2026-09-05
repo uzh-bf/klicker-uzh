@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   abortCardGenerationLease,
@@ -72,8 +73,7 @@ export async function ensureGenerationTriggerMessage({
     message?.threadId !== threadId ||
     message.parentId !== parentId ||
     message.role !== 'user' ||
-    JSON.stringify(message.content) !==
-      JSON.stringify([{ type: 'text', text: content }])
+    !isDeepStrictEqual(message.content, [{ type: 'text', text: content }])
   ) {
     throw new Error('The card generation trigger message is not available')
   }

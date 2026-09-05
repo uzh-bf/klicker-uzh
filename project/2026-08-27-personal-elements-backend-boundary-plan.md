@@ -10,10 +10,13 @@ This plan also removes language-specific retrieval and presentation heuristics,
 reduces the Chat route and supporting modules, and keeps one small extension
 seam for future personal-element types.
 
-Status: S1 through S7 are complete, reviewed, and published on pull request
-#5483. The exact local AI workspace remains stopped pending explicit authority
-for its supported delete/recreate recovery. No deployment, physical migration,
-merge, or release is authorized.
+Status: The core implementation is published on
+[pull request #5483](https://github.com/uzh-bf/klicker-uzh/pull/5483).
+The approved target integration is present locally at `91bd487e71`, thirty
+commits ahead of the published top branch. Post-integration verification,
+correction review, and publication remain pending. On 2026-09-06 the exact
+workspace is running with fresh synthetic data and the `ai,chat,mcp` profile.
+No deployment, physical migration, PR merge, or release is authorized.
 
 ## Plan identity and prior decisions
 
@@ -712,6 +715,73 @@ history rewriting. No schema rollback is planned because this correction adds
 no migration.
 
 ## Progress
+
+- 2026-09-06 runtime restoration completed with the approved fresh synthetic
+  bootstrap and Blob host port `10143`. The supported repair cleared malformed
+  generated Chat route types and proved the managed runtime ready. Earlier
+  queued lifecycle commands below are terminal; do not resume them. Keep this
+  exact workspace running for user testing.
+- 2026-09-06 structural trigger validation passes all four focused tests.
+  The complete Chat suite passes 910 tests, with 13 integration skips; the
+  Chat typecheck passes after generated-cache repair. Auto Mode called the
+  local synthetic retrieval tool, proposed two cards, and generated both after
+  approval. Reload retained the accepted plan, one saved card, one discarded
+  card, and source page ranges. Personal practice hides sources before reveal
+  and shows them with the answer. The page reports nothing due after answer
+  submission. This proves synthetic local MCP plus OpenRouter integration,
+  not real dev multi-tenant Doc Query or GrowthBook connectivity.
+- 2026-09-06 repository verification remains in progress. Root checks first
+  failed because Analytics selected Python 3.14 for pandas 2.2.2. Explicit
+  Python 3.12 runs its lint successfully without dependency changes. All 29
+  typechecks and all seven lint tasks pass; explicit formatting checks pass.
+  Build, correction reviews, commit,
+  and approved stack publication remain pending. The earlier transactional
+  HTML deletions disappeared during normal bootstrap; they are not part of
+  the correction diff.
+
+- 2026-09-05 user approved initializing a fresh synthetic database in the exact
+  task workspace and selecting an available Azurite host port. This permits
+  the normal post-create bootstrap for that workspace only, not deletion or
+  changes to another workspace. Both stop attempts terminated: the first
+  reported changed LiteLLM Compose configuration; the second, with matching
+  secret injection, reported inconsistent provider and primary-container state.
+  The supported injected `ensure --repair --profile chat,ai,mcp` is now queued
+  in shell session `90621`, with available host Blob port `10143`. Resume that
+  command before starting another lifecycle operation. Neither initialization
+  nor application verification has run yet.
+
+- 2026-09-05 approved data-preserving restoration: `klicker-dev` operator
+  status authenticated, and its existing read policy allowed the OpenRouter
+  mapping. The injected `devrouter ensure` failed on Azurite host port 10003,
+  owned by another workspace. Docker created the exact task's PostgreSQL and
+  other volumes during startup; the previous volumes were absent. No reset or
+  seed ran. Continuing would invoke the reset-and-seed post-create bootstrap,
+  so fresh synthetic database initialization requires a new explicit ruling.
+  A canonical exact-path stop is queued behind the provider lock; shell session
+  `52463` owns that single stop command. Resume its completion before another
+  startup. Stop and route removal are not yet verified. No source commit,
+  push, or test run occurred.
+
+- 2026-09-05 continuation: fetched origin and verified that the approved
+  `e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1` target is an ancestor of local
+  `91bd487e7100a006b2e3af8bdd2df39a89cd70a2`. The top branch is 30 ahead and
+  zero behind its upstream, and 227 ahead / 59 behind remote default `v3`.
+  The live stack still targets `v3-ai` through its foundation and practice
+  layers. No additional upstream integration was performed.
+- Current correction: replace serialized JSON equality in the accepted-plan
+  trigger check with structural equality. The existing test now supplies
+  reordered stored keys. This preserves exact payload and branch validation.
+  Source diff checking passes; tests remain unrun because
+  `devrouter exec` on this exact checkout reports no running container for
+  provider workspace `default-rs-cd2d4`. `devpod` is unavailable on host PATH.
+  Runtime registration `rs-student-generated-practice-el` and four routes
+  remain; neither proves runtime health. No runtime was started or changed.
+- Delivery remains pending: restore the exact runtime through the supported
+  lifecycle with explicit approval, run focused and integrated checks plus
+  synthetic browser proof, complete affected reviews, commit, publish the
+  approved stack heads, and update the pull request. Preserve the three
+  pre-existing deleted transactional HTML outputs. No commit or push occurred
+  during this continuation.
 
 - [x] Refreshed remote refs and inspected the current stack topology and drift.
 - [x] Reviewed the full backend, Chat, GraphQL, persistence, documentation, and

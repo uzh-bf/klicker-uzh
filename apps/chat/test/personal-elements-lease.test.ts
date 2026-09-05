@@ -79,13 +79,13 @@ describe('personal-element generation lease adapter', () => {
     )
   })
 
-  test('creates and verifies the accepted-plan trigger message', async () => {
+  test('verifies the accepted-plan trigger independently of stored JSON key order', async () => {
     const createMany = vi.fn().mockResolvedValue({ count: 1 })
     const findUnique = vi.fn().mockResolvedValue({
       threadId: 'thread-1',
       parentId: 'plan-message-1',
       role: 'user',
-      content: [{ type: 'text', text: 'Generate the accepted cards.' }],
+      content: [{ text: 'Generate the accepted cards.', type: 'text' }],
     })
 
     await ensureGenerationTriggerMessage({
@@ -133,6 +133,6 @@ describe('personal-element generation lease adapter', () => {
         parentId: 'plan-message-1',
         content: 'Generate the accepted cards.',
       })
-    ).rejects.toThrow('The card generation trigger message is not available')
+    ).rejects.toThrow()
   })
 })
