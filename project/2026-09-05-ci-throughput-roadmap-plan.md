@@ -337,6 +337,12 @@ substitute for source rollback.
   `2bd37d9266..f0f3e53a60` range. Integrated final source review is next.
 - No publication, settings mutation, host reconfiguration, or live speedup
   is claimed. Later scheduling decisions remain gated on warmed-run evidence.
+- Final integration found the Node CI-contract test command was absent from
+  hosted workflows. Added `pnpm run check:playwright-ci` after dependency install
+  in `check.yml`; this uses the already-declared Devrouter dependency.
+  Supplemental smoke with the installed matching Devrouter 0.0.51 binary proves
+  all four actual CI profile unions without starting or inspecting a runtime.
+  The original full-suite worktree-executable gap remains accurately recorded.
 
 ### Disposition of remaining work
 

@@ -61,6 +61,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check Playwright CI contracts
+        run: pnpm run check:playwright-ci
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check
