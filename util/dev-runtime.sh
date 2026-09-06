@@ -305,6 +305,19 @@ prepare_runtime() {
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
   (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Turbo can return before its Git subprocess exits. Preparation must leave
+  # no live children for the managed process lifecycle to accept it.
+  local preparation_pgid preparation_deadline
+  preparation_pgid="$(ps -o pgid= -p "$$" | tr -d ' ')"
+  preparation_deadline=$((SECONDS + 5))
+  while ps -eo pgid=,stat=,comm= | awk -v group="$preparation_pgid" '
+    $1 == group && $2 !~ /^Z/ && $3 == "git" { found = 1 }
+    END { exit(found ? 0 : 1) }
+  '; do
+    [ "$SECONDS" -lt "$preparation_deadline" ] ||
+      die 'Preparation still has a live Git child after five seconds.'
+    sleep 0.1
+  done
 }
 
 remove_next_dir() {
