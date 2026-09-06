@@ -1,10 +1,15 @@
 import DpoDraftFrame from '@klicker-uzh/shared-components/src/DpoDraftFrame'
 import type { GetServerSidePropsContext } from 'next'
+import AssessmentExportDraft from '../components/dpo-draft/AssessmentExportDraft'
+import KnowledgeBaseUploadDraft from '../components/dpo-draft/KnowledgeBaseUploadDraft'
+import ResearchExportDraft from '../components/dpo-draft/ResearchExportDraft'
 
 export default function DpoDraft() {
   return (
     <DpoDraftFrame>
-      <div />
+      <AssessmentExportDraft />
+      <ResearchExportDraft />
+      <KnowledgeBaseUploadDraft />
     </DpoDraftFrame>
   )
 }

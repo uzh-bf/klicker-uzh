@@ -1,5 +1,144 @@
 export default {
   dpoDraft: {
+    lecturer: {
+      assessment: {
+        context:
+          'For review: confirmation for exporting directly identifiable personal data and assessment- or grade-relevant results. Technical export details are outside the scope of this text approval.',
+        open: 'Export assessment results',
+        title: 'Export assessment results',
+        classification: 'Directly identifiable personal data',
+        assessmentLabel: 'Assessment',
+        assessmentValue:
+          'Grade-relevant course activities · Foundations (example)',
+        scopeLabel: 'Scope',
+        scopeValue: 'Selected results with identity details and point values',
+        lead: 'This file contains directly identifiable personal data and assessment results. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
+        attestationsHeading: 'By downloading, I confirm:',
+        attestations: {
+          purposeLabel: 'Purpose limitation.',
+          purposeText:
+            'I use the file only for this assessment and not for research.',
+          accessLabel: 'Restricted access.',
+          accessText:
+            'Only people who need these data to conduct, assess or carry out necessary follow-up work for the assessment receive access.',
+          storageLabel: 'Secure storage.',
+          storageText:
+            'I store and process the file only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
+          retentionLabel: 'Retention and deletion.',
+          retentionText:
+            'I keep the file only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
+        },
+        logging:
+          'Your export request and this confirmation are logged with your account, the time and the data scope.',
+        acknowledgement: 'I confirm these four points for this export.',
+        acknowledgementRequired: 'Confirm the four points before continuing.',
+        cancel: 'Cancel',
+        submit: 'Export',
+        result:
+          'Export request confirmed (prototype). The confirmation applies to the displayed data scope. No export was created.',
+      },
+      research: {
+        context:
+          'Review question: Which data classes may be released for research without direct identifiers, and what additional review is needed for conversational free text? The research choice is checked immediately before release; accounts without a decision remain excluded.',
+        open: 'Export research data',
+        title: 'Export research data',
+        classification: 'Personal data without direct identifiers',
+        classificationLabel: 'Classification',
+        classificationWithTranscripts:
+          'Personal data without direct identifiers, including conversational data (free text)',
+        projectHeading: 'Research project details',
+        projectNotice:
+          "These details are stored with every export. KlickerUZH has no approval procedure; you are responsible for your project's permissibility.",
+        projectTitleLabel: 'Project title (required)',
+        projectTitlePlaceholder: 'Title of your research project',
+        responsiblePersonLabel: 'Responsible person (required)',
+        contactAddressLabel: 'Contact address (required)',
+        purposeLabel: 'Purpose (required, 1–2 sentences)',
+        deletionDateLabel: 'Planned deletion date (required)',
+        referenceLabel: 'Reference (optional: ethics, approval or DMP number)',
+        referencePlaceholder: 'e.g. ethics committee 2026-xx',
+        dataClassesLegend:
+          'Required data classes (examples, select at least one)',
+        dataClasses: {
+          liveQuizAnswers: 'Live quiz answers',
+          asynchronousAnswers:
+            'Asynchronous answers (learning elements, microlearning)',
+          learningAnalytics:
+            'Learning Analytics data (individual and group values)',
+          chatTranscripts: 'Chat transcripts',
+        },
+        transcriptWarning:
+          'Conversational free text may contain personal information even when account identifiers have been removed. Limit the selection to the data required for your project. The specific data scope and safeguards are defined separately.',
+        scopeLabel: 'Data scope',
+        scopeValue:
+          'Test course autumn 2026, test course spring 2027 · 2026-02-01 to 2026-12-31 (based on your selection)',
+        lead: 'This file contains personal data without direct identifiers. Individual people may nevertheless be recognisable. The data may only be used for the stated research project and by its staff.',
+        attestationsHeading: 'By downloading, I confirm:',
+        attestations: {
+          purposeLabel: 'Purpose limitation.',
+          purposeText:
+            'I use the data only for the research project stated above and only for the stated purpose.',
+          noReidentificationLabel:
+            'No re-identification or impermissible linkage.',
+          noReidentificationText:
+            'I do not try to identify people and do not link the file with other data that could enable identification.',
+          accessLabel: 'Restricted access and no disclosure.',
+          accessText:
+            'I make the file accessible only to staff of the stated project and do not disclose it outside the project.',
+          securityLabel:
+            'Security, removal of personal references and deletion.',
+          securityText:
+            'I process the file only in a suitable, protected environment, remove the personal reference as early as possible, and delete it by the stated date at the latest unless a retention obligation prevents this. Only results that do not allow conclusions about individuals are published.',
+        },
+        logging:
+          "Your export request and this confirmation are logged with your project details, account, the time and the requested data scope. The participants' current research choice applies when the data are provided.",
+        acknowledgement: 'I confirm these four points for this export.',
+        acknowledgementRequired: 'Confirm the four points before continuing.',
+        required: 'This field is required.',
+        invalidEmail: 'Please enter a valid email address.',
+        deletionDateTooEarly:
+          "The planned deletion date may not be before today's local date.",
+        dataClassRequired: 'Select at least one data class.',
+        cancel: 'Cancel',
+        submit: 'Export research data',
+        result:
+          'Export request confirmed (prototype). The confirmation applies to your project details and the selected data classes. The format and technical provision are defined separately. No export was created.',
+      },
+      knowledgeBase: {
+        context:
+          'Proposal for legal review: notice before the first and every subsequent upload into a knowledge base. Copyright permissibility is clarified with specialist lawyers. Ordinary author names and bibliographic details are permitted; other personal data are not intended for this upload. The prototype does not upload files.',
+        open: 'Provide materials for the knowledge base',
+        title: 'Provide materials for the knowledge base',
+        scenarioDescription:
+          'Synthetic scenario. No file is selected or uploaded.',
+        scenarios: {
+          initial: 'First upload',
+          additional: 'Additional upload',
+          replacement: 'Replace a file',
+          import: 'Import into a knowledge base',
+        },
+        lead: 'Upload only materials that you may use for the intended purpose in this knowledge base and make accessible to the intended students.',
+        rightsHeading: 'Copyright and usage rights',
+        rightsParagraphOne:
+          'Observe the rules for providing teaching materials to students, including when distributing them through a learning management system. Also clarify whether your authorisation covers processing in the AI-supported knowledge base and using content in answers. Permission to store material in the LMS does not automatically cover this use.',
+        rightsParagraphTwo:
+          'Comply with licence conditions, source references, and restrictions on the user group and duration of use. If the rights for this use are unclear, upload the material only after obtaining legal clarification.',
+        privacyHeading: 'Protection of personal data',
+        privacyParagraph:
+          'Ordinary author names and bibliographic details may be included and should be retained. Do not upload other personal data, such as student data, private correspondence or case descriptions with identifiable people. Also check filenames, metadata, comments, images and embedded content. Removing direct identifiers is not sufficient if people remain identifiable.',
+        disclaimer:
+          'The confirmation replaces neither clarification of usage rights nor checking the files for personal data.',
+        rightsAcknowledgement:
+          'I am authorised for the intended use and comply with the stated usage conditions and restrictions.',
+        privacyAcknowledgement:
+          'I have checked the selected files. Apart from ordinary author names and bibliographic details, they contain no personal data.',
+        acknowledgementRequired: 'Confirm both points before continuing.',
+        cancel: 'Cancel',
+        submit: 'Upload materials',
+        result: 'Confirmed (prototype). No files were uploaded.',
+      },
+    },
+
     switchLocale: 'Deutsch',
     reviewTitle: 'Data use – app draft',
     reviewNotice:

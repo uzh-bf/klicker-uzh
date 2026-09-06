@@ -1,5 +1,148 @@
 export default {
   dpoDraft: {
+    lecturer: {
+      assessment: {
+        context:
+          'Zur Prüfung: Bestätigung für den Export direkt identifizierbarer, assessment- oder notenrelevanter Ergebnisse. Technische Exportdetails sind nicht Gegenstand dieser Textfreigabe.',
+        open: 'Assessment-Ergebnisse exportieren',
+        title: 'Assessment-Ergebnisse exportieren',
+        classification: 'Direkt identifizierbare Personendaten',
+        assessmentLabel: 'Assessment',
+        assessmentValue:
+          'Notenrelevante Kursaktivitäten · Grundlagen (Beispiel)',
+        scopeLabel: 'Umfang',
+        scopeValue:
+          'Ausgewählte Ergebnisse mit Identitätsangaben und Punktwerten',
+        lead: 'Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
+        attestationsHeading: 'Mit dem Download bestätige ich:',
+        attestations: {
+          purposeLabel: 'Zweckbindung.',
+          purposeText:
+            'Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.',
+          accessLabel: 'Beschränkter Zugriff.',
+          accessText:
+            'Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.',
+          storageLabel: 'Sichere Ablage.',
+          storageText:
+            'Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
+          retentionLabel: 'Aufbewahrung und Löschung.',
+          retentionText:
+            'Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
+        },
+        logging:
+          'Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.',
+        acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+        acknowledgementRequired:
+          'Bestätige die vier Punkte, bevor du fortfährst.',
+        cancel: 'Abbrechen',
+        submit: 'Exportieren',
+        result:
+          'Exportanfrage bestätigt (Prototyp). Die Bestätigung bezieht sich auf den angezeigten Datenumfang. Es wurde kein Export erstellt.',
+      },
+      research: {
+        context:
+          'Prüffrage: Welche Datenklassen dürfen ohne direkte Identifikatoren für Forschung freigegeben werden, und welche zusätzliche Prüfung braucht Gesprächsfreitext? Die Forschungswahl wird unmittelbar vor der Freigabe geprüft; Konten ohne Entscheidung bleiben ausgeschlossen.',
+        open: 'Forschungsdaten exportieren',
+        title: 'Forschungsdaten exportieren',
+        classification: 'Personendaten ohne direkte Identifikatoren',
+        classificationLabel: 'Klassifikation',
+        classificationWithTranscripts:
+          'Personendaten ohne direkte Identifikatoren, inkl. Gesprächsdaten (Freitext)',
+        projectHeading: 'Angaben zum Forschungsprojekt',
+        projectNotice:
+          'Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.',
+        projectTitleLabel: 'Projekttitel (erforderlich)',
+        projectTitlePlaceholder: 'Titel deines Forschungsprojekts',
+        responsiblePersonLabel: 'Verantwortliche Person (erforderlich)',
+        contactAddressLabel: 'Kontaktadresse (erforderlich)',
+        purposeLabel: 'Zweck (erforderlich, 1–2 Sätze)',
+        deletionDateLabel: 'Geplantes Löschdatum (erforderlich)',
+        referenceLabel:
+          'Referenz (optional: Ethik-, Bewilligungs- oder DMP-Nummer)',
+        referencePlaceholder: 'z. B. Ethikkommission 2026-xx',
+        dataClassesLegend:
+          'Benötigte Datenklassen (Beispiele, mindestens eine auswählen)',
+        dataClasses: {
+          liveQuizAnswers: 'Live-Quiz-Antworten',
+          asynchronousAnswers:
+            'Asynchrone Antworten (Lernelemente, Microlearning)',
+          learningAnalytics:
+            'Learning-Analytics-Daten (Einzel- und Gruppenwerte)',
+          chatTranscripts: 'Chat-Transkripte',
+        },
+        transcriptWarning:
+          'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten. Der konkrete Datenumfang und die Schutzmassnahmen werden gesondert festgelegt.',
+        scopeLabel: 'Datenumfang',
+        scopeValue:
+          'Testkurs HS 2026, Testkurs FS 2027 · 2026-02-01 bis 2026-12-31 (aus deiner Auswahl)',
+        lead: 'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungsprojekt und nur durch dessen Mitarbeitende verwendet werden.',
+        attestationsHeading: 'Mit dem Download bestätige ich:',
+        attestations: {
+          purposeLabel: 'Zweckbindung.',
+          purposeText:
+            'Ich verwende die Daten nur für das oben angegebene Forschungsprojekt und nur für den angegebenen Zweck.',
+          noReidentificationLabel:
+            'Keine Reidentifizierung oder unzulässige Verknüpfung.',
+          noReidentificationText:
+            'Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.',
+          accessLabel: 'Beschränkter Zugriff und keine Weitergabe.',
+          accessText:
+            'Ich mache die Datei nur den Mitarbeitenden des angegebenen Projekts zugänglich und gebe sie nicht ausserhalb des Projekts weiter.',
+          securityLabel:
+            'Sicherheit, Entfernung des Personenbezugs und Löschung.',
+          securityText:
+            'Ich bearbeite die Datei nur in einer dafür geeigneten, geschützten Umgebung, entferne den Personenbezug so früh wie möglich und lösche sie spätestens zum angegebenen Datum, soweit keine Aufbewahrungspflicht entgegensteht. Veröffentlicht werden nur Ergebnisse, die keine Rückschlüsse auf einzelne Personen zulassen.',
+        },
+        logging:
+          'Deine Exportanfrage und diese Bestätigung werden mit deinen Projektangaben, Konto, Zeitpunkt und angefragtem Datenumfang protokolliert. Bei der Bereitstellung gilt die aktuelle Forschungswahl der Teilnehmenden.',
+        acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+        acknowledgementRequired:
+          'Bestätige die vier Punkte, bevor du fortfährst.',
+        required: 'Dieses Feld ist erforderlich.',
+        invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+        deletionDateTooEarly:
+          'Das geplante Löschdatum darf nicht vor dem heutigen lokalen Datum liegen.',
+        dataClassRequired: 'Wähle mindestens eine Datenklasse aus.',
+        cancel: 'Abbrechen',
+        submit: 'Forschungsdaten exportieren',
+        result:
+          'Exportanfrage bestätigt (Prototyp). Die Bestätigung bezieht sich auf deine Projektangaben und die ausgewählten Datenklassen. Format und technische Bereitstellung werden gesondert festgelegt. Es wurde kein Export erstellt.',
+      },
+      knowledgeBase: {
+        context:
+          'Vorschlag zur rechtlichen Prüfung: Hinweis vor dem ersten und jedem weiteren Upload in eine Wissensbasis. Die urheberrechtliche Zulässigkeit wird mit spezialisierten Juristinnen und Juristen geklärt. Übliche Autorennamen und bibliografische Angaben sind zulässig; andere personenbezogene Daten sind für diesen Upload nicht vorgesehen. Der Prototyp lädt keine Dateien hoch.',
+        open: 'Materialien für die Wissensbasis bereitstellen',
+        title: 'Materialien für die Wissensbasis bereitstellen',
+        scenarioDescription:
+          'Synthetisches Szenario. Es wird keine Datei ausgewählt oder hochgeladen.',
+        scenarios: {
+          initial: 'Erster Upload',
+          additional: 'Zusätzlicher Upload',
+          replacement: 'Ersatz einer Datei',
+          import: 'Import in eine Wissensbasis',
+        },
+        lead: 'Lade nur Materialien hoch, die du für die vorgesehene Nutzung in dieser Wissensbasis verwenden und den vorgesehenen Studierenden zugänglich machen darfst.',
+        rightsHeading: 'Urheberrecht und Nutzungsrechte',
+        rightsParagraphOne:
+          'Beachte die Regeln für die Bereitstellung von Lehrmaterialien an Studierende, wie auch bei der Verteilung über ein Lernmanagementsystem. Kläre zusätzlich, ob deine Berechtigung die Verarbeitung in der KI-gestützten Wissensbasis und die Verwendung von Inhalten in Antworten umfasst. Eine Erlaubnis zur Ablage im LMS deckt diese Nutzung nicht automatisch ab.',
+        rightsParagraphTwo:
+          'Halte Lizenzbedingungen, Quellenangaben sowie Beschränkungen des Nutzerkreises und der Nutzungsdauer ein. Wenn die Rechte für diese Nutzung unklar sind, lade das Material erst nach rechtlicher Klärung hoch.',
+        privacyHeading: 'Schutz personenbezogener Daten',
+        privacyParagraph:
+          'Übliche Autorennamen und bibliografische Angaben dürfen enthalten sein und sollen erhalten bleiben. Lade keine anderen personenbezogenen Daten hoch, etwa Studierendendaten, private Korrespondenz oder Fallbeschreibungen mit erkennbaren Personen. Prüfe auch Dateinamen, Metadaten, Kommentare, Bilder und eingebettete Inhalte. Das Entfernen direkter Kennungen reicht nicht aus, wenn Personen weiterhin erkennbar sind.',
+        disclaimer:
+          'Die Bestätigung ersetzt weder die Klärung der Nutzungsrechte noch die Prüfung der Dateien auf personenbezogene Daten.',
+        rightsAcknowledgement:
+          'Ich bin zur vorgesehenen Nutzung berechtigt und halte die genannten Nutzungsbedingungen und Beschränkungen ein.',
+        privacyAcknowledgement:
+          'Ich habe die ausgewählten Dateien geprüft. Sie enthalten ausser üblichen Autorennamen und bibliografischen Angaben keine personenbezogenen Daten.',
+        acknowledgementRequired: 'Bestätige beide Punkte, bevor du fortfährst.',
+        cancel: 'Abbrechen',
+        submit: 'Materialien hochladen',
+        result: 'Bestätigt (Prototyp). Es wurden keine Dateien hochgeladen.',
+      },
+    },
+
     switchLocale: 'English',
     reviewTitle: 'Datennutzung – App-Entwurf',
     reviewNotice:
