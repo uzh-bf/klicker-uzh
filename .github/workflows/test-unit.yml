@@ -20,6 +20,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'turbo.json'
       - 'tsconfig.json'
       - '.github/workflows/test-unit.yml'
   pull_request:
@@ -40,6 +41,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'turbo.json'
       - 'tsconfig.json'
       - '.github/workflows/test-unit.yml'
 
@@ -90,7 +92,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: pnpm --filter "@klicker-uzh/chat^..." run build
+        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --concurrency=4
 
       - name: Setup chat test database
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

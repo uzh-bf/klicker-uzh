@@ -88,7 +88,7 @@ jobs:
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
-          retention-days: 1
+          retention-days: 7
 
   # Queue inspection is deliberately hosted and checkout-free. It has only
   # actions: read permission and never runs on the public self-hosted pool.
@@ -212,4 +212,4 @@ jobs:
           name: playwright-queue-telemetry
           path: playwright-queue-telemetry.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7

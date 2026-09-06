@@ -60,7 +60,7 @@ function isRetryableError(error: unknown): boolean {
 
 /**
  * Atomically decrement credits with validation
- * Returns the updated credits or throws if insufficient funds
+ * Returns the updated credits, clamping the remaining balance at zero
  */
 export async function atomicDecrementCredits(
   participantId: string,

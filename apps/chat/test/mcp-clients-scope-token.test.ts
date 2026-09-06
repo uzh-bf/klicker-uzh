@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
+const clientToolsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
@@ -67,15 +68,16 @@ describe('current-v3 Doc Query scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+    clientToolsMock.mockResolvedValue({ doc_query: {} })
     createSDKMCPClientMock.mockResolvedValue({
       close: vi.fn(),
-      tools: vi.fn().mockResolvedValue({ doc_query: {} }),
+      tools: clientToolsMock,
     })
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
     await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
-      kbId: KB_ID,
+      kbIds: [KB_ID],
       sessionId: SESSION_ID,
     })
 
@@ -92,11 +94,42 @@ describe('current-v3 Doc Query scope', () => {
       },
     })
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
-      kbId: KB_ID,
+      kbIds: [KB_ID],
       chatbotId: CHATBOT_ID,
       sessionId: SESSION_ID,
       jti: expect.any(String),
     })
+    expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
+    expect(clientToolsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('emits a multi-knowledge-base scope through one client and tool discovery', async () => {
+    const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
+    await getAggregatedMCPTools(
+      [
+        createServer(
+          {},
+          {
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_ids: [secondKbId, KB_ID],
+            },
+          }
+        ),
+      ],
+      CHATBOT_ID,
+      { kbIds: [KB_ID, secondKbId], sessionId: SESSION_ID }
+    )
+
+    expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
+      kbIds: [KB_ID, secondKbId],
+      chatbotId: CHATBOT_ID,
+      sessionId: SESSION_ID,
+      jti: expect.any(String),
+    })
+    expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
+    expect(clientToolsMock).toHaveBeenCalledTimes(1)
   })
 
   test('does not treat authType scope_token as a scope activation', async () => {
@@ -104,7 +137,7 @@ describe('current-v3 Doc Query scope', () => {
       getAggregatedMCPTools(
         [createServer({ authType: 'scope_token' })],
         CHATBOT_ID,
-        { kbId: KB_ID, sessionId: SESSION_ID }
+        { kbIds: [KB_ID], sessionId: SESSION_ID }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
@@ -115,7 +148,7 @@ describe('current-v3 Doc Query scope', () => {
       getAggregatedMCPTools(
         [createServer({ url: 'http://mcp.example.test' })],
         CHATBOT_ID,
-        { kbId: KB_ID, sessionId: SESSION_ID }
+        { kbIds: [KB_ID], sessionId: SESSION_ID }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
@@ -135,7 +168,7 @@ describe('current-v3 Doc Query scope', () => {
     ]
     for (const url of internalUrls) {
       await getAggregatedMCPTools([createServer({ url })], CHATBOT_ID, {
-        kbId: KB_ID,
+        kbIds: [KB_ID],
         sessionId: SESSION_ID,
       })
       expect(createSDKMCPClientMock).toHaveBeenCalledWith(
@@ -186,7 +219,7 @@ describe('current-v3 Doc Query scope', () => {
       parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
       mcpServer: { id: 'kb-server', name: 'KB' },
     }
-    expect(resolveMcpScope([target], 'tutor', [target])).toBe(KB_ID)
+    expect(resolveMcpScope([target], 'tutor', [target])).toEqual([KB_ID])
     const explainerTarget = {
       ...target,
       chatMode: 'explainer',
@@ -198,7 +231,141 @@ describe('current-v3 Doc Query scope', () => {
     }
     expect(
       resolveMcpScope([target, explainerTarget], 'explainer', [explainerTarget])
-    ).toBe(KB_ID)
+    ).toEqual([KB_ID])
+  })
+
+  test('canonicalizes kb_ids and rejects mixed or mismatched scopes', () => {
+    const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
+    const tutorTarget = {
+      chatMode: 'tutor',
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_ids: [secondKbId, KB_ID],
+      },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+    const explainerTarget = {
+      ...tutorTarget,
+      chatMode: 'explainer',
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_ids: [KB_ID, secondKbId],
+      },
+    }
+
+    expect(
+      resolveMcpScope([tutorTarget, explainerTarget], 'explainer', [
+        explainerTarget,
+      ])
+    ).toEqual([KB_ID, secondKbId])
+
+    expect(() =>
+      resolveMcpScope(
+        [
+          tutorTarget,
+          {
+            ...explainerTarget,
+            parameters: {
+              ...explainerTarget.parameters,
+              kb_ids: [KB_ID],
+            },
+          },
+        ],
+        'explainer',
+        [explainerTarget]
+      )
+    ).toThrowError(RequiredMCPUnavailableError)
+
+    expect(() =>
+      resolveMcpScope([tutorTarget, explainerTarget], 'explainer', [
+        {
+          ...explainerTarget,
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: KB_ID,
+          },
+        },
+      ])
+    ).toThrowError(RequiredMCPUnavailableError)
+  })
+
+  test('rejects empty, duplicate, oversized, and mixed kb representations', () => {
+    const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
+    expect(() =>
+      resolveMcpScope(
+        [
+          {
+            chatMode: 'tutor',
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: KB_ID,
+              kb_ids: [KB_ID],
+            },
+            mcpServer: { id: 'kb-server', name: 'KB' },
+          },
+        ],
+        'tutor',
+        []
+      )
+    ).toThrowError(RequiredMCPUnavailableError)
+
+    for (const kbIds of [
+      [],
+      [KB_ID],
+      [KB_ID, KB_ID],
+      Array.from(
+        { length: 33 },
+        (_, index) =>
+          `7016810d-31e9-4b39-9529-${index.toString(16).padStart(12, '0')}`
+      ),
+      [secondKbId, 'not-a-uuid'],
+    ]) {
+      expect(() =>
+        resolveMcpScope(
+          [
+            {
+              chatMode: 'tutor',
+              parameters: {
+                required: true,
+                toolAlias: 'doc_query',
+                kb_ids: kbIds,
+              },
+              mcpServer: { id: 'kb-server', name: 'KB' },
+            },
+          ],
+          'tutor',
+          [
+            {
+              chatMode: 'tutor',
+              parameters: {
+                required: true,
+                toolAlias: 'doc_query',
+                kb_ids: kbIds,
+              },
+              mcpServer: { id: 'kb-server', name: 'KB' },
+            },
+          ]
+        )
+      ).toThrowError(RequiredMCPUnavailableError)
+    }
+  })
+
+  test('rejects a request scope that is wider than the stored configuration', async () => {
+    const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
+
+    await expect(
+      getAggregatedMCPTools([createServer()], CHATBOT_ID, {
+        kbIds: [KB_ID, secondKbId],
+        sessionId: SESSION_ID,
+      })
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
   })
 
   test('accepts a Tutor binding safely inherited by Quizzer', () => {
@@ -214,7 +381,7 @@ describe('current-v3 Doc Query scope', () => {
 
     expect(
       resolveMcpScope([tutorBinding], 'quizzer', [inheritedQuizzerBinding])
-    ).toBe(KB_ID)
+    ).toEqual([KB_ID])
   })
 
   test('rejects an effective binding outside the validated chatbot scope', () => {

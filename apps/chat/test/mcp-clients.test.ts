@@ -135,18 +135,29 @@ describe('MCP runtime policy', () => {
       ],
       { chatbotId: 'chatbot-1', authMode: 'account' }
     )
+    setTools({ doc_query: { description: 'search' } })
     await getAggregatedMCPTools(
       [
-        createServer({
-          name: 'KB',
-          authType: 'bearer',
-          authSecret: 'transport-token',
-        }),
+        createServer(
+          {
+            name: 'KB',
+            authType: 'bearer',
+            authSecret: 'transport-token',
+          },
+          {
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+            },
+            allowedTools: ['doc_query'],
+          }
+        ),
       ],
       {
         chatbotId: 'chatbot-1',
         authMode: 'account',
-        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+        kbIds: ['7016810d-31e9-4b39-9529-cd46feb2bf63'],
         sessionId: 'session-1',
       }
     )

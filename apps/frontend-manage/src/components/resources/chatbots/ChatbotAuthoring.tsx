@@ -2,7 +2,9 @@ import { useMutation } from '@apollo/client'
 import {
   type Chatbot,
   ChatbotStatus,
-  GetChatbotsInfoDocument,
+  type LocaleType,
+  MUpdateChatbotStandardModeConfigDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   SaveChatbotDisclaimerDocument,
   UpdateChatbotDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -17,6 +19,7 @@ import {
   FormikTextField,
   H4,
   Label,
+  Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik, useField, useFormikContext } from 'formik'
@@ -40,6 +43,82 @@ const metadataEditableStatuses = [
 ]
 
 const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
+
+type StandardMode = 'tutor' | 'explainer' | 'quizzer'
+
+type StandardModeFormValues = {
+  tutorEnabled: boolean
+  explainerEnabled: boolean
+  quizzerEnabled: boolean
+  courseName: string | null
+  subjectDomain: string | null
+  languageOfInstruction: LocaleType | null
+  scopeNote: string
+}
+
+function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
+  const config = chatbot.standardModeConfig
+
+  return {
+    tutorEnabled: config?.tutorEnabled ?? true,
+    explainerEnabled: config?.explainerEnabled ?? true,
+    quizzerEnabled: config?.quizzerEnabled ?? true,
+    courseName: config?.courseName ?? null,
+    subjectDomain: config?.subjectDomain ?? null,
+    languageOfInstruction: config?.languageOfInstruction ?? null,
+    scopeNote: config?.scopeNote ?? '',
+  }
+}
+
+function StandardModeCard({
+  description,
+  disabled,
+  enabled,
+  mode,
+  onChange,
+  statusLabel,
+  title,
+}: {
+  description: string
+  disabled: boolean
+  enabled: boolean
+  mode: StandardMode
+  onChange: (enabled: boolean) => void
+  statusLabel: string
+  title: string
+}) {
+  const switchId = `chatbot-mode-switch-${mode}`
+
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-md border border-gray-200 p-4"
+      data-cy={`chatbot-mode-card-${mode}`}
+    >
+      <div>
+        <h5
+          className="font-semibold text-gray-900"
+          data-cy={`chatbot-mode-title-${mode}`}
+        >
+          {title}
+        </h5>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <span className="text-sm font-medium text-gray-700">{statusLabel}</span>
+        <label className="sr-only" htmlFor={switchId}>
+          {title}
+        </label>
+        <Switch
+          id={switchId}
+          checked={enabled}
+          disabled={disabled}
+          onCheckedChange={onChange}
+          data={{ cy: `chatbot-mode-switch-${mode}` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 function NavigationStateReporter({
   dirty,
@@ -239,29 +318,60 @@ function ChatbotAuthoring({
 }) {
   const t = useTranslations()
   const [updateChatbot] = useMutation(UpdateChatbotDocument)
+  const [updateStandardModeConfig] = useMutation(
+    MUpdateChatbotStandardModeConfigDocument
+  )
   const [saveDisclaimer] = useMutation(SaveChatbotDisclaimerDocument)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSuccess, setMetadataSuccess] = useState(false)
+  const [modeError, setModeError] = useState<string | null>(null)
+  const [modeSuccess, setModeSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
   const [advanceToReview, setAdvanceToReview] = useState(false)
   const [openSections, setOpenSections] = useState<ChatbotSetupStep[]>([step])
   const [metadataNavigationState, setMetadataNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [modeNavigationState, setModeNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const clearMetadataSuccess = useCallback(() => setMetadataSuccess(false), [])
+  const clearModeSuccess = useCallback(() => setModeSuccess(false), [])
 
   const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
+  const modeEditable = metadataEditable
   const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
   const disclaimer = chatbot.disclaimerSummary
+  const standardModeConfig = getStandardModeFormValues(chatbot)
+  const modeReviewItems = [
+    {
+      mode: 'tutor' as const,
+      title: t('manage.resources.chatbotModeTutor'),
+      enabled: standardModeConfig.tutorEnabled,
+    },
+    {
+      mode: 'explainer' as const,
+      title: t('manage.resources.chatbotModeExplainer'),
+      enabled: standardModeConfig.explainerEnabled,
+    },
+    {
+      mode: 'quizzer' as const,
+      title: t('manage.resources.chatbotModeQuizzer'),
+      enabled: standardModeConfig.quizzerEnabled,
+    },
+  ]
   const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
   const published = chatbot.status === ChatbotStatus.Published
   const setupDirty =
-    metadataNavigationState.dirty || disclaimerNavigationState.dirty
+    metadataNavigationState.dirty ||
+    modeNavigationState.dirty ||
+    disclaimerNavigationState.dirty
   const setupPending =
-    metadataNavigationState.pending || disclaimerNavigationState.pending
+    metadataNavigationState.pending ||
+    modeNavigationState.pending ||
+    disclaimerNavigationState.pending
   const publicationPending = publicationNavigationState.pending
 
   const openSection = useCallback((section: ChatbotSetupStep) => {
@@ -278,16 +388,19 @@ function ChatbotAuthoring({
     onNavigationStateChange({
       dirty:
         metadataNavigationState.dirty ||
+        modeNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
+        modeNavigationState.pending ||
         disclaimerNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
     disclaimerNavigationState,
     metadataNavigationState,
+    modeNavigationState,
     onNavigationStateChange,
     publicationNavigationState,
   ])
@@ -296,10 +409,13 @@ function ChatbotAuthoring({
     if (!metadataEditable) {
       setMetadataNavigationState({ dirty: false, pending: false })
     }
+    if (!modeEditable) {
+      setModeNavigationState({ dirty: false, pending: false })
+    }
     if (!disclaimerEditable) {
       setDisclaimerNavigationState({ dirty: false, pending: false })
     }
-  }, [disclaimerEditable, metadataEditable])
+  }, [disclaimerEditable, metadataEditable, modeEditable])
 
   useEffect(() => {
     if (!advanceToReview || !hasCompleteDisclaimer(chatbot)) return
@@ -400,7 +516,9 @@ function ChatbotAuthoring({
                           name: normalizedValues.name,
                           description: normalizedValues.description || null,
                         },
-                        refetchQueries: [{ query: GetChatbotsInfoDocument }],
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values: normalizedValues })
@@ -464,6 +582,269 @@ function ChatbotAuthoring({
                 <UserNotification>
                   {t('manage.resources.chatbotMetadataReadonly')}
                 </UserNotification>
+              )}
+            </section>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem
+          value="modes"
+          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+          data-cy="chatbot-setup-item-modes"
+        >
+          <AccordionTrigger
+            className="py-3 hover:no-underline"
+            data-cy="chatbot-setup-trigger-modes"
+          >
+            <span className="flex flex-col gap-1">
+              <span>{t('manage.resources.chatbotSetupModes')}</span>
+              <span className="text-sm font-normal text-gray-600">
+                {t('manage.resources.chatbotSetupModesDescription')}
+              </span>
+            </span>
+          </AccordionTrigger>
+          <AccordionContent forceMount>
+            <section
+              hidden={!openSections.includes('modes')}
+              className="space-y-4"
+              data-cy="chatbot-setup-modes"
+            >
+              <div>
+                <H4>{t('manage.resources.chatbotSetupModesTitle')}</H4>
+                <p className="mt-1 text-sm text-gray-600">
+                  {t('manage.resources.chatbotSetupModesDescriptionLong')}
+                </p>
+              </div>
+              {modeEditable ? (
+                <Formik<StandardModeFormValues>
+                  enableReinitialize
+                  validateOnMount
+                  initialValues={standardModeConfig}
+                  validate={(values) => {
+                    if (
+                      values.scopeNote !== standardModeConfig.scopeNote &&
+                      values.scopeNote.length > 200
+                    ) {
+                      return {
+                        scopeNote: t('manage.resources.chatbotFramingTooLong'),
+                      }
+                    }
+
+                    return {}
+                  }}
+                  onSubmit={async (values, { resetForm }) => {
+                    setModeError(null)
+                    setModeSuccess(false)
+                    try {
+                      await updateStandardModeConfig({
+                        variables: {
+                          chatbotId: chatbot.id,
+                          config: values,
+                        },
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
+                        awaitRefetchQueries: true,
+                      })
+                      resetForm({ values })
+                      setModeSuccess(true)
+                    } catch (error) {
+                      setModeError(
+                        t(getChatbotMutationErrorKey(error, 'standardMode'))
+                      )
+                    }
+                  }}
+                >
+                  {({
+                    dirty,
+                    isSubmitting,
+                    isValid,
+                    values,
+                    setFieldValue,
+                  }) => {
+                    const controlsDisabled = isSubmitting || publicationPending
+
+                    return (
+                      <Form className="space-y-4">
+                        <FormikInteractionEffects onDirty={clearModeSuccess} />
+                        <NavigationStateReporter
+                          dirty={dirty}
+                          pending={isSubmitting}
+                          onChange={setModeNavigationState}
+                        />
+                        <div className="space-y-1">
+                          <FormikTextareaField
+                            disabled={controlsDisabled}
+                            name="scopeNote"
+                            label={t('manage.resources.chatbotFraming')}
+                            placeholder={t(
+                              'manage.resources.chatbotFramingPlaceholder'
+                            )}
+                            maxLength={200}
+                            maxLengthUnit={t('shared.generic.characters')}
+                            data={{ cy: 'chatbot-framing' }}
+                          />
+                          <p className="text-xs text-gray-500">
+                            {t('manage.resources.chatbotFramingDescription')}
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <StandardModeCard
+                            description={t(
+                              'manage.resources.chatbotModeTutorDescription'
+                            )}
+                            disabled={
+                              controlsDisabled ||
+                              (values.tutorEnabled && !values.explainerEnabled)
+                            }
+                            enabled={values.tutorEnabled}
+                            mode="tutor"
+                            onChange={(enabled) => {
+                              setModeError(null)
+                              void setFieldValue('tutorEnabled', enabled)
+                            }}
+                            statusLabel={t(
+                              values.tutorEnabled
+                                ? 'manage.resources.chatbotModeEnabled'
+                                : 'manage.resources.chatbotModeDisabled'
+                            )}
+                            title={t('manage.resources.chatbotModeTutor')}
+                          />
+                          <StandardModeCard
+                            description={t(
+                              'manage.resources.chatbotModeExplainerDescription'
+                            )}
+                            disabled={
+                              controlsDisabled ||
+                              (values.explainerEnabled && !values.tutorEnabled)
+                            }
+                            enabled={values.explainerEnabled}
+                            mode="explainer"
+                            onChange={(enabled) => {
+                              setModeError(null)
+                              void setFieldValue('explainerEnabled', enabled)
+                            }}
+                            statusLabel={t(
+                              values.explainerEnabled
+                                ? 'manage.resources.chatbotModeEnabled'
+                                : 'manage.resources.chatbotModeDisabled'
+                            )}
+                            title={t('manage.resources.chatbotModeExplainer')}
+                          />
+                          <StandardModeCard
+                            description={t(
+                              'manage.resources.chatbotModeQuizzerDescription'
+                            )}
+                            disabled={controlsDisabled}
+                            enabled={values.quizzerEnabled}
+                            mode="quizzer"
+                            onChange={(enabled) => {
+                              setModeError(null)
+                              void setFieldValue('quizzerEnabled', enabled)
+                            }}
+                            statusLabel={t(
+                              values.quizzerEnabled
+                                ? 'manage.resources.chatbotModeEnabled'
+                                : 'manage.resources.chatbotModeDisabled'
+                            )}
+                            title={t('manage.resources.chatbotModeQuizzer')}
+                          />
+                        </div>
+                        <p
+                          className="text-sm text-gray-600"
+                          data-cy="chatbot-mode-invariant"
+                        >
+                          {t('manage.resources.chatbotModeInvariant')}
+                        </p>
+                        <p
+                          className="text-sm text-gray-600"
+                          data-cy="chatbot-mode-capability-note"
+                        >
+                          {t(
+                            'manage.resources.chatbotModeQuizzerCapabilityNote'
+                          )}
+                        </p>
+                        {modeError ? (
+                          <div role="alert">
+                            <UserNotification type="error">
+                              {modeError}
+                            </UserNotification>
+                          </div>
+                        ) : null}
+                        <SetupStepFooter
+                          action={t('manage.resources.chatbotModesSave')}
+                          disabled={controlsDisabled || !isValid}
+                          loading={isSubmitting}
+                          savingLabel={t('manage.resources.chatbotModesSaving')}
+                          success={modeSuccess}
+                          successMessage={t(
+                            'manage.resources.chatbotModesSaveSuccess'
+                          )}
+                          testId="save-chatbot-modes"
+                        />
+                      </Form>
+                    )
+                  }}
+                </Formik>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <StandardModeCard
+                      description={t(
+                        'manage.resources.chatbotModeTutorDescription'
+                      )}
+                      disabled
+                      enabled={standardModeConfig.tutorEnabled}
+                      mode="tutor"
+                      onChange={() => undefined}
+                      statusLabel={t(
+                        standardModeConfig.tutorEnabled
+                          ? 'manage.resources.chatbotModeEnabled'
+                          : 'manage.resources.chatbotModeDisabled'
+                      )}
+                      title={t('manage.resources.chatbotModeTutor')}
+                    />
+                    <StandardModeCard
+                      description={t(
+                        'manage.resources.chatbotModeExplainerDescription'
+                      )}
+                      disabled
+                      enabled={standardModeConfig.explainerEnabled}
+                      mode="explainer"
+                      onChange={() => undefined}
+                      statusLabel={t(
+                        standardModeConfig.explainerEnabled
+                          ? 'manage.resources.chatbotModeEnabled'
+                          : 'manage.resources.chatbotModeDisabled'
+                      )}
+                      title={t('manage.resources.chatbotModeExplainer')}
+                    />
+                    <StandardModeCard
+                      description={t(
+                        'manage.resources.chatbotModeQuizzerDescription'
+                      )}
+                      disabled
+                      enabled={standardModeConfig.quizzerEnabled}
+                      mode="quizzer"
+                      onChange={() => undefined}
+                      statusLabel={t(
+                        standardModeConfig.quizzerEnabled
+                          ? 'manage.resources.chatbotModeEnabled'
+                          : 'manage.resources.chatbotModeDisabled'
+                      )}
+                      title={t('manage.resources.chatbotModeQuizzer')}
+                    />
+                  </div>
+                  <p
+                    className="text-sm text-gray-600"
+                    data-cy="chatbot-mode-capability-note"
+                  >
+                    {t('manage.resources.chatbotModeQuizzerCapabilityNote')}
+                  </p>
+                  <UserNotification>
+                    {t('manage.resources.chatbotModesReadonly')}
+                  </UserNotification>
+                </>
               )}
             </section>
           </AccordionContent>
@@ -549,7 +930,9 @@ function ChatbotAuthoring({
                           title: normalizedValues.title,
                           introText: normalizedValues.introText,
                         },
-                        refetchQueries: [{ query: GetChatbotsInfoDocument }],
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values: normalizedValues })
@@ -656,6 +1039,64 @@ function ChatbotAuthoring({
                 <H4>{t('manage.resources.chatbotSetupReviewTitle')}</H4>
                 <p className="mt-1 text-sm text-gray-600">
                   {t('manage.resources.chatbotSetupReviewDescriptionLong')}
+                </p>
+              </div>
+
+              <div
+                className="rounded-md border border-gray-200 bg-gray-50 p-4"
+                data-cy="chatbot-review-modes"
+              >
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h5 className="font-semibold text-gray-900">
+                    {t('manage.resources.chatbotSetupModesTitle')}
+                  </h5>
+                  <Button
+                    type="button"
+                    onClick={() => openSection('modes')}
+                    data={{ cy: 'chatbot-setup-edit-modes' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotSetupEdit')}
+                    </Button.Label>
+                  </Button>
+                </div>
+                <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                  {modeReviewItems.map(({ mode, title, enabled }) => (
+                    <div key={mode}>
+                      <dt className="font-medium text-gray-600">{title}</dt>
+                      <dd
+                        className="mt-1 text-gray-900"
+                        data-cy={`chatbot-review-mode-${mode}`}
+                      >
+                        {enabled
+                          ? t('manage.resources.chatbotModeEnabled')
+                          : t('manage.resources.chatbotModeDisabled')}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h5 className="font-semibold text-gray-900">
+                    {t('manage.resources.chatbotFraming')}
+                  </h5>
+                  <Button
+                    type="button"
+                    onClick={() => openSection('modes')}
+                    data={{ cy: 'chatbot-setup-edit-framing' }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotSetupEdit')}
+                    </Button.Label>
+                  </Button>
+                </div>
+                <p
+                  className="whitespace-pre-wrap text-sm text-gray-900"
+                  data-cy="chatbot-review-framing"
+                >
+                  {standardModeConfig.scopeNote || t('shared.generic.unknown')}
                 </p>
               </div>
 

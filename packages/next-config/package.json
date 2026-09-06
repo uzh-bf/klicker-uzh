@@ -5,7 +5,7 @@
     "index.js"
   ],
   "peerDependencies": {
-    "next": "^16.2.10"
+    "next": "^16.2.11"
   },
   "engines": {
     "node": "=24"
