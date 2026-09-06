@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|apps/backend-docker/|apps/frontend-manage/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -153,6 +153,12 @@ jobs:
           cd ../../apps/hatchet-worker-general
           pnpm run build
 
+      - name: Run import/export app unit tests
+        run: |
+          pnpm --filter @klicker-uzh/backend-docker test:run
+          pnpm --filter @klicker-uzh/frontend-manage test:run
+          pnpm --filter @klicker-uzh/hatchet-worker-general test:run
+
       - name: Setup database
         run: |
           cd packages/prisma
@@ -183,6 +189,7 @@ jobs:
           HATCHET_LOG_LEVEL=DEBUG
           HATCHET_TENANT_ID=707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_WORKER_NAME=hatchet-worker-general
+          HATCHET_WORKFLOWS=refreshImportExportFingerprints,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry,processCourseDuplication,processCourseDeletion
           LOG_LEVEL=info
           NODE_ENV=test
           DATABASE_URL=postgresql://klicker:klicker@localhost:5432/klicker-prod
@@ -216,11 +223,27 @@ jobs:
           node --env-file "${WORKER_ENV_FILE}" apps/hatchet-worker-general/dist/index.js &
           HATCHET_WORKER_PID=$!
 
-          sleep 5
-          if ! kill -0 "${HATCHET_WORKER_PID}" >/dev/null 2>&1; then
-            echo "Hatchet worker failed to start. See logs above." >&2
-            exit 1
-          fi
+          WORKER_READY_URL=http://127.0.0.1:8081/ready
+          WORKER_READY_TIMEOUT_SECONDS=60
+          WORKER_READY_DEADLINE=$((SECONDS + WORKER_READY_TIMEOUT_SECONDS))
+
+          until curl --fail --silent --show-error --max-time 1 "${WORKER_READY_URL}" >/dev/null 2>&1; do
+            if ! kill -0 "${HATCHET_WORKER_PID}" >/dev/null 2>&1; then
+              WORKER_EXIT_CODE=0
+              wait "${HATCHET_WORKER_PID}" || WORKER_EXIT_CODE=$?
+              echo "Hatchet worker exited before becoming ready (exit code ${WORKER_EXIT_CODE}). See logs above." >&2
+              exit 1
+            fi
+
+            if (( SECONDS >= WORKER_READY_DEADLINE )); then
+              echo "Timed out after ${WORKER_READY_TIMEOUT_SECONDS}s waiting for Hatchet worker readiness at ${WORKER_READY_URL}." >&2
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          echo "Hatchet worker is ready."
 
           cd packages/graphql
           pnpm vitest run

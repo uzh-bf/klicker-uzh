@@ -20,6 +20,30 @@ data:
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}
+  IMPORT_EXPORT_ENABLED: {{ .Values.importExport.enabled | quote }}
+  IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY: {{ .Values.importExport.privatePreviewOnly | quote }}
+  IMPORT_EXPORT_PACKAGE_STORAGE: {{ .Values.importExport.packageStorage | quote }}
+  IMPORT_EXPORT_PACKAGE_TTL_HOURS: {{ .Values.importExport.packageTtlHours | quote }}
+  IMPORT_EXPORT_PACKAGE_RATE_LIMIT_WINDOW_SECONDS: {{ .Values.importExport.rateLimitWindowSeconds | quote }}
+  IMPORT_EXPORT_PACKAGE_PREVIEW_RATE_LIMIT: {{ .Values.importExport.rateLimits.preview | quote }}
+  IMPORT_EXPORT_PACKAGE_EXPORT_RATE_LIMIT: {{ .Values.importExport.rateLimits.export | quote }}
+  IMPORT_EXPORT_PACKAGE_UPLOAD_RATE_LIMIT: {{ .Values.importExport.rateLimits.upload | quote }}
+  IMPORT_EXPORT_PACKAGE_VALIDATE_RATE_LIMIT: {{ .Values.importExport.rateLimits.validate | quote }}
+  IMPORT_EXPORT_PACKAGE_IMPORT_RATE_LIMIT: {{ .Values.importExport.rateLimits.import | quote }}
+  IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS: {{ .Values.importExport.concurrency.leaseTtlMs | quote }}
+  IMPORT_EXPORT_PACKAGE_PREVIEW_CONCURRENCY: {{ .Values.importExport.concurrency.previewPerUser | quote }}
+  IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY: {{ .Values.importExport.concurrency.previewGlobal | quote }}
+  IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY: {{ .Values.importExport.concurrency.uploadPerUser | quote }}
+  IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY: {{ .Values.importExport.concurrency.uploadGlobal | quote }}
+  IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY: {{ .Values.importExport.concurrency.validatePerUser | quote }}
+  IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY: {{ .Values.importExport.concurrency.validateGlobal | quote }}
+  IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY: {{ .Values.importExport.concurrency.importPerUser | quote }}
+  IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY: {{ .Values.importExport.concurrency.importGlobal | quote }}
+  IMPORT_EXPORT_PACKAGE_EXPORT_CONCURRENCY: {{ .Values.importExport.concurrency.exportPerUser | quote }}
+  IMPORT_EXPORT_PACKAGE_EXPORT_GLOBAL_CONCURRENCY: {{ .Values.importExport.concurrency.exportGlobal | quote }}
+  IMPORT_EXPORT_UPLOAD_BODY_TIMEOUT_MS: {{ .Values.importExport.timeouts.uploadBodyMs | quote }}
+  IMPORT_EXPORT_AZURE_METADATA_TIMEOUT_MS: {{ .Values.importExport.timeouts.azureMetadataMs | quote }}
+  IMPORT_EXPORT_AZURE_TRANSFER_TIMEOUT_MS: {{ .Values.importExport.timeouts.azureTransferMs | quote }}
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}

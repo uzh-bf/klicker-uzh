@@ -23,4 +23,6 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  IMPORT_EXPORT_ENABLED: 'false'
+  IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY: 'true'
   ASSESSMENT_MODE: 'true'
