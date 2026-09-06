@@ -85,6 +85,9 @@ const uiMessages = [
   },
 ]
 
+const originalKbId = '11111111-1111-4111-8111-111111111111'
+const additionalKbId = '22222222-2222-4222-8222-222222222222'
+
 const baseModel = {
   deploymentId: 'base-model',
   fallback: true,
@@ -122,13 +125,17 @@ describe('POST owner preview chat', () => {
       id: 'chatbot-id',
       standardModeConfig: null,
       course: { displayName: 'Test Course' },
-      knowledgeBases: [{ kbId: 'kb-id' }],
+      knowledgeBases: [{ kbId: originalKbId }],
       mcpConfigurations: [
         {
           allowedTools: ['*', 'delete_all'],
           chatMode: 'tutor',
           isEnabled: true,
-          parameters: {},
+          parameters: {
+            kb_id: originalKbId,
+            required: true,
+            toolAlias: 'doc_query',
+          },
           priority: 1,
           mcpServer: {
             authSecret: null,
@@ -233,7 +240,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbIds: ['kb-id'],
+        kbIds: [originalKbId],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
@@ -253,6 +260,26 @@ describe('POST owner preview chat', () => {
     expect(mocks.createChatMessage).not.toHaveBeenCalled()
     expect(mocks.createChatThread).not.toHaveBeenCalled()
     expect(mocks.createParticipant).not.toHaveBeenCalled()
+  })
+
+  it('uses the configured multi-KB scope even without matching KB relations', async () => {
+    const chatbot = await mocks.findChatbot()
+    chatbot.mcpConfigurations[0].parameters = {
+      kb_ids: [additionalKbId, originalKbId],
+      required: true,
+      toolAlias: 'doc_query',
+    }
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ kbIds: [originalKbId, additionalKbId] })
+    )
   })
 
   it('closes MCP tools when no base model is available', async () => {

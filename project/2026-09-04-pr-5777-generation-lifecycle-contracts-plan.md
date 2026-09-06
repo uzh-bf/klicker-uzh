@@ -2,6 +2,53 @@
 
 ## Approval summary
 
+### Current integration and runtime checkpoint — 2026-09-06
+
+The user explicitly approved integrating current v3 and recovering this exact
+workspace with the latest devrouter. Source/runtime custody was released by
+the coordinating task before work. Local merge 479a1045be incorporates
+v3 at 27f2474547df045cc11302c7d9e195798ec66870 into the existing branch;
+no protected branch was changed. Twelve conflicts were reconciled, preserving
+the branch's participant authentication and MCP client cleanup alongside v3's
+multi-KB and standard-mode contracts. The two remaining Next peer ranges were
+aligned to 16.2.11 and the lockfile regenerated inside the container.
+
+Container verification passed: 81 focused Chat tests, Chat/GraphQL/Manage
+typechecks, and literal root check:all with 40 successful tasks. Staged
+redacted gitleaks passed. The host merge hook was split after these container
+checks. The integrated Sol review found one owner-preview scope mismatch:
+KB relations are not the authority for multi-KB MCP scope. The correction
+uses resolveMcpScope and has a passing eight-test route suite, including the
+new configuration-versus-relation regression, and a passing Chat typecheck.
+Correction review remains pending at this checkpoint.
+
+Installed CLI and repository pin both equal the latest official devrouter
+release, 0.0.55. Exact runtime identity remains workspace
+rs-generation-lifecycle-contract, Compose default-rs-f189c, source
+trees/rs/generation-lifecycle-contracts. Port override 10043 and the retained
+Next cache marker were preserved. An initial ensure --repair passed all
+readiness contracts without recreation, and delegated local login worked.
+After dependency relinking during checks, Chat's live Turbopack process failed
+with Next.js package not found and the app group exited. This is not a passing
+final runtime result.
+
+Normal reconciliation then recorded degraded state; two supported repairs
+failed with Preparation for 'klicker-dev' left running children. A bounded
+foreground build diagnostic passed 10/10 tasks but proved its surviving child
+was /usr/bin/git diff HEAD --no-ext-diff --no-color. Disabling the optional
+Turbo daemon did not resolve it. No helper or lock was bypassed. Other owners'
+provider locks were left untouched. The remaining runtime recovery therefore
+requires correcting or accommodating that foreground-process completion seam,
+not another CLI version bump or database reset.
+
+AI navigation has an independent local SDK fixture limitation: the configured
+GrowthBook test endpoint is unavailable. A browser-only interception was used
+for diagnosis and is not normal-browser feature availability or server
+authorization evidence. No ingestion, graph, generation, provider request,
+secret injection, database reset, deployment or cleanup was performed. The
+user's keep-running request retains the exact runtime resources for the next
+recovery checkpoint; the application itself is currently unavailable.
+
 Device-transfer checkpoint, 2026-09-06: the user explicitly requests publishing the current work as pushed draft PRs so another device can continue. This permits a work-in-progress source checkpoint before the previously required publication verification completes; it does not waive any verification or review gate before merge. Preserve pending browser, static assertion, runtime and implementation-review obligations. The adopted runtime source remains attributed to PR #5790, now merged; this checkpoint preserves the exact local candidate rather than integrating any upstream branch. Host identity, shell syntax, diff and redacted secret checks run for this checkpoint. Container-only hooks/builds remain unrun because the task runtime is stopped and startup qualification is blocked; do not report the checkpoint as tested or source-reviewed.
 
 This package consolidates generation around the existing Element model and protects existing business behavior before v3-ai can qualify for stable v3. The backend consolidation is published on this draft PR. The approved remaining correction repairs two browser-test fixtures, the header overflow at smaller desktop widths, and the analytics loading-state redirect on profile failure; it does not change eligibility, permissions, account usage, or Element behavior.
