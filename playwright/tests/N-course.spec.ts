@@ -9,9 +9,11 @@
 import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page, type Response } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { getPrisma } from '../global-setup.js'
 import {
   chooseActivityAction,
   chooseCourseAction,
+  openActionMenuByTestId,
   filterActivitiesByName,
   openCourseActionMenu,
 } from '../util/actions.js'
@@ -2179,6 +2181,60 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     await loginLecturer()
   })
 
+  test('Course navigation, missing metadata, and empty tabs remain usable by keyboard', async ({
+    page,
+  }) => {
+    const name = `course-clarity-${crypto.randomUUID()}`
+    const course = await createCourseRecord({
+      name,
+      displayName: name,
+      startDate: new Date('2020-01-01'),
+      endDate: new Date('2099-01-01'),
+    })
+    const prisma = await getPrisma()
+    try {
+      await page.getByTestId('courses').click()
+      const link = page.getByTestId(`course-list-button-${name}`)
+      await expect(link).toHaveAttribute('href', `/courses/${course.id}`)
+      await openActionMenuByTestId(page, `course-list-actions-${name}`)
+      await page.keyboard.press('Escape')
+      await expect(
+        page.getByTestId(`course-list-actions-${name}`)
+      ).toBeFocused()
+      await link.focus()
+      await page.keyboard.press('Enter')
+      const email = page.getByTestId('course-notification-email')
+      const language = page.getByTestId('course-language')
+      await expect(email).toBeVisible()
+      await expect(email).not.toBeEmpty()
+      await expect(language).toBeVisible()
+      const emailBox = await email.boundingBox()
+      const languageBox = await language.boundingBox()
+      expect(emailBox).not.toBeNull()
+      expect(languageBox).not.toBeNull()
+      expect(Math.abs(emailBox!.x - languageBox!.x)).toBeLessThan(2)
+      expect(languageBox!.y).toBeGreaterThan(emailBox!.y)
+
+      for (const [tab, action] of [
+        ['liveQuizzes', 'live-quiz'],
+        ['practiceQuizzes', 'practice-quiz'],
+        ['microLearnings', 'microlearning'],
+        ['groupActivities', 'group-activity'],
+      ]) {
+        await page.getByTestId(`tab-${tab}`).click()
+        const libraryLink = page.getByTestId(`course-empty-${action}-library`)
+        await expect(libraryLink).toHaveAttribute('href', '/')
+        await libraryLink.focus()
+        await page.keyboard.press('Enter')
+        await expect(page.getByTestId('create-question')).toBeVisible()
+        await page.getByTestId('courses').click()
+        await page.getByTestId(`course-list-button-${name}`).click()
+      }
+    } finally {
+      await prisma.course.delete({ where: { id: course.id } })
+    }
+  })
+
   test('Uses a contextual primary action and an overflow menu for course actions', async ({
     page,
   }) => {
@@ -2306,11 +2362,21 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     await page.getByTestId('courses').click()
 
     // Running course cannot be archived
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${RUNNING_COURSE.name}`
+    )
     await expect(
       page.getByTestId(`archive-course-${RUNNING_COURSE.name}`)
     ).toBeDisabled()
 
+    await page.keyboard.press('Escape')
+
     // Past course can be archived
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await expect(
       page.getByTestId(`archive-course-${PAST_COURSE.name}`)
     ).not.toBeDisabled()
@@ -2318,6 +2384,10 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     // Cancel then confirm archiving
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-cancel').click()
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-confirm').click()
     await expect(
@@ -2329,6 +2399,10 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
     await expect(
       page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
     ).toBeVisible()
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${PAST_COURSE.name}`
+    )
     await page.getByTestId(`archive-course-${PAST_COURSE.name}`).click()
     await page.getByTestId('course-archive-modal-confirm').click()
     await page.getByTestId('toggle-course-archive').click()
@@ -2426,9 +2500,17 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).toBeVisible()
 
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${DELETION.courseName}`
+    )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
     await page.getByTestId('course-deletion-modal-cancel').click()
 
+    await openActionMenuByTestId(
+      page,
+      `course-list-actions-${DELETION.courseName}`
+    )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
 
     // No participations — participation confirm should not exist
@@ -2507,11 +2589,13 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('courses').click()
 
     // Delete non-gamified course (renamed in Part 3)
+    await openActionMenuByTestId(page, `course-list-actions-${COURSE1.nameNew}`)
     await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
     await page.getByTestId('course-deletion-modal-confirm').click()
     await expect(page.getByText(COURSE1.nameNew)).not.toBeVisible()
 
     // Delete gamified course (has participations and groups)
+    await openActionMenuByTestId(page, `course-list-actions-${COURSE2.name}`)
     await page.getByTestId(`delete-course-${COURSE2.name}`).click()
     const participationsConfirm = page.getByTestId(
       'course-deletion-participations-confirm'
@@ -4688,12 +4772,15 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await verifyCourseAdminPermissions(page, false)
 
     await page.getByTestId('courses').click()
+    await openActionMenuByTestId(page, `course-list-actions-${SHARING.course}`)
     await expect(
       page.getByTestId(`delete-course-${SHARING.course}`)
     ).toBeVisible()
     await expect(
       page.getByTestId(`remove-course-${SHARING.course}`)
     ).not.toBeVisible()
+
+    await page.keyboard.press('Escape')
 
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
     await chooseCourseAction(page, 'course-share-button')
@@ -4721,6 +4808,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
   }) => {
     await loginIndividualCatalyst()
     await page.getByTestId('courses').click()
+    await openActionMenuByTestId(page, `course-list-actions-${SHARING.course}`)
     await page.getByTestId(`remove-course-${SHARING.course}`).click()
     await page.getByTestId('confirm-deletion-final').click()
     await page.getByTestId('confirm-dependency-access').click()

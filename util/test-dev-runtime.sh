@@ -72,6 +72,7 @@ write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
 url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
+  */api/auth/providers) printf "200\tapplication/json" ;;
   */api/chatbots/*) printf "401\tapplication/json" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
@@ -392,6 +393,25 @@ assert_equal \
   "$(bash "$RUNTIME_SCRIPT" classify-response auth-json 401 'application/json; charset=utf-8')" \
   'ready: HTTP 401 application/json; charset=utf-8'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 200 'application/json; charset=utf-8')" \
+  'ready: HTTP 200 application/json; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 404 'text/html; charset=utf-8'
+)" || classification_status=$?
+assert_equal "$classification_status" '20'
+assert_equal "$classification_output" 'stale: HTTP 404 text/html; charset=utf-8'
+
+classification_status=0
+bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 200 text/html >/dev/null || classification_status=$?
+assert_equal "$classification_status" '22'
+
+classification_status=0
+bash "$RUNTIME_SCRIPT" classify-response auth-providers-json 400 application/json >/dev/null || classification_status=$?
+assert_equal "$classification_status" '22'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response auth-json 404 'text/html; charset=utf-8'
@@ -460,6 +480,10 @@ fi
 if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
   fail 'app without a probe contract was accepted'
 fi
+
+: >"$CURL_LOG"
+READINESS_APPS=auth bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:3010/api/auth/providers'
 
 : >"$CURL_LOG"
 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null

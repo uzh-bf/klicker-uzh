@@ -1,0 +1,177 @@
+# Manage course and activity clarity — execution plan
+Plan path: project/2026-09-05-manage-overviews-ux-plan.md (initially prepared in trees/ux-review-question-library; transferred with the review and close-out into trees/manage-overviews-ux after approval).
+
+## Research
+Goal: apply the 2026-09-05 Manage UX review as a new native GitHub stack, preserving the merged library experience. The supplied screenshots are inspiration, not current-state acceptance.
+Evidence: origin/v3 at fbc5f4fcc2ffa1c8d25695679823134985c5a8d8. Browser review covered library, live-quiz introduction, course overview/details at 1024x768 and 1440x900 in English. One element, three courses, no activities: populated activity row/detail proposals need a task-owned synthetic fixture before code. Source/test mapping is local; external research is not needed for this existing UI change.
+Existing review: project/2026-09-05-manage-overviews-ux-review.md in the historical ux-review-question-library worktree.
+Primary checkout v3 tracks origin/v3, 0 ahead/8 behind and dirty; historical task branch rs/question-library-status-empty-state has no upstream, 130 ahead/56 behind, with untracked review. Neither is an implementation baseline.
+## Execution contract
+Owner/boundary owner: this main session/self; full-path progressive execution after one topology approval. Main owns integration, product choices, verification and GitHub topology. Executors own bounded disjoint implementation subsets; no child publication/delegation.
+Authority proposed by this plan's approval: create ONE new repo-local worktree trees/manage-overviews-ux from pinned origin/v3, create named native stack branches; local scoped edits, synthetic test fixtures only in its own runtime, repository checks, local commits, required reviews, normal non-destructive branch publication and DRAFT PR creation/update to origin. No old branch replay or pull into primary; no protected-branch mutation, merge, ready-for-review transition, forced update of published history, deletion, deployment, production/secret data, tour work or infrastructure changes. If stack tools require a published non-fast-forward update, ask first. Inter-layer local propagation is allowed after checkpoint; new upstream integration remains separately gated.
+Terminal: all three independent layer tips verified, required reviews resolved, draft PR stack published with current per-layer CI readback and full evidence; then one decision to mark ready. If CI genuinely fails in relevant scope, resolve before terminal; report an unrelated base failure without bypass. Runtime stopped and exact route/provider readback recorded unless user requests an explicit keep-running lease.
+Pause: topology/design/risk expansion, unavailable required environment or reviewer, external action beyond named authority, unresolved conflict/ownership. Routine slice boundaries do not pause.
+## Primitive impact
+Course: reuse existing user-owned container and permission, archive, deletion-request, removal, joining and leaderboard rules. Only presentation changes; no data migration.
+Activity and publication status: reuse four activity types and current allowed lifecycle actions. Search feedback and layout do not redefine statuses or visibility.
+Element instances/blocks/stacks/comments: reuse immutable instance preview and existing comments scope. No edit-to-source propagation, comment scope change or persistence model.
+ADR: none; reversible UI presentation, no new domain or architectural decision. Re-arm on lifecycle, permission, persistence or API changes.
+## Stack topology
+Provider GitHub, target v3, native stacks verified available. One new worktree; historical worktrees retained. All layers complete, not feature-flagged, independently green, tests travel with owning behavior. A single UI story: find a course, find/inspect its activities, create one without excess instructional text.
+Bottom rs/manage-course-clarity (v3): course overview navigation and course-detail readability; course-management maintainer; judgment-heavy; medium UI risk; estimate 350-550 human lines/10-14 files, no generated. Above 400 is still one package because empty activity tabs, metadata and row actions complete the same course inspection journey; no backend change.
+Middle rs/manage-activity-clarity (course layer): activity overview feedback plus compact accessible inspection; activity-workflow maintainer; judgment-heavy; medium UI risk; estimate 350-550 lines/9-13 files, no generated. Above 400 remains one package because search/recovery and resulting activity inspection share one list-detail acceptance journey; no shared abstraction layer.
+Top rs/manage-wizard-guidance (activity layer): concise intro/help across four activity types; instructional-copy/localization reviewer; mechanical except human copy acceptance; low risk; estimate 100-200 lines/6-9 files, no generated.
+Follow-up guard: wizard intro refines the recently merged activity-guidance surface; no existing draft owns it. Record this boundary miss in this plan and package, not another standalone PR or memory mutation. Course/activity overview issues were pre-existing outside prior library scope.
+## Frozen design
+Course layer: every metadata value gets an explicit cell with localized fallback for missing email; preserve labels/value association. Course title is a semantic link with sibling named comments/More actions controls. Archive/delete/remove in menu preserve all existing permission/disabled-reason/confirmation rules; no extra live mutations. Keep dates/badges visible.
+Use neutral empty messages in all four course activity tabs; offer an accurately labeled Library navigation action, not a promise to preselect a course. Do not introduce a course-prefill URL/API contract. Preserve relevant QR/LTI/calendar access. Read-only users get truthful empty copy and no implied write permission.
+Shorten leaderboard permanent explanation to one sentence; export help by CSV control, inclusion rule accessible in contextual help. Keep course title/join controls, participants, description and course metadata visible; avoid collapsing the entire Course information section in this first pass. At smaller desktops stack activity/leaderboard content when necessary; no phone support target.
+Activity layer: 300ms search debounce, Enter remains immediate, clear cancels stale pending search. Distinguish loading, genuine first-use, no search matches, filtered-empty and query failure. Retry retains query/filter/sort; no stale results falsely represented as current. State precedence is query error first; then loading for the current applied variables; then populated current results; otherwise active-search no-match, filtered-empty, and genuine first-use. Combined search+filters exposes both independently scoped recovery actions. Require latest-query-wins: a delayed older response or pending debounce cannot overwrite cleared/current search, results, selection or pagination. Keep selection/batch actions scoped to valid visible results and disable batch actions while current results are unavailable. Named sort direction and semantic keyboard-open/rename controls.
+Before changing density, inspect synthetic populated draft/scheduled/ended and read-only activities with long titles, blocks/stacks and comments. Use compact title/status/count summary; omit a new course label from the activity row because this plan does not extend ActivityInfo or the GraphQL query. Keep required lifecycle dates readable. Details title includes activity name; explicit Preview/Comments views reuse existing components and selected-instance/comment-scope semantics, with a clear selection prompt before an instance is chosen. No drawer redesign, automatic mutation or hidden lifecycle actions. If evidence contradicts these bounded choices, pause for design rather than silently omit the improvement.
+Wizard layer: one short permanent use-case sentence plus existing name input; existing supporting documentation in keyboard-accessible Help disclosure. Essential validation and required constraints remain visible. Preserve all four wizard types, autosave/recovery/cancel semantics and stable secondary Create Element above sidebar while editing. No new onboarding/tour behavior.
+## Test portfolio and acceptance
+Course: adapt affected course archive/delete/removal locators to the new menu while preserving their existing permission and confirmation assertions. Extend playwright/tests/N-course.spec.ts at course overview/editing coverage (around 2182/2204); existing archive/delete and READ/EXECUTE/WRITE/ADMIN tests remain protection. Add missing empty-email label/value and keyboard navigation/menu assertions; neutral empty-tab navigation with no permission promise. Use self-contained synthetic fixtures, not test order/global seed assumptions.
+Activity: add playwright/tests/P-activity-overview-feedback.spec.ts with fixture creation and finally/afterEach cleanup local to that spec using existing getPrisma and fixture helpers; own only per-test synthetic IDs, never global cleanup. Add one Preview/Comments journey asserting the dialog activity's comment object ID/type remains unchanged after selecting an instance, switching tabs, and reopening for another activity. Add the focused activity-feedback spec using the existing P-question-library-feedback.spec.ts GraphQL fault/debounce pattern and fixture helpers. Cover no-Enter search, rapid clear preventing late overwrite, no-hit recovery, query failure/retry preserving filters/sort and safe selection; one primary browser seam. Extend existing activity-log/details protection only for changed entry/selection behavior; no test for each private helper.
+Wizard: extend playwright/tests/W4-activity-wizard-safety.spec.ts only with missing Help keyboard/copy visibility checks; reuse existing four-type EN/DE cancellation/reload checks, don't duplicate them.
+Layout: before/after screenshots 1024x768 and 1440x900 in EN and DE, long names, missing metadata, nonempty activities, read-only and manager. Check keyboard focus return/accessible names and no clipped controls. Screenshots evidence, not brittle pixel-perfect tests. No mobile/accessibility-conformance claims.
+Run repo-native format/lint/check/build relevant to Manage/i18n and test TS at every layer tip; full hook equivalents in exact container, never bypass hooks. Host pnpm playwright:host against exact devrouter routed stack per repo rules. Reuse unchanged passing evidence. Broader per-layer CI is a separate gate from local focused proof.
+## Delegation Map and slices
+All paths below are repository-relative. Each slice appears once. Executors work serially; each shared locale file receives only that slice's keys. The main session alone writes plan/progress/evidence and integrates changes.
+| Slice | Route/owner | Dependency and handoff | Acceptance |
+| --- | --- | --- | --- |
+| Course clarity | executor | pinned v3; return exact diff to main before activity slice | Course commands and visual/menu matrix below |
+| Activity feedback and inspection | executor | verified course tip; main supplies accepted populated visual observations | Activity commands and latest-query/comment-scope matrix below |
+| Wizard guidance | executor | verified activity tip; preserve existing wizard recovery | Wizard commands and four-type EN/DE Help/recovery matrix below |
+
+Course owned paths: apps/frontend-manage/src/pages/courses/index.tsx; apps/frontend-manage/src/pages/courses/[id].tsx; apps/frontend-manage/src/components/courses/{CourseListButton,CourseArchiveButton,CourseDeletionButton,IndividualLeaderboard,LiveQuizList,PracticeQuizList,MicroLearningList,GroupActivityList}.tsx; packages/i18n/messages/{en,de}.ts; playwright/tests/N-course.spec.ts; playwright/tests/W-activity-log.spec.ts (only course-row comment entry locator changes). Preserve non-course button variant behavior in CourseListButton.
+Activity owned paths: apps/frontend-manage/src/pages/activities.tsx; apps/frontend-manage/src/components/activities/overview/{ActivityList,ActivityListEntry,ActivityListSearch,ActivityListSorting}.tsx; apps/frontend-manage/src/components/activities/overview/details/{ActivityDetailsModal,ActivityOverviewTable}.tsx; packages/i18n/messages/{en,de}.ts; playwright/tests/P-activity-overview-feedback.spec.ts; playwright/tests/W-activity-log.spec.ts (only changed activity entry selectors).
+Wizard owned paths: apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizInformationStep.tsx; practiceQuiz/PracticeQuizInformationStep.tsx, microLearning/MicroLearningInformationStep.tsx and groupActivity/GroupActivityInformationStep.tsx under that same creation directory; packages/i18n/messages/{en,de}.ts; playwright/tests/W4-activity-wizard-safety.spec.ts.
+Reuse existing icon-action hover/focus sibling-tooltip pattern; do not wrap Button/Dropdown in the design-system Tooltip trigger. No new shared component abstraction.
+Main owns closure receipt, plan, topology/worktree setup, runtime/fixture ownership, populated visual design acceptance, integration and publication. Reason: critical-path coupling/product decisions and external effects.
+Each layer is one substantive slice with its own conventional commit(s): enhance(manage): clarify course overview and details; enhance(manage): improve activity search and inspection; enhance(manage): simplify activity wizard guidance. Plan first docs(project) commit in bottom layer. Later progress updates travel with their layer.
+Simplifier after each substantive committed slice. Course action changes get slice-reviewer for retaining permission/confirmation protections; activity slice gets slice-reviewer for selection/recovery and comments scope. Wizard slice review not required unless lifecycle contract changed; final integrated review includes correctness, security and maintainability across exact range, architecture skipped unless scope changes. Reports under project/_local/reviews; resolve findings before publication.
+Exact commands at EACH layer tip: devrouter exec /Users/rschlae/Git/klicker/klicker-uzh/trees/manage-overviews-ux -- pnpm run check:all; same command with pnpm run build. This includes test TypeScript checks; use additional pnpm --filter @klicker-uzh/playwright check if not part of the resolved check:all run.
+Host from new worktree, with canonical routed target selected per repository host runner:
+- Course: pnpm playwright:host -- tests/N-course.spec.ts tests/W-activity-log.spec.ts
+- Activity: pnpm playwright:host -- tests/P-activity-overview-feedback.spec.ts tests/W-activity-log.spec.ts
+- Wizard: pnpm playwright:host -- tests/W4-activity-wizard-safety.spec.ts
+Run these suites against only task-owned test data; their existing cleanup is allowed only in the isolated task database. Bootstrap fresh synthetic fixtures for subsequent visual checks after any suite cleanup.
+## Runtime and documentation
+Additional approval, 2026-09-05: the user approved a scoped local Auth/runtime
+repair and continuation of UX verification. It covers the existing exact-app
+cache-recovery path and a narrow Auth readiness correction in
+`util/dev-runtime.sh`, its regression tests in `util/test-dev-runtime.sh`, and
+the matching explanation in `docs/getting-started.md`. Auth must prove its
+providers API returns JSON, rather than only proving its homepage exists.
+No authentication rules, secrets, dependencies, domains, shared router setup,
+database data, or another task's runtime are changed. The parent owns this
+small repair because it is coupled to the active runtime; the read-only test
+mapping used a trusted executor fallback after the explore provider failed
+with HTTP 400 before useful work. Fresh runtime proof and delegated login are
+required before resuming the UX acceptance checks.
+
+Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
+No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
+## Progress
+Latest runtime checkpoint (supersedes pending approval and session references
+below): the scoped Auth readiness repair is approved. Its focused shell
+regression suite passed. Auth still returns HTML 404 internally at
+`http://localhost:3010/api/auth/providers` after the exact-app cache repair.
+The temporary Webpack experiment did not run: the log still shows Turbopack,
+and a fresh managed startup refused the degraded runtime state. The temporary
+`apps/auth/package.json` change was restored; no bundler workaround remains.
+Managed shutdown of this exact checkout failed in `devsy workspace stop` with
+exit status 1, but subsequent provider readback reports `Stopped` for
+`rs-manage-course-clarity`, and source-path readback confirms zero routes.
+Runtime release is therefore verified despite the command error.
+Canonical startup after that verified shutdown still refuses the degraded
+transition. Read-only doctor confirms `transitionPhase=process-start` and
+`the last managed transition is degraded`; shared Docker, router, TLS, network,
+and Devsy agent checks pass. This blocks runtime-dependent UX acceptance.
+Do not bypass the managed lifecycle or modify
+another task's runtime. Next authorized action is bounded provider-failure
+diagnosis, followed by canonical startup and delegated-login proof before UX
+verification. Shared provider repair or deletion requires a new explicit
+boundary. No implementation commit, push, new PR, or browser acceptance is
+claimed by this checkpoint.
+
+Current checkpoint, 2026-09-05: the plan is committed at
+`1448ee98f79634c587a7f766edbca9a00f1c239d`. Fresh fetch confirms
+`rs/manage-course-clarity` has no upstream and is one commit ahead, zero behind
+`origin/v3`. Eleven source/test files contain the uncommitted course clarity
+implementation. The executor completed the course row/menu and locale subset,
+including its focused correction; the main session inspected that diff and
+closed the executor. Scoped formatting completed. The implementation check run
+passed 34 of 35 check tasks and all seven lint tasks; Manage rejected a missing
+translation key. A paired-language course-specific fallback fixed that error,
+and the focused Manage check then passed. Final diff/format review, browser
+acceptance, build, required implementation reviews, and publication remain
+pending. Activity and wizard implementation have not started.
+
+Baseline evidence: the manage profile previously started with matching resources
+and no drift. Frozen Python 3.12 analytics preparation succeeded without source
+or lockfile changes. Root `pnpm run check:all` passed (35 check tasks and seven
+lint tasks), including the plan commit hook. Host Git used a temporary pnpm
+bridge to the exact task container; no hooks were bypassed. These checks precede
+the implementation and do not qualify its changed source.
+
+Runtime issue: synthetic lecturer login and course overview initially worked,
+but the existing course detail route returned HTTP 404 before the source edits.
+The exact task restart in session 10722 eventually succeeded with profile
+`manage`, matching active resources, and no drift. The internal course route
+now returns 200 and `/courses/[id]` appears in its dev pages manifest.
+
+The engineering browser daemon restarted, requiring a fresh login. Delegated
+access now reaches `/api/auth/error`; Auth's session and providers endpoints
+return 404 with `CLIENT_FETCH_ERROR`. A direct container request to
+`http://localhost:3010/api/auth/providers` also returns 404, excluding Traefik
+as that failure's source. The catch-all Auth source exists, but its dev pages
+manifest contains only `/`, `/_app`, `/_document`, and `/_error`. No authenticated
+after screenshots or Playwright acceptance are claimed. The inspected
+`next typegen` implementation writes type files; no evidence establishes it
+as the cause. Auth/runtime repair lies outside this UX plan and needs a scoped
+approval. The isolated browser closed successfully. Task-only shutdown remains
+active in terminal session 85564, queued behind another provider operation;
+stopped state and zero-route readback are not yet verified. Preserve that single
+shutdown request rather than starting a competing one. No keep-running lease
+or deletion is authorized. The historical notes below do not override this
+checkpoint.
+
+Planning only; source untouched. Old stack merged and superseded draft closed; exact fixture repair eight shards passed, post-close AI review unavailable rather than passed; old runtime stopped/zero routes. Locale Sharing-to-Freigabe parked behind separate tour drafts. Historical worktrees retained incl staged roadmap/generated deletions in feedback-recovery. Planner round 1 returned REVISE; accepted all five findings: explicit delegation ownership, state precedence/course-label decision, named spec and comment-scope protection, locale paths/exact commands, and plan path/progress provenance. The same planner returned APPROVED in round 2; all five findings are closed. User approved the topology and named execution authority on 2026-09-05. The new worktree trees/manage-overviews-ux and native bottom branch rs/manage-course-clarity are created at the pinned v3 baseline. Runtime startup and initial plan commit are next; all three implementation layers remain.
+
+## Device-transfer checkpoint, 2026-09-06
+
+The user requests current work committed and published as draft PRs for
+continuation on another device, not completion of the remaining layers or a
+review waiver. Course implementation exists; activity and wizard layers remain
+unimplemented. Current HEAD is the initial plan commit `1448ee98f7`, with no
+upstream or PR. Fresh fetch places it one commit ahead and six behind
+`origin/v3`; no upstream integration occurred.
+
+Central Devsy recovery has superseded the historical startup/shutdown blockers.
+This checkpoint's canonical manage-profile startup has passed internal Auth
+providers JSON and Manage redirect readiness. Final route reconciliation and
+required current commit checks remain pending. No new visual or Playwright
+acceptance is claimed. The initial custody comparison incorrectly reported the
+untracked readiness regression test as deleted; its actual contents match
+upstream and must be retained with the adopted runtime changes.
+
+## Planning verdict
+
+Execution checkpoint, 2026-09-05: user started the task runtime. Fresh fetch succeeded; `rs/manage-course-clarity` has no upstream and is 0 ahead / 0 behind `origin/v3` at the approved baseline. Source-path resolution identifies workspace `rs-manage-course-clarity`, with three routes for Manage, API and Auth. `devrouter exec` successfully returned `/workspaces/klicker-uzh`.
+
+The first container `pnpm run check:all` failed in `@klicker-uzh/analytics#lint`: pandas 2.2.2 attempted a source build with no C compiler. The only installed managed Python is 3.14.4; the repository Dockerfile and CI declare Python 3.12. The failed lint terminated the unfinished Manage and GraphQL checks. No full baseline pass is claimed. The proposed task-only preparation command is `devrouter exec /Users/rschlae/Git/klicker/klicker-uzh/trees/manage-overviews-ux -- uv sync --project apps/analytics --python 3.12 --frozen`; both its permission request and one retry timed out before process creation. No dependency or source configuration was changed.
+
+The task-only agent-browser session opened the Manage URL, but subsequent inspection was blocked by host permission-review timeout and sandbox npm-cache EPERM. No visual acceptance is claimed. Native executor readiness did pass the host `ocx ready --json` check; no executor was dispatched because the initial plan commit and usable baseline verification remain pending. No source implementation, commits or publication have begun. Resume after host command execution is available; do not repeat the topology or plan review. Runtime release is being attempted separately; the release-verification runtime and historical worktrees remain untouched.
+
+Native planner Pauli (`01a0715f-7eef-7c00-b23f-e3056a113cb7`) returned REVISE in round 1 and APPROVED in round 2. All five findings were accepted and verified against source. The local transcript is project/_local/reviews/2026-09-05-manage-overviews-plan-hardening.md. No rival pass is armed: this plan preserves domain, API, data-integrity and authorization contracts; the scoped action-safety reviews remain required during implementation.
+
+The workflow lesson is to validate library, list/detail and wizard information density together before closing a UX package. Proposed destination is the shared UX review guidance; no global instruction, skill or memory change is authorized or made here.
+
+Retry checkpoint, 2026-09-05: host execution is available again and fresh fetch confirms the task branch remains 0 ahead / 0 behind origin/v3. The task container is no longer running, so Python preparation could not execute. Canonical `devrouter ensure` failed fetching `node:24.16.0-bookworm-slim` because `index.docker.io` DNS resolution timed out. An independent host curl check also failed with `curl: (28) Resolving timed out after 10000 milliseconds`. This is now a registry-connectivity blocker, not a permission-review blocker. No source, dependency, lockfile, commit or PR changes were made. The temporary engineering browser closed successfully. Task-only shutdown is queued behind the provider's existing lock; do not bypass it or touch another task's runtime. Resume the approved stack after registry DNS works, through the same exact-path `devrouter ensure` and Python preparation commands.
+
+Runtime release checkpoint: `devrouter stop` for this exact task path and its one permitted retry both timed out in permission review before execution. Shutdown and zero-route readback are unverified; last observed state was accessible with three routes. Closing the temporary `manage-overviews-ux` agent-browser session was also blocked before execution. No keep-running lease was inferred. User/host action is required to restore tool access or run the exact task-only shutdown. `git diff --check` passes; Git status still contains only the three untracked project artifacts.
+
+Latest release evidence supersedes the earlier pending cleanup notes: managed stop completed with `stopped: true` and three freed routes. Fresh source-path workspace readback reports zero routes. Devsy list resolves this source to `rs-manage-course-clarity`; status by that exact ID reports provider `docker`, state `NotFound`, rather than a stopped existing container. No running container remains for this registration. No deletion was performed. The engineering browser is closed. Registry DNS recovery is the remaining environment prerequisite; all implementation and delivery work remains authorized but pending.
+
+Further retry, 2026-09-05: Docker Hub now returns the expected unauthenticated HTTP 401, and fresh fetch still leaves this branch aligned with origin/v3. Startup waited about 17 minutes for the shared provider queue, then created the container and passed internal Auth/Manage readiness. Reconciliation unexpectedly ran the full profile after manage, then exited with `Managed process 'klicker-dev' is not running (foreign). Candidate runtime was rolled back.` No UI implementation or baseline pass is claimed. Both this checkout and the installed CLI declare Devrouter 0.0.51, so a simple declared-version mismatch is not demonstrated. The next investigation is the managed process ownership failure; do not blindly repeat ensure, bypass ownership checks, or change another runtime. Task-only stop is active in terminal session 97487, queued behind a different provider operation. No source, configuration, commit or PR changes were made.

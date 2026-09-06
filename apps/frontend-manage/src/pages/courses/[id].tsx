@@ -173,7 +173,7 @@ function CourseOverviewPage() {
 
       <div
         className={twMerge(
-          'grid grid-cols-1 md:grid-cols-2 md:gap-4 lg:grid-cols-3',
+          'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3',
           !course.isGamificationEnabled && 'md:grid-cols-2'
         )}
       >
@@ -218,7 +218,7 @@ function CourseOverviewPage() {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2">
+        <div className="grid h-max grid-cols-2 gap-x-3 gap-y-1">
           {!course.isAssessmentEnabled && course.pinCode && (
             <>
               <div className="whitespace-nowrap font-bold">
@@ -230,41 +230,58 @@ function CourseOverviewPage() {
             </>
           )}
           <div className="font-bold">{t('shared.generic.courseDuration')}</div>
-          {dayjs(course.startDate).format('DD.MM.YYYY')} -{' '}
-          {dayjs(course.endDate).format('DD.MM.YYYY')}
-          <div className="line-clamp-1 font-bold">
+          <div>
+            {dayjs(course.startDate).format('DD.MM.YYYY')} -{' '}
+            {dayjs(course.endDate).format('DD.MM.YYYY')}
+          </div>
+          <div className="font-bold">
             {t('manage.courseList.notificationEmail')}
           </div>
-          {course.notificationEmail}
+          <div
+            className="min-w-0 break-words"
+            data-cy="course-notification-email"
+          >
+            {course.notificationEmail || t('manage.course.noNotificationEmail')}
+          </div>
           <div className="font-bold">
             {t('manage.courseList.courseLanguage')}
           </div>
-          {t(`shared.generic.${course.language}`)}
+          <div data-cy="course-language">
+            {t(`shared.generic.${course.language}`)}
+          </div>
         </div>
-        <div className="grid h-max grid-cols-2">
+        <div className="grid h-max grid-cols-2 gap-x-3 gap-y-1">
           <div className="font-bold">{t('shared.generic.gamification')}</div>
-          {course.isGamificationEnabled
-            ? t('shared.generic.enabled')
-            : t('shared.generic.disabled')}
+          <div>
+            {course.isGamificationEnabled
+              ? t('shared.generic.enabled')
+              : t('shared.generic.disabled')}
+          </div>
           {course.isGamificationEnabled && (
             <>
               <div className="font-bold">
                 {t('manage.courseList.groupCreationEnabled')}
               </div>
-              {course.isGroupCreationEnabled
-                ? t('shared.generic.enabled')
-                : t('shared.generic.disabled')}
+              <div>
+                {course.isGroupCreationEnabled
+                  ? t('shared.generic.enabled')
+                  : t('shared.generic.disabled')}
+              </div>
               {course.isGroupCreationEnabled && (
                 <>
                   <div className="font-bold">
                     {t('manage.courseList.groupCreationDeadline')}
                   </div>
-                  {dayjs(course.groupDeadlineDate).format('DD.MM.YYYY')}
+                  <div>
+                    {dayjs(course.groupDeadlineDate).format('DD.MM.YYYY')}
+                  </div>
                   <div className="font-bold">
                     {t('shared.generic.groupSize')}
                   </div>
-                  2 - {course.maxGroupSize} ({course.preferredGroupSize}{' '}
-                  {t('shared.generic.preferred')})
+                  <div>
+                    2 - {course.maxGroupSize} ({course.preferredGroupSize}{' '}
+                    {t('shared.generic.preferred')})
+                  </div>
                 </>
               )}
             </>
@@ -272,7 +289,7 @@ function CourseOverviewPage() {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-4 lg:flex-row">
+      <div className="mt-4 flex flex-col gap-4 xl:flex-row">
         {calendarView ? (
           <div className="flex flex-1 basis-3/5 flex-col">
             <Button
