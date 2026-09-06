@@ -270,13 +270,6 @@ function Header({
       data: { cy: 'user-menu' },
       elements: [
         {
-          key: 'beta-features',
-          type: 'link',
-          label: t('manage.settings.betaFeaturesTitle'),
-          onClick: () => router.push('/user/settings#beta-features'),
-          data: { cy: 'menu-beta-features' },
-        },
-        {
           key: 'settings',
           type: 'link',
           label: t('shared.generic.settings'),

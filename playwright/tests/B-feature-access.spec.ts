@@ -304,7 +304,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
   })
 
-  test('Open signup links eligible Catalyst users to the enrollment setting', async ({
+  test('Eligible Catalyst users reach enrollment through settings', async ({
     page,
     loginLecturer,
   }) => {
@@ -317,10 +317,10 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
-    await page.getByTestId('menu-beta-features').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.getByTestId('menu-user-settings').click()
 
-    await expect(page).toHaveURL(/\/user\/settings#beta-features$/)
+    await expect(page).toHaveURL(/\/user\/settings$/)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
   })
@@ -338,7 +338,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
@@ -362,7 +362,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     const enrollmentSwitch = page.getByTestId('beta-enrollment-switch')
     await expect(enrollmentSwitch).toBeChecked()
@@ -416,7 +416,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginFreeUser()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
@@ -443,7 +443,7 @@ test.describe('Beta feature enrollment discovery', () => {
     })
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()

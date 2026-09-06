@@ -1946,8 +1946,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
-      betaFeaturesDataUse:
-        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
         'Beta features include chatbot creation. Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
       betaFeaturesSignupClosed:

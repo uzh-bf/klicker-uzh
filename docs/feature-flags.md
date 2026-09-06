@@ -29,7 +29,7 @@ initialize GrowthBook only when they adopt their first flag.
 | `ai-beta`            | Lecturer chatbot authoring and Manage account usage | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data    |
 | `beta-signup`        | New beta enrollment opt-ins                         | `false`  | Discovery remains visible; new opt-ins are denied and eligible existing members can still opt out |
 
-Beta Features is discoverable in the lecturer user menu, account settings and
+Beta Features is discoverable in account settings and the
 first-login dialog regardless of Catalyst, login scope or signup availability.
 The information names chatbot creation as a beta feature. Enrollment controls
 require the backend capability to allow changes, known membership, and either
@@ -299,7 +299,7 @@ change rather than broadening it preemptively.
    and `catalyst: true`. Create `beta-signup` with a false default and verify
    that browser and backend SDK connections receive equivalent definitions.
 5. Open `beta-signup` only for a small internal Catalyst cohort. Verify the
-   first-login prompt, user-menu link, settings control, opt-in, `ai-beta`
+   first-login prompt, settings navigation and control, opt-in, `ai-beta`
    access, account-usage visibility, reload persistence, and opt-out before
    widening the target.
 

@@ -108,9 +108,6 @@ function BetaEnrollmentSettings({
       <Setting title={t('manage.settings.betaFeaturesTitle')}>
         <div className="mb-5 flex flex-col gap-3">
           <p>{t('manage.settings.betaFeaturesDescription')}</p>
-          <p className="text-sm text-gray-600">
-            {t('manage.settings.betaFeaturesDataUse')}
-          </p>
 
           {!canToggle ? (
             <div data-cy="beta-enrollment-unavailable" role="status">

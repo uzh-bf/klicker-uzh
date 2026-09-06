@@ -1,5 +1,20 @@
 # V3 release readiness checkpoint
 
+## Current follow-up
+
+The requested Settings-only navigation and cohort-explanation removal are
+implemented. Formatting, Manage typechecking and real-browser settings/menu
+checks pass. Navigation assertions were updated but not rerun yet. The local
+lecturer has both Catalyst flags and FULL_ACCESS; all three GrowthBook enrollment
+configuration variables are absent. Manual opt-in/enabled-feature verification
+therefore needs a local-only fixture, not an account entitlement change.
+
+The user approved the sanitized Gemini consultation, which now completed.
+Its report is retained under the ignored local reviews directory. Integrated
+final review remains pending. The user also approved one upstream v3 integration
+pass; push, release and deployment remain unauthorized. Earlier approval blockers
+below are historical and superseded by these explicit rulings.
+
 ## Latest recovery receipt, September 6
 
 The user explicitly authorized full recreation after recycling the runtime.
