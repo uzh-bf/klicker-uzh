@@ -139,6 +139,10 @@ async function main() {
   await runtime.start()
 
   logger.info('Worker runtime stopped after termination')
+  // The drain is complete here, but the Redis and Prisma clients opened above
+  // keep the event loop alive and node runs as PID 1, so exit explicitly
+  // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
+  process.exit(0)
 }
 
 process.on('unhandledRejection', (reason) => {
