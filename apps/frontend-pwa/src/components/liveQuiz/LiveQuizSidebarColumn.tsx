@@ -95,6 +95,7 @@ function LiveQuizSidebarColumn({
       ) : null}
 
       <FeedbackArea
+        key={quizId}
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isLiveQAEnabled={isLiveQAEnabled}
         className={twMerge(

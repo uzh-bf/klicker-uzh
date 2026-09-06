@@ -11,7 +11,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Button, type StepItem, StepProgress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 
 const ICON_MAP: Record<StackFeedbackStatus, IconDefinition> = {
   [StackFeedbackStatus.ManuallyGraded]: faCheck,
@@ -58,19 +57,11 @@ function StepProgressWithScoring({
           if (isNavigable(ix)) setCurrentIx(ix)
         }}
         data={{ cy: 'practice-quiz-progress' }}
-        className={{ root: 'w-full' }}
+        className={{ root: 'h-auto min-h-11 w-full' }}
         formatter={({ element, ix }) => (
           <div className="flex w-full flex-row justify-center px-0.5 md:px-2">
-            <div className="flex flex-row items-center justify-between md:w-full">
-              <div
-                className={twMerge(
-                  typeof element.score !== 'undefined' &&
-                    element.score !== null &&
-                    'hidden md:block'
-                )}
-              >
-                {ix + 1}
-              </div>
+            <div className="flex flex-col items-center justify-between gap-0.5 md:w-full md:flex-row">
+              <div>{ix + 1}</div>
 
               {typeof element.score !== 'undefined' &&
                 element.score !== null && (
@@ -89,7 +80,8 @@ function StepProgressWithScoring({
       />
       {resetLocalStorage && (
         <Button
-          className={{ root: 'flex h-7 flex-row text-sm' }}
+          aria-label={t('pwa.practiceQuiz.resetAnswers')}
+          className={{ root: 'flex min-h-11 min-w-11 flex-row text-sm' }}
           onClick={() => {
             resetLocalStorage()
           }}

@@ -481,6 +481,7 @@ function Index({ id }: { id: string }) {
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveView}
+      activeMobilePage={activeView}
       liveQuizId={id}
       className={{ body: 'p-0 px-4 pb-4' }}
     >
@@ -667,13 +668,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  await apolloClient.query({
-    query: GetFeedbacksDocument,
-    variables: {
-      quizId: ctx.query?.id as string,
-      skip: !ctx.query?.id,
-    },
-  })
+  // Feedback has its own retry state and must not prevent quiz participation.
+  await apolloClient
+    .query({
+      query: GetFeedbacksDocument,
+      variables: {
+        quizId: ctx.query?.id as string,
+        skip: !ctx.query?.id,
+      },
+    })
+    .catch(() => undefined)
 
   return addApolloState(apolloClient, {
     props: {

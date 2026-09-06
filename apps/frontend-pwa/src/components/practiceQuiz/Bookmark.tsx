@@ -61,11 +61,12 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
   return (
     <Button
       disabled={bookmarkingStack}
+      aria-pressed={isBookmarked}
       onClick={() => bookmarkElementStack()}
       data={{ cy: 'bookmark-element-stack' }}
       className={{
         root: twMerge(
-          'h-7 text-sm',
+          'h-11 text-sm',
           bookmarks === null || typeof bookmarks === 'undefined'
             ? 'hidden'
             : undefined

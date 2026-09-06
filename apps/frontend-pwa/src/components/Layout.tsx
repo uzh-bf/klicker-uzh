@@ -6,6 +6,7 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
+import { useTranslations } from 'next-intl'
 import type React from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -34,6 +35,7 @@ interface LayoutProps {
   setActiveMobilePage?: Dispatch<
     SetStateAction<'questions' | 'feedbacks' | 'leaderboard'>
   >
+  activeMobilePage?: string
   liveQuizId?: string
   className?: { header?: string; body?: string }
 }
@@ -46,9 +48,11 @@ function Layout({
   course,
   mobileMenuItems,
   setActiveMobilePage,
+  activeMobilePage,
   liveQuizId,
   className,
 }: LayoutProps) {
+  const t = useTranslations()
   const { data: dataParticipant } = useQuery(SelfDocument, {
     variables: { liveQuizId },
     fetchPolicy: 'cache-and-network',
@@ -78,6 +82,13 @@ function Layout({
         ></meta>
       </Head>
 
+      <a
+        href={`#${LAYOUT_SCROLL_CONTAINER_ID}`}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-3 focus:text-slate-900 focus:ring-2"
+      >
+        {t('shared.generic.skipToContent')}
+      </a>
+
       {!embedded && (
         <div className={twMerge('flex-none', className?.header)}>
           <Header
@@ -94,8 +105,9 @@ function Layout({
         </div>
       )}
 
-      <div
+      <main
         id={LAYOUT_SCROLL_CONTAINER_ID}
+        tabIndex={-1}
         className={twMerge(
           embeddedAutoResize
             ? 'flex flex-none flex-col overflow-visible'
@@ -106,12 +118,13 @@ function Layout({
         )}
       >
         {children}
-      </div>
+      </main>
 
       {!embedded && (
         <div className="flex-none md:hidden">
           <MobileMenuBar
             menuItems={mobileMenuItems}
+            activeValue={activeMobilePage}
             onClick={(value) => setActiveMobilePage?.(value as any)}
             participantMissing={
               !dataParticipant?.self ||
