@@ -1369,7 +1369,7 @@ const EditComposer: FC = () => {
     >
       <ComposerPrimitive.Root
         data-cy="chat-edit-composer"
-        className="bg-muted flex w-full flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0"
+        className="focus-within:border-primary/40 focus-within:ring-primary/10 bg-muted border-border flex w-full flex-col gap-2 rounded-2xl border shadow-[0_0_12px_rgba(0,0,0,0.06)] transition-colors ease-in focus-within:ring-2"
       >
         <ComposerPrimitive.Input
           data-cy="chat-edit-composer-input"
