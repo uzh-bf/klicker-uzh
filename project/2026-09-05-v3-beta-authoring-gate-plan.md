@@ -40,7 +40,7 @@ outside this approval.
 | Lecturer chatbot authoring | Compose | Require existing ai-beta alongside current authoring permissions, fail closed for missing/off/throwing evaluators. |
 | Beta discovery | Extend | Every authenticated lecturer can find informational Beta Features in account settings and first login. The normal Settings menu entry provides navigation; no separate beta menu entry. Chatbots is named as a beta feature. |
 | Published participant access | Reuse unchanged | Publication and course Participation rules remain authoritative; isActive is not access control. |
-- ADR: no new primitive or hard-to-reverse architecture decision. Update docs/feature-flags.md only; reopening entitlement architecture, storage or participant rules requires a new ruling.
+- ADR: no new primitive. Align ADR 0008 (shared feature flags) with the approved restrictive server-side beta gate and clarify ADR 0020 (publication approval) to distinguish the unchanged account entitlement. Update docs/feature-flags.md; reopening entitlement architecture, storage or participant rules requires a new ruling.
 ## Delegation Map
 | Workstream | Owner and reason | Dependency | Acceptance |
 | --- | --- | --- | --- |
@@ -82,6 +82,18 @@ outside this approval.
 - Commit exact slices, run dedicated simplifier plus risk-selected slice reviewer, verify and integrate findings; run final reviewer over complete committed range after all required checks. Correctness, maintainability, security and architecture lenses apply.
 - Stop and verify exact test runtime after use; retain original manual runtime under user's keep-running request. No deletion.
 ## Planning review and Progress
+- Local finish, September 6: slice risk review completed without findings.
+  The integrated final reviewer inspected all 23 paths through 0cd245b632 and
+  reported only conflicting ADR wording. The main session verified the finding:
+  ADR 0008's blanket prohibition was stale against the approved server-side gate;
+  ADR 0020 referred to the separate account publication entitlement, not ai-beta.
+  Both records now explicitly distinguish these controls. This documentation-only
+  correction changes no behavior or approved product decision. Parent diff and
+  source checks resolve the finding; existing runtime and test evidence remains
+  applicable. The native final-review route failed with adapter_eof before a
+  result; one trusted Sol-high continuity reviewer completed the same contract.
+  All reviewers are closed. The local package is complete; further push to the
+  existing draft PR requires explicit authorization. No release readiness is claimed.
 - September 6 receiving-device continuation: Auth delegated login and providers
   work without source repair. The local enrollment fixture now connects the
   test-only backend payload to Manage, with explicit ignored-marker activation

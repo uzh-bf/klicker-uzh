@@ -20,11 +20,16 @@ Approval is two-tier and both tiers are account- or artifact-level, never
 per-edit:
 
 1. **Account AI capability**: the team approves a lecturer's account and cost
-   center once and enables a feature flag. This single AI usage authorization
+   center once and enables the account publication entitlement
+   (`aiChatbotPublishingEnabled`). This single AI usage authorization
    covers both base and advanced model usage; it is not split by model or
-   model class. Lecturers with Catalyst can already see and use the chatbot
-   creation and configuration features beforehand; the flag gates publication,
-   not creation.
+   model class. Eligible lecturers can create and configure chatbots before
+   this approval; the account entitlement gates publication, not creation.
+   Clarification, 2026-09-06: authoring also requires the server-evaluated
+   `ai-beta` rollout condition alongside Catalyst and existing login-scope and
+   ownership checks, as recorded in
+   [ADR 0008 — shared feature flags](./0008-use-growthbook-for-feature-flags.md).
+   Beta enrollment does not grant the account publication entitlement.
 2. **Per-chatbot publication**: each chatbot is created and configured
    self-service in a non-published state. In Phase 0, the owning lecturer can
    manage and configure it, but no use or preview path exists. A later
