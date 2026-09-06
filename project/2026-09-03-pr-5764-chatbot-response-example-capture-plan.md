@@ -87,7 +87,11 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ### Compatibility follow-up authorized on 2026-09-06
 
-Source review is complete at `488fc4126da469e1558a2c3e40cedd676cc1afe7`: the same final reviewer returns `DONE` with no remaining findings across the complete package, reusing unchanged evidence and reviewing the bounded mode correction. Final managed shutdown succeeds; the exact container reports `exited` and the workspace has zero routes. All predecessor findings are resolved. The required delivery layer is still PR-ready: publish the reviewed branch, refresh the existing PR description, and settle exact-head CI and final AI review. Merge, deployment, and live activation remain withheld.
+Source review is complete at `488fc4126da469e1558a2c3e40cedd676cc1afe7`: the same final reviewer returns `DONE` with no remaining findings across the complete package, reusing unchanged evidence and reviewing the bounded mode correction. Final managed shutdown succeeds; the exact container reports `exited` and the workspace has zero routes. All predecessor findings are resolved. The reviewed branch is published and the existing PR description is refreshed. Exact-head CI and final AI review remain pending before PR-ready. Merge, deployment, and live activation remain withheld.
+
+#### Historical execution checkpoints on 2026-09-06
+
+The following checkpoints precede the completed source review, shutdown, and publication recorded above. Their pending statements describe those earlier checkpoints, not the current state.
 
 The user approved proceeding after the Devrouter update. The remaining source correction aligns capture, the review mode list, and approval with canonical standard-mode settings. Main owns this coupled validation change and its two focused database regressions. The same final reviewer will assess the bounded correction after verification; the prior pass's medium finding is recorded in `project/_local/reviews/2026-09-06-response-example-capture-correction-final.md`. Publication remains authorized only to the existing [capture PR](https://github.com/uzh-bf/klicker-uzh/pull/5764). No additional upstream integration, merge, deployment, or live activation is authorized.
 
