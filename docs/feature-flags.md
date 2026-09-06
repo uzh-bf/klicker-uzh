@@ -168,6 +168,31 @@ authentication, API, and database are exercised.
 
 ## Node.js adoption
 
+### Local enrollment verification
+
+For manual verification on a synthetic seeded checkout, create the ignored
+`.devcontainer/.runtime/beta-enrollment-fixture` marker, then run
+`devrouter ensure <checkout> --profile manage`. This explicit mode starts the
+selected apps with `dev:test`; ordinary development remains unchanged. Remove
+the marker and rerun the same command to return to ordinary development.
+Stop the exact checkout with `devrouter stop <checkout>` after verification.
+
+The backend test preload serves an in-memory saved group for the seeded lecturer
+only. Membership starts enabled and resets on backend process restart. Enrollment
+still uses the real HTTPS configuration validation, saved-group service calls,
+Redis locking and feature evaluator. No real GrowthBook request or account
+entitlement change is made. The browser reads the same current payload through
+Manage's test-only `/__growthbook__/api/features/sdk-test` rewrite. No management
+API is exposed to the browser. Both the rewrite and backend route are absent in
+production.
+
+Verify opt-out and opt-in in account settings without Playwright route mocks.
+Require the enrollment convergence indicator, the matching chatbot authoring UI,
+and the matching backend authorization result. The standard Playwright setup
+resets data; do not run it against a retained manual database for this check.
+
+### Server configuration
+
 The adopting service maps server-only variables into one process-level client:
 
 - `GROWTHBOOK_API_HOST`: HTTPS GrowthBook SDK service or proxy reachable from

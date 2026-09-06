@@ -82,6 +82,50 @@ outside this approval.
 - Commit exact slices, run dedicated simplifier plus risk-selected slice reviewer, verify and integrate findings; run final reviewer over complete committed range after all required checks. Correctness, maintainability, security and architecture lenses apply.
 - Stop and verify exact test runtime after use; retain original manual runtime under user's keep-running request. No deletion.
 ## Planning review and Progress
+- September 6 receiving-device continuation: Auth delegated login and providers
+  work without source repair. The local enrollment fixture now connects the
+  test-only backend payload to Manage, with explicit ignored-marker activation
+  restricted to the manage profile. Main owns this coupled runtime/browser seam;
+  delegation skip reason: critical-path coupling. The read-only mapping completed
+  through trusted Luna continuity after the configured exploration route failed.
+  Real opt-out and opt-in both converge in the browser. The publishing-capability
+  query returns Unauthorized while opted out and resolves normally while opted
+  in; existing publishing permission remains false. The authoring page follows
+  both states. Backend tests (11), backend types and Manage types pass. Root
+  check:all passes (35 type/prerequisite tasks and seven lint tasks); runtime
+  regressions and focused formatting pass. Removing the local marker and
+  reconciling ordinary manage startup returns 404 from both fixture routes.
+  The engineering browser is closed. The full production build is running.
+  No real
+  GrowthBook service, entitlement, retained database reset or production change
+  is involved. Slice reviews, remaining native checks and integrated final review
+  remain pending. Fresh refs match the task upstream; the branch is 11 ahead and
+  4 behind v3, including unrelated routing-version and review-workflow changes.
+  No additional integration or push is authorized by this continuation.
+- Device-transfer landing on the receiving machine: fresh fetch confirms
+  origin/rs/v3-release-verification at the recorded head fdd83714a6; the
+  canonical worktree was recreated at trees/rs/v3-production-release as a
+  local tracking branch and the disposable mirror was not recreated. PR #5799
+  remains an open MERGEABLE draft; current-head CI is green except ocr-review,
+  which failed all selected provider/subtask requests with zero findings, and
+  the stale-pending final-ai-review status whose workflow skipped its review
+  jobs on the draft; no human feedback exists. The user-requested retry
+  resolved the escalation blocker. PATH selected Devrouter 0.0.51, whose
+  helper lacks preparation support; the already-installed Volta 0.0.55
+  executable successfully reconciled the manage profile. Workspace
+  rs-v3-release-verification uses Compose project default-rs-9efcf and reports
+  ready with no drift. Auth providers return JSON 200 and real delegated
+  login succeeds. Browser checks confirm beta information and direct
+  authoring denial with the flag off. The
+  approved local enrollment fixture remains an uncommitted partial
+  test-only preload extension: beta-signup rule, an in-process saved-group
+  control plane behind the real HTTPS validation, membership-driven ai-beta,
+  and updated node tests. Header lookup now uses Headers so the enrollment
+  service's Authorization header is accepted case-insensitively. All 11
+  backend unit tests, backend typechecking and focused Biome checks pass in
+  the container. Browser/backend shared-payload integration and actual
+  enrollment verification remain incomplete; integrated final review has
+  not run. The fixture is not activated by ordinary development startup.
 - Device-transfer checkpoint: the user requests publication of the current work on a draft PR against v3 and continuation on another device. This authorizes pushing `rs/v3-release-verification` to origin and opening a draft; it does not authorize merge, tag, deployment or another upstream integration. The package is parked for transfer, not accepted or release-ready. Resume Auth API diagnosis, the approved local-only enrollment fixture, affected verification and the unused integrated-final review. The last real-login attempt failed before credentials with HTML 404s from Auth's API endpoints. Source-level Auth repair was proposed but not implemented. Browser cleanup could not execute after two permission-review timeouts. Retained local caches, database data and ignored review evidence remain machine-local and must not be committed.
 - September 6 recovery follow-up: the user approved recoverable Chat-cache relocation and a local-only beta enrollment fixture. Chat's old cache is preserved at ignored `project/_local/chat-next-archive-20260906T1332`. Canonical repair eventually returned full/ready, all services healthy, no drift, and `recreated: false`; a missing-container inspection failure and a transient LiteLLM health timeout preceded that successful run. Chat now passes its JSON 401 readiness contract. Real routed Auth root loads, but delegated access reaches `/api/auth/error`; browser fetches of providers, signin/delegation and error all return HTML 404, confirmed in current Auth server logs. Root-page readiness is insufficient proof of authentication. No further cache removal or authentication source change was made. Local fixture source mapping is complete, but implementation and integrated final review remain pending. The configured exploration provider rejected the request for insufficient credits; one trusted native Luna continuity mapping completed and both children are closed. HEAD remains `70d3322a511d3f494c57eeb111d8848bdc6cfa0c`, ten ahead and two behind origin/v3; no additional upstream integration. Retain this runtime for the user's manual verification until the next checkpoint.
 - Latest checkpoint: Auth now passes HTTP readiness after its caches were rebuilt outside Tailwind's scan path. Full startup instead detects a stale Chat API route. The preserve-next-cache marker correctly blocks automatic deletion; a separate request to recoverably archive only the Chat cache is awaiting the user. Managed state is degraded, so routed real-login proof is unavailable. No Chat cache or database data was changed. Both runtime review findings are resolved and both children are closed. The local beta fixture decision and integrated final review remain pending. Production disclaimer PR #5696 is still open against v3 on fresh readback.
