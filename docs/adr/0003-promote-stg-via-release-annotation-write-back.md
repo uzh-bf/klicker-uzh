@@ -20,7 +20,19 @@ Automate that annotation. `.github/workflows/deploy-stg-promote.yml` writes the 
 
 Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for the selected source commit, with the required set derived from the workflow files present in the checkout rather than a hardcoded list. `skipped` is not treated as success. A rollout therefore cannot start against a half-published or stale source tag, and cannot run migrations from a stale migrator image.
 
-The workflow publishes as an **auto-merging pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Before requesting auto-merge it waits for the exact generated-promotion verification status so an unprotected source branch cannot merge the pull request before verification.
+The workflow publishes through a **workflow-owned pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Promotion control is fetched from the trusted workflow SHA, while the source checkout persists no write credential. The workflow first disables auto-merge on every older same-repository promotion pull request targeting the selected source, then closes each one without relying on remote branch deletion; similarly named fork pull requests remain untouched. It waits for the exact generated-promotion verification status, then rechecks the unchanged head, intended base, repository ownership, exact status, live pause variable, automatic branch-cleanup policy, absence of another workflow-owned promotion, and disabled auto-merge state before using the synchronous merge endpoint. It never requests queueing; a repository-policy rejection fails closed instead of leaving an asynchronous merge armed.
+
+The repository variable `STG_PROMOTION_PAUSED` is an explicit release-window
+interlock. The promoter checks it before its gates and reads it again through
+the repository API immediately before every promotion-enabling external write.
+Safety retirement may still disable auto-merge and close a stale pull request
+after a pause is raised. It never leaves auto-merge armed on a generated pull
+request. Values are strict: lowercase
+`true` pauses, while lowercase `false` or an unset variable permits promotion;
+any other value or an unreadable API response fails closed. Because a variable
+change cannot retract an API request that GitHub has already accepted, the
+operator also cancels active promoter runs, disables auto-merge if armed, and
+closes every open promotion pull request before declaring the pause effective.
 
 ## Considered options
 
@@ -40,11 +52,15 @@ Each promoted source commit produces a **second** commit on the selected source 
 
 The required set is derived from the `v3_*-stg.yml` files, which includes `v3_analytics-stg.yml` — and `analytics` has **no** Deployment in the chart. A failed analytics image build therefore blocks the staging rollout of components that do not depend on it. Accepted deliberately: a hardcoded exception would rot when the staging build inventory changes, and the failure is visible in the promoter's run log.
 
-Two repository settings are load-bearing and recorded nowhere else: `squash_merge_commit_title` must remain `PR_TITLE` so the `[skip ci]` marker reaches the squash commit, and auto-merge must stay enabled. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so a flipped setting degrades to wasted rebuilds rather than an unbounded promotion loop.
+The selected source branch must require current heads rather than a merge queue. The synchronous merge request supplies its exact verified head SHA and `[skip ci]` commit title, so `squash_merge_commit_title` is not load-bearing. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so an unexpected title-policy change still degrades to wasted rebuilds rather than an unbounded promotion loop.
+
+The repository setting that automatically deletes merged head branches is part of this mechanism. The trusted control preflights it before merge and fails closed when it is disabled, preventing generated branches from accumulating and blocking a later same-SHA promotion.
+
+GitHub's synchronous merge API constrains the expected head SHA but does not accept an expected base branch. The trusted control therefore rechecks the intended base, head repository, and exact verification status immediately before calling it. A repository writer could still retarget the pull request between that read and the merge request; write access and audit logs remain the residual trust boundary.
 
 Every workload carrying the rollout annotation rolls on each promoted commit from the selected source branch, including the Hatchet workers. The workers' SDK drains in-flight tasks on `SIGTERM` and their tasks declare retries, but the chart sets no `terminationGracePeriodSeconds` and no `preStop`, and both worker Dockerfiles use shell-form `CMD`, so signal delivery is not guaranteed. This is pre-existing and applies equally to every manual sync today; automation only changes how often it happens. Hardening it is tracked separately.
 
-GitHub loads `workflow_run` from the default branch. A correction merged only to a non-default selected source is available for a branch-selected manual dispatch but does not alter automatic fan-in until the executable correction also reaches default branch `v3`. Existing build runs keep the promoter definition they started with and need a separately authorized post-build promotion after the correction is active.
+GitHub loads `workflow_run` from the default branch, and the promoter rejects a manual dispatch whose workflow ref is not that default branch. A correction merged only to a non-default selected source is therefore not executable. Existing build runs keep the promoter definition they started with and need a separately authorized post-build promotion after the correction is active on `v3`.
 
 A failed migration now blocks the entire staging rollout automatically rather than only when someone syncs by hand. That is the intended behaviour from ADR-0001, but it makes a bad migration a stop-the-world event on stg.
 
