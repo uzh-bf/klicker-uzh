@@ -25,8 +25,8 @@
 - [Scaling investigation findings](../../trees/klicker-scaling-investigation/project/2026-08-22-klicker-scaling-investigation-findings.md)
 - [Scaling investigation plan](../../trees/klicker-scaling-investigation/project/2026-08-22-klicker-scaling-investigation-plan.md)
 - [W1 replica ownership plan](../../trees/rs-scaling-replica-ownership/project/2026-08-22-pr-5491-scaling-replica-ownership-plan.md)
-- [Planning-stage review disposition](project/_local/reviews/2026-08-22-hatchet-worker-runtime-contract-planning.md)
-- [Final integrated review disposition](project/_local/reviews/2026-08-23-hatchet-worker-runtime-contract-final-review-rebased.md)
+- [Planning-stage review disposition](_local/reviews/2026-08-22-hatchet-worker-runtime-contract-planning.md)
+- [Final integrated review disposition](_local/reviews/2026-08-23-hatchet-worker-runtime-contract-final-review-rebased.md)
 
 ## Goal
 

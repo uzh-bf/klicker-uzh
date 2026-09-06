@@ -138,7 +138,7 @@ async function main() {
   logger.info('Starting worker to process jobs...')
   await runtime.start()
 
-  logger.info('Worker started successfully and ready to process jobs')
+  logger.info('Worker runtime stopped after termination')
 }
 
 process.on('unhandledRejection', (reason) => {

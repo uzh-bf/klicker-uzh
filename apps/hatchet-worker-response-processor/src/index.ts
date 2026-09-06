@@ -124,7 +124,7 @@ async function main() {
   console.log('▶Starting worker to process responses...')
   await runtime.start()
 
-  console.log('Response processor worker started successfully!')
+  console.log('Response processor worker runtime stopped after termination')
 }
 
 await main()
