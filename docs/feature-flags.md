@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-09-03'
+timestamp: '2026-09-05'
 tags:
   - architecture
   - frontend
@@ -23,11 +23,22 @@ initialize GrowthBook only when they adopt their first flag.
 
 ## Active flags
 
-| Key                  | Consumer                                             | Fallback | Disabled behavior                                                                       |
-| -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
-| `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
-| `beta-signup`        | Manage beta enrollment discovery and new opt-ins     | `false`  | Enrollment is hidden and new opt-ins are denied; existing members can still opt out     |
+| Key                  | Consumer                                            | Fallback | Disabled behavior                                                                                 |
+| -------------------- | --------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage                                  | `false`  | Analytics controls remain visible but are not usable                                              |
+| `ai-beta`            | Lecturer chatbot authoring and Manage account usage | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data    |
+| `beta-signup`        | New beta enrollment opt-ins                         | `false`  | Discovery remains visible; new opt-ins are denied and eligible existing members can still opt out |
+
+Beta Features is discoverable in the lecturer user menu, account settings and
+first-login dialog regardless of Catalyst, login scope or signup availability.
+The information names chatbot creation as a beta feature. Enrollment controls
+require the backend capability to allow changes, known membership, and either
+open signup or existing membership. Discovery never grants access.
+
+Chatbot authoring requires `ai-beta`, Catalyst and `FULL_ACCESS` or account-owner
+scope in both Manage and GraphQL. A denied direct route displays an explanation
+and a link to beta settings without mounting authoring queries. Administrative
+publication approval and published participant access remain unchanged.
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -276,6 +287,8 @@ change rather than broadening it preemptively.
 1. Land and deploy the source with `beta-signup` absent or false. Confirm from
    rendered manifests and values-free runtime metadata that only the primary
    GraphQL backend receives the management Secret and saved-group id.
+   Verify that all lecturers can find beta information, while new opt-ins remain
+   unavailable and `ai-beta`-disabled accounts cannot author chatbots.
 2. Record the approved purpose, legal basis, retention owner, monthly removal
    procedure, and support contact before collecting membership. Keep the group
    limited to stable `User.id` values.

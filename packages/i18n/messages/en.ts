@@ -1949,7 +1949,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesDataUse:
         'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
-        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
       betaFeaturesConvergedOff: 'Beta access is no longer active.',
       betaFeaturesConvergedOn: 'Beta access is now active.',
       betaFeaturesEnrollment: 'Beta enrollment',

@@ -42,12 +42,6 @@ function Header({
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const betaSignupEnabled = useFeatureFlag('beta-signup')
-  const canDiscoverBetaFeatures =
-    betaSignupEnabled &&
-    user?.catalyst === true &&
-    (userScope === UserLoginScope.FullAccess ||
-      userScope === UserLoginScope.AccountOwner)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -275,17 +269,13 @@ function Header({
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
-        ...(canDiscoverBetaFeatures
-          ? [
-              {
-                key: 'beta-features',
-                type: 'link' as const,
-                label: t('manage.settings.betaFeaturesTitle'),
-                onClick: () => router.push('/user/settings#beta-features'),
-                data: { cy: 'menu-beta-features' },
-              },
-            ]
-          : []),
+        {
+          key: 'beta-features',
+          type: 'link',
+          label: t('manage.settings.betaFeaturesTitle'),
+          onClick: () => router.push('/user/settings#beta-features'),
+          data: { cy: 'menu-beta-features' },
+        },
         {
           key: 'settings',
           type: 'link',
