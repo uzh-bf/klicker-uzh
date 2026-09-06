@@ -135,7 +135,6 @@ export async function POST(
       knowledgeBases: {
         where: { isEnabled: true },
         select: { kbId: true },
-        take: 1,
       },
       mcpConfigurations: {
         where: { isEnabled: true },

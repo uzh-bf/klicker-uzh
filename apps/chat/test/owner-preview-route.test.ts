@@ -118,10 +118,13 @@ describe('POST owner preview chat', () => {
       value: { messages: uiMessages, selectedMode: 'tutor' },
     })
     mocks.validateManageChatRequest.mockResolvedValue({ messages: uiMessages })
-    mocks.findChatbot.mockResolvedValue({
+    mocks.findChatbot.mockImplementation(async ({ include }) => ({
       id: 'chatbot-id',
       course: { displayName: 'Test Course' },
-      knowledgeBases: [{ kbId: 'kb-id' }],
+      knowledgeBases: [{ kbId: 'kb-id' }, { kbId: 'second-kb-id' }].slice(
+        0,
+        include.knowledgeBases.take
+      ),
       mcpConfigurations: [
         {
           allowedTools: ['*', 'delete_all'],
@@ -149,7 +152,7 @@ describe('POST owner preview chat', () => {
         quizzerEnabled: false,
       },
       systemPrompts: { tutor: 'Tutor instructions' },
-    })
+    }))
     mocks.getAggregatedMCPTools.mockResolvedValue({
       close: mocks.closeMcpTools,
       tools: {
@@ -237,7 +240,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbIds: ['kb-id'],
+        kbIds: ['kb-id', 'second-kb-id'],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
