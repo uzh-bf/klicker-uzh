@@ -24,6 +24,7 @@ import {
   type ElementData,
   type ElementInstanceOptions,
   type ElementInstanceResults,
+  type RefreshImportExportFingerprintsInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -46,6 +47,10 @@ import {
   handlePublishScheduledGroupActivity,
 } from '@/services/groups.js'
 import {
+  handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
+} from '@/services/importExportFingerprintMaintenance.js'
+import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
   handleStandardLiveQuizBlockClosureAggregation,
@@ -55,6 +60,7 @@ import {
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
+import { handleCleanupImportExportPackages } from '@/services/packageStorage.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -133,8 +139,14 @@ export async function testInitialization(
   })
 
   const pubSub = createPubSub()
-  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
-  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
+  const redisExec = new Redis({
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  })
+  const redisAssessmentExec = new Redis({
+    host: process.env.REDIS_ASSESSMENT_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6380),
+  })
 
   const hatchetCtx = {
     hatchet,
@@ -148,6 +160,30 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    repairImportExportFingerprints: hatchet.task({
+      name: 'repair-import-export-fingerprints',
+      fn: async (_, executionContext) => {
+        return await handleRepairImportExportFingerprints(
+          {},
+          hatchetCtx,
+          executionContext
+        )
+      },
+    }),
+    refreshImportExportFingerprints: hatchet.task({
+      name: 'refresh-import-export-fingerprints',
+      fn: async (
+        input: RefreshImportExportFingerprintsInput,
+        executionContext
+      ) => {
+        const result = await handleRefreshImportExportFingerprints(
+          input,
+          hatchetCtx,
+          executionContext
+        )
+        return { success: true, processed: result.processed }
+      },
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({
@@ -285,6 +321,17 @@ export async function testInitialization(
         return { success }
       },
     }),
+    cleanupImportExportPackages: hatchet.task({
+      name: 'cleanup-import-export-packages',
+      fn: async (_, executionContext) => {
+        const success = await handleCleanupImportExportPackages(
+          {},
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
       fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
@@ -378,6 +425,10 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  // audit logs do not carry foreign keys, so they need explicit cleanup between
+  // tests that reuse deterministic object ids.
+  await prisma.auditLogEntry.deleteMany()
+
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
@@ -396,6 +447,12 @@ export async function testCleanup(prisma: PrismaClient) {
       `Permissions or derived permissions still exist in the database: ${dbPermissions} permissions, ${dbPermissionsDerived} derived permissions`
     )
   }
+
+  // Durable import/export rows deliberately restrict owner/receipt deletion
+  // until exact cleanup records have been removed.
+  await prisma.importMediaStaging.deleteMany()
+  await prisma.elementImportReceipt.deleteMany()
+  await prisma.importExportPackageArtifact.deleteMany()
 
   // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()

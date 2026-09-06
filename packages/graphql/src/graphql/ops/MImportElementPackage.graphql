@@ -1,0 +1,12 @@
+mutation ImportElementPackage(
+  $importToken: String!
+  $selectedElementRefs: [String!]!
+) {
+  importElementPackage(
+    importToken: $importToken
+    selectedElementRefs: $selectedElementRefs
+  ) {
+    importedElements
+    warnings
+  }
+}

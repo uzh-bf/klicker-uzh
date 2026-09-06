@@ -3,12 +3,14 @@ import {
   ConcurrencyLimitStrategy,
   type HatchetClient,
   Priority,
+  type TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
   CourseDeletionEvent,
   HatchetHandlers,
   PreparedHatchetTasks,
+  RefreshImportExportFingerprintsInput,
 } from '@klicker-uzh/types'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -31,6 +33,20 @@ function isAuditLogMessage(input: unknown): input is AuditLogMessage {
     typeof (input as { info?: unknown }).info === 'string'
   )
 }
+
+export const IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS = {
+  refreshFingerprints: '5m',
+  repairFingerprints: '10m',
+  cleanupPackages: '45m',
+} as const
+
+const IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT = {
+  // A standalone task owns its own concurrency group, so one constant CEL key
+  // serializes runs of that task without coupling repair and cleanup together.
+  expression: 'true',
+  maxRuns: 1,
+  limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+} as const
 
 export function prepareHatchetTasks({
   hatchet,
@@ -67,6 +83,54 @@ export function prepareHatchetTasks({
       return preparedTasks
     },
   }
+
+  // ! IMPORT / EXPORT FINGERPRINT MAINTENANCE
+  // #region
+  let refreshImportExportFingerprints: TaskWorkflowDeclaration<
+    RefreshImportExportFingerprintsInput,
+    { success: boolean; processed: number }
+  >
+  refreshImportExportFingerprints = hatchet.task({
+    name: 'refresh-import-export-fingerprints',
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.refreshFingerprints,
+    defaultPriority: Priority.LOW,
+    fn: async (input, executionContext) => {
+      const result = await handlers.handleRefreshImportExportFingerprints(
+        input,
+        globalContext,
+        executionContext
+      )
+      if (
+        !result.stoppedEarly &&
+        typeof result.nextAfterElementId === 'number' &&
+        'answerCollectionId' in input
+      ) {
+        await refreshImportExportFingerprints.runNoWait({
+          answerCollectionId: input.answerCollectionId,
+          afterElementId: result.nextAfterElementId,
+        })
+      }
+      return { success: true, processed: result.processed }
+    },
+  })
+
+  const repairImportExportFingerprints = hatchet.task({
+    name: 'repair-import-export-fingerprints',
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.repairFingerprints,
+    concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT,
+    defaultPriority: Priority.LOW,
+    onCrons: ['*/15 * * * *'],
+    fn: async (_, executionContext) => {
+      return await handlers.handleRepairImportExportFingerprints(
+        {},
+        globalContext,
+        executionContext
+      )
+    },
+  })
+  // #endregion
 
   // ! AUDIT LOGGING
   // #region
@@ -315,6 +379,25 @@ export function prepareHatchetTasks({
     },
   })
 
+  const cleanupImportExportPackages = hatchet.task({
+    name: 'cleanup-import-export-packages',
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.cleanupPackages,
+    concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT,
+    defaultPriority: Priority.LOW,
+    onCrons: [
+      '30 * * * *', // running hourly at minute 30 (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleCleanupImportExportPackages(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -392,10 +475,13 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    refreshImportExportFingerprints,
+    repairImportExportFingerprints,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
     updateWeeklyTimelineEntries,
+    cleanupImportExportPackages,
     sendPushNotifications,
     publishScheduledGroupActivity,
     publishScheduledLiveQuiz,
