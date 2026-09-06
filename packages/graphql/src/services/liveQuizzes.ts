@@ -3173,7 +3173,10 @@ export async function getLiveQuizLeaderboard(
       .concat(
         quiz?.temporaryLeaderboard?.flatMap((entry) => {
           return {
-            id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
+            // stable numeric id hashed from the temporary participant id so
+            // entries keep their React key across refetches instead of
+            // remounting the whole list
+            id: createHash('sha256').update(entry.id).digest().readUInt32BE(0),
             participantId: entry.id,
             username: participantProfilesVisible ? entry.username : 'Anonymous',
             avatar: participantProfilesVisible ? entry.avatar : null,

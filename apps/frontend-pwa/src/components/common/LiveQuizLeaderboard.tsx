@@ -4,7 +4,6 @@ import {
   LogoutParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
@@ -22,6 +21,23 @@ type BlockResult = {
   score: number
   rank: number
 } | null
+
+// placeholder matching the leaderboard layout, shown while the initial
+// query resolves (refetches keep the existing list mounted to avoid flicker)
+function LeaderboardSkeleton() {
+  return (
+    <div className="w-full animate-pulse space-y-1.5" aria-hidden="true">
+      <div className="flex items-end gap-4 pb-1">
+        <div className="h-16 flex-1 rounded-t-lg bg-slate-100" />
+        <div className="h-20 flex-1 rounded-t-lg bg-slate-100" />
+        <div className="h-16 flex-1 rounded-t-lg bg-slate-100" />
+      </div>
+      {Array.from({ length: 5 }).map((_, ix) => (
+        <div key={ix} className="h-10 rounded-lg bg-slate-100" />
+      ))}
+    </div>
+  )
+}
 
 function LiveQuizLeaderboard({
   quizId,
@@ -49,7 +65,7 @@ function LiveQuizLeaderboard({
     fetchPolicy: 'cache-only',
   })
 
-  const { data, loading } = useQuery(GetLiveQuizLeaderboardDocument, {
+  const { data } = useQuery(GetLiveQuizLeaderboardDocument, {
     variables: { quizId },
     // use network-only to trigger a refetch once the component is displayed
     // TODO: replace this by a send of the leaderboard within the subscription
@@ -98,8 +114,21 @@ function LiveQuizLeaderboard({
     asyncFunc()
   }, [data, selfData?.self?.id])
 
-  if (loading || !data) {
-    return <Loader />
+  if (!data) {
+    return (
+      <div
+        className={twMerge(
+          'mx-auto w-max max-w-full space-y-4 pt-4 md:pt-2',
+          className
+        )}
+        data-cy="leaderboard-skeleton"
+      >
+        <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
+        <div className="w-200 max-w-full">
+          <LeaderboardSkeleton />
+        </div>
+      </div>
+    )
   }
 
   const leaderboard = data.liveQuizLeaderboard ?? []
@@ -221,7 +250,7 @@ function LiveQuizLeaderboard({
       ) : null}
 
       {blockDelta && (
-        <div className="flex flex-row gap-4 text-xl">
+        <div className="flex animate-fade-in flex-row gap-4 text-xl">
           <div>
             &Delta; {t('shared.leaderboard.ranks')}:{' '}
             <span

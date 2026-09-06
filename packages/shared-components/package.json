@@ -3,6 +3,9 @@
   "name": "@klicker-uzh/shared-components",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "dependencies": {
+    "motion": "13.1.1"
+  },
   "devDependencies": {
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
