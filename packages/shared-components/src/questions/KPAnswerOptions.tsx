@@ -74,16 +74,13 @@ export function KPAnswerOptions({
                 )}
                 data-cy="kp-answer-options"
               >
-                <div
-                  id={choiceLabelId}
-                  className="relative pointer-events-none"
-                >
+                <div id={choiceLabelId} className="relative">
                   <Markdown
                     withProse
                     content={choice.value}
                     expandLabel={t('shared.generic.expandImage')}
                     className={{
-                      root: 'pointer-events-none [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_video]:pointer-events-auto [&_input]:pointer-events-auto [&_iframe]:pointer-events-auto prose-p:m-0! prose-img:m-0! max-w-none p-1 pt-2',
+                      root: 'prose-p:m-0! prose-img:m-0! max-w-none p-1 pt-2',
                     }}
                   />
                 </div>
