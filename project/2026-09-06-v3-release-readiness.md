@@ -1,5 +1,44 @@
 # V3 release readiness checkpoint
 
+## Receiving-device verification, September 6
+
+Local fixture commit `f44bc324a1ce61369346cbe753a938603ed856f0` completes
+the browser/backend enrollment path. Real delegated login works on this device;
+Auth providers return JSON 200. No Auth source change was required.
+
+Real opt-out and opt-in both show converged browser state. The backend publishing
+capability query is Unauthorized while opted out and resolves normally while
+opted in. Its false result preserves the separate publishing entitlement.
+The authoring page changes from denial to an enabled Create chatbot control.
+The test-only payload is shared through Manage without browser request mocks.
+Removing the ignored activation marker and reconciling ordinary manage startup
+returns 404 from both fixture routes. The engineering browser is closed.
+
+Fresh local checks pass: root `check:all` (35 check/prerequisite tasks and seven
+lint tasks), 11 backend tests, 110 focused authorization/enrollment tests,
+backend and Manage types, managed-runtime shell regressions, and focused code
+and document formatting. The complete production build passes all 23 tasks in
+1m58.916s with `NODE_ENV=production`. The first attempt inherited the container's
+development mode and failed Auth logout prerendering; changing only the build
+mode resolved it. Existing build warnings are not a clean-warning claim.
+
+The fixture simplifier found no warranted net reduction. Slice risk review and
+integrated final review remain pending. Shutdown of the exact receiving-device
+workspace completed after waiting for another worktree's provider lock. Fresh
+provider readback is Stopped and exact route count is zero. The local fixture
+marker is removed; no runtime data, caches or worktree were deleted.
+
+[PR 5799 — beta discovery and chatbot authoring gates](https://github.com/uzh-bf/klicker-uzh/pull/5799)
+remains draft at the older published `fdd83714a6` head. Its build/check, GraphQL
+and eight Playwright shards pass; OCR fails and the final-AI-review status remains
+pending after skipped workflow jobs. These are not current-local-head CI results.
+[PR 5696 — visible dark-mode disclaimer acceptance](https://github.com/uzh-bf/klicker-uzh/pull/5696)
+remains open against v3. No push, upstream integration, merge, tag, deployment,
+production GrowthBook write or retained-data reset occurred in this continuation.
+
+All runtime state and blockers below are historical receiving/originating-device
+receipts and are superseded by this section where they conflict.
+
 ## Current follow-up
 
 The approved upstream integration is complete at `3a311052f0`, incorporating
