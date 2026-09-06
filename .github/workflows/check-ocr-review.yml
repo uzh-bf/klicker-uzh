@@ -2,7 +2,7 @@ name: AI code review (OpenCodeReview)
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -16,9 +16,11 @@ permissions:
 
 jobs:
   ocr-review:
-    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft == true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout trusted review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,9 +49,9 @@ jobs:
           llm_model: deepseek/deepseek-v4-flash-0731
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
-          llm_timeout: '540'
+          llm_timeout: '480'
           ocr_version: '1.9.10'
-          review_concurrency: '2'
+          review_concurrency: '4'
           sticky_summary: 'true'
           incremental: 'true'
           route_severity_below: 'low'

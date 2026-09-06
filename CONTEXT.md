@@ -36,6 +36,16 @@ participant account.
 numeric pin code, while an **SSO course** admits only people arriving through
 SWITCH edu-ID.
 
+**Course deletion request**: An accepted instruction to remove a course. The
+course and its activities immediately leave user-facing collections and detail
+reads, even though permanent course deletion may still be pending.
+_Avoid_: Background deletion, soft deletion
+
+**Permanent course deletion**: The irreversible removal of a course and the
+deletion or disconnection of its associated activities according to the course
+deletion rules.
+_Avoid_: Course deletion request, soft deletion
+
 **Assessment course**: A course whose participant results are used as formal
 assessment records and grade-matching inputs (`isAssessmentEnabled`). It is a
 mode of an ordinary course, not a separate type, and it changes what identity
@@ -140,3 +150,193 @@ and is enforced field-by-field in the API layer.
   results. Editing the source element bumps that element's version and flags
   the instance as outdated; it never rewrites what participants already saw or
   answered.
+
+## Chatbot usage
+
+These terms define the language for lecturer authorization, model usage, and
+the two usage lanes shown for chatbot accounts.
+
+### Authorization and lifecycle
+
+**AI usage authorization**:
+An account-level approval that requires an approved cost center and permits
+both base and advanced model usage. It is separate from publication approval.
+_Avoid_: base authorization, advanced authorization, per-model approval
+
+**Publication approval**:
+The per-chatbot approval that makes a chatbot reachable by students. It does
+not authorize model usage by itself.
+_Avoid_: usage approval, activation
+
+**Standard-mode configuration**:
+The nullable owner-controlled Tutor, Explainer, and Quizzer settings stored on
+a chatbot. It contains explicit mode availability and bounded course context;
+the platform compiler treats valid values as lecturer context beneath its
+non-removable scaffolding. Missing or malformed values retain legacy/default
+behavior, and a new replacement must leave Tutor or Explainer enabled while
+Quizzer may be disabled independently.
+_Avoid_: raw prompt, system prompt editor, custom-mode configuration
+
+**Effective mode set**:
+The server-resolved modes a participant may present or request for one
+chatbot. It combines standard-mode configuration, legacy custom-mode entries,
+and required MCP capability checks; a hidden mode is rejected before thread or
+provider work.
+_Avoid_: client mode list, available modes (when referring to server policy)
+
+### Model classes and budgets
+
+**Usage class**:
+The explicit registry classification `BASE` or `ADVANCED` for a model. It
+describes the model lane and is independent of who covers the usage.
+_Avoid_: funding tier, price tier
+
+**Base model usage**:
+Usage from `BASE` models. The teaching center covers a limited amount per
+lecturer, but the covered amount is internal and never shown. Base usage above
+that contribution remains in the base lane and may consume the authorized
+paid budget.
+_Avoid_: Luna usage, unlimited usage, lecturer-funded usage
+
+**Advanced model usage**:
+Usage from `ADVANCED` models. The teaching center does not cover this usage;
+the account's authorized budget applies.
+_Avoid_: premium usage, lecturer-funded usage
+
+**Monthly usage budget**:
+An operations-managed, account-wide configured limit for one usage class. The
+limit persists until operations changes it; only used credits reset at the
+Europe/Zurich month boundary. A base budget does not state how much the
+teaching center covers.
+_Avoid_: chatbot budget, subsidy allowance
+
+**Usage lane**:
+The lecturer-facing projection of one usage class. The UI has exactly two
+lanes, base model usage and advanced model usage, each showing its configured
+budget, used credits, remaining credits, and reset date. Credit figures are
+estimates; the configured budget is a soft planning target and the reset date
+is exact. The lanes are read-only for lecturers; operations manages the
+budgets.
+_Avoid_: funding lane, cost center lane
+
+**Hidden base contribution**:
+The teaching center's internal base-usage contribution. Its amount, covered
+usage, remaining contribution, and settlement details are never returned to
+lecturer or participant clients.
+_Avoid_: free allowance, unlimited allowance, subsidy balance
+
+### Legacy and boundary terms
+
+**Participant usage credits**:
+The existing per-participant, per-chatbot allowance. It remains separate from
+the account-wide monthly usage budgets; any fallback must stay within the
+same usage class.
+_Avoid_: lecturer budget, account credits
+
+**Auto model**:
+The automatic model choice, classified as `ADVANCED` for the MVP until every
+routed billable step can be attributed to a usage class.
+_Avoid_: base fallback, unclassified model
+
+**Class exhaustion**:
+The state in which one class has reached its monthly budget. It disables only
+that class, never triggers an automatic cross-class switch, and exposes a
+class-specific denial code at the participant API boundary.
+_Avoid_: chatbot exhaustion, global lockout
+
+## Learning analytics, research, and consent
+
+**Account-level Learning Analytics choice**:
+The participant's single global choice for Learning Analytics. It is explicit
+and independent of research participation. Inclusion begins prospectively after
+an affirmative choice; opting out removes personal derived Learning Analytics
+data. Existing aggregate reports are not retroactively recomputed or promised
+to be removed; future aggregates exclude the participant.
+Account creation cannot be submitted without an explicit yes or no. Assessment
+account setup follows the same rule for usability: an account may exist before
+the flags are set, but it cannot be used until the required choices and privacy
+acknowledgement are complete.
+
+**Research participation**:
+A separate voluntary decision about future pseudonymised research datasets.
+It is allowed by default for new accounts and therefore uses an opt-out
+control; it does not imply or control Learning Analytics. The decision can be
+changed repeatedly and is checked when an export is released: an objection
+excludes the participant from later exports, and a later opt-in makes older
+eligible data available again. An account with no recorded decision is not
+eligible. _Avoid_: anonymised research export (participant-level rows remain
+pseudonymised; "anonymous" is reserved for outputs that pass a disclosure
+check).
+
+**Privacy-policy acknowledgement**:
+An acknowledgement that the participant has read the applicable privacy policy
+and accepts the platform terms. It is not consent to research or Learning
+Analytics. _Avoid_: legal confirmation, consent.
+
+**Consent-neutral choice**:
+The interface presents affirmative and negative choices with equal visual
+weight. Neither choice is represented as success, failure, warning, or error.
+
+**German register**:
+The consent and privacy flow uses informal `du` consistently, including the
+surrounding explanation and the confirmation action.
+
+## Personal elements
+
+**Personal element**:
+An element (flashcard, later a question) owned by a Participant and visible
+only to them. It is practiced with the same spaced-repetition scheduling as
+lecturer elements but never appears in another student's practice. _Avoid_:
+student flashcard, user card.
+
+**Lecturer element**:
+An element owned by a lecturer and placed into a course activity. Students
+reach it only through published activities. _Avoid_: course element, official
+element (both blur the distinction between the element and its placement).
+
+**Candidate element**:
+A generated element shown in the chat that the student has not saved yet. It
+becomes a personal element only through an explicit save. Distinct from the
+lecturer-side generated element draft. _Avoid_: draft (that word names
+publication and element editing states).
+
+**Generated element draft**:
+A lecturer-facing generated item inside an element generation build, awaiting
+the lecturer's individual accept, reject, or save decision. Saving copies its
+content into an ordinary lecturer element that records its AI origin. Distinct
+from the candidate element in the student chat. _Avoid_: generation candidate,
+candidate (alone — ambiguous with candidate elements and the response-example
+review status).
+
+**Card plan**:
+The list of proposed personal elements the chatbot presents after retrieving
+material on the requested topic, which the student approves before any element
+is generated. _Avoid_: outline, proposal (see element proposal).
+
+**Origin**:
+How an element's content came to exist: AI-generated or authored by a person.
+Who owns it is a separate fact. _Avoid_: source (that word names citations).
+
+**Verification**:
+The lecturer review state of a personal element: unverified until a lecturer
+has verified it. Unrelated to account verification. _Avoid_: approval (chatbot
+publication), review (activity review status).
+
+**Element proposal**:
+A student's explicit request that a lecturer verify a personal element and add
+it to the course. _Avoid_: submission (answering), proposal alone (credit
+configuration).
+
+## H5P question content
+
+**H5P Asset**:
+A lecturer-owned, replaceable `.h5p` package used like other media. Replacing
+its file changes what every H5P Embed displays. _Avoid_: H5P Content Revision.
+
+**H5P Embed**:
+The placement of one H5P Asset inside an element's main content. It is
+presentation content, not a question, response, or scoring rule.
+
+**H5P Viewer**:
+The isolated presentation context that renders an H5P Asset with H5P
+Standalone, without participant identity, results, or saved learning state.

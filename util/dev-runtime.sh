@@ -4,10 +4,15 @@ set -euo pipefail
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 ROOT="${KLICKER_DEV_RUNTIME_ROOT:-$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)}"
 STATE_DIR="${KLICKER_DEV_RUNTIME_STATE_DIR:-$ROOT/.devcontainer/.runtime}"
+BOOTSTRAP_STATE_DIR="${KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR:-/tmp/klicker-devcontainer}"
+BOOTSTRAP_MARKER_FILE="$BOOTSTRAP_STATE_DIR/bootstrap-complete"
+BOOTSTRAP_MARKER_TOKEN='klicker-devcontainer-bootstrap-v1'
 GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
+PRESERVE_NEXT_CACHE_FILE="$STATE_DIR/preserve-next-cache"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+RUNTIME_APPS=("${NEXT_APPS[@]}" response-api)
 # Authentication rejects this valid synthetic nested route before any database
 # lookup, so the handler must return JSON 401 even when no seed data exists.
 CHAT_PROBE_URL='http://localhost:3004/api/chatbots/00000000-0000-4000-8000-000000000000/threads'
@@ -126,6 +131,28 @@ write_atomic() {
   mv "$temporary" "$path"
 }
 
+# Bootstrap completion lives in the container's fixed /tmp state rather than
+# the mounted worktree. Tests may override this one directory for isolation.
+begin_bootstrap() {
+  rm -f -- "$BOOTSTRAP_MARKER_FILE"
+  echo '[dev-runtime] Invalidated the bootstrap completion marker.'
+}
+
+complete_bootstrap() {
+  write_atomic "$BOOTSTRAP_MARKER_FILE" "$BOOTSTRAP_MARKER_TOKEN"
+  echo '[dev-runtime] Published the bootstrap completion marker.'
+}
+
+require_bootstrap() {
+  require_tool cmp
+  [ -f "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker is missing.'
+  [ ! -L "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker must be a regular file.'
+  printf '%s\n' "$BOOTSTRAP_MARKER_TOKEN" | cmp -s - "$BOOTSTRAP_MARKER_FILE" ||
+    die 'Bootstrap completion marker is malformed or does not match the contract.'
+}
+
 read_generation() {
   local generation=0
 
@@ -153,6 +180,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
 }
@@ -167,19 +195,28 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
+    response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
+}
+
+require_cache_repair_allowed() {
+  if [ -e "$PRESERVE_NEXT_CACHE_FILE" ] || [ -L "$PRESERVE_NEXT_CACHE_FILE" ]; then
+    die 'Next.js cache repair is disabled by the preserve-next-cache marker.'
+  fi
 }
 
 request_repair() {
   local app="$1" generation pending updated
 
   valid_next_app "$app" || die "Unsupported Next.js repair target: $app"
+  require_cache_repair_allowed
   require_tool flock
   mkdir -p "$STATE_DIR"
   exec 9>"$STATE_DIR/lock"
   flock -w 10 9 || die "Timed out waiting for the runtime-state lock."
 
+  require_cache_repair_allowed
   generation="$(read_generation)"
   updated="$app"
   if [ -s "$REPAIR_REQUEST_FILE" ]; then
@@ -217,10 +254,64 @@ ensure_dependencies() {
   write_atomic "$DEPENDENCY_STAMP_FILE" "$current"
 }
 
+preparation_filters() {
+  local filters command token status=0
+  local -a words=()
+  # shellcheck source=/dev/null
+  . "$ROOT/util/profile-resolver.sh"
+  profile_wants klicker-dev || status=$?
+  [ "$status" -ne 2 ] || die 'Invalid managed profile.'
+  [ "$status" -eq 0 ] || return 0
+  filters="$(profile_turbo_filters)"
+  if [ -z "$filters" ]; then
+    command="$(node -e '
+      const script = require(process.argv[1]).scripts?.["dev:container"]
+      if (typeof script !== "string") process.exit(1)
+      process.stdout.write(script)
+    ' "$ROOT/package.json")" || die 'Missing canonical dev:container command.'
+    read -r -a words <<<"$command"
+    [ "${words[0]:-}" = turbo ] && [ "${words[1]:-}" = run ] &&
+      [ "${words[2]:-}" = dev ] || die 'Unsupported dev:container command.'
+    words=("${words[@]:3}")
+    while [ "${#words[@]}" -gt 0 ]; do
+      token="${words[0]}"
+      words=("${words[@]:1}")
+      if [ "$token" = --concurrency ]; then
+        [[ "${words[0]:-}" =~ ^[1-9][0-9]*$ ]] || die 'Invalid dev concurrency.'
+        words=("${words[@]:1}")
+      else
+        filters="${filters:+$filters }$token"
+      fi
+    done
+    [[ "$command" != *$'\n'* ]] || die 'Multiline dev:container commands are unsupported.'
+  fi
+  [ -n "$filters" ] || die 'No managed development roots were selected.'
+  for token in $filters; do
+    [[ "$token" =~ ^--filter=@klicker-uzh/[a-z0-9][a-z0-9-]*$ ]] ||
+      die 'Unsupported managed development selector.'
+  done
+  for token in $filters; do
+    printf '%s^...\n' "$token"
+  done | paste -sd' ' -
+}
+
+prepare_runtime() {
+  local filter
+  [ "$#" -gt 0 ] || die 'Preparation requires dependency-only selectors.'
+  for filter in "$@"; do
+    [[ "$filter" =~ ^--filter=@klicker-uzh/[a-z0-9][a-z0-9-]*\^\.\.\.$ ]] ||
+      die 'Invalid preparation selector.'
+  done
+  ensure_dependencies
+  echo '[dev-runtime] Building selected application dependencies before startup.'
+  (cd "$ROOT" && pnpm exec turbo run build "$@")
+}
+
 remove_next_dir() {
   local target="$1"
   local allowed=false app next_dir
 
+  require_cache_repair_allowed
   for app in "${NEXT_APPS[@]}"; do
     next_dir="$ROOT/apps/$app/.next"
     if [ "$target" = "$next_dir" ]; then
@@ -240,6 +331,7 @@ apply_cache_policy() {
   local repair_target
 
   if [ -f "$REPAIR_REQUEST_FILE" ]; then
+    require_cache_repair_allowed
     while IFS= read -r repair_target; do
       valid_next_app "$repair_target" ||
         die "Invalid pending repair target: $repair_target."
@@ -270,11 +362,17 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
+  elif [ "$mode" = 'health-json' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$status" = '404' ] && [[ "$content_type" == text/html* ]]; then
+  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+    [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"
   fi
@@ -283,16 +381,21 @@ classify_response() {
 }
 
 probe_app() {
-  local app="$1" mode url response status content_type
+  local app="$1" timeout="${2:-15}" mode url response status content_type curl_status=0
 
   mode="$(probe_mode "$app")" || die "No probe contract is defined for: $app"
   url="$(probe_url "$app")" || die "No probe URL is defined for: $app"
   require_tool curl
-  if ! response="$(curl --silent --show-error --output /dev/null \
+  response="$(curl --silent --show-error --output /dev/null \
     --write-out $'%{http_code}\t%{content_type}' \
-    --connect-timeout 2 --max-time 15 --noproxy '*' \
-    "$url" 2>/dev/null)"; then
-    echo "waiting: $app is not accepting connections"
+    --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
+    "$url" 2>/dev/null)" || curl_status=$?
+  if [ "$curl_status" -ne 0 ]; then
+    case "$curl_status" in
+      7) echo "waiting: $app connection failed (curl 7)" ;;
+      28) echo "waiting: $app request timed out (curl 28)" ;;
+      *) echo "waiting: $app transport failed (curl $curl_status)" ;;
+    esac
     return "$WAITING_STATUS"
   fi
 
@@ -305,16 +408,24 @@ wait_for_app() {
   local app="$1"
   local attempt observation status=0 last_observation=''
   local stale_count=0 unexpected_count=0
+  local started=$SECONDS deadline remaining timeout last_report=$SECONDS
+  deadline=$((started + 90))
 
   require_tool sleep
   echo "[dev-runtime] Waiting for the $app readiness contract..."
-  for ((attempt = 1; attempt <= 90; attempt++)); do
+  for ((attempt = 1; SECONDS < deadline; attempt++)); do
+    remaining=$((deadline - SECONDS))
+    [ "$remaining" -gt 0 ] || break
+    timeout=$remaining
+    [ "$timeout" -le 15 ] || timeout=15
     status=0
-    observation="$(probe_app "$app")" || status=$?
-    if [ "$observation" != "$last_observation" ]; then
-      echo "[dev-runtime] $observation"
+    observation="$(probe_app "$app" "$timeout")" || status=$?
+    if [ "$observation" != "$last_observation" ] || [ "$((SECONDS - last_report))" -ge 15 ]; then
+      echo "[dev-runtime] $observation (elapsed $((SECONDS - started))s)"
       last_observation="$observation"
+      last_report=$SECONDS
     fi
+    [ "$SECONDS" -lt "$deadline" ] || break
 
     case "$status" in
       0)
@@ -346,7 +457,9 @@ wait_for_app() {
       echo "[dev-runtime] $app returned a stable unexpected response; no cache was removed." >&2
       return "$UNEXPECTED_STATUS"
     fi
-    [ "$attempt" -eq 90 ] || sleep 1
+    remaining=$((deadline - SECONDS))
+    [ "$remaining" -gt 0 ] || break
+    sleep 1
   done
 
   echo "[dev-runtime] $app did not satisfy its readiness contract within 90 seconds." >&2
@@ -356,8 +469,16 @@ wait_for_app() {
 doctor() {
   local app observation status=0 unhealthy=0
   local any_stale=false any_unexpected=false
+  local doctor_apps=("${RUNTIME_APPS[@]}")
 
-  for app in "${NEXT_APPS[@]}"; do
+  if [ "${READINESS_APPS+x}" = x ]; then
+    doctor_apps=()
+    if [ -n "$READINESS_APPS" ]; then
+      read -r -a doctor_apps <<<"$READINESS_APPS"
+    fi
+  fi
+
+  for app in "${doctor_apps[@]}"; do
     status=0
     observation="$(probe_app "$app")" || status=$?
     if [ "$status" -eq 0 ]; then
@@ -411,13 +532,18 @@ Usage:
   util/dev-runtime.sh fingerprint
   util/dev-runtime.sh dependency-fingerprint
   util/dev-runtime.sh generation
+  util/dev-runtime.sh begin-bootstrap
+  util/dev-runtime.sh complete-bootstrap
+  util/dev-runtime.sh require-bootstrap
   util/dev-runtime.sh stamp-dependencies
   util/dev-runtime.sh ensure-dependencies
+  util/dev-runtime.sh preparation-filters
+  util/dev-runtime.sh prepare <dependency-filter> [dependency-filter...]
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell> <status> <content-type>
-  util/dev-runtime.sh probe-app <next-app>
-  util/dev-runtime.sh wait-app <next-app>
+  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh probe-app <runtime-app>
+  util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor
 EOF
 }
@@ -439,11 +565,31 @@ main() {
     generation)
       read_generation
       ;;
+    begin-bootstrap)
+      [ "$#" -eq 1 ] || die "begin-bootstrap takes no arguments."
+      begin_bootstrap
+      ;;
+    complete-bootstrap)
+      [ "$#" -eq 1 ] || die "complete-bootstrap takes no arguments."
+      complete_bootstrap
+      ;;
+    require-bootstrap)
+      [ "$#" -eq 1 ] || die "require-bootstrap takes no arguments."
+      require_bootstrap
+      ;;
     stamp-dependencies)
       stamp_dependencies
       ;;
     ensure-dependencies)
       ensure_dependencies
+      ;;
+    preparation-filters)
+      [ "$#" -eq 1 ] || die 'preparation-filters takes no arguments.'
+      preparation_filters
+      ;;
+    prepare)
+      shift
+      prepare_runtime "$@"
       ;;
     request-repair)
       [ "$#" -eq 2 ] || die "request-repair requires one app name."

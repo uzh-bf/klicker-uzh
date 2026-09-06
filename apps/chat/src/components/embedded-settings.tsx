@@ -56,9 +56,9 @@ export function EmbeddedSettings() {
  * `useSettingsStore` state (and its existing fetch) that `CreditsFooter` uses
  * for the sidebar — no separate fetching logic. Deliberately trimmed down
  * from `CreditsFooter` (no progress bar, no cost-hint/reset copy): a small
- * embed has little vertical room, and `chat.credits.exhausted` already
- * doubles as the fallback-model notice ("you can still use the smaller
- * model"), so no separate `settingsPanel.usingFallbackModel` text is needed.
+ * embed has little vertical room, and `chat.credits.exhausted` already states
+ * that model availability may change, so no separate
+ * `settingsPanel.usingFallbackModel` text is needed.
  */
 export function EmbeddedCreditsBar() {
   const t = useTranslations()
