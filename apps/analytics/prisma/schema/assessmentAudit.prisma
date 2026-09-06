@@ -1,0 +1,145 @@
+enum AssessmentAuditCoverageState {
+  UNCOVERED
+  ACTIVATING
+  COVERED
+  EXCLUDED_TERMINAL
+  FAILED
+}
+
+enum AssessmentAuditBaselineKind {
+  CREATION
+  ROLLOUT_CONFIGURATION_CURRENT_STATE
+  REOPENING
+}
+
+enum AssessmentAuditRolloutOutcome {
+  PENDING
+  ACTIVATED
+  ROLLOUT_BASELINED
+  EXCLUDED_TERMINAL
+  FAILED
+}
+
+enum AssessmentAuditDeliveryState {
+  PENDING
+  LEASED
+  DELIVERED_UNSEALED
+  SEALED
+  QUARANTINED
+}
+
+enum AssessmentAuditEmissionPath {
+  LANE_1_OUTBOX
+  LANE_2_HATCHET
+  CLIENT_INGRESS
+  OWNER_CLI
+}
+
+enum AssessmentAuditEvidenceClass {
+  AUTHORITATIVE
+  SERVER_OBSERVED
+  CLIENT_OBSERVED
+  ADMINISTRATIVE
+}
+
+enum AssessmentAuditCriticality {
+  CRITICAL
+  STANDARD
+}
+
+enum AssessmentAuditRecordedVia {
+  TRANSACTIONAL_OUTBOX
+  CLIENT_QUEUE_DRAINER
+  HATCHET_PROCESSOR
+  OWNER_CLI
+  AUDIT_SERVICE
+}
+
+/// Sticky assessment-audit coverage and retention anchors. The scalar IDs are
+/// intentionally not relations: deleting business data must not delete evidence.
+model AssessmentAuditScope {
+  liveQuizId     String @db.Uuid
+  lifecycleEpoch Int
+
+  coverageState AssessmentAuditCoverageState
+  baselineId    String?                      @unique @db.Uuid
+  baselineKind  AssessmentAuditBaselineKind?
+  activatedAt   DateTime?                    @db.Timestamptz(3)
+
+  completedAt       DateTime? @db.Timestamptz(3)
+  cancelledAt       DateTime? @db.Timestamptz(3)
+  deletedAt         DateTime? @db.Timestamptz(3)
+  retentionAnchorAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([liveQuizId, lifecycleEpoch])
+  @@index([coverageState, activatedAt])
+  @@index([retentionAnchorAt])
+}
+
+/// Durable rollout accounting for every assessment-enabled LiveQuiz observed by
+/// a scan. It has no relation to LiveQuiz so terminal inventory survives deletion.
+model AssessmentAuditRolloutInventory {
+  scanId     String @db.Uuid
+  liveQuizId String @db.Uuid
+
+  observedAt             DateTime                      @db.Timestamptz(3)
+  observedLifecycleState String                        @db.VarChar(128)
+  outcome                AssessmentAuditRolloutOutcome @default(PENDING)
+  stableReason           String?                       @db.VarChar(128)
+  rolloutEventId         String?                       @unique @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([scanId, liveQuizId])
+  @@index([scanId, outcome])
+  @@index([liveQuizId, observedAt])
+}
+
+/// Exact canonical event bytes waiting for append-only evidence delivery.
+/// Canonical JSON is text rather than JSONB so PostgreSQL cannot rewrite bytes.
+model AssessmentAuditOutboxEvent {
+  eventId        String @id @db.Uuid
+  idempotencyKey String @unique @db.Char(64)
+  eventHash      String @db.Char(64)
+  payloadHash    String @db.Char(64)
+
+  schemaVersion        Int
+  payloadSchemaVersion Int
+  eventType            String                       @db.VarChar(128)
+  emissionPath         AssessmentAuditEmissionPath
+  evidenceClass        AssessmentAuditEvidenceClass
+  criticality          AssessmentAuditCriticality
+  recordedVia          AssessmentAuditRecordedVia
+
+  liveQuizId     String   @db.Uuid
+  lifecycleEpoch Int
+  courseId       String?  @db.Uuid
+  participantId  String?  @db.Uuid
+  correlationId  String   @db.Uuid
+  receivedAt     DateTime @db.Timestamptz(3)
+  recordedAt     DateTime @db.Timestamptz(3)
+
+  canonicalEnvelope   String @db.Text
+  canonicalByteLength Int
+
+  deliveryState    AssessmentAuditDeliveryState @default(PENDING)
+  attemptCount     Int                          @default(0)
+  nextAttemptAt    DateTime                     @default(now()) @db.Timestamptz(3)
+  leaseOwner       String?                      @db.VarChar(128)
+  leaseExpiresAt   DateTime?                    @db.Timestamptz(3)
+  deliveredAt      DateTime?                    @db.Timestamptz(3)
+  sealedAt         DateTime?                    @db.Timestamptz(3)
+  quarantinedAt    DateTime?                    @db.Timestamptz(3)
+  quarantineReason String?                      @db.VarChar(128)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([deliveryState, nextAttemptAt, recordedAt])
+  @@index([deliveryState, leaseExpiresAt])
+  @@index([liveQuizId, lifecycleEpoch, recordedAt, eventId])
+  @@index([deliveryState, deliveredAt])
+}
