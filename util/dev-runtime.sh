@@ -307,13 +307,16 @@ prepare_runtime() {
   (cd "$ROOT" && pnpm exec turbo run build "$@")
   # Turbo can return before its Git subprocess exits. Preparation must leave
   # no live children for the managed process lifecycle to accept it.
-  local preparation_pgid preparation_deadline
+  local preparation_pgid preparation_deadline preparation_processes
   preparation_pgid="$(ps -o pgid= -p "$$" | tr -d ' ')"
   preparation_deadline=$((SECONDS + 5))
-  while ps -eo pgid=,stat=,comm= | awk -v group="$preparation_pgid" '
+  while true; do
+    preparation_processes="$(ps -eo pgid=,stat=,comm=)" ||
+      die 'Unable to inspect preparation child processes.'
+    awk -v group="$preparation_pgid" '
     $1 == group && $2 !~ /^Z/ && $3 == "git" { found = 1 }
     END { exit(found ? 0 : 1) }
-  '; do
+    ' <<<"$preparation_processes" || break
     [ "$SECONDS" -lt "$preparation_deadline" ] ||
       die 'Preparation still has a live Git child after five seconds.'
     sleep 0.1
