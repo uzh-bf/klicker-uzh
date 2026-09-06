@@ -1,12 +1,12 @@
 import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import { type Driver, driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
+import { openProductUpdateCta } from '@klicker-uzh/shared-components/src/productUpdates/openCta'
+import { trackProductUpdate } from '@klicker-uzh/shared-components/src/productUpdates/tracking'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { openProductUpdateCta } from './openCta'
 import { resolveSpotlightTarget } from './spotlightTargets'
-import { trackProductUpdate } from './tracking'
 import type { UseProductUpdatesResult } from './useProductUpdates'
 
 // A "browser session" is one tab: sessionStorage is per tab and disappears when

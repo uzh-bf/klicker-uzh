@@ -1,9 +1,10 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import ProductUpdateCard from '@klicker-uzh/shared-components/src/productUpdates/ProductUpdateCard'
 import { H1 } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
-import ProductUpdateCard from '../components/productUpdates/ProductUpdateCard'
+import { resolveSpotlightTarget } from '../components/productUpdates/spotlightTargets'
 import { useProductUpdateSpotlight } from '../components/productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../components/productUpdates/useProductUpdates'
 
@@ -30,7 +31,7 @@ function Updates() {
           <H1>{t('manage.productUpdates.pageTitle')}</H1>
           {entries.length === 0 ? (
             <div className="text-slate-600" data-cy="product-updates-empty">
-              {t('manage.productUpdates.empty')}
+              {t('shared.productUpdates.empty')}
             </div>
           ) : (
             // Unlike the feed, this page keeps dismissed entries: it is the
@@ -45,6 +46,9 @@ function Updates() {
                 onRead={markRead}
                 onDismiss={entry.dismissed ? undefined : dismiss}
                 onShowSpotlight={replaySpotlight}
+                isSpotlightReachable={(update) =>
+                  resolveSpotlightTarget(update.spotlightTarget) !== null
+                }
               />
             ))
           )}

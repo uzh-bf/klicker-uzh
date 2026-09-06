@@ -10,7 +10,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { openProductUpdateCta } from './openCta'
-import { resolveSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -28,6 +27,7 @@ function ProductUpdateCard({
   onRead,
   onDismiss,
   onShowSpotlight,
+  isSpotlightReachable,
 }: {
   update: ProductUpdate
   dismissed?: boolean
@@ -36,14 +36,18 @@ function ProductUpdateCard({
   // so a mutation answered earlier would lose its cache write and the card
   // would look unread again until the next reload.
   statesLoaded: boolean
-  onPresent: (updateId: string) => void
-  onRead: (updateId: string) => void
+  onPresent: (updateId: string) => Promise<unknown>
+  onRead: (updateId: string) => Promise<unknown>
   // Omitted where dismissal makes no sense, such as an already dismissed entry
   // in the persistent archive.
   onDismiss?: (updateId: string) => void
   // Replays the contextual spotlight on demand. Omitted by surfaces that have
   // no spotlight runner attached.
   onShowSpotlight?: (update: ProductUpdate) => void
+  // Whether the spotlight can reach its target from the page this card is on.
+  // The surface owns the registry of targets, so it answers; the card only asks
+  // after mounting because resolving needs the document.
+  isSpotlightReachable?: (update: ProductUpdate) => boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -68,8 +72,11 @@ function ProductUpdateCard({
 
           reported.current = true
           observer.disconnect()
-          onPresent(update.id)
-          onRead(update.id)
+          // Both writes create the state row when the entry is seen for the
+          // first time, and the backend cannot absorb two concurrent inserts of
+          // the same row: sent together, one of them fails and its timestamp is
+          // lost. Reporting the read after the presentation keeps them apart.
+          void onPresent(update.id).then(() => onRead(update.id))
           trackProductUpdate('Presented', update.id)
           trackProductUpdate('Opened', update.id)
         }
@@ -89,16 +96,12 @@ function ProductUpdateCard({
     openProductUpdateCta(update.cta, router)
   }, [router, update.cta, update.id])
 
-  // Whether the spotlight can actually reach its target from the page this card
-  // is on. Resolving needs the document, so it happens after mounting rather
-  // than during render, and it is redone whenever the card shows another entry.
+  // Redone whenever the card shows another entry.
   const [spotlightReachable, setSpotlightReachable] = useState(false)
 
   useEffect(() => {
-    setSpotlightReachable(
-      resolveSpotlightTarget(update.spotlightTarget) !== null
-    )
-  }, [update.spotlightTarget])
+    setSpotlightReachable(isSpotlightReachable?.(update) ?? false)
+  }, [isSpotlightReachable, update])
 
   const body = update.bodyMarkdown ? localized(update.bodyMarkdown) : undefined
 
@@ -115,7 +118,7 @@ function ProductUpdateCard({
         <H3 className={{ root: 'mb-0' }}>{localized(update.title)}</H3>
         {update.maturity !== 'released' && (
           <Tag
-            label={t(`manage.productUpdates.maturity.${update.maturity}`)}
+            label={t(`shared.productUpdates.maturity.${update.maturity}`)}
             className={{ root: 'bg-orange-200' }}
             data={{ cy: `product-update-maturity-${update.id}` }}
           />
@@ -157,7 +160,7 @@ function ProductUpdateCard({
             className="text-sm text-blue-600 hover:underline"
             data-cy={`product-update-details-${update.id}`}
           >
-            {t('manage.productUpdates.readMore')}
+            {t('shared.productUpdates.readMore')}
             <FontAwesomeIcon
               icon={faArrowUpRightFromSquare}
               className="ml-1.5"
@@ -172,7 +175,7 @@ function ProductUpdateCard({
             className={{ root: 'text-sm text-blue-600 hover:underline' }}
             data={{ cy: `product-update-spotlight-${update.id}` }}
           >
-            {t('manage.productUpdates.showMeWhere')}
+            {t('shared.productUpdates.showMeWhere')}
           </Button>
         )}
         {onDismiss && (
@@ -185,7 +188,7 @@ function ProductUpdateCard({
             className={{ root: 'ml-auto text-sm text-slate-500' }}
             data={{ cy: `product-update-dismiss-${update.id}` }}
           >
-            {t('manage.productUpdates.dismiss')}
+            {t('shared.productUpdates.dismiss')}
           </Button>
         )}
       </div>
