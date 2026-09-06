@@ -11,12 +11,9 @@ const {
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
-  GENERATED_PROMOTION_STATUS,
-  PROMOTION_FILE,
   authorizeFinalReview,
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
-  buildExpectedPromotionContent,
   buildOCRConfig,
   buildOpenRouterToolCanaryRequest,
   buildReviewPlan,
@@ -26,10 +23,7 @@ const {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
-  getStagingSourceBranch,
-  verifyPromotionBuilds,
   hasCurrentSuccessfulFinalReview,
-  hasVerifiedGeneratedPromotionStatus,
   isFinalReviewCommand,
   isTrustedPermission,
   initializeFinalReview,
@@ -40,14 +34,12 @@ const {
   parseReviewMetadata,
   planOCRResume,
   publishFinalReview,
-  promotionBody,
   removeOCRConfig,
   resolveFinalReviewLockKey,
   renderFinalReviewChunks,
   resolveCleanReviewRange,
   requiresColdIncrementalReview,
   startFinalReview,
-  validatePromotionContract,
   validateOCRResult,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
@@ -2539,8 +2531,6 @@ test('keeps the pending status for a consolidation-branch pull request', async (
     github,
     context,
     core: { info: () => {}, notice: () => {}, setOutput: () => {} },
-    sourceBranch: 'v3-ai',
-    trustedSha: 'd'.repeat(40),
   })
 
   assert.equal(statuses.length, 1)
@@ -2589,8 +2579,6 @@ test('rejects a pull request targeting an unlisted integration branch', async ()
     github,
     context,
     core: { info: () => {}, notice: () => {}, setOutput: () => {} },
-    sourceBranch: 'v3',
-    trustedSha: 'd'.repeat(40),
   })
 
   assert.equal(statuses.length, 1)
@@ -3423,445 +3411,58 @@ test('rejects duplicate disposition markers as ambiguous', () => {
   assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
 })
 
-function promotionFile(release, tag = 'v3-ai') {
-  const tags = Array.from(
-    { length: 17 },
-    (_, index) => `service${index}:\n  tag: ${tag}`
-  )
-  const annotations = Array.from(
-    { length: 16 },
-    (_, index) =>
-      `rollout${index}:\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
-  )
-  return [...tags, ...annotations].join('\n')
-}
-
-function validPromotionInput(sourceBranch = 'v3-ai') {
-  const targetSha = '123456789abc'.padEnd(40, 'd')
-  const shortSha = targetSha.slice(0, 12)
-  const baseContent = promotionFile('aaaaaaaaaaaa')
-  const expected = buildExpectedPromotionContent(
-    baseContent,
-    shortSha,
-    sourceBranch
-  )
-
-  return {
-    pull: {
-      state: 'open',
-      draft: false,
-      baseRef: sourceBranch,
-      baseSha: 'b'.repeat(40),
-      baseRepo: 'uzh-bf/klicker-uzh',
-      headRef: `chore/promote-stg-${shortSha}`,
-      headRepo: 'uzh-bf/klicker-uzh',
-      title: `chore(deploy): promote ${shortSha} to stg [skip ci]`,
-      body: promotionBody(targetSha),
-    },
-    permission: 'write',
-    repository: 'uzh-bf/klicker-uzh',
-    defaultBranch: 'v3',
-    sourceBranch,
-    commits: [
-      {
-        message: `chore(deploy): promote ${shortSha} to stg`,
-        parents: ['b'.repeat(40)],
-      },
-    ],
-    files: [{ filename: PROMOTION_FILE, status: 'modified' }],
-    baseContent,
-    headContent: expected.content,
-    targetIsAncestor: true,
-    buildEvidence: {
-      valid: true,
-      sourceBranch,
-      targetSha,
-    },
-  }
-}
-
-test('accepts current and source-switch generated promotions', () => {
-  assert.equal(validatePromotionContract(validPromotionInput()).valid, true)
-  assert.equal(
-    validatePromotionContract(validPromotionInput('release-candidate')).valid,
-    true
-  )
-})
-
-test('requires non-empty dynamic promotion inventories', () => {
-  const noTags = validPromotionInput()
-  noTags.baseContent = noTags.baseContent.replace(/^([ \t]+tag: ).*$/gm, '')
-  noTags.headContent = buildExpectedPromotionContent(
-    noTags.baseContent,
-    noTags.buildEvidence.targetSha.slice(0, 12),
-    noTags.sourceBranch
-  ).content
-  assert.equal(validatePromotionContract(noTags).valid, false)
-
-  const noAnnotations = validPromotionInput()
-  noAnnotations.baseContent = noAnnotations.baseContent.replace(
-    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
-    ''
-  )
-  noAnnotations.headContent = buildExpectedPromotionContent(
-    noAnnotations.baseContent,
-    noAnnotations.buildEvidence.targetSha.slice(0, 12),
-    noAnnotations.sourceBranch
-  ).content
-  assert.equal(validatePromotionContract(noAnnotations).valid, false)
-})
-
-test('staging promoter targets the selected source without fixed value counts', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/deploy-stg-promote.yml'),
-    'utf8'
-  )
-
-  assert.match(workflow, /Build Docker image for mcp-lecturer \(stg\)/)
-  assert.match(workflow, /Build Docker image for mcp-student \(stg\)/)
-  assert.match(
-    workflow,
-    /ref: \$\{\{ steps\.target\.outputs\.source_branch \}\}/
-  )
-  assert.ok(workflow.includes('--base "$SOURCE_BRANCH"'))
-  assert.ok(workflow.includes('Verified generated staging promotion'))
-  assert.doesNotMatch(workflow, /expected 15/)
-})
-
-test('requires every trusted exact-SHA staging build run for a promotion', async () => {
-  const workflowPaths = [
-    '.github/workflows/v3_auth-stg.yml',
-    '.github/workflows/v3_chat-stg.yml',
-  ]
-  const targetSha = 'a'.repeat(40)
-  const trustedSha = 'd'.repeat(40)
-  const context = reviewContext()
-  const workflowDefinitions = new Map(
-    workflowPaths.map((workflowPath) => [
-      `${workflowPath}:${trustedSha}`,
-      `name: ${workflowPath}`,
-    ])
-  )
-  for (const workflowPath of workflowPaths) {
-    workflowDefinitions.set(
-      `${workflowPath}:${targetSha}`,
-      `name: ${workflowPath}`
-    )
-  }
-  const github = {
-    rest: {
-      repos: {
-        getContent: async ({ path: filePath, ref }) =>
-          filePath === '.github/workflows'
-            ? {
-                data: workflowPaths.map((workflowPath) => ({
-                  name: workflowPath.split('/').at(-1),
-                  path: workflowPath,
-                  type: 'file',
-                })),
-              }
-            : {
-                data: {
-                  type: 'file',
-                  encoding: 'base64',
-                  content: Buffer.from(
-                    workflowDefinitions.get(`${filePath}:${ref}`) ?? ''
-                  ).toString('base64'),
-                },
-              },
-      },
-      actions: {
-        listWorkflowRunsForRepo: async (params) => ({
-          data: {
-            workflow_runs: [
-              {
-                conclusion: 'success',
-                event: 'push',
-                head_branch: 'v3',
-                head_sha: targetSha,
-                path: params.workflow_id,
-                repository: { full_name: 'uzh-bf/klicker-uzh' },
-                status: 'completed',
-              },
-            ],
-          },
-        }),
-      },
-    },
-    paginate: async (endpoint, params) =>
-      (await endpoint(params)).data.workflow_runs,
-  }
-
-  const evidence = await verifyPromotionBuilds({
-    github,
-    context,
-    sourceBranch: 'v3',
-    targetSha,
-    trustedSha,
-  })
-
-  assert.equal(evidence.valid, true)
-  assert.deepEqual(evidence.workflowPaths, workflowPaths)
-
-  workflowDefinitions.set(
-    `${workflowPaths[1]}:${targetSha}`,
-    'name: changed on the target'
-  )
-  const changedDefinition = await verifyPromotionBuilds({
-    github,
-    context,
-    sourceBranch: 'v3',
-    targetSha,
-    trustedSha,
-  })
-  assert.equal(changedDefinition.valid, false)
-  assert.match(changedDefinition.reason, /definition/)
-})
-
-test('CLI verifier adapter covers promotion pagination and missing variables', async () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-gh-'))
-  const executable = path.join(directory, 'gh')
-  fs.writeFileSync(
-    executable,
-    `#!/usr/bin/env node
-const endpoint = process.argv.at(-1)
-if (endpoint.includes('/actions/variables/')) {
-  process.stderr.write('gh: 404 Not Found')
-  process.exit(1)
-}
-if (endpoint.includes('/pulls/42/commits')) {
-  process.stdout.write(JSON.stringify([[{ sha: 'commit' }]]))
-} else if (endpoint.includes('/pulls/42/files')) {
-  process.stdout.write(JSON.stringify([[{ filename: 'deploy/env-uzh-stg/values.yaml' }]]))
-} else if (endpoint.includes('/actions/workflows/v3_auth-stg.yml/runs')) {
-  process.stdout.write(JSON.stringify([{ workflow_runs: [{ conclusion: 'success', head_sha: 'a'.repeat(40) }] }]))
-} else {
-  process.stdout.write(JSON.stringify({ ok: true }))
-}
-`,
-    { mode: 0o700 }
-  )
-  const originalPath = process.env.PATH
-  process.env.PATH = `${directory}:${originalPath ?? ''}`
-  try {
-    const { github } = createGhGithub({
-      repository: 'uzh-bf/klicker-uzh',
-      defaultBranch: 'v3',
-    })
-    assert.deepEqual(
-      await github.paginate(github.rest.pulls.listCommits, {
-        pull_number: 42,
-      }),
-      [{ sha: 'commit' }]
-    )
-    assert.deepEqual(
-      await github.paginate(github.rest.pulls.listFiles, { pull_number: 42 }),
-      [{ filename: 'deploy/env-uzh-stg/values.yaml' }]
-    )
-    assert.deepEqual(
-      await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
-        workflow_id: '.github/workflows/v3_auth-stg.yml',
-        event: 'push',
-        head_sha: 'a'.repeat(40),
-        status: 'completed',
-      }),
-      [{ conclusion: 'success', head_sha: 'a'.repeat(40) }]
-    )
-    assert.equal(
-      await getStagingSourceBranch({
-        github,
-        context: reviewContext(),
-        defaultBranch: 'v3',
-      }),
-      'v3'
-    )
-  } finally {
-    if (originalPath == null) delete process.env.PATH
-    else process.env.PATH = originalPath
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-})
-
-test('verifies the generated-promotion no-report status through the repository verifier', async () => {
-  const input = validPromotionInput()
+test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
   const pull = {
     number: 42,
-    state: input.pull.state,
-    draft: input.pull.draft,
-    title: input.pull.title,
-    body: input.pull.body,
-    user: { login: 'reviewer' },
+    state: 'open',
+    draft: false,
+    title: 'Legacy-named staging change',
     base: {
-      ref: input.pull.baseRef,
-      repo: { full_name: input.pull.baseRepo },
-      sha: input.pull.baseSha,
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
     head: {
-      ref: input.pull.headRef,
-      repo: { full_name: input.pull.headRepo },
+      ref: 'chore/promote-stg-123456789abc',
       sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
   }
-  const trustedSha = 'd'.repeat(40)
-  const workflowPath = '.github/workflows/v3_auth-stg.yml'
-  const statusEndpoint = async () => ({ data: [] })
-  const commitsEndpoint = {}
-  const filesEndpoint = {}
-  const workflowRunsEndpoint = async () => ({ data: { workflow_runs: [] } })
-  const workflow = {
-    conclusion: 'success',
-    event: 'push',
-    head_branch: input.sourceBranch,
-    head_sha: input.buildEvidence.targetSha,
-    path: workflowPath,
-    repository: { full_name: input.repository },
-    status: 'completed',
-  }
+  const statuses = []
   const github = {
     rest: {
-      actions: {
-        listWorkflowRunsForRepo: workflowRunsEndpoint,
-        getWorkflowRun: async () => ({
-          data: {
-            conclusion: 'success',
-            event: 'pull_request_target',
-            head_branch: 'v3',
-            id: 123,
-            path: '.github/workflows/check-ocr-final-review.yml',
-            repository: { full_name: input.repository },
-          },
-        }),
-      },
-      pulls: {
-        listCommits: commitsEndpoint,
-        listFiles: filesEndpoint,
-      },
       repos: {
-        compareCommitsWithBasehead: async () => ({
-          data: { status: 'ahead' },
-        }),
-        getCollaboratorPermissionLevel: async () => ({
-          data: { user: { permission: 'write' } },
-        }),
-        getContent: async ({ path: filePath, ref }) => {
-          if (filePath === '.github/workflows') {
-            return {
-              data: [
-                {
-                  name: 'v3_auth-stg.yml',
-                  path: workflowPath,
-                  type: 'file',
-                },
-              ],
-            }
-          }
-          if (filePath === workflowPath) {
-            return {
-              data: {
-                content: Buffer.from('trusted workflow').toString('base64'),
-                encoding: 'base64',
-                type: 'file',
-              },
-            }
-          }
-          return {
-            data: {
-              content: Buffer.from(
-                filePath === PROMOTION_FILE
-                  ? ref === pull.base.sha
-                    ? input.baseContent
-                    : input.headContent
-                  : ''
-              ).toString('base64'),
-              encoding: 'base64',
-              type: 'file',
-            },
-          }
-        },
-        listCommitStatusesForRef: statusEndpoint,
+        createCommitStatus: async (status) => statuses.push(status),
       },
     },
-    paginate: async (endpoint) => {
-      if (endpoint === statusEndpoint) {
-        return [
-          {
-            context: 'final-ai-review',
-            description: GENERATED_PROMOTION_STATUS,
-            state: 'success',
-            target_url:
-              'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
-          },
-        ]
-      }
-      if (endpoint === commitsEndpoint) {
-        return [
-          {
-            commit: { message: input.commits[0].message },
-            parents: [{ sha: input.commits[0].parents[0] }],
-          },
-        ]
-      }
-      if (endpoint === filesEndpoint) return input.files
-      if (endpoint === workflowRunsEndpoint) return [workflow]
-      throw new Error('unexpected pagination endpoint')
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
     },
   }
 
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
   assert.equal(
-    await hasVerifiedGeneratedPromotionStatus({
-      github,
-      context: reviewContext(),
-      pull,
-      sourceBranch: input.sourceBranch,
-      trustedSha,
-    }),
-    true
+    statuses[0].description,
+    `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
   )
-})
 
-test('rejects every material promotion-contract deviation', () => {
-  const mutations = [
-    (input) => {
-      input.pull.draft = true
-    },
-    (input) => {
-      input.permission = 'read'
-    },
-    (input) => {
-      input.pull.headRepo = 'attacker/fork'
-    },
-    (input) => {
-      input.pull.baseRef = 'v3'
-    },
-    (input) => {
-      input.pull.title = 'chore(deploy): bypass review'
-    },
-    (input) => {
-      input.pull.body = `${input.pull.body}extra`
-    },
-    (input) => {
-      input.commits.push(input.commits[0])
-    },
-    (input) => {
-      input.commits[0].parents[0] = 'c'.repeat(40)
-    },
-    (input) => {
-      input.files.push({ filename: 'extra.txt', status: 'added' })
-    },
-    (input) => {
-      input.headContent += '\nuntrusted: true\n'
-    },
-    (input) => {
-      input.targetIsAncestor = false
-    },
-    (input) => {
-      input.buildEvidence.valid = false
-    },
-  ]
-
-  for (const mutate of mutations) {
-    const input = validPromotionInput()
-    mutate(input)
-    assert.equal(validatePromotionContract(input).valid, false)
-  }
+  const source = fs.readFileSync(
+    path.join(__dirname, 'final-ai-review.js'),
+    'utf8'
+  )
+  assert.doesNotMatch(
+    source,
+    /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
+  )
 })
