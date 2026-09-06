@@ -304,7 +304,7 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  (cd "$ROOT" && pnpm exec turbo run build --no-daemon "$@")
+  (cd "$ROOT" && pnpm exec turbo run build "$@")
 }
 
 remove_next_dir() {
