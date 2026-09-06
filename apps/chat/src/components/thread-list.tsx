@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
+import { featureTargetProps } from './onboarding/featureTargets'
 import {
   transitionDeleteConfirm,
   type DeleteConfirmPhase,
@@ -16,7 +17,10 @@ import {
 
 export const ThreadList: FC = () => {
   return (
-    <div className="flex flex-col items-stretch gap-1">
+    <div
+      {...featureTargetProps('chat-thread-list')}
+      className="flex flex-col items-stretch gap-1"
+    >
       <ThreadListItems />
     </div>
   )

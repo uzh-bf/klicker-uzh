@@ -153,7 +153,47 @@ two inserts hit the unique constraint; the service treats that violation as
 proof that the row now exists and reads it back. The second statement then
 keeps the first read and the first dismissal from moving.
 
-## Current consumers
+## The chat surface
+
+`apps/chat` is the first interactive feed. It does not use the GraphQL fields
+above: chat talks to Prisma directly like every other data path in that
+application, so `apps/chat/src/services/productUpdates.ts` restates the
+participant half of the GraphQL service, keeping the same idempotent write
+shapes, and `apps/chat/src/app/api/product-updates/route.ts` exposes them as one
+authenticated REST route (`GET` for the feed, `POST` with `read`, `dismiss`, or
+`presented`). Both halves must move together when the write semantics change.
+
+Two behaviors are specific to this surface. The route is guarded by
+`getProductUpdateParticipantId`, a sibling of `getParticipantId` that additionally
+requires the `PARTICIPANT` role, because the shared participant guard accepts the
+temporary accounts issued for anonymous live-quiz participation. And no feature
+flags are evaluated here, so an entry carrying `requiredFeatureFlags` never
+becomes eligible in chat — the fail-closed direction, consistent with the
+selection rule above.
+
+The sidebar footer carries only an entry point: a "What's new" item with an
+unread badge (`ProductUpdatesMenuItem`), which opens the feed as a design-system
+`Modal` (`ProductUpdatesModal`). The entry renders nothing while the feed is
+empty, and the embedded chatbot mode hides the whole sidebar, so an embedded
+conversation neither shows nor requests product updates. Locale comes from the
+`NEXT_LOCALE` cookie; the chrome lives in `packages/i18n/messages/{de,en}.ts`
+under `chat.productUpdates`.
+
+Loading the feed records nothing. A card counts as presented — and is marked
+read — only once it is actually visible inside the open modal, observed per card
+with an `IntersectionObserver`; otherwise every sidebar mount would inflate
+`presentationCount` for entries nobody looked at. Reopening the feed counts
+again, which is what `lastPresentedAt` and the increment are for. Because the
+mandated card shows its whole body at once, there is no separate "opened the
+entry" gesture, so the read timestamp coincides with that first visibility.
+The design-system `Modal` suppresses Radix's automatic focus handling in both
+directions, so the surface does it itself: the modal focuses its own content on
+open, and `ProductUpdatesMenuItem` — not the modal, and not Radix — returns
+focus to the sidebar entry on close. Dismissing the last card is the exception,
+because the emptied feed unmounts that entry; focus then goes to
+`#main-content`, the target of the application's skip link.
+
+## Other consumers
 
 The documentation homepage banner
 (`apps/docs/src/components/landing/TitleImage.tsx`) renders the newest released
@@ -332,9 +372,11 @@ otherwise fight over the page.
 
 A spotlight announces one feature. A tour orients someone who has just arrived:
 several steps over the parts of an interface that are always on screen. Manage
-has one today (`manage-onboarding-v1`); the student app and the chat app are
-meant to follow, which is why the mechanics live in a package instead of next to
-the manage header.
+has one (`manage-onboarding-v1`) and chat has one (`chat-onboarding-v1`); the
+student app is meant to follow, which is why the shared mechanics live in a
+package instead of next to the manage header. Both surfaces walk the page with
+driver.js popovers anchored to registered feature targets, and share the id
+list, the session slot and the completion semantics.
 
 ### The shared package
 
@@ -370,7 +412,7 @@ floor as the read-state mutations. The upsert keeps a non-empty `update` branch
 so Prisma emits a native upsert; an empty one becomes a read-then-insert that
 two tabs can race into a unique-constraint error.
 
-**Two writers, one set of rules.** The chat app is Prisma-direct and will write
+**Two writers, one set of rules.** The chat app is Prisma-direct and writes
 `ParticipantTourState` from its own API route rather than through GraphQL. The
 per-surface tour ids keep the rows disjoint, but the semantics above — validated
 id, non-empty-update upsert, first write wins on `completedAt` — must stay
@@ -422,3 +464,58 @@ replaying does not change what the account has already recorded.
 Step copy lives under `manage.productTours` in the shared message files, in both
 locales, and is escaped before it reaches a popover for the reason described in
 the spotlight section.
+
+### The chat tour
+
+`chat-onboarding-v1` is a five-step driver.js tour over the chat screen: the
+Tutor/Explainer mode switcher, cited sources, the attachment button, the
+conversation list and the credit balance. It runs on the same
+`@klicker-uzh/product-tours` hook as the manage tour and takes its targets from
+a chat-side registry (`apps/chat/src/components/onboarding/featureTargets.ts`)
+that maps keys to `data-product-feature` attributes; step lists never contain CSS
+selectors. Several targets are conditional — the mode switcher is absent on a
+single-mode chatbot, the attachment button on one that takes no images, and the
+sidebar is unmounted on mobile while closed — and a step whose target is missing
+is dropped rather than pointed at nothing. The sources step names no element at
+all, because citations only exist inside an answer; driver.js centers it, which
+is how the tour carries one card of plain explanation and why no run can end up
+with every step missing.
+
+**Sequencing.** The tour opens strictly after the disclaimer, never beside it.
+`ChatOnboardingProvider` (`chat-onboarding.tsx`) takes the gate's open state from
+`assistant.tsx` as `disclaimerPending` and auto-starts only from settled state:
+completion known and not recorded, no disclaimer in the way, not embedded, and
+no replay already requested in this page view. Deriving it this way rather than
+watching the gate close is what makes the bot that requires a disclaimer and the
+bot that does not take the same path. A declined disclaimer never reaches the
+provider, because that state renders its own blocked view. The unsolicited start
+also respects the shared session slot, so a tab that already spent its one
+overlay does not get a second.
+
+**Focus.** The provider publishes the tour's open state through the same
+external store in `chat-ui-context.tsx` that the disclaimer uses, so the
+composer does not autofocus underneath the popover and takes focus back when the
+tour ends — after the first showing and after a replay alike. The store carries
+one flag per dialog and the composer reads their disjunction, because the tour
+claims the gate in the same commit in which the disclaimer releases it; a single
+shared flag would dip to false in between and hand focus over for one frame.
+
+**State.** `apps/chat/src/app/api/onboarding-tour/route.ts` is the participant
+half of the GraphQL tour service, restated for the Prisma-direct app:
+`GET ?tourId=` reports the completion, `POST {tourId}` records it, both behind
+`getTourParticipantId` — the tours-worded sibling of the product-update guard,
+requiring the `PARTICIPANT` role. The id is validated against `TOUR_IDS`, and an
+unknown one is refused rather than answered with empty state, which a client
+would otherwise read as "never completed". Finishing, skipping and dismissing
+all record completion; a failed request leaves the tour unrecorded, so it may
+appear once more, which is the harmless direction.
+
+**Replay and embedding.** "Take the tour" sits in the sidebar footer next to
+"What's new" and restarts the tour from the first step. It writes nothing: the
+state is already stored and `completedAt` never moves anyway. An embedded
+conversation is suppressed entirely — no state request and no overlay — because
+it has no sidebar and nobody opened it to be introduced to an application.
+
+Step copy lives under `chat.onboarding` in both message files, one `<id>Title`
+and `<id>Body` per step, and is currently placeholder text awaiting editorial
+review.

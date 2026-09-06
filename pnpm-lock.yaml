@@ -392,6 +392,12 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-tours':
+        specifier: workspace:*
+        version: link:../../packages/product-tours
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../../packages/product-updates
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
@@ -446,6 +452,9 @@ importers:
       clsx:
         specifier: 2.1.1
         version: 2.1.1
+      driver.js:
+        specifier: 1.8.0
+        version: 1.8.0
       heic2any:
         specifier: 0.0.4
         version: 0.0.4
