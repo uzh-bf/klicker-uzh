@@ -240,7 +240,71 @@ test.describe('Tests the availability of standard activity creation formats', ()
 })
 
 test.describe('Beta feature enrollment discovery', () => {
-  test('Open signup links eligible Catalyst users to the enrollment setting', async ({
+  test('Unknown membership keeps information visible without guessing enrollment', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page, { aiBeta: true, betaSignup: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: null,
+      mayChange: true,
+      signupAvailable: true,
+    })
+    await loginLecturer()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+  })
+
+  test('First login explains chatbot beta features even when signup is closed', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page)
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: false,
+      mayChange: false,
+      signupAvailable: false,
+    })
+    const persisted = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const body = request.postData() ? request.postDataJSON() : undefined
+      const extensions =
+        body?.extensions ??
+        JSON.parse(url.searchParams.get('extensions') ?? '{}')
+      const name = body?.operationName ?? url.searchParams.get('operationName')
+      const hash = extensions?.persistedQuery?.sha256Hash
+      const isProfileQuery = ['UserProfile', 'ManageUserProfile'].some(
+        (profileName) =>
+          name === profileName || (hash && hash === persisted[profileName])
+      )
+      if (!isProfileQuery) {
+        await route.fallback()
+        return
+      }
+      const response = await route.fetch()
+      const json = await response.json()
+      expect(json.data?.userProfile).toBeTruthy()
+      json.data.userProfile.firstLogin = true
+      await route.fulfill({ response, json })
+    })
+    await loginLecturer()
+    await expect(page.getByTestId('first-login-beta-enrollment')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+  })
+
+  test('Eligible Catalyst users reach enrollment through settings', async ({
     page,
     loginLecturer,
   }) => {
@@ -253,15 +317,15 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
-    await page.getByTestId('menu-beta-features').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.getByTestId('menu-user-settings').click()
 
-    await expect(page).toHaveURL(/\/user\/settings#beta-features$/)
+    await expect(page).toHaveURL(/\/user\/settings$/)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
   })
 
-  test('Closed signup hides enrollment from a non-member', async ({
+  test('Closed signup keeps beta discovery visible without an opt-in control', async ({
     page,
     loginLecturer,
   }) => {
@@ -274,9 +338,11 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 
   test('Existing members can opt out after signup closes', async ({
@@ -296,14 +362,15 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     const enrollmentSwitch = page.getByTestId('beta-enrollment-switch')
     await expect(enrollmentSwitch).toBeChecked()
     await enrollmentSwitch.click()
 
     await expect.poll(() => requestedMembership).toBe(false)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(enrollmentSwitch).not.toBeAttached()
   })
 
   test('Enrollment reports pending and feature-refresh failure states', async ({
@@ -336,7 +403,7 @@ test.describe('Beta feature enrollment discovery', () => {
     ).toBeVisible()
   })
 
-  test('Open signup remains hidden from non-Catalyst users', async ({
+  test('Non-Catalyst users can discover beta features but cannot enroll', async ({
     page,
     loginFreeUser,
   }) => {
@@ -349,12 +416,14 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginFreeUser()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 
-  test('Open signup remains hidden from weaker login scopes', async ({
+  test('Weaker login scopes can discover beta features but cannot enroll', async ({
     page,
     loginFactory,
   }) => {
@@ -374,8 +443,10 @@ test.describe('Beta feature enrollment discovery', () => {
     })
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 })

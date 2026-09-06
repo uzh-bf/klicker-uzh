@@ -1,8 +1,10 @@
 import { expect, type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
 import { fillEditorField } from '../util/fixtures/elements.js'
+import { mockGrowthBookFeatureFlags } from '../util/fixtures/manage.js'
 import { COURSE_ID_TEST, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 
 const CHATBOT_PREFIX = 'E2E Authoring'
@@ -154,9 +156,51 @@ async function fillPublicationRequest(page: Page, useCase: string) {
   await page.getByTestId('chatbot-publication-proposed-credits').fill('25')
 }
 
+test('Disabled AI beta blocks the direct authoring route before its queries', async ({
+  page,
+  loginLecturer,
+}) => {
+  await mockGrowthBookFeatureFlags(page, { aiBeta: false })
+  await loginLecturer()
+  const persisted = JSON.parse(
+    await readFile(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const protectedNames = [
+    'GetChatbotsInfo',
+    'GetChatModelRegistry',
+    'GetChatbotPublishingCapability',
+  ]
+  const seen: string[] = []
+  page.on('request', (request) => {
+    const url = new URL(request.url())
+    if (!url.pathname.endsWith('/api/graphql')) return
+    const body = request.method() === 'POST' ? request.postDataJSON() : null
+    const extensions =
+      body?.extensions ?? JSON.parse(url.searchParams.get('extensions') ?? '{}')
+    const name = body?.operationName ?? url.searchParams.get('operationName')
+    const hash = extensions?.persistedQuery?.sha256Hash
+    for (const protectedName of protectedNames) {
+      if (name === protectedName || (hash && hash === persisted[protectedName]))
+        seen.push(protectedName)
+    }
+  })
+  await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots`)
+  await expect(page.getByTestId('chatbot-authoring-unavailable')).toBeVisible()
+  await expect(page.getByTestId('create-chatbot')).not.toBeAttached()
+  await expect(page.getByTestId('chatbot-beta-settings')).toHaveAttribute(
+    'href',
+    '/user/settings#beta-features'
+  )
+  expect(seen).toEqual([])
+})
+
 test.describe.serial('Lecturer chatbot draft authoring', () => {
   test.beforeEach(async ({ loginLecturer, page }) => {
     await cleanupAuthoringChatbots()
+    await mockGrowthBookFeatureFlags(page, { aiBeta: true })
     await loginLecturer()
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots`

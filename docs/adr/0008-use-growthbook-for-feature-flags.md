@@ -35,7 +35,16 @@ The shared actor attributes are stable Klicker id, actor type, and role. Each
 adapter owns the normalized deployment environment and adds it to evaluations.
 Email is excluded. Missing configuration, an invalid non-empty environment,
 and unavailable boolean definitions fail closed to false. Flags control rollout
-and presentation, never authentication or authorization.
+and presentation; they never authenticate actors or grant permissions.
+
+Amendment, 2026-09-06: the approved beta authoring gate additionally requires
+server-evaluated `ai-beta` for lecturer chatbot authoring. This is a restrictive
+rollout condition alongside existing role, Catalyst, login-scope and ownership
+checks, not a replacement for them. Browser evaluation is not authoritative.
+Publication entitlement, administrative approval and participant access remain
+separate and unchanged. See the
+[approved beta authoring plan](../../project/2026-09-05-v3-beta-authoring-gate-plan.md)
+and [the publication approval decision](./0020-two-tier-chatbot-approval.md).
 
 Existing preview booleans migrate incrementally. A field remains authoritative
 until every consumer for that behavior has moved; deleting the database or
@@ -66,7 +75,9 @@ upgrade path for a sensitive flag.
 The cluster must expose a browser-accessible, CORS-enabled HTTPS SDK endpoint in
 addition to its internal service. GrowthBook feature definitions and ordinary
 client-side targeting rules are observable in browser traffic, so sensitive
-attributes and authorization decisions are prohibited.
+attributes must not appear there. Client-side decisions cannot authorize backend
+operations; the authoring restriction above is independently evaluated by the
+backend.
 
 Each adopting app or service owns its connectivity configuration and must be
 tested with missing configuration. Browser definitions load on provider mount;

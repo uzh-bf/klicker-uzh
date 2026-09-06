@@ -1958,10 +1958,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
-      betaFeaturesDataUse:
-        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
       betaFeaturesDescription:
-        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+        'Zu den Beta-Features gehört die Erstellung von Chatbots. Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesSignupClosed:
+        'Neue Beta-Anmeldungen sind derzeit geschlossen. Informationen zu Beta-Features finden Sie weiterhin hier.',
+      betaFeaturesEnrollmentRestricted:
+        'Mit diesem Konto oder dieser Anmeldung kann die Beta-Anmeldung nicht geändert werden. Neue Anmeldungen erfordern Catalyst und vollen Kontozugriff.',
       betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
       betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
       betaFeaturesEnrollment: 'Beta-Anmeldung',
@@ -1978,6 +1980,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
         'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
       chatAccountUsageDescription:

@@ -37,6 +37,31 @@ function prepareApp({
 
   const app = express()
 
+  // Share the preload's current membership with the local test browser.
+  // No management endpoint is exposed, and production never mounts this route.
+  if (
+    process.env.NODE_ENV === 'test' &&
+    process.env.GROWTHBOOK_API_HOST === 'https://growthbook.test' &&
+    process.env.GROWTHBOOK_CLIENT_KEY === 'sdk-test'
+  ) {
+    app.get(
+      '/__growthbook__/api/features/sdk-test',
+      async (_req, res, next) => {
+        try {
+          const response = await fetch(
+            'https://growthbook.test/api/features/sdk-test'
+          )
+          res
+            .set('Cache-Control', 'no-store')
+            .status(response.status)
+            .json(await response.json())
+        } catch (error) {
+          next(error)
+        }
+      }
+    )
+  }
+
   app.use(
     cors({
       origin(origin, cb) {

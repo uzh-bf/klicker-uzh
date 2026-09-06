@@ -7,17 +7,169 @@ const serviceMocks = vi.hoisted(() => ({
   updateChatbotModelSettings: vi.fn(),
   updateChatbotModelPolicy: vi.fn(),
   updateChatbotStandardModeConfig: vi.fn(),
+  createChatbot: vi.fn(),
+  updateChatbot: vi.fn(),
+  saveChatbotDisclaimer: vi.fn(),
+  requestChatbotPublication: vi.fn(),
+  getChatbotPublishingCapability: vi.fn(),
 }))
 
 vi.mock('../src/services/chatbots.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/services/chatbots.js')>()),
-  updateChatbotModelSettings: serviceMocks.updateChatbotModelSettings,
-  updateChatbotModelPolicy: serviceMocks.updateChatbotModelPolicy,
-  updateChatbotStandardModeConfig: serviceMocks.updateChatbotStandardModeConfig,
+  ...serviceMocks,
 }))
 
 import '../src/schema/mutation.js'
 import { schema } from '../src/index.js'
+import { getChatbotsInfo } from '../src/services/chatbots.js'
+
+function buildDeniedBetaContext(state: 'missing' | 'off' | 'throwing') {
+  const ctx = buildContext({
+    scope: UserLoginScope.FULL_ACCESS,
+    catalyst: true,
+  })
+  if (state === 'missing') {
+    delete ctx.featureFlags
+  } else {
+    ctx.featureFlags = {
+      refresh: async () => {},
+      isEnabled: () => {
+        if (state === 'throwing') throw new Error('Synthetic evaluator failure')
+        return false
+      },
+    } as NonNullable<ContextWithUser['featureFlags']>
+  }
+  return ctx
+}
+
+describe('AI beta listing boundary', () => {
+  it.each([
+    'missing',
+    'off',
+    'throwing',
+  ] as const)('returns no data before Prisma access with a %s evaluator', async (state) => {
+    const ctx = buildDeniedBetaContext(state)
+    const read = vi.fn(() => {
+      throw new Error('Unexpected Prisma access')
+    })
+    Object.defineProperty(ctx, 'prisma', { get: read })
+    expect(await getChatbotsInfo(ctx)).toBeNull()
+    expect(read).not.toHaveBeenCalled()
+  })
+})
+
+describe('AI beta authoring field boundary', () => {
+  const operations = [
+    {
+      field: 'updateChatbotModelSettings',
+      query:
+        'mutation { updateChatbotModelSettings(chatbotId: "synthetic-chatbot", modelSelection: false, allowedModelIds: []) { id } }',
+    },
+    {
+      field: 'updateChatbotModelPolicy',
+      query:
+        'mutation { updateChatbotModelPolicy(chatbotId: "synthetic-chatbot", modelSelection: false, allowedModelIds: []) { id } }',
+    },
+    {
+      field: 'updateChatbotStandardModeConfig',
+      query:
+        'mutation { updateChatbotStandardModeConfig(chatbotId: "synthetic-chatbot", config: { tutorEnabled: true, explainerEnabled: false, quizzerEnabled: false }) { id } }',
+    },
+    {
+      field: 'createChatbot',
+      query:
+        'mutation { createChatbot(name: "Synthetic bot", courseId: "synthetic-course") { id } }',
+    },
+    {
+      field: 'updateChatbot',
+      query:
+        'mutation { updateChatbot(id: "synthetic-chatbot", name: "Updated synthetic bot") { id } }',
+    },
+    {
+      field: 'saveChatbotDisclaimer',
+      query:
+        'mutation { saveChatbotDisclaimer(chatbotId: "synthetic-chatbot", title: "Synthetic notice", introText: "Synthetic notice") { id } }',
+    },
+    {
+      field: 'requestChatbotPublication',
+      query:
+        'mutation { requestChatbotPublication(id: "synthetic-chatbot", useCase: "Synthetic test", expectedStudentCount: 1, proposedCredits: 1) { id } }',
+    },
+    {
+      field: 'getChatbotPublishingCapability',
+      query: 'query { getChatbotPublishingCapability }',
+    },
+  ] as const
+
+  beforeEach(() => {
+    for (const mock of Object.values(serviceMocks)) {
+      mock.mockReset()
+      mock.mockResolvedValue({ id: 'synthetic-chatbot' })
+    }
+    serviceMocks.getChatbotPublishingCapability.mockResolvedValue(true)
+  })
+
+  describe.each(operations)('$field', ({ field, query }) => {
+    async function execute(context: ContextWithUser) {
+      const yoga = createYoga({ schema, context: () => context })
+      const response = await yoga.fetch('http://localhost/graphql', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query }),
+      })
+      return (await response.json()) as {
+        data?: Record<string, unknown>
+        errors?: { message: string }[]
+      }
+    }
+
+    it.each([
+      'missing',
+      'off',
+      'throwing',
+    ] as const)('denies a %s evaluator before invoking the service', async (state) => {
+      const ctx = buildDeniedBetaContext(state)
+      const result = await execute(ctx)
+      expect(result.errors?.[0]?.message).toBe('Unauthorized')
+      expect(serviceMocks[field]).not.toHaveBeenCalled()
+    })
+
+    it('allows an eligible lecturer when AI beta is enabled', async () => {
+      const result = await execute(
+        buildContext({
+          scope: UserLoginScope.FULL_ACCESS,
+          catalyst: true,
+        })
+      )
+      expect(result.errors).toBeUndefined()
+      expect(serviceMocks[field]).toHaveBeenCalledOnce()
+    })
+
+    it.each([
+      { scope: UserLoginScope.READ_ONLY, catalyst: true, role: UserRole.USER },
+      {
+        scope: UserLoginScope.FULL_ACCESS,
+        catalyst: false,
+        role: UserRole.USER,
+      },
+      {
+        scope: UserLoginScope.FULL_ACCESS,
+        catalyst: true,
+        role: UserRole.PARTICIPANT,
+      },
+    ])('preserves existing authorization for $scope/$catalyst/$role', async ({
+      scope,
+      catalyst,
+      role,
+    }) => {
+      const ctx = buildContext({ scope, catalyst })
+      ctx.user.role = role
+      const result = await execute(ctx)
+      expect(result.errors?.[0]?.message).toBe('Unauthorized')
+      expect(serviceMocks[field]).not.toHaveBeenCalled()
+    })
+  })
+})
 
 function buildContext({
   scope,
@@ -27,6 +179,7 @@ function buildContext({
   catalyst: boolean
 }) {
   return {
+    featureFlags: { isEnabled: () => true, refresh: async () => {} },
     user: {
       sub: '00000000-0000-4000-8000-000000000001',
       role: UserRole.USER,
@@ -34,7 +187,7 @@ function buildContext({
       catalystIndividual: catalyst,
       catalystInstitutional: false,
     },
-  } as ContextWithUser
+  } as unknown as ContextWithUser
 }
 
 async function executeMutation(

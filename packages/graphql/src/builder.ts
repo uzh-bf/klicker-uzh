@@ -12,6 +12,7 @@ import ZodPlugin from '@pothos/plugin-zod'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import type { Context, ContextWithUser } from './lib/context.js'
+import { isFeatureFlagEnabled } from './lib/featureFlags.js'
 import './types/app.js'
 
 const builder = new SchemaBuilder<{
@@ -28,12 +29,14 @@ const builder = new SchemaBuilder<{
     role: ContextWithUser
     scope: ContextWithUser
     catalyst: ContextWithUser
+    aiBeta: ContextWithUser
   }
   AuthScopes: {
     authenticated: boolean
     role?: UserRole
     scope?: UserLoginScope
     catalyst?: boolean
+    aiBeta?: boolean
   }
   PrismaTypes: PrismaTypes
   Scalars: {
@@ -110,6 +113,9 @@ const builder = new SchemaBuilder<{
         return false
       },
       catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
+      aiBeta: () =>
+        !!ctx.user &&
+        isFeatureFlagEnabled({ ...ctx, user: ctx.user }, 'ai-beta'),
     }),
   },
   zod: {
