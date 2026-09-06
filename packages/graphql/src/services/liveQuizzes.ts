@@ -2240,6 +2240,21 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
+  if (typeof hmac === 'string') {
+    const identity = await ctx.prisma.liveQuiz.findUnique({
+      where: { id, isDeleted: false, ...liveQuizCourseVisibilityFilter },
+      select: { id: true, namespace: true },
+    })
+    if (!identity) return null
+
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(identity.namespace + identity.id)
+    const quizHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
+    if (quizHmac !== hmac) return null
+  }
+
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
@@ -2281,23 +2296,12 @@ export async function getLiveQuizEvaluation(
     pinCode: liveQuiz.pinCode,
   }
 
-  if (typeof hmac === 'string') {
-    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-    hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
-    const quizHmac = hmacEncoder.digest('hex')
-
-    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
-    if (quizHmac !== hmac) {
-      return null
-    }
-
-    if (!shouldExposeEvaluationResults) {
-      return {
-        ...evaluationMetadata,
-        results: [],
-        feedbacks: null,
-        confusionFeedbacks: null,
-      }
+  if (typeof hmac === 'string' && !shouldExposeEvaluationResults) {
+    return {
+      ...evaluationMetadata,
+      results: [],
+      feedbacks: null,
+      confusionFeedbacks: null,
     }
   }
 

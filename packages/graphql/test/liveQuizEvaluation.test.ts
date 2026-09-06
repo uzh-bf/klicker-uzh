@@ -3,7 +3,7 @@ import {
   ElementBlockStatus,
   ElementInstanceType,
   ElementType,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -11,9 +11,10 @@ import {
   processElementData,
 } from '@klicker-uzh/util'
 import { createHmac } from 'crypto'
-import { EventEmitter } from 'events'
+import type { EventEmitter } from 'events'
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -63,6 +64,7 @@ describe('Unit tests for live quiz evaluation service', () => {
   })
 
   beforeEach(async () => {
+    vi.stubEnv('APP_SECRET', 'evaluation-test-secret')
     const { userOneCtx: newUserOneCtx } = await testInitialization(
       prisma,
       hatchet,
@@ -70,6 +72,10 @@ describe('Unit tests for live quiz evaluation service', () => {
     )
     userOneCtx = newUserOneCtx
     utilMocks.getCachedBlockResults.mockReset()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('strips element content for SCHEDULED blocks while preserving block status metadata', async () => {
@@ -197,7 +203,10 @@ describe('Unit tests for live quiz evaluation service', () => {
     expect(executedRes.instances[0]?.name).toEqual('Single Choice Question 2')
   })
 
-  it('returns metadata without evaluation content for HMAC requests to DRAFT quizzes', async () => {
+  it.each([
+    PublicationStatus.DRAFT,
+    PublicationStatus.SCHEDULED,
+  ])('returns metadata without evaluation content for HMAC requests to %s quizzes', async (status) => {
     const course = await seedCourse({}, userOneCtx)
 
     const question = await prisma.element.create({
@@ -224,7 +233,7 @@ describe('Unit tests for live quiz evaluation service', () => {
       data: {
         name: 'Draft Quiz',
         displayName: 'Draft Quiz',
-        status: PublicationStatus.DRAFT,
+        status,
         ownerId: userOneCtx.user.sub,
         courseId: course.id,
         blocks: {
@@ -274,17 +283,36 @@ describe('Unit tests for live quiz evaluation service', () => {
     expect(evaluation).toMatchObject({
       id: liveQuiz.id,
       displayName: 'Draft Quiz',
-      status: PublicationStatus.DRAFT,
+      status,
       courseName: course.name,
       results: [],
     })
 
+    const findQuiz = vi.fn(prisma.liveQuiz.findUnique.bind(prisma.liveQuiz))
+    utilMocks.getCachedBlockResults.mockClear()
     const rejectedEvaluation = await getLiveQuizEvaluation(
       { id: liveQuiz.id, hmac: 'invalid' },
-      anonymousCtx
+      {
+        ...anonymousCtx,
+        prisma: {
+          ...prisma,
+          liveQuiz: new Proxy(prisma.liveQuiz, {
+            get(target, property, receiver) {
+              return property === 'findUnique'
+                ? findQuiz
+                : Reflect.get(target, property, receiver)
+            },
+          }),
+        },
+      }
     )
 
     expect(rejectedEvaluation).toBeNull()
+    expect(findQuiz).toHaveBeenCalledExactlyOnceWith({
+      where: expect.objectContaining({ id: liveQuiz.id, isDeleted: false }),
+      select: { id: true, namespace: true },
+    })
+    expect(utilMocks.getCachedBlockResults).not.toHaveBeenCalled()
   })
 
   it('strips evaluation content for authenticated non-published quizzes', async () => {

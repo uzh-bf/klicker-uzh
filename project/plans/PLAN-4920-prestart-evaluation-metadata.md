@@ -1,4 +1,70 @@
-# PR 4920: pre-start evaluation metadata
+# PR 4920: evaluation metadata and active-block reveal controls
+
+## Approved follow-up
+
+The user requested usable solution and explanation controls while a block runs,
+and resolution of the remaining merge blockers. Active questions initialize both
+controls off on their first render regardless of saved closed-block settings or
+URL flags. An explicit reveal survives polling and navigation back to the same
+running question, but does not carry to another question or newly running block.
+Closed-block URL behavior, unpublished-content protection, and the separate
+results-confirmation overlay remain unchanged.
+
+Authority: implement, verify, commit and push this package to the existing
+[evaluation PR](https://github.com/uzh-bf/klicker-uzh/pull/4920), including one
+integration of current `v3` and ordinary/final review handling. Merge, approval,
+force-push and deployment remain excluded. Retain the exact activity-info-on-eval
+runtime for user testing through the next checkpoint.
+
+Route: the executor owns evaluation UI and existing Playwright expectations;
+the main session owns HMAC validation, its regression, upstream integration and
+final evidence. The HMAC boundary stays with the main session because it is
+security-sensitive. Manage startup feedback is addressed by upstream's profile
+guard; verify rather than duplicate it.
+
+Acceptance: active controls are enabled and initially off, actual rendered
+solutions and explanations follow manual toggles across polling and navigation,
+and closed-block behavior still works. Invalid HMAC requests perform only an
+identity lookup and never load evaluation relations or cache results. Valid signed
+DRAFT/SCHEDULED requests retain metadata-only responses. Tests use a restored,
+synthetic APP_SECRET. Run focused GraphQL and host Playwright/browser checks,
+applicable package checks and full build in the managed container, then slice
+simplification and security review, integrated final review and current-head CI.
+Stop only at a real capability, authority or semantic conflict boundary.
+
+The older scope below records the original pre-start fix. This follow-up
+supersedes its no-UI-change restriction. No new schema, dependencies, production
+data or authorization model is introduced.
+
+Progress: the worktree was fast-forwarded to the pushed head `6484e56bc6`.
+The old runtime lacks devrouter's required waitFor configuration, so the single
+authorized v3 integration precedes runtime verification. The sole startup-script
+conflict retains the working /AddResponse endpoint and upstream GrowthBook host.
+The planner's five findings were accepted: explicit reveal-state lifetime,
+updated behavioral Playwright coverage, query-order regression, full warmup
+guard verification, and the existing review gates.
+
+Planner: APPROVED after accepting the five findings and preserving upstream's
+course-visibility filter. The optional Gemini challenge confirmed the need to
+define active-to-closed precedence; use existing closed-state behavior. Its URL
+rewriting, pre-lookup HMAC validation and narrower metadata proposals are rejected:
+URL flags remain meaningful for closed blocks, signing requires the stored
+namespace, and activity/course metadata is the explicitly approved feature.
+No new rate-limiting layer is part of this bounded correction.
+
+Verification checkpoint (2026-09-06): the authorized integration is committed
+as `21f05ef5c`. Root `check:all` and the full build pass in the exact managed
+container. The isolated evaluation GraphQL suite passes all five tests, including
+invalid-HMAC lookup order and DRAFT/SCHEDULED signed metadata. Redis connection
+warnings remain in that mocked-cache suite; this is not response-processing proof.
+Browser screenshots confirm enabled, default-off active controls even with both
+URL flags true, actual rendered solution/explanation after manual reveal, and
+preserved selections after reload. Closed-block manual reveal also works.
+The obsolete active-block disabled assertions now check enabled controls,
+manual selections, reload persistence and hiding again. The serial Playwright
+workflow remains CI-only because its cleanup would erase the retained manual-test
+database. Independent reviews and publication are still pending. Keep the exact
+activity-info-on-eval runtime running for user testing.
 
 ## Goal
 

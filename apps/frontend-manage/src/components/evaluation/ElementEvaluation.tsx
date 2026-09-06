@@ -42,7 +42,6 @@ interface ElementEvaluationProps {
   type: ActivityEvaluationType
   activityType?: ActivityType
   requireShowResultsConfirmation: boolean
-  isStackActive?: boolean
   isAssessmentEnabled: boolean
   pinCode?: string | null
   className?: string
@@ -66,7 +65,6 @@ function ElementEvaluation({
   type,
   activityType,
   requireShowResultsConfirmation,
-  isStackActive,
   isAssessmentEnabled,
   pinCode,
   className,
@@ -202,8 +200,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={!isStackActive && showSolution}
-                  showExplanation={!isStackActive && showExplanation}
+                  showSolution={showSolution}
+                  showExplanation={showExplanation}
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
@@ -216,8 +214,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={!isStackActive && showSolution}
-                  showExplanation={!isStackActive && showExplanation}
+                  showSolution={showSolution}
+                  showExplanation={showExplanation}
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
@@ -230,8 +228,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={!isStackActive && showSolution}
-                  showExplanation={!isStackActive && showExplanation}
+                  showSolution={showSolution}
+                  showExplanation={showExplanation}
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
@@ -243,8 +241,8 @@ function ElementEvaluation({
                   instanceEvaluation={currentInstance}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={!isStackActive && showSolution}
-                  showExplanation={!isStackActive && showExplanation}
+                  showSolution={showSolution}
+                  showExplanation={showExplanation}
                 />
               )}
             </div>
@@ -259,8 +257,8 @@ function ElementEvaluation({
             activeInstance={activeInstance}
             textSize={textSize}
             chartType={chartType}
-            showSolution={!isStackActive && showSolution}
-            showExplanation={!isStackActive && showExplanation}
+            showSolution={showSolution}
+            showExplanation={showExplanation}
             hasSolution={hasSolution}
             hasExplanation={hasExplanation}
             isAssessmentEnabled={isAssessmentEnabled}

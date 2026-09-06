@@ -99,6 +99,22 @@ function ActivityEvaluation({
     }))
   )
 
+  const currentStack =
+    typeof activeStack === 'number' ? stacks[activeStack] : undefined
+  const currentInstance = instanceResults[activeInstance]
+  const isStackActive = currentStack?.stackActive ?? false
+
+  // Active-block reveals are separate from the closed-block settings so that
+  // opening a block never exposes a saved result or URL-selected solution.
+  const [activeShowSolution, setActiveShowSolution] = useSessionStorage(
+    `active-show-solution-${activityId}-${currentStack?.stackId ?? activeStack}-${currentInstance?.id ?? activeInstance}`,
+    false
+  )
+  const [activeShowExplanation, setActiveShowExplanation] = useSessionStorage(
+    `active-show-explanation-${activityId}-${currentStack?.stackId ?? activeStack}-${currentInstance?.id ?? activeInstance}`,
+    false
+  )
+
   // automatically switch to correct instance
   const questionLocation = getEvaluationQuestionLocation(
     router.query.questionIx as string | null,
@@ -121,6 +137,7 @@ function ActivityEvaluation({
     paramsLoaded:
       questionLocation?.stackIx === activeStack &&
       questionLocation?.instanceIx === activeInstance,
+    isStackActive,
     showSolution: router.query.showSolution === 'true',
     showExplanation: router.query.showExplanation === 'true',
     activeInstance,
@@ -225,7 +242,6 @@ function ActivityEvaluation({
                 requireShowResultsConfirmation={
                   hideActiveBlockResults && stacks[activeStack].stackActive
                 }
-                isStackActive={stacks[activeStack]?.stackActive ?? false}
                 currentInstance={instanceResults[activeInstance]}
                 currentStack={stacks[activeStack]}
                 activeInstance={activeInstance}
@@ -242,7 +258,9 @@ function ActivityEvaluation({
                 chartType={chartType}
                 showSolution={
                   instanceResults[activeInstance]?.hasSampleSolution
-                    ? showSolution
+                    ? isStackActive
+                      ? activeShowSolution
+                      : showSolution
                     : false
                 }
                 showExplanation={
@@ -251,7 +269,9 @@ function ActivityEvaluation({
                   !instanceResults[activeInstance]?.explanation.match(
                     /^(<br>(\n)*)$/g
                   )
-                    ? showExplanation
+                    ? isStackActive
+                      ? activeShowExplanation
+                      : showExplanation
                     : false
                 }
                 type={type}
@@ -344,17 +364,18 @@ function ActivityEvaluation({
           <EvaluationFooter
             type={type}
             activeStack={activeStack}
-            isStackActive={
-              typeof activeStack === 'number'
-                ? (stacks[activeStack]?.stackActive ?? false)
-                : false
-            }
             textSize={textSize}
             setTextSize={setTextSize}
-            showSolution={showSolution}
-            setShowSolution={setShowSolution}
-            showExplanation={showExplanation}
-            setShowExplanation={setShowExplanation}
+            showSolution={isStackActive ? activeShowSolution : showSolution}
+            setShowSolution={
+              isStackActive ? setActiveShowSolution : setShowSolution
+            }
+            showExplanation={
+              isStackActive ? activeShowExplanation : showExplanation
+            }
+            setShowExplanation={
+              isStackActive ? setActiveShowExplanation : setShowExplanation
+            }
             chartType={chartType}
             setChartType={setChartType}
             currentInstance={instanceResults[activeInstance]}

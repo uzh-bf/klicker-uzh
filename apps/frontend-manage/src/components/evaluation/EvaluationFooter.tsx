@@ -1,9 +1,4 @@
-import {
-  faFont,
-  faMinus,
-  faPlus,
-  faTriangleExclamation,
-} from '@fortawesome/free-solid-svg-icons'
+import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
@@ -15,7 +10,7 @@ import {
   ACTIVE_CHART_TYPES,
   ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Select, Switch, Tooltip } from '@uzh-bf/design-system'
+import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
@@ -27,7 +22,6 @@ interface EvaluationFooterProps {
   type: 'LiveQuiz' | 'Asynchronous'
   currentInstance?: ElementInstanceEvaluation
   activeStack: ActiveStackType
-  isStackActive: boolean
   textSize: TextSizeType
   setTextSize: Dispatch<{ type: string }>
   showSolution: boolean
@@ -42,7 +36,6 @@ function EvaluationFooter({
   type,
   currentInstance,
   activeStack,
-  isStackActive,
   textSize,
   setTextSize,
   showSolution,
@@ -110,9 +103,8 @@ function EvaluationFooter({
                 <div className="flex flex-col gap-1">
                   {hasSolution && (
                     <Switch
-                      disabled={isStackActive}
                       size={hasSolutionAndExplanation ? 'sm' : undefined}
-                      checked={!isStackActive && showSolution}
+                      checked={showSolution}
                       label={t('manage.evaluation.showSolution')}
                       onCheckedChange={(newValue) => setShowSolution(newValue)}
                       data={{ cy: 'evaluation-footer-show-solution' }}
@@ -124,9 +116,8 @@ function EvaluationFooter({
                   {hasExplanation &&
                     currentInstance.type !== ElementType.Flashcard && (
                       <Switch
-                        disabled={isStackActive}
                         size={hasSolutionAndExplanation ? 'sm' : undefined}
-                        checked={!isStackActive && showExplanation}
+                        checked={showExplanation}
                         label={t('manage.evaluation.showExplanation')}
                         onCheckedChange={(newValue) =>
                           setShowExplanation(newValue)
@@ -140,16 +131,6 @@ function EvaluationFooter({
                       />
                     )}
                 </div>
-                {isStackActive && (
-                  <Tooltip
-                    tooltip={t('manage.evaluation.solutionHiddenWhileActive')}
-                  >
-                    <FontAwesomeIcon
-                      icon={faTriangleExclamation}
-                      className="text-orange-500"
-                    />
-                  </Tooltip>
-                )}
               </div>
             ) : null}
             {currentInstance?.type &&
