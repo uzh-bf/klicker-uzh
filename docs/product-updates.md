@@ -87,6 +87,72 @@ missing — a missing i18n key would only render a placeholder. Do not migrate
 other code to this shape; conversely, the chrome around an entry (feed title,
 empty state, button labels) does belong in the i18n message files.
 
+## Per-actor read state
+
+`UserProductUpdateState` and `ParticipantProductUpdateState`
+(`packages/prisma/src/prisma/schema/productUpdate.prisma`) hold one row per actor
+and entry. Why the state is in the database, split across two tables, and keyed
+per entry is recorded in
+[ADR 0046](./adr/0046-native-product-updates-subsystem.md).
+
+`updateId` is a plain string with no foreign key, since the catalog is code, so
+the service validates every id against `PRODUCT_UPDATES` before writing.
+
+| Column                                 | Meaning                                                    |
+| -------------------------------------- | ---------------------------------------------------------- |
+| `firstPresentedAt` / `lastPresentedAt` | When the entry first and most recently reached the actor   |
+| `presentationCount`                    | How often a presentation was explicitly recorded           |
+| `readAt`                               | When the card was first opened, and never moved afterwards |
+| `dismissedAt`                          | When the actor dismissed the entry                         |
+
+A row can be created by a read or a dismissal that arrives before any
+presentation was recorded. The presentation timestamps are not nullable, so they
+are filled with that moment, while `presentationCount` stays at zero because no
+presentation was reported.
+
+## The read-state API
+
+Four authenticated root fields in `packages/graphql/src/schema/productUpdates.ts`
+(type) plus the query and mutation types, backed by
+`packages/graphql/src/services/productUpdates.ts`:
+
+| Operation                                   | Behavior                                                             |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| `productUpdateStates(updateIds)`            | Existing rows only; a missing entry means never presented and unread |
+| `markProductUpdateRead(updateId)`           | Sets `readAt` once; a second read returns the unchanged row          |
+| `dismissProductUpdate(updateId)`            | Sets `dismissedAt` once, in the same idempotent way                  |
+| `recordProductUpdatePresentation(updateId)` | Upserts and increments `presentationCount`, moving `lastPresentedAt` |
+
+An id that is not in the catalog is ignored by `productUpdateStates`, which
+answers for the remaining ids, but rejected by all three mutations. That
+asymmetry keeps a newer frontend's feed working against a backend that does not
+carry the newest entries yet, while still refusing to write an orphaned row.
+
+These are the only fields in the schema that serve lecturers and participants
+under one name. Pothos' `role` scope takes a single role, so they are authorized
+as `{ authenticated: true }` and the service performs the role branch: `USER` and
+`ADMIN` write the lecturer table, `PARTICIPANT` writes the participant table, and
+every other role — `TEMPORARY_PARTICIPANT` above all — is rejected with an error
+rather than served an empty result. The actor id always comes from `ctx.user.sub`;
+no operation accepts an actor id from the caller.
+
+The three mutations additionally apply the repository's scope floor for writes:
+a delegated lecturer login with `READ_ONLY` or `SESSION_EXEC` scope is rejected,
+while the query stays open to it so the feed still renders. Participant tokens
+carry no scope claim, so the floor applies to lecturer sessions only.
+
+The write path comes in two shapes, both safe under two browser tabs touching
+the same entry at once. `recordProductUpdatePresentation` is a single upsert
+with a database-side increment; because that update has something to set,
+Prisma emits a native `INSERT ... ON CONFLICT`, so no presentation is lost to a
+read-modify-write race. `markProductUpdateRead` and `dismissProductUpdate`
+insert the row if it is absent and then claim the timestamp only while it is
+still unset. Their insert has an empty update, which Prisma runs as a
+find-then-create instead, so a concurrent first interaction can make one of the
+two inserts hit the unique constraint; the service treats that violation as
+proof that the row now exists and reads it back. The second statement then
+keeps the first read and the first dismissal from moving.
+
 ## Current consumers
 
 The documentation homepage banner
@@ -96,5 +162,6 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-Per-actor read state and the in-app feed surfaces do not exist yet; ADR 0046
-describes their intended shape.
+The in-app feed surfaces in `frontend-manage` and `frontend-pwa` do not exist
+yet; ADR 0046 describes their intended shape. The read-state API above is
+already in place for them.

@@ -1,0 +1,51 @@
+// ----- PRODUCT UPDATES -----
+// Per-actor presentation and read state for the entries of the
+// `@klicker-uzh/product-updates` catalog. The catalog itself lives in code, so
+// `updateId` deliberately has no foreign key; the GraphQL service validates it
+// against the catalog before writing a row.
+//
+// Lecturers and participants are separate models, so they get separate state
+// tables rather than one table with a polymorphic actor column. A single row
+// per actor and entry (never a single "last seen" timestamp) is required
+// because feature-flag targeting can make an actor eligible for an older entry
+// long after newer ones were already read.
+
+model UserProductUpdateState {
+  id Int @id @default(autoincrement())
+
+  updateId String
+
+  firstPresentedAt  DateTime
+  lastPresentedAt   DateTime
+  presentationCount Int       @default(0)
+  readAt            DateTime?
+  dismissedAt       DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, updateId])
+}
+
+model ParticipantProductUpdateState {
+  id Int @id @default(autoincrement())
+
+  updateId String
+
+  firstPresentedAt  DateTime
+  lastPresentedAt   DateTime
+  presentationCount Int       @default(0)
+  readAt            DateTime?
+  dismissedAt       DateTime?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, updateId])
+}
