@@ -72,6 +72,10 @@ function Chatbots() {
     typeof router.query?.view === 'string' ? router.query.view : undefined
   const requestedStep =
     typeof router.query?.step === 'string' ? router.query.step : undefined
+  const requestedResponseExampleId =
+    typeof router.query?.responseExampleId === 'string'
+      ? router.query.responseExampleId
+      : undefined
   const workspaceState = useMemo<ChatbotWorkspaceState>(
     () =>
       selectedChatbot
@@ -103,9 +107,12 @@ function Chatbots() {
       } else {
         delete query.step
       }
+      if (state.view !== 'advanced' || chatbotId !== selectedId) {
+        delete query.responseExampleId
+      }
       return query
     },
-    [router.query]
+    [router.query, selectedId]
   )
 
   useEffect(() => {
@@ -281,6 +288,7 @@ function Chatbots() {
             }
             publishingAuthorizationLoading={publishingCapabilityLoading}
             publishingAuthorizationError={Boolean(publishingCapabilityError)}
+            focusedResponseExampleId={requestedResponseExampleId}
           />
         </main>
       </div>

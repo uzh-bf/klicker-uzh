@@ -14,6 +14,9 @@ data:
   APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  RESPONSE_EXAMPLE_RECEIPT_ISSUER: {{ .Values.chat.responseExampleReceipt.issuer | quote }}
+  RESPONSE_EXAMPLE_RECEIPT_AUDIENCE: {{ .Values.chat.responseExampleReceipt.audience | quote }}
+  RESPONSE_EXAMPLE_RECEIPT_KID: {{ .Values.chat.responseExampleReceipt.keyId | quote }}
   {{- if .Values.backendGraphql.betaSavedGroupId }}
   GROWTHBOOK_BETA_SAVED_GROUP_ID: {{ .Values.backendGraphql.betaSavedGroupId | quote }}
   {{- end }}
