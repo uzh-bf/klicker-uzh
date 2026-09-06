@@ -1,5 +1,40 @@
 # V3 release readiness checkpoint
 
+## Latest recovery receipt, September 6
+
+The user explicitly authorized full recreation after recycling the runtime.
+Devsy reported `NotFound`; the former Compose containers and volumes were
+absent. `devrouter up` restored the missing shared network. Canonical
+`devrouter ensure` then created new containers and completed bootstrap on the
+exact release worktree. The full profile reports ready, healthy services and
+no drift. The new app container is `001d211c0627` and Postgres is `b6dd720957c3`;
+mount inspection confirms the release worktree, not the primary checkout.
+
+Auth providers now return HTTP 200 inside the container. Real delegated login
+succeeds in the engineering browser. The lecturer menu exposes Beta Features,
+its link reaches the expanded settings section, and the direct chatbot route
+shows the gated state. Screenshots are retained outside Git. The browser is
+closed. The runtime remains running under the user's manual-verification lease
+until the next verification checkpoint. No surviving volume was deleted.
+
+Bootstrap emitted type warnings and a course warm-up warning. Its successful
+startup is not a replacement for the earlier clean checks. Host curl rejects
+the local certificate trust chain, while the browser login works. The source
+and lockfile are unchanged; the fresh fetch leaves the branch four commits
+ahead and four behind `origin/v3`. No integration occurred.
+
+The former Auth/cache approval blocker is resolved. Package delivery remains
+pending the required advisor and integrated final review. The advisor CLI's
+model catalog is available, but command approval rejected sending the local
+verification summary to Gemini. No summary was sent and no advisor ran. Explicit
+approval for that payload and destination is required before retrying. The final
+reviewer has not run. Nothing was pushed, tagged, released or deployed.
+
+## Earlier verification receipts
+
+The following records predate the authorized recreation and retain historical
+test evidence; their retained-runtime status is superseded above.
+
 Final disposable lifecycle receipt: `devrouter stop` completed, freeing ten
 routes. Fresh Devsy status reports `Stopped`, and the route inventory contains
 zero exact workspace routes. Its database and worktree are retained. No command,
