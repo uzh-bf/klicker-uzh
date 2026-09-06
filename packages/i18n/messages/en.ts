@@ -1,4 +1,59 @@
 export default {
+  dpoDraft: {
+    switchLocale: 'Deutsch',
+    reviewTitle: 'Data use – app draft',
+    reviewNotice:
+      'Local review draft with synthetic examples. All actions are simulated in memory only. No accounts are created, preferences saved, access activated, exports generated or files uploaded. The notices have not yet been approved.',
+    simulatedResult: 'Confirmed in the draft. Nothing was saved or activated.',
+    required: 'Required',
+    invalidEmail: 'Please enter a valid email address.',
+    usernameLength: 'The username must be between 5 and 15 characters long.',
+    usernameTaken: 'This username is already taken in the local example.',
+    passwordLength: 'The password must be at least 8 characters long.',
+    choices: {
+      research: 'Data for research',
+      allowed: 'Allowed',
+      objected: 'Objected',
+      allow: 'Allow',
+      object: 'Object',
+      researchDescription:
+        'KlickerUZH may provide your usage and learning data for research projects at the University of Zurich. Direct account identifiers are removed or replaced; free text may still contain personal information and requires special safeguards. Only results that do not allow conclusions about individuals are published. You can object or agree again at any time. Your current choice applies to datasets provided afterwards. Data already provided is governed by the rules of the respective research project.',
+      analytics: 'Learning Analytics',
+      required: 'Decision required',
+      enabled: 'Participation: yes',
+      disabled: 'Participation: no',
+      analyticsDescription:
+        'Learning Analytics helps you understand your exercises and progress. Only you can see your personal insights. Lecturers receive protected group reports, for example showing where many learners struggle during practice. Individual values and chat content are not part of these reports. Your choice applies to all courses and can be changed at any time. If you choose "No", courses, chat and points remain available; personal LA data is deleted after the change has been processed. Released, reviewed group reports remain available. When you enable participation, only new activities count.',
+      guide: 'What you and your lecturers see (German draft)',
+      yes: 'Yes, participate',
+      no: 'No, do not participate',
+      yesDescription: 'Private insights and protected group reports.',
+      noDescription: 'Courses, points and chat work as usual.',
+    },
+    account: {
+      title: 'Your account',
+      email: 'Email',
+      username: 'Username',
+      usernameHelp: 'Displayed in the course leaderboard when you join.',
+      password: 'Password',
+      choicesTitle: 'Data use and settings',
+      collectionTitle: 'What data is collected about me?',
+      collection:
+        'We store your account data and data from your courses and activities, such as groups, answers, their evaluation, points and feedback. Your points and personal statistics are retained independently of joining a leaderboard. Your leaderboard information becomes visible to other participants only when you join.',
+      visibilityTitle: 'Who can see my data?',
+      visibility:
+        'Lecturers and other authorised people see the information they need to run and evaluate the course. When you join a leaderboard, other participants see your username and leaderboard information. Learning Analytics shows lecturers only aggregated group values.',
+      purposeTitle: 'What is my data used for?',
+      purpose:
+        'We use your data to operate your account and run and evaluate course activities. Research and Learning Analytics follow your choices on this page. These choices do not affect points, grades or course access.',
+      retentionTitle: 'How long is my data stored?',
+      retention:
+        'Your account data and answers are stored for as long as your account exists. Data may remain stored until legal or contractual retention periods expire. It is then deleted or changed so that it can no longer be associated with a person. You can request deletion of your account and data.',
+      acknowledgement:
+        'I have read the <privacy>KlickerUZH privacy policy</privacy>, accept the <terms>terms of service</terms> and confirm my choices. Account and activity data is necessary to use the service; research and Learning Analytics are voluntary and can be declined.',
+      submit: 'Create account',
+    },
+  },
   chat: {
     common: {
       opensInNewTab: '(opens in new tab)',

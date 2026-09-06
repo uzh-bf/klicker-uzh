@@ -1,4 +1,61 @@
 export default {
+  dpoDraft: {
+    switchLocale: 'English',
+    reviewTitle: 'Datennutzung – App-Entwurf',
+    reviewNotice:
+      'Lokaler Prüfentwurf mit synthetischen Beispielen. Alle Aktionen werden nur im Arbeitsspeicher simuliert. Es werden keine Konten erstellt, Einstellungen gespeichert, Zugänge freigeschaltet, Exporte erzeugt oder Dateien hochgeladen. Die Texte sind noch nicht freigegeben.',
+    simulatedResult:
+      'Im Entwurf bestätigt. Es wurde nichts gespeichert oder freigeschaltet.',
+    required: 'Erforderlich',
+    invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+    usernameLength: 'Der Benutzername muss 5 bis 15 Zeichen lang sein.',
+    usernameTaken:
+      'Dieser Benutzername ist im lokalen Beispiel bereits vergeben.',
+    passwordLength: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+    choices: {
+      research: 'Daten für Forschung',
+      allowed: 'Zugelassen',
+      objected: 'Widersprochen',
+      allow: 'Zulassen',
+      object: 'Widersprechen',
+      researchDescription:
+        'KlickerUZH kann deine Nutzungs- und Lerndaten für Forschungsprojekte der Universität Zürich bereitstellen. Direkte Kontokennungen werden entfernt oder ersetzt; Freitext kann trotzdem persönliche Angaben enthalten und braucht besondere Schutzmassnahmen. Veröffentlicht werden nur Ergebnisse ohne Rückschlüsse auf einzelne Personen. Du kannst jederzeit widersprechen oder wieder zustimmen. Deine aktuelle Wahl gilt für danach bereitgestellte Datensätze. Für bereits bereitgestellte Daten gelten die Regeln des jeweiligen Forschungsprojekts.',
+      analytics: 'Learning Analytics',
+      required: 'Entscheidung erforderlich',
+      enabled: 'Teilnahme: ja',
+      disabled: 'Teilnahme: nein',
+      analyticsDescription:
+        'Learning Analytics hilft dir, deine Übungen und Fortschritte besser einzuordnen. Deine persönlichen Einblicke siehst nur du. Dozierende erhalten geschützte Gruppenberichte, etwa darüber, wo viele beim Üben Schwierigkeiten haben. Einzelwerte und Chat-Inhalte gehören nicht zu diesen Berichten. Deine Wahl gilt für alle Kurse und ist jederzeit änderbar. Bei "Nein" bleiben Kurse, Chat und Punkte nutzbar; persönliche LA-Daten werden nach Verarbeitung der Änderung gelöscht. Freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim Einschalten zählen nur neue Aktivitäten.',
+      guide: 'Was du und deine Dozierenden sehen',
+      yes: 'Ja, teilnehmen',
+      no: 'Nein, nicht teilnehmen',
+      yesDescription: 'Private Einblicke und geschützte Gruppenberichte.',
+      noDescription: 'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+    },
+    account: {
+      title: 'Dein Konto',
+      email: 'E-Mail',
+      username: 'Benutzername',
+      usernameHelp: 'Wird bei einem Beitritt in der Kursrangliste angezeigt.',
+      password: 'Passwort',
+      choicesTitle: 'Datennutzung und Einstellungen',
+      collectionTitle: 'Welche Daten werden über mich gesammelt?',
+      collection:
+        'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.',
+      visibilityTitle: 'Wer sieht meine Daten?',
+      visibility:
+        'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+      purposeTitle: 'Wofür werden meine Daten genutzt?',
+      purpose:
+        'Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Kurszugang.',
+      retentionTitle: 'Wie lange werden meine Daten gespeichert?',
+      retention:
+        'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+      acknowledgement:
+        'Ich habe die <privacy>KlickerUZH Datenschutzbestimmungen</privacy> gelesen, akzeptiere die <terms>Nutzungsbedingungen</terms> und bestätige meine Auswahl. Konto- und Aktivitätsdaten sind für die Nutzung erforderlich; Forschung und Learning Analytics sind freiwillig und können abgelehnt werden.',
+      submit: 'Konto erstellen',
+    },
+  },
   chat: {
     common: {
       opensInNewTab: '(öffnet in neuem Tab)',
