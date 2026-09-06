@@ -1,5 +1,118 @@
 export default {
   dpoDraft: {
+    participant: {
+      connectedTitle: 'SWITCH edu-ID connected',
+      connectedEmail: 'student-0042@example.invalid',
+      eduid: {
+        title: 'Create an account with SWITCH edu-ID',
+        context:
+          'Planned extension: ordinary account creation through SWITCH edu-ID, without assessment mode. The sign-in route alone does not make activities grade-relevant. Research is allowed by default; Learning Analytics requires an explicit choice.',
+        connectedHelp:
+          'You do not need an additional password. This example has the username lernende_0042 assigned.',
+        collection:
+          'We store the identity details transmitted by SWITCH edu-ID for your account as well as data from your courses and activities, such as groups, answers, their evaluation, points and feedback. Your points and personal statistics remain available independently of joining a leaderboard. Your leaderboard information becomes visible to other participants only when you join.',
+        submit: 'Create account',
+        result: 'The account is created.',
+      },
+      assessment: {
+        title: 'Activate access to the assessment',
+        context:
+          "Review question: Is the same text sufficient for assessment accounts if the assessment's purpose, identity, access and retention are explained as well? Access remains locked until the choices are complete.",
+        accessTitle: 'Your access',
+        connectedHelp: 'You do not need a password or any further input.',
+        collection:
+          'We store the identity details transmitted by SWITCH edu-ID as well as answers, their evaluation, points and technical log data required to conduct, evaluate and document the assessment. This storage does not depend on joining a leaderboard.',
+        visibility:
+          'Authorised assessment staff see your identity details, answers, corrections and results to the extent required for the assessment. Other participants do not see these details. Learning Analytics shows lecturers only aggregated group values.',
+        purpose:
+          'We use your data to operate your account and to conduct, evaluate and document activities relevant to the assessment or grades. Research and Learning Analytics follow your choice on this page. This choice does not affect points, grades or access to the assessment.',
+        retention:
+          'Your assessment account and assessment data are stored for conducting, correcting and documenting the assessment and during applicable objection and retention periods. During this time, deletion may be restricted or refused. Afterwards, the data are deleted or changed so that they can no longer be associated with a person.',
+        submit: 'Activate access',
+        result: 'Assessment access is activated.',
+      },
+      gate: {
+        title: 'Before you continue',
+        context:
+          'This page adds missing choices and records confirmation of the current privacy policy and terms of service. Saved choices remain unchanged. This applies to ordinary login and edu-ID, including assessment mode.',
+        scenarioLabel: 'Example state',
+        scenarios: {
+          legacy: 'Legacy account without choices',
+          saved: 'Choices present: research objected, LA no',
+        },
+        intro: 'Please review the choices for your account',
+        username: 'lernende_0042',
+        destination:
+          'for research and Learning Analytics and confirm the current privacy policy and terms of service. You then return directly to Chat · Benibot.',
+        submit: 'Save and continue',
+        result: 'Returning to Chat · Benibot.',
+      },
+      settings: {
+        title: 'Settings',
+        context:
+          'Both choices remain changeable. Each change writes a log entry.',
+        dataHeading: 'Your data',
+        researchTitle: 'Data for research',
+        researchMarker: 'Research:',
+        researchDescription:
+          'Your current choice is checked immediately before every new research export. If you object, your data will not be included in research datasets provided later. If you agree again later, all suitable data then available may be included in later exports. Data already provided without direct identifiers is governed by the respective research project. Results already provided that passed a documented disclosure review and do not allow conclusions about individuals cannot subsequently be associated with a person or removed for that person.',
+        allowed: 'Allowed',
+        objected: 'Objected',
+        researchEnabled:
+          'Saved: allowed. From now on, your older suitable data may also be included in later research exports. This change is logged.',
+        researchDisabled:
+          'Saved: objected. Your data will not be included in any research dataset provided later. This change is logged.',
+        analyticsTitle: 'Learning Analytics',
+        analyticsDescription:
+          'Learning Analytics gives you private insights into your exercises. Lecturers see protected group reports only. Your choice applies to all courses. If you switch it off, no further activities are included in LA; your personal LA data and insights are deleted after the change has been processed. Released, reviewed group reports remain available. When you switch it on again, only new activities count.',
+        analyticsGuide: 'More about your choice',
+        analyticsMarker: 'Learning Analytics:',
+        confirmTitle: 'Switch off Learning Analytics?',
+        confirmText:
+          'Your personal LA data and insights are deleted after the change has been processed. Released, reviewed group reports remain available. Your answers for course operations remain stored.',
+        disable: 'Switch off',
+        keepEnabled: 'Keep enabled',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+        analyticsDisabled:
+          'Saved: switched off. Your derived personal Learning Analytics data are deleted after processing. This change is logged.',
+        analyticsEnabled:
+          'Saved: switched on. From now on, only new activities are considered; earlier activities are not backfilled. This change is logged.',
+      },
+      leaderboard: {
+        title: 'Join the leaderboard for “Test course autumn 2026”',
+        context:
+          'Agreed target behaviour: joining controls visibility in the leaderboard, not the collection or storage of personal points. The backend change is still pending.',
+        description:
+          'Participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining the leaderboard. If you join, other participants see your username lernende_0042, your rank, points and achievements in the leaderboard. You can leave and rejoin at any time. After leaving, you no longer appear in the leaderboard; your points and personal statistics remain available. Your research and Learning Analytics choices are unaffected.',
+        join: 'Join leaderboard',
+        decline: 'Do not join',
+        leave: 'Leave leaderboard',
+        rejoin: 'Rejoin leaderboard',
+        close: 'Close',
+        open: 'Open join dialog',
+        readoutTitle: 'Synthetic status',
+        notJoinedReadout:
+          'Not joined. Your personal points and statistics remain private.',
+        joinedReadout:
+          'Joined. Your personal points count immediately in the leaderboard.',
+        leftReadout:
+          'Left. Your personal points and statistics remain available and private.',
+        unchangedChoices:
+          'Your research and Learning Analytics choices remain unchanged.',
+        personalPointsLabel: 'Personal points',
+        rankingPointsLabel: 'Ranking points',
+        awardsLabel: 'Rank-dependent awards',
+        declinedResult:
+          'Leaderboard not joined. Personal points and statistics remain private.',
+        joinedResult:
+          'Leaderboard joined. Historical points count immediately; there are no retroactive rank-dependent awards.',
+        leftResult:
+          'Leaderboard left. Personal points and statistics remain available and private.',
+        rejoinedResult:
+          'Leaderboard rejoined. Historical points count immediately; there are no retroactive rank-dependent awards.',
+      },
+    },
     lecturer: {
       assessment: {
         context:

@@ -57,9 +57,6 @@ export default function AssessmentExportDraft() {
               <Form
                 className="flex flex-col gap-4"
                 data-cy="dpo-assessment-export-form"
-                onChange={() => {
-                  if (result) setResult('')
-                }}
               >
                 <span className="w-fit rounded bg-red-100 px-2 py-1 text-sm font-semibold text-red-900">
                   {t('dpoDraft.lecturer.assessment.classification')}

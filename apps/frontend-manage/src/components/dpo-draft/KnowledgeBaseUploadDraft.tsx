@@ -50,7 +50,10 @@ export default function KnowledgeBaseUploadDraft() {
           title={t('dpoDraft.lecturer.knowledgeBase.title')}
           data={{ cy: 'dpo-knowledge-upload-modal' }}
           dataCloseButton={{ cy: 'dpo-close-knowledge-upload' }}
-          className={{ content: 'max-w-3xl' }}
+          className={{
+            content: 'max-w-3xl',
+            title: 'min-w-0 whitespace-normal pr-8 text-left',
+          }}
         >
           <div className="mb-4 space-y-2">
             <label
@@ -123,9 +126,6 @@ export default function KnowledgeBaseUploadDraft() {
               <Form
                 className="flex flex-col gap-4"
                 data-cy="dpo-knowledge-upload-form"
-                onChange={() => {
-                  if (result) setResult('')
-                }}
               >
                 <p className="text-sm leading-6">
                   {t('dpoDraft.lecturer.knowledgeBase.lead')}

@@ -1,5 +1,118 @@
 export default {
   dpoDraft: {
+    participant: {
+      connectedTitle: 'Switch edu-ID verbunden',
+      connectedEmail: 'student-0042@example.invalid',
+      eduid: {
+        title: 'Konto mit Switch edu-ID erstellen',
+        context:
+          'Geplante Erweiterung: normales Konto über Switch edu-ID, ohne Assessment-Modus. Der Anmeldeweg allein macht Aktivitäten nicht notenrelevant. Forschung bleibt standardmässig zugelassen; Learning Analytics verlangt eine ausdrückliche Wahl.',
+        connectedHelp:
+          'Du brauchst kein zusätzliches Passwort. Für dieses Beispiel ist der Benutzername lernende_0042 hinterlegt.',
+        collection:
+          'Wir speichern die von Switch edu-ID für dein Konto übermittelten Identitätsangaben sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.',
+        submit: 'Konto erstellen',
+        result: 'Konto ist erstellt.',
+      },
+      assessment: {
+        title: 'Zugang zum Assessment freischalten',
+        context:
+          'Prüffrage: Reicht derselbe Text für Assessment-Konten, wenn Zweck, Identität, Einsicht und Aufbewahrung des Assessments zusätzlich erklärt werden? Der Zugang bleibt bis zur vollständigen Auswahl gesperrt.',
+        accessTitle: 'Dein Zugang',
+        connectedHelp: 'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        collection:
+          'Wir speichern die von Switch edu-ID übermittelten Identitätsangaben sowie Antworten, deren Bewertung, Punkte und technische Protokolldaten, die für die Durchführung, Auswertung und Nachvollziehbarkeit des Assessments erforderlich sind. Diese Speicherung hängt nicht von einem Ranglistenbeitritt ab.',
+        visibility:
+          'Berechtigte Assessment-Mitarbeitende sehen deine Identitätsangaben, Antworten, Korrekturen und Ergebnisse, soweit dies für das Assessment erforderlich ist. Andere Teilnehmende sehen diese Angaben nicht. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        purpose:
+          'Wir verwenden deine Daten, um dein Konto zu betreiben und assessment- oder notenrelevante Aktivitäten durchzuführen, auszuwerten und nachvollziehbar zu dokumentieren. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        retention:
+          'Dein Assessment-Konto und deine Assessment-Daten werden für die Durchführung, Korrektur und Nachvollziehbarkeit sowie während geltender Einsprache- und Aufbewahrungsfristen gespeichert. Während dieser Zeit kann eine Löschung eingeschränkt oder abgelehnt werden. Danach werden die Daten gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können.',
+        submit: 'Zugang freischalten',
+        result: 'Assessment-Zugang ist freigeschaltet.',
+      },
+      gate: {
+        title: 'Bevor du weitermachst',
+        context:
+          'Die Seite ergänzt fehlende Entscheidungen und erfasst die Bestätigung der aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Gespeicherte Entscheidungen bleiben erhalten. Dies gilt bei normalem Login und bei edu-ID, auch im Assessment-Modus.',
+        scenarioLabel: 'Beispielzustand',
+        scenarios: {
+          legacy: 'Altes Konto ohne Entscheidungen',
+          saved: 'Entscheidungen vorhanden: Forschung widersprochen, LA nein',
+        },
+        intro: 'Bitte überprüfe für dein Konto',
+        username: 'lernende_0042',
+        destination:
+          'deine Auswahl für Forschung und Learning Analytics und bestätige die aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Danach geht es direkt zurück zu Chat · Benibot.',
+        submit: 'Speichern und weiter',
+        result: 'Zurück zu Chat · Benibot.',
+      },
+      settings: {
+        title: 'Einstellungen',
+        context:
+          'Beide Entscheidungen bleiben änderbar. Jede Änderung schreibt einen Protokolleintrag.',
+        dataHeading: 'Deine Daten',
+        researchTitle: 'Daten für Forschung',
+        researchMarker: 'Forschung:',
+        researchDescription:
+          'Deine aktuelle Wahl wird unmittelbar vor jedem neuen Forschungs-Export geprüft. Wenn du widersprichst, werden deine Daten nicht in später bereitgestellte Forschungsdatensätze aufgenommen. Wenn du später wieder zustimmst, können alle dann vorhandenen und geeigneten Daten in spätere Exporte aufgenommen werden. Bereits bereitgestellte Daten ohne direkte Identifikatoren unterliegen dem jeweiligen Forschungsprojekt. Bereits bereitgestellte Ergebnisse, die eine dokumentierte Offenlegungsprüfung bestanden haben und keine Rückschlüsse auf einzelne Personen zulassen, können nicht nachträglich einer Person zugeordnet oder für sie entfernt werden.',
+        allowed: 'Zugelassen',
+        objected: 'Widersprochen',
+        researchEnabled:
+          'Gespeichert: zugelassen. Ab jetzt können auch deine älteren geeigneten Daten in spätere Forschungsexporte aufgenommen werden. Diese Änderung wird protokolliert.',
+        researchDisabled:
+          'Gespeichert: widersprochen. Deine Daten werden in keinen später bereitgestellten Forschungsdatensatz aufgenommen. Diese Änderung wird protokolliert.',
+        analyticsTitle: 'Learning Analytics',
+        analyticsDescription:
+          'Learning Analytics bietet dir private Einblicke in deine Übungen. Dozierende sehen ausschliesslich geschützte Gruppenberichte. Deine Wahl gilt für alle Kurse. Wenn du ausschaltest, werden keine weiteren Aktivitäten für LA aufgenommen; deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim erneuten Einschalten zählen nur neue Aktivitäten.',
+        analyticsGuide: 'Mehr zu deiner Entscheidung',
+        analyticsMarker: 'Learning Analytics:',
+        confirmTitle: 'Learning Analytics ausschalten?',
+        confirmText:
+          'Deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Deine Antworten für den Kursbetrieb bleiben erhalten.',
+        disable: 'Ausschalten',
+        keepEnabled: 'Eingeschaltet lassen',
+        enabled: 'Eingeschaltet',
+        disabled: 'Ausgeschaltet',
+        analyticsDisabled:
+          'Gespeichert: ausgeschaltet. Deine abgeleiteten personenbezogenen Learning-Analytics-Daten werden nach der Verarbeitung gelöscht. Diese Änderung wird protokolliert.',
+        analyticsEnabled:
+          'Gespeichert: eingeschaltet. Ab jetzt werden nur neue Aktivitäten berücksichtigt; frühere Aktivitäten werden nicht nachgetragen. Diese Änderung wird protokolliert.',
+      },
+      leaderboard: {
+        title: 'Rangliste von «Testkurs HS 2026» beitreten',
+        context:
+          'Vereinbartes Zielverhalten: Der Beitritt steuert die Sichtbarkeit in der Rangliste, nicht das Sammeln oder Speichern persönlicher Punkte. Die Backend-Anpassung steht noch aus.',
+        description:
+          'Die Teilnahme ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen lernende_0042, deine Platzierung, Punkte und Erfolge in der Rangliste. Du kannst jederzeit austreten und wieder beitreten. Nach dem Austritt erscheinst du nicht mehr in der Rangliste; deine Punkte und persönlichen Statistiken bleiben erhalten. Deine Auswahl für Forschung und Learning Analytics bleibt davon unberührt.',
+        join: 'Rangliste beitreten',
+        decline: 'Nicht beitreten',
+        leave: 'Rangliste verlassen',
+        rejoin: 'Rangliste wieder beitreten',
+        close: 'Schliessen',
+        open: 'Beitrittsdialog öffnen',
+        readoutTitle: 'Synthetischer Status',
+        notJoinedReadout:
+          'Noch nicht beigetreten. Deine persönlichen Punkte und Statistiken bleiben privat.',
+        joinedReadout:
+          'Beigetreten. Deine persönlichen Punkte zählen sofort in der Rangliste.',
+        leftReadout:
+          'Ausgetreten. Deine persönlichen Punkte und Statistiken bleiben erhalten und privat.',
+        unchangedChoices:
+          'Deine Auswahl für Forschung und Learning Analytics bleibt unverändert.',
+        personalPointsLabel: 'Persönliche Punkte',
+        rankingPointsLabel: 'Ranglistenpunkte',
+        awardsLabel: 'Rangabhängige Auszeichnungen',
+        declinedResult:
+          'Rangliste nicht beigetreten. Persönliche Punkte und Statistiken bleiben privat.',
+        joinedResult:
+          'Rangliste beigetreten. Historische Punkte zählen sofort; es gibt keine rückwirkenden rangabhängigen Auszeichnungen.',
+        leftResult:
+          'Rangliste verlassen. Persönliche Punkte und Statistiken bleiben erhalten und privat.',
+        rejoinedResult:
+          'Rangliste wieder beigetreten. Historische Punkte zählen sofort; es gibt keine rückwirkenden rangabhängigen Auszeichnungen.',
+      },
+    },
     lecturer: {
       assessment: {
         context:
