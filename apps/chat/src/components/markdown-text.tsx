@@ -59,20 +59,39 @@ export const MarkdownText = memo(MarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   const t = useTranslations()
-  const { isCopied, copyToClipboard } = useCopyToClipboard()
+  const { copyStatus, copyToClipboard } = useCopyToClipboard()
+  const isCopied = copyStatus === 'success'
   const onCopy = () => {
     if (!code || isCopied) return
-    copyToClipboard(code)
+    void copyToClipboard(code)
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
-      <span className="lowercase [&>span]:text-xs">{language}</span>
+    <div className="flex items-center justify-between gap-2 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="lowercase [&>span]:text-xs">{language}</span>
+        <span
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className={cn(
+            'min-w-0 flex-1 break-words text-xs font-normal',
+            copyStatus === 'error' ? 'text-red-200' : 'text-white/80'
+          )}
+        >
+          {copyStatus === 'success'
+            ? t('chat.markdown.copyCodeSuccess')
+            : copyStatus === 'error'
+              ? t('chat.markdown.copyCodeError')
+              : ''}
+        </span>
+      </div>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={onCopy}
-            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium text-white transition-colors touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8"
           >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
@@ -90,18 +109,27 @@ const useCopyToClipboard = ({
 }: {
   copiedDuration?: number
 } = {}) => {
-  const [isCopied, setIsCopied] = useState<boolean>(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>(
+    'idle'
+  )
 
-  const copyToClipboard = (value: string) => {
+  const copyToClipboard = async (value: string) => {
     if (!value) return
 
-    navigator.clipboard.writeText(value).then(() => {
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), copiedDuration)
-    })
+    setCopyStatus('idle')
+
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopyStatus('success')
+      setTimeout(() => {
+        setCopyStatus('idle')
+      }, copiedDuration)
+    } catch {
+      setCopyStatus('error')
+    }
   }
 
-  return { isCopied, copyToClipboard }
+  return { copyStatus, copyToClipboard }
 }
 
 const defaultComponents = memoizeMarkdownComponents({
