@@ -1,0 +1,5 @@
+﻿sep=;
+"Studierende (E-Mail)";"Vorname der studierenden Person";"Nachname der studierenden Person";"Matrikelnummer der studierenden Person";"Basispunkte";"Korrektheitspunkte";"Bonuspunkte";"Total"
+"pruefling-001@example.invalid";"Alex";"Beispiel";"99000001";"40";"32";"3";"75"
+"pruefling-002@example.invalid";"Sam";"Muster";"99000002";"40";"28";"2";"70"
+"pruefling-003@example.invalid";"Kim";"Demo";"99000003";"40";"24";"4";"68"

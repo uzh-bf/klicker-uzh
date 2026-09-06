@@ -1,4 +1,317 @@
 export default {
+  dpoDraft: {
+    participant: {
+      connectedTitle: 'Switch edu-ID verbunden',
+      connectedEmail: 'student-0042@example.invalid',
+      eduid: {
+        title: 'Konto mit Switch edu-ID erstellen',
+        context:
+          'Geplante Erweiterung: normales Konto über Switch edu-ID, ohne Assessment-Modus. Der Anmeldeweg allein macht Aktivitäten nicht notenrelevant. Forschung bleibt standardmässig zugelassen; Learning Analytics verlangt eine ausdrückliche Wahl.',
+        connectedHelp:
+          'Du brauchst kein zusätzliches Passwort. Für dieses Beispiel ist der Benutzername lernende_0042 hinterlegt.',
+        collection:
+          'Wir speichern die von Switch edu-ID für dein Konto übermittelten Identitätsangaben sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.',
+        submit: 'Konto erstellen',
+        result: 'Konto ist erstellt.',
+      },
+      assessment: {
+        title: 'Zugang zum Assessment freischalten',
+        context:
+          'Prüffrage: Reicht derselbe Text für Assessment-Konten, wenn Zweck, Identität, Einsicht und Aufbewahrung des Assessments zusätzlich erklärt werden? Der Zugang bleibt bis zur vollständigen Auswahl gesperrt.',
+        accessTitle: 'Dein Zugang',
+        connectedHelp: 'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        collection:
+          'Wir speichern die von Switch edu-ID übermittelten Identitätsangaben sowie Antworten, deren Bewertung, Punkte und technische Protokolldaten, die für die Durchführung, Auswertung und Nachvollziehbarkeit des Assessments erforderlich sind. Diese Speicherung hängt nicht von einem Ranglistenbeitritt ab.',
+        visibility:
+          'Berechtigte Assessment-Mitarbeitende sehen deine Identitätsangaben, Antworten, Korrekturen und Ergebnisse, soweit dies für das Assessment erforderlich ist. Andere Teilnehmende sehen diese Angaben nicht. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        purpose:
+          'Wir verwenden deine Daten, um dein Konto zu betreiben und assessment- oder notenrelevante Aktivitäten durchzuführen, auszuwerten und nachvollziehbar zu dokumentieren. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        retention:
+          'Dein Assessment-Konto und deine Assessment-Daten werden für die Durchführung, Korrektur und Nachvollziehbarkeit sowie während geltender Einsprache- und Aufbewahrungsfristen gespeichert. Während dieser Zeit kann eine Löschung eingeschränkt oder abgelehnt werden. Danach werden die Daten gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können.',
+        submit: 'Zugang freischalten',
+        result: 'Assessment-Zugang ist freigeschaltet.',
+      },
+      gate: {
+        title: 'Bevor du weitermachst',
+        context:
+          'Die Seite ergänzt fehlende Entscheidungen und erfasst die Bestätigung der aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Gespeicherte Entscheidungen bleiben erhalten. Dies gilt bei normalem Login und bei edu-ID, auch im Assessment-Modus.',
+        scenarioLabel: 'Beispielzustand',
+        scenarios: {
+          legacy: 'Altes Konto ohne Entscheidungen',
+          saved: 'Entscheidungen vorhanden: Forschung widersprochen, LA nein',
+        },
+        intro: 'Bitte überprüfe für dein Konto',
+        username: 'lernende_0042',
+        destination:
+          'deine Auswahl für Forschung und Learning Analytics und bestätige die aktuellen Datenschutzbestimmungen und Nutzungsbedingungen. Danach geht es direkt zurück zu Chat · Benibot.',
+        submit: 'Speichern und weiter',
+        result: 'Zurück zu Chat · Benibot.',
+      },
+      settings: {
+        title: 'Einstellungen',
+        context:
+          'Beide Entscheidungen bleiben änderbar. Jede Änderung schreibt einen Protokolleintrag.',
+        dataHeading: 'Deine Daten',
+        researchTitle: 'Daten für Forschung',
+        researchMarker: 'Forschung:',
+        researchDescription:
+          'Deine aktuelle Wahl wird unmittelbar vor jedem neuen Forschungs-Export geprüft. Wenn du widersprichst, werden deine Daten nicht in später bereitgestellte Forschungsdatensätze aufgenommen. Wenn du später wieder zustimmst, können alle dann vorhandenen und geeigneten Daten in spätere Exporte aufgenommen werden. Bereits bereitgestellte Daten ohne direkte Identifikatoren unterliegen dem jeweiligen Forschungsprojekt. Bereits bereitgestellte Ergebnisse, die eine dokumentierte Offenlegungsprüfung bestanden haben und keine Rückschlüsse auf einzelne Personen zulassen, können nicht nachträglich einer Person zugeordnet oder für sie entfernt werden.',
+        allowed: 'Zugelassen',
+        objected: 'Widersprochen',
+        researchEnabled:
+          'Gespeichert: zugelassen. Ab jetzt können auch deine älteren geeigneten Daten in spätere Forschungsexporte aufgenommen werden. Diese Änderung wird protokolliert.',
+        researchDisabled:
+          'Gespeichert: widersprochen. Deine Daten werden in keinen später bereitgestellten Forschungsdatensatz aufgenommen. Diese Änderung wird protokolliert.',
+        analyticsTitle: 'Learning Analytics',
+        analyticsDescription:
+          'Learning Analytics bietet dir private Einblicke in deine Übungen. Dozierende sehen ausschliesslich geschützte Gruppenberichte. Deine Wahl gilt für alle Kurse. Wenn du ausschaltest, werden keine weiteren Aktivitäten für LA aufgenommen; deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim erneuten Einschalten zählen nur neue Aktivitäten.',
+        analyticsGuide: 'Mehr zu deiner Entscheidung',
+        analyticsMarker: 'Learning Analytics:',
+        confirmTitle: 'Learning Analytics ausschalten?',
+        confirmText:
+          'Deine persönlichen LA-Daten und Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene, geprüfte Gruppenberichte bleiben bestehen. Deine Antworten für den Kursbetrieb bleiben erhalten.',
+        disable: 'Ausschalten',
+        keepEnabled: 'Eingeschaltet lassen',
+        enabled: 'Eingeschaltet',
+        disabled: 'Ausgeschaltet',
+        analyticsDisabled:
+          'Gespeichert: ausgeschaltet. Deine abgeleiteten personenbezogenen Learning-Analytics-Daten werden nach der Verarbeitung gelöscht. Diese Änderung wird protokolliert.',
+        analyticsEnabled:
+          'Gespeichert: eingeschaltet. Ab jetzt werden nur neue Aktivitäten berücksichtigt; frühere Aktivitäten werden nicht nachgetragen. Diese Änderung wird protokolliert.',
+      },
+      leaderboard: {
+        title: 'Rangliste von «Testkurs HS 2026» beitreten',
+        context:
+          'Vereinbartes Zielverhalten: Der Beitritt steuert die Sichtbarkeit in der Rangliste, nicht das Sammeln oder Speichern persönlicher Punkte. Die Backend-Anpassung steht noch aus.',
+        description:
+          'Die Teilnahme ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen lernende_0042, deine Platzierung, Punkte und Erfolge in der Rangliste. Du kannst jederzeit austreten und wieder beitreten. Nach dem Austritt erscheinst du nicht mehr in der Rangliste; deine Punkte und persönlichen Statistiken bleiben erhalten. Deine Auswahl für Forschung und Learning Analytics bleibt davon unberührt.',
+        join: 'Rangliste beitreten',
+        decline: 'Nicht beitreten',
+        leave: 'Rangliste verlassen',
+        rejoin: 'Rangliste wieder beitreten',
+        close: 'Schliessen',
+        open: 'Beitrittsdialog öffnen',
+        readoutTitle: 'Synthetischer Status',
+        notJoinedReadout:
+          'Noch nicht beigetreten. Deine persönlichen Punkte und Statistiken bleiben privat.',
+        joinedReadout:
+          'Beigetreten. Deine persönlichen Punkte zählen sofort in der Rangliste.',
+        leftReadout:
+          'Ausgetreten. Deine persönlichen Punkte und Statistiken bleiben erhalten und privat.',
+        unchangedChoices:
+          'Deine Auswahl für Forschung und Learning Analytics bleibt unverändert.',
+        personalPointsLabel: 'Persönliche Punkte',
+        rankingPointsLabel: 'Ranglistenpunkte',
+        awardsLabel: 'Rangabhängige Auszeichnungen',
+        declinedResult:
+          'Rangliste nicht beigetreten. Persönliche Punkte und Statistiken bleiben privat.',
+        joinedResult:
+          'Rangliste beigetreten. Historische Punkte zählen sofort; es gibt keine rückwirkenden rangabhängigen Auszeichnungen.',
+        leftResult:
+          'Rangliste verlassen. Persönliche Punkte und Statistiken bleiben erhalten und privat.',
+        rejoinedResult:
+          'Rangliste wieder beigetreten. Historische Punkte zählen sofort; es gibt keine rückwirkenden rangabhängigen Auszeichnungen.',
+      },
+    },
+    lecturer: {
+      assessment: {
+        context:
+          'Zur Prüfung: Bestätigung für den Export direkt identifizierbarer, assessment- oder notenrelevanter Ergebnisse. Technische Exportdetails sind nicht Gegenstand dieser Textfreigabe.',
+        open: 'Assessment-Ergebnisse exportieren',
+        title: 'Assessment-Ergebnisse exportieren',
+        classification: 'Direkt identifizierbare Personendaten',
+        assessmentLabel: 'Assessment',
+        assessmentValue:
+          'Notenrelevante Kursaktivitäten · Grundlagen (Beispiel)',
+        scopeLabel: 'Umfang',
+        scopeValue:
+          'Ausgewählte Ergebnisse mit Identitätsangaben und Punktwerten',
+        lead: 'Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
+        attestationsHeading: 'Mit dem Download bestätige ich:',
+        attestations: {
+          purposeLabel: 'Zweckbindung.',
+          purposeText:
+            'Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.',
+          accessLabel: 'Beschränkter Zugriff.',
+          accessText:
+            'Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.',
+          storageLabel: 'Sichere Ablage.',
+          storageText:
+            'Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
+          retentionLabel: 'Aufbewahrung und Löschung.',
+          retentionText:
+            'Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
+        },
+        logging:
+          'Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.',
+        acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+        acknowledgementRequired:
+          'Bestätige die vier Punkte, bevor du fortfährst.',
+        cancel: 'Abbrechen',
+        submit: 'Exportieren',
+        result:
+          'Exportanfrage bestätigt (Prototyp). Die Bestätigung bezieht sich auf den angezeigten Datenumfang. Es wurde kein Export erstellt.',
+      },
+      research: {
+        context:
+          'Prüffrage: Welche Datenklassen dürfen ohne direkte Identifikatoren für Forschung freigegeben werden, und welche zusätzliche Prüfung braucht Gesprächsfreitext? Die Forschungswahl wird unmittelbar vor der Freigabe geprüft; Konten ohne Entscheidung bleiben ausgeschlossen.',
+        open: 'Forschungsdaten exportieren',
+        title: 'Forschungsdaten exportieren',
+        classification: 'Personendaten ohne direkte Identifikatoren',
+        classificationLabel: 'Klassifikation',
+        classificationWithTranscripts:
+          'Personendaten ohne direkte Identifikatoren, inkl. Gesprächsdaten (Freitext)',
+        projectHeading: 'Angaben zum Forschungsprojekt',
+        projectNotice:
+          'Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.',
+        projectTitleLabel: 'Projekttitel (erforderlich)',
+        projectTitlePlaceholder: 'Titel deines Forschungsprojekts',
+        responsiblePersonLabel: 'Verantwortliche Person (erforderlich)',
+        contactAddressLabel: 'Kontaktadresse (erforderlich)',
+        purposeLabel: 'Zweck (erforderlich, 1–2 Sätze)',
+        deletionDateLabel: 'Geplantes Löschdatum (erforderlich)',
+        referenceLabel:
+          'Referenz (optional: Ethik-, Bewilligungs- oder DMP-Nummer)',
+        referencePlaceholder: 'z. B. Ethikkommission 2026-xx',
+        dataClassesLegend:
+          'Benötigte Datenklassen (Beispiele, mindestens eine auswählen)',
+        dataClasses: {
+          liveQuizAnswers: 'Live-Quiz-Antworten',
+          asynchronousAnswers:
+            'Asynchrone Antworten (Lernelemente, Microlearning)',
+          learningAnalytics:
+            'Learning-Analytics-Daten (Einzel- und Gruppenwerte)',
+          chatTranscripts: 'Chat-Transkripte',
+        },
+        transcriptWarning:
+          'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten. Der konkrete Datenumfang und die Schutzmassnahmen werden gesondert festgelegt.',
+        scopeLabel: 'Datenumfang',
+        scopeValue:
+          'Testkurs HS 2026, Testkurs FS 2027 · 2026-02-01 bis 2026-12-31 (aus deiner Auswahl)',
+        lead: 'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungsprojekt und nur durch dessen Mitarbeitende verwendet werden.',
+        attestationsHeading: 'Mit dem Download bestätige ich:',
+        attestations: {
+          purposeLabel: 'Zweckbindung.',
+          purposeText:
+            'Ich verwende die Daten nur für das oben angegebene Forschungsprojekt und nur für den angegebenen Zweck.',
+          noReidentificationLabel:
+            'Keine Reidentifizierung oder unzulässige Verknüpfung.',
+          noReidentificationText:
+            'Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.',
+          accessLabel: 'Beschränkter Zugriff und keine Weitergabe.',
+          accessText:
+            'Ich mache die Datei nur den Mitarbeitenden des angegebenen Projekts zugänglich und gebe sie nicht ausserhalb des Projekts weiter.',
+          securityLabel:
+            'Sicherheit, Entfernung des Personenbezugs und Löschung.',
+          securityText:
+            'Ich bearbeite die Datei nur in einer dafür geeigneten, geschützten Umgebung, entferne den Personenbezug so früh wie möglich und lösche sie spätestens zum angegebenen Datum, soweit keine Aufbewahrungspflicht entgegensteht. Veröffentlicht werden nur Ergebnisse, die keine Rückschlüsse auf einzelne Personen zulassen.',
+        },
+        logging:
+          'Deine Exportanfrage und diese Bestätigung werden mit deinen Projektangaben, Konto, Zeitpunkt und angefragtem Datenumfang protokolliert. Bei der Bereitstellung gilt die aktuelle Forschungswahl der Teilnehmenden.',
+        acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+        acknowledgementRequired:
+          'Bestätige die vier Punkte, bevor du fortfährst.',
+        required: 'Dieses Feld ist erforderlich.',
+        invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+        deletionDateTooEarly:
+          'Das geplante Löschdatum darf nicht vor dem heutigen lokalen Datum liegen.',
+        dataClassRequired: 'Wähle mindestens eine Datenklasse aus.',
+        cancel: 'Abbrechen',
+        submit: 'Forschungsdaten exportieren',
+        result:
+          'Exportanfrage bestätigt (Prototyp). Die Bestätigung bezieht sich auf deine Projektangaben und die ausgewählten Datenklassen. Format und technische Bereitstellung werden gesondert festgelegt. Es wurde kein Export erstellt.',
+      },
+      knowledgeBase: {
+        context:
+          'Vorschlag zur rechtlichen Prüfung: Hinweis vor dem ersten und jedem weiteren Upload in eine Wissensbasis. Die urheberrechtliche Zulässigkeit wird mit spezialisierten Juristinnen und Juristen geklärt. Übliche Autorennamen und bibliografische Angaben sind zulässig; andere personenbezogene Daten sind für diesen Upload nicht vorgesehen. Der Prototyp lädt keine Dateien hoch.',
+        open: 'Materialien für die Wissensbasis bereitstellen',
+        title: 'Materialien für die Wissensbasis bereitstellen',
+        scenarioDescription:
+          'Synthetisches Szenario. Es wird keine Datei ausgewählt oder hochgeladen.',
+        scenarios: {
+          initial: 'Erster Upload',
+          additional: 'Zusätzlicher Upload',
+          replacement: 'Ersatz einer Datei',
+          import: 'Import in eine Wissensbasis',
+        },
+        lead: 'Lade nur Materialien hoch, die du für die vorgesehene Nutzung in dieser Wissensbasis verwenden und den vorgesehenen Studierenden zugänglich machen darfst.',
+        rightsHeading: 'Urheberrecht und Nutzungsrechte',
+        rightsParagraphOne:
+          'Beachte die Regeln für die Bereitstellung von Lehrmaterialien an Studierende, wie auch bei der Verteilung über ein Lernmanagementsystem. Kläre zusätzlich, ob deine Berechtigung die Verarbeitung in der KI-gestützten Wissensbasis und die Verwendung von Inhalten in Antworten umfasst. Eine Erlaubnis zur Ablage im LMS deckt diese Nutzung nicht automatisch ab.',
+        rightsParagraphTwo:
+          'Halte Lizenzbedingungen, Quellenangaben sowie Beschränkungen des Nutzerkreises und der Nutzungsdauer ein. Wenn die Rechte für diese Nutzung unklar sind, lade das Material erst nach rechtlicher Klärung hoch.',
+        privacyHeading: 'Schutz personenbezogener Daten',
+        privacyParagraph:
+          'Übliche Autorennamen und bibliografische Angaben dürfen enthalten sein und sollen erhalten bleiben. Lade keine anderen personenbezogenen Daten hoch, etwa Studierendendaten, private Korrespondenz oder Fallbeschreibungen mit erkennbaren Personen. Prüfe auch Dateinamen, Metadaten, Kommentare, Bilder und eingebettete Inhalte. Das Entfernen direkter Kennungen reicht nicht aus, wenn Personen weiterhin erkennbar sind.',
+        disclaimer:
+          'Die Bestätigung ersetzt weder die Klärung der Nutzungsrechte noch die Prüfung der Dateien auf personenbezogene Daten.',
+        rightsAcknowledgement:
+          'Ich bin zur vorgesehenen Nutzung berechtigt und halte die genannten Nutzungsbedingungen und Beschränkungen ein.',
+        privacyAcknowledgement:
+          'Ich habe die ausgewählten Dateien geprüft. Sie enthalten ausser üblichen Autorennamen und bibliografischen Angaben keine personenbezogenen Daten.',
+        acknowledgementRequired: 'Bestätige beide Punkte, bevor du fortfährst.',
+        cancel: 'Abbrechen',
+        submit: 'Materialien hochladen',
+        result: 'Bestätigt (Prototyp). Es wurden keine Dateien hochgeladen.',
+      },
+    },
+
+    switchLocale: 'English',
+    reviewTitle: 'Datennutzung – App-Entwurf',
+    reviewNotice:
+      'Lokaler Prüfentwurf mit synthetischen Beispielen. Alle Aktionen werden nur im Arbeitsspeicher simuliert. Es werden keine Konten erstellt, Einstellungen gespeichert, Zugänge freigeschaltet, Exporte erzeugt oder Dateien hochgeladen. Die Texte sind noch nicht freigegeben.',
+    simulatedResult:
+      'Im Entwurf bestätigt. Es wurde nichts gespeichert oder freigeschaltet.',
+    required: 'Erforderlich',
+    invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+    usernameLength: 'Der Benutzername muss 5 bis 15 Zeichen lang sein.',
+    usernameTaken:
+      'Dieser Benutzername ist im lokalen Beispiel bereits vergeben.',
+    passwordLength: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+    choices: {
+      research: 'Daten für Forschung',
+      allowed: 'Zugelassen',
+      objected: 'Widersprochen',
+      allow: 'Zulassen',
+      object: 'Widersprechen',
+      researchDescription:
+        'KlickerUZH kann deine Nutzungs- und Lerndaten für Forschungsprojekte der Universität Zürich bereitstellen. Direkte Kontokennungen werden entfernt oder ersetzt; Freitext kann trotzdem persönliche Angaben enthalten und braucht besondere Schutzmassnahmen. Veröffentlicht werden nur Ergebnisse ohne Rückschlüsse auf einzelne Personen. Du kannst jederzeit widersprechen oder wieder zustimmen. Deine aktuelle Wahl gilt für danach bereitgestellte Datensätze. Für bereits bereitgestellte Daten gelten die Regeln des jeweiligen Forschungsprojekts.',
+      analytics: 'Learning Analytics',
+      required: 'Entscheidung erforderlich',
+      enabled: 'Teilnahme: ja',
+      disabled: 'Teilnahme: nein',
+      analyticsDescription:
+        'Learning Analytics hilft dir, deine Übungen und Fortschritte besser einzuordnen. Deine persönlichen Einblicke siehst nur du. Dozierende erhalten geschützte Gruppenberichte, etwa darüber, wo viele beim Üben Schwierigkeiten haben. Einzelwerte und Chat-Inhalte gehören nicht zu diesen Berichten. Deine Wahl gilt für alle Kurse und ist jederzeit änderbar. Bei "Nein" bleiben Kurse, Chat und Punkte nutzbar; persönliche LA-Daten werden nach Verarbeitung der Änderung gelöscht. Freigegebene, geprüfte Gruppenberichte bleiben bestehen. Beim Einschalten zählen nur neue Aktivitäten.',
+      guide: 'Was du und deine Dozierenden sehen',
+      yes: 'Ja, teilnehmen',
+      no: 'Nein, nicht teilnehmen',
+      yesDescription: 'Private Einblicke und geschützte Gruppenberichte.',
+      noDescription: 'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+    },
+    account: {
+      title: 'Dein Konto',
+      email: 'E-Mail',
+      username: 'Benutzername',
+      usernameHelp: 'Wird bei einem Beitritt in der Kursrangliste angezeigt.',
+      password: 'Passwort',
+      choicesTitle: 'Datennutzung und Einstellungen',
+      collectionTitle: 'Welche Daten werden über mich gesammelt?',
+      collection:
+        'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn du beitrittst, erscheinen deine Ranglistenangaben für andere Teilnehmende.',
+      visibilityTitle: 'Wer sieht meine Daten?',
+      visibility:
+        'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+      purposeTitle: 'Wofür werden meine Daten genutzt?',
+      purpose:
+        'Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Kurszugang.',
+      retentionTitle: 'Wie lange werden meine Daten gespeichert?',
+      retention:
+        'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+      acknowledgement:
+        'Ich habe die <privacy>KlickerUZH Datenschutzbestimmungen</privacy> gelesen, akzeptiere die <terms>Nutzungsbedingungen</terms> und bestätige meine Auswahl. Konto- und Aktivitätsdaten sind für die Nutzung erforderlich; Forschung und Learning Analytics sind freiwillig und können abgelehnt werden.',
+      submit: 'Konto erstellen',
+    },
+  },
   chat: {
     common: {
       opensInNewTab: '(öffnet in neuem Tab)',
