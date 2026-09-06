@@ -15,6 +15,7 @@ function LiveQuizEvaluation() {
     undefined
   )
   const previousNetworkStatus = useRef<NetworkStatus | undefined>(undefined)
+  const skipPolling = useRef(false)
 
   // fetch evaluation data
   const { data, loading, networkStatus } = useQuery(
@@ -25,6 +26,7 @@ function LiveQuizEvaluation() {
         hmac: router.query.hmac as string,
       },
       pollInterval: 5000,
+      skipPollAttempt: () => skipPolling.current,
       notifyOnNetworkStatusChange: true,
       skip: !router.query.id,
       onError: () => {
@@ -47,6 +49,8 @@ function LiveQuizEvaluation() {
     }
 
     previousNetworkStatus.current = networkStatus
+    skipPolling.current =
+      networkStatus === NetworkStatus.ready && data?.liveQuizEvaluation === null
   }, [data?.liveQuizEvaluation, networkStatus])
 
   if (loading && !data?.liveQuizEvaluation) {

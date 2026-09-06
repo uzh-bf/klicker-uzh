@@ -2298,7 +2298,15 @@ export async function getLiveQuizEvaluation(
 
   if (typeof hmac === 'string' && !shouldExposeEvaluationResults) {
     return {
-      ...evaluationMetadata,
+      id: liveQuiz.id,
+      status: liveQuiz.status,
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
+      courseLanguage: liveQuiz.course?.language,
+      courseName: liveQuiz.course?.name,
+      description: null,
+      isAssessmentEnabled: null,
+      pinCode: null,
       results: [],
       feedbacks: null,
       confusionFeedbacks: null,

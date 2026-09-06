@@ -1,5 +1,5 @@
+import { createRequire } from 'node:module'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
-import { HatchetLogger } from '@hatchet-dev/typescript-sdk/clients/hatchet-client/hatchet-logger.js'
 import type { LogLevel } from '@hatchet-dev/typescript-sdk/util/logger/logger.js'
 
 const globalForHatchet = global as unknown as { hatchetClient: HatchetClient }
@@ -7,6 +7,9 @@ const globalForHatchet = global as unknown as { hatchetClient: HatchetClient }
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
 
 function createSafeLogger(context: string, logLevel?: LogLevel) {
+  const { HatchetLogger } = createRequire(import.meta.url)(
+    '@hatchet-dev/typescript-sdk/clients/hatchet-client/hatchet-logger.js'
+  ) as typeof import('@hatchet-dev/typescript-sdk/clients/hatchet-client/hatchet-logger.js')
   const logger = new HatchetLogger(context, logLevel)
 
   return new Proxy(logger, {
@@ -38,7 +41,8 @@ function setupClient() {
       )
         ? (process.env.HATCHET_LOG_LEVEL as LogLevel)
         : 'INFO',
-    logger: createSafeLogger,
+    ...((process.env.NODE_ENV === 'development' ||
+      process.env.NODE_ENV === 'test') && { logger: createSafeLogger }),
   })
 
   return hatchet

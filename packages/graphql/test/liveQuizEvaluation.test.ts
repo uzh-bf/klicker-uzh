@@ -233,6 +233,7 @@ describe('Unit tests for live quiz evaluation service', () => {
       data: {
         name: 'Draft Quiz',
         displayName: 'Draft Quiz',
+        pinCode: `pin-${status}`,
         status,
         ownerId: userOneCtx.user.sub,
         courseId: course.id,
@@ -280,12 +281,19 @@ describe('Unit tests for live quiz evaluation service', () => {
       anonymousCtx
     )
 
-    expect(evaluation).toMatchObject({
+    expect(evaluation).toEqual({
       id: liveQuiz.id,
-      displayName: 'Draft Quiz',
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
       status,
+      courseLanguage: course.language,
       courseName: course.name,
+      description: null,
+      isAssessmentEnabled: null,
+      pinCode: null,
       results: [],
+      feedbacks: null,
+      confusionFeedbacks: null,
     })
 
     const findQuiz = vi.fn(prisma.liveQuiz.findUnique.bind(prisma.liveQuiz))
