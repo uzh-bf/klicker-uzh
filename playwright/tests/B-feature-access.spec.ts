@@ -19,6 +19,7 @@ import {
   COURSE_ID_TEST,
   LECTURER_EMAIL,
   SEEDED_COURSE,
+  URL_AUTH,
   URL_MANAGE,
   USER_ID_TEST,
 } from '../util/constants.js'
@@ -204,6 +205,27 @@ test.describe('Tests the availability of standard activity creation formats', ()
     page,
     loginLecturer,
   }) => {
+    const growthbookApiHost =
+      process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST ?? 'https://growthbook.test'
+    const growthbookClientKey =
+      process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
+    const growthbookFeaturesUrl = `${growthbookApiHost.replace(
+      /\/$/,
+      ''
+    )}/api/features/${growthbookClientKey}*`
+    await page.unroute(growthbookFeaturesUrl)
+    await page.route(growthbookFeaturesUrl, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          features: {
+            'beta-signup': { defaultValue: false },
+            'learning-analytics': { defaultValue: true },
+          },
+        }),
+      })
+    )
+
     await loginLecturer()
 
     // Production builds send hashed queries as GET requests without an
@@ -361,6 +383,67 @@ test.describe('Tests the availability of standard activity creation formats', ()
     expect(analyticsQueryRequested).toBe(false)
   })
 
+  test('Redirects unauthenticated analytics access to auth without loading analytics data', async ({
+    page,
+  }) => {
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const persistedNames: Record<string, string> = {}
+    for (const [name, hash] of Object.entries(persistedOperations)) {
+      persistedNames[hash] = name
+    }
+
+    let activityAnalyticsRequests = 0
+    page.on('request', (request) => {
+      const operationName = getGraphqlOperationName(request)
+      const requestUrl = new URL(request.url())
+      if (!requestUrl.pathname.endsWith('/api/graphql')) return
+
+      const postData = request.postData()
+      const serializedExtensions = requestUrl.searchParams.get('extensions')
+      const extensions = postData
+        ? (
+            JSON.parse(postData) as {
+              extensions?: { persistedQuery?: { sha256Hash?: string } }
+            }
+          ).extensions
+        : serializedExtensions
+          ? (JSON.parse(serializedExtensions) as {
+              persistedQuery?: { sha256Hash?: string }
+            })
+          : undefined
+      const persistedHash = extensions?.persistedQuery?.sha256Hash
+      const resolvedOperationName =
+        operationName ??
+        (persistedHash ? persistedNames[persistedHash] : undefined)
+
+      if (resolvedOperationName === 'GetCourseActivityAnalytics') {
+        activityAnalyticsRequests += 1
+      }
+    })
+
+    await page.context().clearCookies()
+    await mockGrowthBookLearningAnalytics(page, true)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+
+    const authUrl = process.env.URL_AUTH ?? URL_AUTH
+    const expectedAuthUrl = new URL(authUrl)
+    await expect(page).toHaveURL(
+      (url) =>
+        url.origin === expectedAuthUrl.origin &&
+        url.pathname === expectedAuthUrl.pathname
+    )
+    expect(activityAnalyticsRequests).toBe(0)
+  })
+
   test('Allows direct analytics navigation with feature access', async ({
     page,
     loginLecturer,
@@ -414,8 +497,50 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const persistedNames: Record<string, string> = {}
+    for (const [name, hash] of Object.entries(persistedOperations)) {
+      persistedNames[hash] = name
+    }
+
+    let profileFailureIntercepted = 0
+    let activityAnalyticsRequests = 0
     await page.route('**/api/graphql*', async (route) => {
-      if (getGraphqlOperationName(route.request()) === 'UserProfile') {
+      const request = route.request()
+      const operationName = getGraphqlOperationName(request)
+      const postData = request.postData()
+      const requestUrl = new URL(request.url())
+      const serializedExtensions = requestUrl.searchParams.get('extensions')
+      const extensions = postData
+        ? (
+            JSON.parse(postData) as {
+              extensions?: { persistedQuery?: { sha256Hash?: string } }
+            }
+          ).extensions
+        : serializedExtensions
+          ? (JSON.parse(serializedExtensions) as {
+              persistedQuery?: { sha256Hash?: string }
+            })
+          : undefined
+      const persistedHash = extensions?.persistedQuery?.sha256Hash
+      const resolvedOperationName =
+        operationName ??
+        (persistedHash ? persistedNames[persistedHash] : undefined)
+
+      if (resolvedOperationName === 'GetCourseActivityAnalytics') {
+        activityAnalyticsRequests += 1
+      }
+
+      if (resolvedOperationName === 'ManageUserProfile') {
+        profileFailureIntercepted += 1
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -432,10 +557,11 @@ test.describe('Tests the availability of standard activity creation formats', ()
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
 
+    await expect.poll(() => profileFailureIntercepted).toBeGreaterThan(0)
     await expect(
       page.getByTestId('learning-analytics-access-denied')
     ).toBeVisible()
-    await expect(page.getByText('Loading analytics data')).not.toBeAttached()
+    expect(activityAnalyticsRequests).toBe(0)
   })
 })
 

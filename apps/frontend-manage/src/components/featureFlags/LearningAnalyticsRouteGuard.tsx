@@ -3,10 +3,10 @@ import {
   useFeatureFlagEvaluationAvailable,
   useFeatureFlagsReady,
 } from '@klicker-uzh/feature-flags/react'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
 import Layout from '~/components/Layout'
 
 export default function LearningAnalyticsRouteGuard({
@@ -21,7 +21,12 @@ export default function LearningAnalyticsRouteGuard({
   const title = t('shared.generic.learningAnalytics')
 
   if (!flagsReady) {
-    return <AnalyticsLoadingView title={title} navigation={null} />
+    // Resolve profile availability before mounting Layout's login redirect.
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader />
+      </div>
+    )
   }
 
   const unavailable = (

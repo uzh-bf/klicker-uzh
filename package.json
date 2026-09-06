@@ -27,7 +27,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "~2.5.2",
-    "@devrouter/cli": "0.0.51",
+    "@devrouter/cli": "0.0.55",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",
@@ -113,7 +113,7 @@
     "syncpack:mismatches": "syncpack list-mismatches",
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
-    "test:dev-runtime": "bash ./util/test-dev-runtime.sh",
+    "test:dev-runtime": "bash ./util/test-dev-runtime.sh && node --test ./util/dev-runtime-readiness.test.mjs",
     "test:growthbook": "node ./playwright/util/mockGrowthBookServer.mjs",
     "test:profile-resolver": "bash ./util/test-profile-resolver.sh",
     "test:run": "turbo run test:run",
