@@ -10,18 +10,19 @@ with measured queue latency, fallback, recovery, and rollback.
 
 | Package | Current evidence | Remaining work |
 |---|---|---|
-| W0 — Replica ownership | [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491), published head `98c2990bc3c11aecd4ad0a87f3a9fe70f461cfe0`; normal CI passes on that head | Documentation corrections, final review, and a conflict with current `v3-ai`; not merge-ready |
-| W1 — Worker runtime | [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492), published head `3ddecc0672cadf20733b70c13e5111a03bc3274f`; normal CI passes and its parent relationship is intact | Stack final-review policy errors for `v3-ai`, foundation landing, and separately authorized live lifecycle proof |
+| W0 — Replica ownership | [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491), locally integrated with `v3-ai` at `5c8ee4b6`; conflict repair, render gate, 40-task check graph, and normal commit checks pass | Atomic publication, fresh hosted CI and feedback, then authorized foundation landing |
+| W1 — Worker runtime | [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492), upper semantic patch preserved on the integrated lower; 18 tests, worker checks, and 26-task production build pass | Atomic publication, fresh CI and review-policy reconciliation, foundation landing, and separately authorized live lifecycle proof |
 | W2 — Disabled KEDA primitives | Not implemented in this stack | Land source foundations, freeze the authentication interface, then implement and fixture-test disabled resources |
 | W3a–W3c — Platform, capacity, and observability | Planned; this refresh supplies no live evidence | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 
 The user requested this roadmap refresh and goal execution on 2026-09-06.
 Continue the approved dependency order through local work, checks, reviews,
-and commits. The unused approval for the documentation correction permits one
-patch-identical propagation into the upper layer and atomic force-with-lease
-publication of the two existing branches. It does not permit another
-integration of current `v3-ai`. Finish independently executable source work
+and commits. The documentation-only publication grant is consumed. The user
+then approved one integration of current `v3-ai` and atomic force-with-lease
+publication of both existing branches. The integration and upper propagation
+are complete locally; publication remains pending. This does not permit a
+second upstream integration. Finish independently executable source work
 before reporting a boundary; do not skip the foundation-landing dependency to
 start the disabled KEDA package.
 
@@ -47,8 +48,8 @@ against approved requests and node capacity before activation.
   no infrastructure PR exists for this plan
 - **Current target observed:** `origin/v3-ai` at
   `5c8ee4b6a034c22da8e85159214c629f371d0f3d` on 2026-09-06. The foundation
-  still uses recorded base `e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1`;
-  fetching did not integrate the target.
+  includes that target after the separately approved one-time integration.
+  The earlier `e9e8f2952` baseline is historical, not the current base.
 - **Infrastructure base inspected:** `df-cloud-klickeruzh` `origin/stg`
 - **Audience:** KlickerUZH application, platform, and operations maintainers
 - **Status:** Roadmap refresh approved by the planner on 2026-09-06; goal
@@ -1319,30 +1320,29 @@ a values edit.
 
 ### Current execution — 2026-09-06
 
-- **Active work:** Refresh the roadmap and finish the two foundation
-  documentation corrections under the user's goal request. The main session
-  owns the small coupled edit and stack operations; delegation would cost more
-  than this edit. The independent planner returned `APPROVED` after one
-  correction round. No application test is added for documentation wording.
-- **Verified source:** Clean task branch before editing, tracking
-  `origin/rs/scaling-replica-ownership` at `98c2990bc3`; upper published head
-  `3ddecc067` contains that parent. Lower is 101 commits ahead and 61 behind
-  remote default `v3`, independently of its target drift. Against `v3-ai`, it
-  is three ahead and 99 behind. GitHub reports a foundation conflict; a
-  non-checkout merge calculation identifies
-  `.github/workflows/public-pr-playwright-shards.yml`. No integration occurred.
-- **Verification:** Normal CI passed on the published August 30 heads.
-  Superseded cancelled duplicate runs are not fresh failures. GitGuardian
-  passes on both; earlier incident claims below are historical, not current
-  blockers or authority to dismiss findings. The lower final review remains
-  pending; the upper review contexts report staging-stack policy errors.
-  Two lower documentation threads remain open pending publication.
+- **Active work:** Complete the approved integration and atomic publication
+  after the planner-approved roadmap refresh. The main session owns the
+  coupled stack operations. An independent final reviewer checked the
+  integration; its sole finding was the stale execution record corrected here.
+  No application test is added for documentation wording.
+- **Verified source:** Integrated implementation heads are lower `cf85c3aca`
+  and upper `f7d32fc9e`; this execution-record correction follows them without
+  changing implementation. The lower contains target `5c8ee4b6`, and the upper
+  contains the lower. Conflicts are resolved; the upper semantic changes are
+  preserved. Remote heads remain lower `17335e3b` and upper `963c458e` until
+  the pending atomic publication. Both documentation threads are resolved.
+- **Verification:** Lower normal commit checks pass after serial regeneration
+  recovered a parallel Prisma generation race. The fresh serial check graph
+  passes 40/40 tasks. Upper worker checks pass 10/10 tasks, focused tests pass
+  18/18, and the full production build passes 26/26 tasks. Helm checks and
+  diff checks pass on both layers. These results do not prove fresh hosted CI;
+  old CI, security statuses, and review-policy results are historical only.
 - **Runtime evidence:** Host devrouter is now 0.0.51, so the old 0.0.36
   capability blocker is stale. This is CLI availability, not runtime or live
   scaling proof. No runtime was started for these documentation checks.
 - **Required versus achieved:** Foundations require source readiness; worker
   runtime also requires separately authorized live proof. Both have implemented
-  source and passing normal CI, but neither is merged or live-proven. Disabled
+  source and passing local checks, but neither is merged or live-proven. Disabled
   KEDA primitives and later packages remain unimplemented by this stack.
 - **Integration follow-up:** Documentation was published at lower `17335e3b`
   and upper `963c458e`; both documentation review threads were resolved.
@@ -1355,9 +1355,8 @@ a values edit.
   duplicate restores valid rendering without changing the configured value.
   The existing check now passes all default renders, the HPA render, values
   checks, and seven negative fixtures. No runtime or cluster was started.
-- **Next action:** Complete integration verification, propagate the lower
-  repair while preserving the upper semantic layer, and publish both branches
-  atomically under the new one-time grant. Reconcile fresh CI and feedback;
+- **Next action:** Publish both verified branches atomically under the
+  one-time grant, then reconcile fresh hosted CI and feedback;
   do not reuse pre-integration CI as current-head proof. Disabled KEDA
   implementation starts after both foundations
   land and the source authentication interface is frozen; staging activation
