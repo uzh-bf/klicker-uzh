@@ -183,7 +183,7 @@ all task caches; narrowing it requires a separate input-usage audit, not deletio
 
 ## Progress
 
-Execution approved on 2026-09-06; build verification is active. Native planner returned
+Execution approved on 2026-09-06; build verification is complete. Native planner returned
 `DONE — VERDICT APPROVED` on 2026-09-06. Its findings about task identity,
 generated outputs, compatibility, and measurement limits are retained above.
 The parent independently refreshed the remote baseline and confirmed activation
@@ -207,8 +207,14 @@ the selected dependency closure; cold/restored/mixed probes protect output
 equivalence. No new maintained test is needed for the workflow-only conversion.
 Implementation commit: `50898f9e5191480463b578a19aaee74b80d6443a`.
 Simplification is complete: retain the explicit build roots required by the
-plan, even where today's dependency edges also reach them. Risk review and
-integrated final review remain pending. No maintained tests were added or removed.
+plan, even where today's dependency edges also reach them. Slice review is done
+with no findings; its report is retained in
+`project/_local/reviews/2026-09-06-hosted-graphs-slice-review.md`.
+Integrated final review passed without findings on
+`1387f884ba731400b251e5646d83de6a9aa9e3b9..c65d6da954923a0ff57830ae33483fbf3c3ac7e6`.
+The report is retained in
+`project/_local/reviews/2026-09-06-hosted-graphs-final-review.md`.
+No maintained tests were added or removed.
 
 The exact disposable Compose project `klicker-ci-build-graphs-proof` is stopped;
 its running-service query returns no entries. All named build/test containers
@@ -224,6 +230,8 @@ Execution lane: `trees/rs/hosted-test-build-graphs`, branch
 `rs/hosted-test-build-graphs`, baseline `1387f884ba731400b251e5646d83de6a9aa9e3b9`.
 The timing repair remains in its original worktree and is excluded.
 
-Boundary owner: main. Next action: finish independent review and local evidence
-commits. Stop only for a material cost/trust decision,
-unavailable isolated verification, competing ownership, or new external action.
+Boundary owner: main. The approved local package is complete: implementation,
+verification, independent reviews, and local commits. A successful remote
+refresh confirmed no target drift before completion; no integration occurred.
+Publication, hosted performance proof, and any new cache workload remain outside
+this completed local package. No PR exists and no runner settings changed.
