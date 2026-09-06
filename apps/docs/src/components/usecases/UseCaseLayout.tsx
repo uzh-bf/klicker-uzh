@@ -37,10 +37,17 @@ const getUseCaseItems = (slug: string) => {
 
 interface UseCaseLayoutProps {
   path: string
+  title: string
+  description?: string
   children: React.ReactNode
 }
 
-function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
+function UseCaseLayout({
+  path,
+  title,
+  description,
+  children,
+}: UseCaseLayoutProps) {
   // Generate sidebar structure
   const sidebar = [
     { type: 'link', href: '/use_cases', label: 'Overview' },
@@ -61,7 +68,7 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
   ]
 
   return (
-    <Layout>
+    <Layout title={title} description={description}>
       <div className={twMerge(DocPageStyles.docPage, 'flex flex-row')}>
         <aside
           className={twMerge(

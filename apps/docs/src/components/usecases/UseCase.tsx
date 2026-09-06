@@ -34,10 +34,15 @@ function UseCase({ slug }: UseCaseProps) {
   const useCase = USE_CASES[slug]
 
   return (
-    <UseCaseLayout path={`/use_cases/${slug}`}>
+    <UseCaseLayout
+      path={`/use_cases/${slug}`}
+      title={useCase.title}
+      description={useCase.abstract}
+    >
       <img
         className="h-32 w-full object-cover sm:h-48 md:h-64 lg:h-80"
         src={useCase.headerImgSrc}
+        alt=""
       />
       <div className="grid grid-cols-1 gap-4 md:p-4 lg:grid-cols-3 lg:gap-8 lg:p-0 lg:pt-8">
         <div className="col-span-1 lg:col-span-3">

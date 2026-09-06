@@ -9,49 +9,49 @@ import { UseCaseOverview } from '../components/landing/UseCaseOverview'
 
 function Home() {
   return (
-    <Layout>
+    <Layout description="Engage students in class and support independent practice with live quizzes, Q&A, microlearning and group activities.">
       <TitleImage />
       <FeatureSection
-        title={'Synchronous Interaction'}
+        title={'Interaction During Class'}
         description={
-          'Interact with your students during class and drive engagement with your lecture.'
+          'Ask questions, discuss responses and hear what your students need.'
         }
         features={[
           {
             title: 'Live Quizzes',
             icon: faArrowRight,
-            text: 'You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.',
+            text: 'Prepare questions before class and launch a Live Quiz when you need it. Students answer on their phones or laptops, and you can discuss the results together.',
             hoverImage: '/img/live_quiz/lq_student_view.png',
           },
           {
             title: 'Live Q&A',
             icon: faArrowRight,
-            text: 'You can launch a Live Q&A session during your lecture. Students can ask and upvote questions from other students and give real-time feedback. You can answer questions live in writing or orally.',
+            text: 'Let students ask and upvote questions during a Live Quiz. Answer in writing or discuss them in class. Enable Live Feedback separately to hear how students find the pace and difficulty.',
             hoverImage: '/img/landing/live_qa.png',
           },
         ]}
       />
 
       <FeatureSection
-        title="Asynchronous Interaction"
-        description="Foster engagement and interaction with your contents outside of class."
+        title="Learning Between Classes"
+        description="Give students opportunities to practise, revisit material and work together."
         features={[
           {
             title: 'Microlearning',
             icon: faArrowRight,
-            text: 'You can prepare short Microlearning units that students can work through at their own pace. The units are time-restricted and can be used to combat the forgetting curve.',
+            text: 'Set short Microlearning units with a completion window. Students work through them at their own pace and revisit material between classes.',
             hoverImage: '/img/microlearning/ml_mobile_views.png',
           },
           {
             title: 'Practice Quizzes',
             icon: faArrowRight,
-            text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or using a spaced repetition algorithm.',
+            text: 'Create Practice Quizzes that students can repeat as often as they need. Offer questions in sequence or use spaced repetition to guide revision.',
             hoverImage: '/img/practice_quiz/pq_olat_view.png',
           },
           {
             title: 'Group Activities',
             icon: faArrowRight,
-            text: 'Students form groups and engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
+            text: 'Set tasks that students solve together in groups, with points and feedback to support their progress.',
             hoverImage: '/img/group_activity/ga_graded_students.png',
           },
         ]}
@@ -59,19 +59,19 @@ function Home() {
 
       <FeatureSection
         title="Gamified Learning"
-        description="Engage your students with gamified learning activities."
+        description="Use points, progress and group activities to encourage participation."
         features={[
           {
             title: 'Points and Leaderboards',
             icon: faArrowRight,
-            text: 'Individual and group leaderboards display rankings, inspiring a sense of friendly competition and prompting students to stay engaged.',
+            text: 'Show individual and group rankings on course leaderboards to add friendly competition to learning activities.',
             hoverImage: '/img/leaderboard/course_leaderboard.png',
             shadow: false,
           },
           {
             title: 'Group Formation',
             icon: faArrowRight,
-            text: 'Students can form groups with their peers by choice or randomly and collaborate and compete against other groups.',
+            text: 'Let students choose a group or assign groups randomly. Groups can collaborate on tasks and compete with one another.',
             hoverImage: '/img/group/group_student_view.png',
           },
         ]}
@@ -104,22 +104,22 @@ function Home() {
 
       <FeatureFocusSection
         title="Question Pool and Activity Management"
-        description="Manage everything in one place."
+        description="Build learning activities from a shared question pool."
         imgSrc="/img/elements/library.png"
         features={[
           {
-            title: 'Wide Array of Learning Activities',
-            text: 'You can select from five distinct learning activities that suit specific educational objectives and adapt to various teaching methods during live lectures (synchronous learning) or outside of the traditional lecture frame (asynchronous learning). All activities are created from the central question pool.',
+            title: 'Activities for Different Teaching Goals',
+            text: 'Reuse questions across activities for class and independent study. Choose the format that fits your teaching goal and create each activity from the central question pool.',
             icon: faArrowRight,
           },
           {
             title: 'Various Element Types',
-            text: 'Element types like Content Element (CT), Flashcard (FC), Single and Multiple Choice (SC/MC), Kprim (KP), Free Text (FT), and Numerical (NR) are supported and cover a wide range of use cases. Elements can be grouped and/or stacked for sequential presentation. Question types can be augmented with sample solutions and explanations, as well as choice-specific feedback.',
+            text: 'Combine content elements, flashcards and questions: single or multiple choice, Kprim, free text and numerical answers. Group elements for sequential presentation and add sample solutions, explanations or answer-specific feedback.',
             icon: faArrowRight,
           },
           {
             title: 'Customization Options',
-            text: 'You have the flexibility to customize quizzes, content, and challenges according to your specific course objectives, ensuring a tailored and targeted learning experience. Gamification can be optionally enabled on a live quiz and/or course-level.',
+            text: 'Adapt quizzes, content and challenges to your course objectives. Enable gamification for a Live Quiz or course when it supports your teaching.',
             icon: faArrowRight,
           },
         ]}

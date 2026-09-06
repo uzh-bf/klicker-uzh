@@ -63,6 +63,26 @@ export default {
   ],
   versionGroups: [
     {
+      // The static website upgrades independently of the application runtime.
+      label: 'Website dependencies can track compatible releases independently',
+      dependencies: [
+        '@tailwindcss/postcss',
+        '@tailwindcss/typography',
+        '@types/react',
+        'autoprefixer',
+        'cross-env',
+        'postcss',
+        'postcss-import',
+        'react',
+        'react-dom',
+        'recharts',
+        'tailwind-merge',
+        'tailwindcss',
+      ],
+      packages: ['@klicker-uzh/docs'],
+      isIgnored: true,
+    },
+    {
       // Rollup 4.59 fixes an arbitrary-file-write advisory. Keep the add-in
       // patched until the workspace-wide Rollup upgrade is handled separately.
       label: 'Office Add-in Rollup security floor can differ',

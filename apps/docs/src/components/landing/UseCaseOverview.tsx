@@ -20,9 +20,10 @@ export function UseCaseOverview() {
             <div className="flex-none">
               <a
                 className="inline-flex items-center gap-2"
+                aria-label={`Read about ${item.title}`}
                 href={`/use_cases/${href}`}
               >
-                <FontAwesomeIcon icon={faArrowRight} />
+                <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" />
                 <div>More Details</div>
               </a>
             </div>

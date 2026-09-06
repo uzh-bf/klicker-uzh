@@ -35,11 +35,11 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
           {features.map((feature, ix) => (
             <div
               key={feature.title}
+              onMouseEnter={() => setHoveredFeatureIx(ix)}
               className={twMerge(
                 'flex cursor-pointer flex-row items-center gap-6 p-6 pl-9',
                 hoveredFeatureIx === ix && 'rounded-xl bg-gray-100'
               )}
-              onMouseEnter={() => setHoveredFeatureIx(ix)}
             >
               <FontAwesomeIcon
                 aria-hidden="true"
@@ -47,7 +47,17 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
                 className="text-uzh-red-100 h-5 w-5"
               />
               <div>
-                <dt className="font-semibold text-gray-900">{feature.title}</dt>
+                <dt>
+                  <button
+                    type="button"
+                    aria-pressed={hoveredFeatureIx === ix}
+                    className="border-0 bg-transparent p-0 font-semibold text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100"
+                    onClick={() => setHoveredFeatureIx(ix)}
+                    onFocus={() => setHoveredFeatureIx(ix)}
+                  >
+                    {feature.title}
+                  </button>
+                </dt>
                 <dd className="ml-0 block">{feature.text}</dd>
               </div>
             </div>

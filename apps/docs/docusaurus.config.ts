@@ -5,7 +5,7 @@ import remarkMath from 'remark-math'
 
 const config: Config = {
   future: {
-    experimental_faster: false,
+    faster: false,
   },
   trailingSlash: true,
   title: 'KlickerUZH',
@@ -95,9 +95,9 @@ const config: Config = {
       jsLoader: '/matomo.js',
     },
     announcementBar: {
-      id: 'release_v3',
+      id: 'upcoming_v3_4',
       content:
-        'We are offering introductory courses at UZH. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
+        'Preparing for KlickerUZH v3.4. <a href="/development/">Explore the upcoming preview and roadmap</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,
