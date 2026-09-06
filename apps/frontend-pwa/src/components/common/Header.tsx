@@ -91,15 +91,19 @@ function Header({
       )}
     >
       <div className="flex max-w-[calc(100%-2.5rem)] flex-row items-center gap-3">
-        <Image
-          priority
-          src="/klicker-icon-inverted.png"
-          alt="KlickerUZH Logo"
-          width={35}
-          height={35}
-          onClick={() => router.push('/')}
-          className="cursor-pointer"
-        />
+        <Link
+          href="/"
+          aria-label={t('shared.generic.home')}
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          <Image
+            priority
+            src="/klicker-icon-inverted.png"
+            alt="KlickerUZH Logo"
+            width={35}
+            height={35}
+          />
+        </Link>
 
         {title && course?.displayName && (
           <div>
