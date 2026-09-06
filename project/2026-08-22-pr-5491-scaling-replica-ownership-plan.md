@@ -1,4 +1,17 @@
-# W1 — Replica ownership and chart safety
+# Local W1 (roadmap W0) — Replica ownership and chart safety
+
+## Current execution boundary — 2026-09-06
+
+This historical plan's local W1 is roadmap W0, the replica-ownership
+foundation. Local W2 is roadmap W1, the worker-runtime package in dependent
+[PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492).
+The [full roadmap](2026-08-29-pr-5491-keda-horizontal-scaling-plan.md)
+owns current status, targets, authority, and next actions. Historical preflight,
+integration, publication, cluster-read, readiness, and Progress instructions
+below describe earlier runs and grant no repeat operation. The current target
+is `v3-ai`. Finish the documentation correction on the existing baseline and
+propagate it once into the upper layer without changing that layer's patch.
+Fresh trunk integration and live operations remain separate approval gates.
 
 ## Plan identity
 

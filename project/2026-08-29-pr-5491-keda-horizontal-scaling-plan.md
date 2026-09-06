@@ -1,5 +1,37 @@
 # KEDA-native horizontal scaling full execution plan
 
+## Current outcome and execution boundary — 2026-09-06
+
+The architecture is planned and the two foundation packages have implemented
+source, but neither has merged. No worker KEDA scaling, spot bursting, cost
+saving, or live drain safety is proven by this work. The next observable
+milestone is one assessment worker pool scaling on regular nodes in staging,
+with measured queue latency, fallback, recovery, and rollback.
+
+| Package | Current evidence | Remaining work |
+|---|---|---|
+| W0 — Replica ownership | [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491), published head `98c2990bc3c11aecd4ad0a87f3a9fe70f461cfe0`; normal CI passes on that head | Documentation corrections, final review, and a conflict with current `v3-ai`; not merge-ready |
+| W1 — Worker runtime | [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492), published head `3ddecc0672cadf20733b70c13e5111a03bc3274f`; normal CI passes and its parent relationship is intact | Stack final-review policy errors for `v3-ai`, foundation landing, and separately authorized live lifecycle proof |
+| W2 — Disabled KEDA primitives | Not implemented in this stack | Land source foundations, freeze the authentication interface, then implement and fixture-test disabled resources |
+| W3a–W3c — Platform, capacity, and observability | Planned; this refresh supplies no live evidence | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
+| W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
+
+The user requested this roadmap refresh and goal execution on 2026-09-06.
+Continue the approved dependency order through local work, checks, reviews,
+and commits. The unused approval for the documentation correction permits one
+patch-identical propagation into the upper layer and atomic force-with-lease
+publication of the two existing branches. It does not permit another
+integration of current `v3-ai`. Finish independently executable source work
+before reporting a boundary; do not skip the foundation-landing dependency to
+start the disabled KEDA package.
+
+This section and the Execution contract supersede historical authority,
+readiness, and next-action statements in both foundation plans. Merge, new
+upstream integration, deployment, cluster connectivity or changes, secret
+writes, load generation, and pod eviction remain separately gated. Goldilocks
+continues to own vertical recommendations; horizontal limits must be checked
+against approved requests and node capacity before activation.
+
 ## Identity
 
 - **Date:** 2026-08-29
@@ -7,17 +39,21 @@
 - **Plan path:** `project/2026-08-29-pr-5491-keda-horizontal-scaling-plan.md`
 - **Planning branch:** `rs/keda-horizontal-scaling-roadmap`
 - **Execution branch:** `rs/scaling-replica-ownership`
-- **Application target:** `v3`; W0 reuses PR #5491 and preserves dependent
-  PR #5492
+- **Application target:** `v3-ai` for the existing foundation stack; W0 replica
+  ownership reuses [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491)
+  and preserves dependent [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492).
+  Production remains `v3`; resolve each later package's live target before work.
 - **Infrastructure target:** the confirmed `df-cloud-klickeruzh` `stg` flow;
   no infrastructure PR exists for this plan
-- **Authoritative application base:** `origin/v3` at `bb495a1b2`, refreshed on
-  2026-08-29 before the coordinated W0 integration
+- **Current target observed:** `origin/v3-ai` at
+  `5c8ee4b6a034c22da8e85159214c629f371d0f3d` on 2026-09-06. The foundation
+  still uses recorded base `e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1`;
+  fetching did not integrate the target.
 - **Infrastructure base inspected:** `df-cloud-klickeruzh` `origin/stg`
 - **Audience:** KlickerUZH application, platform, and operations maintainers
-- **Status:** Planner-reviewed full execution plan; W0 execution activated by
-  the user on 2026-08-29. Merge, deployment, and cluster changes remain
-  unauthorized.
+- **Status:** Roadmap refresh approved by the planner on 2026-09-06; goal
+  execution active on the existing foundation stack. Source and live delivery
+  remain distinct; neither foundation PR is merged.
 
 ## Goal and scope
 
@@ -42,24 +78,24 @@ without separate approval.
   stack topology, integration, review disposition, and evidence. A package may
   use only the route listed in the Delegation Map and still returns integration
   to `main`.
-- **Autonomy model:** The 2026-08-29 approval accepts the architecture and this
-  full planning pass. The subsequent explicit W0 activation authorizes W0's
-  named local edits, checks, reviews, progress updates, commits, stack repair,
-  push, and PR update through Gate 2.
+- **Autonomy model:** Preserve the approved architecture and package order.
+  The 2026-09-06 request activates roadmap maintenance and dependency-ordered
+  local execution, checks, reviews, progress updates, and commits. Prior
+  completed rebase/publication approvals are consumed, not reusable grants.
 - **Boundary owner:** `self` for each active package. Separate proposed tasks
   never become hidden integration owners.
-- **Granted now:** Take over and repair W0 in the existing W0/W1 GitHub stack,
-  preserve W1 topology without changing its semantics, run repository checks
-  and required reviews, commit, push the repaired branches, and update PR #5491
-  through Gate 2.
-- **Withheld now:** W1 semantic implementation, PR visibility changes, merge,
-  staging branch promotion, Argo reconciliation, cluster reads or writes, load
-  generation, pod termination, spot eviction, production rollout, node-pool
-  changes, and Goldilocks request changes.
-- **Planning terminal:** A planner-accepted full plan exists under `project/`,
-  with the architecture, stack boundaries, test portfolio, evidence gates,
-  approval gates, and next package frozen. The plan remains uncommitted until
-  it can ship with the first implementing package rather than in a plan-only PR.
+- **Granted now:** Finish the foundation documentation correction on the
+  recorded baseline, verify and commit it, and use the previously approved
+  one-time patch-identical upper propagation and atomic publication if the
+  stack tool can exclude trunk integration. Existing babysit authority covers
+  in-scope feedback and CI repairs, review replies, and PR updates.
+- **Withheld now:** Fresh upstream integration, new topology, PR visibility
+  changes, merge, staging promotion, Argo reconciliation, cluster connectivity
+  or changes, secret writes, load generation, pod termination, spot eviction,
+  production rollout, node-pool changes, and Goldilocks request changes.
+- **Planning terminal:** The refreshed roadmap records current source, CI,
+  delivery gaps, and the unchanged package order. It ships within the existing
+  foundation PR; it is not a separate plan-only PR.
 - **Epic terminal:** Every approved Hatchet profile has reached its package's
   required evidence layer, production packages have separately passed A4, and
   W9 records a reviewed migrate/defer decision for eligible HTTP services.
@@ -73,8 +109,9 @@ without separate approval.
 
 - Treat each W-item as one independently reviewable PR-sized package. Reuse the
   named existing PR when one is listed instead of opening a duplicate.
-- Work from a freshly fetched base in a task worktree. Application changes base
-  on `v3`; platform changes use the repository's confirmed `stg` flow.
+- Refresh refs in the task worktree without integrating them automatically.
+  The existing stack targets `v3-ai`; later packages resolve their live target.
+  Platform changes use the repository's confirmed integration flow.
 - Keep source/render, CI, Argo desired revision, deployed resources, and live
   scaling evidence separate. A green render does not prove live KEDA behavior.
 - Land disabled primitives before activation. Enabling a ScaledObject, changing
@@ -171,6 +208,11 @@ node guidance](https://learn.microsoft.com/en-us/azure/architecture/aws-professi
 
 ## Planning-stage specialist
 
+- **2026-09-06 refresh review:** The native planner approved the bounded
+  status/authority refresh after correcting assessment-versus-spot gate
+  dependencies and superseding historical integration instructions. The
+  original design review below is separate evidence. This refresh changes no
+  architecture, package order, live acceptance, or production authority.
 - **Scope:** The complete architecture, formulas, activation transaction,
   package boundaries, routing map, evidence gates, and approval gates.
 - **Findings accepted:** Separate regular/burst residual arithmetic; ordered
@@ -252,7 +294,10 @@ The composite value is normalized into pod-equivalents and explicitly uses
 fallback. The regular ScaledObject therefore falls back to the static floor
 `B`. On KEDA 2.16, the burst ScaledObject falls back to static `C`, preserving
 potentially occupied burst capacity at bounded extra spot cost; an alert fires
-immediately. A newer current-replica fallback may replace this only after the
+immediately. Any burst trigger crossing its failure threshold, including
+task-stats queued or running totals and `burst_busy_workers`, bypasses the
+composite formula and activates that whole ScaledObject's fallback to `C`.
+A newer current-replica fallback may replace this only after the
 live add-on proves its semantics. The chart must remain compatible with the
 version proven live; the initial design uses only KEDA 2.16 features.
 
@@ -401,7 +446,10 @@ Staging activation requires a separately approved, content-equivalent sync to
 the selected source branch and its generated promotion workflow. Do not retarget
 Argo or change `STG_SOURCE_BRANCH` as an implicit implementation step.
 
-## Planning snapshot and takeover evidence
+## Historical planning snapshot and takeover evidence — 2026-08-29
+
+These are dated source observations, not current readiness or repeat authority.
+The current outcome section and Progress supersede their current-state wording.
 
 | Area | Verified source state | Consequence |
 |---|---|---|
@@ -476,7 +524,7 @@ long stack would make the lower layers unsafe to land independently.
 ```yaml
 feature: KEDA Hatchet worker foundations
 provider: github
-base: v3
+base: v3-ai
 mode: guided
 layers:
   - id: W0
@@ -485,7 +533,7 @@ layers:
     pr: https://github.com/uzh-bf/klicker-uzh/pull/5491
     work_package: Every rendered Deployment has exactly one static or autoscaler owner
     responsibility: Repair and extend the chart ownership invariant for future ScaledObjects
-    depends_on: v3
+    depends_on: v3-ai
     reviewer: deployment and GitOps maintainers
     attention: judgment-heavy
     reviewer_focus:
@@ -573,6 +621,9 @@ service-level test portfolio.
 
 ### W0 — Recover the replica-ownership foundation
 
+The historical package plan calls this local W1. This roadmap calls the
+replica-ownership package W0 and the dependent worker-runtime package W1.
+
 - **Priority:** P0; blocks every KEDA target.
 - **Route:** `main` in the existing W0/W1 stack worktree.
 - **Execution-tier skip reason:** Critical-path coupling and exclusive stack
@@ -591,18 +642,20 @@ service-level test portfolio.
   rewriting history unless explicitly authorized.
 - **Problem:** Current `v3` can omit worker replicas without rendering a scaler.
   Existing PR #5491 addresses the broader chart invariant but is stale and open.
-- **Do:** Take over PR #5491, rebase its intent onto fresh `v3`, retain the
-  static-versus-scaled invariant, extend its checker design to recognize future
-  ScaledObjects, and remove unrelated historical changes if they are no longer
-  needed. Do not merge it as-is without a current diff review. Designate `main`
+- **Do:** Finish current documentation feedback on the recorded baseline of
+  [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491). Preserve the
+  implemented ownership invariant and checker. Report target conflicts and
+  obtain one explicit integration grant before incorporating newer `v3-ai`.
+  Do not rewrite public history to remove reverted changes. Designate `main`
   as topology owner for both W0 and W1; no other task may
   independently rebase, reorder, merge, or restack either layer.
 - **Check:** Base, staging, and production renders give every Deployment exactly
   one owner. Negative fixtures catch ownerless, dual-owned, duplicate-target,
   and invalid target references. The existing three HPAs render valid
   `autoscaling/v2` resources.
-- **Working context:** Reuse branch `rs/scaling-replica-ownership` and PR #5491;
-  target `v3`.
+- **Working context:** Reuse branch `rs/scaling-replica-ownership` and
+  [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491) in
+  `trees/keda-horizontal-scaling-stack`; target `v3-ai`.
 - **Authority and terminal:** Local repair, repository checks, review, and PR
   update require the normal takeover approval. Terminal is reviewed `pr_ready`;
   merge and deployment remain separate.
@@ -623,10 +676,10 @@ service-level test portfolio.
 - **Commit:** Keep W1 as one stack layer with focused runtime, worker-wiring,
   deployment, documentation, and progress commits. Any lower-layer correction
   lands in W0 and propagates through the stack-aware rebase procedure.
-- **Problem:** `v3` relies on SDK slot defaults and lacks explicit readiness and
-  drain behavior. PR #5492 contains reviewed prior work and is stacked on W0.
-  It was conflict-blocked at plan authoring; the coordinated takeover restored
-  its topology without reopening W1 semantics.
+- **Problem:** The deployed runtime contract still needs proof. Source in
+  [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492) already implements
+  explicit slots, identities, readiness, and termination handling. Preserve that
+  implementation rather than treating it as unstarted work.
 - **Do:** Reconcile PR #5492 after W0. Preserve explicit standard and durable
   slots, distinct worker identities, health endpoints, exec-form process
   startup, readiness-before-exit ordering, and termination grace. Re-evaluate
@@ -640,7 +693,8 @@ service-level test portfolio.
   cannot make a 30-minute task safe; such a task needs checkpoint/replay or must
   remain off spot.
 - **Working context:** Reuse branch `rs/hatchet-worker-runtime-contract` and PR
-  #5492 after W0; target W0's branch until the stack is restacked onto `v3`.
+  #5492 after W0; target `rs/scaling-replica-ownership` in the existing
+  `v3-ai`-rooted stack. No further retarget is implicit.
 - **Authority and terminal:** Source repair can end `pr_ready`. Staging runtime
   proof needs explicit cluster and deployment approval. Required delivery is
   `live_proven`; the package parks at `delivery_pending` after PR readiness until
@@ -678,8 +732,10 @@ service-level test portfolio.
   explicitly.
 - **Check:** Formula fixtures enumerate zero, boundary, saturation, long-running,
   mixed standard/durable, zero-residual, cap, scale-from-zero, regular fallback
-  to `B`, burst metric failure to `C`, partial-trigger failure, asymmetric regular/spot
-  failure, unschedulable-regular, and residual-burst cases. Fixtures parse the
+  to `B`, each burst task-stats queued/running trigger failure to `C`,
+  `burst_busy_workers` failure to `C`, simultaneous trigger failures,
+  asymmetric regular/spot failure, unschedulable-regular, and residual-burst
+  cases. Fixtures parse the
   rendered manifests and prove AverageValue target `1` semantics. Helm checks
   assert exact replica ownership, exact target names, no spot fields on
   assessment, required spot fields only on burst, KEDA 2.16-compatible CRDs,
@@ -860,7 +916,8 @@ service-level test portfolio.
   external cluster effects.
 - **Acceptance:** Staging evidence proves demand below/at/above `T`, mixed slot
   arithmetic, residual spot scaling, distinct busy-worker protection, bounded
-  fallback, duplicate-safe effects, controlled eviction recovery, and rollback.
+  fallback to `C` for either burst task-stats or busy-worker metric failure,
+  duplicate-safe effects, controlled eviction recovery, and rollback.
 - **Test obligation:** Extend the response-effect seam and add the mixed-pool,
   sparse occupancy, and live eviction evidence from the portfolio.
 - **Commit:** Land response-effect correctness before enabling burst behavior;
@@ -885,7 +942,8 @@ service-level test portfolio.
   delivery leaves each external effect correct. A forced spot eviction must
   recover within the agreed SLO. Let total demand cross below `T` while a burst
   task remains active and prove voluntary scale-down waits for drain. Prove
-  metric failure keeps the regular floor, sets burst to bounded `C`, alerts,
+  regular metric failure keeps the regular floor; either burst task-stats or
+  `burst_busy_workers` failure sets burst to bounded `C`, alerts,
   exercises the documented burst-retry path, and recovers without effect
   corruption.
 - **Working context:** New `rs/keda-live-response-spot-pilot` branch after W4;
@@ -1184,12 +1242,13 @@ task or mutate either repository.
 
 | Package | Owner form | Launcher and authorization gate | Dependency | Acceptance boundary |
 |---|---|---|---|---|
-| W0-W1 stack recovery | `main`, also the single stack topology owner | User-authorized takeover of the two named PRs | Current PR heads and fresh `v3` | Both layers independently green and correctly based; W1 later `live_proven` |
+| W0-W1 stack recovery | `main`, also the single stack topology owner | Existing correction and publication authority; fresh trunk integration is separate | Current PR heads and recorded baseline under `v3-ai` | Both layers independently green and correctly based; W1 later `live_proven` |
 | W2 KEDA primitives | `main` | Approved W2 execution plan | W0-W1 and E1a | Rendered formulas, auth references, fallback, ownership, and placement pass |
 | W3a Argo/auth primitives | `separate task (proposed)` | `main` launches only after explicit W3a infrastructure-package authorization | W2 names and E1a | Disabled source reviewable; activation later `live_proven` |
 | W3b capacity artifact | `main` | Approved W3b package plus values-free read authority | W2, E1b, and A1 | Versioned artifact and consumer checker close E2 |
 | W3c observability | `separate task (proposed)` | `main` launches only after explicit W3c infrastructure-package authorization | W3b and E1b | Dashboard, alerts, and busy-worker query are `live_proven` |
-| W4-W5 pilots | `main` | A2 grants the staging branch, activation, load, and interruption actions | W1-W3c, E1b-E3, and A1 | Assessment and live-response behavior are `live_proven` |
+| W4 — Assessment regular pilot | `main` | A2 grants the staging branch, activation, load, and interruption actions | W1-W3c, E1b, E2, and A1 | Assessment regular scaling is `live_proven`; E3 spot eligibility does not apply |
+| W5 — Live-response spot pilot | `main` | A2 grants the staging branch, activation, load, and interruption actions | W4, E1b, E2, E3, and A1 | Live-response regular and spot behavior are `live_proven` |
 | W6 optional adapter | `separate task (proposed)` | `main` launches only when E4 fails and the user authorizes W6 | E4 threshold crossed | Adapter deployment and KEDA cutover are `live_proven` |
 | W7 general profiles | `main` | Approved W7 plan and A2 | W5, E3-E4, and W6 when armed | Every task assigned exactly once; selected profiles `live_proven` |
 | W8a-W8d3 production | `main` | A4 authorizes each exact package separately | Selected staging profiles and current E2 artifact | Exact revisions, ownership, rollback, capacity, and health are `live_proven` |
@@ -1226,7 +1285,7 @@ a values edit.
 | Dependency | Owner | Needed for | Failure handling |
 |---|---|---|---|
 | Goldilocks request recommendations and approved changes | Parallel vertical-sizing workstream | Regular/spot schedulability, node packing, and caps | Keep current requests and conservative caps; recalculate after every accepted change |
-| Shared Hatchet API and Prometheus targets | Hatchet platform owner | Queue/running demand and scaling SLOs | Use regular fallback floor `B` for task-stats or Hatchet API failure, and burst fallback floor `C` for burst Prometheus failure; alert and stop promotion |
+| Shared Hatchet API and Prometheus targets | Hatchet platform owner | Queue/running demand and scaling SLOs | Use regular fallback floor `B` for regular task-stats or Hatchet API failure, and burst fallback `C` for either burst task-stats or Prometheus failure; alert and stop promotion |
 | Managed KEDA add-on and single external metrics adapter | AKS platform owner | ScaledObject reconciliation | Verify live version first; do not install another adapter |
 | Dedicated Hatchet scaling URL and bearer projection from Infisical | Secret-delivery owner | Values-free KEDA `metrics-api` authentication | Stop at E1b if the Secret cannot be projected and referenced without exposing values |
 | Guaranteed regular capacity and `asyncspot` health | AKS/cost owner | Threshold and burst promises | Lower caps or increase approved capacity; never let spot replace the critical floor |
@@ -1255,6 +1314,45 @@ a values edit.
   node pools](https://learn.microsoft.com/en-us/azure/architecture/aws-professional/eks-to-aks/node-pools).
 
 ## Progress
+
+### Current execution — 2026-09-06
+
+- **Active work:** Refresh the roadmap and finish the two foundation
+  documentation corrections under the user's goal request. The main session
+  owns the small coupled edit and stack operations; delegation would cost more
+  than this edit. The independent planner returned `APPROVED` after one
+  correction round. No application test is added for documentation wording.
+- **Verified source:** Clean task branch before editing, tracking
+  `origin/rs/scaling-replica-ownership` at `98c2990bc3`; upper published head
+  `3ddecc067` contains that parent. Lower is 101 commits ahead and 61 behind
+  remote default `v3`, independently of its target drift. Against `v3-ai`, it
+  is three ahead and 99 behind. GitHub reports a foundation conflict; a
+  non-checkout merge calculation identifies
+  `.github/workflows/public-pr-playwright-shards.yml`. No integration occurred.
+- **Verification:** Normal CI passed on the published August 30 heads.
+  Superseded cancelled duplicate runs are not fresh failures. GitGuardian
+  passes on both; earlier incident claims below are historical, not current
+  blockers or authority to dismiss findings. The lower final review remains
+  pending; the upper review contexts report staging-stack policy errors.
+  Two lower documentation threads remain open pending publication.
+- **Runtime evidence:** Host devrouter is now 0.0.51, so the old 0.0.36
+  capability blocker is stale. This is CLI availability, not runtime or live
+  scaling proof. No runtime was started for these documentation checks.
+- **Required versus achieved:** Foundations require source readiness; worker
+  runtime also requires separately authorized live proof. Both have implemented
+  source and passing normal CI, but neither is merged or live-proven. Disabled
+  KEDA primitives and later packages remain unimplemented by this stack.
+- **Next action:** Verify and commit these documentation changes, preserve the
+  upper semantic patch during the one approved propagation/publication, then
+  reconcile fresh CI and review feedback. Fresh target integration requires a
+  separate grant. Disabled KEDA implementation starts after both foundations
+  land and the source authentication interface is frozen; staging activation
+  additionally needs capacity, observability, numerical SLOs, and live authority.
+
+### Historical progress — 2026-08-29
+
+The following entries retain their original wording as dated evidence. They
+do not describe current readiness, current blockers, or repeat authority.
 
 - **Current status:** W0 reached the Gate 2 review boundary on PR #5491. The
   replica-ownership foundation, ADR-0043, and this roadmap are published and
