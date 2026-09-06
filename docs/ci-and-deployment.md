@@ -14,6 +14,15 @@ tags:
 
 ## PR gates
 
+GraphQL and lightweight unit CI build their dependencies through scoped Turbo
+`build` graphs with at most four tasks running concurrently. The GraphQL graph
+includes the general worker and feature-flags package. Unit CI builds only
+Prisma, types, grading, and util; it does not add Chat or PWA application builds.
+Database setup and tests still run after successful dependency builds.
+These jobs retain setup-node's pnpm cache but do not restore the Playwright
+Turbo snapshot: its `build:test` task identities and test-container environment
+are not compatible with these hosted `build` tasks.
+
 Per-commit workflows: required `check` (one install covering format, syncpack,
 lint, schema and guide drift, incremental builds and types, plus advisory Knip)
 and required `check-gitleaks`. Branch protection binds both contexts to GitHub

@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -137,21 +137,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build dependency packages
-        run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
-          cd ../hatchet
-          pnpm run build
-          cd ../../apps/hatchet-worker-general
-          pnpm run build
+        run: pnpm exec turbo run build --filter=@klicker-uzh/graphql --filter=@klicker-uzh/hatchet-worker-general --concurrency=4
 
       - name: Setup database
         run: |
