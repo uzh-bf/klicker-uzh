@@ -150,7 +150,8 @@ export async function POST(
 
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
@@ -216,7 +217,7 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
-      kbId: chatbot.knowledgeBases[0]?.kbId,
+      kbIds: chatbot.knowledgeBases.map(({ kbId }) => kbId),
       sessionId: randomUUID(),
     })
     tools = mcpToolsHandle.tools
@@ -239,6 +240,7 @@ export async function POST(
       selectedMode,
       {
         courseDisplayName: chatbot.course.displayName,
+        standardModeConfig: chatbot.standardModeConfig,
         toolNames,
       }
     )

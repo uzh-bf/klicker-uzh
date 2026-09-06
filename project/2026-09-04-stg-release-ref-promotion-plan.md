@@ -262,6 +262,32 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
+- `Local v3 integration, 2026-09-06:` The user explicitly approved integrating
+  `v3` into this existing worktree. The merge uses fetched source
+  `27f2474547df045cc11302c7d9e195798ec66870` and preserves the staging release
+  changes. Publication, remote merges, release-ref movement, and deployment
+  remain outside this approval. The previous local edits remain recoverable in
+  stash `be6567dfbf1c7eb42d395b9914017fe4b9c33fac`; six runtime fixes already
+  arrived through v3, while the two Playwright fixture fixes remain stashed.
+  Conflict resolution retains both CI contract checks, the AI package build
+  filters, and multi-KB scope validation. The new `QManageChatbots` operation
+  combines standard-mode fields with the existing enabled-KB link and preserves
+  both older operation documents. Owner preview now passes standard-mode
+  settings and the array-shaped MCP scope. Two AI-only peer ranges match the
+  incoming Next.js patch version. No task-authored migration was added.
+  Promoter and final-review policy tests pass 133/133; affected MCP and mode
+  tests pass 104/104; owner-preview tests pass 8/8. GraphQL schema and type checks
+  pass. The broader type-check run passed 38/40 tasks; its Prisma generation
+  race and stale preview caller were then resolved and both package checks pass
+  sequentially. All seven lint tasks pass, as do dependency consistency,
+  staged-file formatting, runtime helper tests, frozen-lockfile validation,
+  staged Gitleaks, and host identity/diff checks. In-container lint-staged Git
+  bookkeeping failed during the merge; its exact formatting commands were run
+  separately from host Git checks. The broad check terminated the development
+  backend watcher with exit 137. Canonical Manage startup had passed with no
+  drift; runtime restart and final browser verification remain pending.
+  The incoming shared final-review policy supersedes the historical exact
+  controller mirror claim below. Independent integration review remains pending.
 - `Source follow-up, 2026-09-05:` The user approved repairing the failing
   contract test and preparing private platform source wiring, with merges and
   activation still gated. The published test failed under CI's Helm 3.21.4

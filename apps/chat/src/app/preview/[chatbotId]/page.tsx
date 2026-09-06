@@ -36,6 +36,7 @@ export default async function OwnerPreviewPage({
       id: true,
       name: true,
       status: true,
+      standardModeConfig: true,
       systemPrompts: true,
       mcpConfigurations: {
         select: {
@@ -53,7 +54,8 @@ export default async function OwnerPreviewPage({
 
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
   const manageBaseUrl = (
     process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'

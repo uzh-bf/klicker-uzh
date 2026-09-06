@@ -66,6 +66,108 @@ describe('effective chatbot modes', () => {
     ).toEqual({})
   })
 
+  test('uses valid typed standard-mode flags over legacy opt-outs', () => {
+    expect(
+      resolveEffectiveChatModeOptions(
+        {
+          tutor: { enabled: false },
+          explainer: { enabled: false },
+        },
+        [],
+        {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        }
+      )
+    ).toEqual({
+      tutor: 'Guides students with focused questions, hints, and feedback.',
+    })
+  })
+
+  test('falls back to legacy flags when typed standard-mode data is absent or malformed', () => {
+    const legacy = { tutor: { enabled: false } }
+
+    expect(resolveEffectiveChatModeOptions(legacy, [])).not.toHaveProperty(
+      'tutor'
+    )
+    expect(
+      resolveEffectiveChatModeOptions(legacy, [], { tutorEnabled: 'yes' })
+    ).not.toHaveProperty('tutor')
+    expect(
+      resolveEffectiveChatModeOptions({ tutor: { enabled: false } }, [], {
+        tutorEnabled: true,
+        explainerEnabled: false,
+      })
+    ).toHaveProperty('tutor')
+  })
+
+  test('honours an independently disabled typed Quizzer flag', () => {
+    const typedConfig = {
+      tutorEnabled: true,
+      explainerEnabled: true,
+      quizzerEnabled: false,
+    }
+
+    expect(
+      resolveEffectiveChatModeOptions(
+        { quizzer: { enabled: true } },
+        [
+          config({
+            allowedTools: ['doc_query'],
+            chatMode: 'tutor',
+            serverId: 'course',
+          }),
+        ],
+        typedConfig
+      )
+    ).not.toHaveProperty('quizzer')
+  })
+
+  test('exposes enabled typed Quizzer with a safe document-query capability', () => {
+    expect(
+      resolveEffectiveChatModeOptions(
+        null,
+        [
+          config({
+            allowedTools: ['doc_query'],
+            chatMode: 'tutor',
+            serverId: 'course',
+          }),
+        ],
+        {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+        }
+      )
+    ).toHaveProperty('quizzer')
+  })
+
+  test('hides enabled typed Quizzer without a safe document-query capability', () => {
+    expect(
+      resolveEffectiveChatModeOptions(
+        null,
+        [
+          config({
+            allowedTools: ['course_search'],
+            chatMode: 'tutor',
+            serverId: 'course',
+          }),
+        ],
+        {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+        }
+      )
+    ).not.toHaveProperty('quizzer')
+  })
+
   test('does not expose blank custom mode keys', () => {
     const modeOptions = resolveEffectiveChatModeOptions(
       {

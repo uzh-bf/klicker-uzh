@@ -82,9 +82,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.STORE_PATH }}
-        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
-        restore-keys: |
-          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
 
     - name: Install dependencies
       shell: bash
@@ -310,4 +308,4 @@ runs:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
         path: playwright-telemetry-${{ inputs.shard-index }}.json
         if-no-files-found: ignore
-        retention-days: 1
+        retention-days: 7

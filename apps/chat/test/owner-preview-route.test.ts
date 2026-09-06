@@ -143,6 +143,11 @@ describe('POST owner preview chat', () => {
         },
       ],
       ownerId: 'owner-id',
+      standardModeConfig: {
+        tutorEnabled: true,
+        explainerEnabled: true,
+        quizzerEnabled: false,
+      },
       systemPrompts: { tutor: 'Tutor instructions' },
     })
     mocks.getAggregatedMCPTools.mockResolvedValue({
@@ -232,7 +237,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbId: 'kb-id',
+        kbIds: ['kb-id'],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
@@ -240,6 +245,11 @@ describe('POST owner preview chat', () => {
       'tutor',
       {
         courseDisplayName: 'Test Course',
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+        },
         toolNames: ['KB_doc_query'],
       }
     )
@@ -294,10 +304,13 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  it('rejects an unsupported mode before MCP or model work', async () => {
+  it.each([
+    'exam',
+    'quizzer',
+  ])('rejects unsupported or disabled mode %s before MCP or model work', async (selectedMode) => {
     mocks.readBoundedJson.mockResolvedValue({
       ok: true,
-      value: { messages: uiMessages, selectedMode: 'exam' },
+      value: { messages: uiMessages, selectedMode },
     })
 
     const response = await POST(request(), {
