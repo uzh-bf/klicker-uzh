@@ -1,5 +1,82 @@
 # V3 beta discovery and chatbot authoring gates
 
+## Approved amendment: database beta preference and one AI approval
+
+The September 6 user ruling supersedes the saved-group storage and separate
+publication-entitlement contracts below. The user approved implementation and
+confirmed that this approval feature has never deployed and has no approval
+data to preserve. Store `User.betaEnabled` with default `true` and use
+`User.aiFeaturesEnabled`, default `false`, as the sole account AI approval.
+Per-chatbot publication review remains separate. Token provisioning and
+validation belong to v3-ai and are not implemented here.
+
+Authority: scoped local source, generated migrations, isolated verification,
+independent reviews and commits on the existing branch. Terminal: locally
+committed, verified and independently reviewed source. No push, merge, branch
+integration, deployment, live GrowthBook changes or retained-data deletion.
+Boundary owner: self. Pause for contradictory deployment evidence, failed test
+isolation, an unavailable required gate, or a new material authority boundary.
+
+### Migration and ownership
+
+Reuse `20260823120459_ai_features_enabled/migration.sql` byte-for-byte from
+v3-ai. Generate one additional migration adding `betaEnabled` and dropping
+`aiChatbotPublishingEnabled`. Preserve the original lifecycle migration and
+do not backfill approvals. Two migration directories are necessary to preserve
+the shared v3-ai migration identity without a duplicate column addition later.
+Generate the Analytics mirror through `prisma:sync`. No retained local database
+is migrated or reset; migration and browser proof use a disposable database.
+
+| Product primitive | Disposition | Contract |
+| --- | --- | --- |
+| Beta preference | Extend | Database-owned, default on, full-access edits; Catalyst required to opt in, opt-out remains possible without Catalyst. |
+| Feature rollout | Reuse | GrowthBook `ai-beta` targets trusted `betaEnabled` and existing actor attributes; failure stays false. |
+| Account AI approval | Compose | One `aiFeaturesEnabled` approval gates publication and model usage; beta preference never grants approval. |
+| Chatbot publication | Reuse | Per-chatbot review, participant permissions and publication state remain authoritative. |
+
+### Implementation and verification
+
+Slice 1 persists beta preference and normalizes the complete schema. Main owns
+schema, authorization and cache seams because they are coupled. A bounded
+executor may own mechanical shared-attribute/fixture changes. Replace the
+saved-group management API and Redis lock with database reads and scoped writes;
+remove `beta-signup` and dedicated configuration. Read trusted preference per
+request with request-local reuse, never from JWT or a global cache. Database
+false must defeat even a forced-true rollout. Preserve persisted operation hashes
+using new operation names for new selections. Synchronize preference writes with
+Manage's provider and distinguish saved preference from rollout availability.
+Mechanical approval-field substitutions keep this slice buildable.
+
+Slice 2 completes unified approval at publication and Chat admission, including
+when budget enforcement is disabled. Main owns the security-sensitive seam.
+Pre-approval configuration remains available to otherwise eligible authors.
+Participant usage ignores the owner's beta preference. Preserve conditional
+publication writes, revocation checks and existing budget switches.
+
+Extend or consolidate existing enrollment, authoring, publication, account-usage
+and Chat admission tests. Cover account isolation, scoped opt-in/out, write/read
+failure, fresh-request revocation, forced rollout, approval before provider work
+under both budget-switch states, and participant independence from beta.
+Retain existing contracts instead of adding prose-pinning tests. Verify generated
+migrations/defaults, Analytics sync, old persisted hashes, chart rendering,
+affected checks, root checks and production build. Browser proof must use real
+database opt-out/in, API denial/allow and persistence after restart without
+reseeding. Stop the exact runtime and verify its routes are released.
+
+Update ADRs 0008, 0020 and 0041 and directly affected feature-flag guidance to
+reflect these ownership changes. Commit each coherent slice after checks, then
+run its simplifier and risk reviewer, followed by integrated final review.
+Prior reviews apply only to unchanged behavior.
+
+### Amendment progress
+
+Planner approved the amendment on September 6. The cross-provider consultation
+flagged eligibility, cache and migration-lineage risks; the contracts above
+resolve them. Generic beta naming is intentional. No global cache is added.
+Baseline: clean `5e5b1d69c8cf08a58f27dee6c81d618844116b77`, matching upstream,
+15 commits ahead and 5 behind `v3`. The 42 feature-flag baseline tests pass.
+Implementation and amendment verification remain pending.
+
 ## Approval summary
 
 Make beta features easy for every lecturer to find while restricting chatbot
