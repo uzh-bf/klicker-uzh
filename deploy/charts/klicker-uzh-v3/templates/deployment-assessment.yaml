@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.assessment.frontendPWA.autoscaling.enabled }}
+  {{- if hasKey .Values.assessment.frontendPWA "replicaCount" }}
   replicas: {{ .Values.assessment.frontendPWA.replicaCount }}
   {{- end }}
   selector:
@@ -92,7 +92,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.assessment.backendGraphql.autoscaling.enabled }}
+  {{- if hasKey .Values.assessment.backendGraphql "replicaCount" }}
   replicas: {{ .Values.assessment.backendGraphql.replicaCount }}
   {{- end }}
   selector:
