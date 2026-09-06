@@ -1,5 +1,6 @@
 const {
   getPermission,
+  isEligibleBaseBranch,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -36,12 +37,6 @@ const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
 const OCR_RUN_MANIFEST_SCHEMA = 'ocr.run-manifest/v1'
-// Long-lived consolidation branches (for example, v3-ai) that staging
-// deployments are cut from. Individual final reviews treat open ready pull
-// requests targeting one of these bases exactly like pull requests targeting
-// the default branch. Stack review and native-stack root validation stay
-// bound to the default branch.
-const CONSOLIDATION_BASE_BRANCHES = Object.freeze(['v3-ai'])
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -934,13 +929,6 @@ async function getPull(github, context, pullNumber) {
     pull_number: pullNumber,
   })
   return response.data
-}
-
-function isEligibleBaseBranch({ baseRef, context }) {
-  return (
-    baseRef === context.payload.repository.default_branch ||
-    CONSOLIDATION_BASE_BRANCHES.includes(baseRef)
-  )
 }
 
 function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {

@@ -31,6 +31,30 @@ async function listCheckRunsForRef({ github, context, ref }) {
   return Array.isArray(checkRuns) ? checkRuns : []
 }
 
+// Consolidation branches are long-lived integration branches named after the
+// default branch with a dash-separated suffix (for example, v3-ai or
+// v3-polls). Staging deployments are cut from them, so pull requests and
+// native stack roots that target one are reviewed exactly like pull requests
+// that target the default branch itself.
+function isConsolidationBaseBranch({ baseRef, defaultBranch }) {
+  if (typeof baseRef !== 'string' || typeof defaultBranch !== 'string') {
+    return false
+  }
+  const prefix = `${defaultBranch}-`
+  return (
+    baseRef.startsWith(prefix) &&
+    /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(baseRef.slice(prefix.length))
+  )
+}
+
+function isEligibleBaseBranch({ baseRef, context }) {
+  const defaultBranch = context.payload.repository.default_branch
+  return (
+    baseRef === defaultBranch ||
+    isConsolidationBaseBranch({ baseRef, defaultBranch })
+  )
+}
+
 function repositoryName(context) {
   return `${context.repo.owner}/${context.repo.repo}`
 }
@@ -68,6 +92,8 @@ function workflowRunUrl(context, runId = context.runId) {
 
 module.exports = {
   getPermission,
+  isConsolidationBaseBranch,
+  isEligibleBaseBranch,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
