@@ -183,6 +183,7 @@ runs:
           packages/knowledge-graph/dist
           packages/markdown/dist
           packages/prisma/dist
+          packages/product-updates/dist
           packages/types/dist
           packages/util/dist
         retention-days: 1
