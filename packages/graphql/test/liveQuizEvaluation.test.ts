@@ -41,6 +41,121 @@ import {
   testInitialization,
 } from './helpers.js'
 
+type SingleChoiceQuestionOptions = {
+  name: string
+  content?: string
+  explanation?: string
+  choiceValues?: readonly string[]
+  includeSolutionMetadata?: boolean
+}
+
+async function createSingleChoiceQuestion(
+  prisma: PrismaClient,
+  ownerId: string,
+  {
+    name,
+    content = `${name} Content`,
+    explanation,
+    choiceValues = ['A', 'B'],
+    includeSolutionMetadata = true,
+  }: SingleChoiceQuestionOptions
+) {
+  const resolvedExplanation = includeSolutionMetadata
+    ? (explanation ?? `${name} Explanation`)
+    : explanation
+
+  return prisma.element.create({
+    data: {
+      status: 'READY',
+      type: 'SC',
+      name,
+      content,
+      ...(resolvedExplanation === undefined
+        ? {}
+        : { explanation: resolvedExplanation }),
+      options: {
+        choices: choiceValues.map((value, ix) => ({
+          ix,
+          value,
+          correct: ix === 0,
+        })),
+        displayMode: 'LIST',
+        ...(includeSolutionMetadata
+          ? { hasSampleSolution: true, hasAnswerFeedbacks: true }
+          : {}),
+      },
+      ownerId,
+    },
+  })
+}
+
+type SyntheticQuestion = Awaited<ReturnType<typeof createSingleChoiceQuestion>>
+
+function createEvaluationBlock(
+  question: SyntheticQuestion,
+  status: ElementBlockStatus,
+  order: number,
+  ownerId: string
+) {
+  const elementData = processElementData(question)
+
+  return {
+    order,
+    status,
+    elements: {
+      create: [
+        {
+          type: ElementInstanceType.LIVE_QUIZ,
+          elementId: question.id,
+          elementType: ElementType.SC,
+          order: 0,
+          options: {},
+          elementData,
+          results: getInitialInstanceResults(elementData),
+          anonymousResults: getInitialInstanceResults(elementData),
+          ownerId,
+        },
+      ],
+    },
+  }
+}
+
+type EvaluationBlock = ReturnType<typeof createEvaluationBlock>
+
+async function createEvaluationQuiz(
+  prisma: PrismaClient,
+  {
+    courseId,
+    ownerId,
+    name,
+    status,
+    blocks,
+    pinCode,
+  }: {
+    courseId: string
+    ownerId: string
+    name: string
+    status: PublicationStatus
+    blocks: EvaluationBlock[]
+    pinCode?: string
+  }
+) {
+  return prisma.liveQuiz.create({
+    data: {
+      name,
+      displayName: name,
+      ...(pinCode === undefined ? {} : { pinCode }),
+      status,
+      ownerId,
+      courseId,
+      blocks: { create: blocks },
+    },
+    include: {
+      blocks: { include: { elements: true } },
+    },
+  })
+}
+
 describe('Unit tests for live quiz evaluation service', () => {
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -81,104 +196,36 @@ describe('Unit tests for live quiz evaluation service', () => {
   it('strips element content for SCHEDULED blocks while preserving block status metadata', async () => {
     const course = await seedCourse({}, userOneCtx)
 
-    const question1 = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
-        name: 'Single Choice Question 1',
-        content: 'Question 1 Content',
-        explanation: 'Question 1 Explanation',
-        options: {
-          choices: [
-            { ix: 0, value: 'A', correct: true },
-            { ix: 1, value: 'B', correct: false },
-          ],
-          displayMode: 'LIST',
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        ownerId: userOneCtx.user.sub,
-      },
-    })
+    const question1 = await createSingleChoiceQuestion(
+      prisma,
+      userOneCtx.user.sub,
+      { name: 'Single Choice Question 1' }
+    )
+    const question2 = await createSingleChoiceQuestion(
+      prisma,
+      userOneCtx.user.sub,
+      { name: 'Single Choice Question 2', choiceValues: ['X', 'Y'] }
+    )
 
-    const question2 = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
-        name: 'Single Choice Question 2',
-        content: 'Question 2 Content',
-        explanation: 'Question 2 Explanation',
-        options: {
-          choices: [
-            { ix: 0, value: 'X', correct: true },
-            { ix: 1, value: 'Y', correct: false },
-          ],
-          displayMode: 'LIST',
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        ownerId: userOneCtx.user.sub,
-      },
-    })
-
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Evaluation Quiz',
-        displayName: 'Evaluation Quiz',
-        status: PublicationStatus.PUBLISHED,
-        ownerId: userOneCtx.user.sub,
-        courseId: course.id,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              status: ElementBlockStatus.SCHEDULED,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question1.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question1),
-                    results: getInitialInstanceResults(
-                      processElementData(question1)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question1)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-            {
-              order: 1,
-              status: ElementBlockStatus.EXECUTED,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question2.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question2),
-                    results: getInitialInstanceResults(
-                      processElementData(question2)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question2)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+    const liveQuiz = await createEvaluationQuiz(prisma, {
+      name: 'Evaluation Quiz',
+      status: PublicationStatus.PUBLISHED,
+      ownerId: userOneCtx.user.sub,
+      courseId: course.id,
+      blocks: [
+        createEvaluationBlock(
+          question1,
+          ElementBlockStatus.SCHEDULED,
+          0,
+          userOneCtx.user.sub
+        ),
+        createEvaluationBlock(
+          question2,
+          ElementBlockStatus.EXECUTED,
+          1,
+          userOneCtx.user.sub
+        ),
+      ],
     })
 
     const evaluation = await getLiveQuizEvaluation(
@@ -200,7 +247,7 @@ describe('Unit tests for live quiz evaluation service', () => {
     const executedRes = results[1]!
     expect(executedRes.status).toEqual(ElementBlockStatus.EXECUTED)
     expect(executedRes.instances.length).toBeGreaterThan(0)
-    expect(executedRes.instances[0]?.name).toEqual('Single Choice Question 2')
+    expect(executedRes.instances[0]?.name).toEqual(question2.name)
   })
 
   it.each([
@@ -209,62 +256,26 @@ describe('Unit tests for live quiz evaluation service', () => {
   ])('returns metadata without evaluation content for HMAC requests to %s quizzes', async (status) => {
     const course = await seedCourse({}, userOneCtx)
 
-    const question = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
-        name: 'Draft HMAC Question',
-        content: 'Draft HMAC Question Content',
-        explanation: 'Draft HMAC Question Explanation',
-        options: {
-          choices: [
-            { ix: 0, value: 'A', correct: true },
-            { ix: 1, value: 'B', correct: false },
-          ],
-          displayMode: 'LIST',
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        ownerId: userOneCtx.user.sub,
-      },
-    })
+    const question = await createSingleChoiceQuestion(
+      prisma,
+      userOneCtx.user.sub,
+      { name: 'Draft HMAC Question' }
+    )
 
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Draft Quiz',
-        displayName: 'Draft Quiz',
-        pinCode: `pin-${status}`,
-        status,
-        ownerId: userOneCtx.user.sub,
-        courseId: course.id,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              status: ElementBlockStatus.EXECUTED,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question),
-                    results: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+    const liveQuiz = await createEvaluationQuiz(prisma, {
+      name: 'Draft Quiz',
+      pinCode: `pin-${status}`,
+      status,
+      ownerId: userOneCtx.user.sub,
+      courseId: course.id,
+      blocks: [
+        createEvaluationBlock(
+          question,
+          ElementBlockStatus.EXECUTED,
+          0,
+          userOneCtx.user.sub
+        ),
+      ],
     })
 
     const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
@@ -326,61 +337,25 @@ describe('Unit tests for live quiz evaluation service', () => {
   it('strips evaluation content for authenticated non-published quizzes', async () => {
     const course = await seedCourse({}, userOneCtx)
 
-    const question = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
-        name: 'Draft Question',
-        content: 'Draft Question Content',
-        explanation: 'Draft Question Explanation',
-        options: {
-          choices: [
-            { ix: 0, value: 'A', correct: true },
-            { ix: 1, value: 'B', correct: false },
-          ],
-          displayMode: 'LIST',
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        ownerId: userOneCtx.user.sub,
-      },
-    })
+    const question = await createSingleChoiceQuestion(
+      prisma,
+      userOneCtx.user.sub,
+      { name: 'Draft Question' }
+    )
 
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Draft Quiz',
-        displayName: 'Draft Quiz',
-        status: PublicationStatus.DRAFT,
-        ownerId: userOneCtx.user.sub,
-        courseId: course.id,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              status: ElementBlockStatus.EXECUTED,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question),
-                    results: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+    const liveQuiz = await createEvaluationQuiz(prisma, {
+      name: 'Draft Quiz',
+      status: PublicationStatus.DRAFT,
+      ownerId: userOneCtx.user.sub,
+      courseId: course.id,
+      blocks: [
+        createEvaluationBlock(
+          question,
+          ElementBlockStatus.EXECUTED,
+          0,
+          userOneCtx.user.sub
+        ),
+      ],
     })
 
     const evaluation = await getLiveQuizEvaluation(
@@ -398,84 +373,34 @@ describe('Unit tests for live quiz evaluation service', () => {
   it('deduplicates active block in-place instead of appending duplicate block', async () => {
     const course = await seedCourse({}, userOneCtx)
 
-    const question = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
+    const question = await createSingleChoiceQuestion(
+      prisma,
+      userOneCtx.user.sub,
+      {
         name: 'Active Question',
-        content: 'Active Question Content',
-        options: {
-          choices: [
-            { ix: 0, value: 'A', correct: true },
-            { ix: 1, value: 'B', correct: false },
-          ],
-          displayMode: 'LIST',
-        },
-        ownerId: userOneCtx.user.sub,
-      },
-    })
+        includeSolutionMetadata: false,
+      }
+    )
 
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Live Active Quiz',
-        displayName: 'Live Active Quiz',
-        status: PublicationStatus.PUBLISHED,
-        ownerId: userOneCtx.user.sub,
-        courseId: course.id,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              status: ElementBlockStatus.ACTIVE,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question),
-                    results: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-            {
-              order: 1,
-              status: ElementBlockStatus.SCHEDULED,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: question.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {},
-                    elementData: processElementData(question),
-                    results: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(question)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      include: {
-        blocks: { include: { elements: true } },
-      },
+    const liveQuiz = await createEvaluationQuiz(prisma, {
+      name: 'Live Active Quiz',
+      status: PublicationStatus.PUBLISHED,
+      ownerId: userOneCtx.user.sub,
+      courseId: course.id,
+      blocks: [
+        createEvaluationBlock(
+          question,
+          ElementBlockStatus.ACTIVE,
+          0,
+          userOneCtx.user.sub
+        ),
+        createEvaluationBlock(
+          question,
+          ElementBlockStatus.SCHEDULED,
+          1,
+          userOneCtx.user.sub
+        ),
+      ],
     })
 
     expect(liveQuiz.blocks).toHaveLength(2)
