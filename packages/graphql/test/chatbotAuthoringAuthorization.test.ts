@@ -23,28 +23,32 @@ import '../src/schema/mutation.js'
 import { schema } from '../src/index.js'
 import { getChatbotsInfo } from '../src/services/chatbots.js'
 
+function buildDeniedBetaContext(state: 'missing' | 'off' | 'throwing') {
+  const ctx = buildContext({
+    scope: UserLoginScope.FULL_ACCESS,
+    catalyst: true,
+  })
+  if (state === 'missing') {
+    delete ctx.featureFlags
+  } else {
+    ctx.featureFlags = {
+      refresh: async () => {},
+      isEnabled: () => {
+        if (state === 'throwing') throw new Error('Synthetic evaluator failure')
+        return false
+      },
+    } as NonNullable<ContextWithUser['featureFlags']>
+  }
+  return ctx
+}
+
 describe('AI beta listing boundary', () => {
   it.each([
     'missing',
     'off',
     'throwing',
   ] as const)('returns no data before Prisma access with a %s evaluator', async (state) => {
-    const ctx = buildContext({
-      scope: UserLoginScope.FULL_ACCESS,
-      catalyst: true,
-    })
-    if (state === 'missing') {
-      delete ctx.featureFlags
-    } else {
-      ctx.featureFlags = {
-        refresh: async () => {},
-        isEnabled: () => {
-          if (state === 'throwing')
-            throw new Error('Synthetic evaluator failure')
-          return false
-        },
-      } as NonNullable<ContextWithUser['featureFlags']>
-    }
+    const ctx = buildDeniedBetaContext(state)
     const read = vi.fn(() => {
       throw new Error('Unexpected Prisma access')
     })
@@ -124,22 +128,7 @@ describe('AI beta authoring field boundary', () => {
       'off',
       'throwing',
     ] as const)('denies a %s evaluator before invoking the service', async (state) => {
-      const ctx = buildContext({
-        scope: UserLoginScope.FULL_ACCESS,
-        catalyst: true,
-      })
-      if (state === 'missing') {
-        delete ctx.featureFlags
-      } else {
-        ctx.featureFlags = {
-          refresh: async () => {},
-          isEnabled: () => {
-            if (state === 'throwing')
-              throw new Error('Synthetic evaluator failure')
-            return false
-          },
-        } as NonNullable<ContextWithUser['featureFlags']>
-      }
+      const ctx = buildDeniedBetaContext(state)
       const result = await execute(ctx)
       expect(result.errors?.[0]?.message).toBe('Unauthorized')
       expect(serviceMocks[field]).not.toHaveBeenCalled()
