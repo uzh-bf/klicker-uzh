@@ -97,7 +97,7 @@ const config: Config = {
     announcementBar: {
       id: 'upcoming_v3_4',
       content:
-        'Preparing for KlickerUZH v3.4. <a href="/development/">Explore the upcoming preview and roadmap</a>.',
+        '<a href="/#release-updates">Explore what is new in v3.3 and what we are preparing for v3.4</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,
@@ -173,7 +173,7 @@ const config: Config = {
         // },
         {
           href: 'https://manage.klicker.uzh.ch',
-          label: 'Login',
+          label: 'Lecturer sign-in',
           position: 'right',
         },
         {
