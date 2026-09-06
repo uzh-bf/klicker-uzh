@@ -1,0 +1,6 @@
+query GetElementSpreadsheet($elementIds: [Int!]!) {
+  getElementSpreadsheet(elementIds: $elementIds) {
+    filename
+    base64
+  }
+}
