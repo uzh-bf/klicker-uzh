@@ -508,6 +508,8 @@ fi
 # shellcheck disable=SC2086 # validated flags emitted by preparation-filters
 bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
 assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'exec turbo run build'
+grep -q 'exec turbo run build --no-daemon' "$INSTALL_LOG" ||
+  fail 'managed preparation must not leave a Turbo daemon running'
 status=0
 # shellcheck disable=SC2086
 KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?

@@ -66,6 +66,17 @@ workflow remains CI-only because its cleanup would erase the retained manual-tes
 database. Independent reviews and publication are still pending. Keep the exact
 activity-info-on-eval runtime running for user testing.
 
+The user requested a fresh v3 integration for devrouter 0.0.55 reliability.
+Commit `cffc2cdfb` contains fetched v3 `27f2474547`; no target commits remain
+missing at that check. The first ensure overlapped this commit and failed the
+runtime-input guard. A subsequent repair exposed a separate preparation failure:
+the default Turbo build left an orphan git process in its process group. A
+bounded `--no-daemon` probe exited without remaining children. Managed preparation
+now uses that flag, and `bash util/test-dev-runtime.sh` passes in the exact
+container using temporary fixtures. Runtime recovery must finish before claiming
+the retained manual-testing environment is ready again. The evaluation slice
+review has no blocking findings; integrated final review and push remain pending.
+
 ## Goal
 
 Show the LiveQuiz name, publication status, and course name on a valid signed
