@@ -11,6 +11,11 @@ export type ProductUpdateAction =
   | 'Dismissed'
   | 'CTA Clicked'
   | 'Details Opened'
+  // The spotlight is a separate step of the same funnel: it reaches lecturers
+  // who never opened the feed, so its impressions must stay distinguishable
+  // from the card impressions above.
+  | 'Spotlight Presented'
+  | 'Spotlight Dismissed'
 
 export function trackProductUpdate(
   action: ProductUpdateAction,

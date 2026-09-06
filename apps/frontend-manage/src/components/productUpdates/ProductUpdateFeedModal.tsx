@@ -1,9 +1,19 @@
+import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import SharedProductUpdateFeedModal from '@klicker-uzh/shared-components/src/productUpdates/ProductUpdateFeedModal'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { resolveSpotlightTarget } from './spotlightTargets'
 import { useProductUpdates } from './useProductUpdates'
 
-function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
+function ProductUpdateFeedModal({
+  onClose,
+  onShowSpotlight,
+}: {
+  onClose: () => void
+  // Provided by the header, which owns the spotlight runner and closes this
+  // modal before the overlay opens.
+  onShowSpotlight: (update: ProductUpdate) => void
+}) {
   const t = useTranslations()
   const router = useRouter()
   const feed = useProductUpdates()
@@ -12,6 +22,10 @@ function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
     <SharedProductUpdateFeedModal
       feed={feed}
       onClose={onClose}
+      onShowSpotlight={onShowSpotlight}
+      isSpotlightReachable={(update) =>
+        resolveSpotlightTarget(update.spotlightTarget) !== null
+      }
       className={{
         overlay: 'my-auto text-black',
         content: 'h-max max-w-3xl pb-1',

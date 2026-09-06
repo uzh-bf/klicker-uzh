@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { openProductUpdateCta } from './openCta'
 import { trackProductUpdate } from './tracking'
@@ -26,6 +26,8 @@ function ProductUpdateCard({
   onPresent,
   onRead,
   onDismiss,
+  onShowSpotlight,
+  isSpotlightReachable,
 }: {
   update: ProductUpdate
   dismissed?: boolean
@@ -39,6 +41,13 @@ function ProductUpdateCard({
   // Omitted where dismissal makes no sense, such as an already dismissed entry
   // in the persistent archive.
   onDismiss?: (updateId: string) => void
+  // Replays the contextual spotlight on demand. Omitted by surfaces that have
+  // no spotlight runner attached.
+  onShowSpotlight?: (update: ProductUpdate) => void
+  // Whether the spotlight can reach its target from the page this card is on.
+  // The surface owns the registry of targets, so it answers; the card only asks
+  // after mounting because resolving needs the document.
+  isSpotlightReachable?: (update: ProductUpdate) => boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -86,6 +95,13 @@ function ProductUpdateCard({
     trackProductUpdate('CTA Clicked', update.id)
     openProductUpdateCta(update.cta, router)
   }, [router, update.cta, update.id])
+
+  // Redone whenever the card shows another entry.
+  const [spotlightReachable, setSpotlightReachable] = useState(false)
+
+  useEffect(() => {
+    setSpotlightReachable(isSpotlightReachable?.(update) ?? false)
+  }, [isSpotlightReachable, update])
 
   const body = update.bodyMarkdown ? localized(update.bodyMarkdown) : undefined
 
@@ -151,6 +167,16 @@ function ProductUpdateCard({
               size="sm"
             />
           </a>
+        )}
+        {onShowSpotlight && spotlightReachable && (
+          <Button
+            basic
+            onClick={() => onShowSpotlight(update)}
+            className={{ root: 'text-sm text-blue-600 hover:underline' }}
+            data={{ cy: `product-update-spotlight-${update.id}` }}
+          >
+            {t('shared.productUpdates.showMeWhere')}
+          </Button>
         )}
         {onDismiss && (
           <Button

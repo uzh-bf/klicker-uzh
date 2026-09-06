@@ -28,6 +28,8 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
+import { spotlightTargetProps } from '../productUpdates/spotlightTargets'
+import { useProductUpdateSpotlight } from '../productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../productUpdates/useProductUpdates'
 import SupportModal from './SupportModal'
 
@@ -45,7 +47,14 @@ function Header({
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showProductUpdates, setShowProductUpdates] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
-  const { unreadCount } = useProductUpdates()
+  const productUpdates = useProductUpdates()
+  const unreadCount = productUpdates.unreadCount
+  // The header is the one place that auto-presents: it renders on every manage
+  // page, so the once-per-session cap belongs to exactly this mount.
+  const { replaySpotlight } = useProductUpdateSpotlight({
+    updates: productUpdates,
+    autoPresent: true,
+  })
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
     betaSignupEnabled &&
@@ -359,22 +368,38 @@ function Header({
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          <Navigation
-            items={leftNavigation}
-            className={{ root: 'shadow-none' }}
-          />
-          {learningAnalyticsEnabled ? (
-            analyticsMenu
-          ) : (
-            <Tooltip
-              tooltip={t('manage.analytics.featureUnavailable')}
-              delay={0}
-              dataContent={{ cy: 'analytics-disabled-reason' }}
-              className={{ tooltip: 'z-30' }}
-            >
-              {analyticsMenu}
-            </Tooltip>
-          )}
+          {/* The wrapper exists so a product update spotlight can point at the
+              main navigation, which holds the Resources menu with the chatbots:
+              the design-system navigation does not forward unknown attributes. */}
+          <div
+            className="flex"
+            {...spotlightTargetProps('manage-header-main-nav')}
+          >
+            <Navigation
+              items={leftNavigation}
+              className={{ root: 'shadow-none' }}
+            />
+          </div>
+          {/* The wrapper exists so a product update spotlight can find the
+              analytics menu: the design-system navigation does not forward
+              unknown attributes, and the menu itself renders in two branches. */}
+          <div
+            className="flex"
+            {...spotlightTargetProps('manage-header-analytics')}
+          >
+            {learningAnalyticsEnabled ? (
+              analyticsMenu
+            ) : (
+              <Tooltip
+                tooltip={t('manage.analytics.featureUnavailable')}
+                delay={0}
+                dataContent={{ cy: 'analytics-disabled-reason' }}
+                className={{ tooltip: 'z-30' }}
+              >
+                {analyticsMenu}
+              </Tooltip>
+            )}
+          </div>
         </div>
         <div className="flex flex-row items-center">
           <NotificationBadgeWrapper
@@ -404,7 +429,13 @@ function Header({
         <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
       )}
       {showProductUpdates && (
-        <ProductUpdateFeedModal onClose={() => setShowProductUpdates(false)} />
+        <ProductUpdateFeedModal
+          onClose={() => setShowProductUpdates(false)}
+          onShowSpotlight={(update) => {
+            setShowProductUpdates(false)
+            replaySpotlight(update)
+          }}
+        />
       )}
     </>
   )

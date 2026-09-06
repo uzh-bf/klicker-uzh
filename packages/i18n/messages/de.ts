@@ -295,6 +295,7 @@ export default {
       empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
       readMore: 'Mehr erfahren',
       dismiss: 'Ausblenden',
+      showMeWhere: 'Zeig mir wo',
       maturity: {
         preview: 'Vorschau',
         pilot: 'Pilot',
@@ -1902,6 +1903,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     productUpdates: {
       pageTitle: 'Produkt-Updates',
       showAll: 'Alle Produkt-Updates ansehen',
+      spotlightConfirm: 'Zeig es mir',
+      spotlightDismiss: 'Nicht mehr anzeigen',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
