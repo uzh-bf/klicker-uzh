@@ -132,16 +132,18 @@ It additionally required memo invalidation for localized markdown labels.
 
 ## Progress
 
-Implementation remains local. The approved plan and shared-controls slice are
-committed. No push, publication, integration, merge, deployment or paid Chat
-generation occurred. No implementation child remains active. Shared-interaction
-review returned DONE with no findings. Its simplifier identified redundant
-KPRIM pointer-event rules; the accepted removal passed its package typecheck,
-formatter and KPRIM keyboard browser regression (1 passed). The mobile preview
-screenshot was inspected. This mechanical removal preserves the reviewed
-contracts and needs no repeat review. Reports remain under
-`project/_local/reviews/2026-09-06-shared-controls-*.md`.
-PWA and Chat slice reviews, plus integrated final review, remain pending.
+All three implementation slices are committed locally. Shared-interaction review
+returned DONE; its accepted KPRIM simplification passed focused checks. PWA
+review returned DONE after correcting a confetti coverage gap. Chat's
+simplifier accepted one consolidation of identical settings conditions; this
+preserves DOM order, implicit labels and the existing browser-tested behavior.
+No push, publication, integration, merge, deployment or paid Chat generation
+occurred. No schema, dependency, authorization or product-model changes were
+introduced. Reports are retained under `project/_local/reviews/`.
+
+The integrated completion and runtime-release receipt is recorded locally at
+`project/_local/mobile-polish/final-receipt.md`. The separate final-review report
+is `project/_local/reviews/2026-09-06-mobile-polish-final-reviewer.md`.
 
 ### Implemented behavior
 
@@ -216,7 +218,8 @@ came from a Python 3.14 virtual environment; running its unchanged lint command
 with the configured Python 3.12 restored it without dependency/config changes.
 Host staged gitleaks and identity checks pass. Container checks substitute for
 the host pre-commit toolchain; local commits use that verified hook split.
-Local slice commits and independent reviews are next.
+Local slice commits and required slice reviews are complete. The standalone
+final review evaluates the full committed package after runtime release.
 
 Exact workspace: `rs-mobile-chat-pwa-ux-audit`; current proven container:
 `589f7ab02c8c10879d64dd8457fd739f5cd1e50a32603da955055d22280d89d9`.
@@ -225,10 +228,24 @@ Earlier runtime recovery restored an OOM-stopped process and a missing container
 through canonical source-path reconciliation. No infrastructure configuration or
 replacement connectivity changed. The manual browser session is closed.
 
-### Remaining terminal checks
+### Final acceptance boundary
 
-Finish the nested-dialog regression, inspect screenshots, run native checks,
-commit the approved slices and complete their required reviews. Stop this exact
-runtime and prove provider stopped plus zero routes before integrated final
-review. Physical iPhone/Android, installed-PWA keyboard and spoken assistive
-technology remain external acceptance checks. No WCAG conformance is claimed.
+All 34 new scenarios have passing browser evidence across focused runs, plus
+three existing editor regressions. The final EN/DE delayed-response cases now
+enable gamification and prove absence, presence, and absence of the library's
+actual confetti layer as reduced-motion preference changes. Both pass; see
+`reduced-motion-control-2.log`. This closes the PWA review's sole finding.
+The initial reduced-motion test did not exercise confetti and is not evidence
+for its suppression.
+
+The expanded cases initially reached a local Next.js 404 before application
+code ran, despite the dynamic session page existing. Canonical stop/restart of
+this exact runtime restored the route and both cases passed without application
+changes. This is a local runtime recovery, not a product defect claim.
+
+The final accepted local outcome requires the exact runtime stopped, zero
+routes, and a separate integrated final-review verdict. Those receipts live at
+the local paths above. Physical iPhone/Android, installed-PWA keyboard behavior,
+rotation, safe areas, and spoken assistive technology remain external acceptance
+checks. The pre-existing narrow lecturer authoring-page overflow is deferred.
+No WCAG conformance or measured performance improvement is claimed.
