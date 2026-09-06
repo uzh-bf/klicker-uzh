@@ -61,20 +61,28 @@ function GroupActivityDetails() {
     }
   )
 
+  // Every branch of this route marks itself as an answering surface, including
+  // the ones rendered before the activity has loaded: the layout decides on its
+  // first render whether a product update may appear, and a later branch cannot
+  // recall a request that the earlier one already sent.
   if (!data || loading) {
     return (
-      <Layout>
+      <Layout activelyAnswering>
         <Loader />
       </Layout>
     )
   }
 
   if (!data.groupActivityDetails) {
-    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
+    return (
+      <Layout activelyAnswering>
+        {t('pwa.groupActivity.activityNotYetActive')}
+      </Layout>
+    )
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return <Layout activelyAnswering>{t('shared.generic.systemError')}</Layout>
   }
 
   const groupActivity = data.groupActivityDetails
@@ -88,6 +96,7 @@ function GroupActivityDetails() {
 
   return (
     <Layout
+      activelyAnswering
       course={groupActivity.course}
       displayName={groupActivity.displayName}
     >

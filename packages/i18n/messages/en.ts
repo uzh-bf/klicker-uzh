@@ -1255,6 +1255,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       feedbackSubmitted:
         'Your feedback / question has been successfully submitted.',
     },
+    productUpdates: {
+      menuLabel: 'News',
+    },
     profile: {
       publicProfile: 'Profile Visibility',
       isProfilePublic:

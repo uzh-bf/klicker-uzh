@@ -162,9 +162,8 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-The lecturer feed in `frontend-manage` is described below. The student surface in
-`frontend-pwa` does not exist yet; ADR 0046 describes its intended shape, and the
-read-state API above is already in place for it.
+The lecturer feed in `frontend-manage` and the student feed in `frontend-pwa`
+are described below.
 
 ## The lecturer feed
 
@@ -221,5 +220,57 @@ catalog id as the event name: `Eligible` once per page load per entry, then
 
 Entry copy always comes from the catalog in the reader's locale. Only the chrome
 around it — feed title, empty state, dismiss and read-more labels, and the
-`preview`/`pilot` maturity labels — lives under `manage.productUpdates` in
-`packages/i18n/messages/de.ts` and `en.ts`.
+`preview`/`pilot` maturity labels — lives under `shared.productUpdates` in
+`packages/i18n/messages/de.ts` and `en.ts`; each application keeps only its own
+surface labels (the archive page title and link on manage, the menu label on
+the PWA) under `manage.productUpdates` and `pwa.productUpdates`.
+
+## The student feed
+
+`apps/frontend-pwa/src/components/productUpdates/` holds the student
+counterpart of the manage wrappers: a `useProductUpdates` wrapper that fixes
+audience `student` and surface `pwa` and passes the assessment build flag, and a
+feed modal wrapper that renders the shared modal `fullScreen`. Card, hook, modal
+shell, and funnel events are the shared components described above.
+
+`apps/frontend-pwa/src/components/Layout.tsx` owns the surface. It decides
+whether product updates may appear at all, reads the feed once, hands the unread
+count and the opener to the header bullhorn, adds a badged item to the mobile
+menu bar, and renders the feed modal for both entry points. The modal is
+`fullScreen`, which gives a phone the whole viewport for a card while the
+desktop keeps the usual modal width.
+
+| Excluded when                                              | Because                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_IS_ASSESSMENT` is `true`                      | The assessment build shows no product news at all                                            |
+| The page is embedded, or runs inside a frame               | Announcements must not appear inside a learning management system                            |
+| A live quiz is being answered (`liveQuizId`, `/session/…`) | Nothing may compete with an open question                                                    |
+| The page sets `activelyAnswering`                          | Practice quizzes, microlearnings, and group activities carry no other marker for answering   |
+| `self.role` is not `PARTICIPANT`                           | Temporary and anonymous participants are outside the subsystem, and the API rejects them too |
+
+Suppression is complete, not cosmetic: an excluded surface issues no
+product-update query, no mutation, and no identity query for flag targeting.
+An answering page opts out explicitly through `activelyAnswering` instead of the
+layout matching a list of paths, so a new answering route states its own
+requirement rather than inheriting one it does not know about. Every branch of
+such a page sets the flag, including the loading and error branches: the layout
+decides on its first render, and the read-state query it sends there cannot be
+recalled once the answering branch takes over. The reliable trigger is the
+`PracticeQuiz` component: every page that mounts it is an answering surface, as
+are the microlearning and group activity routes, and any future page that lets a
+student work through questions has to set the flag on all of its branches.
+
+`PwaFeatureFlagProvider` (`apps/frontend-pwa/src/components/featureFlags/`) is
+mounted in `_app.tsx` inside the Apollo provider and sets
+`{ id, actorType: 'participant' }` for a registered participant and
+`{ actorType: 'anonymous' }` otherwise. It stays mounted even in the assessment
+build, where it is constructed **without** an API host and client key: the
+GrowthBook hooks throw when no provider is above them, while a client without
+credentials starts from an empty payload and never reaches the network, so every
+flag reads as false.
+
+A card reports its presentation and its read one after the other rather than
+together. Both writes create the state row when an entry is seen for the first
+time, and the backend cannot absorb two concurrent inserts of the same row — the
+second one fails on the unique constraint and its timestamp is lost, which for a
+participant meant the entry stayed unread forever.
