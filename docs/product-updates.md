@@ -168,13 +168,22 @@ read-state API above is already in place for it.
 
 ## The lecturer feed
 
-`apps/frontend-manage/src/components/productUpdates/` holds the whole surface.
-`useProductUpdates` is its single entry point: it selects the catalog entries
-eligible for audience `lecturer` on surface `manage`, pairs each with the stored
-read state, and exposes the three write calls. Several components may call it at
-once — the header and the `/updates` page do — because they share one Apollo
-query, and every mutation writes its returned row back into that query's cache
-entry instead of refetching.
+The surface-independent parts live in
+`packages/shared-components/src/productUpdates/`: the card, the feed modal, the
+read-state hook, the Matomo funnel events, and the CTA navigation. They are
+consumed as source, like every other shared component, and read their copy from
+the `shared.productUpdates` messages. `apps/frontend-manage/src/components/productUpdates/`
+holds only what is specific to the lecturer surface: a `useProductUpdates`
+wrapper that fixes audience `lecturer` and surface `manage`, and a feed modal
+wrapper that adds the link to the `/updates` archive.
+
+The shared `useProductUpdates` is the single entry point: it selects the eligible
+catalog entries for the given audience and surface, pairs each with the stored
+read state, and exposes the three write calls, which return the mutation
+promise so that a card can order its presentation write before its read write.
+Several components may call it at once — the header and the `/updates` page do —
+because they share one Apollo query, and every mutation writes its returned row
+back into that query's cache entry instead of refetching.
 
 Flags are evaluated through `useFeatureFlags` from `@klicker-uzh/feature-flags`,
 which asks GrowthBook once per render for every key the catalog gates on. One

@@ -290,6 +290,16 @@ export default {
     },
   },
   shared: {
+    productUpdates: {
+      feedTitle: 'Neu in KlickerUZH',
+      empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
+      readMore: 'Mehr erfahren',
+      dismiss: 'Ausblenden',
+      maturity: {
+        preview: 'Vorschau',
+        pilot: 'Pilot',
+      },
+    },
     table: {
       download: 'Als CSV herunterladen',
       noResults: 'Keine Ergebnisse.',
@@ -1890,16 +1900,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reportTimeZone: 'Europe/Zurich',
     },
     productUpdates: {
-      feedTitle: 'Neu in KlickerUZH',
       pageTitle: 'Produkt-Updates',
-      empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
       showAll: 'Alle Produkt-Updates ansehen',
-      readMore: 'Mehr erfahren',
-      dismiss: 'Ausblenden',
-      maturity: {
-        preview: 'Vorschau',
-        pilot: 'Pilot',
-      },
     },
     support: {
       modalTitle: 'Support KlickerUZH',

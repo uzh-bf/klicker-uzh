@@ -287,6 +287,16 @@ export default {
     },
   },
   shared: {
+    productUpdates: {
+      feedTitle: 'New in KlickerUZH',
+      empty: 'There are no new product updates at the moment.',
+      readMore: 'Read more',
+      dismiss: 'Dismiss',
+      maturity: {
+        preview: 'Preview',
+        pilot: 'Pilot',
+      },
+    },
     table: {
       download: 'Download as CSV',
       noResults: 'No results.',
@@ -1878,16 +1888,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reportTimeZone: 'Europe/Zurich',
     },
     productUpdates: {
-      feedTitle: 'New in KlickerUZH',
       pageTitle: 'Product Updates',
-      empty: 'There are no new product updates at the moment.',
       showAll: 'See all product updates',
-      readMore: 'Read more',
-      dismiss: 'Dismiss',
-      maturity: {
-        preview: 'Preview',
-        pilot: 'Pilot',
-      },
     },
     support: {
       modalTitle: 'Support KlickerUZH',
