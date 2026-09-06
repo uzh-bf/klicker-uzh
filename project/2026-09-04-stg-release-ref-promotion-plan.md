@@ -285,9 +285,22 @@ Phase 2 is a separate task with explicit delivery and operations authority.
   bookkeeping failed during the merge; its exact formatting commands were run
   separately from host Git checks. The broad check terminated the development
   backend watcher with exit 137. Canonical Manage startup had passed with no
-  drift; runtime restart and final browser verification remain pending.
+  drift. The recovered runtime and authenticated Overview, Advanced, and
+  Learning modes browser views passed using the synthetic lecturer and an
+  isolated browser feature-flag fixture. The full Chat suite passed 927 tests
+  with 22 skipped on merge commit `b7de509d74`. Independent review found one
+  multi-KB preview regression: the query still limited enabled bindings to one.
+  Correction `e0446eab72` removes that limit. The existing preview fixture now
+  honors query cardinality and requires both KB IDs; it failed before the fix
+  and passes 8/8 afterward, together with Chat types and focused Biome checks.
+  A later runtime resume failed its managed preparation child-process check;
+  canonical container execution remained available for correction verification.
+  No provider configuration or runtime data was reset to bypass that error.
   The incoming shared final-review policy supersedes the historical exact
-  controller mirror claim below. Independent integration review remains pending.
+  controller mirror claim below. The same independent reviewer cleared the
+  corrected range through `e0446eab72` with no remaining findings. Final runtime
+  readback reports provider `Stopped` and zero routes for this exact checkout.
+  No push, remote merge, release-ref update, or deployment occurred.
 - `Source follow-up, 2026-09-05:` The user approved repairing the failing
   contract test and preparing private platform source wiring, with merges and
   activation still gated. The published test failed under CI's Helm 3.21.4
