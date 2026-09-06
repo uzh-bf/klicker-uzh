@@ -1,0 +1,14 @@
+query GetCourseDuplicationStatuses($ids: [String!]!) {
+  courseDuplicationStatuses(ids: $ids) {
+    id
+    status
+    sourceCourseId
+    sourceCourseName
+    targetCourseName
+    createdCourseId
+    errorType
+    errorMessage
+    createdAt
+    updatedAt
+  }
+}

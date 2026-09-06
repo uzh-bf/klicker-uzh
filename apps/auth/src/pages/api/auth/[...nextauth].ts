@@ -26,6 +26,7 @@ import {
   getLecturerHosts,
   getStudentHosts,
 } from '@/lib/helpers'
+import { isSameOriginRedirect } from '@/lib/redirect'
 import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
@@ -239,6 +240,10 @@ function getParticipantConfig({
           url,
           baseUrl,
         })
+        if (isSameOriginRedirect(url, baseUrl)) {
+          return url
+        }
+
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
@@ -524,6 +529,10 @@ function getLecturerConfig({
           url,
           baseUrl,
         })
+        if (isSameOriginRedirect(url, baseUrl)) {
+          return url
+        }
+
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`

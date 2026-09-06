@@ -61,7 +61,7 @@ jobs:
           no-cache: true
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
-    if: github.event.pull_request.draft == false
+    if: ${{ false }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

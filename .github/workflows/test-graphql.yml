@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   filter:
     runs-on: ubuntu-latest
@@ -28,9 +31,6 @@ jobs:
     needs: filter
     if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     services:
       postgres:
@@ -121,15 +121,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Define node version
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - name: Set up Node.js with pnpm cache
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.0
-          run_install: true
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build dependency packages
         run: |

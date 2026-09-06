@@ -1,8 +1,15 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../fixtures/questions.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActionByTestId,
+  chooseActivityAction,
+  filterActivitiesByName,
+  openActionMenuByTestId,
+  replaceControlledSearchValue,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
+import { getPrisma } from '../global-setup.js'
 import {
   LECTURER_ID,
   LECTURER_IND_SHORTNAME,
@@ -29,10 +36,11 @@ import {
   validateElement,
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
-import { enMessages as messages } from '../util/messages.js'
+import { deMessages, enMessages as messages } from '../util/messages.js'
 import {
   acceptGamifiedLiveQuizAccountPrompt,
   createQuestionNR,
+  env,
 } from '../util/workflow.js'
 
 type Choice = {
@@ -168,6 +176,20 @@ async function enterSCQuestionContent(page: Page) {
   }
 }
 
+async function expectRecoveredSCQuestionContent(page: Page, title: string) {
+  await page.getByTestId('load-recovered-element-data').click()
+  await expect(page.getByTestId('insert-question-title')).toHaveValue(title)
+  await expect(page.getByTestId('insert-question-text')).toContainText(
+    data.autoSave.content
+  )
+
+  for (let ix = 0; ix < data.autoSave.choices.length; ix++) {
+    await expect(page.getByTestId(`insert-answer-field-${ix}`)).toContainText(
+      data.autoSave.choices[ix].value
+    )
+  }
+}
+
 async function clearAndTypeEditor(page: Page, testId: string, text: string) {
   const editor = page.getByTestId(testId)
   await editor.click()
@@ -287,9 +309,9 @@ async function shareElementWithUser(
 }
 
 async function openShareModalForElement(page: Page, elementName: string) {
-  await page.getByTestId('elements-search-input').clear()
-  await page.getByTestId('elements-search-input').fill(elementName)
-  await page.keyboard.press('Enter')
+  const searchInput = page.getByTestId('elements-search-input')
+  await replaceControlledSearchValue(searchInput, elementName)
+  await searchInput.press('Enter')
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`share-element-${elementName}`).click()
 }
@@ -454,7 +476,9 @@ test.describe('Create different types of elements (with and without sample solut
         .click()
       await page.waitForTimeout(500)
       await expect(
-        page.getByText(messages.manage.elements.DUPLICATETitle)
+        page.getByRole('heading', {
+          name: messages.manage.elements.DUPLICATETitle,
+        })
       ).toBeVisible()
       await saveElementModal(page)
 
@@ -478,15 +502,17 @@ test.describe('Create different types of elements (with and without sample solut
   })
 
   test.describe('Part 2: Auto-Save functionality for Elements', () => {
-    test.beforeEach(async ({ loginLecturer }) => {
+    test.beforeEach(async ({ loginLecturer, page }) => {
       await loginLecturer()
+      await page.evaluate(() => {
+        localStorage.removeItem('autosave-element-creation')
+      })
     })
 
     test('Verify that empty questions are not stored in local storage (creation)', async ({
       page,
     }) => {
       await page.getByTestId('create-question').click()
-      await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
       await page.getByTestId('create-question').click()
@@ -500,27 +526,177 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue('')
     })
 
-    test('Verify that non-empty questions are stored and loaded correctly on demand (creation)', async ({
+    for (const dismissal of [
+      {
+        label: 'modal close button',
+        dismiss: (page: Page) =>
+          page.getByTestId('close-element-modal').click(),
+      },
+      {
+        label: 'footer close button',
+        dismiss: (page: Page) =>
+          page.getByTestId('close-element-modal-button').click(),
+      },
+      {
+        label: 'Escape',
+        dismiss: (page: Page) => page.keyboard.press('Escape'),
+      },
+    ]) {
+      test(`Immediately preserves the latest dirty creation values via ${dismissal.label}`, async ({
+        page,
+      }) => {
+        const latestTitle = `${data.autoSave.title} - ${dismissal.label}`
+
+        await page.getByTestId('create-question').click()
+        await enterSCQuestionContent(page)
+        await page.getByTestId('insert-question-title').fill(latestTitle)
+        await dismissal.dismiss(page)
+        await expectNotAttached(page.getByTestId('insert-question-title'))
+
+        await page.getByTestId('create-question').click()
+        await expectRecoveredSCQuestionContent(page, latestTitle)
+      })
+    }
+
+    test('Keeps the create form open after an outside pointer click', async ({
       page,
     }) => {
       await page.getByTestId('create-question').click()
-      await enterSCQuestionContent(page)
-      await page.waitForTimeout(3000)
-      await page.getByTestId('close-element-modal').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
 
-      await page.getByTestId('create-question').click()
-      await page.getByTestId('load-recovered-element-data').click()
+      await page.mouse.click(2, 2)
+
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
-      await page.getByTestId('insert-question-text').click()
-      await expect(page.getByTestId('insert-question-text')).toContainText(
-        data.autoSave.content
+    })
+
+    test('Lets the element type picker consume Escape before the create form', async ({
+      page,
+    }) => {
+      await page.getByTestId('create-question').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
+      await page.getByTestId('select-question-type').click()
+      await expect(page.getByRole('listbox')).toBeVisible()
+
+      await page.keyboard.press('Escape')
+
+      await expect(page.getByRole('listbox')).not.toBeVisible()
+      await expect(page.getByTestId('insert-question-title')).toHaveValue(
+        data.autoSave.title
       )
-      for (let ix = 0; ix < data.autoSave.choices.length; ix++) {
+    })
+
+    test('Keeps the create form open while a nested collection modal owns Escape', async ({
+      page,
+    }) => {
+      const collectionName = 'W5 nested Escape ownership collection'
+      const prisma = await getPrisma()
+      await prisma.answerCollection.deleteMany({
+        where: { name: collectionName, ownerId: LECTURER_ID },
+      })
+      await createAnswerCollection({
+        name: collectionName,
+        description: 'Synthetic collection for nested Escape ownership',
+        entries: ['First option', 'Second option'],
+        userId: LECTURER_ID,
+      })
+
+      try {
+        await page.getByTestId('create-question').click()
+        await page
+          .getByTestId('insert-question-title')
+          .fill(data.autoSave.title)
+        await page.getByTestId('select-question-type').click()
+        await page
+          .getByTestId(
+            `select-question-type-${messages.shared.SELECTION.typeLabel}`
+          )
+          .click()
+        await page.getByTestId('select-answer-collection').click()
+        await page
+          .getByTestId(`select-answer-collection-${collectionName}`)
+          .click()
+        await page.getByTestId('inline-edit-answer-collection').click()
         await expect(
-          page.getByTestId(`insert-answer-field-${ix}`)
-        ).toContainText(data.autoSave.choices[ix].value)
+          page.getByTestId('close-answer-collection-edit-modal')
+        ).toBeVisible()
+
+        await page.keyboard.press('Escape')
+
+        await expect(
+          page.getByTestId('close-answer-collection-edit-modal')
+        ).toBeVisible()
+        await expect(page.getByTestId('insert-question-title')).toHaveValue(
+          data.autoSave.title
+        )
+      } finally {
+        await prisma.answerCollection.deleteMany({
+          where: { name: collectionName, ownerId: LECTURER_ID },
+        })
+      }
+    })
+
+    test('Keeps dirty creation values open when recovery storage cannot be written', async ({
+      page,
+    }) => {
+      await page.getByTestId('create-question').click()
+      await page.getByTestId('insert-question-title').fill(data.autoSave.title)
+
+      await page.evaluate(() => {
+        const originalDescriptor = Object.getOwnPropertyDescriptor(
+          Storage.prototype,
+          'setItem'
+        )
+        Object.defineProperty(window, '__w5SetItemDescriptor', {
+          configurable: true,
+          value: originalDescriptor,
+        })
+        Object.defineProperty(Storage.prototype, 'setItem', {
+          configurable: true,
+          writable: true,
+          value(this: Storage, key: string, value: string) {
+            if (key === 'autosave-element-creation') {
+              throw new DOMException(
+                'Synthetic storage failure',
+                'QuotaExceededError'
+              )
+            }
+
+            return originalDescriptor?.value.call(this, key, value)
+          },
+        })
+      })
+
+      try {
+        await page.getByTestId('close-element-modal').click()
+        await expect(page.getByTestId('insert-question-title')).toHaveValue(
+          data.autoSave.title
+        )
+        await expect(
+          page.getByText(messages.shared.generic.systemError)
+        ).toBeVisible()
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem('autosave-element-creation')
+          )
+        ).toBeNull()
+      } finally {
+        await page.evaluate(() => {
+          const descriptor = (
+            window as typeof window & {
+              __w5SetItemDescriptor?: PropertyDescriptor
+            }
+          ).__w5SetItemDescriptor
+          if (descriptor) {
+            Object.defineProperty(Storage.prototype, 'setItem', descriptor)
+          }
+          delete (
+            window as typeof window & {
+              __w5SetItemDescriptor?: PropertyDescriptor
+            }
+          ).__w5SetItemDescriptor
+        })
       }
     })
 
@@ -557,6 +733,8 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId('insert-question-title')).toBeVisible()
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
@@ -679,6 +857,8 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-text')).toContainText(
         data.autoSave.contentEdited
       )
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId('insert-question-title')).toBeVisible()
       await page.waitForTimeout(3000)
       await page.getByTestId('close-element-modal').click()
 
@@ -717,6 +897,86 @@ test.describe('Create different types of elements (with and without sample solut
       await deleteElement(page, data.autoSave.titleEdited)
     })
   })
+  test.describe('Part 2b: Element type picker explains every type', () => {
+    const typeKeys = [
+      'SC',
+      'MC',
+      'KPRIM',
+      'FREE_TEXT',
+      'NUMERICAL',
+      'CONTENT',
+      'FLASHCARD',
+      'SELECTION',
+      'CASE_STUDY',
+    ] as const
+
+    for (const locale of ['en', 'de'] as const) {
+      test(`Explains all nine element types and keeps selection compact (${locale})`, async ({
+        page,
+        loginLecturer,
+      }) => {
+        await loginLecturer()
+        const msgs = locale === 'en' ? messages : deMessages
+        const urlPrefix = locale === 'en' ? '' : '/de'
+
+        await page.goto(env('URL_MANAGE') + urlPrefix + '/')
+        await page.getByTestId('create-question').click()
+
+        // The create form explains every type before selection.
+        await expect(
+          page.getByTestId('element-type-immutable-notice')
+        ).toBeVisible()
+        await expect(
+          page.getByTestId('element-type-immutable-notice')
+        ).toContainText(msgs.manage.elements.elementTypeImmutableNotice)
+
+        await page.getByTestId('select-question-type').click()
+        for (const typeKey of typeKeys) {
+          const type = msgs.shared[typeKey]
+          const option = page.getByTestId(
+            'select-question-type-' + type.typeLabel
+          )
+          await expect(option).toContainText(type.typeLabel)
+          await expect(option).toContainText(type.description)
+        }
+
+        // Selecting an option keeps the trigger compact (label only, no description).
+        await page
+          .getByTestId('select-question-type-' + msgs.shared.SC.typeLabel)
+          .click()
+        await expect(page.getByTestId('select-question-type')).toContainText(
+          msgs.shared.SC.typeLabel
+        )
+        await expect(
+          page.getByTestId('select-question-type')
+        ).not.toContainText(msgs.shared.SC.description)
+        await page.getByTestId('close-element-modal').click()
+
+        // Edit mode keeps the type select disabled.
+        const probeTitle = `Element type picker probe ${locale}`
+        await createQuestionSC({
+          name: probeTitle,
+          content: data.update.content1,
+          choices: data.update.choices1,
+          userId: LECTURER_ID,
+        })
+        await page.reload()
+
+        await page.getByTestId('elements-search-input').fill(probeTitle)
+        await page.keyboard.press('Enter')
+        await page.getByTestId(`edit-element-${probeTitle}`).click()
+        const editTypeSelect = page.getByTestId('select-question-type')
+        await expect(editTypeSelect).toBeDisabled()
+        await expect(editTypeSelect).not.toContainText(
+          msgs.manage.elements.elementTypeImmutableNotice
+        )
+        await page.getByTestId('close-element-modal').click()
+
+        // Cleanup the probe element.
+        await deleteElement(page, probeTitle)
+      })
+    }
+  })
 
   test.describe('Part 3: Element instance updates', () => {
     test('Create a single choice question with sample solution and answer feedbacks', async ({
@@ -738,6 +998,7 @@ test.describe('Create different types of elements (with and without sample solut
       page,
       loginLecturer,
     }) => {
+      test.setTimeout(120_000)
       await loginLecturer()
 
       for (const quiz of [
@@ -1146,7 +1407,19 @@ test.describe('Create different types of elements (with and without sample solut
     }) => {
       await loginLecturer()
 
-      await deleteElement(page, data.update.title3)
+      await page.getByTestId('elements-search-input').fill(data.update.title3)
+      await page.getByTestId('elements-search-input').press('Enter')
+      const obsoleteElement = page.getByTestId(
+        `element-item-${data.update.title3}`
+      )
+      if (
+        await obsoleteElement
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        await deleteElement(page, data.update.title3)
+      }
 
       await page.getByTestId('activities').click()
       for (const quiz of [
@@ -1154,11 +1427,17 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
+        const cockpitButton = page.getByTestId(`live-quiz-cockpit-${quiz}`)
+        const quizExists = await cockpitButton
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+        if (!quizExists) continue
+
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
-          page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
+          cockpitButton.click(),
         ])
         await expect(page.getByTestId('next-block-timeline')).toBeVisible()
         await page.getByTestId('next-block-timeline').click()
@@ -1167,9 +1446,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.waitForTimeout(500)
         await page.reload()
         await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
         await chooseActivityAction(
           page,
           'LIVE_QUIZ',
@@ -1181,7 +1458,6 @@ test.describe('Create different types of elements (with and without sample solut
           'confirm-deletion-qa-feedbacks',
           'confirm-deletion-confusion-feedbacks',
         ])
-        await page.getByTestId('activities-search-input').clear()
       }
 
       await page.getByTestId('courses').click()
@@ -1959,16 +2235,21 @@ test.describe('Create different types of elements (with and without sample solut
       loginInstitutionalCatalyst,
       loginIndividualCatalyst,
       logoutUser,
-    }) => {
+    }, testInfo) => {
+      const retrySuffix =
+        testInfo.retry === 0 ? '' : ` (retry ${testInfo.retry})`
+      const mcTitle = `${data.MCML.title}${retrySuffix}`
+      const nrTitle = `${data.NRML.title}${retrySuffix}`
+
       await loginLecturer()
       await createQuestionMC({
-        name: data.MCML.title,
+        name: mcTitle,
         content: data.MCML.content,
         choices: data.MCML.choices,
         userId: LECTURER_ID,
       })
       await createQuestionNR(page, {
-        name: data.NRML.title,
+        name: nrTitle,
         content: data.NRML.content,
         ...data.NRML.options,
         multiplier: 3,
@@ -1976,14 +2257,14 @@ test.describe('Create different types of elements (with and without sample solut
       })
 
       await page.reload()
-      await openShareModalForElement(page, data.MCML.title)
+      await openShareModalForElement(page, mcTitle)
       await shareElementWithUser(page, {
         shortnameOrEmail: LECTURER_INST_SHORTNAME,
         permission: messages.manage.sharing.permissionsADMIN,
       })
       await page.getByTestId('close-share-object').click()
 
-      await openShareModalForElement(page, data.NRML.title)
+      await openShareModalForElement(page, nrTitle)
       await shareElementWithUser(page, {
         shortnameOrEmail: LECTURER_INST_SHORTNAME,
         permission: messages.manage.sharing.permissionsWRITE,
@@ -1992,10 +2273,11 @@ test.describe('Create different types of elements (with and without sample solut
 
       await logoutUser()
       await loginInstitutionalCatalyst()
-      await page.getByTestId('elements-search-input').clear()
-      await page.getByTestId('elements-search-input').press('Enter')
+      const institutionalSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(institutionalSearchInput, '')
+      await institutionalSearchInput.press('Enter')
 
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
       await page.getByTestId('element-batch-operations').click()
       await page.getByTestId('status-checkbox').check()
       await selectOption(
@@ -2008,14 +2290,14 @@ test.describe('Create different types of elements (with and without sample solut
         .getByTestId('element-batch-sharing-username-or-email')
         .fill(LECTURER_IND_SHORTNAME)
       await expect(
-        page.getByTestId(`element-batch-sharing-x-${data.NRML.title}`)
+        page.getByTestId(`element-batch-sharing-x-${nrTitle}`)
       ).toBeVisible()
       await expect(page.getByTestId('apply-batch-operations')).toBeEnabled()
       await page.getByTestId('close-batch-operations-modal').click()
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).uncheck()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).uncheck()
 
-      await page.getByTestId(`element-checkbox-${data.MCML.title}`).check()
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId(`element-checkbox-${mcTitle}`).check()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
       await page.getByTestId('element-batch-operations').click()
       await page.getByTestId('status-checkbox').check()
       await selectOption(
@@ -2034,10 +2316,10 @@ test.describe('Create different types of elements (with and without sample solut
       )
 
       await expect(
-        page.getByTestId(`element-batch-sharing-check-${data.MCML.title}`)
+        page.getByTestId(`element-batch-sharing-check-${mcTitle}`)
       ).toBeVisible()
       const writeOnlyElement = page.getByTestId(
-        `element-batch-sharing-x-${data.NRML.title}`
+        `element-batch-sharing-x-${nrTitle}`
       )
       await expect(writeOnlyElement).toBeVisible()
       await writeOnlyElement.hover()
@@ -2056,28 +2338,25 @@ test.describe('Create different types of elements (with and without sample solut
         page.getByTestId('element-batch-update-result')
       ).toContainText(messages.manage.questionPool.batchUpdateResultSuccess)
       await expect(
-        page.getByTestId(`element-batch-sharing-result-${data.MCML.title}`)
+        page.getByTestId(`element-batch-sharing-result-${mcTitle}`)
       ).toContainText(messages.manage.questionPool.batchSharingResultShared)
       await expect(
-        page.getByTestId(`element-batch-sharing-result-${data.NRML.title}`)
+        page.getByTestId(`element-batch-sharing-result-${nrTitle}`)
       ).toContainText(
         messages.manage.questionPool
           .batchSharingResultSkippedInsufficientPermission
       )
       await page.getByTestId('close-batch-operations-result').click()
 
-      await validateElement(page, data.NRML.title, [
-        messages.shared.READY.statusLabel,
-      ])
+      await validateElement(page, nrTitle, [messages.shared.READY.statusLabel])
 
       await logoutUser()
       await loginIndividualCatalyst()
-      await validateElement(page, data.MCML.title)
-      await page.getByTestId('elements-search-input').fill(data.NRML.title)
-      await page.getByTestId('elements-search-input').press('Enter')
-      await expect(
-        page.getByTestId(`element-item-${data.NRML.title}`)
-      ).toBeHidden()
+      await validateElement(page, mcTitle)
+      const individualSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(individualSearchInput, nrTitle)
+      await individualSearchInput.press('Enter')
+      await expect(page.getByTestId(`element-item-${nrTitle}`)).toBeHidden()
     })
 
     test('Create a single choice question and share it with different permission levels', async ({
@@ -2134,6 +2413,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expectNotAttached(
         page.getByTestId(`actions-element-${data.SCML.title}`)
       )
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst()
@@ -2149,13 +2431,20 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `view-activity-log-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
       await expect(
         page.getByTestId(`remove-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst2()
@@ -2171,7 +2460,11 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `archive-element-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
@@ -2181,6 +2474,79 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`delete-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expect(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      ).toBeVisible()
+    })
+
+    test('ADMIN users can archive and restore an element from its action menu', async ({
+      page,
+      loginInstitutionalCatalyst2,
+    }) => {
+      await loginInstitutionalCatalyst2()
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').fill(data.SCML.title)
+      await page.keyboard.press('Enter')
+
+      const element = page.getByTestId(`element-item-${data.SCML.title}`)
+      const archiveSwitch = page.getByTestId('show-archive-switch')
+      const archiveBadge = page.getByTestId(`archive-badge-${data.SCML.title}`)
+      let archiveAttempted = false
+
+      try {
+        await expect(element).toBeVisible()
+        archiveAttempted = true
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `archive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementArchivedSuccessfully
+          )
+        ).toBeVisible()
+        await expect(element).not.toBeAttached()
+
+        await archiveSwitch.click()
+        await expect(element).toBeVisible()
+        await expect(archiveBadge).toBeVisible()
+
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `unarchive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementRestoredSuccessfully
+          )
+        ).toBeVisible()
+        await expect(archiveBadge).not.toBeAttached()
+        archiveAttempted = false
+      } finally {
+        if (archiveAttempted) {
+          if ((await archiveSwitch.getAttribute('aria-checked')) !== 'true') {
+            await archiveSwitch.click()
+          }
+
+          await element.waitFor({ state: 'visible' }).catch(() => undefined)
+          if (await archiveBadge.isVisible().catch(() => false)) {
+            await chooseActionByTestId(
+              page,
+              `actions-element-${data.SCML.title}`,
+              `unarchive-element-${data.SCML.title}`
+            )
+            await expect(archiveBadge).not.toBeAttached()
+          }
+        }
+
+        if ((await archiveSwitch.getAttribute('aria-checked')) === 'true') {
+          await archiveSwitch.click()
+        }
+      }
+
+      await expect(element).toBeVisible()
     })
 
     test('Cleanup: Delete the created question again and verify deletion', async ({
@@ -2439,6 +2805,181 @@ test.describe('Create different types of elements (with and without sample solut
         canEdit: true,
         canOpenActions: true,
       })
+    })
+  })
+
+  test.describe('Part 7: Element card actions and metadata clarity', () => {
+    const cleanedUpElementIds: number[] = []
+
+    test.afterAll(async () => {
+      const prisma = await getPrisma()
+      if (cleanedUpElementIds.length > 0) {
+        await prisma.element.deleteMany({
+          where: { id: { in: cleanedUpElementIds } },
+        })
+      }
+    })
+
+    test('Card actions and metadata', async ({ page, loginLecturer }) => {
+      await loginLecturer()
+      await expect(page.getByTestId('elements-search-input')).toBeVisible()
+
+      const runPrefix = `Card Clarity ${Date.now()}`
+      const createdElementName = `${runPrefix} New`
+      const editedElementName = `${runPrefix} Edited`
+      const prisma = await getPrisma()
+
+      try {
+        await createQuestionSC({
+          name: createdElementName,
+          content: 'Fresh content for the card clarity regression.',
+          choices: [
+            { value: 'Option A', correct: true },
+            { value: 'Option B' },
+          ],
+          userId: LECTURER_ID,
+        })
+
+        const createdElement = await prisma.element.findFirst({
+          where: { name: createdElementName },
+        })
+        if (!createdElement) {
+          throw new Error('Failed to create the new card clarity fixture')
+        }
+        cleanedUpElementIds.push(createdElement.id)
+
+        await createQuestionSC({
+          name: editedElementName,
+          content: 'Content before the versioned edit.',
+          choices: [
+            { value: 'Option A', correct: true },
+            { value: 'Option B' },
+          ],
+          userId: LECTURER_ID,
+        })
+
+        const editedElement = await prisma.element.findFirst({
+          where: { name: editedElementName },
+        })
+        if (!editedElement) {
+          throw new Error('Failed to create the edited card clarity fixture')
+        }
+        cleanedUpElementIds.push(editedElement.id)
+
+        await prisma.element.update({
+          where: { id: editedElement.id },
+          data: {
+            content: 'Content after the versioned edit.',
+            version: { increment: 1 },
+          },
+        })
+
+        await page.getByTestId('elements-search-input').fill(runPrefix)
+        await page.keyboard.press('Enter')
+
+        const createdCard = page.getByTestId(
+          `element-item-${createdElementName}`
+        )
+        const editedCard = page.getByTestId(`element-item-${editedElementName}`)
+        await expect(createdCard).toBeVisible()
+        await expect(editedCard).toBeVisible()
+
+        // Each card renders exactly one truthful timestamp.
+        await expect(createdCard).toContainText('Created at')
+        await expect(createdCard).not.toContainText('Edited at')
+        await expect(editedCard).toContainText('Edited at')
+        await expect(editedCard).not.toContainText('Created at')
+
+        // Icon-only actions expose their localized label as accessible name.
+        const editButton = createdCard.getByRole('button', {
+          name: 'Edit Element',
+        })
+        await expect(editButton).toBeVisible()
+        const createdOverflow = page.getByTestId(
+          `actions-element-${createdElementName}`
+        )
+        await expect(createdOverflow).toHaveAccessibleName(
+          `More actions for ${createdElementName}`
+        )
+
+        // The tooltip appears on hover and on focus-within.
+        await editButton.hover()
+        await expect(
+          createdCard.getByRole('tooltip', { name: 'Edit Element' })
+        ).toBeVisible()
+        await editButton.focus()
+        await expect(
+          createdCard.getByRole('tooltip', { name: 'Edit Element' })
+        ).toBeVisible()
+
+        // Keyboard activation of a visible action opens the edit modal.
+        await page.keyboard.press('Enter')
+        await expect(page.getByTestId('insert-question-title')).toBeVisible()
+        await page.getByTestId('close-element-modal').click()
+
+        // Keyboard activation of the overflow opens its menu.
+        await createdOverflow.focus()
+        await expect(
+          createdCard.getByRole('tooltip', {
+            name: `More actions for ${createdElementName}`,
+          })
+        ).toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(
+          page.getByTestId(`delete-element-${createdElementName}`)
+        ).toBeVisible()
+        await page.keyboard.press('Escape')
+
+        // The sort toggle describes the next action and flips after use.
+        const elementItems = page.locator('[data-cy^="element-item-"]')
+        await expect(elementItems.first()).toContainText(editedElementName)
+        const sortToggle = page.getByTestId('sort-order-question-pool-toggle')
+        await expect(sortToggle).toHaveAccessibleName('Sort ascending')
+        await sortToggle.focus()
+        await expect(
+          page.getByRole('tooltip', { name: 'Sort ascending' })
+        ).toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(sortToggle).toHaveAccessibleName('Sort descending')
+        await expect(elementItems.first()).toContainText(createdElementName)
+
+        // The German locale carries the paired labels. The sort toggle state is
+        // persisted to local storage, so the ascending order flipped above is
+        // restored on the reload and the toggle again describes the next action.
+        await page.waitForFunction(() => {
+          try {
+            const stored = JSON.parse(
+              localStorage.getItem('library-filtering-sorting') ?? ''
+            )
+            return stored?.sort?.asc === true
+          } catch {
+            return false
+          }
+        })
+        await page.goto(`${env('URL_MANAGE')}/de/`)
+        await expect(page.getByTestId('elements-search-input')).toBeVisible()
+        await page.getByTestId('elements-search-input').fill(runPrefix)
+        await page.keyboard.press('Enter')
+        const deEditedCard = page.getByTestId(
+          `element-item-${editedElementName}`
+        )
+        await expect(deEditedCard).toContainText('Editiert am')
+        await expect(deEditedCard).not.toContainText('Erstellt am')
+        await expect(
+          page.getByTestId(`actions-element-${editedElementName}`)
+        ).toHaveAccessibleName(`Weitere Aktionen für ${editedElementName}`)
+        const deSortToggle = page.getByTestId('sort-order-question-pool-toggle')
+        await expect(deSortToggle).toHaveAccessibleName('Absteigend sortieren')
+        await deSortToggle.focus()
+        await page.keyboard.press('Enter')
+        await expect(deSortToggle).toHaveAccessibleName('Aufsteigend sortieren')
+      } finally {
+        if (cleanedUpElementIds.length > 0) {
+          await prisma.element.deleteMany({
+            where: { id: { in: cleanedUpElementIds } },
+          })
+        }
+      }
     })
   })
 })

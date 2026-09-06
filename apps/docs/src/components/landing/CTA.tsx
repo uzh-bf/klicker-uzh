@@ -5,8 +5,8 @@ export function CTA() {
     {
       title: 'Roadmap',
       description:
-        "Are you interested in what's next? Check out our current Roadmap! We are also very happy about any feedbacks or bug reports. In urgent cases, you should contact us through our support channels.",
-      href: 'https://klicker-uzh.feedbear.com',
+        "Are you interested in what's next? Check out our current Roadmap! For ideas, positive experiences, or problems, please use our Feedback platform.",
+      href: 'https://www.klicker.uzh.ch/development',
     },
     {
       title: 'Community',

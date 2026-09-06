@@ -73,7 +73,7 @@ jobs:
           no-cache: true
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
-    if: github.event.pull_request.draft == false
+    if: ${{ false }}
     # See build-arm: the app image must never advance without its migrator.
     needs: build-migrator-amd
     runs-on: ubuntu-latest
@@ -154,7 +154,7 @@ jobs:
           no-cache: true
           labels: ${{ steps.meta.outputs.labels }}
   build-migrator-amd:
-    if: github.event.pull_request.draft == false
+    if: ${{ false }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -15,7 +15,7 @@ function CreditBalance({ current, total }: { current: number; total: number }) {
 }
 
 /**
- * Keeps the balance and the fallback state visible in the main mobile layout
+ * Keeps the balance and exhausted state visible in the main mobile layout
  * while the sidebar is closed. The embedded layout has its own
  * `EmbeddedCreditsBar`, so this is rendered only by `SidebarMain`.
  */

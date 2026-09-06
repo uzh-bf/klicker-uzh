@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-09-02'
 tags:
   - backend
   - graphql
@@ -20,17 +20,19 @@ tags:
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error. A multi-object batch field cannot use this single-selector wrapper: gate the field with `t.withAuth(...)`, then perform a bounded service query and an explicit permission check for every unique object before mutation. Return per-object outcomes instead of collapsing the batch to one nullable field.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
 
-Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on
-courseId, plus a nullable boolean that preserves the existing behavior when
-omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
+Worked examples: `requestCourseDeletion` in `mutation.ts` (asUser + ADMIN
+permission on courseId, plus a nullable boolean for optional draft live-quiz
+cleanup), `controlCourse` in `query.ts` (EXECUTE), and `getLiveQuizSummary`
+(READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
 ## Layering contract
 
-- `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
+- `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.duplicateCourse(args, ctx)`.
 - `services/*.ts` — all business logic, Prisma access, Redis, pubSub publishes. Import style: `import * as XService from '../services/x.js'`.
 - Context (`packages/graphql/src/lib/context.ts`): `Context` has optional `user`; `t.withAuth` narrows to `ContextWithUser` (`user.sub`, `role`, `scope`, catalyst flags) — services take `ctx` and rely on that narrowing.
+- Capability-gated reads (precedent: `getChatAccountUsage` with the `ai-beta` flag) keep authorization first, then call the fail-closed helper `lib/featureFlags.ts:isFeatureFlagEnabled` before any domain data query, and return `null` when the flag is unavailable or false. Visibility gates hide results; they never replace authorization and never gate administrative mutations that must stay reachable.
 
 ## Validation and errors
 
@@ -47,7 +49,7 @@ The ritual after ANY change to ops or schema:
 pnpm --filter @klicker-uzh/graphql generate
 ```
 
-and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
+The package build runs this generation before Rollup. Commit the handwritten operation/schema sources and the generated `src/public/schema.graphql` SDL snapshot; do not commit `src/ops.ts` or `src/public/{client,server}.json`, which are ignored build outputs. Frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). A missing generation step fails in two distinct ways: typecheck errors for missing documents or runtime persisted-query rejection for an unknown hash.
 
 ### Assessment invitation API
 
@@ -104,6 +106,9 @@ does not change endpoint-specific caps such as verification records. The
 Elements operation, schema field, service signature, and generated artifacts
 must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
 `packages/graphql/src/services/elements.ts:getUserElements`).
+Activity list filtering excludes deleted activities that are only reachable
+through derived access before fetching and counting, so pagination totals and
+rendered rows describe the same result set.
 
 ## Subscriptions
 
@@ -111,4 +116,4 @@ Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` p
 
 ## Worked feature traces
 
-Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).
+Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).

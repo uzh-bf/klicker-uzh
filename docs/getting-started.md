@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-12'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -38,7 +38,11 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external
+EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
+routed app plus the two Hatchet workers. Dependency-aware profiles select only
+the needed app roots, optional services, and managed processes while keeping
+Postgres and Hatchet as the boot-critical base.
 
 1. **Start and prove the checkout:**
    ```bash
@@ -48,7 +52,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.35 and run `devrouter setup --yes` once.
+     1. Install devrouter ≥ 0.0.46 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -57,30 +61,102 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
-For OpenRouter-backed Chat, inject the shared prototyping key when starting the
-workspace; never write it into the repository:
+Choose an application profile such as `manage`, `pwa`, `chat`, or
+`live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
+needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
+profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
+default `full`. Profile unions are additive and order-insensitive, and a warm
+transition does not recreate the app container or reset persistent data.
 
-```bash
-infisical run \
-  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
-  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
-```
+Parallel task work should use one linked worktree per task and the smallest
+matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
+tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
+keep separate app caches, database state, routes, and processes while sharing
+only the package-download cache. Do not default every parallel worktree to
+`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
+workers in each environment. The Turbo local cache is shared across all
+worktrees and bounded in size/age; see
+[Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
+the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
+commands.
 
-The local LiteLLM Auto V2 router sends classification, semantic embedding, and
-answer requests through that same external upstream. Use seeded or synthetic
-content. If the workspace was already started without the variables, stop it
-before rerunning the command because `ensure` does not replace a running
-container's environment.
+Playwright is the deliberate toolchain exception. Run
+`pnpm playwright:host -- <args>` from the host; the launcher calls
+`devrouter ensure`, resolves the exact worktree routes, and connects the host
+Prisma setup to that workspace's random loopback PostgreSQL port. The browser
+and Playwright process never enter the devcontainer. Direct local Playwright
+commands fail before database cleanup, and the devcontainer blocks browser
+downloads. GitHub Actions keeps its existing official Playwright container.
 
-`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
+workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
+do not copy credentials into the repository or use raw Infisical injection.
 
-Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side
+`devrouter ensure` delivers its matching process helper to the exact validated
+container, then invokes the adapter. Devrouter records its owned process
+group and fingerprints the workspace, command, adapter bytes, selected profile,
+and declared non-secret origin environment in
+`/tmp/devrouter-process-klicker-dev.state`. An exact repeat is idempotent,
+stale owned groups are replaced boundedly, unknown processes are never killed,
+and a failed profile transition restores the last usable generated config.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
+The Dev Container waits for `postCreateCommand` before managed post-start.
+Post-create publishes a fixed container-local completion marker only after the
+destructive bootstrap and generated runtime inputs succeed; post-start checks
+that marker before it reads those inputs or starts a process. If the marker is
+missing or malformed, treat the workspace as incompletely bootstrapped and use
+the canonical stop/recovery path. A warm profile switch never manufactures the
+marker or reruns database bootstrap. The `ROOT` contract in
+[post-create](../.devcontainer/post-create.sh) and
+[post-start](../.devcontainer/post-start.sh) canonicalizes
+`KLICKER_DEVCONTAINER_ROOT` once and uses that same checkout for every
+repository-local path. Post-create invalidates any earlier completion marker
+before it validates the configured root, so an invalid override cannot expose a
+stale successful bootstrap.
+
+Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
+the selected routes and can spend one container recreate when an exact
+workspace is alive but an application remains unhealthy. The repository-owned
+semantic checks perform one bounded `.next` repair only after a known route
+repeatedly returns the stale-route signature. The adapter also primes Manage's
+course list and a synthetic course-detail URL within one bounded deadline.
+
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.46`.
+The devcontainer image contains no devrouter package or helper, and
+`devcontainer.json` does not run the managed adapter independently.
 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
+Before Compose starts, `.devcontainer/initialize.sh` creates the external
+Docker volume `klicker-uzh-pnpm-store-v1`. Every worktree mounts that volume at
+`/pnpm/.pnpm-store`, so package downloads are reused dynamically. The
+worktree's `node_modules`, `.next`, and PostgreSQL volumes remain isolated.
+Removing the shared store is destructive cache cleanup: stop every consuming
+Klicker DevPod first and remove only that exact volume. Never use broad Docker
+pruning for this cache.
+
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
+
+Klicker's runtime guard adds profile-scoped semantic readiness. It
+fingerprints the dependency graph, checked-out commit, Next.js route structure,
+and app configuration. A true managed start preserves each worktree's
+`.next/dev` output, while a changed dependency fingerprint refreshes the
+persistent `node_modules` volume with a frozen, local-first install.
+Unauthenticated Chat must answer `401 application/json` on a
+nested API route; the shell pages of auth, PWA, manage, and control must answer
+`2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
+and `live-quiz` requires live general and response-processor worker descendants
+of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing
+routes identify stale route-table state and trigger one full `.next` cleanup
+for the affected apps plus one managed restart. Any other stable response fails
+without deleting caches, so data-driven 404s stay application failures.
+
+Run the read-only semantic check inside the exact workspace:
+
+```bash
+devrouter exec . -- pnpm run dev:doctor
+```
 
 ### Path B: Host-based Setup (Legacy)
 
@@ -97,13 +173,14 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 
 ## Failure signatures (fresh clone / wrong state)
 
-| Exact error                                                                     | Cause                                                                                    | Fix                                                            |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`             | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                       |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                    | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`              |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match` | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11 |
-| `Bind for :::5432 failed: port is already allocated`                            | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack       |
-| ~19 packages fail `pnpm run check` on fresh clone                               | generated artifacts missing                                                              | `pnpm run build` once, then check                              |
+| Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
+| `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
+| ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                              | `pnpm run build` once, then check                                 |
+| A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                    | `devrouter ensure .`; it verifies and repairs this signature once |
 
 ## Infrastructure (Docker Compose)
 
@@ -146,11 +223,11 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.

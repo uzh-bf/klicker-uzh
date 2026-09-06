@@ -6,6 +6,7 @@ type TestFeatures = {
   'default-on-flag': boolean
   'targeted-flag': boolean
   'identifier-flag': boolean
+  'catalyst-flag': boolean
 }
 
 const enabledAttributes: FeatureFlagAttributes = {
@@ -52,6 +53,15 @@ describe('createBrowserFeatureFlagClient', () => {
                 },
               ],
             },
+            'catalyst-flag': {
+              defaultValue: false,
+              rules: [
+                {
+                  condition: { catalyst: true },
+                  force: true,
+                },
+              ],
+            },
           },
         }),
         {
@@ -67,6 +77,7 @@ describe('createBrowserFeatureFlagClient', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     setPolyfills({
       fetch: originalFetch,
     })
@@ -97,6 +108,7 @@ describe('createBrowserFeatureFlagClient', () => {
   })
 
   it('fails closed when the feature payload cannot be loaded', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
     const { growthbook, initialize } =
       createBrowserFeatureFlagClient<TestFeatures>({
@@ -106,6 +118,9 @@ describe('createBrowserFeatureFlagClient', () => {
       })
 
     expect(await initialize()).toBe(false)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser initialization failed; using false fallbacks'
+    )
     await growthbook.setAttributes(enabledAttributes)
     expect(growthbook.isOn('targeted-flag')).toBe(false)
   })
@@ -212,6 +227,7 @@ describe('createBrowserFeatureFlagClient', () => {
     await setAttributes({
       id: 'user-id',
       actorType: 'user',
+      catalyst: true,
       role: 'USER',
       email: 'user@example.com',
     })
@@ -220,17 +236,68 @@ describe('createBrowserFeatureFlagClient', () => {
     expect(growthbook.getAttributes()).toEqual({
       id: 'user-id',
       actorType: 'user',
+      catalyst: true,
       role: 'USER',
       environment: 'test',
     })
+    expect(growthbook.isOn('catalyst-flag')).toBe(true)
+  })
+
+  it('refreshes feature definitions without the browser cache', async () => {
+    const { growthbook, initialize, refresh } =
+      createBrowserFeatureFlagClient<TestFeatures>({
+        apiHost: 'https://growthbook.test',
+        clientKey: 'sdk-test',
+        environment: 'test',
+      })
+
+    await initialize()
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          features: {
+            'default-on-flag': { defaultValue: false },
+          },
+        })
+      )
+    )
+
+    await expect(refresh()).resolves.toBe(true)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(growthbook.isOn('default-on-flag')).toBe(false)
+  })
+
+  it('reports a failed no-cache refresh while keeping the prior payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const { growthbook, initialize, refresh } =
+      createBrowserFeatureFlagClient<TestFeatures>({
+        apiHost: 'https://growthbook.test',
+        clientKey: 'sdk-test',
+        environment: 'test',
+      })
+
+    await initialize()
+    expect(growthbook.isOn('default-on-flag')).toBe(true)
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+
+    await expect(refresh()).resolves.toBe(false)
+    expect(growthbook.isOn('default-on-flag')).toBe(true)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser refresh failed; keeping the last usable payload'
+    )
   })
 
   it('initializes once and fails closed without configuration', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const { growthbook, initialize } =
       createBrowserFeatureFlagClient<TestFeatures>({ environment: 'test' })
 
     expect(await initialize()).toBe(false)
     expect(await initialize()).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser configuration is incomplete; using false fallbacks'
+    )
     await growthbook.setAttributes(enabledAttributes)
     expect(growthbook.isOn('targeted-flag')).toBe(false)
     expect(mockFetch).not.toHaveBeenCalled()

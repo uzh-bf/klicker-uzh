@@ -1,0 +1,159 @@
+name: Update Playwright shard timings
+
+on:
+  workflow_run:
+    workflows: ['Klicker automated testing with playwright']
+    types: [completed]
+    branches: ['v3']
+
+concurrency:
+  group: playwright-timing-writer
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'v3' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Download Playwright run metadata
+        id: metadata-download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-run-metadata
+          path: ${{ runner.temp }}/playwright-run-metadata
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Check whether Playwright tests ran
+        id: run-gate
+        if: always()
+        env:
+          METADATA_PATH: ${{ runner.temp }}/playwright-run-metadata/playwright-run-metadata.txt
+        run: |
+          set -euo pipefail
+          if [ ! -f "${METADATA_PATH}" ]; then
+            echo '::notice::Playwright run metadata is unavailable; skipping timing feedback.'
+            echo 'should_run=false' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          should_run="$(sed -n 's/^should_run=//p' "${METADATA_PATH}")"
+          if [ "${should_run}" = 'true' ]; then
+            echo 'should_run=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo '::notice::Playwright tests were skipped by the path filter.'
+            echo 'should_run=false' >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Check out the tested commit
+        if: steps.run-gate.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          token: ${{ github.token }}
+          persist-credentials: false
+
+      - name: Skip timing-only source changes
+        id: source-gate
+        if: steps.run-gate.outputs.should_run == 'true'
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          subject="$(git log -1 --format='%s' "${RUN_SHA}")"
+          parent_sha="$(git rev-parse "${RUN_SHA}^1")"
+          changed_files="$(git diff --name-only "${parent_sha}" "${RUN_SHA}" | sort -u)"
+          if [ "${subject}" = 'ci(playwright): update shard timings' ] || [ "${changed_files}" = 'playwright/timings.json' ]; then
+            echo '::notice::The source run only changed shard timings; skipping feedback.'
+            echo 'should_update=false' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'should_update=true' >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Require the timing update token
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        env:
+          TOKEN: ${{ secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN is not set"
+            exit 1
+          fi
+
+      - name: Configure Git with the timing update token
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN }}
+        run: gh auth setup-git
+
+      - name: Download compact shard results
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-results-*-of-*
+          path: ${{ runner.temp }}/playwright-timing-artifacts
+          merge-multiple: false
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Aggregate and validate shard timings
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        run: >-
+          python3 .github/scripts/update-playwright-timings.py
+          "${RUNNER_TEMP}/playwright-timing-artifacts"
+          playwright/timings.json
+
+      - name: Open or update the timing pull request
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          TIMING_BRANCH: automation/playwright-timings
+        run: |
+          set -euo pipefail
+          git config user.name 'playwright-timings[bot]'
+          git config user.email 'playwright-timings[bot]@users.noreply.github.com'
+
+          if git diff --quiet -- playwright/timings.json; then
+            echo 'Shard timings are unchanged; no pull request is needed.'
+            exit 0
+          fi
+
+          git fetch origin "${TIMING_BRANCH}" || true
+          previous_branch_sha="$(git rev-parse "refs/remotes/origin/${TIMING_BRANCH}" 2>/dev/null || true)"
+          git switch --create "${TIMING_BRANCH}" "${RUN_SHA}"
+          git add playwright/timings.json
+          git commit -m 'ci(playwright): update shard timings'
+
+          if [ -n "${previous_branch_sha}" ]; then
+            git push --force-with-lease="refs/heads/${TIMING_BRANCH}:${previous_branch_sha}" origin "${TIMING_BRANCH}"
+          else
+            git push origin "${TIMING_BRANCH}"
+          fi
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          body="Generated from successful Playwright run: ${run_url}"$'\n\n'
+          body+="This timing-only pull request is human-reviewed and is never auto-merged."
+          pr_number="$(gh pr list --repo "${GITHUB_REPOSITORY}" --base v3 --head "${TIMING_BRANCH}" --state open --json number --jq '.[0].number')"
+          if [ -n "${pr_number}" ]; then
+            gh pr edit "${pr_number}" --body "${body}"
+          else
+            gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base v3 \
+              --head "${TIMING_BRANCH}" \
+              --title 'ci(playwright): update shard timings' \
+              --body "${body}"
+          fi

@@ -15,7 +15,11 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import { persistActivityWithPermissions } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -27,6 +31,7 @@ export async function getPracticeQuizData(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      course: { deletionRequestedAt: null },
       OR: [
         { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
         { status: DB.PublicationStatus.SCHEDULED },
@@ -87,7 +92,12 @@ export async function getPracticeQuizEvaluation(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -118,7 +128,11 @@ export async function getSinglePracticeQuiz(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       stacks: {
@@ -136,7 +150,7 @@ export async function getCoursePublishedPracticeQuizzes(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       practiceQuizzes: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -441,6 +455,7 @@ export async function getBookmarksPracticeQuiz(
         courseId,
         participantId: ctx.user.sub,
       },
+      course: { deletionRequestedAt: null },
     },
     include: {
       bookmarkedElementStacks: {
@@ -495,7 +510,7 @@ export async function getPracticeQuizSummary(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { stacks: { include: { elements: true } } },
   })
 
@@ -623,7 +638,10 @@ export async function unpublishPracticeQuiz(
 }
 
 export async function deletePracticeQuiz(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -635,16 +653,33 @@ export async function deletePracticeQuiz(
     return null
   }
 
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    practiceQuiz.status
+  )
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the practice quiz is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
-    practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
-    practiceQuiz.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && practiceQuiz.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.practiceQuiz.delete({
-      where: { id },
-    })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.practiceQuiz.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+          })
+        )
+      : await ctx.prisma.practiceQuiz.delete({ where: { id } })
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled practice quizzes)
     if (

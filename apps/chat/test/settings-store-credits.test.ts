@@ -101,24 +101,33 @@ describe('settingsStore credits loading', () => {
     expect(useSettingsStore.getState().creditsLoaded).toBe(false)
   })
 
-  test('replaces a persisted unavailable model with the credit-safe fallback', async () => {
+  test('preserves the selected usage class when participant credits are exhausted', async () => {
     useSettingsStore.setState({
       modelSelectionEnabled: true,
-      selectedModel: 'gpt-5.6-luna',
+      selectedModel: 'gpt-4.1',
     })
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValueOnce(
         creditsResponse(0, {
-          automaticModelId: 'gpt-4.1-mini',
+          automaticModelId: 'gpt-5.6-luna',
           availableModels: [
             {
-              id: 'gpt-4.1-mini',
-              name: 'GPT-4.1 Mini',
-              description: 'fallback',
-              fallback: true,
+              id: 'gpt-4.1',
+              name: 'GPT-4.1',
+              description: 'advanced',
+              fallback: false,
               supportsReasoning: false,
               allowedReasoningEfforts: [],
+              supportsImageAttachments: true,
+            },
+            {
+              id: 'gpt-5.6-luna',
+              name: 'GPT-5.6 Luna',
+              description: 'base fallback',
+              fallback: true,
+              supportsReasoning: true,
+              allowedReasoningEfforts: ['medium'],
               supportsImageAttachments: true,
             },
           ],
@@ -128,7 +137,7 @@ describe('settingsStore credits loading', () => {
 
     await useSettingsStore.getState().loadCredits('chatbot-fallback')
 
-    expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1-mini')
-    expect(useSettingsStore.getState().modelOptions).toHaveLength(1)
+    expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1')
+    expect(useSettingsStore.getState().modelOptions).toHaveLength(2)
   })
 })

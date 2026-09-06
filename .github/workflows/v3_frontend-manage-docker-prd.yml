@@ -64,7 +64,7 @@ jobs:
             NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD }}
             NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD }}
   build-amd:
-    if: github.event.pull_request.draft == false
+    if: ${{ false }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

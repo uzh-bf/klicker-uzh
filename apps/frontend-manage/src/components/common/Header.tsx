@@ -4,29 +4,49 @@ import {
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  User,
+  type ManageUserProfileQuery,
+  UserLoginScope,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Navigation,
-  NavigationItemProps,
-  NavigationMenuItemProps,
+  type NavigationDropdownItemProps,
+  type NavigationItemProps,
+  type NavigationMenuItemProps,
+  type NavigationSubmenuProps,
+  Tooltip,
 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-function Header({ user }: { user?: User | null }): React.ReactElement {
+type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
+
+function Header({
+  user,
+  userScope,
+}: {
+  user?: UserProfile | null
+  userScope?: ManageUserProfileQuery['userScope']
+}): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const betaSignupEnabled = useFeatureFlag('beta-signup')
+  const canDiscoverBetaFeatures =
+    betaSignupEnabled &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -154,61 +174,63 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
         content: 'flex flex-col gap-0.5',
       },
     },
-    ...(user?.publicPreview
-      ? [
-          {
-            type: 'dropdown',
-            key: 'analytics-menubar-item',
-            label: t('manage.general.analytics'),
-            icon: faBolt,
-            active: router.pathname.includes('/analytics'),
-            elements: [
-              ...(courses?.slice(0, 5).map((course) => ({
-                key: `course-analytics-${course.id}`,
-                type: 'submenu',
-                label: course.name,
-                data: { cy: `course-analytics-menu-${course.name}` },
-                options: [
-                  {
-                    key: `activity-dashboard-${course.name}`,
-                    type: 'link',
-                    label: t('manage.analytics.activity'),
-                    onClick: () =>
-                      router.push(`/analytics/${course.id}/activity`),
-                  },
-                  {
-                    key: `progress-dashboard-${course.name}`,
-                    type: 'link',
-                    label: t('manage.analytics.performance'),
-                    onClick: () =>
-                      router.push(`/analytics/${course.id}/performance`),
-                  },
-                  {
-                    key: `quiz-dashboard-${course.name}`,
-                    type: 'link',
-                    label: t('manage.analytics.quizzes'),
-                    onClick: () =>
-                      router.push(`/analytics/${course.id}/quizzes`),
-                  },
-                ],
-              })) ?? []),
-              {
-                key: 'analytics-all-courses-separator',
-                type: 'separator',
-              },
-              {
-                key: 'analytics-all-courses',
-                type: 'link',
-                label: t('manage.analytics.olderCourses'),
-                onClick: () => router.push('/analytics'),
-              },
-            ],
-            data: { cy: 'analytics' },
-            className: { icon: 'text-orange-400' },
-          } as NavigationItemProps,
-        ]
-      : []),
   ]
+
+  const analyticsElements: NavigationDropdownItemProps['elements'] = [
+    ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
+      key: `course-analytics-${course.id}`,
+      type: 'submenu',
+      label: course.name,
+      data: { cy: `course-analytics-menu-${course.name}` },
+      options: [
+        {
+          key: `activity-dashboard-${course.name}`,
+          type: 'link',
+          label: t('manage.analytics.activity'),
+          onClick: () => router.push(`/analytics/${course.id}/activity`),
+        },
+        {
+          key: `progress-dashboard-${course.name}`,
+          type: 'link',
+          label: t('manage.analytics.performance'),
+          onClick: () => router.push(`/analytics/${course.id}/performance`),
+        },
+        {
+          key: `quiz-dashboard-${course.name}`,
+          type: 'link',
+          label: t('manage.analytics.quizzes'),
+          onClick: () => router.push(`/analytics/${course.id}/quizzes`),
+        },
+      ],
+    })) ?? []),
+    {
+      key: 'analytics-all-courses-separator',
+      type: 'separator',
+    },
+    {
+      key: 'analytics-all-courses',
+      type: 'link',
+      label: t('manage.analytics.olderCourses'),
+      onClick: () => router.push('/analytics'),
+    },
+  ]
+  const analyticsNavigation: NavigationDropdownItemProps = {
+    type: 'dropdown',
+    key: 'analytics-menubar-item',
+    label: t('manage.general.analytics'),
+    icon: faBolt,
+    disabled: !learningAnalyticsEnabled,
+    active: router.pathname.includes('/analytics'),
+    elements: analyticsElements,
+    data: { cy: 'analytics' },
+    className: { icon: 'text-orange-400' },
+  }
+  const analyticsMenu = (
+    <Navigation
+      items={[analyticsNavigation]}
+      className={{ root: 'shadow-none' }}
+    />
+  )
 
   const rightNavigation: NavigationItemProps[] = [
     {
@@ -249,6 +271,17 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
+        ...(canDiscoverBetaFeatures
+          ? [
+              {
+                key: 'beta-features',
+                type: 'link' as const,
+                label: t('manage.settings.betaFeaturesTitle'),
+                onClick: () => router.push('/user/settings#beta-features'),
+                data: { cy: 'menu-beta-features' },
+              },
+            ]
+          : []),
         {
           key: 'settings',
           type: 'link',
@@ -306,6 +339,18 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
+          {learningAnalyticsEnabled ? (
+            analyticsMenu
+          ) : (
+            <Tooltip
+              tooltip={t('manage.analytics.featureUnavailable')}
+              delay={0}
+              dataContent={{ cy: 'analytics-disabled-reason' }}
+              className={{ tooltip: 'z-30' }}
+            >
+              {analyticsMenu}
+            </Tooltip>
+          )}
         </div>
         <Navigation
           items={rightNavigation}

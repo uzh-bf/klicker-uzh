@@ -25,11 +25,12 @@ runs:
         BASE_REF: ${{ github.base_ref }}
       run: |
         if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-          # Only shallow-fetch when the clone is already shallow. On a full
-          # clone (fetch-depth: 0, as check-types needs) a --depth=1 fetch
-          # writes a shallow graft at the base ref; on a stacked PR that ref
-          # is an ancestor of HEAD, so HEAD's own history gets truncated and
-          # later merge-base lookups against origin/v3 fail.
+          # Only shallow-fetch when the clone is already shallow. A full clone
+          # (fetch-depth: 0) must retain its history for later merge-base
+          # lookups. A --depth=1 fetch writes a shallow graft at the base ref;
+          # on a stacked PR that ref is an ancestor of HEAD, so HEAD's own
+          # history gets truncated and later merge-base lookups against
+          # origin/v3 fail.
           if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
             git fetch --depth=1 origin "$BASE_REF"
           else

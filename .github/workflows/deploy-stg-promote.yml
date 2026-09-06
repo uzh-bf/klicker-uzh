@@ -1,19 +1,24 @@
 name: Promote to stg
 
-# Staging pulls the floating `v3` image tag, so rebuilding an image never changes
-# the rendered manifest: ArgoCD sees no drift, never syncs, and the new image is
-# only picked up whenever someone happens to restart the pods. This workflow closes
-# that gap by writing the built commit's SHA into the `rollout.klicker.uzh.ch/release`
-# pod annotations. That DOES change the pod template, so ArgoCD detects drift, runs
-# the PreSync migration hook, and rolls the pods -- in that order (see ADR-0003).
+# Staging pulls the floating image tag for the selected source branch, so rebuilding
+# an image never changes the rendered manifest: ArgoCD sees no drift, never syncs,
+# and the new image is only picked up whenever someone happens to restart the pods.
+# This workflow closes that gap by writing the built commit's SHA into the
+# `rollout.klicker.uzh.ch/release` pod annotations. That DOES change the pod
+# template, so ArgoCD detects drift, runs the PreSync migration hook, and rolls the
+# pods -- in that order (see ADR-0003).
 #
 # It promotes only once every stg image for that commit exists, so the rollout can
-# never start against a half-published or stale `:v3` tag.
+# never start against a half-published or stale source tag.
 #
 # INVARIANT: every `.github/workflows/v3_*-stg.yml` must (a) run unconditionally on
-# push to `v3` and (b) appear under `workflows:` below. Adding a push-level `paths:`
-# filter to any of them stalls promotion permanently -- the gate would wait forever
-# for a run that is never going to happen.
+# push to the selected source branch and (b) appear under `workflows:` below. Adding
+# a push-level `paths:` filter to any of them stalls promotion permanently -- the
+# gate would wait forever for a run that is never going to happen.
+#
+# The selected source branch is the repository variable `STG_SOURCE_BRANCH`. It falls
+# back to `v3` until the variable is created. The branch name must also be a valid
+# Docker tag because the stg build workflows publish branch-name tags.
 
 on:
   workflow_run:
@@ -33,13 +38,15 @@ on:
       - 'Build Docker image for hatchet-worker-general (stg)'
       - 'Build Docker image for hatchet-worker-response-processor (stg)'
       - 'Build Docker image for lti (stg)'
+      - 'Build Docker image for mcp-lecturer (stg)'
+      - 'Build Docker image for mcp-student (stg)'
       - 'Build Docker image for olat-api (stg)'
       - 'Build Docker image for response-api (stg)'
     types: [completed]
   workflow_dispatch:
     inputs:
       sha:
-        description: 'Commit SHA on v3 to promote (break-glass / first run)'
+        description: 'Commit SHA on the selected source branch to promote (break-glass / first run)'
         required: true
       dry_run:
         description: 'Evaluate and print the diff only, do not open a PR'
@@ -47,22 +54,30 @@ on:
         default: true
 
 # Must stay `false`: cancelling a promoter mid-publish could leave a branch pushed
-# with no PR. GitHub keeps at most one running plus one pending run per group, so
-# the 13 build completions collapse to the latest-queued one, which is what we want.
+# with no PR. Keep workflow-run groups separate by source branch, so an unrelated
+# `v3*` branch cannot occupy the selected branch's pending slot. Within one branch
+# group, repeated build completions collapse to the latest queued one.
 concurrency:
-  group: promote-stg
+  group: promote-stg-${{ github.event.workflow_run.head_branch || 'manual' }}
   cancel-in-progress: false
 
 jobs:
   promote:
-    # `head_branch == 'v3'` is mandatory: the stg build workflows also fire on `v3*`
-    # feature branches, which must never promote. `event == 'push'` excludes PR
+    # The stg build workflows also fire on `v3*` feature branches, which must never
+    # promote unless selected by STG_SOURCE_BRANCH. `event == 'push'` excludes PR
     # builds, which do not push images at all.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'v3' &&
+       (github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH ||
+        (vars.STG_SOURCE_BRANCH == '' && github.event.workflow_run.head_branch == 'v3')) &&
        github.event.workflow_run.conclusion == 'success')
+    # Workflow-level concurrency is branch-specific so skipped, non-selected
+    # completions do not occupy the selected branch's pending slot. This job-level
+    # lock still serializes every real writer, including manual dispatches.
+    concurrency:
+      group: promote-stg-writer
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -87,17 +102,26 @@ jobs:
         env:
           WR_SHA: ${{ github.event.workflow_run.head_sha }}
           IN_SHA: ${{ github.event.inputs.sha }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
         run: |
           set -euo pipefail
-          # Must be the BUILD's head SHA, never the current tip of v3: the tip may
-          # have advanced past the commit whose images are actually green.
+          if [[ ! "${SOURCE_BRANCH}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+            echo "::error::STG_SOURCE_BRANCH must be a Docker-safe branch/tag name"
+            exit 1
+          fi
+          # Must be the BUILD's head SHA, never the current tip of the source branch:
+          # the tip may have advanced past the commit whose images are actually green.
           SHA="${WR_SHA:-$IN_SHA}"
-          [ -n "$SHA" ] || { echo "::error::no target SHA"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "::error::target SHA must be 40 lowercase hexadecimal characters"; exit 1; }
           echo "sha=$SHA" >>"$GITHUB_OUTPUT"
+          echo "source_branch=$SOURCE_BRANCH" >>"$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
-          ref: v3
+          # ArgoCD reads the selected source branch, so the promotion must update the
+          # values on that same branch.
+          ref: ${{ steps.target.outputs.source_branch }}
           fetch-depth: 0 # merge-base needs full history
           token: ${{ secrets.STG_PROMOTE_TOKEN }}
 
@@ -106,10 +130,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.target.outputs.sha }}
+          SOURCE_BRANCH: ${{ steps.target.outputs.source_branch }}
         run: |
           set -euo pipefail
-          # Matched per workflow *file* via `.path`. Check-runs cannot be used: all 13
-          # stg workflows name their jobs `build-arm`/`build-amd`, so the names collide.
+          # Matched per workflow *file* via `.path`. Check-runs cannot be used: the stg
+          # workflows name their jobs `build-arm`/`build-amd`, so the names collide.
           # Re-poll rather than giving up on the first look. This job is only ever
           # triggered by a build completing, so if the API has not yet indexed the
           # last run when the surviving promoter evaluates, there is no later trigger
@@ -117,11 +142,12 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             gh api --paginate --slurp \
               "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&event=push&per_page=100" \
-              | jq '[.[].workflow_runs[] | select(.head_branch == "v3")]' > runs.json
+              | jq --arg source "${SOURCE_BRANCH}" \
+                '[.[].workflow_runs[] | select(.head_branch == $source)]' > runs.json
 
             missing=(); notgreen=()
-            # Required set derived from the checkout, so adding a 14th stg app needs no
-            # edit here -- only the trigger list above.
+            # Required set derived from the checkout, so changing the stg build set
+            # needs no count update here -- only the trigger list above.
             for wf in .github/workflows/v3_*-stg.yml; do
               run=$(jq -c --arg p "$wf" \
                 '[.[] | select(.path == $p)] | sort_by(.id) | last // empty' runs.json)
@@ -155,25 +181,49 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         env:
           SHA: ${{ steps.target.outputs.sha }}
+          SOURCE_BRANCH: ${{ steps.target.outputs.source_branch }}
         run: |
           set -euo pipefail
           F=deploy/env-uzh-stg/values.yaml
-          git merge-base --is-ancestor "$SHA" origin/v3 \
-            || { echo "::error::$SHA is not an ancestor of origin/v3"; exit 1; }
+          git merge-base --is-ancestor "$SHA" "origin/${SOURCE_BRANCH}" \
+            || { echo "::error::$SHA is not an ancestor of origin/${SOURCE_BRANCH}"; exit 1; }
+
+          TOTAL_TAGS=$(awk '$1 == "tag:" { count++ } END { print count + 0 }' "$F")
+          SOURCE_TAGS=$(awk -v source="$SOURCE_BRANCH" \
+            '$1 == "tag:" && $2 == source { count++ } END { print count + 0 }' "$F")
+          [ "$TOTAL_TAGS" -gt 0 ] \
+            || { echo "::error::staging values contain no image tags"; exit 1; }
+          if [ "$SOURCE_TAGS" -ne "$TOTAL_TAGS" ]; then
+            echo "::notice::staging source tag is changing to ${SOURCE_BRANCH}"
+            echo "go=true" >>"$GITHUB_OUTPUT"; exit 0
+          fi
 
           # Never promote a promotion. The `[skip ci]` marker in the PR title normally
           # stops the squash-merge from rebuilding and re-firing this workflow, but that
           # depends on the repository's `squash_merge_commit_title` setting, which lives
           # outside this repo and is not recorded anywhere as load-bearing. This check
           # does not depend on it, and without it a flipped setting yields a runaway loop
-          # that burns 13 image builds and a full stg rollout per iteration.
+          # that burns every image build and a full stg rollout per iteration.
           if git log -1 --format='%s' "$SHA" | grep -q '^chore(deploy): promote '; then
             echo "::notice::${SHA} is itself a promotion commit"
             echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
           fi
 
-          CUR=$(sed -n "s/^[[:space:]]*rollout\.klicker\.uzh\.ch\/release: '\(.*\)'$/\1/p" "$F" | head -1)
-          # Stale-promotion guard, and the idempotence check for the 13 re-fires:
+          RELEASE_COUNT=$(awk \
+            '/^[[:space:]]*rollout\.klicker\.uzh\.ch\/release:/ { count++ } END { print count + 0 }' "$F")
+          [ "$RELEASE_COUNT" -gt 0 ] \
+            || { echo "::error::staging values contain no rollout annotations"; exit 1; }
+          mapfile -t RELEASES < <(sed -n \
+            "s/^[[:space:]]*rollout\.klicker\.uzh\.ch\/release: '\(.*\)'$/\1/p" "$F")
+          [ "${#RELEASES[@]}" -eq "$RELEASE_COUNT" ] \
+            || { echo "::error::rollout annotations must contain quoted string values"; exit 1; }
+          mapfile -t UNIQUE_RELEASES < <(printf '%s\n' "${RELEASES[@]}" | sort -u)
+          if [ "${#UNIQUE_RELEASES[@]}" -ne 1 ]; then
+            echo "::notice::staging rollout annotations are not uniform"
+            echo "go=true" >>"$GITHUB_OUTPUT"; exit 0
+          fi
+          CUR="${UNIQUE_RELEASES[0]}"
+          # Stale-promotion guard, and the idempotence check for repeated build events:
           # `--is-ancestor` is true for equal commits. Restricted to hex so a legacy
           # release-tag value is not silently resolved as a commit -- `v3.4.0-alpha.64`
           # IS a tag in this repo, and comparing against a tag newer than the target
@@ -192,20 +242,32 @@ jobs:
         if: steps.gate.outputs.go == 'true' && steps.guard.outputs.go == 'true'
         env:
           SHA: ${{ steps.target.outputs.sha }}
+          SOURCE_BRANCH: ${{ steps.target.outputs.source_branch }}
         run: |
           set -euo pipefail
           F=deploy/env-uzh-stg/values.yaml
           SHORT=$(git rev-parse --short=12 "$SHA")
 
-          BEFORE=$(grep -c "rollout\.klicker\.uzh\.ch/release:" "$F")
-          [ "$BEFORE" -eq 15 ] || { echo "::error::expected 15 annotations, found $BEFORE"; exit 1; }
+          TAGS_BEFORE=$(awk '$1 == "tag:" { count++ } END { print count + 0 }' "$F")
+          [ "$TAGS_BEFORE" -gt 0 ] \
+            || { echo "::error::staging values contain no image tags"; exit 1; }
+          sed -i -E "s|^([[:space:]]+tag: ).*$|\1${SOURCE_BRANCH}|" "$F"
+          TAGS_AFTER=$(awk -v source="$SOURCE_BRANCH" \
+            '$1 == "tag:" && $2 == source { count++ } END { print count + 0 }' "$F")
+          [ "$TAGS_AFTER" -eq "$TAGS_BEFORE" ] || { echo "::error::rewrote $TAGS_AFTER of $TAGS_BEFORE image tags"; exit 1; }
+
+          BEFORE=$(awk \
+            '/^[[:space:]]*rollout\.klicker\.uzh\.ch\/release:/ { count++ } END { print count + 0 }' "$F")
+          [ "$BEFORE" -gt 0 ] \
+            || { echo "::error::staging values contain no rollout annotations"; exit 1; }
 
           # sed, not yq: the file carries comments and hand-chosen quote styles that a
           # yq round-trip reflows. The value MUST stay quoted -- an unquoted all-digit
           # short SHA parses as a YAML integer and Kubernetes rejects the annotation.
           sed -i -E "s|^([[:space:]]*rollout\.klicker\.uzh\.ch/release:).*|\1 '${SHORT}'|" "$F"
 
-          AFTER=$(grep -c "rollout\.klicker\.uzh\.ch/release: '${SHORT}'" "$F")
+          AFTER=$(awk -v release="'${SHORT}'" \
+            '$1 == "rollout.klicker.uzh.ch/release:" && $2 == release { count++ } END { print count + 0 }' "$F")
           [ "$AFTER" -eq "$BEFORE" ] || { echo "::error::rewrote $AFTER of $BEFORE"; exit 1; }
 
           git diff -- "$F"
@@ -217,6 +279,7 @@ jobs:
           GH_TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
           SHA: ${{ steps.target.outputs.sha }}
           SHORT: ${{ steps.write.outputs.short }}
+          SOURCE_BRANCH: ${{ steps.target.outputs.source_branch }}
         run: |
           set -euo pipefail
           BRANCH="chore/promote-stg-${SHORT}"
@@ -241,7 +304,7 @@ jobs:
           git push origin "$BRANCH"
 
           # `[skip ci]` in the title becomes the squash commit message, which stops the
-          # merge from re-running all 13 builds and re-firing this workflow. The PR
+          # merge from re-running every image build and re-firing this workflow. The PR
           # touches only `deploy/**`, so `Build Fallback` supplies build-amd/build-arm.
           # The YAML block scalar strips this common indentation, so the heredoc body
           # and its EOF terminator both land at column 0 in the generated script.
@@ -254,10 +317,30 @@ jobs:
           commit. See ADR-0003.
           EOF
 
-          gh pr create \
-            --base v3 --head "$BRANCH" \
+          PR_URL=$(gh pr create \
+            --base "$SOURCE_BRANCH" --head "$BRANCH" \
             --title "chore(deploy): promote ${SHORT} to stg [skip ci]" \
-            --body-file /tmp/pr-body.md
+            --body-file /tmp/pr-body.md)
+
+          # The selected source branch may not require the generated-promotion
+          # verifier. Wait for its exact success status before allowing an immediate
+          # merge on an unprotected branch.
+          PROMOTION_HEAD=$(git rev-parse HEAD)
+          VERIFIED='false'
+          for attempt in 1 2 3 4 5 6; do
+            STATUS=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${PROMOTION_HEAD}/statuses" \
+              --jq '[.[] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv')
+            case "$STATUS" in
+              $'success\tVerified generated staging promotion')
+                VERIFIED='true'; break ;;
+              $'failure\t'* | $'error\t'*)
+                echo "::error::generated promotion verification failed: ${STATUS}"; exit 1 ;;
+            esac
+            echo "attempt ${attempt}: waiting for generated promotion verification on ${PR_URL}"
+            [ "$attempt" -eq 6 ] || sleep 20
+          done
+          [ "$VERIFIED" = 'true' ] \
+            || { echo "::error::generated promotion verification did not succeed for ${PR_URL}"; exit 1; }
 
           gh pr merge "$BRANCH" --squash --auto --delete-branch
 

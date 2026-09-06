@@ -1,0 +1,67 @@
+query QGetChatbotsInfoWithStandardModes {
+  getChatbotsInfo {
+    id
+    name
+    description
+    avatar
+    status
+    publicationUseCase
+    expectedStudentCount
+    reviewComment
+    publishedAt
+    standardModeConfig {
+      tutorEnabled
+      explainerEnabled
+      quizzerEnabled
+      courseName
+      subjectDomain
+      languageOfInstruction
+      scopeNote
+    }
+    modelSelection
+    allowedModelIds
+    allowedReasoningEffortsByModel {
+      modelId
+      efforts
+    }
+    creditInitialCredits
+    creditResetPeriod
+    creditResetAmount
+    creditMaxCredits
+    courses {
+      id
+      name
+    }
+    usageSummary {
+      threadCount
+      messageCount
+      participantCount
+      lastActivityAt
+      totalCredits
+      currentCredits
+      totalResets
+      lastResetAt
+    }
+    disclaimerSummary {
+      id
+      name
+      title
+      introText
+      acceptedCount
+      declinedCount
+      pendingCount
+    }
+    mcpConfigurations {
+      serverId
+      serverName
+      serverDescription
+      serverIsActive
+      chatMode
+      isEnabled
+      priority
+      allowedToolsCount
+    }
+    createdAt
+    updatedAt
+  }
+}

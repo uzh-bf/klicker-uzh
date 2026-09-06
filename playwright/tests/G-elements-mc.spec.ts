@@ -11,6 +11,7 @@ import { MC_DATA as MC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   addAnswerChoices,
+  clearEditorField,
   deleteElement,
   fillAnswerField,
   fillEditorField,
@@ -122,6 +123,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
   }) => {
     await searchAndEdit(page, MC.title)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await setElementStatus(page, statusLabels.review)
 
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(MC.titleEdited)
@@ -161,6 +163,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await validateElement(page, MC.titleEdited, [
       MC.contentEdited,
       MC.titleEdited,
+      statusLabels.review,
     ])
   })
 
@@ -180,8 +183,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clear feedback 1 re-disables
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await clearEditorField(page, 'insert-answer-feedback-1')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 1, MC.choicesFeedbacks[1])
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
@@ -224,6 +226,9 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
 
     await expect(page.getByTestId('insert-question-title')).toHaveValue(
       MC.titleEdited
+    )
+    await expect(page.getByTestId('select-question-status')).toContainText(
+      statusLabels.review
     )
     await verifyEditorField(page, 'insert-question-text', MC.contentEdited)
     await verifyAnswerAndFeedbackFields(

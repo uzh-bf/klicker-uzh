@@ -27,11 +27,14 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
+      resources:
+        limits:
+          memory: 2Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -49,11 +52,11 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -71,11 +74,11 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -105,7 +108,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -128,7 +131,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -159,7 +162,7 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -170,7 +173,7 @@ chat:
 
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-4.1-mini
+    fallbackId: gpt-5.6-luna
 
   modelRegistry:
     # "Auto" routes through the LiteLLM auto-router, which self-selects the
@@ -181,8 +184,9 @@ chat:
     # therefore use Auto by default; explicit model selections remain respected.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # cost mirrors the gpt-5.6-luna tier (the typical COMPLEX route); REASONING
-    # (gpt-5.6-sol-medium) is rare. Tune if the routed mix shifts.
+    # The accounting rate is the accepted rounded blend for an observed
+    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
+    # overhead remain outside the registry's selected-model token fields.
     - id: auto
       deploymentId: klickeruzh/azure/auto-router
       name: Auto
@@ -190,15 +194,36 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 1.0
+        output: 5.0
+    - id: gpt-5.6-luna
+      deploymentId: klickeruzh/azure/gpt-5.6-luna
+      name: GPT-5.6 Luna
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: true
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.2
+        output: 1.2
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
       supportsImageAttachments: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
         output: 8.0
@@ -215,6 +240,8 @@ chat:
         - medium
         - high
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.25
         output: 10.0
@@ -231,9 +258,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 2.5
+        output: 15.0
     - id: gpt-5.5
       deploymentId: klickeruzh/azure/gpt-5.5
       name: GPT-5.5
@@ -247,19 +276,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 5.0
         output: 30.0
-    - id: gpt-4.1-mini
-      deploymentId: klickeruzh/azure/gpt-4.1-mini
-      name: GPT-4.1 Mini
-      description: Small OpenAI model
-      supportsImageAttachments: true
-      fallback: true
-      cost:
-        input: 0.4
-        output: 1.6
-
   replicaCount: 1
 
   autoscaling:
@@ -281,7 +302,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -310,10 +331,10 @@ chat:
       memory: 768Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -336,7 +357,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -365,7 +386,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -388,7 +409,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -418,14 +439,14 @@ frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -470,7 +491,7 @@ frontendControl:
 backendGraphql:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -493,7 +514,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -538,14 +559,14 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -590,7 +611,7 @@ olatApi:
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
   replicaCount: 1
 
   affinity:
@@ -617,7 +638,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -639,13 +660,13 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3
+    tag: v3-ai
     pullPolicy: Always
 
   autoscaling:
@@ -692,7 +713,7 @@ assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -726,7 +747,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy
@@ -755,7 +776,7 @@ assessment:
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -789,7 +810,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -832,7 +853,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'ae9bc7ea526b'
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
 
     autoscaling:
@@ -867,7 +888,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy
@@ -894,7 +915,7 @@ assessment:
         memory: 200Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
-# backendGraphql image tag above (floating v3 on stg).
+# backendGraphql image tag above (floating selected source tag on stg).
 migrator:
   priorityClassName: staging-workload
   image:
