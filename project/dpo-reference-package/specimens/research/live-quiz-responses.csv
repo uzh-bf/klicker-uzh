@@ -1,0 +1,4 @@
+﻿participantPseudonym,liveQuizPseudonym,itemPseudonym,elementType,blockExecution,correctness,basePoints,correctnessPoints,bonusPoints,totalPoints,correctionOnly,submittedDay,responseChoices,responseValue,responseSelection,responseAssessment
+person_projectA_001,quiz_projectA_001,item_projectA_001,MC,1,CORRECT,10,10,2,22,false,2026-04-14,"1,3",,,
+person_projectA_002,quiz_projectA_001,item_projectA_001,MC,1,WRONG,10,0,1,11,false,2026-04-14,2,,,
+person_projectA_001,quiz_projectA_001,item_projectA_002,NUMERICAL,1,PARTIAL,10,5,0,15,false,2026-04-14,,1040.40,,

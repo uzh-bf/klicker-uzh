@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learning Analytics: Was du und deine Dozierenden sehen | KlickerUZH</title>
+  <style>
+    :root{--brand:#0033a0;--ink:#171717;--muted:#4b5563;--line:#d1d5db;--bg:#e7ebef}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Segoe UI",system-ui,sans-serif}
+    header{width:100%;padding:16px 24px;background:#344256;border-bottom:7px solid #e2001a;color:white}header a{color:white}
+    main{max-width:1119px;margin:auto;padding:24px 32px 48px}article{background:white;border:1px solid var(--line);border-radius:9px;padding:32px}
+    h1,h2,h3{line-height:1.3}h1{font-size:2rem;margin:12px 0}h2{font-size:1.4rem;margin:36px 0 12px;border-bottom:1px solid var(--brand);padding-bottom:8px}h3{font-size:1.1rem}
+    p{max-width:80ch}a{color:var(--brand)}a:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-offset:3px}
+    .eyebrow,.small{font-size:.88rem;color:var(--muted)}.review-note{padding:12px 16px;background:#eef3ff;border-left:3px solid var(--brand);margin:20px 0}
+    .columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{padding:18px;background:#f5f7fa;border:1px solid var(--line);border-radius:8px}.card h3{margin-top:0}
+    nav ul{display:flex;flex-wrap:wrap;gap:8px 24px;padding-left:20px}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.93rem;table-layout:fixed}caption{text-align:left;font-size:.88rem;color:var(--muted);margin-bottom:8px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:12px 10px;overflow-wrap:anywhere}th{background:#f0f3f7}td:first-child,th:first-child{width:32%}
+    details{border-bottom:1px solid var(--line);padding:14px 0}summary{cursor:pointer;font-weight:600;color:var(--brand)}details p{margin-bottom:0}
+    .example{border-left:3px solid #8495b1;padding-left:16px}.tag{display:inline-block;font-size:.8rem;background:#eef3ff;padding:2px 8px;border-radius:4px;color:var(--brand)}
+    footer{border-top:1px solid var(--line);margin-top:36px;padding-top:16px;font-size:.88rem;color:var(--muted)}
+    @media(max-width:700px){main{padding:16px}article{padding:20px}.columns{grid-template-columns:1fr}h1{font-size:1.65rem}th,td{padding:8px 5px;font-size:.84rem}}
+    @media print{header,nav,.back{display:none}body{background:white}main{padding:0}article{border:0;padding:0}details{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<header><strong>KlickerUZH</strong> · Learning Analytics</header>
+<main><article>
+  <a class="back" href="prototype.html">Zurück zum Prototyp</a>
+  <p class="eyebrow">Informationen für Studierende</p>
+  <h1>Dein Lernen besser verstehen. Den Unterricht mitgestalten.</h1>
+  <p>Welche Übungen fallen dir leichter als zuvor? Wo lohnt sich eine Wiederholung? Learning Analytics soll dir helfen, solche Fragen anhand deiner Lernaktivitäten zu beantworten. Gleichzeitig können zusammengefasste Ergebnisse zeigen, wo eine Lerngruppe mehr Erklärung oder Übung braucht.</p>
+  <div class="review-note"><strong>Vorschau zur geplanten ersten Version.</strong> Diese Seite beschreibt das angestrebte Angebot. Die Beispiele sind erfunden. Persönliche LA-Einblicke und die hier beschriebenen Schutzregeln sind noch nicht vollständig umgesetzt. Was bereits vorhanden ist und was später kommen könnte, steht am Ende dieser Seite.</div>
+  <nav aria-label="Inhalt"><ul>
+    <li><a href="#deine-einblicke">Deine Einblicke</a></li><li><a href="#dozierende">Was Dozierende sehen</a></li><li><a href="#daten">Welche Daten einbezogen werden</a></li><li><a href="#entscheidung">Deine Entscheidung</a></li><li><a href="#ausblick">Heute und später</a></li>
+  </ul></nav>
+
+  <h2 id="deine-einblicke">Was du selbst davon hast</h2>
+  <p>Geplant ist eine private Übersicht über deine neuen Übungen seit deiner Zustimmung: was du bearbeitet hast, welche Antworten richtig oder teilweise richtig waren und wie sich deine Ergebnisse beim Wiederholen verändern. Damit kannst du deine nächste Lernphase gezielter planen. Diese persönlichen Einblicke sollen nur für dich sichtbar sein.</p>
+  <div class="columns">
+    <section class="card"><span class="tag">Geplantes Beispiel: nur für dich</span><h3>Deine Übung: Zinsrechnung</h3><p>Du hast 8 von 10 Aufgaben bearbeitet. Beim ersten Versuch waren 5 von 8 Antworten richtig, beim letzten Versuch 7 von 8.</p><p><strong>Was du daraus machen kannst:</strong> Schau dir die Aufgabe an, bei der du noch unsicher bist, und versuche sie später noch einmal.</p></section>
+    <section class="card"><span class="tag">Geplantes Beispiel: nur für dich</span><h3>Deine nächste Lernphase</h3><p>Bei Barwert und Annuität waren mehrere Antworten teilweise richtig. Das kann ein Anlass sein, die Rechenschritte erneut durchzugehen.</p><p><strong>Du entscheidest:</strong> Eine solche Rückmeldung ist ein Lernhinweis. Sie sagt nicht, wie gut du ein Thema insgesamt beherrschst.</p></section>
+  </div>
+  <p>Eine Übersicht nach Themen setzt voraus, dass die Aufgaben passenden Themen zugeordnet sind. Für die erste Version stehen deshalb Übungen und Aktivitäten im Vordergrund. Persönliche Themenübersichten und zusätzliche Empfehlungen sind ein Ausbauziel, keine zugesicherte Funktion zum Start.</p>
+  <p>Deine Antworten müssen für diese private Übersicht deinem Konto zugeordnet werden können. Die Aussage „nur Gruppenwerte“ bezieht sich auf die LA-Ansichten für Dozierende in KlickerUZH. Sie bedeutet nicht, dass KlickerUZH für deinen eigenen Lernverlauf keinerlei persönliche Daten verarbeitet. Für Forschungsexporte gilt eine separate Auswahl.</p>
+
+  <h2 id="dozierende">Was deine Dozierenden sehen</h2>
+  <p>In der geplanten ersten Version sehen Dozierende Zusammenfassungen pro Kurs und Aktivität. Es gibt keine Liste mit den Fehlerquoten einzelner Studierender und keine Möglichkeit, von einem Gruppenwert zu einer Person zu wechseln. Die Berichte enthalten auch keine Kennungen, über die sich einzelne Lernverläufe verbinden lassen.</p>
+  <table>
+    <caption>Beispiel für einen freigegebenen Gruppenbericht. Alle Werte sind erfunden, gerundet und beziehen sich auf einbezogene Aktivitäten.</caption>
+    <thead><tr><th scope="col">Aktivität</th><th scope="col">Abgeschlossen</th><th scope="col">Richtig beim ersten Versuch</th><th scope="col">Richtig beim letzten Versuch</th></tr></thead>
+    <tbody><tr><th scope="row">Zinsrechnung</th><td>etwa 70 %</td><td>etwa 55 %</td><td>etwa 75 %</td></tr><tr><th scope="row">Barwert und Annuität</th><td>etwa 60 %</td><td>etwa 40 %</td><td>etwa 60 %</td></tr><tr><th scope="row">Optionen und Futures</th><td colspan="3">Keine Anzeige: Für eine geschützte Auswertung reichen die Daten nicht aus.</td></tr></tbody>
+  </table>
+  <p class="example"><strong>Was das im Unterricht ändern kann:</strong> Wenn viele in einer Übung Schwierigkeiten haben, kann die Lehrperson einen Rechenweg nochmals erklären, eine Aufgabe überarbeiten oder eine zusätzliche Übung anbieten. Sie erfährt aus diesem Bericht nicht, wer die Schwierigkeiten hatte.</p>
+  <p>Die erste Version soll auch grobe Verläufe zeigen: etwa, wie viel eine Gruppe in einer abgeschlossenen Woche geübt hat und wie häufig Übungen beendet oder wiederholt wurden. Rückmeldungen zur Qualität einer Aufgabe können zusammengefasst zeigen, wo Erklärungen fehlen.</p>
+  <p>Solche Werte beschreiben die teilnehmende Gruppe, nicht automatisch den gesamten Kurs. Nicht bearbeitete Aufgaben zählen nicht als falsche Antworten. Mehr Übungszeit bedeutet nicht zwingend mehr Lernen, und bessere Ergebnisse beim Wiederholen beweisen keinen Lernerfolg allein durch KlickerUZH. LA dient der Unterstützung des Unterrichts und wird nicht zur Benotung oder zur Entscheidung über deinen Kurszugang eingesetzt.</p>
+
+  <h2>Wie Gruppenberichte deine Privatsphäre schützen sollen</h2>
+  <p>Nur Namen zu entfernen reicht nicht. Eine kleine Gruppe oder eine seltene Kombination von Angaben kann verraten, wer gemeint ist. Deshalb soll die Freigabe mehrere Schutzregeln gemeinsam prüfen.</p>
+  <div class="columns">
+    <section class="card"><h3>Ausreichend grosse Gruppen</h3><p>Kleine oder auffällige Gruppen werden zusammengefasst oder nicht angezeigt. Auch ein Gruppenmittelwert kann entfallen, wenn er etwas über einzelne Personen verraten würde.</p></section>
+    <section class="card"><h3>Keine Rückschlüsse durch Vergleiche</h3><p>Berichte verwenden begrenzte Zeiträume und grobe Werte. Filter, Summen und frühere Berichte dürfen versteckte Einzelwerte nicht wieder sichtbar machen. Das gilt für alle LA-Ansichten für Dozierende in KlickerUZH.</p></section>
+  </div>
+  <p>Geplant sind Gruppenberichte, aus denen sich keine einzelnen Personen bestimmen lassen. Ob die Schutzregeln das in einer konkreten Auswertung erreichen, muss vor der Freigabe geprüft werden. Eine feste Mindestgrösse allein garantiert das nicht. Wenn eine Auswertung den Schutz nicht erfüllt, wird sie nicht bereitgestellt.</p>
+
+  <h2 id="daten">Welche Daten für die erste Version vorgesehen sind</h2>
+  <table>
+    <caption>Die Auswahl beschränkt sich auf Angaben, die einen nachvollziehbaren Lernhinweis oder Gruppenbericht ermöglichen.</caption>
+    <thead><tr><th scope="col">Angaben</th><th scope="col">Deine private Übersicht</th><th scope="col">Bericht für Dozierende</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Bearbeitete Übungen und Aufgaben</th><td>Dein Bearbeitungsstand seit deiner Zustimmung</td><td>Zusammengefasste Starts, Abschlüsse und Wiederholungen</td></tr>
+      <tr><th scope="row">Richtig, teilweise richtig oder falsch</th><td>Deine Ergebnisse und Veränderungen beim Üben</td><td>Geschützte Gruppenwerte pro Aktivität; keine Liste einzelner Fehlerquoten</td></tr>
+      <tr><th scope="row">Zeitliche Zuordnung</th><td>Wann du eine Übung bearbeitet hast</td><td>Grobe Zeiträume, etwa abgeschlossene Wochen; kein individueller Stundenplan</td></tr>
+      <tr><th scope="row">Bewertung einer Aufgabe</th><td>Keine zusätzliche persönliche Bewertung</td><td>Zusammengefasste Rückmeldungen, sofern die Schutzregeln erfüllt sind</td></tr>
+      <tr><th scope="row">Chat-Gespräche und hochgeladene Inhalte</th><td>Keine zusätzliche Inhaltsanalyse durch LA in der ersten Version</td><td>Keine Gesprächsinhalte, Zitate oder Themencluster in der ersten Version</td></tr>
+    </tbody>
+  </table>
+  <p>Für den Kursbetrieb bleiben Daten wie dein Konto und deine eingereichten Antworten erforderlich. Für die erste LA-Version ist kein zusätzlicher Verlauf deiner Klicks, keine Verbindung mit Daten anderer Websites und keine Analyse deiner Persönlichkeit vorgesehen.</p>
+  <p>Assessment-Ergebnisse haben einen eigenen Zweck: Berechtigte Personen können sie für Durchführung, Bewertung und Nachbearbeitung assessment- oder notenrelevanter Aktivitäten benötigen. Diese identifizierbaren Assessment-Daten sind kein LA-Gruppenbericht und bleiben von deiner LA-Wahl getrennt.</p>
+
+  <h2 id="entscheidung">Du entscheidest, ob du teilnimmst</h2>
+  <p>Du wählst ausdrücklich „Ja“ oder „Nein“. Es ist keine Antwort vorausgewählt. Deine Wahl gilt für dein Konto über alle Kurse hinweg und lässt sich in den Einstellungen jederzeit ändern. Kursberichte bleiben getrennt; daraus entsteht kein kursübergreifendes Profil für Dozierende.</p>
+  <p>Mit „Ja“ sollen deine neuen Aktivitäten die privaten LA-Einblicke und die geschützten Gruppenberichte ermöglichen. Du hilfst damit, Schwierigkeiten im Lernmaterial sichtbar zu machen. Du musst nicht teilnehmen: Mit „Nein“ bleiben Kurszugang, Übungen, Chat sowie deine Punkte und gewöhnlichen persönlichen Statistiken erhalten. Punkte sammelst du unabhängig davon, ob du der Rangliste beitrittst. Die zusätzlichen persönlichen LA-Einblicke stehen mit „Nein“ nicht zur Verfügung.</p>
+  <details open><summary>Was passiert, wenn ich später ausschalte?</summary><p>Ab deiner Änderung werden keine weiteren Aktivitäten für LA aufgenommen. Noch nicht freigegebene Gruppenberechnungen dürfen deine Beiträge nicht weiterverwenden. Persönliche LA-Daten und daraus abgeleitete Einblicke werden nach Verarbeitung der Änderung gelöscht. Bereits freigegebene Gruppenberichte bleiben bestehen, sofern sie die Schutzprüfung bestanden haben; sie werden nicht rückwirkend neu berechnet. Deine für den Kursbetrieb gespeicherten Antworten und Assessment-Unterlagen werden dadurch nicht gelöscht.</p></details>
+  <details><summary>Kann ich wieder einschalten?</summary><p>Ja, auch mehrmals. Dann zählen nur Aktivitäten ab der erneuten Zustimmung. Die Pause und frühere Aktivitäten werden nicht nachträglich aufgefüllt. Deshalb beginnt dein zusätzlicher LA-Verlauf erneut mit neuen Daten.</p></details>
+  <details><summary>Gilt mein Ja auch für Forschung?</summary><p>Nein. Forschung hat eine eigene Auswahl. Deine Zustimmung zu LA erlaubt nicht automatisch einen Forschungsexport. Anders als die LA-Ansichten können Forschungsdateien einzelne Datensätze enthalten, auch zu Lernaktivitäten und deren Auswertung. Direkte Kontokennungen werden entfernt oder ersetzt. Forschende dürfen nicht versuchen, Personen zu identifizieren, auch nicht durch Zusammenführen mit anderen Daten. Für diese Dateien gelten deine Forschungswahl und die Regeln des jeweiligen Projekts. Bei Freitext sind zusätzliche Schutzmassnahmen nötig.</p></details>
+  <details><summary>Was sehen andere Studierende?</summary><p>Sie erhalten keinen Zugang zu deinen privaten LA-Einblicken. Die Kursrangliste ist eine eigene Funktion mit einer eigenen Beitrittsentscheidung. Eine Ranglistenposition ist keine LA-Auswertung.</p></details>
+  <details><summary>Warum sehe ich manchmal noch nichts?</summary><p>Vielleicht hast du seit deiner Zustimmung noch zu wenige Aktivitäten bearbeitet. Gruppenberichte können ausserdem zurückgehalten werden, weil die Gruppe zu klein ist oder Rückschlüsse möglich wären. Fehlende Werte sind kein Urteil über deine Leistung.</p></details>
+
+  <h2 id="ausblick">Was es heute gibt und was dazukommen soll</h2>
+  <table>
+    <thead><tr><th scope="col">Stand</th><th scope="col" colspan="2">Was das bedeutet</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Im bestehenden Code vorhanden</th><td colspan="2">Eine persönliche Zeitachse für Punkte und Erfahrungspunkte sowie Auswertungen von Aktivität und Antworten für Dozierende. Einige heutige Dozierenden-Ansichten enthalten noch Einzelwerte. Sie entsprechen damit noch nicht dem hier beschriebenen Ziel.</td></tr>
+      <tr><th scope="row">Für die erste Version geplant</th><td colspan="2">Globale LA-Wahl mit Umsetzung des Widerrufs, private Einblicke in neue Übungen sowie ausschliesslich geschützte Gruppenberichte in den LA-Ansichten für Dozierende. Forschungsexporte bleiben davon getrennt. Die bisherige Punkte-Zeitachse ist keine Gegenleistung für eine LA-Zustimmung.</td></tr>
+      <tr><th scope="row">Möglicher späterer Ausbau</th><td colspan="2">Themenübersichten, zusätzliche Wiederholungshinweise und gemeinsame Themen aus Chat-Gesprächen. Vor einer Erweiterung müssen Nutzen, Qualität, Datennutzung und die dazu passende Entscheidung geklärt und erklärt werden.</td></tr>
+    </tbody>
+  </table>
+  <h3>Wie spätere Chat-Themen aussehen könnten</h3>
+  <p>Ein künftiger Bericht könnte etwa zeigen, dass viele Gespräche dieselbe Verständnisfrage zur Zinsrechnung betreffen. Dafür müssten Gesprächsinhalte ausgewertet werden. Ein freigegebener Bericht dürfte nur ausreichend breite Themen und geschützte Gruppenwerte enthalten, ohne Zitate, Gesprächsverläufe oder Zuordnung zu einzelnen Personen. Seltene Themen müssten entfallen oder zusammengefasst werden.</p>
+  <p>Eine Themenhäufung wäre ein Hinweis für die Unterrichtsplanung, keine Aussage darüber, ob jemand etwas verstanden hat. Die heutigen experimentellen Auswertungsskripte sind noch kein solches Angebot für Studierende oder Dozierende. Diese Erweiterung ist nicht Bestandteil der beschriebenen ersten LA-Version.</p>
+
+  <h2 id="beispieldateien">Beispieldateien zum Herunterladen</h2>
+  <p>Diese Excel-Dateien zeigen dir konkret, welche Angaben die verschiedenen Ansichten und Downloads enthalten können. Alle Daten sind erfunden. Jedes Arbeitsblatt mit Daten hat eine Kopfzeile mit den exportierten Feldern; das Blatt „Hinweise“ erklärt Herkunft, Bedeutung und Grenzen.</p>
+  <ul>
+    <li><a href="outputs/consent-la-download-examples/la-gruppenbericht-beispiel.xlsx" download>LA-Gruppenbericht (Excel)</a>: die geplante Dozierenden-Ansicht als Arbeitsblatt, mit Gruppenwerten und einem unterdrückten Ergebnis. Keine Einzelzeilen.</li>
+    <li><a href="outputs/consent-la-download-examples/forschung-beispieldaten.xlsx" download>Forschungsexport (Excel)</a>: einzelne Quizantworten, Übungsverläufe, kursbezogene LA-Kennwerte und Chat-Nachrichten. Die Forschungswahl gilt unabhängig von LA. Diese Daten erscheinen nicht als Einzelzeilen in der LA-Ansicht.</li>
+    <li><a href="outputs/consent-la-download-examples/assessment-beispieldaten.xlsx" download>Assessment-Export (Excel)</a>: Identitätsangaben und assessmentrelevante Punktwerte für berechtigte Personen, getrennt von Forschung und LA.</li>
+  </ul>
+  <p class="small">Die Dateien dienen der Prüfung des geplanten Datenumfangs. Die Assessment-Spalten entsprechen dem bestehenden CSV-Export. Forschungsdateien zeigen vorgeschlagene Datenzusammenstellungen; die Chat-Tabelle ist ein Auszug aus dem JSON-Beispiel. Die Arbeitsblätter belegen weder einen bereits verfügbaren Excel-Download noch eine abgeschlossene Datenschutzprüfung.</p>
+
+  <h2>Fragen zu deinen Daten</h2>
+  <p>Die <a href="https://www.klicker.uzh.ch/privacy_policy">KlickerUZH Datenschutzbestimmungen</a> erklären die Datenverarbeitung und die Kontaktmöglichkeiten für Fragen, Auskunft oder Löschung. Bei einer Rückmeldung zu deinen LA-Einblicken hilft eine Beschreibung der betreffenden Übung; du musst keine persönlichen Chat-Inhalte weitergeben.</p>
+  <footer>Informationsentwurf für die Produkt- und Datenschutzprüfung · 5. September 2026. Die Beispiele beschreiben das Zielbild und belegen weder eine heutige Verfügbarkeit noch eine bereits abgeschlossene Schutzprüfung.</footer>
+</article></main>
+</body>
+</html>
