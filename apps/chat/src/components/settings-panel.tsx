@@ -86,28 +86,22 @@ export function SettingsPanel() {
             {/* model selection */}
             <div data-cy="chat-model-selection" className="space-y-1">
               {modelSelectionEnabled ? (
-                <label className="block space-y-1">
-                  <span className="text-sm font-bold">
-                    {t('chat.settingsPanel.aiModelLabel')}
-                  </span>
-                  <Select
-                    data={{ cy: 'chat-model-select' }}
-                    placeholder={t('chat.settingsPanel.selectAiModel')}
-                    items={modelOptions.map((option) => ({
-                      value: option.id,
-                      label: option.name,
-                    }))}
-                    onChange={handleModelChange}
-                    value={selectedModel}
-                  />
-                </label>
-              ) : (
-                <div className="text-sm font-bold">
-                  {t('chat.settingsPanel.aiModelLabel')}
-                </div>
-              )}
-              {modelSelectionEnabled ? (
                 <>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-bold">
+                      {t('chat.settingsPanel.aiModelLabel')}
+                    </span>
+                    <Select
+                      data={{ cy: 'chat-model-select' }}
+                      placeholder={t('chat.settingsPanel.selectAiModel')}
+                      items={modelOptions.map((option) => ({
+                        value: option.id,
+                        label: option.name,
+                      }))}
+                      onChange={handleModelChange}
+                      value={selectedModel}
+                    />
+                  </label>
                   {selectedModelDescription ? (
                     <p className="text-muted-foreground text-sm">
                       {selectedModelDescription}
@@ -116,6 +110,9 @@ export function SettingsPanel() {
                 </>
               ) : (
                 <>
+                  <div className="text-sm font-bold">
+                    {t('chat.settingsPanel.aiModelLabel')}
+                  </div>
                   <div
                     data-cy="chat-model-display"
                     className="rounded-md border px-3 py-2 text-sm"
