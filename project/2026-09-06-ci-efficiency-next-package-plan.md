@@ -50,13 +50,13 @@ skill keeps prerequisites, acceptance, and authority explicit in this artifact.
 
 ### Measurements and limitations
 
-| Verified observation | Consequence |
-| --- | --- |
-| [Latest completed PR Playwright run](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694804) has a 4m59 build and shards of approximately 11–15m33. Shards start 2–3 seconds after the build. | Execution, not queueing, dominates this sample. It is not a representative fleet benchmark. |
-| That run was created at 21:39:52 UTC; global caching was enabled at 21:40:14 UTC. Its logs explicitly report caching disabled. | Its zero of 21 cached tasks cannot evaluate the newly enabled cache. |
-| [GraphQL validation](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694587) takes 5m19 overall. Container initialization takes 53 seconds, installation 29 seconds, manual builds 64 seconds, tests 98 seconds. | Graph compilation reuse can reduce one component, not the whole job. |
-| [Code validation](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694576) takes under two minutes. | Preserve its existing affected-task optimization; inspect reuse without adding more jobs. |
-| [Trusted seed attempt 2](https://github.com/uzh-bf/klicker-uzh/actions/runs/33992561288/attempts/2) reports 21 of 21 tasks cached on both architectures. | This proves seed self-reuse, not compatibility with other workflows. |
+| Verified observation                                                                                                                                                                                                     | Consequence                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [Latest completed PR Playwright run](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694804) has a 4m59 build and shards of approximately 11–15m33. Shards start 2–3 seconds after the build.                    | Execution, not queueing, dominates this sample. It is not a representative fleet benchmark. |
+| That run was created at 21:39:52 UTC; global caching was enabled at 21:40:14 UTC. Its logs explicitly report caching disabled.                                                                                           | Its zero of 21 cached tasks cannot evaluate the newly enabled cache.                        |
+| [GraphQL validation](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694587) takes 5m19 overall. Container initialization takes 53 seconds, installation 29 seconds, manual builds 64 seconds, tests 98 seconds. | Graph compilation reuse can reduce one component, not the whole job.                        |
+| [Code validation](https://github.com/uzh-bf/klicker-uzh/actions/runs/33993694576) takes under two minutes.                                                                                                               | Preserve its existing affected-task optimization; inspect reuse without adding more jobs.   |
+| [Trusted seed attempt 2](https://github.com/uzh-bf/klicker-uzh/actions/runs/33992561288/attempts/2) reports 21 of 21 tasks cached on both architectures.                                                                 | This proves seed self-reuse, not compatibility with other workflows.                        |
 
 The planner found that GraphQL declares `feature-flags`, and that Prisma
 generates source outside the generic `dist` outputs. Verify those contracts in
@@ -64,12 +64,12 @@ the first slice; do not copy the existing manual package list blindly.
 
 ### Delegation map
 
-| Work item | Owner | Acceptance |
-| --- | --- | --- |
-| Establish task and cache compatibility | Main | Per-task compatibility matrix and explicit sharing decision; environment and trust decisions remain coupled. |
-| Convert hosted dependency builds | Executor | Exact dependency graph, complete cold/restored outputs, existing suites pass. |
-| Wire compatible cache restoration | Main | Restore-only consumers, trusted writer, correct misses and outputs; retain trust-sensitive decisions. |
-| Verify and review the integrated package | Main | Focused checks, resolved reviews, local timing evidence, explicit hosted-proof limits. |
+| Work item                                | Owner    | Acceptance                                                                                                   |
+| ---------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| Establish task and cache compatibility   | Main     | Per-task compatibility matrix and explicit sharing decision; environment and trust decisions remain coupled. |
+| Convert hosted dependency builds         | Executor | Exact dependency graph, complete cold/restored outputs, existing suites pass.                                |
+| Wire compatible cache restoration        | Main     | Restore-only consumers, trusted writer, correct misses and outputs; retain trust-sensitive decisions.        |
+| Verify and review the integrated package | Main     | Focused checks, resolved reviews, local timing evidence, explicit hosted-proof limits.                       |
 
 ### Establish compatibility before changing workflows
 
@@ -164,13 +164,13 @@ after execution-plan approval. Publication and live activation remain withheld.
 
 ### Other CI improvements, outside this package
 
-| Candidate | Next evidence or decision |
-| --- | --- |
-| Docker layer caching | The inspected staging manage build uses `no-cache: true`. Coordinate existing Docker ownership before a single-image cache pilot; preserve image inputs and deployment behavior. |
-| Smarter draft Playwright runs | Complete existing shadow and draft-to-ready acceptance before activation; ready PRs retain full coverage. |
-| Fewer scheduler-only jobs | The fallback workflow allocates two success-only jobs. Verify consumers and required-check names before consolidating them. |
-| Less repeated validation | Prove test-subject equivalence before suppressing push versus PR runs; branch and merge-ref runs are not automatically equivalent. |
-| Smaller service sets and balanced shards | Repair timing publication first, then measure setup and slow-tail tests; preserve meaningful integration coverage. |
+| Candidate                                | Next evidence or decision                                                                                                                                                        |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker layer caching                     | The inspected staging manage build uses `no-cache: true`. Coordinate existing Docker ownership before a single-image cache pilot; preserve image inputs and deployment behavior. |
+| Smarter draft Playwright runs            | Complete existing shadow and draft-to-ready acceptance before activation; ready PRs retain full coverage.                                                                        |
+| Fewer scheduler-only jobs                | The fallback workflow allocates two success-only jobs. Verify consumers and required-check names before consolidating them.                                                      |
+| Less repeated validation                 | Prove test-subject equivalence before suppressing push versus PR runs; branch and merge-ref runs are not automatically equivalent.                                               |
+| Smaller service sets and balanced shards | Repair timing publication first, then measure setup and slow-tail tests; preserve meaningful integration coverage.                                                               |
 
 Vercel is not mandatory: Turbo supports a self-hosted compatible HTTP cache.
 That is not proposed here because it adds operations without proven need.
@@ -183,11 +183,37 @@ all task caches; narrowing it requires a separate input-usage audit, not deletio
 
 ## Progress
 
-Execution approved on 2026-09-06; compatibility investigation is active. Native planner returned
+Execution approved on 2026-09-06; build verification is active. Native planner returned
 `DONE — VERDICT APPROVED` on 2026-09-06. Its findings about task identity,
 generated outputs, compatibility, and measurement limits are retained above.
 The parent independently refreshed the remote baseline and confirmed activation
-timing. No build-equivalence verification or implementation of this package has run.
+timing. The dependency-graph conversion is implemented. Its dry runs select eight
+GraphQL/worker tasks and four unit dependency tasks. The cold GraphQL graph
+passes all eight builds; isolated Chat, PWA, grading, Markdown, util, and
+GraphQL suites pass. All 60 existing Playwright CI contract checks pass.
+
+Existing Playwright seeds cannot supply these `build` tasks. Cache wiring is
+deferred under the approved compatibility fallback; no seed workload, cache
+service, credential, or setting is added. See the
+[compatibility evidence](2026-09-06-hosted-build-cache-compatibility.md).
+
+Restoration passes with eight cache hits and complete `dist` artifacts while
+generated source is absent. All 1,494 tests pass on both cold and restored
+outputs. Mixed-hit compilation passes with five restored producers and three
+rebuilt tasks. No output correction is needed for these consumers.
+
+Test portfolio: existing suites protect test execution; Turbo dry runs protect
+the selected dependency closure; cold/restored/mixed probes protect output
+equivalence. No new maintained test is needed for the workflow-only conversion.
+Implementation commit: `50898f9e5191480463b578a19aaee74b80d6443a`.
+Simplification is complete: retain the explicit build roots required by the
+plan, even where today's dependency edges also reach them. Risk review and
+integrated final review remain pending. No maintained tests were added or removed.
+
+The exact disposable Compose project `klicker-ci-build-graphs-proof` is stopped;
+its running-service query returns no entries. All named build/test containers
+have exited. No Devrouter runtime or routes were started. Container data and
+task-local probe backups are preserved; no deletion or broad cleanup occurred.
 
 The separate timing-ref repair is one uncommitted line in
 `update-playwright-timings.yml`. Missing-ref reproduction, valid commit lookup,
@@ -198,7 +224,6 @@ Execution lane: `trees/rs/hosted-test-build-graphs`, branch
 `rs/hosted-test-build-graphs`, baseline `1387f884ba731400b251e5646d83de6a9aa9e3b9`.
 The timing repair remains in its original worktree and is excluded.
 
-Boundary owner: main. Next action: establish the compatibility
-matrix in an owned execution lane. Stop only for a material cost/trust decision,
+Boundary owner: main. Next action: finish independent review and local evidence
+commits. Stop only for a material cost/trust decision,
 unavailable isolated verification, competing ownership, or new external action.
-
