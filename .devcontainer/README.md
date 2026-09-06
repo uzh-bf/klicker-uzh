@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.46 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -70,7 +70,7 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 
 ## Profiles
 
-This repository pins devrouter 0.0.46. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -80,6 +80,9 @@ Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
 generated configuration when a cold or warm transition fails. Version 0.0.46
 also queues parallel provider transitions fairly, reports wait progress, and
 keeps detached-state recovery fail-closed while prior containers still exist.
+Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
+and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
+retained-runtime configuration and mount comparison.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
