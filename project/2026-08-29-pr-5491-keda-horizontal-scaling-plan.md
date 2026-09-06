@@ -84,12 +84,14 @@ without separate approval.
   completed rebase/publication approvals are consumed, not reusable grants.
 - **Boundary owner:** `self` for each active package. Separate proposed tasks
   never become hidden integration owners.
-- **Granted now:** Finish the foundation documentation correction on the
-  recorded baseline, verify and commit it, and use the previously approved
-  one-time patch-identical upper propagation and atomic publication if the
-  stack tool can exclude trunk integration. Existing babysit authority covers
-  in-scope feedback and CI repairs, review replies, and PR updates.
-- **Withheld now:** Fresh upstream integration, new topology, PR visibility
+- **Granted now:** The documentation correction and its publication are
+  complete. The user separately approved one integration of current `v3-ai`,
+  conflict resolution, verification, and atomic force-with-lease publication
+  of `rs/scaling-replica-ownership` and `rs/hatchet-worker-runtime-contract`
+  to `origin`. Preserve the upper semantic layer and existing PR topology.
+  Existing babysit authority covers in-scope feedback and CI repairs, review
+  replies, and PR updates. The integration grant is consumed on publication.
+- **Withheld now:** Any further upstream integration, new topology, PR visibility
   changes, merge, staging promotion, Argo reconciliation, cluster connectivity
   or changes, secret writes, load generation, pod termination, spot eviction,
   production rollout, node-pool changes, and Goldilocks request changes.
@@ -1342,10 +1344,22 @@ a values edit.
   runtime also requires separately authorized live proof. Both have implemented
   source and passing normal CI, but neither is merged or live-proven. Disabled
   KEDA primitives and later packages remain unimplemented by this stack.
-- **Next action:** Verify and commit these documentation changes, preserve the
-  upper semantic patch during the one approved propagation/publication, then
-  reconcile fresh CI and review feedback. Fresh target integration requires a
-  separate grant. Disabled KEDA implementation starts after both foundations
+- **Integration follow-up:** Documentation was published at lower `17335e3b`
+  and upper `963c458e`; both documentation review threads were resolved.
+  The user then approved one target integration and atomic publication.
+  `gh stack rebase` incorporated `v3-ai` at `5c8ee4b6` locally. Conflict
+  resolution retains upstream identity checks and its shared Playwright build
+  action, which already includes both required package artifacts. Helm keeps
+  one pinned v5 setup with Helm v3.21.4. The replica-ownership check exposed
+  an upstream duplicate GrowthBook ConfigMap key; removing its undocumented
+  duplicate restores valid rendering without changing the configured value.
+  The existing check now passes all default renders, the HPA render, values
+  checks, and seven negative fixtures. No runtime or cluster was started.
+- **Next action:** Complete integration verification, propagate the lower
+  repair while preserving the upper semantic layer, and publish both branches
+  atomically under the new one-time grant. Reconcile fresh CI and feedback;
+  do not reuse pre-integration CI as current-head proof. Disabled KEDA
+  implementation starts after both foundations
   land and the source authentication interface is frozen; staging activation
   additionally needs capacity, observability, numerical SLOs, and live authority.
 
