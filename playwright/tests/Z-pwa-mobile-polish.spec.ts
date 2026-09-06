@@ -579,6 +579,11 @@ for (const locale of ['en', 'de']) {
       page,
     }, testInfo) => {
       const quiz = await createActiveLiveQuiz()
+      const prisma = await getPrisma()
+      await prisma.liveQuiz.update({
+        where: { id: quiz.id },
+        data: { isGamificationEnabled: true },
+      })
       await page.emulateMedia({ reducedMotion: 'reduce' })
       let releaseResponse!: () => void
       const responsePending = new Promise<void>((resolve) => {
@@ -626,6 +631,12 @@ for (const locale of ['en', 'de']) {
       await expect(
         page.getByRole('status').filter({ hasText: /\S/ })
       ).toBeVisible()
+      const confetti = page.locator('[data-slot="confetti-explosion-screen"]')
+      await expect(confetti).toHaveCount(0)
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await expect(confetti).toBeVisible()
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await expect(confetti).toHaveCount(0)
     })
   })
 }
