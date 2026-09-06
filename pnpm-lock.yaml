@@ -460,10 +460,10 @@ importers:
         version: 0.522.0(react@19.2.7)
       next:
         specifier: 16.2.11
-        version: 16.2.11(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 16.2.11(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       next-intl:
         specifier: 4.13.0
-        version: 4.13.0(next@16.2.11(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+        version: 4.13.0(next@16.2.11(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
       nookies:
         specifier: 2.5.2
         version: 2.5.2
@@ -883,6 +883,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../../packages/product-updates
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
@@ -2284,6 +2287,9 @@ importers:
 
   packages/shared-components:
     dependencies:
+      '@apollo/client':
+        specifier: ^3.13.8
+        version: 3.13.8(@types/react@19.2.17)(graphql-ws@6.0.6(graphql@16.11.0)(ws@8.18.3))(graphql@16.11.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@fortawesome/fontawesome-svg-core':
         specifier: ^6.7.2
         version: 6.7.2
@@ -2296,6 +2302,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.7)
+      '@socialgouv/matomo-next':
+        specifier: ^1.9.1
+        version: 1.9.1(next@16.2.11(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@tailwindcss/postcss':
         specifier: ^4.1.11
         version: 4.1.12
@@ -2342,12 +2351,18 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
     devDependencies:
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../graphql
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../markdown
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../product-updates
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types
@@ -20421,6 +20436,29 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
+  '@apollo/client@3.13.8(@types/react@19.2.17)(graphql-ws@6.0.6(graphql@16.11.0)(ws@8.18.3))(graphql@16.11.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.11.0)
+      '@wry/caches': 1.0.1
+      '@wry/equality': 0.5.7
+      '@wry/trie': 0.5.0
+      graphql: 16.11.0
+      graphql-tag: 2.12.6(graphql@16.11.0)
+      hoist-non-react-statics: 3.3.2
+      optimism: 0.18.1
+      prop-types: 15.8.1
+      rehackt: 0.1.0(@types/react@19.2.17)(react@19.2.7)
+      symbol-observable: 4.0.0
+      ts-invariant: 0.10.3
+      tslib: 2.8.1
+      zen-observable-ts: 1.2.5
+    optionalDependencies:
+      graphql-ws: 6.0.6(graphql@16.11.0)(ws@8.18.3)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+    transitivePeerDependencies:
+      - '@types/react'
+
   '@apollo/protobufjs@1.2.7':
     dependencies:
       '@protobufjs/aspromise': 1.1.2
@@ -28131,6 +28169,10 @@ snapshots:
   '@socialgouv/matomo-next@1.9.1(next@16.2.11(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
     dependencies:
       next: 16.2.11(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+
+  '@socialgouv/matomo-next@1.9.1(next@16.2.11(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
+    dependencies:
+      next: 16.2.11(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
   '@socket.io/component-emitter@3.1.2': {}
 

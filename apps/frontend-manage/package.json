@@ -22,6 +22,7 @@
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/product-updates": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",

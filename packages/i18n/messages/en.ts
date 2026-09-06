@@ -287,6 +287,16 @@ export default {
     },
   },
   shared: {
+    productUpdates: {
+      feedTitle: 'New in KlickerUZH',
+      empty: 'There are no new product updates at the moment.',
+      readMore: 'Read more',
+      dismiss: 'Dismiss',
+      maturity: {
+        preview: 'Preview',
+        pilot: 'Pilot',
+      },
+    },
     table: {
       download: 'Download as CSV',
       noResults: 'No results.',
@@ -1876,6 +1886,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reportRecordsRefreshError:
         'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
       reportTimeZone: 'Europe/Zurich',
+    },
+    productUpdates: {
+      pageTitle: 'Product Updates',
+      showAll: 'See all product updates',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
