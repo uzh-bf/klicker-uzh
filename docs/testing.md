@@ -208,7 +208,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-The root dependency pins `@devrouter/cli` to exact version `0.0.51`; its reviewed
+The root dependency pins `@devrouter/cli` to exact version `0.0.55`; its reviewed
 minimum-release-age exception is exact as well. The package's optional native
 SSH helpers are explicitly denied build scripts because profile planning has no
 Docker or SSH path.
