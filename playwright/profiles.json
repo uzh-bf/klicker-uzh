@@ -39,7 +39,7 @@
     },
     {
       "profile": "manage,chat",
-      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+      "specs": ["A-login.spec.ts", "Y-chat.spec.ts", "Y-mobile-polish.spec.ts"]
     },
     {
       "profile": "manage,live-quiz",

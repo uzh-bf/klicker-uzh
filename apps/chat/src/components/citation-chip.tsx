@@ -39,7 +39,11 @@ export function CitationChip({ index }: { index: number }) {
   const handleClick = (event: MouseEvent) => {
     event.preventDefault()
     const target = document.getElementById(`src-${messageId}-${source.index}`)
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches
+      ? 'auto'
+      : 'smooth'
+    target?.scrollIntoView({ behavior, block: 'center' })
     // `preventScroll` avoids fighting the smooth scroll above: `.focus()`
     // would otherwise jump the card into view instantly on its own.
     target?.focus({ preventScroll: true })
