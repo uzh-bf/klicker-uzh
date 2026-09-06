@@ -1263,15 +1263,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
     productUpdates: {
-      feedTitle: 'Neu in KlickerUZH',
       menuLabel: 'Neuigkeiten',
-      empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
-      readMore: 'Mehr erfahren',
-      dismiss: 'Ausblenden',
-      maturity: {
-        preview: 'Vorschau',
-        pilot: 'Pilot',
-      },
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',

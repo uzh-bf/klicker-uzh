@@ -210,7 +210,7 @@ function Header({
             >
               <FontAwesomeIcon
                 icon={faBullhorn}
-                title={t('pwa.productUpdates.feedTitle')}
+                title={t('shared.productUpdates.feedTitle')}
               />
             </Button>
           </NotificationBadgeWrapper>

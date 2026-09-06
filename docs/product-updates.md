@@ -220,16 +220,18 @@ catalog id as the event name: `Eligible` once per page load per entry, then
 
 Entry copy always comes from the catalog in the reader's locale. Only the chrome
 around it — feed title, empty state, dismiss and read-more labels, and the
-`preview`/`pilot` maturity labels — lives under `manage.productUpdates` in
-`packages/i18n/messages/de.ts` and `en.ts`.
+`preview`/`pilot` maturity labels — lives under `shared.productUpdates` in
+`packages/i18n/messages/de.ts` and `en.ts`; each application keeps only its own
+surface labels (the archive page title and link on manage, the menu label on
+the PWA) under `manage.productUpdates` and `pwa.productUpdates`.
 
 ## The student feed
 
-`apps/frontend-pwa/src/components/productUpdates/` mirrors the lecturer surface
-for audience `student` on surface `pwa`: the same hook shape, the same card, the
-same funnel events, with its chrome under `pwa.productUpdates`. The card and the
-hook are copies rather than shared code, because the two applications do not
-share a component package for this.
+`apps/frontend-pwa/src/components/productUpdates/` holds the student
+counterpart of the manage wrappers: a `useProductUpdates` wrapper that fixes
+audience `student` and surface `pwa` and passes the assessment build flag, and a
+feed modal wrapper that renders the shared modal `fullScreen`. Card, hook, modal
+shell, and funnel events are the shared components described above.
 
 `apps/frontend-pwa/src/components/Layout.tsx` owns the surface. It decides
 whether product updates may appear at all, reads the feed once, hands the unread
