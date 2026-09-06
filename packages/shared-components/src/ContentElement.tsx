@@ -39,6 +39,7 @@ function ContentElement({
           </span>
           <DynamicMarkdown
             content={element.elementData.content}
+            expandLabel={t('shared.generic.expandImage')}
             withProse
             data={{ cy: `content-element-md-${elementIx}` }}
             className={{ root: 'p-2' }}

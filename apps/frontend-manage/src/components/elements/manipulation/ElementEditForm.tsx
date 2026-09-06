@@ -182,6 +182,14 @@ function ElementEditForm({
       if (event.key !== 'Escape' || collectionModal.open) return
 
       const eventPath = event.composedPath()
+      const owningDialog = eventPath.find(
+        (element) =>
+          element instanceof HTMLElement &&
+          element.getAttribute('role') === 'dialog'
+      )
+      if (owningDialog !== formBodyRef.current?.closest('[role="dialog"]'))
+        return
+
       const formOwnsEvent = [formBodyRef.current, formActionsRef.current].some(
         (element) => element && eventPath.includes(element)
       )

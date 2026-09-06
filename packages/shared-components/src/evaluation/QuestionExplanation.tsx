@@ -24,6 +24,7 @@ function QuestionExplanation({ explanation }: QuestionExplanationProps) {
           root: 'prose prose-sm prose-p:mb-1 prose-p:mt-0 max-w-none text-green-800',
         }}
         content={explanation}
+        expandLabel={t('shared.generic.expandImage')}
       />
     </UserNotification>
   )

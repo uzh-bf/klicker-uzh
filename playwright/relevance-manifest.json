@@ -77,7 +77,8 @@
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Y-chat.spec.ts",
-        "Z-credential-verification.spec.ts"
+        "Z-credential-verification.spec.ts",
+        "Z-preview-mobile-polish.spec.ts"
       ]
     },
     {
@@ -157,7 +158,8 @@
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Y-chat.spec.ts",
-        "Z-credential-verification.spec.ts"
+        "Z-credential-verification.spec.ts",
+        "Z-preview-mobile-polish.spec.ts"
       ]
     }
   ]

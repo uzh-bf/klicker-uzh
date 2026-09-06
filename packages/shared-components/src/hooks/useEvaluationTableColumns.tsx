@@ -56,6 +56,7 @@ function useEvaluationTableColumns({
             return (
               <Markdown
                 content={row.getValue('value')}
+                expandLabel={t('shared.generic.expandImage')}
                 className={{ img: 'max-h-32' }}
               />
             )
