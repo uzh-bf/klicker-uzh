@@ -10,11 +10,12 @@ with measured queue latency, fallback, recovery, and rollback.
 
 | Package | Current evidence | Remaining work |
 |---|---|---|
-| W0 — Replica ownership | [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491), locally integrated with `v3-ai` at `5c8ee4b6`; conflict repair, render gate, 40-task check graph, and normal commit checks pass | Atomic publication, fresh hosted CI and feedback, then authorized foundation landing |
-| W1 — Worker runtime | [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492), upper semantic patch preserved on the integrated lower; 18 tests, worker checks, and 26-task production build pass | Atomic publication, fresh CI and review-policy reconciliation, foundation landing, and separately authorized live lifecycle proof |
+| W0 — Replica ownership | [PR #5491](https://github.com/uzh-bf/klicker-uzh/pull/5491), published integrated with `v3-ai` at `5c8ee4b6`; hosted CI green except three Playwright failures inherited from the `v3-ai` baseline; review threads resolved | Final review once the OpenRouter key limit resets, a ruling on the inherited Playwright failures, then authorized foundation landing |
+| W1 — Worker runtime | [PR #5492](https://github.com/uzh-bf/klicker-uzh/pull/5492), published on the integrated lower; review feedback addressed; hosted CI matches the lower | Final review (stack roots on consolidation branches are eligible since PR #5800), foundation landing after W0, and separately authorized live lifecycle proof |
 | W2 — Disabled KEDA primitives | Not implemented in this stack | Land source foundations, freeze the authentication interface, then implement and fixture-test disabled resources |
 | W3a–W3c — Platform, capacity, and observability | Planned; this refresh supplies no live evidence | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
+| W10 — Chat and MCP multi-replica readiness | Added 2026-09-06 from a source scan; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
 
 The user requested this roadmap refresh and goal execution on 2026-09-06.
 Continue the approved dependency order through local work, checks, reviews,
@@ -150,6 +151,17 @@ without separate approval.
   **Decision:** Goldilocks owns recommendations and approved requests; this
   plan owns slots, floors, thresholds, caps, and placement. A versioned
   capacity artifact joins the two workstreams and blocks stale promotion.
+- **Problem:** Chat and the MCP servers were absent from the W9 inventory,
+  and both carry state that plain replica scaling would break.
+  **Evidence:** FastMCP 4.13.1 implements the handshake-based MCP revisions
+  with in-process sessions and documents that it does not support the stateless
+  2026-07-28 specification; production runs two MCP replicas with anti-affinity
+  spread but no session affinity. Chat holds each streamed LLM response in
+  process for the request's lifetime and has no drain handling beyond its
+  readiness probe; a source scan found no cross-request server state.
+  **Decision:** W10 makes both safe for more than one replica first (stateless
+  MCP transport or an explicit substitute, chat drain contract), independent of
+  the worker packages. W9 then evaluates them with request-based signals.
 - **Assumptions:** Live KEDA version, CRDs, Hatchet revision, metric labels,
   scrape health, node health, and Secret projection remain unverified until
   E1b. The current floors are the migration baseline, not final optimized
@@ -1216,9 +1228,14 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
 - **Problem:** Replacing an HPA with KEDA without a better signal only changes
   YAML ownership. The current chart has CPU-utilization HPAs for PWA, Manage,
   and GraphQL but no application request metrics.
-- **Do:** Inventory PWA, Manage, GraphQL, and other HTTP workloads. Prototype or
+- **Do:** Inventory PWA, Manage, GraphQL, chat, and the MCP student and
+  lecturer servers. Chat and the MCP servers enter the comparison only after
+  W10 proves they serve correctly from any replica. Prototype or
   observe low-cardinality request-rate or in-flight metrics only where they may
-  predict saturation better than the existing CPU HPA policy. Record an
+  predict saturation better than the existing CPU HPA policy; the candidate
+  signals are in-flight requests per replica for chat and request rate per
+  replica for the MCP servers, since CPU is a weak saturation proxy for
+  LLM-bound streaming requests. Record an
   explicit migrate/defer decision per service. Do not implement an HPA-to-KEDA
   migration in this item;
   an accepted candidate receives its own execution package.
@@ -1235,8 +1252,64 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
 - **Boundary owner:** Each HTTP service owner and platform operations.
 - **Release note:** Decision record only; no release note unless a later
   execution package implements a migration.
-- **Depends on / gates:** W0-W3c, selected W8a-W8d3 evidence, A3, and current
-  Goldilocks recommendations.
+- **Depends on / gates:** W0-W3c, selected W8a-W8d3 evidence, A3, W10 for chat
+  and the MCP servers, and current Goldilocks recommendations.
+
+### W10 — Make chat and the MCP servers safe for more than one replica
+
+- **Priority:** P2; independent of the worker packages. The MCP servers already
+  run two replicas in production without session affinity, so the correctness
+  part is a live condition, not a future scaling concern.
+- **Route:** `main` owns the transport decision and the drain contract;
+  `executor` may implement bounded slices once the prototype has answered the
+  transport question.
+- **Acceptance:** The MCP student and lecturer servers serve every request
+  correctly from any replica, proven by a test that drives chat's MCP client
+  against two server instances. Chat finishes in-flight streamed responses
+  across a rolling restart and a scale-in. Both record their candidate signal
+  for W9.
+- **Test obligation:** One integration test for MCP request handling across two
+  instances without session continuity; one lifecycle test for chat draining
+  (readiness flips, the in-flight stream completes, the process exits within
+  the grace period); Helm render checks for new lifecycle values. No test pins
+  protocol prose or SDK wording.
+- **Commit:** The MCP transport change or framework migration with its tests,
+  the chat drain contract with its test, and Helm lifecycle values, each in its
+  own PR; plus this plan update.
+- **Problem:** FastMCP 4.13.1 keeps MCP sessions in process memory and
+  implements only the handshake-based revisions (2025-11-25 and earlier); its
+  own documentation states it does not support the stateless 2026-07-28
+  specification. A client that reuses a session across requests can reach a
+  replica that does not know the session. Chat keeps no cross-request server
+  state that the source scan could find (each request opens and closes its own
+  MCP client; no resumable-stream store exists), but every streamed LLM
+  response lives in one process until it completes, and a pod termination cuts
+  it because the deployment has no drain handling beyond its readiness probe.
+- **Do:** (1) Prototype FastMCP `stateless: true` on both MCP servers against
+  chat's `@ai-sdk/mcp` HTTP client and record whether the handshake, tool
+  listing, and tool calls succeed without `Mcp-Session-Id` continuity. If they
+  do not, evaluate migrating to a framework that implements the stateless
+  specification, or add ingress session affinity as an explicit, documented
+  stopgap. (2) Give chat a SIGTERM drain contract modelled on the W1 worker
+  runtime: flip readiness, stop accepting new requests, let in-flight streams
+  finish, and exit before `terminationGracePeriodSeconds`, with the grace
+  period set above the longest allowed stream. (3) Record the W9 candidate
+  signals named above and confirm the source-scan claim that chat holds no
+  cross-request state.
+- **Check:** The two-instance MCP test passes; a rolling restart under a
+  synthetic streaming request completes the stream; Helm renders the lifecycle
+  values; no HPA, ScaledObject, or replica ownership changes in this item.
+- **Working context:** Separate branches off `v3` (for example
+  `rs/mcp-stateless-transport` and `rs/chat-drain-contract`); not part of the
+  W0/W1 stack. Use the repository's local runtime only for the two-instance
+  and drain tests, never for manifest checks.
+- **Authority and terminal:** Terminal is merged source with the tests above
+  and a recorded W9 input. Load generation, production rollout, and any scaler
+  remain separately gated.
+- **Boundary owner:** Chat and MCP maintainers.
+- **Release note:** Internal only, unless the MCP transport change alters
+  client-visible behavior.
+- **Depends on / gates:** None of the worker packages; feeds W9 and A3.
 
 ## Delegation Map
 
@@ -1255,7 +1328,8 @@ task or mutate either repository.
 | W6 optional adapter | `separate task (proposed)` | `main` launches only when E4 fails and the user authorizes W6 | E4 threshold crossed | Adapter deployment and KEDA cutover are `live_proven` |
 | W7 general profiles | `main` | Approved W7 plan and A2 | W5, E3-E4, and W6 when armed | Every task assigned exactly once; selected profiles `live_proven` |
 | W8a-W8d3 production | `main` | A4 authorizes each exact package separately | Selected staging profiles and current E2 artifact | Exact revisions, ownership, rollback, capacity, and health are `live_proven` |
-| W9 HTTP decision | `researcher` | `main` launches the bounded research only after A3 and integrates the report | Selected production evidence | Evidence-backed migrate/defer decision; no scaler implementation |
+| W9 HTTP decision | `researcher` | `main` launches the bounded research only after A3 and integrates the report | Selected production evidence; W10 for chat and the MCP servers | Evidence-backed migrate/defer decision; no scaler implementation |
+| W10 chat and MCP multi-replica readiness | `main` for the transport decision and drain contract; `executor` for bounded slices | Approved W10 execution plan; independent of worker authority | None | Two-instance MCP test and chat drain test pass; W9 signals recorded |
 
 ## Evidence gates
 
@@ -1276,7 +1350,7 @@ questions.
 |---|---|---|---|
 | A1 — SLO and cost envelope | Queue-to-assignment target, cold-start allowance, maximum backlog age, regular capacity commitment, spot cap/cost, and alert owner per profile | Preserve current floors first; tune only from observed staging and production data | Stop activation when an owner or numerical target is missing |
 | A2 — Staging delivery path and test authority | Approve the content-equivalent transition to current `v3-ai`, generated promotion, activation transaction, bounded load, and any eviction/pod termination | Keep current explicit `v3-ai`; do not retarget Argo or change `STG_SOURCE_BRANCH` for this work | Park at `delivery_pending` without all named authority |
-| A3 — HTTP scope | After worker rollout, rule whether better request/in-flight signals justify separate HTTP migration packages | Finish all worker profiles first; defer services whose signal does not beat the existing CPU HPA policy | End W9 as “defer” when evidence is weak; do not migrate by convention alone |
+| A3 — HTTP scope | After worker rollout, rule whether better request/in-flight signals justify separate HTTP migration packages | Finish all worker profiles first; defer services whose signal does not beat the existing CPU HPA policy; admit chat and the MCP servers only with W10 complete | End W9 as “defer” when evidence is weak; do not migrate by convention alone |
 | A4 — Production rollout | Approve exact revisions, capacity artifact, values, alert ownership, load/observation window, and rollback transaction per profile | Promote assessment first, then regular live-response, burst, and general profiles | Park at `delivery_pending` if any revision, owner, rollback, or evidence layer is missing |
 
 No gate permits assessment on spot. Changing that boundary conflicts with the
@@ -1317,6 +1391,28 @@ a values edit.
   node pools](https://learn.microsoft.com/en-us/azure/architecture/aws-professional/eks-to-aks/node-pools).
 
 ## Progress
+
+### Roadmap extension — 2026-09-06, later
+
+- **Publication and review policy:** Both foundation branches were published
+  atomically under the one-time grant (lower `c8efba28`, upper `beb11af3`
+  after one review follow-up). The Final AI review workflow refused the stack
+  because native-stack roots had to target the default branch; PR #5800
+  (merged into `v3`) makes any `<default branch>-<suffix>` consolidation
+  branch eligible for individual reviews, stack roots, and stack base-advance
+  checks. Both re-posted reviews now pass eligibility and fail only on the
+  OpenRouter key's exhausted weekly limit, which the user manages.
+- **Inherited CI failure:** Playwright shard 8 fails three tests on both PRs
+  and on the `v3-ai` baseline run one commit before the target head; this is
+  not a stack defect and needs a ruling before merge.
+- **Scope extension:** The user asked why chat and the MCP servers are absent
+  from autoscaling. A source scan established the stateful-transport and
+  streaming-drain findings recorded under Resolved questions, W9, and the new
+  W10. No implementation, runtime, or cluster action was taken for this
+  extension.
+- **Next action:** Unchanged for the foundations: final reviews after the key
+  limit resets, then merge authority in stack order. W10 may start
+  independently once the user approves its execution plan.
 
 ### Current execution — 2026-09-06
 
