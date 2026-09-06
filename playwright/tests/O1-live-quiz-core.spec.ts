@@ -3836,18 +3836,23 @@ test.describe.serial('Core live-quiz workflows', () => {
       'data-state',
       'unchecked'
     )
-    await expectByAssertion(
-      page.getByTestId('evaluation-footer-show-solution'),
-      'have.attr',
-      'disabled',
-      'disabled'
+    const solutionToggle = page.getByTestId('evaluation-footer-show-solution')
+    const explanationToggle = page.getByTestId(
+      'evaluation-footer-show-explanation'
     )
-    await expectByAssertion(
-      page.getByTestId('evaluation-footer-show-explanation'),
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
+    await expect(solutionToggle).toBeEnabled()
+    await expect(explanationToggle).toBeEnabled()
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await page.reload()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
   })
 
   test('Check out the evaluation view of the live quiz and its content', async ({
