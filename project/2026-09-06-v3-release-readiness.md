@@ -2,9 +2,43 @@
 
 ## Current follow-up
 
+The approved upstream integration is complete at `3a311052f0`, incorporating
+v3 `1387f884ba` without conflicts or new migration/lockfile changes. The six
+previously adopted runtime files matched upstream exactly and remain recoverable
+in a scoped stash; do not reapply that stash over the merged files.
+
+Post-merge preparation twice failed because Turbo left a transient Git child.
+Local commits `3976ebd61e` and `e54427a49d` add a bounded five-second wait and
+fail closed on process-scan errors without weakening Devrouter's child guard.
+Syntax and runtime regression tests pass, covering disappearance, persistence,
+the grace interval and scan failure. Canonical repair reported full readiness,
+but actual delegated login reproduced an Auth 404. With explicit user approval,
+the exact runtime was stopped and only `apps/auth/.next` was archived. The first
+sibling location was an error: Tailwind scanned generated artifacts and emitted
+invalid CSS, producing HTTP 500. The original cache is now preserved under the
+ignored `project/_local/auth-next-archive-20260906T1308`; the CSS-failed generated
+cache is preserved separately under `project/_local/auth-next-css-failed-20260906T1318`.
+After rebuilding outside the scan path, Auth returns HTTP 200. Full startup
+then detects a separate stale Chat API route returning HTML 404. The
+`preserve-next-cache` guard correctly blocks automatic deletion. Recoverable
+archival of only `apps/chat/.next` needs the separately requested approval.
+The failed full-profile reconciliation leaves managed state degraded and routed
+login verification unavailable; do not infer real-login success from Auth's
+internal readiness. Neither archive may be committed. The database and other
+app caches are untouched.
+
+Merged-code verification passes all three Chat scope/tool suites, 60 Playwright
+CI contract tests and 28 FinanceWiki tests. All nine non-destructive UI smoke
+tests pass in 30 seconds, using synthetic sessions. This is not real-login proof.
+The host pnpm launcher initially attempted to replace Linux-managed dependencies,
+then selected repository Devrouter 0.0.51 instead of installed 0.0.55. The passing
+run invoked the same `util/run-playwright-host.mjs` directly with pinned Node
+24.16.0 and `pnpm_config_verify_deps_before_run=warn`, preserving the host's
+Devrouter selection. No dependency purge, lockfile change or database reset ran.
+
 The requested Settings-only navigation and cohort-explanation removal are
 implemented. Formatting, Manage typechecking and real-browser settings/menu
-checks pass. Navigation assertions were updated but not rerun yet. The local
+checks pass, including the revised navigation assertions. The local
 lecturer has both Catalyst flags and FULL_ACCESS; all three GrowthBook enrollment
 configuration variables are absent. Manual opt-in/enabled-feature verification
 therefore needs a local-only fixture, not an account entitlement change.
@@ -15,7 +49,14 @@ final review remains pending. The user also approved one upstream v3 integration
 pass; push, release and deployment remain unauthorized. Earlier approval blockers
 below are historical and superseded by these explicit rulings.
 
-## Latest recovery receipt, September 6
+The production disclaimer fix in PR #5696, which keeps the accept button visible
+in dark colour schemes, remains OPEN against v3 on fresh September 6 readback.
+No action was taken on that PR. The upstream integration introduces no schema,
+migration or lockfile delta.
+
+## Earlier recreation receipt, September 6
+
+This receipt predates upstream integration and the Auth-cache recovery above.
 
 The user explicitly authorized full recreation after recycling the runtime.
 Devsy reported `NotFound`; the former Compose containers and volumes were
