@@ -518,17 +518,21 @@ for command in \
   fi
 done
 
+write_file "$ROOT/node_modules/.bin/turbo" '#!/usr/bin/env bash
+[ "${KLICKER_TEST_TURBO_FAIL:-false}" != true ] || exit 17
+printf "turbo %s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
+chmod +x "$ROOT/node_modules/.bin/turbo"
 : >"$INSTALL_LOG"
 if bash "$RUNTIME_SCRIPT" prepare --filter=@klicker-uzh/auth >/dev/null 2>&1; then
   fail 'preparation accepted an app build selector'
 fi
 [ ! -s "$INSTALL_LOG" ] || fail 'invalid preparation changed dependencies'
 # shellcheck disable=SC2086 # validated flags emitted by preparation-filters
-bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
-assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'exec turbo run build'
+KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'turbo run build'
 status=0
 # shellcheck disable=SC2086
-KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
+KLICKER_TEST_TURBO_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
 assert_equal "$status" 17
 
 HELPER_LOG="$TEST_ROOT/helper.log"
@@ -561,7 +565,7 @@ fi
 [ ! -s "$HELPER_LOG" ] || fail 'unsupported helper caused a lifecycle operation'
 [ ! -s "$CURL_LOG" ] || fail 'unsupported helper reached readiness'
 if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
-  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  KLICKER_TEST_TURBO_FAIL=true \
   bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
   fail 'post-start ignored preparation failure'
 fi

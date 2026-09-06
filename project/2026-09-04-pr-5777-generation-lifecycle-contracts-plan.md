@@ -20,7 +20,7 @@ checks. The integrated Sol review found one owner-preview scope mismatch:
 KB relations are not the authority for multi-KB MCP scope. The correction
 uses resolveMcpScope and has a passing eight-test route suite, including the
 new configuration-versus-relation regression, and a passing Chat typecheck.
-Correction review remains pending at this checkpoint.
+Sol's correction review passed on 4cb54e47d1 with no actionable findings.
 
 Installed CLI and repository pin both equal the latest official devrouter
 release, 0.0.55. Exact runtime identity remains workspace
@@ -39,7 +39,19 @@ was /usr/bin/git diff HEAD --no-ext-diff --no-color. Disabling the optional
 Turbo daemon did not resolve it. No helper or lock was bypassed. Other owners'
 provider locks were left untouched. The remaining runtime recovery therefore
 requires correcting or accommodating that foreground-process completion seam,
-not another CLI version bump or database reset.
+not another CLI version bump or database reset. A subsequent isolated comparison
+found that invoking the installed Turbo binary directly, without pnpm exec,
+completed with no surviving process in its group. The bounded candidate changes
+only preparation to use that binary; the focused shell runtime suite passes,
+including direct-execution and failure-propagation checks. Canonical repair is
+completed after another workspace released the provider lock. The exact repair
+run passed all six app contracts and both worker checks, reporting ready with
+empty drift, eleven scoped routes, and no recreation or TLS refresh. Normal
+delegated login and settings rendering passed after removing the browser mock.
+The focused shell runtime suite passes; the separate unchanged hanging-response
+test cannot run alongside live Auth because both bind port 3010 (EADDRINUSE).
+That collision is not claimed as passing test evidence. No live service was
+stopped to accommodate that test.
 
 AI navigation has an independent local SDK fixture limitation: the configured
 GrowthBook test endpoint is unavailable. A browser-only interception was used
@@ -47,7 +59,8 @@ for diagnosis and is not normal-browser feature availability or server
 authorization evidence. No ingestion, graph, generation, provider request,
 secret injection, database reset, deployment or cleanup was performed. The
 user's keep-running request retains the exact runtime resources for the next
-recovery checkpoint; the application itself is currently unavailable.
+recovery checkpoint; the application is now running, but normal-browser AI
+availability remains unverified pending resolution of the local SDK fixture.
 
 Device-transfer checkpoint, 2026-09-06: the user explicitly requests publishing the current work as pushed draft PRs so another device can continue. This permits a work-in-progress source checkpoint before the previously required publication verification completes; it does not waive any verification or review gate before merge. Preserve pending browser, static assertion, runtime and implementation-review obligations. The adopted runtime source remains attributed to PR #5790, now merged; this checkpoint preserves the exact local candidate rather than integrating any upstream branch. Host identity, shell syntax, diff and redacted secret checks run for this checkpoint. Container-only hooks/builds remain unrun because the task runtime is stopped and startup qualification is blocked; do not report the checkpoint as tested or source-reviewed.
 

@@ -306,7 +306,9 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Invoke the installed binary directly: pnpm exec can leave a Git child
+  # running after completion, which violates managed foreground preparation.
+  (cd "$ROOT" && ./node_modules/.bin/turbo run build "$@")
 }
 
 remove_next_dir() {
