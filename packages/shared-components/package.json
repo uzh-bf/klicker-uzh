@@ -4,8 +4,10 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "devDependencies": {
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
+    "@klicker-uzh/product-updates": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/word-cloud": "workspace:*",
     "@tanstack/react-table": "~8.20.5",
@@ -28,13 +30,17 @@
     "unified": "~11.0.5"
   },
   "peerDependencies": {
+    "@apollo/client": "^3.13.8",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
+    "@klicker-uzh/product-updates": "workspace:*",
     "@klicker-uzh/word-cloud": "workspace:*",
+    "@socialgouv/matomo-next": "^1.9.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@uzh-bf/design-system": "4.1.8",
     "dayjs": "^1.11.20",

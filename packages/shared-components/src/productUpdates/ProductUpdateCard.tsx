@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { openProductUpdateCta } from './openCta'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -33,8 +34,8 @@ function ProductUpdateCard({
   // so a mutation answered earlier would lose its cache write and the card
   // would look unread again until the next reload.
   statesLoaded: boolean
-  onPresent: (updateId: string) => void
-  onRead: (updateId: string) => void
+  onPresent: (updateId: string) => Promise<unknown>
+  onRead: (updateId: string) => Promise<unknown>
   // Omitted where dismissal makes no sense, such as an already dismissed entry
   // in the persistent archive.
   onDismiss?: (updateId: string) => void
@@ -62,8 +63,11 @@ function ProductUpdateCard({
 
           reported.current = true
           observer.disconnect()
-          onPresent(update.id)
-          onRead(update.id)
+          // Both writes create the state row when the entry is seen for the
+          // first time, and the backend cannot absorb two concurrent inserts of
+          // the same row: sent together, one of them fails and its timestamp is
+          // lost. Reporting the read after the presentation keeps them apart.
+          void onPresent(update.id).then(() => onRead(update.id))
           trackProductUpdate('Presented', update.id)
           trackProductUpdate('Opened', update.id)
         }
@@ -80,12 +84,7 @@ function ProductUpdateCard({
     if (!update.cta) return
 
     trackProductUpdate('CTA Clicked', update.id)
-
-    if (update.cta.href.startsWith('/')) {
-      void router.push(update.cta.href)
-    } else {
-      window.open(update.cta.href, '_blank', 'noopener,noreferrer')
-    }
+    openProductUpdateCta(update.cta, router)
   }, [router, update.cta, update.id])
 
   const body = update.bodyMarkdown ? localized(update.bodyMarkdown) : undefined
@@ -103,7 +102,7 @@ function ProductUpdateCard({
         <H3 className={{ root: 'mb-0' }}>{localized(update.title)}</H3>
         {update.maturity !== 'released' && (
           <Tag
-            label={t(`manage.productUpdates.maturity.${update.maturity}`)}
+            label={t(`shared.productUpdates.maturity.${update.maturity}`)}
             className={{ root: 'bg-orange-200' }}
             data={{ cy: `product-update-maturity-${update.id}` }}
           />
@@ -145,7 +144,7 @@ function ProductUpdateCard({
             className="text-sm text-blue-600 hover:underline"
             data-cy={`product-update-details-${update.id}`}
           >
-            {t('manage.productUpdates.readMore')}
+            {t('shared.productUpdates.readMore')}
             <FontAwesomeIcon
               icon={faArrowUpRightFromSquare}
               className="ml-1.5"
@@ -163,7 +162,7 @@ function ProductUpdateCard({
             className={{ root: 'ml-auto text-sm text-slate-500' }}
             data={{ cy: `product-update-dismiss-${update.id}` }}
           >
-            {t('manage.productUpdates.dismiss')}
+            {t('shared.productUpdates.dismiss')}
           </Button>
         )}
       </div>
