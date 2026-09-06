@@ -58,6 +58,15 @@ function QuestionArea({
   const t = useTranslations()
 
   const [showConfetti, setShowConfetti] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(true)
+
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setReducedMotion(preference.matches)
+    updatePreference()
+    preference.addEventListener('change', updatePreference)
+    return () => preference.removeEventListener('change', updatePreference)
+  }, [])
   const [submitting, setSubmitting] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
@@ -492,7 +501,10 @@ function QuestionArea({
           {t('shared.generic.questions')}
         </H2>
         {submittedAt ? (
-          <div className="mb-0.5 mt-1 flex items-center gap-2 self-end text-sm text-green-700">
+          <div
+            role="status"
+            className="mb-0.5 mt-1 flex items-center gap-2 self-end text-sm text-green-700"
+          >
             <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
             <span>
               {t('pwa.assessment.respondedAt', {
@@ -511,7 +523,7 @@ function QuestionArea({
             message={t('pwa.liveQuiz.allQuestionsAnswered')}
           />
         )}
-        {showConfetti ? (
+        {showConfetti && !reducedMotion ? (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
             <ConfettiExplosion duration={2000} />
           </div>
@@ -533,6 +545,7 @@ function QuestionArea({
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
           canSubmit={!!studentResponse.valid && !submitting}
+          submitting={submitting}
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
             setActiveInstance((prev) =>

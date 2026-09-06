@@ -4,6 +4,7 @@ import { Button, NotificationBadgeWrapper } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Router, { useRouter } from 'next/router'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface MobileMenuBarProps {
   menuItems?: {
@@ -18,12 +19,14 @@ interface MobileMenuBarProps {
     }
   }[]
   onClick?: (value: string) => void
+  activeValue?: string
   participantMissing?: boolean
 }
 
 function MobileMenuBar({
   menuItems,
   onClick,
+  activeValue,
   participantMissing,
 }: MobileMenuBarProps): React.ReactElement {
   const t = useTranslations()
@@ -54,8 +57,13 @@ function MobileMenuBar({
           size="sm"
         >
           <Button
+            aria-current={item.value === activeValue ? 'page' : undefined}
             className={{
-              root: 'flex flex-1 flex-col justify-center border-0 bg-transparent hover:bg-transparent',
+              root: twMerge(
+                'flex min-h-11 flex-1 flex-col justify-center border-0 bg-transparent hover:bg-transparent',
+                item.value === activeValue &&
+                  'bg-primary-20 text-primary-100 hover:bg-primary-20 font-semibold'
+              ),
             }}
             key={item.value}
             onClick={() => {
