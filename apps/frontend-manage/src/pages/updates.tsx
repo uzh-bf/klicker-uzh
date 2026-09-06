@@ -4,7 +4,7 @@ import { H1 } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
-import { resolveSpotlightTarget } from '../components/productUpdates/spotlightTargets'
+import { resolveFeatureTarget } from '../components/onboarding/featureTargets'
 import { useProductUpdateSpotlight } from '../components/productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../components/productUpdates/useProductUpdates'
 
@@ -47,7 +47,7 @@ function Updates() {
                 onDismiss={entry.dismissed ? undefined : dismiss}
                 onShowSpotlight={replaySpotlight}
                 isSpotlightReachable={(update) =>
-                  resolveSpotlightTarget(update.spotlightTarget) !== null
+                  resolveFeatureTarget(update.spotlightTarget) !== null
                 }
               />
             ))

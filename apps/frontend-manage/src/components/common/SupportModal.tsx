@@ -1,9 +1,11 @@
+import { useQuery } from '@apollo/client'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons'
 import {
   faBook,
   faBullseye,
+  faCompass,
+  faCrown,
   faInfo,
   faList,
   faQuestion,
@@ -15,18 +17,19 @@ import {
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
-import { useQuery } from '@apollo/client'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import CatalystRequestForm from './CatalystRequestForm'
 import SupportEntry from './SupportEntry'
 
 function SupportModal({
   onClose,
+  onStartTour,
   user,
 }: {
   onClose: () => void
+  onStartTour: () => void
   user?: Pick<User, 'catalyst'> | null
 }) {
   const t = useTranslations()
@@ -81,7 +84,14 @@ function SupportModal({
         <div className="flex flex-1 flex-col justify-between">
           <div className="flex flex-col gap-2">
             <H2>{t('manage.support.furtherResources')}</H2>
-            <div className="text-gray-600">
+            <SupportEntry
+              onClick={onStartTour}
+              title={t('manage.productTours.replayTitle')}
+              subtitle={t('manage.productTours.replayDesc')}
+              icon={faCompass}
+              data={{ cy: 'support-start-tour' }}
+            />
+            <div className="mt-4 text-gray-600">
               {t('shared.generic.documentation')}
             </div>
             <SupportEntry

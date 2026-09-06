@@ -23,6 +23,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import * as ToursService from '../services/tours.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -128,6 +129,7 @@ import {
   ActivityTemplateMetadata,
   TemplateElementInformation,
 } from './template.js'
+import { TourState } from './tours.js'
 import {
   BetaEnrollmentCapability,
   MediaFile,
@@ -2227,6 +2229,16 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await ProductUpdatesService.getProductUpdateStates(args, ctx)
+        },
+      }),
+
+      tourStates: t.withAuth(asAnyActor).field({
+        type: [TourState],
+        args: {
+          tourIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ToursService.getTourStates(args, ctx)
         },
       }),
     }

@@ -1,0 +1,468 @@
+// The browser half of the package: everything that touches the DOM, driver.js
+// or React lives here, so the pure entry point stays importable from the
+// backend. Consuming apps import `driver.js/dist/driver.css` themselves — a
+// tsc-built package cannot ship CSS, and pnpm does not hoist the dependency.
+// That import has to happen from the app's stylesheet inside a cascade layer
+// (`@import 'driver.js/dist/driver.css' layer(components);`), because an
+// unlayered stylesheet outranks every layered Tailwind utility no matter how
+// specific: imported from JavaScript, driver's own look would silently beat
+// `TOUR_POPOVER_CLASS`.
+
+import type { Alignment, Driver, DriveStep, Side } from 'driver.js'
+import { driver } from 'driver.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { escapeHtml } from './index.js'
+
+/**
+ * The structural class on the documentation link a step may carry. It is not a
+ * Tailwind utility: it only gives `TOUR_POPOVER_CLASS` something stable to
+ * style, the way driver.js' own `driver-popover-*` classes do.
+ */
+const DOCUMENTATION_LINK_CLASS = 'driver-popover-doc-link'
+
+/**
+ * The structural class on the skip control. Driver.js has no button slot left
+ * for it — next, previous and close are all spoken for — so the tour adds its
+ * own element and needs a stable hook to style it, exactly as above.
+ */
+const SKIP_BUTTON_CLASS = 'driver-popover-skip-btn'
+
+/**
+ * The look of every product-tour popover, in one place, so the lecturer
+ * interface, the student app and the chat introduce themselves the same way.
+ *
+ * Driver.js renders a fixed skeleton of `driver-popover-*` elements that the
+ * caller cannot reach, so the card is styled through descendant variants on
+ * this single class. Two constraints keep it working:
+ *
+ * - It must stay one literal string. Tailwind finds utilities by reading the
+ *   source, so a class assembled at runtime produces no CSS at all. Consuming
+ *   apps additionally need `@source` pointed at this package's `src`, because
+ *   the package is deliberately not transpiled by the apps.
+ * - The app must import `driver.js/dist/driver.css` into a cascade layer; see
+ *   the file header.
+ *
+ * Only tokens that all three apps define are used — `popover`,
+ * `popover-foreground`, `foreground`, `muted-foreground`, `border`, `accent`
+ * and the `primary-100` / `primary-80` brand pair. The brand pair, not the
+ * shadcn `primary` token: `primary` resolves to near-black in the lecturer and
+ * student apps, so a call to action built on it would come out black in two of
+ * the three apps and UZH blue in the third.
+ */
+export const TOUR_POPOVER_CLASS = `
+  font-sans max-w-sm rounded-lg border border-border bg-popover p-5
+  text-popover-foreground shadow-lg
+  [&_.driver-popover-title]:text-base
+  [&_.driver-popover-title]:font-bold
+  [&_.driver-popover-title]:leading-6
+  [&_.driver-popover-title]:text-foreground
+  [&_.driver-popover-description]:mt-2
+  [&_.driver-popover-description]:text-sm
+  [&_.driver-popover-description]:leading-6
+  [&_.driver-popover-description]:text-muted-foreground
+  [&_.driver-popover-doc-link]:mt-3
+  [&_.driver-popover-doc-link]:block
+  [&_.driver-popover-doc-link]:text-sm
+  [&_.driver-popover-doc-link]:font-medium
+  [&_.driver-popover-doc-link]:text-primary-100
+  [&_.driver-popover-doc-link]:underline
+  [&_.driver-popover-doc-link]:underline-offset-2
+  [&_.driver-popover-footer]:mt-5
+  [&_.driver-popover-footer]:gap-4
+  [&_.driver-popover-progress-text]:text-xs
+  [&_.driver-popover-progress-text]:text-muted-foreground
+  [&_.driver-popover-skip-btn]:ml-3
+  [&_.driver-popover-skip-btn]:cursor-pointer
+  [&_.driver-popover-skip-btn]:bg-transparent
+  [&_.driver-popover-skip-btn]:p-0
+  [&_.driver-popover-skip-btn]:text-xs
+  [&_.driver-popover-skip-btn]:font-medium
+  [&_.driver-popover-skip-btn]:text-muted-foreground
+  [&_.driver-popover-skip-btn]:underline
+  [&_.driver-popover-skip-btn]:underline-offset-2
+  [&_.driver-popover-skip-btn:hover]:text-foreground
+  [&_.driver-popover-navigation-btns]:gap-2
+  [&_.driver-popover-navigation-btns_button]:ml-0
+  [&_.driver-popover-next-btn]:rounded-md
+  [&_.driver-popover-next-btn]:border-transparent
+  [&_.driver-popover-next-btn]:bg-primary-100
+  [&_.driver-popover-next-btn]:px-3
+  [&_.driver-popover-next-btn]:py-1.5
+  [&_.driver-popover-next-btn]:text-sm
+  [&_.driver-popover-next-btn]:font-semibold
+  [&_.driver-popover-next-btn]:text-white
+  [&_.driver-popover-next-btn:hover]:bg-primary-80
+  [&_.driver-popover-prev-btn]:rounded-md
+  [&_.driver-popover-prev-btn]:border
+  [&_.driver-popover-prev-btn]:border-border
+  [&_.driver-popover-prev-btn]:bg-transparent
+  [&_.driver-popover-prev-btn]:px-3
+  [&_.driver-popover-prev-btn]:py-1.5
+  [&_.driver-popover-prev-btn]:text-sm
+  [&_.driver-popover-prev-btn]:font-medium
+  [&_.driver-popover-prev-btn]:text-foreground
+  [&_.driver-popover-prev-btn:hover]:bg-accent
+  [&_.driver-popover-close-btn]:top-2
+  [&_.driver-popover-close-btn]:right-2
+  [&_.driver-popover-close-btn]:text-lg
+  [&_.driver-popover-close-btn]:leading-none
+  [&_.driver-popover-close-btn]:text-muted-foreground
+  [&_.driver-popover-close-btn:hover]:text-foreground
+  [&_.driver-popover-arrow-side-left]:border-l-popover
+  [&_.driver-popover-arrow-side-right]:border-r-popover
+  [&_.driver-popover-arrow-side-top]:border-t-popover
+  [&_.driver-popover-arrow-side-bottom]:border-b-popover
+`
+
+// One slot per browser tab for everything the user did not ask for: the
+// onboarding tour and the product-update spotlight both claim it, so a lecturer
+// never gets two overlays in a row. sessionStorage is per tab and disappears
+// with it, which is the closest thing to a session the client can observe
+// without another server round trip.
+const SESSION_SLOT_KEY = 'klicker-uzh.onboarding.unsolicitedOverlay'
+
+/**
+ * Whether this tab has already shown an unsolicited overlay.
+ *
+ * Storage can be unavailable, for instance when the browser blocks it for this
+ * origin. The cap cannot be honoured without it, and an uncapped overlay is
+ * worse than a missing one, so the slot then counts as taken.
+ */
+export function unsolicitedOverlayShownThisSession(): boolean {
+  try {
+    return window.sessionStorage.getItem(SESSION_SLOT_KEY) === 'true'
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Takes the tab's single unsolicited-overlay slot. Callers claim it before the
+ * overlay opens, so a presentation that fails halfway does not hand the slot to
+ * the next candidate in the same page load.
+ */
+export function claimUnsolicitedOverlaySlot() {
+  try {
+    window.sessionStorage.setItem(SESSION_SLOT_KEY, 'true')
+  } catch {
+    // See above: a session that cannot remember never presents again anyway.
+  }
+}
+
+/**
+ * Opens an overlay one animation frame later and returns the matching cancel.
+ *
+ * Deferring protects against a mount that is undone straight away — React's
+ * development double-invocation, or a layout that flips back to its loading
+ * state — which would otherwise burn the session slot on an overlay that is
+ * torn down again immediately. It also lets a modal that triggered the overlay
+ * finish unmounting, so its focus trap does not fight the popover.
+ */
+export function deferToNextFrame(open: () => void): () => void {
+  const frame = requestAnimationFrame(open)
+
+  return () => cancelAnimationFrame(frame)
+}
+
+export interface FeatureTargetRegistry<Key extends string> {
+  /** Spread onto the element the key names, or onto a wrapper around it. */
+  targetProps: (key: Key) => Record<string, string>
+  /** The element on the current page, or null when it is not rendered here. */
+  resolve: (key: string | undefined) => HTMLElement | null
+}
+
+/**
+ * Builds an app's registry of UI elements that overlays may point at.
+ *
+ * Elements are named by key and found through a data attribute, never through a
+ * CSS selector: a selector stored outside the component breaks silently the
+ * next time the markup moves, and nobody notices until a user sees an overlay
+ * around nothing. Each app owns its own attribute and key set, because the same
+ * key would mean different things in the lecturer and student interfaces.
+ */
+export function createFeatureTargetRegistry<Key extends string>({
+  attribute,
+  targets,
+}: {
+  attribute: string
+  targets: Record<Key, string>
+}): FeatureTargetRegistry<Key> {
+  return {
+    targetProps: (key) => ({ [attribute]: key }),
+
+    resolve: (key) => {
+      // An unknown key is a normal outcome: the caller can be newer than this
+      // build. So is a known key that this page does not render.
+      if (key === undefined || !(key in targets)) return null
+
+      return document.querySelector<HTMLElement>(`[${attribute}="${key}"]`)
+    },
+  }
+}
+
+export type ProductTourEndReason = 'complete' | 'skip' | 'dismiss'
+
+export interface ProductTourDocumentation {
+  /** Absolute URL of the documentation page the step points at. */
+  href: string
+  /** What the reader sees, in the language the tour is running in. */
+  label: string
+}
+
+export interface ProductTourStep {
+  /**
+   * Resolved when the tour starts. A step whose element is not on the page is
+   * left out; a step without an element at all is shown centered, which is how
+   * a tour opens with a welcome card.
+   */
+  element?: () => HTMLElement | null
+  title: string
+  description: string
+  /**
+   * An optional link to the page in the user-facing documentation that covers
+   * what the step points at, for the reader who wants more than a card.
+   */
+  documentation?: ProductTourDocumentation
+  side?: Side
+  align?: Alignment
+}
+
+/**
+ * Renders a step's body, plus its documentation link when it has one.
+ *
+ * Both fields are structured rather than a snippet of HTML, so that no
+ * translation can ever carry markup into the popover: driver.js assigns this
+ * string with innerHTML, and everything that reaches it is escaped here.
+ */
+function renderDescription(step: ProductTourStep): string {
+  const description = escapeHtml(step.description)
+  if (!step.documentation) return description
+
+  const href = escapeHtml(step.documentation.href)
+  const label = escapeHtml(step.documentation.label)
+
+  return `${description}<a class="${DOCUMENTATION_LINK_CLASS}" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
+}
+
+export interface ProductTourLabels {
+  next: string
+  previous: string
+  done: string
+  /** The labelled way out, next to the step counter. */
+  skip: string
+  /** Carries driver.js' `{{current}}` and `{{total}}` markers. */
+  progress: string
+}
+
+export interface UseProductTourOptions {
+  steps: ProductTourStep[]
+  labels: ProductTourLabels
+  /**
+   * Whether the actor still needs the unsolicited run. `null` means the answer
+   * is not known yet — usually because the stored tour state is still loading.
+   * Nothing starts and nothing settles while it is null, so a failed state
+   * query never turns into a tour for someone who already finished it.
+   */
+  autoStart: boolean | null
+  /** Set on routes where an overlay would interrupt time-critical work. */
+  autoStartSuppressed?: boolean
+  onComplete?: () => void
+  onSkip?: () => void
+  onDismiss?: () => void
+}
+
+export interface UseProductTourResult {
+  /** Starts the tour on explicit request, ignoring every cap. */
+  startTour: () => void
+  /**
+   * True once the auto-start decision has been made and acted on. Other
+   * unsolicited overlays wait for this before claiming the session slot, so the
+   * tour wins deterministically on an account that has never seen it.
+   */
+  autoStartSettled: boolean
+}
+
+/**
+ * Runs a multi-step driver.js tour over elements the caller names.
+ *
+ * The hook owns the overlay mechanics — step assembly, escaping, the session
+ * slot, and the deferred open — while the caller owns the policy: which steps
+ * exist, in which language, whether this actor is still eligible, and what
+ * "finished" means for the surface. Ending the tour in any way is reported
+ * exactly once, because every surface stores completion the same way.
+ */
+export function useProductTour({
+  steps,
+  labels,
+  autoStart,
+  autoStartSuppressed = false,
+  onComplete,
+  onSkip,
+  onDismiss,
+}: UseProductTourOptions): UseProductTourResult {
+  // Steps and labels are rebuilt on every render of a translated component, so
+  // the running tour reads them through a ref instead of restarting whenever
+  // their identity changes.
+  const latest = useRef({ steps, labels, onComplete, onSkip, onDismiss })
+  useEffect(() => {
+    latest.current = { steps, labels, onComplete, onSkip, onDismiss }
+  })
+
+  const activeDriver = useRef<Driver | null>(null)
+  const endReason = useRef<ProductTourEndReason | null>(null)
+  // A teardown the user did not ask for — an unmount, or a replay replacing a
+  // running tour — must not be reported as an ending.
+  const silentTeardown = useRef(false)
+  const autoStarted = useRef(false)
+  const [pendingStart, setPendingStart] = useState(false)
+  const [autoStartSettled, setAutoStartSettled] = useState(false)
+
+  // Returns whether the tour actually opened: a tour whose targets are all
+  // missing shows nothing, and the caller must not treat that as a run.
+  const start = useCallback((): boolean => {
+    const current = latest.current
+
+    const driverSteps: DriveStep[] = []
+    for (const step of current.steps) {
+      const element = step.element?.()
+      if (step.element && !element) continue
+
+      driverSteps.push({
+        element: element ?? undefined,
+        popover: {
+          // Driver.js writes every popover string into the DOM with innerHTML.
+          title: escapeHtml(step.title),
+          description: renderDescription(step),
+          side: step.side,
+          align: step.align,
+        },
+      })
+    }
+
+    if (driverSteps.length === 0) return false
+
+    if (activeDriver.current) {
+      silentTeardown.current = true
+      activeDriver.current.destroy()
+    }
+
+    // A previous teardown may have left the flag raised — React's development
+    // double mount runs the unmount cleanup on the same refs the remounted hook
+    // keeps using. A tour that is starting now always reports how it ends.
+    silentTeardown.current = false
+
+    const instance = driver({
+      steps: driverSteps,
+      allowClose: true,
+      stagePadding: 6,
+      popoverClass: TOUR_POPOVER_CLASS,
+      showProgress: driverSteps.length > 1,
+      progressText: escapeHtml(current.labels.progress),
+      nextBtnText: escapeHtml(current.labels.next),
+      prevBtnText: escapeHtml(current.labels.previous),
+      doneBtnText: escapeHtml(current.labels.done),
+      // Driver.js only offers a close icon to leave early, and an unlabelled
+      // glyph is not an obvious way out for someone who is met by a tour they
+      // never asked for. The footer gains a named control beside the step
+      // counter, deliberately quiet so it does not compete with the primary
+      // action. It is omitted on the last step, where "Done" already ends the
+      // tour and a second button with the same effect only reads as a puzzle.
+      onPopoverRender: (popover, opts) => {
+        if (opts.driver.isLastStep()) return
+
+        const skip = document.createElement('button')
+        skip.type = 'button'
+        skip.className = SKIP_BUTTON_CLASS
+        // textContent, not innerHTML: this is the one popover string driver.js
+        // does not write itself, so it never needs the escaping the others do.
+        skip.textContent = current.labels.skip
+        skip.addEventListener('click', () => {
+          endReason.current = 'skip'
+          instance.destroy()
+        })
+
+        popover.footer.insertBefore(skip, popover.footerButtons)
+      },
+      // Driver.js only calls these instead of its own teardown, so each one has
+      // to destroy the overlay itself. They exist to tell the three endings
+      // apart; the state they leave behind is the same for all of them.
+      onDoneClick: () => {
+        endReason.current = 'complete'
+        instance.destroy()
+      },
+      onCloseClick: () => {
+        endReason.current = 'skip'
+        instance.destroy()
+      },
+      // Reached by every ending, including the ones with no button behind them:
+      // the escape key and a click on the overlay.
+      onDestroyed: () => {
+        activeDriver.current = null
+        const reason = endReason.current ?? 'dismiss'
+        endReason.current = null
+
+        if (silentTeardown.current) return
+
+        const handlers = latest.current
+        if (reason === 'complete') handlers.onComplete?.()
+        else if (reason === 'skip') handlers.onSkip?.()
+        else handlers.onDismiss?.()
+      },
+    })
+
+    activeDriver.current = instance
+    instance.drive()
+
+    return true
+  }, [])
+
+  useEffect(() => {
+    if (autoStartSettled || autoStarted.current) return
+    // Eligibility unknown: stay unsettled so that overlays waiting on the tour
+    // keep waiting instead of presenting themselves first.
+    if (autoStart === null) return
+
+    if (!autoStart || autoStartSuppressed) {
+      setAutoStartSettled(true)
+      return
+    }
+
+    if (unsolicitedOverlayShownThisSession()) {
+      setAutoStartSettled(true)
+      return
+    }
+
+    return deferToNextFrame(() => {
+      autoStarted.current = true
+
+      // The slot is only spent on a tour that opened. A tour whose targets are
+      // missing leaves it to the next candidate rather than silently costing
+      // the session its single overlay.
+      if (start()) claimUnsolicitedOverlaySlot()
+
+      setAutoStartSettled(true)
+    })
+  }, [autoStart, autoStartSuppressed, autoStartSettled, start])
+
+  useEffect(() => {
+    if (!pendingStart) return
+
+    return deferToNextFrame(() => {
+      start()
+      setPendingStart(false)
+    })
+  }, [pendingStart, start])
+
+  useEffect(
+    () => () => {
+      silentTeardown.current = true
+      activeDriver.current?.destroy()
+    },
+    []
+  )
+
+  return {
+    startTour: useCallback(() => setPendingStart(true), []),
+    autoStartSettled,
+  }
+}
