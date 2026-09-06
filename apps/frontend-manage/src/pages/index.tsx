@@ -1,17 +1,23 @@
 import { useQuery } from '@apollo/client'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDownload,
+  faListCheck,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
   GetUserElementsDocument,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination, {
@@ -36,9 +42,24 @@ import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
 
+const DownloadModal = dynamic(
+  () => import('~/components/elements/manipulation/DownloadModal'),
+  { ssr: false }
+)
+const UploadModal = dynamic(
+  () => import('~/components/elements/manipulation/UploadModal'),
+  { ssr: false }
+)
+
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const { data: featureAccess, loading: loadingFeatureAccess } = useQuery(
+    UserProfileDocument,
+    { fetchPolicy: 'cache-and-network' }
+  )
+  const canUseElementImportExport =
+    !loadingFeatureAccess && featureAccess?.canUseElementImportExport === true
 
   // search, filter and pagination states
   const [searchInput, setSearchInput] = useState('')
@@ -67,8 +88,31 @@ function Index() {
     return 10
   })
 
+  // export elements
+  const [uploadElements, setUploadElements] = useState(false)
+  const [downloadElements, setDownloadElements] = useState<Element[] | null>(
+    null
+  )
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+
+  const closeImportModal = useCallback(() => {
+    setUploadElements(false)
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-cy="elements-upload"]')
+        ?.focus()
+    })
+  }, [])
+
+  const closeExportModal = useCallback(() => {
+    setDownloadElements(null)
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[data-cy="elements-download"]')
+        ?.focus()
+    })
+  }, [])
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -153,7 +197,30 @@ function Index() {
     fetchPolicy: 'network-only',
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
-  const elements = dataElements?.userElements?.elements ?? []
+  const elements = useMemo(
+    () => dataElements?.userElements?.elements ?? [],
+    [dataElements?.userElements?.elements]
+  )
+  const selectedElementCount = Object.keys(selectedElements).length
+
+  const openDownloadModal = useCallback(() => {
+    const nextSelection: Record<number, Element> = {}
+
+    for (const [id, element] of Object.entries(selectedElements)) {
+      const refreshedElement = elements.find((e) => e.id === Number(id))
+      nextSelection[Number(id)] = refreshedElement ?? element
+    }
+
+    setSelectedElements(nextSelection)
+    setDownloadElements(Object.values(nextSelection))
+  }, [elements, selectedElements])
+
+  useEffect(() => {
+    if (canUseElementImportExport) return
+
+    setUploadElements(false)
+    setDownloadElements(null)
+  }, [canUseElementImportExport])
   const refetchElementsForChildren = useCallback(async () => {
     await refetchElements()
   }, [refetchElements])
@@ -394,8 +461,8 @@ function Index() {
 
         <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
-            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">
+            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between gap-2 pb-2.5">
+              <div className="flex min-w-0 w-full flex-row flex-wrap items-center gap-1.5 sm:w-auto">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
@@ -414,11 +481,11 @@ function Index() {
                 />
               </div>
 
-              <div className="flex flex-row items-center gap-2">
-                {!creationMode && Object.keys(selectedElements).length > 0 ? (
+              <div className="flex w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 sm:w-auto">
+                {!creationMode && selectedElementCount > 0 ? (
                   <Button
                     className={{
-                      root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
+                      root: 'min-h-9 max-w-full border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
                     }}
                     onClick={() => setBatchOperationsOpen(true)}
                     data={{ cy: 'element-batch-operations' }}
@@ -426,10 +493,51 @@ function Index() {
                     <Button.Icon icon={faListCheck} />
                     <Button.Label>
                       {t('manage.questionPool.batchOperations', {
-                        numElements: Object.keys(selectedElements).length,
+                        numElements: selectedElementCount,
                       })}
                     </Button.Label>
                   </Button>
+                ) : null}
+                {canUseElementImportExport ? (
+                  <>
+                    <Button
+                      className={{
+                        root: 'h-9',
+                      }}
+                      onClick={openDownloadModal}
+                      disabled={selectedElementCount === 0}
+                      aria-label={
+                        selectedElementCount === 0
+                          ? t(
+                              'manage.elements.downloadElementsDisabledNoSelection'
+                            )
+                          : t('shared.generic.download')
+                      }
+                      title={
+                        selectedElementCount === 0
+                          ? t(
+                              'manage.elements.downloadElementsDisabledNoSelection'
+                            )
+                          : t('manage.elements.downloadElementsPackage')
+                      }
+                      data={{ cy: 'elements-download' }}
+                    >
+                      <Button.Icon icon={faDownload} />
+                      <Button.Label>
+                        {t('shared.generic.download')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'h-9',
+                      }}
+                      onClick={() => setUploadElements(true)}
+                      data={{ cy: 'elements-upload' }}
+                    >
+                      <Button.Icon icon={faUpload} />
+                      <Button.Label>{t('shared.generic.upload')}</Button.Label>
+                    </Button>
+                  </>
                 ) : null}
               </div>
             </div>
@@ -558,6 +666,20 @@ function Index() {
           elementId={parseInt(router.query.editElementId as string, 10)}
           mode={ElementEditMode.EDIT}
           refetchElements={refetchElementsForChildren}
+        />
+      )}
+      {canUseElementImportExport && downloadElements && (
+        <DownloadModal
+          selectedElements={downloadElements}
+          onClose={closeExportModal}
+        />
+      )}
+      {canUseElementImportExport && uploadElements && (
+        <UploadModal
+          onClose={closeImportModal}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
         />
       )}
       {batchOperationsOpen && (

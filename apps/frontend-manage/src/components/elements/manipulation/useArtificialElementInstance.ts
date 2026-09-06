@@ -14,7 +14,7 @@ function useArtificialElementInstance({
 }: {
   values?: ElementFormTypes | null
   elementDataTypename?: ElementData['__typename']
-  answerCollectionEntries?: { id: number; value: string }[]
+  answerCollectionEntries?: readonly { id: number; value: string }[]
 }): ElementInstance | undefined {
   const instance = useMemo(() => {
     // verify that the element data typename is set
@@ -60,6 +60,10 @@ function useArtificialElementInstance({
                   typeof values.options.accuracy !== 'undefined' &&
                   values.options.accuracy !== null
                     ? parseInt(String(values.options.accuracy))
+                    : undefined,
+                placeholder:
+                  'placeholder' in values.options
+                    ? values.options.placeholder
                     : undefined,
                 unit:
                   'unit' in values.options ? values.options.unit : undefined,

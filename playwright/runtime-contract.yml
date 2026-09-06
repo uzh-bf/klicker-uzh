@@ -32,7 +32,9 @@ apps:
           - '--filter=@klicker-uzh/hatchet-worker-general'
           - '--filter=@klicker-uzh/hatchet-worker-response-processor'
           - '--filter=@klicker-uzh/response-api'
-        serviceEndpoints: ['http://127.0.0.1:7078/healthz']
+        serviceEndpoints:
+          - 'http://127.0.0.1:7078/healthz'
+          - 'http://127.0.0.1:8081/ready'
 dependencies:
   allowed: []
 managedRuntime:
