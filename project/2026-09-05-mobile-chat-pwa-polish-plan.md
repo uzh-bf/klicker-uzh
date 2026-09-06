@@ -132,9 +132,16 @@ It additionally required memo invalidation for localized markdown labels.
 
 ## Progress
 
-Implementation remains local and uncommitted. No push, publication, integration,
-merge, deployment or paid Chat generation occurred. No implementation child
-remains active. Required simplifier, slice and final reviews remain pending.
+Implementation remains local. The approved plan and shared-controls slice are
+committed. No push, publication, integration, merge, deployment or paid Chat
+generation occurred. No implementation child remains active. Shared-interaction
+review returned DONE with no findings. Its simplifier identified redundant
+KPRIM pointer-event rules; the accepted removal passed its package typecheck,
+formatter and KPRIM keyboard browser regression (1 passed). The mobile preview
+screenshot was inspected. This mechanical removal preserves the reviewed
+contracts and needs no repeat review. Reports remain under
+`project/_local/reviews/2026-09-06-shared-controls-*.md`.
+PWA and Chat slice reviews, plus integrated final review, remain pending.
 
 ### Implemented behavior
 
