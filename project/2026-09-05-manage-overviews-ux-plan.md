@@ -57,19 +57,104 @@ Host from new worktree, with canonical routed target selected per repository hos
 - Wizard: pnpm playwright:host -- tests/W4-activity-wizard-safety.spec.ts
 Run these suites against only task-owned test data; their existing cleanup is allowed only in the isolated task database. Bootstrap fresh synthetic fixtures for subsequent visual checks after any suite cleanup.
 ## Runtime and documentation
+Additional approval, 2026-09-05: the user approved a scoped local Auth/runtime
+repair and continuation of UX verification. It covers the existing exact-app
+cache-recovery path and a narrow Auth readiness correction in
+`util/dev-runtime.sh`, its regression tests in `util/test-dev-runtime.sh`, and
+the matching explanation in `docs/getting-started.md`. Auth must prove its
+providers API returns JSON, rather than only proving its homepage exists.
+No authentication rules, secrets, dependencies, domains, shared router setup,
+database data, or another task's runtime are changed. The parent owns this
+small repair because it is coupled to the active runtime; the read-only test
+mapping used a trusted executor fallback after the explore provider failed
+with HTTP 400 before useful work. Fresh runtime proof and delegated login are
+required before resuming the UX acceptance checks.
+
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
-Latest verified checkpoint: task startup now succeeds with the `manage` profile,
-matching active resources and no drift. Python 3.12 frozen analytics dependency
-preparation succeeds without source or lockfile changes. Root `pnpm run check:all`
-passes (35 check tasks and 7 lint tasks). Delegated local login reaches the
-library and course overview. The branch remains at the approved baseline with
-no upstream and zero divergence from origin/v3. Course clarity is the active
-slice; all implementation, reviews and draft publication remain pending.
-Earlier environment failures below are historical and no longer block startup.
+Latest runtime checkpoint (supersedes pending approval and session references
+below): the scoped Auth readiness repair is approved. Its focused shell
+regression suite passed. Auth still returns HTML 404 internally at
+`http://localhost:3010/api/auth/providers` after the exact-app cache repair.
+The temporary Webpack experiment did not run: the log still shows Turbopack,
+and a fresh managed startup refused the degraded runtime state. The temporary
+`apps/auth/package.json` change was restored; no bundler workaround remains.
+Managed shutdown of this exact checkout failed in `devsy workspace stop` with
+exit status 1, but subsequent provider readback reports `Stopped` for
+`rs-manage-course-clarity`, and source-path readback confirms zero routes.
+Runtime release is therefore verified despite the command error.
+Canonical startup after that verified shutdown still refuses the degraded
+transition. Read-only doctor confirms `transitionPhase=process-start` and
+`the last managed transition is degraded`; shared Docker, router, TLS, network,
+and Devsy agent checks pass. This blocks runtime-dependent UX acceptance.
+Do not bypass the managed lifecycle or modify
+another task's runtime. Next authorized action is bounded provider-failure
+diagnosis, followed by canonical startup and delegated-login proof before UX
+verification. Shared provider repair or deletion requires a new explicit
+boundary. No implementation commit, push, new PR, or browser acceptance is
+claimed by this checkpoint.
+
+Current checkpoint, 2026-09-05: the plan is committed at
+`1448ee98f79634c587a7f766edbca9a00f1c239d`. Fresh fetch confirms
+`rs/manage-course-clarity` has no upstream and is one commit ahead, zero behind
+`origin/v3`. Eleven source/test files contain the uncommitted course clarity
+implementation. The executor completed the course row/menu and locale subset,
+including its focused correction; the main session inspected that diff and
+closed the executor. Scoped formatting completed. The implementation check run
+passed 34 of 35 check tasks and all seven lint tasks; Manage rejected a missing
+translation key. A paired-language course-specific fallback fixed that error,
+and the focused Manage check then passed. Final diff/format review, browser
+acceptance, build, required implementation reviews, and publication remain
+pending. Activity and wizard implementation have not started.
+
+Baseline evidence: the manage profile previously started with matching resources
+and no drift. Frozen Python 3.12 analytics preparation succeeded without source
+or lockfile changes. Root `pnpm run check:all` passed (35 check tasks and seven
+lint tasks), including the plan commit hook. Host Git used a temporary pnpm
+bridge to the exact task container; no hooks were bypassed. These checks precede
+the implementation and do not qualify its changed source.
+
+Runtime issue: synthetic lecturer login and course overview initially worked,
+but the existing course detail route returned HTTP 404 before the source edits.
+The exact task restart in session 10722 eventually succeeded with profile
+`manage`, matching active resources, and no drift. The internal course route
+now returns 200 and `/courses/[id]` appears in its dev pages manifest.
+
+The engineering browser daemon restarted, requiring a fresh login. Delegated
+access now reaches `/api/auth/error`; Auth's session and providers endpoints
+return 404 with `CLIENT_FETCH_ERROR`. A direct container request to
+`http://localhost:3010/api/auth/providers` also returns 404, excluding Traefik
+as that failure's source. The catch-all Auth source exists, but its dev pages
+manifest contains only `/`, `/_app`, `/_document`, and `/_error`. No authenticated
+after screenshots or Playwright acceptance are claimed. The inspected
+`next typegen` implementation writes type files; no evidence establishes it
+as the cause. Auth/runtime repair lies outside this UX plan and needs a scoped
+approval. The isolated browser closed successfully. Task-only shutdown remains
+active in terminal session 85564, queued behind another provider operation;
+stopped state and zero-route readback are not yet verified. Preserve that single
+shutdown request rather than starting a competing one. No keep-running lease
+or deletion is authorized. The historical notes below do not override this
+checkpoint.
 
 Planning only; source untouched. Old stack merged and superseded draft closed; exact fixture repair eight shards passed, post-close AI review unavailable rather than passed; old runtime stopped/zero routes. Locale Sharing-to-Freigabe parked behind separate tour drafts. Historical worktrees retained incl staged roadmap/generated deletions in feedback-recovery. Planner round 1 returned REVISE; accepted all five findings: explicit delegation ownership, state precedence/course-label decision, named spec and comment-scope protection, locale paths/exact commands, and plan path/progress provenance. The same planner returned APPROVED in round 2; all five findings are closed. User approved the topology and named execution authority on 2026-09-05. The new worktree trees/manage-overviews-ux and native bottom branch rs/manage-course-clarity are created at the pinned v3 baseline. Runtime startup and initial plan commit are next; all three implementation layers remain.
+
+## Device-transfer checkpoint, 2026-09-06
+
+The user requests current work committed and published as draft PRs for
+continuation on another device, not completion of the remaining layers or a
+review waiver. Course implementation exists; activity and wizard layers remain
+unimplemented. Current HEAD is the initial plan commit `1448ee98f7`, with no
+upstream or PR. Fresh fetch places it one commit ahead and six behind
+`origin/v3`; no upstream integration occurred.
+
+Central Devsy recovery has superseded the historical startup/shutdown blockers.
+This checkpoint's canonical manage-profile startup has passed internal Auth
+providers JSON and Manage redirect readiness. Final route reconciliation and
+required current commit checks remain pending. No new visual or Playwright
+acceptance is claimed. The initial custody comparison incorrectly reported the
+untracked readiness regression test as deleted; its actual contents match
+upstream and must be retained with the adopted runtime changes.
 
 ## Planning verdict
 

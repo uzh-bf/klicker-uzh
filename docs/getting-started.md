@@ -143,8 +143,9 @@ fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
 `2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
 and `live-quiz` requires live general and response-processor worker descendants
 of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing

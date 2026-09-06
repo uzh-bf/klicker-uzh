@@ -3557,10 +3557,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
       viewActivities: 'Aktivitäten einsehen',
+      openLibrary: 'Bibliothek öffnen',
+      noNotificationEmail: 'Nicht angegeben',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      leaderboardSummary:
+        'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
+      leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
+      leaderboardInclusion:
+        'Teilnehmende ohne Punkte erscheinen nur in der Rangliste für den gesamten Kurs.',
+      leaderboardExportHelp: 'Hinweise zum CSV-Export',
+      leaderboardExportDescription:
+        'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',
       deleteCourse: 'Kurs löschen',
       removeCourse: 'Kurs entfernen',
       confirmCourseRemoval:
