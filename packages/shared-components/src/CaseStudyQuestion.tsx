@@ -92,6 +92,7 @@ function CaseStudyQuestion({
             <Markdown
               withProse
               content={content}
+              expandLabel={t('shared.generic.expandImage')}
               data={{ cy: `instance-question-content` }}
               className={{ root: 'text-base' }}
             />

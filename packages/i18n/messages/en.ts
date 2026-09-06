@@ -135,6 +135,8 @@ export default {
     },
     markdown: {
       copyCode: 'Copy',
+      copyCodeSuccess: 'Code copied.',
+      copyCodeError: 'Could not copy. Try again or select the code to copy it.',
     },
     attachments: {
       hydrationError:
@@ -433,6 +435,8 @@ export default {
       fieldcontent: 'content',
     },
     generic: {
+      expandImage: 'Expand image',
+      skipToContent: 'Skip to content',
       date: 'Date',
       percentage: 'Percentage',
       status: 'Status',
@@ -1234,6 +1238,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       submitPin: 'Submit PIN',
     },
     feedbacks: {
+      feedbackLabel: 'Your question or feedback',
+      feedbacksLoadFailed: 'Feedback could not be loaded. Please try again.',
+      feedbackSubmissionFailed:
+        'Your feedback could not be submitted. Please try again.',
+      upvoteQuestion: 'Upvote question',
+      helpfulResponse: 'Helpful response',
+      unhelpfulResponse: 'Unhelpful response',
       title: 'Feedback Channel',
       speed: 'Speed',
       difficulty: 'Difficulty',
