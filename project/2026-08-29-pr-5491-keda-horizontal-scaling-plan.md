@@ -151,8 +151,11 @@ without separate approval.
   **Decision:** Goldilocks owns recommendations and approved requests; this
   plan owns slots, floors, thresholds, caps, and placement. A versioned
   capacity artifact joins the two workstreams and blocks stale promotion.
-- **Problem:** Chat and the MCP servers were absent from the W9 inventory,
-  and both carry state that plain replica scaling would break.
+- **Problem:** Chat and the MCP servers were absent from the W9 inventory.
+  The MCP servers carry in-process session state that a second replica cannot
+  serve; chat carries only per-request stream state, which is safe under
+  plain replica scaling but is cut when a pod terminates during a rolling
+  restart or scale-in without draining.
   **Evidence:** FastMCP 4.13.1 implements the handshake-based MCP revisions
   with in-process sessions and documents that it does not support the stateless
   2026-07-28 specification; production runs two MCP replicas with anti-affinity
@@ -1265,13 +1268,21 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   transport question.
 - **Acceptance:** The MCP student and lecturer servers serve every request
   correctly from any replica, proven by a test that drives chat's MCP client
-  against two server instances. Chat finishes in-flight streamed responses
-  across a rolling restart and a scale-in. Both record their candidate signal
-  for W9.
-- **Test obligation:** One integration test for MCP request handling across two
-  instances without session continuity; one lifecycle test for chat draining
-  (readiness flips, the in-flight stream completes, the process exits within
-  the grace period); Helm render checks for new lifecycle values. No test pins
+  against two instances of each server. The proof depends on the transport
+  chosen in step (1): with a stateless or migrated transport, requests succeed
+  without `Mcp-Session-Id` continuity; with the ingress-affinity stopgap, a
+  reused session reaches the same replica for its whole lifetime. The
+  effective FastMCP 4.13.1 setting and the selected ingress behavior are
+  recorded before W10 is marked complete. Chat finishes in-flight streamed
+  responses across a rolling restart and a scale-in, and a draining chat
+  process accepts no new request. Both record their candidate signal for W9.
+- **Test obligation:** One integration test that calls both `apps/mcp-student`
+  and `apps/mcp-lecturer` through chat's MCP client across two instances of
+  each, asserting the transport branch selected above (sessionless requests,
+  or same-replica routing for a reused session); one lifecycle test for chat
+  draining (readiness flips, a request arriving after drain begins is
+  rejected, the in-flight stream completes, the process exits within the
+  grace period); Helm render checks for new lifecycle values. No test pins
   protocol prose or SDK wording.
 - **Commit:** The MCP transport change or framework migration with its tests,
   the chat drain contract with its test, and Helm lifecycle values, each in its
@@ -1296,9 +1307,12 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   period set above the longest allowed stream. (3) Record the W9 candidate
   signals named above and confirm the source-scan claim that chat holds no
   cross-request state.
-- **Check:** The two-instance MCP test passes; a rolling restart under a
-  synthetic streaming request completes the stream; Helm renders the lifecycle
-  values; no HPA, ScaledObject, or replica ownership changes in this item.
+- **Check:** The two-instance MCP test passes for both servers on the
+  selected transport branch; a rolling restart and a scale-in, each under a
+  synthetic streaming request, complete the stream while the draining process
+  rejects a request that arrives after drain begins; Helm renders the
+  lifecycle values; no HPA, ScaledObject, or replica ownership changes in
+  this item.
 - **Working context:** Separate branches off `v3` (for example
   `rs/mcp-stateless-transport` and `rs/chat-drain-contract`); not part of the
   W0/W1 stack. Use the repository's local runtime only for the two-instance
@@ -1400,8 +1414,12 @@ a values edit.
   because native-stack roots had to target the default branch; PR #5800
   (merged into `v3`) makes any `<default branch>-<suffix>` consolidation
   branch eligible for individual reviews, stack roots, and stack base-advance
-  checks. Both re-posted reviews now pass eligibility and fail only on the
-  OpenRouter key's exhausted weekly limit, which the user manages.
+  checks. After the user replaced the OpenRouter key, both individual reviews
+  passed clean and the stack review reported one confirmed finding: a
+  termination signal during worker construction left the runtime draining
+  while intake still started. The upper layer fixes it with a regression
+  test; CodeRabbit's five roadmap comments on W10 wording and the superseded
+  execution record are folded into this document.
 - **Inherited CI failure:** Playwright shard 8 fails three tests on both PRs
   and on the `v3-ai` baseline run one commit before the target head; this is
   not a stack defect and needs a ruling before merge.
@@ -1410,11 +1428,16 @@ a values edit.
   streaming-drain findings recorded under Resolved questions, W9, and the new
   W10. No implementation, runtime, or cluster action was taken for this
   extension.
-- **Next action:** Unchanged for the foundations: final reviews after the key
-  limit resets, then merge authority in stack order. W10 may start
+- **Next action:** Fresh final reviews on the repaired upper head, then merge
+  authority in stack order. W10 may start
   independently once the user approves its execution plan.
 
 ### Current execution — 2026-09-06
+
+Superseded record: the remote heads, pending atomic publication, and next
+action below describe the state before publication. The
+`Roadmap extension — 2026-09-06, later` entry above holds the authoritative
+published heads.
 
 - **Active work:** Complete the approved integration and atomic publication
   after the planner-approved roadmap refresh. The main session owns the
