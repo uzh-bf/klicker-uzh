@@ -213,6 +213,13 @@ preserves each worktree's `.next/dev` output; a changed dependency fingerprint
 runs one frozen install against the persistent `node_modules` volume and shared
 pnpm content store.
 
+For recovery that must preserve Next.js caches, create the ignored marker
+`.devcontainer/.runtime/preserve-next-cache` in the worktree before `ensure`.
+Its presence refuses new cache-repair requests and applying pending requests,
+leaving caches, pending requests, and the runtime generation unchanged. The
+marker remains effective across retries until explicitly removed. With a
+custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
+
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
 a nested API route, the committed shell pages of auth, PWA, manage, and control

@@ -19,12 +19,12 @@ function requireScopeTokenEnv(name: string): string {
 }
 
 export async function signDocQueryScopeToken({
-  kbId,
+  kbIds,
   chatbotId,
   sessionId,
   jti,
 }: {
-  kbId: string
+  kbIds: readonly string[]
   chatbotId: string
   sessionId: string
   jti: string
@@ -43,7 +43,7 @@ export async function signDocQueryScopeToken({
     )
 
     return await new SignJWT({
-      kb_id: kbId,
+      kb_id: kbIds.length === 1 ? kbIds[0] : kbIds,
       chatbot_id: chatbotId,
     })
       .setProtectedHeader({
