@@ -213,6 +213,13 @@ preserves each worktree's `.next/dev` output; a changed dependency fingerprint
 runs one frozen install against the persistent `node_modules` volume and shared
 pnpm content store.
 
+For recovery that must preserve Next.js caches, create the ignored marker
+`.devcontainer/.runtime/preserve-next-cache` in the worktree before `ensure`.
+Its presence refuses new cache-repair requests and applying pending requests,
+leaving caches, pending requests, and the runtime generation unchanged. The
+marker remains effective across retries until explicitly removed. With a
+custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
+
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
 a nested API route, the committed shell pages of auth, PWA, manage, and control
@@ -244,6 +251,12 @@ analytics image and lint CI so the root quality gate runs inside the container.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
+- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
+  workspace bind and the store volume are different devices inside the
+  container, so pnpm can fall back from the configured store to a workspace
+  store during installs; the second mount makes that fallback land in the
+  shared volume instead of writing a per-worktree store onto the host bind
+  mount.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

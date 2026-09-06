@@ -13,6 +13,21 @@ const {
 } = require('./playwright-selector.cjs')
 
 const repositoryRoot = path.join(__dirname, '../..')
+const localGitEnvironmentVariables = childProcess
+  .execFileSync(
+    'git',
+    ['-C', repositoryRoot, 'rev-parse', '--local-env-vars'],
+    { encoding: 'utf8' }
+  )
+  .trim()
+  .split('\n')
+
+// Git exports repository-local variables to hooks. Clear them before any
+// fixture command or selector call so temporary repositories stay isolated.
+for (const variable of localGitEnvironmentVariables) {
+  delete process.env[variable]
+}
+
 const relevanceManifest = JSON.parse(
   fs.readFileSync(
     path.join(repositoryRoot, 'playwright/relevance-manifest.json'),
@@ -42,11 +57,13 @@ function change(kind, ...paths) {
   return { kind, status: kind, paths }
 }
 
-function gitAt(root, ...args) {
+function gitAtWithEnvironment(root, inheritedEnvironment, ...args) {
   // Git exports repository-local variables to hooks. Fixture repositories must
   // not inherit them, or `git -C` can still mutate the parent repository.
   const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+    Object.entries(inheritedEnvironment).filter(
+      ([key]) => !key.startsWith('GIT_')
+    )
   )
 
   return childProcess.execFileSync('git', ['-C', root, ...args], {
@@ -54,6 +71,10 @@ function gitAt(root, ...args) {
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
+}
+
+function gitAt(root, ...args) {
+  return gitAtWithEnvironment(root, process.env, ...args)
 }
 
 function commitFixture(root, message) {
@@ -91,6 +112,35 @@ function createCandidate() {
   const baseSha = gitAt(root, 'rev-parse', 'HEAD').trim()
   return { root, baseSha }
 }
+
+test('fixture git commands ignore an inherited parent repository', () => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-parent-'))
+  const candidate = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-child-'))
+
+  try {
+    gitAt(parent, 'init', '-q', '-b', 'main')
+    gitAt(candidate, 'init', '-q', '-b', 'main')
+    gitAtWithEnvironment(
+      candidate,
+      {
+        ...process.env,
+        GIT_DIR: path.join(parent, '.git'),
+        GIT_WORK_TREE: parent,
+      },
+      'config',
+      'test.fixtureScope',
+      'candidate'
+    )
+    assert.equal(
+      gitAt(candidate, 'config', '--get', 'test.fixtureScope').trim(),
+      'candidate'
+    )
+    assert.throws(() => gitAt(parent, 'config', '--get', 'test.fixtureScope'))
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true })
+    fs.rmSync(candidate, { recursive: true, force: true })
+  }
+})
 
 test('parses rename-aware null-delimited diff records', () => {
   assert.deepEqual(

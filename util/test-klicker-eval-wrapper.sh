@@ -30,6 +30,7 @@ assert_line() {
 FAKE_BIN="$TEST_ROOT/bin"
 FAKE_REPO="$TEST_ROOT/repo"
 CHILD_LOG="$TEST_ROOT/child.log"
+INFISICAL_LOG="$TEST_ROOT/infisical.log"
 mkdir -p "$FAKE_BIN"
 
 write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
@@ -82,8 +83,28 @@ if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
   exec "$4"
 fi'
 
-chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv"
+write_file "$FAKE_BIN/infisical" '#!/usr/bin/env bash
+if [ -n "${KLICKER_TEST_INFISICAL_LOG:-}" ]; then
+  printf "%s\n" "$*" >>"$KLICKER_TEST_INFISICAL_LOG"
+fi
+if [ -n "${KLICKER_TEST_INFISICAL_STATUS:-}" ] && [ "$KLICKER_TEST_INFISICAL_STATUS" != "0" ]; then
+  printf "%s\n" "synthetic infisical failure" >&2
+  exit "$KLICKER_TEST_INFISICAL_STATUS"
+fi
+if [ -n "${KLICKER_TEST_EMPTY_SECRET:-}" ]; then
+  exit 0
+fi
+printf "%s" "synthetic-test-key"
+exit 0'
+
+chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv" "$FAKE_BIN/infisical"
 TEST_PATH="$FAKE_BIN:$(dirname "$(command -v bash)"):/usr/bin:/bin"
+# Minimal path for the missing-CLI case: it must contain no infisical, so it
+# cannot reuse TEST_PATH (the bash directory may itself ship a real CLI).
+MIN_BIN="$TEST_ROOT/min-bin"
+mkdir -p "$MIN_BIN"
+ln -s "$(command -v bash)" "$MIN_BIN/bash"
+ln -s "$(command -v dirname)" "$MIN_BIN/dirname"
 if PATH="$TEST_PATH" command -v rs-infisical-operator >/dev/null 2>&1; then
   fail 'portable wrapper test path must not contain rs-infisical-operator'
 fi
@@ -108,6 +129,7 @@ env -i \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
   "$WRAPPER" -- --mode eval --qa-file synthetic-qa.json
 
 assert_line 'LITELLM_API_BASE=https://litellm.example.test' "$CHILD_LOG"
@@ -126,6 +148,21 @@ assert_line 'ARG=--mode' "$CHILD_LOG"
 assert_line 'ARG=eval' "$CHILD_LOG"
 assert_line 'ARG=--qa-file' "$CHILD_LOG"
 assert_line 'ARG=synthetic-qa.json' "$CHILD_LOG"
+
+[ ! -s "$INFISICAL_LOG" ] || fail 'caller-provided judge key must not invoke the infisical CLI'
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+env -i \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$TEST_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" -- --mode eval --qa-file synthetic-qa.json
+
+assert_line 'secrets get PIPELINES_LITELLM_API_KEY --plain --silent --expand=false --projectId d071be96-5136-4f23-a6cb-e0c7f9b9a6c8 --env stg' "$INFISICAL_LOG"
+assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 
 : >"$CHILD_LOG"
 env -i \
@@ -175,14 +212,45 @@ assert_line 'EVAL_MODEL_CAPABILITY_MODEL_STATE=unset' "$CHILD_LOG"
 status=0
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$MIN_BIN" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval >"$TEST_ROOT/missing-cli.out" 2>&1 || status=$?
+
+[ "$status" -eq 1 ] || fail "missing infisical CLI returned $status instead of 1"
+assert_line 'Error: LITELLM_API_KEY is not set and the infisical CLI is required to fetch PIPELINES_LITELLM_API_KEY' "$TEST_ROOT/missing-cli.out"
+[ ! -s "$CHILD_LOG" ] || fail 'missing infisical CLI must not invoke uv'
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  KLICKER_TEST_INFISICAL_STATUS='73' \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
-  "$WRAPPER" --mode eval >"$TEST_ROOT/empty-key.out" 2>&1 || status=$?
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" --mode eval >"$TEST_ROOT/infisical-failure.out" 2>&1 || status=$?
 
-[ "$status" -eq 1 ] || fail "missing judge key returned $status instead of 1"
-assert_line 'Error: LITELLM_API_KEY must be provided by the invoking environment' "$TEST_ROOT/empty-key.out"
-[ ! -s "$CHILD_LOG" ] || fail 'missing judge key must not invoke uv'
+[ "$status" -eq 1 ] || fail "infisical CLI failure returned $status instead of 1"
+assert_line 'Error: could not fetch PIPELINES_LITELLM_API_KEY from the Infisical project d071be96-5136-4f23-a6cb-e0c7f9b9a6c8 (environment stg); check infisical login and project access' "$TEST_ROOT/infisical-failure.out"
+grep -Fq -- 'synthetic infisical failure' "$TEST_ROOT/infisical-failure.out" || fail 'infisical CLI stderr must pass through'
+[ ! -s "$CHILD_LOG" ] || fail 'infisical CLI failure must not invoke uv'
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  KLICKER_TEST_EMPTY_SECRET='true' \
+  PATH="$TEST_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" --mode eval >"$TEST_ROOT/empty-secret.out" 2>&1 || status=$?
+
+[ "$status" -eq 1 ] || fail "empty fetched judge key returned $status instead of 1"
+assert_line 'Error: fetched PIPELINES_LITELLM_API_KEY is empty' "$TEST_ROOT/empty-secret.out"
+[ ! -s "$CHILD_LOG" ] || fail 'empty fetched judge key must not invoke uv'
 
 status=0
 env -i \

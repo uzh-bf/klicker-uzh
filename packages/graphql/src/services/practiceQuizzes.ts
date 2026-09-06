@@ -31,6 +31,7 @@ export async function getPracticeQuizData(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      course: { deletionRequestedAt: null },
       OR: [
         { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
         { status: DB.PublicationStatus.SCHEDULED },
@@ -91,7 +92,12 @@ export async function getPracticeQuizEvaluation(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -122,7 +128,11 @@ export async function getSinglePracticeQuiz(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       stacks: {
@@ -140,7 +150,7 @@ export async function getCoursePublishedPracticeQuizzes(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       practiceQuizzes: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -445,6 +455,7 @@ export async function getBookmarksPracticeQuiz(
         courseId,
         participantId: ctx.user.sub,
       },
+      course: { deletionRequestedAt: null },
     },
     include: {
       bookmarkedElementStacks: {
@@ -499,7 +510,7 @@ export async function getPracticeQuizSummary(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { stacks: { include: { elements: true } } },
   })
 

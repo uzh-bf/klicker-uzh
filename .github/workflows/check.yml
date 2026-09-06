@@ -27,11 +27,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check pull request commit identities
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash util/check-git-identity.sh range "${PR_BASE_SHA}..${PR_HEAD_SHA}"
+
+      - name: Test Git identity guard
+        run: node --test ./util/check-git-identity.test.mjs
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.12'
           enable-cache: false
+
+      - name: Test Playwright timing aggregation
+        run: uv run --no-project --python 3.12 python -m unittest discover -s .github/scripts -p test_update_playwright_timings.py
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -47,6 +60,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Check Playwright CI contracts
+        run: pnpm run check:playwright-ci
 
       - name: Check file formatting
         shell: bash

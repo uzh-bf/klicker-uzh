@@ -65,7 +65,10 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   }
 
   const row = (await prisma.chatbot.findUnique({
-    where: { id: parsedId.data },
+    where: {
+      id: parsedId.data,
+      course: { deletionRequestedAt: null },
+    },
     // `status` is always selected on top of the caller's projection so this one
     // guard can enforce publication for every participant route.
     select: { ...select, status: true },

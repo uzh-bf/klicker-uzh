@@ -6,6 +6,36 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FRAMEWORK_ROOT="$REPO_ROOT/evaluation/framework"
 FRAMEWORK_RUNNER="$FRAMEWORK_ROOT/scripts/_run_eval.sh"
 
+# Judge credential contract: a caller-provided LITELLM_API_KEY wins as-is;
+# otherwise the key is fetched with the standard Infisical CLI from the
+# klicker-uzh project (stg environment). The value is only exported to the
+# evaluator child and is stripped from the target-adapter environment.
+LITELLM_KEY_SECRET_NAME='PIPELINES_LITELLM_API_KEY'
+INFISICAL_PROJECT_ID='d071be96-5136-4f23-a6cb-e0c7f9b9a6c8'
+INFISICAL_ENV_SLUG='stg'
+
+resolve_litellm_api_key() {
+  if [ -n "${LITELLM_API_KEY:-}" ]; then
+    return 0
+  fi
+  if ! command -v infisical >/dev/null 2>&1; then
+    echo "Error: LITELLM_API_KEY is not set and the infisical CLI is required to fetch ${LITELLM_KEY_SECRET_NAME}" >&2
+    exit 1
+  fi
+  local fetched
+  if ! fetched="$(infisical secrets get "$LITELLM_KEY_SECRET_NAME" \
+    --plain --silent --expand=false \
+    --projectId "$INFISICAL_PROJECT_ID" --env "$INFISICAL_ENV_SLUG" </dev/null)"; then
+    echo "Error: could not fetch ${LITELLM_KEY_SECRET_NAME} from the Infisical project ${INFISICAL_PROJECT_ID} (environment ${INFISICAL_ENV_SLUG}); check infisical login and project access" >&2
+    exit 1
+  fi
+  if [ -z "$fetched" ]; then
+    echo "Error: fetched ${LITELLM_KEY_SECRET_NAME} is empty" >&2
+    exit 1
+  fi
+  export LITELLM_API_KEY="$fetched"
+}
+
 if [ "${1:-}" = "--" ]; then
   shift
 fi
@@ -29,11 +59,6 @@ fi
 
 if [ -z "${LITELLM_API_BASE:-}" ]; then
   echo "Error: LITELLM_API_BASE must point to the approved LiteLLM proxy" >&2
-  exit 1
-fi
-
-if [ -z "${LITELLM_API_KEY:-}" ]; then
-  echo "Error: LITELLM_API_KEY must be provided by the invoking environment" >&2
   exit 1
 fi
 
@@ -98,6 +123,10 @@ if [ "$LOCAL_TARGET" = true ]; then
   require_readable_directory KLICKER_EVAL_GT_DIR "$EFFECTIVE_LOCAL_GT_DIR"
   require_readable_file KLICKER_EVAL_CANARY_FILE "${KLICKER_EVAL_CANARY_FILE:-$REPO_ROOT/evaluation/data/canaries/klicker_local_mcp.json}"
 fi
+
+# Secret retrieval happens after all preflights so input failures never
+# trigger a credential fetch.
+resolve_litellm_api_key
 
 ADAPTER_PID=""
 ADAPTER_TMP_DIR=""

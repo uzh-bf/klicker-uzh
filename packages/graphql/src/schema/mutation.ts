@@ -4,9 +4,11 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -26,7 +28,11 @@ import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import {
+  Course,
+  CourseDeletionRequestPayload,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -85,6 +91,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -99,6 +106,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -670,9 +678,9 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      deleteCourse: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
+        type: CourseDeletionRequestPayload,
         args: {
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
@@ -681,7 +689,11 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return { courseId: request.courseId }
           }
         ),
       }),
@@ -1473,6 +1485,41 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
         nullable: true,
         type: ChatAccountUsageOverviewRef,
@@ -1863,6 +1910,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 

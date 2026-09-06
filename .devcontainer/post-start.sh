@@ -39,6 +39,7 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
   export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=http://localhost:3002/__growthbook__
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
 elif [ -n "${WORKSPACE:-}" ]; then
@@ -62,6 +63,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://manage.klicker.${WORKSPACE}.localhost/__growthbook__
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
   export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
   export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
@@ -84,7 +86,7 @@ echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
 
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
 
 # Resolve the complete selection first through the pure table in
 # util/profile-resolver.sh: exact turbo roots, readiness apps, and process
@@ -105,6 +107,12 @@ else
   PROFILE_WANTS_MCP=no
 fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
+DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
+if [ "$PROFILE_WANTS_DEV" = yes ] &&
+  ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
+  echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
+  exit 1
+fi
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
 if profile_wants klicker-workers; then
@@ -176,6 +184,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
   else
@@ -183,6 +192,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi
