@@ -114,6 +114,21 @@ notification.
 
 ## Progress
 
+- 2026-09-06 follow-up: the exact retained activity-info-on-eval runtime
+  recovered through the published devrouter 0.0.55 `ensure --repair` command.
+  The producing run reported ready, no drift and no recreation. The manage
+  route returned HTTP 200 using the existing local CA. Keep it running for
+  manual testing. A separate devrouter worktree at
+  `/Volumes/HOME/Git/personal/devrouter/trees/preparation-child-reaping`
+  contains an uncommitted bounded child-drain fix: the Linux regression suite
+  passes with the patch and fails against published 0.0.55 at the new transient
+  child test. Final cleanup, review and publication remain pending because the
+  automatic permission reviewer timed out twice on the separate-worktree edit.
+  The user subsequently confirmed evaluation works and requested that the
+  separate devrouter repair move to its own task. That repair does not block
+  this evaluation PR; the retained runtime is recovered using published 0.0.55.
+  Evaluation publication is authorized, with final review and exact-head CI
+  still required before reporting merge readiness. Do not merge the PR.
 - 2026-08-26: Reproduced the missing metadata on Calendar Live Quiz 2 and
   captured the pre-fix screenshot.
 - 2026-08-26: Traced the null payload to the HMAC-only PUBLISHED/ENDED Prisma
