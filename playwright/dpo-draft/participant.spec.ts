@@ -1,5 +1,17 @@
 import { expect, test, type Page } from '@playwright/test'
 
+function observeRequests(page: Page) {
+  const requests: string[] = []
+  page.on('request', (request) => {
+    if (
+      ['fetch', 'xhr', 'ping'].includes(request.resourceType()) &&
+      !new URL(request.url()).pathname.startsWith('/_next/')
+    )
+      requests.push(request.url())
+  })
+  return requests
+}
+
 async function chooseView(page: Page, index: number) {
   await page.getByTestId('dpo-view').click()
   await page.getByRole('option').nth(index).click()
@@ -12,14 +24,7 @@ for (const [index, view] of [
   test(`${view} requires only choices and acknowledgement`, async ({
     page,
   }) => {
-    const requests: string[] = []
-    page.on('request', (request) => {
-      if (
-        ['fetch', 'xhr', 'ping'].includes(request.resourceType()) &&
-        !new URL(request.url()).pathname.startsWith('/_next/')
-      )
-        requests.push(request.url())
-    })
+    const requests = observeRequests(page)
     await page.goto('/de/dpo-draft')
     await chooseView(page, index)
     await expect(
@@ -27,6 +32,10 @@ for (const [index, view] of [
     ).toHaveCount(0)
     await expect(page.getByTestId(`dpo-${view}-submit`)).toBeDisabled()
     await page.getByTestId(`dpo-${view}-la-false`).click()
+    await page.getByTestId(`dpo-${view}-research-details`).click()
+    await expect(
+      page.getByTestId(`dpo-${view}-research-allow`)
+    ).toHaveAttribute('aria-pressed', 'true')
     await page.getByTestId(`dpo-${view}-ack-checkbox`).check()
     await page.getByTestId(`dpo-${view}-submit`).click()
     await expect(page.getByTestId(`dpo-${view}-result`)).toBeVisible()
@@ -35,6 +44,7 @@ for (const [index, view] of [
 }
 
 test('renewed acknowledgement preserves saved refusals', async ({ page }) => {
+  const requests = observeRequests(page)
   await page.goto('/en/dpo-draft')
   await chooseView(page, 3)
   await expect(page.getByTestId('dpo-gate-submit')).toBeDisabled()
@@ -54,11 +64,13 @@ test('renewed acknowledgement preserves saved refusals', async ({ page }) => {
     'aria-pressed',
     'true'
   )
+  expect(requests).toEqual([])
 })
 
 test('analytics withdrawal requires confirmation and stays independent of research', async ({
   page,
 }) => {
+  const requests = observeRequests(page)
   await page.goto('/en/dpo-draft')
   await chooseView(page, 4)
   const analytics = page.getByTestId('dpo-settings-analytics')
@@ -75,11 +87,13 @@ test('analytics withdrawal requires confirmation and stays independent of resear
   await analytics.click()
   await expect(analytics).toBeChecked()
   await expect(research).not.toBeChecked()
+  expect(requests).toEqual([])
 })
 
 test('joining and rejoining rank retained points without retroactive awards', async ({
   page,
 }) => {
+  const requests = observeRequests(page)
   await page.goto('/de/dpo-draft')
   await chooseView(page, 5)
   await page.getByTestId('dpo-leaderboard-close').click()
@@ -109,4 +123,5 @@ test('joining and rejoining rank retained points without retroactive awards', as
       '0'
     )
   }
+  expect(requests).toEqual([])
 })
