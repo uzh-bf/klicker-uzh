@@ -96,6 +96,12 @@ export const PARTICIPANT_IDS = [
   'b687a300-b5e7-43dd-a49e-aea9ff30aadc',
 ]
 
+// uuids for the two participants that stay outside every course
+const UNENROLLED_PARTICIPANT_IDS = [
+  '908f84d0-fd32-4a99-8a9f-b4793288234d',
+  'ec8385db-e951-47dc-9e86-e215b7e4c501',
+]
+
 // uuids for 14 participant groups
 export const PARTICIPANT_GROUP_IDS = [
   '9c4940c1-87ca-47a7-afc4-cd85656df3e7',
@@ -995,10 +1001,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   await Promise.all(
-    [
-      '908f84d0-fd32-4a99-8a9f-b4793288234d',
-      'ec8385db-e951-47dc-9e86-e215b7e4c501',
-    ].map(async (id, ix) => {
+    UNENROLLED_PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
@@ -1009,6 +1012,31 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       )
     })
   )
+
+  // Seeded participants represent established students, not first logins, so
+  // mark the student onboarding tour as already completed for all of them.
+  // Without this, the tour would auto-start unsolicited on the overview page of
+  // every seeded account and its document-wide pointer-blocking overlay would
+  // break every PWA E2E spec that logs in and interacts right away.
+  // The tour id literal is owned by packages/product-tours/src/index.ts
+  // (TOUR_IDS); it stays a plain string here so the seed paths gain no runtime
+  // dependency — update both places when a tour is renamed.
+  for (const participantId of [
+    ...PARTICIPANT_IDS,
+    ...UNENROLLED_PARTICIPANT_IDS,
+  ]) {
+    await prisma.participantTourState.upsert({
+      where: {
+        participantId_tourId: { participantId, tourId: 'pwa-onboarding-v1' },
+      },
+      create: {
+        participantId,
+        tourId: 'pwa-onboarding-v1',
+        completedAt: new Date(),
+      },
+      update: { completedAt: new Date() },
+    })
+  }
 
   await Promise.all(
     PARTICIPANT_IDS.map(async (participantId) => {
