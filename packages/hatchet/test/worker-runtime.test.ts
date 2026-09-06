@@ -205,6 +205,45 @@ test('runtime stops a worker that registers after startup times out', async () =
   await waitFor(() => stopCount === 1)
 })
 
+test('runtime stops instead of starting intake when termination arrives during startup', async () => {
+  const signals = new FakeSignals()
+  let startCount = 0
+  let stopCount = 0
+  const worker = {
+    start: async () => {
+      startCount += 1
+    },
+    stop: async () => {
+      stopCount += 1
+      return []
+    },
+  } as unknown as HatchetWorker
+  const runtime = createHatchetWorkerRuntime({
+    config: {
+      mode: 'general',
+      name: 'terminated-during-startup-worker',
+      slots: 1,
+      durableSlots: 1,
+      healthPort: 0,
+      startupTimeoutMs: 1_000,
+    },
+    workflows: [] as HatchetWorkflows,
+    workerFactory: async () => {
+      signals.emitFirst('SIGTERM')
+      return worker
+    },
+    signalSource: signals,
+    healthHost: '127.0.0.1',
+  })
+
+  await runtime.start()
+
+  assert.equal(startCount, 0)
+  assert.equal(stopCount, 1)
+  assert.equal(runtime.lifecycle.state, 'stopped')
+  assert.equal(runtime.lifecycle.isReady, false)
+})
+
 test('runtime preserves workflows and drops readiness before SDK intake stops', async () => {
   const signals = new FakeSignals()
   const lifecycleEvents: string[] = []

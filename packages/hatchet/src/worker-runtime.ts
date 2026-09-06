@@ -125,6 +125,10 @@ export class WorkerLifecycle {
     return this.currentState === 'ready'
   }
 
+  get isDraining() {
+    return this.currentState === 'draining'
+  }
+
   beginDraining() {
     if (this.currentState === 'starting' || this.currentState === 'ready') {
       this.currentState = 'draining'
@@ -350,6 +354,12 @@ export function createHatchetWorkerRuntime({
             config.startupTimeoutMs,
             (lateWorker) => lateWorker.stop()
           )
+
+          if (lifecycle.isDraining) {
+            await worker.stop()
+            lifecycle.markStopped()
+            return
+          }
 
           const workerStart = worker.start()
           lifecycle.markReady()
