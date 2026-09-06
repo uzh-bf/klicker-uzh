@@ -6,6 +6,7 @@ import {
   KBResourceType,
   type Prisma,
   type PrismaClient,
+  Prisma as PrismaRuntime,
   ResponseExampleStatus,
   ResponseExampleStyle,
 } from '@klicker-uzh/prisma/client'
@@ -54,7 +55,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true },
+    select: { systemPrompts: true, standardModeConfig: true },
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -249,7 +250,7 @@ describe('response-example foundation', () => {
 
     expect(ownerSet).not.toBeNull()
     expect(ownerSet?.chatbotId).toBe(chatbot.id)
-    expect(ownerSet?.chatModes).toEqual(['explainer', 'tutor'])
+    expect(ownerSet?.chatModes).toEqual(['explainer', 'quizzer', 'tutor'])
     expect(ownerSet?.examples).toHaveLength(2)
     expect(
       ownerSet?.examples.map(({ chatMode, studentMessage, status }) => ({
@@ -334,6 +335,64 @@ describe('response-example foundation', () => {
       where: { id: capture.set.id },
     })
     expect(refreshedSet.digest).not.toBe(beforeDigest)
+  })
+
+  it('captures and approves an enabled standard mode without legacy prompts', async () => {
+    const capture = await buildCaptureInput({ chatMode: 'explainer' })
+    await prisma.chatbot.update({
+      where: { id: capture.chatbot.id },
+      data: {
+        systemPrompts: PrismaRuntime.DbNull,
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+
+    const result = await captureResponseExample(
+      capture.args,
+      userOneCtx,
+      receiptSettings
+    )
+    expect(result).toMatchObject({ created: true })
+    const approved = await approveResponseExample(
+      { id: result!.exampleId },
+      userOneCtx
+    )
+    expect(approved?.chatModes).toEqual(['explainer'])
+    expect(
+      approved?.examples.find(({ id }) => id === result!.exampleId)
+    ).toMatchObject({ status: ResponseExampleStatus.APPROVED })
+  })
+
+  it('rejects capture when a standard mode is disabled after receipt issuance', async () => {
+    const capture = await buildCaptureInput({ chatMode: 'explainer' })
+    await prisma.chatbot.update({
+      where: { id: capture.chatbot.id },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
   })
 
   it('rejects receipt binding mismatches and stale evidence', async () => {
@@ -618,7 +677,17 @@ describe('response-example foundation', () => {
 
     await prisma.chatbot.update({
       where: { id: chatbot.id },
-      data: { systemPrompts: { explainer: { prompt: 'Explainer' } } },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
     })
     const candidate = set.examples.find(
       (example) => example.status === ResponseExampleStatus.CANDIDATE
