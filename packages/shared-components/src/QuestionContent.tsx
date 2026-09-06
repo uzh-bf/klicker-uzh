@@ -7,9 +7,11 @@ import { twMerge } from 'tailwind-merge'
 function QuestionContent({
   content,
   noPoints,
+  questionLabelId,
 }: {
   content: string
   noPoints: boolean
+  questionLabelId?: string
 }) {
   const t = useTranslations()
 
@@ -19,6 +21,7 @@ function QuestionContent({
 
   return (
     <div
+      id={questionLabelId}
       className={twMerge(
         'prose prose-p:m-0! prose-img:m-0! relative mb-4 min-h-24 max-w-none flex-initial rounded border p-4 leading-6',
         noPoints && 'mt-4 rounded-tr-none'
@@ -30,7 +33,11 @@ function QuestionContent({
           {t('shared.generic.noPoints')}
         </div>
       ) : null}
-      <Markdown content={content} data={{ cy: `instance-question-content` }} />
+      <Markdown
+        content={content}
+        expandLabel={t('shared.generic.expandImage')}
+        data={{ cy: `instance-question-content` }}
+      />
     </div>
   )
 }

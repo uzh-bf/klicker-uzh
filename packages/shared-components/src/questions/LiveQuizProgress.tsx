@@ -19,6 +19,7 @@ export interface LiveQuizProgressProps {
   isContent: boolean
   isBlockOver: boolean // boolean to hide countdown during cooldown
   canSubmit: boolean
+  submitting?: boolean
   // actions
   onPrev: () => void
   onNext: () => void
@@ -36,6 +37,7 @@ export function LiveQuizProgress({
   isBlockOver,
   isContent,
   canSubmit,
+  submitting = false,
   onPrev,
   onNext,
   onSubmit,
@@ -44,7 +46,10 @@ export function LiveQuizProgress({
   const t = useTranslations()
 
   return (
-    <div className="sticky top-0 z-10 -mx-4 mb-1.5 flex flex-row items-center justify-between gap-2 border-b border-slate-300 bg-white px-4 pb-2 pt-2 md:mx-0 md:mb-0 md:border-b-0 md:px-0">
+    <div
+      aria-busy={submitting}
+      className="sticky top-0 z-10 -mx-4 mb-1.5 flex flex-row items-center justify-between gap-2 border-b border-slate-300 bg-white px-4 pb-2 pt-2 md:mx-0 md:mb-0 md:border-b-0 md:px-0"
+    >
       <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
         {expiresAt && timeLimit && !isBlockOver ? (
           <div className="flex-initial">
@@ -60,7 +65,8 @@ export function LiveQuizProgress({
         <Button
           onClick={onPrev}
           disabled={activeIndex <= 0}
-          className={{ root: 'h-8 w-8 md:h-9 md:w-9' }}
+          aria-label={t('shared.table.previous')}
+          className={{ root: 'h-11 w-11' }}
           data={{ cy: 'lq-nav-prev' }}
         >
           <Button.Icon
@@ -73,7 +79,8 @@ export function LiveQuizProgress({
         <Button
           onClick={onNext}
           disabled={activeIndex >= allowedMaxIndex}
-          className={{ root: 'h-8 w-8 md:h-9 md:w-9' }}
+          aria-label={t('shared.table.next')}
+          className={{ root: 'h-11 w-11' }}
           data={{ cy: 'lq-nav-next' }}
         >
           <Button.Icon
@@ -88,7 +95,8 @@ export function LiveQuizProgress({
         <Button
           fluid
           primary={isCurrentUnanswered}
-          className={{ root: 'h-8 px-4 md:h-9 md:px-5' }}
+          className={{ root: 'min-h-11 px-4 md:px-5' }}
+          loading={submitting}
           disabled={
             isCurrentUnanswered ? !canSubmit : activeIndex >= allowedMaxIndex
           }
@@ -106,11 +114,13 @@ export function LiveQuizProgress({
           }}
         >
           <Button.Label>
-            {!isCurrentUnanswered
-              ? t('shared.generic.continue')
-              : isContent
-                ? t('shared.generic.next')
-                : t('shared.generic.send')}
+            {submitting
+              ? t('shared.comments.sending')
+              : !isCurrentUnanswered
+                ? t('shared.generic.continue')
+                : isContent
+                  ? t('shared.generic.next')
+                  : t('shared.generic.send')}
           </Button.Label>
         </Button>
       </div>

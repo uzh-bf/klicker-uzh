@@ -86,11 +86,14 @@ function FlashcardFront({
   content: string
   elementIx: number
 }) {
+  const t = useTranslations()
+
   return (
     <DynamicMarkdown
       withProse
       data={{ cy: `flashcard-front-${elementIx}` }}
       content={content}
+      expandLabel={t('shared.generic.expandImage')}
       className={{
         root: twMerge(
           'prose prose-p:m-0! prose-img:m-0! mx-auto flex-none text-center',
@@ -122,7 +125,11 @@ function FlashcardBack({
   return (
     <div className="rotate-y-180 flex w-full flex-1 flex-col">
       <div className="prose prose-p:m-0! prose-img:m-0! flex flex-1">
-        <DynamicMarkdown content={explanation} withProse />
+        <DynamicMarkdown
+          content={explanation}
+          expandLabel={t('shared.generic.expandImage')}
+          withProse
+        />
       </div>
       <div className="flex w-full shrink-0 flex-col items-center justify-center gap-1 border-t border-gray-300 pt-4">
         <p className="font-bold">

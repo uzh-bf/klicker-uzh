@@ -3,6 +3,7 @@ import type {
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { useId } from 'react'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
@@ -45,10 +46,17 @@ function ChoicesQuestion({
   noPoints,
   disabled,
 }: ChoicesQuestionProps) {
+  const questionId = useId()
+  const questionLabelId = `${questionId}-question`
+
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
-        <QuestionContent content={content} noPoints={noPoints} />
+        <QuestionContent
+          content={content}
+          noPoints={noPoints}
+          questionLabelId={questionLabelId}
+        />
 
         {evaluation && evaluation.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
@@ -67,6 +75,7 @@ function ChoicesQuestion({
             }}
             elementIx={elementIx}
             disabled={disabled || !!existingResponse}
+            questionLabelId={questionLabelId}
           />
         )}
 
@@ -82,6 +91,7 @@ function ChoicesQuestion({
             }}
             elementIx={elementIx}
             disabled={disabled || !!existingResponse}
+            questionLabelId={questionLabelId}
           />
         )}
 
@@ -97,6 +107,7 @@ function ChoicesQuestion({
             }}
             elementIx={elementIx}
             disabled={disabled || !!existingResponse}
+            questionLabelId={questionLabelId}
           />
         )}
       </div>

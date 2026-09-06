@@ -42,6 +42,7 @@ export interface MarkdownProps {
   withLinkButtons?: boolean
   withProse?: boolean
   singleDollarTextMath?: boolean
+  expandLabel?: string
   data?: {
     cy?: string
     test?: string
@@ -56,6 +57,7 @@ function Markdown({
   withLinkButtons = true,
   withProse = false,
   singleDollarTextMath = false,
+  expandLabel = 'Expand image',
   data,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
@@ -135,6 +137,7 @@ function Markdown({
                     img: className?.img,
                   }}
                   withModal={withModal}
+                  expandLabel={expandLabel}
                 />
               ),
               a: ({
@@ -194,7 +197,7 @@ function Markdown({
       console.error(e)
       return 'Failed to parse content.'
     }
-  }, [content, singleDollarTextMath])
+  }, [content, expandLabel, singleDollarTextMath])
 
   if (withProse) {
     // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl
