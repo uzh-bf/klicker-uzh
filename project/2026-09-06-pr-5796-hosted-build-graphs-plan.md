@@ -1,5 +1,8 @@
 # Faster hosted GraphQL and unit-test builds
 
+Delivery: [PR #5796 — scoped hosted dependency builds](https://github.com/uzh-bf/klicker-uzh/pull/5796),
+branch `rs/hosted-test-build-graphs`, target `v3`.
+
 ## Approval summary
 
 Replace sequential dependency builds in hosted GraphQL and lightweight unit
@@ -233,5 +236,7 @@ The timing repair remains in its original worktree and is excluded.
 Boundary owner: main. The approved local package is complete: implementation,
 verification, independent reviews, and local commits. A successful remote
 refresh confirmed no target drift before completion; no integration occurred.
-Publication, hosted performance proof, and any new cache workload remain outside
-this completed local package. No PR exists and no runner settings changed.
+The user subsequently approved push and Actions verification. The branch is
+published as the draft PR linked above; exact-head Actions verification is in
+progress. Merge and any new cache workload remain unauthorized. No runner
+settings changed.
