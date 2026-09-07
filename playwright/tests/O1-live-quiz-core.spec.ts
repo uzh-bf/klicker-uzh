@@ -4,9 +4,10 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import { getPrisma } from '../global-setup.js'
 import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
-import { PARTICIPANT_IDS } from '../util/constants.js'
+import { PARTICIPANT_IDS, USER_ID_TEST } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
 import { getDatetimeValidationString, getFutureDate } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
@@ -91,33 +92,13 @@ let studentPwaWebStorage: {
 const liveQuizPins = new Map<string, string>()
 let liveQuizPinRoutePage: Page | null = null
 
-async function confirmResponseDeletionIfAvailable(
-  page: Page,
-  expectedResponsesText?: string
-) {
+async function confirmResponseDeletionIfAvailable(page: Page) {
   const dialog = page.getByRole('dialog', { name: 'Delete Live Quiz' })
-  const responseSummary = dialog.getByText(
-    /\d+ response\(s\) in this live quiz/
-  )
-  const confirmResponses = page.getByTestId('confirm-deletion-responses')
-
-  if (await confirmResponses.isVisible().catch(() => false)) {
-    if (expectedResponsesText) {
-      await expect(page.locator('body')).toContainText(expectedResponsesText)
-    }
+  // The summary query must finish before the dialog and its confirmations mount.
+  await expect(dialog).toBeVisible()
+  const confirmResponses = dialog.getByTestId('confirm-deletion-responses')
+  if (await confirmResponses.isVisible()) {
     await confirmResponses.click()
-  } else if (await responseSummary.isVisible().catch(() => false)) {
-    if (expectedResponsesText) {
-      await expect(responseSummary).toContainText(expectedResponsesText)
-    }
-    await responseSummary
-      .locator('xpath=ancestor::*[.//button][1]')
-      .getByRole('button', { name: 'Confirm' })
-      .click()
-  } else {
-    await expect(dialog).toContainText(
-      'For this live quiz no responses have been collected yet.'
-    )
   }
 }
 
@@ -3853,6 +3834,29 @@ test.describe.serial('Core live-quiz workflows', () => {
     await explanationToggle.click()
     await expect(solutionToggle).not.toBeChecked()
     await expect(explanationToggle).not.toBeChecked()
+    const originalViewport = page.viewportSize()
+    try {
+      await page.setViewportSize({ width: 390, height: 844 })
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.documentElement.scrollWidth -
+              document.documentElement.clientWidth
+          )
+        )
+        .toBeLessThanOrEqual(1)
+      await solutionToggle.scrollIntoViewIfNeeded()
+      await solutionToggle.click()
+      await expect(solutionToggle).toBeChecked()
+      await solutionToggle.click()
+      await explanationToggle.scrollIntoViewIfNeeded()
+      await explanationToggle.click()
+      await expect(explanationToggle).toBeChecked()
+      await explanationToggle.click()
+    } finally {
+      if (originalViewport) await page.setViewportSize(originalViewport)
+    }
   })
 
   test('Check out the evaluation view of the live quiz and its content', async ({
@@ -4704,13 +4708,59 @@ test.describe.serial('Core live-quiz workflows', () => {
     aliases.clear()
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
+    const prisma = await getPrisma()
+    const quiz = await prisma.liveQuiz.findFirstOrThrow({
+      where: {
+        name: data.liveQuiz.name,
+        ownerId: USER_ID_TEST,
+        isDeleted: false,
+      },
+      select: { id: true },
+    })
+    await prisma.temporaryLeaderboardEntry.create({
+      data: {
+        quizId: quiz.id,
+        username: 'Synthetic deletion participant',
+        score: 1,
+      },
+    })
     await loginLecturer(page)
     await page.getByTestId('activities').click()
     await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
     await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-responses`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'be.disabled'
+    )
+    await page.getByTestId(`confirm-deletion-responses`).click()
+    await page.getByTestId(`confirmation-modal-cancel`).click()
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await page.getByTestId(`delete-live-quiz-${data.liveQuiz.name}`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-responses`),
+      'exist'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'be.disabled'
+    )
+    await expectByAssertion(
+      page.getByTestId(`confirm-deletion-leaderboard-entries`),
+      'exist'
+    )
     await confirmResponseDeletionIfAvailable(page)
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
+    await page.getByTestId(`confirm-deletion-leaderboard-entries`).click()
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'not.be.disabled'
+    )
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await page
       .getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.duplicateName}`)
@@ -4721,6 +4771,11 @@ test.describe.serial('Core live-quiz workflows', () => {
     await confirmResponseDeletionIfAvailable(page)
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-leaderboard-entries')
+    await expectByAssertion(
+      page.getByTestId(`confirmation-modal-confirm`),
+      'not.be.disabled'
+    )
     await page.getByTestId(`confirmation-modal-confirm`).click()
   })
 })

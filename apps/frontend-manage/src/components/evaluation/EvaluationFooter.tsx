@@ -57,7 +57,7 @@ function EvaluationFooter({
   return (
     <Footer>
       {typeof activeStack === 'number' && (
-        <div className="m-0 flex flex-row items-center justify-between py-2.5">
+        <div className="m-0 flex min-w-0 flex-wrap items-center justify-between gap-2 py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
             {(currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
             type === 'Asynchronous'
@@ -69,8 +69,8 @@ function EvaluationFooter({
                   number: currentInstance?.results.totalAnswers ?? 0,
                 })}
           </div>
-          <div className="flex flex-row items-center gap-7">
-            <div className="ml-2 flex flex-row items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-3 lg:gap-7">
+            <div className="flex shrink-0 flex-row items-center gap-2 lg:ml-2">
               <Button
                 onClick={() => {
                   setTextSize({ type: 'decrease' })
@@ -152,7 +152,7 @@ function EvaluationFooter({
               <Select
                 value={router.locale}
                 contentPosition="popper"
-                className={{ trigger: '-ml-3 w-16 border-slate-400' }}
+                className={{ trigger: 'w-16 border-slate-400 lg:-ml-3' }}
                 items={Object.values(LocaleType).map((language) => ({
                   label: t(`shared.generic.${language}`),
                   shortLabel: t(`shared.generic.${language}Short`),

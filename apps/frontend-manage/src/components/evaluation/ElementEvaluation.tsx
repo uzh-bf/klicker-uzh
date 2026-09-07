@@ -101,7 +101,9 @@ function ElementEvaluation({
   // if the entire block is scheduled and not yet executed, display the unavailable notification without element body
   if (!currentStack || currentStackStatus === ElementBlockStatus.Scheduled) {
     return (
-      <div className={twMerge('relative flex h-full flex-col', className)}>
+      <div
+        className={twMerge('relative flex h-full min-w-0 flex-col', className)}
+      >
         {type === 'LiveQuiz' && currentStack && currentStackStatus && (
           <div className="absolute bottom-4 left-4 z-10">
             <BlockStatusIndicator
@@ -127,7 +129,7 @@ function ElementEvaluation({
   if (!showResults && currentInstance.type !== ElementType.Content) {
     return (
       <div
-        className="relative flex h-full w-full flex-col items-center justify-center bg-slate-200"
+        className="relative flex h-full w-full min-w-0 flex-col items-center justify-center bg-slate-200"
         key={`overlay-${currentInstance.id}-${currentStack.stackId}`}
       >
         {currentStack.expiresAt && (
@@ -165,7 +167,9 @@ function ElementEvaluation({
   }
 
   return (
-    <div className={twMerge('relative flex h-full flex-col', className)}>
+    <div
+      className={twMerge('relative flex h-full min-w-0 flex-col', className)}
+    >
       {type === 'LiveQuiz' && currentStack.status && (
         <div className="absolute bottom-4 left-4 z-10">
           <BlockStatusIndicator
@@ -175,12 +179,15 @@ function ElementEvaluation({
           />
         </div>
       )}
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
         {(currentInstance.__typename === 'ChoicesActivityEvaluationData' ||
           currentInstance.__typename === 'NumericalActivityEvaluationData' ||
           currentInstance.__typename === 'FreeTextActivityEvaluationData' ||
           currentInstance.__typename === 'SelectionActivityEvaluationData') && (
-          <div className="flex h-full w-full flex-col" key={currentInstance.id}>
+          <div
+            className="flex h-full w-full min-w-0 flex-col"
+            key={currentInstance.id}
+          >
             <div className="flex-none">
               <QuestionCollapsible
                 content={currentInstance.content}
@@ -192,7 +199,7 @@ function ElementEvaluation({
                 }
               />
             </div>
-            <div className="relative min-h-0 flex-1">
+            <div className="relative min-h-0 min-w-0 flex-1">
               {currentInstance.__typename ===
                 'ChoicesActivityEvaluationData' && (
                 <ChoicesEvaluation

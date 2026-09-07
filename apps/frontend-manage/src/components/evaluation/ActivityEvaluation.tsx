@@ -193,7 +193,7 @@ function ActivityEvaluation({
       </Head>
 
       {router.query.hideControls !== 'true' && (
-        <div className="z-20 h-11 flex-none">
+        <div className="z-20 h-auto flex-none lg:h-11">
           <EvaluationNavigation
             courseId={courseId ?? ''}
             activityId={activityId}
