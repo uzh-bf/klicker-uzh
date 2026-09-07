@@ -60,14 +60,7 @@ let fixture: SyntheticFixture
 
 async function createSyntheticFixture(
   overrides: Partial<
-    Pick<
-      AuthEnvironment,
-      | 'DOC_QUERY_SCOPE_AUDIENCE'
-      | 'DOC_QUERY_SCOPE_ISSUER'
-      | 'DOC_QUERY_SCOPE_KID'
-      | 'LOCAL_MCP_GENERATION'
-      | 'LOCAL_MCP_TRANSPORT_TOKEN'
-    >
+    Pick<AuthEnvironment, 'LOCAL_MCP_GENERATION' | 'LOCAL_MCP_TRANSPORT_TOKEN'>
   > = {}
 ): Promise<SyntheticFixture> {
   const { privateKey, publicKey } = await generateKeyPair('ES256')
@@ -77,14 +70,9 @@ async function createSyntheticFixture(
     LOCAL_MCP_PUBLIC_KEY: await exportSPKI(publicKey),
     LOCAL_MCP_TRANSPORT_TOKEN:
       overrides.LOCAL_MCP_TRANSPORT_TOKEN ?? SYNTHETIC_TRANSPORT_TOKEN,
-    DOC_QUERY_SCOPE_AUDIENCE:
-      overrides.DOC_QUERY_SCOPE_AUDIENCE ?? SYNTHETIC_AUDIENCE,
-    DOC_QUERY_SCOPE_ISSUER:
-      overrides.DOC_QUERY_SCOPE_ISSUER ?? SYNTHETIC_ISSUER,
-    DOC_QUERY_SCOPE_KID:
-      overrides.DOC_QUERY_SCOPE_KID ??
-      overrides.LOCAL_MCP_GENERATION ??
-      SYNTHETIC_GENERATION,
+    DOC_QUERY_SCOPE_AUDIENCE: SYNTHETIC_AUDIENCE,
+    DOC_QUERY_SCOPE_ISSUER: SYNTHETIC_ISSUER,
+    DOC_QUERY_SCOPE_KID: overrides.LOCAL_MCP_GENERATION ?? SYNTHETIC_GENERATION,
   }
 
   return {
@@ -96,9 +84,7 @@ async function createSyntheticFixture(
 
 async function signScopeToken(
   tokenFixture: SyntheticFixture = fixture,
-  options: ScopeTokenOptions = {},
-  signer: KeyLike = tokenFixture.privateKey,
-  tokenEnvironment: AuthEnvironment = tokenFixture.env
+  options: ScopeTokenOptions = {}
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const iat = options.iat ?? now - 1
@@ -114,13 +100,13 @@ async function signScopeToken(
     .setProtectedHeader({
       alg: 'ES256',
       typ: 'JWT',
-      kid: options.kid ?? tokenEnvironment.DOC_QUERY_SCOPE_KID,
+      kid: options.kid ?? tokenFixture.env.DOC_QUERY_SCOPE_KID,
     })
     .setIssuedAt(iat)
     .setExpirationTime(exp)
-    .setIssuer(options.issuer ?? tokenEnvironment.DOC_QUERY_SCOPE_ISSUER)
-    .setAudience(options.audience ?? tokenEnvironment.DOC_QUERY_SCOPE_AUDIENCE)
-    .sign(signer)
+    .setIssuer(options.issuer ?? tokenFixture.env.DOC_QUERY_SCOPE_ISSUER)
+    .setAudience(options.audience ?? tokenFixture.env.DOC_QUERY_SCOPE_AUDIENCE)
+    .sign(tokenFixture.privateKey)
 }
 
 function headersFor(

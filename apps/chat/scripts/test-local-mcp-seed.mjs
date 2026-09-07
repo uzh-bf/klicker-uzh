@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { realpathSync } from 'node:fs'
+import { isDeepStrictEqual } from 'node:util'
 import { decrypt } from '@klicker-uzh/util'
 import pg from 'pg'
 
@@ -31,28 +32,8 @@ function requireTrue(value, message) {
   assert.equal(value, true, message)
 }
 
-function canonicalJson(value) {
-  if (value instanceof Date) return value.toISOString()
-  if (Array.isArray(value)) return value.map(canonicalJson)
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.keys(value)
-        .sort()
-        .map((key) => [key, canonicalJson(value[key])])
-    )
-  }
-  return value
-}
-
-function jsonEqual(actual, expected) {
-  return (
-    JSON.stringify(canonicalJson(actual)) ===
-    JSON.stringify(canonicalJson(expected))
-  )
-}
-
 function requireJsonEqual(actual, expected, message) {
-  requireTrue(jsonEqual(actual, expected), message)
+  requireTrue(isDeepStrictEqual(actual, expected), message)
 }
 
 function validateRuntimeContext() {
