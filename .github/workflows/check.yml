@@ -61,8 +61,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Devrouter profile planner
+        run: bash .github/scripts/install-devrouter.sh
+
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
+
+      - name: Check Playwright host launcher
+        run: pnpm run check:playwright-host
 
       - name: Check file formatting
         shell: bash

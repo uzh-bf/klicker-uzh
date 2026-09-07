@@ -88,6 +88,10 @@ runs:
       shell: bash
       run: pnpm install
 
+    - name: Install Devrouter profile planner
+      shell: bash
+      run: bash .ci-control/.github/scripts/install-devrouter.sh
+
     - name: Download canonical Playwright execution plan
       uses: actions/download-artifact@v4
       with:
@@ -201,6 +205,7 @@ runs:
         if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
           RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${SHARD_INDEX}.json"
           node util/playwright-profile-runtime.mjs resolve \
+            --devrouter-bin "$KLICKER_DEVROUTER_BIN" \
             --profile "$PROFILE" \
             --output "$RUNTIME_PLAN"
           export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
