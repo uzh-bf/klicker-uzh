@@ -204,6 +204,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     page,
     loginLecturer,
   }) => {
+    await mockGrowthBookFeatureFlags(page, { aiBeta: false })
     await loginLecturer()
 
     // Production builds send hashed queries as GET requests without an
@@ -415,7 +416,11 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
     await page.route('**/api/graphql*', async (route) => {
-      if (getGraphqlOperationName(route.request()) === 'UserProfile') {
+      const operationName = getGraphqlOperationName(route.request())
+      if (
+        operationName === 'UserProfile' ||
+        operationName === 'ManageUserProfile'
+      ) {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
