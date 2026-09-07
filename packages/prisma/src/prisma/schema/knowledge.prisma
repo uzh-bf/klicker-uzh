@@ -161,7 +161,8 @@ model KBResource {
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
 
-  ingestionRuns KBIngestionRun[]
+  ingestionRuns       KBIngestionRun[]
+  replacementTickets KBUploadTicket[] @relation("KBUploadTicketReplacementResource")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -520,9 +521,15 @@ model KBUploadTicket {
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   kbId String @db.Uuid
 
+  // Non-null only for a target-bound same-resource file replacement.
+  replacementResource     KBResource? @relation("KBUploadTicketReplacementResource", fields: [replacementResourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replacementResourceId   String?     @db.Uuid
+  expectedResourceVersion Int?
+
   createdAt DateTime @default(now())
 
   @@unique([kbId, blobName])
+  @@index([replacementResourceId])
   @@index([expiresAt])
 }
 

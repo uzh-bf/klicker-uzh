@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
@@ -83,6 +84,9 @@ test.describe('Knowledge base management workspace', () => {
       let signalUploadStarted = () => {}
       let failNextKbMetricsRefresh = false
       let bulkIngestCalls = 0
+      let replaceCalls = 0
+      let syntheticFileVisible = false
+      let syntheticFileReplaced = false
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -90,16 +94,40 @@ test.describe('Knowledge base management workspace', () => {
         signalUploadStarted = resolve
       })
 
-      await page.route('**/graphql', async (route) => {
-        const request = route.request()
-        if (request.method() !== 'POST') {
-          await route.continue()
-          return
-        }
+      const persistedOperations = JSON.parse(
+        await readFile(
+          new URL(
+            '../../packages/graphql/src/public/client.json',
+            import.meta.url
+          ),
+          'utf8'
+        )
+      ) as Record<string, string>
+      const persistedNames = Object.fromEntries(
+        Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+      )
 
-        const operationName = (
-          request.postDataJSON() as { operationName?: string }
-        ).operationName
+      await page.route('**/graphql*', async (route) => {
+        const request = route.request()
+        const requestUrl = new URL(request.url())
+        let operationName =
+          requestUrl.searchParams.get('operationName') ?? undefined
+
+        if (!operationName && request.method() === 'POST') {
+          operationName = (request.postDataJSON() as { operationName?: string })
+            .operationName
+        }
+        if (!operationName) {
+          const extensions = requestUrl.searchParams.get('extensions')
+          const hash = extensions
+            ? (
+                JSON.parse(extensions) as {
+                  persistedQuery?: { sha256Hash?: string }
+                }
+              ).persistedQuery?.sha256Hash
+            : undefined
+          operationName = hash ? persistedNames[hash] : undefined
+        }
         if (operationName === 'RequestKbFileUpload') {
           await route.fulfill({
             status: 200,
@@ -117,6 +145,7 @@ test.describe('Knowledge base management workspace', () => {
           return
         }
         if (operationName === 'ConfirmKbFileUpload') {
+          syntheticFileVisible = true
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -124,6 +153,91 @@ test.describe('Knowledge base management workspace', () => {
               data: { confirmKbFileUpload: { id: 'synthetic-resource' } },
             }),
           })
+          return
+        }
+        if (operationName === 'RequestKbFileReplacement') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                requestKbFileReplacement: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: 'replacement.txt',
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileReplacement') {
+          replaceCalls += 1
+          syntheticFileReplaced = true
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                confirmKbFileReplacement: {
+                  id: 'synthetic-resource',
+                  status: 'QUEUED',
+                  resourceVersion: 2,
+                  activeResourceVersion: 1,
+                },
+              },
+            }),
+          })
+          return
+        }
+
+        if (operationName === 'GetKbResources' && syntheticFileVisible) {
+          const response = await route.fetch()
+          const body = (await response.json()) as {
+            data?: {
+              getKbResources?: {
+                items: Array<Record<string, unknown> & { id: string }>
+                totalCount: number
+                inProgressCount: number
+              }
+            }
+          }
+          const connection = body.data?.getKbResources
+          if (connection) {
+            connection.items = [
+              {
+                id: 'synthetic-resource',
+                type: 'BLOB',
+                materialType: 'COURSE_CONTENT',
+                title: 'pending.txt',
+                sourceUrl: null,
+                originalFilename: syntheticFileReplaced
+                  ? 'replaced.txt'
+                  : 'pending.txt',
+                mimeType: 'text/plain',
+                sizeBytes: syntheticFileReplaced ? 16 : 14,
+                status: syntheticFileReplaced ? 'QUEUED' : 'READY',
+                ingestedAt: new Date(0).toISOString(),
+                resourceVersion: syntheticFileReplaced ? 2 : 1,
+                activeResourceVersion: 1,
+                latestIngestionRun: syntheticFileReplaced
+                  ? {
+                      id: 'replacement-attempt',
+                      status: 'QUEUED',
+                      errorCode: null,
+                    }
+                  : null,
+                createdAt: new Date(0).toISOString(),
+                updatedAt: new Date(0).toISOString(),
+              },
+              ...connection.items.filter(
+                ({ id }) => id !== 'synthetic-resource'
+              ),
+            ]
+            connection.totalCount += 1
+            if (syntheticFileReplaced) connection.inProgressCount += 1
+          }
+          await route.fulfill({ response, json: body })
           return
         }
         if (operationName === 'IngestAllKbResources') {
@@ -278,6 +392,36 @@ test.describe('Knowledge base management workspace', () => {
         page.getByTestId('ingest-kb-resource-inspector')
       ).toContainText(/Ingest|Verarbeiten/)
       await page.getByTestId('done-kb-resource-inspector').click()
+
+      await resourceRow.getByTestId(/kb-resource-actions-/).click()
+      await expect(page.getByTestId(/replace-kb-resource-/)).toHaveCount(0)
+      await page.keyboard.press('Escape')
+
+      const fileRow = resourceTable.getByRole('row').filter({
+        hasText: 'pending.txt',
+      })
+      await fileRow.getByTestId(/kb-resource-actions-/).click()
+      await page.getByTestId('replace-kb-resource-synthetic-resource').click()
+      const replaceModal = page.getByTestId('kb-replace-file-modal')
+      await expect(replaceModal).toBeVisible()
+      await expect(replaceModal).toContainText(
+        /Choose a new file|Wählen Sie eine neue Datei/
+      )
+      await page.getByTestId('kb-file-input').setInputFiles({
+        name: 'replaced.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('replaced content'),
+      })
+      await expect(
+        page.getByTestId('confirm-kb-file-replacement')
+      ).toBeVisible()
+      failNextKbMetricsRefresh = true
+      await page.getByTestId('confirm-kb-file-replacement').click()
+      await expect(replaceModal).toBeHidden()
+      expect(replaceCalls).toBe(1)
+      await page.reload()
+      await expect(detail).toBeVisible()
+      await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
 
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
