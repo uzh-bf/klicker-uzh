@@ -106,4 +106,10 @@ Production-derived clone and owner records are purpose-limited to rehearsal/appr
 
 User approved local execution on September 7, 2026. Selected candidate: `7c73ed231ce89885f634d37fece86c621424f617`, the merged beta PR plus disclaimer. Dedicated branch `rs/v3-release-qualification` has no upstream and starts exactly at that candidate. The primary `v3` checkout remains untouched, 16 commits behind `origin/v3`. The beta PR monitor is paused after merge.
 
-S1 in progress: plan transfer and provenance. S2/S3 provisional mapping completed read-only and needs final-candidate reconciliation. S4 checks and S5 integrated review remain. Native planner hardening approved in round 2; optional external rival failed before providing a review. No new runtime, production connection, clone, account/flag write, tag, push or deployment.
+Candidate selection, migration/client mapping and approval dependency mapping are reconciled against the frozen candidate. The manifest records seven migration checksums, all production image repositories and unresolved live evidence. The cutover packets preserve separate approval gates; they are not executable commands.
+
+Synthetic qualification passed: exact-candidate CI, 80 local workflow tests, a focused two-migration default/separation SQL probe, and 29 Chat admission tests including the new beta-off owner regression. Candidate Playwright passed with one retried Live Quiz test and five explicitly recorded wizard skips. The corrected release dry-run processes all 21 configured package targets without changing files, HEAD or tags. Application source and migrations are unchanged by this package.
+
+Local correction commits: `07e99dd2` restores configured version targets; `83ed4ca3` adds participant admission regression coverage. The regression's simplifier and slice reviewer found no actionable changes. Mapping used the existing trusted executor fallback after the original explore route failed. Native planner hardening approved in round 2; the optional external planning rival failed before providing a review. Integrated final review remains pending.
+
+The fresh isolated PostgreSQL container is stopped; no managed runtime was started. No production connection, production-derived clone, account/flag write, tag, push or deployment occurred. Source publication and all operational packets remain separately gated.
