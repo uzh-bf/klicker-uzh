@@ -73,6 +73,226 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+### Approved atomic local fixture restoration, 2026-09-08
+
+The user approved extending local MCP startup repair to recreate only missing
+synthetic parents, verify ownership and preservation, then resume the full
+runtime and course suites. This supersedes the managed recovery blocker below.
+The parent owns the data-boundary implementation in
+`apps/chat/scripts/local-mcp-seed.mjs`; a native executor owns the existing
+temporary-table acceptance script. No authentication rule, external service,
+dependency, schema or shared router configuration is changed.
+
+The repair accepts only zero bindings, absent fixed course/chatbot IDs, the
+exact seeded lecturer and the validated existing local server. It inserts
+the course, draft chatbot and two mode bindings in the existing serializable
+credential-rotation transaction. Existing or conflicting parents are rejected.
+The full managed repair completed with healthy services, both owned processes
+running and no drift (`/tmp/manage-parent-repair-startup.log`). The subsequent
+host launcher also completed startup; course/activity-log verification runs
+in `/tmp/manage-parent-repair-course-suites.log`. Focused preservation tests,
+final suite results, checks and review remain pending. No commit or push yet.
+
+Verification update: the temporary-table acceptance script passes, including
+legacy and authenticated restoration, repeat stability, partial-parent and
+owner/marker conflicts, interruption and insertion rollback. Syntax, Biome and
+diff whitespace checks pass. The combined course/activity-log run passed 39
+tests and failed at the missing Group 5 selector; 39 tests remained unrun.
+Course navigation, deletion cancellation/reopening, and individual permission
+checks passed. That group-sharing failure is unresolved and is not attributed
+to the startup repair. A separate activity-log run is in progress.
+
+After suite cleanup, startup again restored the missing fixture automatically.
+Dependency preparation then stalled with completed Rollup outputs and sleeping
+build processes. The existing startup session was cancelled, and managed stop
+drained the provider operation and freed ten routes. One clean retry completed
+full startup successfully (`/tmp/manage-repaired-restart-retry.log`). No manual
+parent restoration was used. Runtime proof is successful; full course-package
+acceptance and required committed-range reviews remain incomplete.
+
+### Docker recovery reaches managed fixture blocker, 2026-09-08
+
+Docker is available again (server 29.4.0). Fresh fetch leaves the task equal
+to its own upstream, six ahead and seven behind `origin/v3`. No integration
+or source changes ran during this recovery attempt.
+
+Completing the interrupted exact-task stop cleared ten routes. A clean
+managed full-profile startup resumed the owned container, but failed at
+`[local-mcp] Authenticated fixture startup failed; no credentials logged`.
+The supported `ensure --repair --profile full` reached the same failure.
+The previously approved guarded synthetic-parent restoration could not run:
+`devrouter exec` now reports `Lifecycle transition is blocked.` No raw
+provider or Docker mutation bypass was used. Full course verification remains
+blocked on a supported way to restore the missing startup records while the
+managed runtime is degraded. Logs: `/tmp/manage-clean-managed-restart.log`
+and `/tmp/manage-mcp-repair-after-docker.log`.
+
+Final exact-task stop succeeded. Fresh Devsy status identifies
+`rs-manage-course-clarity` as `Stopped`; source-path workspace readback
+reports zero routes. Runtime release is now verified, superseding the prior
+unknown shutdown. Data and local edits are preserved. No commit, push,
+deletion or handoff occurred. Diff whitespace validation passes.
+
+### Cache experiment and confirmation transition, 2026-09-07
+
+Host execution recovered and the guarded synthetic MCP-parent restoration
+succeeded. Two complete course/activity-log attempts passed the former Manage
+and PWA route failures, keyboard navigation, missing metadata, empty tabs,
+course editing and archiving. Each stopped at the deletion-menu reopen after
+cancelling its confirmation: 13 passed, one failed, 65 unrun. Logs:
+`/tmp/manage-both-cache-off-suites.log` and
+`/tmp/manage-cache-off-menu-correction-suites.log`.
+
+Adding the expected action to the existing menu helper alone did not fix the
+failure. A fresh delegated-login agent-browser inspection successfully opened,
+cancelled and reopened the synthetic course confirmation; screenshot:
+`/tmp/manage-course-menu-reopened.png`. The test now waits for the cancelled
+confirmation to disappear before reopening and waits for the Delete action.
+The self-contained deletion journey then passed in 18.7 seconds overall:
+`/tmp/manage-deletion-close-transition.log`. All deletion assertions remain.
+Both development-cache configuration changes remain experimental and local;
+the full 79-test acceptance run after the correction remains required.
+
+Docker became unavailable immediately after that focused pass. Both the
+synthetic-parent restoration attempt and independent `docker info` report
+that `/Users/roland/.orbstack/run/docker.sock` cannot be reached. Exact-task
+`devrouter stop .` failed for the same reason. Runtime shutdown is unknown;
+no keep-running lease or deletion is inferred. The diagnostic browser closed.
+Restore host Docker availability, then rerun the guarded parent restoration,
+the two full suites, and exact-source runtime release when verification ends.
+
+Fresh fetch leaves the task equal to its own upstream and six commits ahead,
+five behind `origin/v3`. The current target is
+`7c73ed231ce89885f634d37fece86c621424f617`; its Manage test-only rewrite and
+disposable-database changes need integration assessment after experiment proof.
+No additional integration, commit or push occurred. Config syntax and diff
+whitespace checks pass. Prettier passed before the final hidden-confirmation
+assertion; its final check is pending container availability. Activity and
+wizard layers remain unimplemented. No handoff was created or synchronized.
+The bounded fixture-source executor was stopped at this pause without a
+completed report; no fixture validation or accepted correction is claimed.
+
+### Approved PWA experiment, 2026-09-07
+
+The user approved extending the same development-only cache experiment to
+PWA, rerunning the course suites, and retaining it only if verified. That
+decision supersedes the pending scope request below. Both Manage and PWA
+now have the seven-line development-only configuration locally; production
+settings and dependencies are unchanged. Both files pass `node --check`,
+and `git diff --check` passes. The PWA experiment has not run and is not a
+verified fix. No commit or push occurred.
+
+Fresh fetch succeeds with host access. The task branch tracks
+`origin/rs/manage-course-clarity` with zero upstream drift and stands six
+commits ahead and five behind `origin/v3`. No further integration ran.
+
+Synthetic startup-parent restoration and its single permitted retry both
+timed out in automatic approval review before execution. The full suites
+therefore did not start. No renewed user scope approval is needed; host
+command execution remains the blocker. The sandboxed task-only stop failed
+to determine process identity for the lifecycle lock. The host-access stop
+then timed out in automatic approval review before execution. No shutdown
+success is claimed. No handoff was created or synchronized.
+
+### Development-cache experiment, 2026-09-07
+
+The synthetic MCP-parent restoration command executed successfully on resume,
+superseding the earlier approval-availability blocker. The unchanged full
+course/activity-log retry again failed at Manage course navigation: two passed,
+one failed, 76 not run (`/tmp/manage-resumed-course-suites.log`).
+
+A temporary, uncommitted Manage configuration disables
+`experimental.turbopackFileSystemCacheForDev` only for development. The focused
+gamified-course creation test passed (4.4 seconds; one passed overall) through
+canonical startup in `/tmp/manage-cache-off-focused.log`. A second canonical
+startup passed the same course navigation in the full suite. That run then
+failed on the student PWA course page: three passed, one failed, 75 not run
+(`/tmp/manage-cache-off-suites.log`). The PWA snapshot shows its 404 page;
+values-free manifest inspection shows Manage's dynamic course route registered
+and no PWA course routes registered. This supports further bounded diagnosis,
+but does not establish the cache mechanism as the root cause or a complete fix.
+
+The user was asked to extend this development-only experiment to PWA; that
+scope decision remains pending. No PWA source change was made. Manage config
+syntax and `git diff --check` pass. No new commit or push occurred.
+
+The ignored populated-activity fixture now additionally requires
+`DRY_RUN=false` and the exact container database/working directory before
+writes. Its dry run and one permitted retry both timed out in automatic
+approval review before execution. No populated fixture was created and no new
+visual proof is claimed. Activity and wizard implementation remain pending.
+No handoff was created or synchronized.
+
+Runtime release is blocked: the exact-task stop and its single retry timed
+out in automatic approval review before execution. Independent Devsy status
+still reports `rs-manage-course-clarity` as `Running`. No keep-running lease
+was inferred, no deletion was attempted, and shutdown is not claimed. Resume
+the exact-task stop when command approval is available. The task worktree is
+`/Volumes/HOME/Git/klicker/klicker-uzh/trees/rs/manage-course-clarity`.
+
+### Continued route diagnosis without handoff, 2026-09-07
+
+The user requested continued execution without a handoff. No handoff was
+created or synchronized during this continuation. Fresh fetch leaves the task
+equal to its own upstream, six commits ahead and four behind `v3`; the newly
+fetched changes do not overlap course navigation. No second integration ran.
+
+Resume selected the retained full-profile startup hook and rejected the MCP
+parents removed by Playwright global setup. A guarded task-local transaction
+restored only the absent synthetic course, draft chatbot and two bindings;
+existing course-test data and the MCP server's authentication were preserved.
+The first transaction rolled back because a PIN-auth course requires a PIN;
+the corrected transaction passed. Canonical full-profile repair then passed.
+
+The local request probe found `/courses/[id]` registered. Both the synthetic
+course document and its localized data endpoint returned 200 with the expected
+page/data structure. The existing gamified-course creation test subsequently
+passed through the canonical host runner in 4.4 seconds, with no product-code
+change. Log: `/tmp/manage-course-transition-test.log`. Earlier failed runs
+logged a dynamic-course warm-up 404 while still declaring runtime readiness;
+this passing run did not. A durable restart fix remains unproven.
+
+The configured advisor completed a bounded prompt-only consultation; its
+hypotheses and parent disposition are recorded under
+`project/_local/reviews/2026-09-07-route-advisor.md`. No hypothesis is claimed
+as a root cause. Full course/activity-log re-verification is next, pending
+restoration of the same synthetic startup parents removed by test setup.
+Both command approval reviews timed out without execution. No further retry
+was attempted. Full-suite re-verification is blocked on command approval
+availability. Canonical task shutdown passed after a provider-lock wait. Independent
+Devsy status reports Stopped and the exact workspace has zero routes. No
+handoff was created or synchronized. The plan update remains uncommitted, and no source changes were made.
+
+### Approved reset and repeated route failure, 2026-09-07
+
+The user explicitly approved resetting and reseeding only the disposable task
+database. Reset, schema push, client generation and the standard synthetic seed
+all passed. Values-free checks confirmed the expected MCP course, chatbot and
+two mode bindings. Canonical full-profile startup passed with no drift using
+the installed global Devrouter 0.0.55. This supersedes the pending reset
+approval below; the global installation and shared router remain unchanged.
+
+The post-integration course/activity-log retry stopped at gamified course
+navigation: two tests passed, one failed, and 76 did not run. The page snapshot
+and server log show `PageNotFoundError` with `ENOENT` for the synthetic course;
+the runtime pages manifest contains `/courses` but lacks its dynamic detail
+route. This is bounded failure evidence, not an established root cause or a
+durable repair. Producing log:
+`/tmp/manage-postintegration-suites-repaired.log`. The remaining visual matrix
+and populated-activity acceptance remain pending.
+
+Hosted checks at `3b258fe5ceb61a76c6eb37bf7e2a485ae12e9dbb` pass all eight
+Playwright shards, build, source checks, Gitleaks and automated code review.
+GitGuardian still reports two potential secrets; its CLI annotations are
+empty and no authenticated dashboard session is available. Those findings
+remain unresolved. Hosted success does not replace the failed local run.
+
+Further runtime platform repair is required before dependent activity and
+wizard work; no further reset or startup retry is proposed from this evidence.
+The exact task runtime is stopped. Independent provider status confirms Stopped
+and source-path route ownership reports zero routes. Integrated final review remains unused. This
+checkpoint changes no tested source and does not mark the draft PR ready.
+
 ### Target integration, 2026-09-07
 
 The user explicitly authorized pulling in the latest target branch. The live

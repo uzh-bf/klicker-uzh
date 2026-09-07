@@ -97,6 +97,12 @@ configuration. Plaintext credentials remain in the local process environment;
 the database stores only the encrypted transport token. The local shared
 process environment is not an isolation boundary between apps.
 
+After Playwright cleanup, startup can recreate the fixture's synthetic course,
+draft chatbot and two mode bindings when all are absent. The exact local server
+and seeded lecturer must still match. Partial parent state is rejected; repair
+never overwrites an existing course or chatbot. Restoration and credential
+rotation share one transaction, so a failure leaves the previous data intact.
+
 Use the completed tool call, final answer, source card and reload persistence
 as integration evidence. The deterministic fixture has no public origin URL,
 so its source card cannot prove that a linked website or PDF is accessible.
