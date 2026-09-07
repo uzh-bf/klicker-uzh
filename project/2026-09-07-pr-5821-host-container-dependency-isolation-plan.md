@@ -6,19 +6,19 @@ Draft [PR #5821 — isolate host and container dependencies](https://github.com/
 
 Host Playwright installs can rewrite dependency links used by the running Linux devcontainer. Root dependencies are isolated, but most package-level dependency directories remain shared. This can make Chat and other apps fail even though their source has not changed.
 
-Extend the existing project-scoped named volumes to every workspace package's `node_modules`. Keep the shared content-addressed pnpm store, existing package versions, host Playwright boundary, and runner profiles unchanged. Strengthen the existing mount regression test and document the isolation contract.
+Generate project-scoped named volumes for every workspace package's `node_modules` from pnpm's workspace discovery. Replace the handwritten mount inventory with one ignored Compose overlay. Keep the shared content-addressed pnpm store, existing volume names and package versions, host Playwright boundary, and runner profiles unchanged.
 
 The user approved a separate tooling fix, local implementation and commits, and subsequently one fresh disposable test workspace. Use that fresh workspace for bootstrap and runtime verification, preserving both existing workspaces and databases. Changing mounts on a retained runtime can trigger bootstrap and reset its database; that operation remains outside this approval.
 
 Success means host dependency preparation occurs while the exact runtime is stopped, followed by healthy module resolution and app routes after startup. Warm runs must not reinstall dependencies or stop the runtime. Record the existing authoring suite results afterward. Leave the user's validation workspace untouched and running. Stop only the disposable test runtime and retain its volumes.
 
-The user approved the extension on 2026-09-07: repository-wide fail-closed dependency validation, launcher ordering, disposable verification, required reviews, and draft PR delivery. No upstream integration, merge, deployment, data deletion, dependency upgrade, product change, or changes to the validation workspace are authorized.
+The user approved the extension on 2026-09-07: repository-wide fail-closed dependency validation, launcher ordering, automatic mount generation through released Devrouter 0.0.58, disposable verification, required reviews, and draft PR delivery. Target integration follows standing repository authority when needed for readiness; merge into the target, deployment, data deletion, dependency upgrades, product changes, and validation-workspace changes remain excluded.
 
 ## Execution details
 
 ### Working context and ownership
 
-The tooling worktree is `trees/rs/devcontainer-dependency-isolation`, branch `rs/devcontainer-dependency-isolation`, created from fetched `origin/v3` at `d8e29ee75168b61e5c6902a5a8d8afa12495e261`. It currently tracks `origin/v3`; this does not authorize pushing to that branch. The intended eventual PR target is `v3`.
+The tooling worktree is `trees/rs/devcontainer-dependency-isolation`, branch `rs/devcontainer-dependency-isolation`, created from `origin/v3` at `d8e29ee75168b61e5c6902a5a8d8afa12495e261`. It tracks `origin/rs/devcontainer-dependency-isolation`; the live draft PR target is `v3`.
 
 The disposable test worktree is `trees/rs/chatbot-isolation-proof` at feature baseline `50c1c318f1624ee3d7ae2b5665d1fcf3e933d252`. Its launcher profile edit and four additional package mounts are test-only and must be preserved, not shipped. Transfer only the reviewed isolation and launcher patches, never the entire Compose file. The older `trees/rs/chatbot-editor-e2e` workspace remains stopped and excluded from mutation.
 
@@ -69,6 +69,28 @@ Use the approved host Infisical operator for any upstream-backed runtime. Use sy
 Pause before destructive bootstrap, unsupported lifecycle operations, dependency-policy bypasses, changes to the validation workspace, new provider effects, or expansion into shared build artifacts. A missing safe mount-update procedure is a real prerequisite failure, not permission to recreate or reset data.
 
 ## Progress
+
+### Automatic mount generation continuation
+
+The user approved continuing this package with a goal after Devrouter 0.0.58 was released. Installed parser and upgrade guidance confirm `managedRuntime.devcontainer.prepareCommand` runs literal host argv from the checkout root before Compose inspection, once under lifecycle serialization, with a sixty-second bound. It must preserve `.devrouter.yml`; diagnostics never execute it. This release does not apply changed mounts to retained containers.
+
+Implement one cohesive extension: a Node built-ins generator calls host `pnpm list --recursive --depth -1 --json`, using pnpm's workspace and exclusion semantics without importing installed dependencies. Preserve fail-closed dependency policy. Validate canonical paths inside the checkout, safe mount targets and distinct volume names. Preserve the four historical root/Playwright/Prisma/types names and derive other names from relative package paths. Write deterministic JSON-compatible YAML atomically to ignored `.devcontainer/docker-compose.dependencies.yml`; unchanged output keeps its modification time. Discovery or validation failure leaves previous output untouched and exits nonzero.
+
+Move all dependency mounts and declarations out of the base Compose file, retaining store, build and database mounts. Load the generated overlay between base and routing overlay. Native `initialize.sh` invokes generation first from the explicit checkout root and propagates failure before certificate or Docker effects. The managed hook invokes only the generator. Pin the configured Devrouter version to 0.0.58 and document the host Node/pnpm prerequisite and retained-mount limitation in the README and repository Devrouter skill.
+
+| Slice | Owner | Acceptance |
+| --- | --- | --- |
+| Automatic dependency isolation | Executor | Generator and focused synthetic Node tests: cold discovery, exclusions, deterministic output, failure preservation, path and collision rejection, compatible names |
+| Same slice integration and evidence | Main | Configuration, effective Compose coverage, documentation, commit, isolated hook invocation/abort proof, and runtime gate disposition |
+
+Main retains integration because the work crosses shared configuration and runtime authority boundaries. Extend the existing mount regression against the merged model, asserting both coverage and absence of stale excluded/removed mounts and declarations. Run the existing launcher contracts unchanged otherwise. Compare generated real-workspace mappings with the committed manual baseline. Isolated hook verification must prove invocation before overlay consumption and failure propagation; parser acceptance alone is insufficient. No retained runtime is started or recreated merely to test generation. Source verification and committed simplifier/seam review proceed independently; integrated final review and package completion remain pending if safe runtime application proof is unavailable.
+
+Planning hardening: `generated_mount_plan` approved revision 2. Accepted findings move the complete manual inventory into the overlay and require native/managed invocation evidence. Cold synthetic pnpm discovery returned only root and included package, omitted the excluded package, and generated no dependencies or lockfile. Existing original runtime evidence below applies only to unchanged isolation semantics, not the new generation hook.
+
+Current baseline: clean `340048a905879c85f0f01e36f0ffc1ad402c8edd`, already pushed. The requested target merge completed there with 22 passing launcher tests and focused format/secret checks. Remote refresh on 2026-09-07 shows 14 commits ahead and 10 behind `v3`; no new integration is justified by freshness alone. Earlier progress below is historical, including its superseded upstream and delivery-next statements.
+
+### Historical launcher delivery evidence
+
 Before committing or testing the launcher extension, preserve this execution contract: set workspace `verifyDepsBeforeRun: error` and force lowercase `pnpm_config_verify_deps_before_run=error` for every launcher-owned pnpm child. Missing Playwright CLI requires a successful exact-checkout stop before explicit filtered frozen installation. Stop/install failure aborts; no automatic deletion, retry or store repair. Host builds and browser preparation precede `ensure`. Warm runs issue no stop or package installation. Preserve profiles, filters, headed and list behavior. `--print-env` retains reconciliation without dependency preparation; `--show-report` never calls `ensure`, though cold report preparation can stop the runtime and leave it stopped. Documentation distinguishes direct Node cold bootstrap from explicit stale-dependency repair. Executor owns the launcher, existing test, workspace policy and README; main owns runtime proof and integration.
 
 
