@@ -195,6 +195,49 @@ describe('Closed live quiz aggregation ownership', () => {
     expect(publish).not.toHaveBeenCalled()
   })
 
+  it('finishes closure without publishing running state when the quiz ends between phases', async () => {
+    await prisma.liveQuiz.update({
+      where: { id: quizId },
+      data: { activeBlockId: blockId },
+    })
+    await prisma.elementBlock.update({
+      where: { id: blockId },
+      data: { status: 'ACTIVE', closedAt: null },
+    })
+    await redis.hdel(infoKey(), 'blockClosedAt')
+    const publish = vi.fn()
+    const schedule = vi.fn()
+    let transactions = 0
+    const ctx = {
+      ...globalCtx,
+      prisma: {
+        $transaction: async (
+          work: (tx: Prisma.TransactionClient) => Promise<unknown>
+        ) => {
+          const result = await prisma.$transaction(work)
+          if (++transactions === 1) {
+            await prisma.liveQuiz.update({
+              where: { id: quizId },
+              data: { status: 'ENDED', finishedAt: new Date() },
+            })
+          }
+          return result
+        },
+      },
+      pubSub: { publish },
+      tasks: { aggregateLiveQuizBlockResultsStandard: { schedule } },
+    } as unknown as ContextWithUser
+    expect(await deactivateLiveQuizBlock({ quizId, blockId }, ctx)).toBe(true)
+    const block = await prisma.elementBlock.findUniqueOrThrow({
+      where: { id: blockId },
+    })
+    expect(await redis.hget(infoKey(), 'blockClosedAt')).toBe(
+      String(block.closedAt!.getTime())
+    )
+    expect(schedule).toHaveBeenCalledExactlyOnceWith(expect.any(Date), input())
+    expect(publish).not.toHaveBeenCalled()
+  })
+
   beforeEach(async () => {
     ownerId = randomUUID()
     await prisma.user.create({

@@ -1439,7 +1439,8 @@ export async function deactivateLiveQuizBlock(
         const block = current?.blocks[0]
         if (
           !block ||
-          current!.status !== updatedQuiz.status ||
+          (current!.status !== updatedQuiz.status &&
+            current!.status !== DB.PublicationStatus.ENDED) ||
           current!.isAssessmentEnabled !== isAssessmentEnabled ||
           block.status !== DB.ElementBlockStatus.EXECUTED ||
           block.execution !== closedBlock.execution ||
@@ -1463,7 +1464,11 @@ export async function deactivateLiveQuizBlock(
         if (!results || results.some(([error]) => error)) {
           throw new GraphQLError('Could not record live quiz block closure')
         }
-        return { publish: current!.activeBlockId === null }
+        return {
+          publish:
+            current!.status === updatedQuiz.status &&
+            current!.activeBlockId === null,
+        }
       },
       { timeout: 30000 }
     )
