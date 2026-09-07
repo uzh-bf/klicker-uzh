@@ -93,7 +93,11 @@ The managed MCP startup now uses
 to rotate ephemeral credentials and restart both Chat and the fixture together.
 Its seed repair accepts only the exact synthetic owner, course and two mode
 bindings. An ownership conflict stops startup instead of replacing another
-configuration. Plaintext credentials remain in the local process environment;
+configuration. The current `scope_token` seed is recognized alongside the legacy
+seed; repair preserves each binding's enabled state and disables obsolete
+chatbot-ID forwarding. A disabled binding stays disabled after credential
+rotation, so successful startup does not prove tool activation.
+Plaintext credentials remain in the local process environment;
 the database stores only the encrypted transport token. The local shared
 process environment is not an isolation boundary between apps.
 

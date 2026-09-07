@@ -24,7 +24,7 @@ export async function repairLocalMcpSeed(db, token, isInterrupted) {
     assertLocalSeedOwnership(server, configs)
     if (isInterrupted()) throw new Error('Local MCP startup interrupted')
     await db.query(
-      'UPDATE "ChatbotMCPServer" SET "authType" = $1, "authSecret" = $2, parameters = $3::jsonb, "updatedAt" = NOW() WHERE id = $4',
+      'UPDATE "ChatbotMCPServer" SET "authType" = $1, "authSecret" = $2, parameters = $3::jsonb, "passChatbotId" = false, "updatedAt" = NOW() WHERE id = $4',
       [
         'bearer',
         encrypt(token),

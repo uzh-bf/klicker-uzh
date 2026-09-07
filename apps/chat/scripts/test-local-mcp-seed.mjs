@@ -103,7 +103,17 @@ async function createTemporarySchema(db) {
   `)
 }
 
-async function resetSyntheticFixture(db) {
+async function resetSyntheticFixture(
+  db,
+  {
+    authType = 'none',
+    authSecret = null,
+    parameters = null,
+    passChatbotId = true,
+    configParameters = null,
+    configEnabled = { tutor: true, explainer: true },
+  } = {}
+) {
   await db.query('DELETE FROM "ChatbotMCPConfig"')
   await db.query('DELETE FROM "ChatbotMCPServer"')
   await db.query('DELETE FROM "Chatbot"')
@@ -117,12 +127,12 @@ async function resetSyntheticFixture(db) {
     [
       SERVER_ID,
       'KB',
-      'none',
-      null,
-      null,
+      authType,
+      authSecret,
+      parameters,
       'http://localhost:1417/mcp',
       true,
-      true,
+      passChatbotId,
       null,
       SYNTHETIC_TIMESTAMP,
     ]
@@ -139,10 +149,10 @@ async function resetSyntheticFixture(db) {
         SERVER_ID,
         LOCAL_CHATBOT_ID,
         chatMode,
-        true,
+        configEnabled[chatMode],
         0,
         ['doc_query'],
-        null,
+        configParameters,
         SYNTHETIC_TIMESTAMP,
       ]
     )
@@ -183,10 +193,20 @@ async function snapshot(db) {
   return { chatbots, configs, servers }
 }
 
-function requireAuthenticatedFixture(state, message) {
+function requireAuthenticatedFixture(state, message, expectedEnabled) {
   requireTrue(state.servers.length === 1, `${message}: server count`)
   requireTrue(state.configs.length === 2, `${message}: config count`)
+  requireTrue(state.chatbots.length === 1, `${message}: chatbot count`)
+  const [chatbot] = state.chatbots
+  requireTrue(chatbot.id === LOCAL_CHATBOT_ID, `${message}: chatbot ID`)
+  requireTrue(chatbot.ownerId === SYNTHETIC_OWNER_ID, `${message}: owner ID`)
+  requireTrue(chatbot.courseId === SYNTHETIC_COURSE_ID, `${message}: course ID`)
   const [server] = state.servers
+  requireTrue(server.name === 'KB', `${message}: server name`)
+  requireTrue(
+    server.url === 'http://localhost:1417/mcp',
+    `${message}: server URL`
+  )
   requireTrue(server.authType === 'bearer', `${message}: auth type`)
   requireTrue(
     typeof server.authSecret === 'string' &&
@@ -198,7 +218,22 @@ function requireAuthenticatedFixture(state, message) {
     LOCAL_FIXTURE_MARKER,
     `${message}: server marker`
   )
+  requireTrue(server.passChatbotId === false, `${message}: pass chatbot ID`)
+  requireTrue(server.chatbotIdHeader === null, `${message}: chatbot header`)
   for (const config of state.configs) {
+    requireTrue(
+      config.isEnabled === expectedEnabled[config.chatMode],
+      `${message}: ${config.chatMode} enabled state`
+    )
+    requireTrue(
+      config.priority === 0,
+      `${message}: ${config.chatMode} priority`
+    )
+    requireJsonEqual(
+      config.allowedTools,
+      ['doc_query'],
+      `${message}: ${config.chatMode} allowed tools`
+    )
     requireJsonEqual(config.parameters, LOCAL_SCOPE, `${message}: config scope`)
   }
 }
@@ -218,21 +253,59 @@ async function runAcceptance(db) {
 
   await resetSyntheticFixture(db)
   await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_A, () => false)
-  const firstRotation = await snapshot(db)
-  requireAuthenticatedFixture(firstRotation, 'initial repair')
+  const legacyFirstRotation = await snapshot(db)
+  requireAuthenticatedFixture(legacyFirstRotation, 'legacy initial repair', {
+    tutor: true,
+    explainer: true,
+  })
 
-  const firstAuthSecret = firstRotation.servers[0].authSecret
+  const legacyFirstAuthSecret = legacyFirstRotation.servers[0].authSecret
   requireTrue(
-    decrypt(firstAuthSecret) === SYNTHETIC_TOKEN_A,
-    'initial repair stored the wrong token'
+    decrypt(legacyFirstAuthSecret) === SYNTHETIC_TOKEN_A,
+    'legacy initial repair stored the wrong token'
   )
   await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_B, () => false)
-  const secondRotation = await snapshot(db)
-  requireAuthenticatedFixture(secondRotation, 'repeat repair')
+  const legacySecondRotation = await snapshot(db)
+  requireAuthenticatedFixture(legacySecondRotation, 'legacy repeat repair', {
+    tutor: true,
+    explainer: true,
+  })
   requireTrue(
-    decrypt(secondRotation.servers[0].authSecret) === SYNTHETIC_TOKEN_B,
-    'repeat repair stored the wrong token'
+    decrypt(legacySecondRotation.servers[0].authSecret) === SYNTHETIC_TOKEN_B,
+    'legacy repeat repair stored the wrong token'
   )
+
+  for (const emptyParameters of [null, {}]) {
+    await resetSyntheticFixture(db, {
+      authType: 'scope_token',
+      parameters: emptyParameters,
+      passChatbotId: false,
+      configParameters: emptyParameters,
+      configEnabled: { tutor: true, explainer: false },
+    })
+    await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_A, () => false)
+    const firstRotation = await snapshot(db)
+    requireAuthenticatedFixture(firstRotation, 'scope_token initial repair', {
+      tutor: true,
+      explainer: false,
+    })
+
+    const firstAuthSecret = firstRotation.servers[0].authSecret
+    requireTrue(
+      decrypt(firstAuthSecret) === SYNTHETIC_TOKEN_A,
+      'initial repair stored the wrong token'
+    )
+    await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_B, () => false)
+    const secondRotation = await snapshot(db)
+    requireAuthenticatedFixture(secondRotation, 'scope_token repeat repair', {
+      tutor: true,
+      explainer: false,
+    })
+    requireTrue(
+      decrypt(secondRotation.servers[0].authSecret) === SYNTHETIC_TOKEN_B,
+      'repeat repair stored the wrong token'
+    )
+  }
 
   await addExtraConsumer(db)
   const ownershipBefore = await snapshot(db)
