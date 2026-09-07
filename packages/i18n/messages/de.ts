@@ -878,9 +878,7 @@ export default {
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
-Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an allen Aktivitäten teilnehmen kannst, aber keine Punkte sammeln, nicht in der Rangliste aufgeführt werden und nicht für Erfolge und Auszeichnungen in Frage kommst. Wenn Du an den spielerischen Aktivitäten in diesem Kurs teilnehmen möchtest, **klicke auf die Schaltfläche** unten, um teilzunehmen. Du kannst die Kursrangliste jederzeit verlassen, wobei alle gesammelten Punkte **gelöscht** werden.
-
-Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
+Die Teilnahme an der Rangliste ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen, deine Platzierung, Punkte und Erfolge. Du kannst jederzeit austreten und wieder beitreten; deine Punkte und persönlichen Statistiken bleiben erhalten.
 `,
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
@@ -1096,11 +1094,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
+      joinLeaderboardTitle: 'Der Rangliste für {name} beitreten',
+      joinLeaderboardDescription:
+        'Die Teilnahme ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen {username}, deine Platzierung, Punkte und Erfolge in der Rangliste. Du kannst jederzeit austreten und wieder beitreten. Deine bisherigen Punkte zählen sofort; rangabhängige Auszeichnungen werden nicht rückwirkend vergeben. Deine Auswahl für Forschung und Learning Analytics bleibt davon unberührt.',
+      joinLeaderboardConfirm: 'Der Rangliste beitreten',
+      joinLeaderboardError:
+        'Der Beitritt zur Rangliste ist fehlgeschlagen. Bitte versuche es erneut.',
+      leaveLeaderboardError:
+        'Der Austritt aus der Rangliste ist fehlgeschlagen. Bitte versuche es erneut.',
       leaveLeaderboardTitle: 'Leaderboard verlassen',
-      leaveLeaderboardConfirmation:
-        'Möchten Sie das Leaderboard wirklich verlassen?',
+      leaveLeaderboardConfirmation: 'Möchtest du die Kursrangliste verlassen?',
       leaveLeaderboardInformation:
-        'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
+        'Nach dem Austritt erscheinst du nicht mehr in der Kursrangliste. Deine Punkte und persönlichen Statistiken bleiben erhalten und du kannst weiterhin Punkte sammeln. Du kannst jederzeit wieder beitreten; deine bisherigen Punkte zählen sofort.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
       groupActivityEndedToast:

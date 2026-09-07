@@ -871,9 +871,7 @@ export default {
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
-You are currently **not** participating in the course leaderboard, meaning that you can participate in all activities but will not collect any points, will not be listed on the leaderboard, and will not be eligible for achievements and awards. If you would like to participate in the gamified activities throughout this course, **click the button** below to join. You can leave the course leaderboard at any time, upon which all of your collected points will be **deleted**.
-
-Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
+Leaderboard participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining. Joining makes your username, rank, points and achievements visible to other participants. You can leave and rejoin at any time; your points and personal statistics remain available.
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
@@ -1088,11 +1086,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
+      joinLeaderboardTitle: 'Join the leaderboard for {name}',
+      joinLeaderboardDescription:
+        'Participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining the leaderboard. If you join, other participants see your username {username}, your rank, points and achievements in the leaderboard. You can leave and rejoin at any time. Your retained points count immediately; historical rank-dependent awards are not awarded retroactively. Your research and Learning Analytics choices are unaffected.',
+      joinLeaderboardConfirm: 'Join leaderboard',
+      joinLeaderboardError: 'Could not join the leaderboard. Please try again.',
+      leaveLeaderboardError:
+        'Could not leave the leaderboard. Please try again.',
       leaveLeaderboardTitle: 'Leave Leaderboard',
       leaveLeaderboardConfirmation:
         'Are you sure you want to leave the course leaderboard?',
       leaveLeaderboardInformation:
-        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+        'After leaving, you no longer appear in the course leaderboard. Your points and personal statistics remain available, and you can continue collecting points. You can rejoin at any time; your retained points count immediately.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
       groupActivityEndedToast:

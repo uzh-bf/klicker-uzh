@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-02'
+timestamp: '2026-09-07'
 tags:
   - backend
   - prisma
@@ -10,7 +10,7 @@ tags:
 
 # Domain Model
 
-**The fact most likely to be guessed wrong: gamification runs on two separate tracks.** Points require an _active_ `Participation` in the course and land in `LeaderboardEntry.score`; XP accrues **unconditionally** and lands on `Participant.xp`. Both are computed in `packages/graphql/src/services/stacks.ts:computeAwardedPointsAndXP` — points throttled per instance via `options.resetTimeDays`, XP throttled by the `XP_AWARD_TIMEFRAME_DAYS` constant. A participant who left the leaderboard still earns XP.
+**Gamification runs on two separate tracks.** Ordinary points require a course `Participation`, including an inactive one, and land in `LeaderboardEntry.score`. XP lands on `Participant.xp` independently of leaderboard publication. Both are computed in `packages/graphql/src/services/stacks.ts:computeAwardedPointsAndXP`: points are throttled per instance via `options.resetTimeDays`, and XP by `XP_AWARD_TIMEFRAME_DAYS`. Leaving hides public course and session leaderboard entries while retaining scores and personal timeline entries. First join and rejoin publish the retained balance immediately. Rank-dependent live-quiz awards require active leaderboard participation in gamified courses at award calculation; joining later does not replay them. Already-erased balances are not reconstructed.
 
 Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/src/prisma/schema/) (split by area — see [Data & Migrations](./data-and-migrations.md)).
 
