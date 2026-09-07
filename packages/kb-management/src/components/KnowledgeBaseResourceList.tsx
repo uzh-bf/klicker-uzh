@@ -59,6 +59,7 @@ import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
 import DeleteKnowledgeBaseResourcesModal from './DeleteKnowledgeBaseResourcesModal'
+import KnowledgeBaseReplaceFileModal from './KnowledgeBaseReplaceFileModal'
 
 const PAGE_SIZE = 20
 const MAX_BULK_SELECTION = 50
@@ -309,6 +310,13 @@ function ResourceServingStatus({
       version: resource.activeResourceVersion,
     })
   }
+  if (resource.activeResourceVersion > resource.resourceVersion) {
+    // A platform refresh advanced the serving revision beyond the stored
+    // lecturer attempt without re-dispatching work.
+    return t('kb.servingNewerVersion', {
+      version: resource.activeResourceVersion,
+    })
+  }
   return t('kb.servingPreviousVersion', {
     version: resource.activeResourceVersion,
   })
@@ -328,6 +336,7 @@ function ResourceTableRow({
   renderStatus,
   onToggleSelection,
   onInspect,
+  onReplace,
   onDelete,
 }: Readonly<{
   resource: KnowledgeBaseResource
@@ -339,6 +348,7 @@ function ResourceTableRow({
   renderStatus: (resource: KnowledgeBaseResource) => React.ReactNode
   onToggleSelection: (id: string) => void
   onInspect: (id: string) => void
+  onReplace: (resource: KnowledgeBaseResource) => void
   onDelete: (resource: KnowledgeBaseResource) => void
 }>) {
   const t = useTranslations()
@@ -485,6 +495,19 @@ function ResourceTableRow({
           <Dropdown
             align="end"
             items={[
+              ...(resource.type === KbResourceType.Blob
+                ? [
+                    {
+                      id: `replace-kb-resource-${resource.id}`,
+                      disabled: active || ingestingId !== null || bulkIngesting,
+                      label: t('kb.replaceFile'),
+                      onClick: () => onReplace(resource),
+                      data: {
+                        cy: `replace-kb-resource-${resource.id}`,
+                      },
+                    },
+                  ]
+                : []),
               {
                 id: `delete-kb-resource-${resource.id}`,
                 disabled: active || ingestingId !== null || bulkIngesting,
@@ -526,6 +549,7 @@ function ResourceTable({
   onTogglePageSelection,
   onToggleSelection,
   onInspect,
+  onReplace,
   onDelete,
   loadingMore,
   onLoadMore,
@@ -542,6 +566,7 @@ function ResourceTable({
   onTogglePageSelection: () => void
   onToggleSelection: (id: string) => void
   onInspect: (id: string) => void
+  onReplace: (resource: KnowledgeBaseResource) => void
   onDelete: (resource: KnowledgeBaseResource) => void
   loadingMore: boolean
   onLoadMore: () => void
@@ -626,6 +651,7 @@ function ResourceTable({
               renderStatus={renderStatus}
               onToggleSelection={onToggleSelection}
               onInspect={onInspect}
+              onReplace={onReplace}
               onDelete={onDelete}
             />
           ))}
@@ -663,6 +689,7 @@ function ResourceListContent({
   onTogglePageSelection,
   onToggleSelection,
   onInspect,
+  onReplace,
   onDelete,
   loadingMore,
   onLoadMore,
@@ -682,6 +709,7 @@ function ResourceListContent({
   onTogglePageSelection: () => void
   onToggleSelection: (id: string) => void
   onInspect: (id: string) => void
+  onReplace: (resource: KnowledgeBaseResource) => void
   onDelete: (resource: KnowledgeBaseResource) => void
   loadingMore: boolean
   onLoadMore: () => void
@@ -749,6 +777,7 @@ function ResourceListContent({
       onTogglePageSelection={onTogglePageSelection}
       onToggleSelection={onToggleSelection}
       onInspect={onInspect}
+      onReplace={onReplace}
       onDelete={onDelete}
       loadingMore={loadingMore}
       onLoadMore={onLoadMore}
@@ -778,6 +807,8 @@ function KnowledgeBaseResourceList({
   >('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletionTarget, setDeletionTarget] =
+    useState<KnowledgeBaseResource | null>(null)
+  const [replacementTarget, setReplacementTarget] =
     useState<KnowledgeBaseResource | null>(null)
   const [bulkDeletionOpen, setBulkDeletionOpen] = useState(false)
   const [bulkIngestOpen, setBulkIngestOpen] = useState(false)
@@ -1116,6 +1147,9 @@ function KnowledgeBaseResourceList({
     }
   }, [polling, pollActivePages, refreshLoadedResources])
 
+  // These values are intentionally effect triggers: the reset clears state
+  // that belongs to the previous query context without otherwise reading them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when any query context dimension changes
   useEffect(() => {
     refreshRequestRef.current += 1
     setSelectedIds(new Set())
@@ -1599,6 +1633,7 @@ function KnowledgeBaseResourceList({
         onTogglePageSelection={togglePageSelection}
         onToggleSelection={toggleSelection}
         onInspect={setInspectorId}
+        onReplace={setReplacementTarget}
         onDelete={setDeletionTarget}
         loadingMore={loadingMore}
         onLoadMore={loadMore}
@@ -1812,6 +1847,18 @@ function KnowledgeBaseResourceList({
             })
             await refreshWorkspace()
           }}
+        />
+      ) : null}
+
+      {replacementTarget ? (
+        <KnowledgeBaseReplaceFileModal
+          kbId={kbId}
+          resource={{
+            id: replacementTarget.id,
+            title: replacementTarget.title,
+          }}
+          onClose={() => setReplacementTarget(null)}
+          onResourceCreated={refreshWorkspace}
         />
       ) : null}
 

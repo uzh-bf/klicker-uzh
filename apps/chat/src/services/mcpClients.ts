@@ -138,7 +138,7 @@ async function applyDocQueryAuthHeaders(
   authType: string
 ): Promise<boolean> {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
-  if (!(context.kbIds && context.sessionId)) {
+  if (!context.kbIds || !context.sessionId) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
   if (authType !== 'bearer' || !server.authSecret) {

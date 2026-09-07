@@ -46,7 +46,7 @@ spec:
         - name: mcp-lecturer
           securityContext:
             {{- toYaml .Values.mcpLecturer.securityContext | nindent 12 }}
-          image: "{{ .Values.mcpLecturer.image.repository }}:{{ .Values.mcpLecturer.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.mcpLecturer.image.repository }}:{{ .Values.global.imageTag | default .Values.mcpLecturer.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.mcpLecturer.image.pullPolicy }}
           ports:
             - name: http

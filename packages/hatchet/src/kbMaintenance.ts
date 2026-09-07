@@ -971,6 +971,7 @@ export async function maintainKBResources(
         status: KBIngestionStatus.SUCCEEDED,
       },
     },
+    replacementTickets: { none: {} },
   } satisfies Prisma.KBResourceWhereInput
   const deletedResourceCount = await dependencies.prisma.kBResource.count({
     where: deletedResourceWhere,
@@ -1027,6 +1028,7 @@ export async function maintainKBResources(
               status: KBIngestionStatus.SUCCEEDED,
             },
           },
+          replacementTickets: { none: {} },
         },
       })
     } catch {

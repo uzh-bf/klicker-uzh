@@ -1,0 +1,19 @@
+mutation RequestKbFileReplacement(
+  $kbId: ID!
+  $resourceId: ID!
+  $fileName: String!
+  $contentType: String!
+  $sizeBytes: Int!
+) {
+  requestKbFileReplacement(
+    kbId: $kbId
+    resourceId: $resourceId
+    fileName: $fileName
+    contentType: $contentType
+    sizeBytes: $sizeBytes
+  ) {
+    uploadSasURL
+    containerName
+    blobName
+  }
+}

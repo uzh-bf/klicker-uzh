@@ -361,7 +361,7 @@ test('accepts equivalent runtime plans with different JSON property order', () =
   const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-order-'))
   const output = join(outputDir, 'profile.json')
   const devrouterBin = join(outputDir, 'devrouter')
-  const plan = { ...profilePlan(), repoPath: outputDir }
+  const plan = profilePlan({ repoPath: outputDir })
 
   writeFileSync(
     devrouterBin,

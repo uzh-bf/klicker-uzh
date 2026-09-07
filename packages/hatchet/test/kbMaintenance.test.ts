@@ -444,6 +444,14 @@ describe('KB retention maintenance', () => {
     })
 
     expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, resource.blobName)
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          replacementTickets: { none: {} },
+        }),
+      })
+    )
     expect(prisma.kBResource.deleteMany).toHaveBeenCalledWith({
       where: {
         id: RESOURCE_ID,
@@ -459,6 +467,7 @@ describe('KB retention maintenance', () => {
             status: KBIngestionStatus.SUCCEEDED,
           },
         },
+        replacementTickets: { none: {} },
       },
     })
     expect(deleteBlob.mock.invocationCallOrder[0]).toBeLessThan(

@@ -135,6 +135,7 @@ describe('MCP runtime policy', () => {
       ],
       { chatbotId: 'chatbot-1', authMode: 'account' }
     )
+    setTools({ doc_query: { description: 'search' } })
     await getAggregatedMCPTools(
       [
         createServer(
@@ -144,7 +145,7 @@ describe('MCP runtime policy', () => {
             authSecret: 'transport-token',
           },
           {
-            allowedTools: ['search_docs'],
+            allowedTools: ['doc_query'],
             parameters: {
               required: true,
               toolAlias: 'doc_query',
