@@ -73,8 +73,9 @@ diff checks pass. One credential-boundary test was added, existing workflow
 and receipt checks were extended, and no tests were removed. Full application
 build/check and Node 24 proof were not run; no application runtime was started.
 
-Simplifier complete with no recommended reduction. Credential-risk and
-integrated-final reviews remain required before draft publication. Reports
+Simplifier complete with no recommended reduction. Credential-risk review
+complete with no findings. Integrated-final review remains required before
+draft publication. Reports
 are in `project/_local/reviews/2026-09-07-stg-write-token-*.md`.
 Optional AGY challenge unavailable due to catalog/authentication errors.
 No operational state changed. Next: finish required review and publish the
