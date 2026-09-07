@@ -3,7 +3,7 @@ import { existsSync, globSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+import { parse as parseYaml } from 'yaml'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -56,8 +56,7 @@ function discoverWorkspacePackages(root = repoRoot) {
 }
 
 function parseDependencyMounts(compose) {
-  const composeConfig = parseYaml(compose)
-  const appVolumes = composeConfig?.services?.app?.volumes
+  const appVolumes = compose?.services?.app?.volumes
 
   assert.ok(
     Array.isArray(appVolumes),
@@ -87,21 +86,14 @@ function parseDependencyMounts(compose) {
   return new Map(mounts)
 }
 
-function parseVolumeDeclarations(compose) {
-  const composeConfig = parseYaml(compose)
-  const declarations = composeConfig?.volumes
+function assertDependencyMountCoverage(compose, workspacePackages) {
+  const mounts = parseDependencyMounts(compose)
+  const declarations = compose?.volumes
 
   assert.ok(
     declarations && typeof declarations === 'object',
     'compose file has no top-level volumes section'
   )
-
-  return declarations
-}
-
-function assertDependencyMountCoverage(compose, workspacePackages) {
-  const mounts = parseDependencyMounts(compose)
-  const declarations = parseVolumeDeclarations(compose)
 
   for (const [target, volume] of [
     ['node_modules', 'node_modules_root'],
@@ -117,16 +109,15 @@ function assertDependencyMountCoverage(compose, workspacePackages) {
     assert.ok(Object.hasOwn(declarations, volume), `${volume} is not declared`)
   }
 
-  const packageMounts = workspacePackages.map((workspacePackage) => {
+  const packageVolumes = workspacePackages.map((workspacePackage) => {
     const target = `${workspacePackage}/node_modules`
     const volume = mounts.get(target)
 
     assert.ok(volume, `${target} is not isolated from the host`)
     assert.ok(Object.hasOwn(declarations, volume), `${volume} is not declared`)
 
-    return [target, volume]
+    return volume
   })
-  const packageVolumes = packageMounts.map(([, volume]) => volume)
 
   assert.equal(
     new Set(['node_modules_root', ...packageVolumes]).size,
@@ -153,15 +144,7 @@ function assertDependencyMountCoverage(compose, workspacePackages) {
     'dependency volume declarations must match app service mounts'
   )
 
-  for (const volume of new Set([
-    ...[
-      'node_modules_root',
-      'node_modules_playwright',
-      'node_modules_prisma',
-      'node_modules_types',
-    ],
-    ...packageVolumes,
-  ])) {
+  for (const volume of expectedDependencyVolumes) {
     const declaration = declarations[volume] ?? {}
     assert.equal(
       declaration.external,
@@ -183,7 +166,7 @@ function assertDependencyMountCoverage(compose, workspacePackages) {
 }
 
 function createOriginalMountFixture(compose) {
-  const original = parseYaml(compose)
+  const original = structuredClone(compose)
   const legacyTargets = new Set([
     'playwright/node_modules',
     'packages/prisma/node_modules',
@@ -211,7 +194,7 @@ function createOriginalMountFixture(compose) {
 
   for (const volume of removedVolumes) delete original.volumes[volume]
 
-  return stringifyYaml(original)
+  return original
 }
 
 test('local Playwright rejects direct host execution', () => {
@@ -328,9 +311,8 @@ test('every local Playwright package script routes through the host launcher', (
 })
 
 test('devcontainer dependency mounts isolate every workspace package', () => {
-  const compose = readFileSync(
-    join(repoRoot, '.devcontainer', 'docker-compose.yml'),
-    'utf8'
+  const compose = parseYaml(
+    readFileSync(join(repoRoot, '.devcontainer', 'docker-compose.yml'), 'utf8')
   )
   const workspacePackages = discoverWorkspacePackages()
 
