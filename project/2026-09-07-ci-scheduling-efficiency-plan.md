@@ -115,4 +115,17 @@ The first candidate, the
 qualified: run `34031639568` at head
 `577db334cf3da9c2f2130c49b638fb61aab3eb68` produced `history-unavailable`, no
 merge-base, and eight-shard full fallback. No variable has been changed.
-Implementation and independent reviews remain pending. Publication is withheld.
+Close-event implementation is committed at `1bad529c73edef5530542591c1fdf8c480196389`.
+All 61 CI contracts and standalone policy validation pass. Scoped format and
+staged Gitleaks pass. No application runtime was started.
+
+Canary qualification exposed a prerequisite bug, now included in the second
+slice: the exact-base fetch used `--depth=1` after a full candidate checkout.
+A synthetic divergent Git history reproduces the resulting missing merge-base.
+Both course-overview run `34031639568` and mobile-quiz run `34035619797` show
+`history-unavailable` and eight-shard fallback. The course head and base have
+common ancestor `fbc5f4fcc2ffa1c8d25695679823134985c5a8d8` in complete history.
+Remove only the shallow fetch option and protect full ancestry in a focused
+workflow contract. This completes selector qualification prerequisites without
+changing selection policy. Ten representative live comparisons remain pending;
+no canary activation is justified. Publication is withheld.

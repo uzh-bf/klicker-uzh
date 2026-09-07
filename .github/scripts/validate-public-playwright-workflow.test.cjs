@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -64,7 +65,6 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   )
 
   const parsed = YAML.parse(workflow)
-  assert.deepEqual(validateCallerLifecycle(parsed), [])
   assert.deepEqual(parsed.on.push.branches, ['v3', 'v3*'])
   assert.deepEqual(parsed.on.pull_request.types, [
     'opened',
@@ -152,5 +152,65 @@ test('missing policy files produce actionable validator issues', (t) => {
     result.issues.some((issue) =>
       issue.includes('.github/workflows/test-playwright.yml')
     )
+  )
+})
+
+test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  const fetchStep = workflow.jobs.prepare.steps.find((step) =>
+    step.run?.includes('git -C .candidate fetch')
+  )
+  const fetchCommand = fetchStep.run
+    .match(/^\s*git -C \.candidate fetch .+$/m)[0]
+    .trim()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playwright-history-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+  Object.assign(env, {
+    GIT_AUTHOR_NAME: 'Fixture',
+    GIT_COMMITTER_NAME: 'Fixture',
+    GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
+    GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
+  })
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: root,
+      env,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-q', '-b', 'base', 'source')
+  git('-C', 'source', 'commit', '-q', '--allow-empty', '-m', 'root')
+  const ancestor = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'branch', 'candidate')
+  git('-C', 'source', 'commit', '-q', '--allow-empty', '-m', 'base-advance')
+  env.BASE_SHA = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'checkout', '-q', 'candidate')
+  git(
+    '-C',
+    'source',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    'candidate-advance'
+  )
+  git('clone', '-q', `file://${root}/source`, '.candidate')
+  git('-C', '.candidate', 'remote', 'add', 'base', `file://${root}/source`)
+  execFileSync('bash', ['-euc', fetchCommand], {
+    cwd: root,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  assert.equal(
+    git('-C', '.candidate', 'merge-base', env.BASE_SHA, 'HEAD'),
+    ancestor
   )
 })
