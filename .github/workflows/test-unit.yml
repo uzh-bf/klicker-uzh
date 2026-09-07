@@ -90,7 +90,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --concurrency=4
+        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --filter=@klicker-uzh/graphql --filter=@klicker-uzh/markdown --filter=@klicker-uzh/feature-flags --concurrency=4
 
       - name: Setup chat test database
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
