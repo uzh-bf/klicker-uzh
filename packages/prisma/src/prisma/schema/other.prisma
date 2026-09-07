@@ -12,3 +12,35 @@ model EmailTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+enum DataExportStatus {
+  PENDING
+  RELEASED
+  FAILED
+}
+
+model ResearchExportReceipt {
+  id          String @id @db.Uuid
+  requesterId String @db.Uuid
+  courseId    String @db.Uuid
+
+  projectTitle      String
+  responsiblePerson String
+  contactEmail      String
+  purpose           String
+  deletionDate      DateTime @db.Date
+  reference         String?
+  selectedClasses   String[]
+  disclosureVersion String
+  attestedAt        DateTime @default(now())
+
+  status      DataExportStatus @default(PENDING)
+  sha256      String?
+  byteCount   Int?
+  recordCount Int?
+  failureCode String?
+  releasedAt  DateTime?
+
+  @@index([requesterId, attestedAt])
+  @@index([courseId, attestedAt])
+}

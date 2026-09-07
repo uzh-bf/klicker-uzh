@@ -9,7 +9,11 @@ import {
   forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
 } from '@klicker-uzh/feature-flags'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  downloadResearchExport,
+  enhanceContext,
+  schema,
+} from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -135,6 +139,90 @@ function prepareApp({
 
   app.use(cookieParser())
   app.use(jwtMiddleware)
+
+  app.post(
+    '/api/data-exports/research',
+    express.json({ limit: '16kb' }),
+    async (req: any, res) => {
+      res.setHeader('Cache-Control', 'no-store')
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+      if (
+        !process.env.APP_ORIGIN_MANAGE ||
+        req.headers.origin !== process.env.APP_ORIGIN_MANAGE ||
+        req.headers['x-graphql-yoga-csrf'] !== '1'
+      ) {
+        res.status(403).json({ code: 'DATA_EXPORT_FORBIDDEN' })
+        return
+      }
+      if (!req.locals?.user) {
+        res.status(401).json({ code: 'DATA_EXPORT_UNAUTHENTICATED' })
+        return
+      }
+      const controller = new AbortController()
+      const cancel = () => controller.abort()
+      res.once('close', cancel)
+      try {
+        const artifact = await downloadResearchExport(
+          req.body,
+          {
+            req,
+            res,
+            user: req.locals.user,
+            prisma,
+            redisExec,
+            redisAssessmentExec,
+            pubSub,
+            emitter,
+            hatchet,
+            tasks,
+            featureFlags,
+          },
+          controller.signal
+        )
+        if (res.destroyed) return
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="research-${artifact.exportId}.json"`
+        )
+        res.status(200).send(artifact.body)
+      } catch (error) {
+        if (res.destroyed) return
+        const candidate = error as { extensions?: { code?: unknown } }
+        const code = candidate.extensions?.code
+        const knownCodes = [
+          'DATA_EXPORT_FORBIDDEN',
+          'DATA_EXPORT_INVALID_REQUEST',
+          'DATA_EXPORT_CLASS_UNAVAILABLE',
+          'DATA_EXPORT_TOO_LARGE',
+          'DATA_EXPORT_ELIGIBILITY_CHANGED',
+          'DATA_EXPORT_REQUEST_ALREADY_USED',
+          'DATA_EXPORT_CANCELLED',
+        ]
+        const safeCode =
+          typeof code === 'string' && knownCodes.includes(code)
+            ? code
+            : 'DATA_EXPORT_FAILED'
+        const status =
+          safeCode === 'DATA_EXPORT_FORBIDDEN'
+            ? 403
+            : safeCode === 'DATA_EXPORT_TOO_LARGE'
+              ? 413
+              : [
+                    'DATA_EXPORT_ELIGIBILITY_CHANGED',
+                    'DATA_EXPORT_REQUEST_ALREADY_USED',
+                  ].includes(safeCode)
+                ? 409
+                : safeCode === 'DATA_EXPORT_FAILED'
+                  ? 500
+                  : 400
+        res.status(status).json({ code: safeCode })
+      } finally {
+        res.off('close', cancel)
+      }
+    }
+  )
 
   const yogaApp = createYoga({
     schema,
