@@ -66,6 +66,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check staging release contracts
+        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
+
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
 
