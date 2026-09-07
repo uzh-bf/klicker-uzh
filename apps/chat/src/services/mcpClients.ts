@@ -15,10 +15,11 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
+  assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
-  normalizeDocQueryKbId,
+  normalizeDocQueryKbIds,
 } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -49,13 +50,13 @@ export interface MCPRequestContext {
   chatbotId: string
   participantId?: string
   authMode: AuthMode
-  kbId?: string
+  kbIds?: readonly string[]
   sessionId?: string
 }
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
-  kbId?: string
+  kbIds?: readonly string[]
   sessionId?: string
 }
 
@@ -137,7 +138,7 @@ async function applyDocQueryAuthHeaders(
   authType: string
 ): Promise<boolean> {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
-  if (!(context.kbId && context.sessionId)) {
+  if (!(context.kbIds && context.sessionId)) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
   if (authType !== 'bearer' || !server.authSecret) {
@@ -152,10 +153,10 @@ async function applyDocQueryAuthHeaders(
 
   assertDocQueryTransportSecurity(server.url)
 
-  const kbId = normalizeDocQueryKbId(context.kbId)
+  const kbIds = normalizeDocQueryKbIds(context.kbIds)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
   const token = await signDocQueryScopeToken({
-    kbId,
+    kbIds,
     chatbotId: context.chatbotId,
     sessionId: context.sessionId,
     jti: randomUUID(),
@@ -289,7 +290,7 @@ function normalizeMCPRequest(
           ? participantIdOrOptions
           : undefined,
       authMode,
-      kbId: options.kbId,
+      kbIds: options.kbIds,
       sessionId: options.sessionId,
     },
     options,
@@ -412,6 +413,9 @@ async function loadServerTools(
   }
 
   try {
+    if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+      assertDocQueryRequestScope(config.parameters, context.kbIds)
+    }
     client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
 

@@ -32,10 +32,11 @@ export default {
         'Uses fewer credits and remains available when your credits run out.',
       autoSelectionInfo:
         'KlickerUZH chooses a suitable model for each message.',
+      fixedModelInfo: 'Your lecturer fixed this model for all participants.',
       usingPrimaryModel:
-        'The standard model is used while credits are available.',
+        'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. Some models may no longer be available.',
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -4569,6 +4570,39 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
       chatbotSetupBasics: 'Basics',
       chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupModes: 'Learning modes',
+      chatbotSetupModesDescription:
+        'Choose which standard modes participants can use',
+      chatbotSetupModesTitle: 'Learning modes',
+      chatbotSetupModesDescriptionLong:
+        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Guides participants with questions, hints, and formative feedback.',
+      chatbotModeExplainer: 'Explainer',
+      chatbotModeExplainerDescription:
+        'Explains course concepts directly with definitions and grounded examples.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Practises exam-style course questions one at a time with formative feedback.',
+      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeQuizzerCapabilityNote:
+        'Quizzer may still be hidden when its course-material capability is unavailable.',
+      chatbotModeEnabled: 'Enabled',
+      chatbotModeDisabled: 'Disabled',
+      chatbotFraming: 'Chatbot framing',
+      chatbotFramingDescription:
+        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+      chatbotFramingPlaceholder:
+        'For example: First-year organic chemistry for medical students.',
+      chatbotFramingTooLong:
+        'Chatbot framing must be 200 characters or fewer when edited.',
+      chatbotModesSave: 'Save learning modes',
+      chatbotModesSaving: 'Saving…',
+      chatbotModesSaveSuccess: 'Learning modes saved.',
+      chatbotModesSaveError: 'Could not save learning modes. Please try again.',
+      chatbotModesReadonly:
+        'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
       chatbotSetupReview: 'Review and submit',
@@ -4636,7 +4670,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublicationDisclaimerRequired:
         'Save a complete disclaimer before requesting publication.',
       chatbotPublicationUnsavedSetup:
-        'Save or wait for changes in Basics and Disclaimer before requesting publication.',
+        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
       chatbotPublicationAuthorizationChecking:
         'Checking whether this account can request publication...',
       chatbotPublicationAuthorizationUnavailable:
@@ -4706,17 +4740,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Model selection',
+      modelSelection: 'Let participants choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'Participants can choose among the allowed models.',
+        'On: participants can choose one of the explicitly selected models.',
       modelSelectionDisabledDescription:
-        'Model selection is automatic and based on credit availability.',
+        'Off: the chatbot uses exactly one model selected by the lecturer.',
+      modelSelectionFixedDescription:
+        'Participants use this model. New chatbots start with Auto.',
+      modelSelectionParticipantDescription:
+        'Participants can choose among these models. Select at least one.',
+      selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
+      reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
       chatbotModelSettingsSave: 'Save model settings',
       chatbotModelSettingsSaving: 'Saving...',

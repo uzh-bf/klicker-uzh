@@ -216,7 +216,9 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
-      kbId: chatbot.knowledgeBases[0]?.kbId,
+      kbIds: chatbot.knowledgeBases[0]?.kbId
+        ? [chatbot.knowledgeBases[0].kbId]
+        : undefined,
       sessionId: randomUUID(),
     })
     tools = mcpToolsHandle.tools
