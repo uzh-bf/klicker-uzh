@@ -626,6 +626,15 @@ export async function startCourseDuplication(
       console.error(
         `Failed to mark async task ${job.id} as failed: ${getErrorMessage(taskCleanupError)}`
       )
+      // No worker was published. Retain the job for task recovery, but do not
+      // keep the source locked while the task database is unavailable.
+      try {
+        await releaseCourseDuplicationSourceLock(ctx.redisExec, job)
+      } catch (releaseError) {
+        console.error(
+          `Failed to release course duplication source lock for job ${job.id}: ${getErrorMessage(releaseError)}`
+        )
+      }
       throw error
     }
 
@@ -690,12 +699,15 @@ export async function getCourseDuplicationStatuses(
       ctx.prisma,
       job
     )
-    try {
-      await syncCourseDuplicationTask(normalizedJob, ctx.prisma)
-    } catch (error) {
-      console.error(
-        `Failed to restore async task ${normalizedJob.id}: ${getErrorMessage(error)}`
-      )
+    // Normalization synchronizes changed jobs through updateCourseDuplicationJob.
+    if (normalizedJob === job) {
+      try {
+        await syncCourseDuplicationTask(normalizedJob, ctx.prisma)
+      } catch (error) {
+        console.error(
+          `Failed to restore async task ${normalizedJob.id}: ${getErrorMessage(error)}`
+        )
+      }
     }
     statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
   }
@@ -732,6 +744,9 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       // A worker may have persisted FAILED and crashed before releasing the
       // source lock. Always reconcile the lock when a retry observes a
       // terminal job so a failed duplication cannot block future attempts.
+      // Task persistence remains retryable below; this lock protects active
+      // copying, not task-center availability. Release compares the job id,
+      // so an old retry cannot unlock a newer duplication.
       try {
         await releaseCourseDuplicationSourceLock(redis, pendingJob)
       } catch (releaseError) {
@@ -945,6 +960,14 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
         if (!job) continue
 
         if (isTerminalCourseDuplicationStatus(job.status)) {
+          // Also recover locks for jobs that failed before a worker was sent.
+          try {
+            await releaseCourseDuplicationSourceLock(redis, job)
+          } catch (error) {
+            executionCtx.logger.warn(
+              `Failed to release course duplication source lock for job ${job.id}: ${getErrorMessage(error)}`
+            )
+          }
           try {
             await syncCourseDuplicationTask(job, globalCtx.prisma)
           } catch (error) {

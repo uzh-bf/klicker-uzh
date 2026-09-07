@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  getCourseDuplicationStatuses,
   handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
   startCourseDuplication,
 } from '../src/services/courseDuplication.js'
 
@@ -170,6 +172,87 @@ describe('course duplication task durability', () => {
       })
     ).toBe(true)
     expect(redis.del).not.toHaveBeenCalled()
-    expect(redis.eval).not.toHaveBeenCalled()
+    expect(redis.eval).toHaveBeenCalledOnce()
+  })
+
+  it('releases orphaned terminal locks during a sweep even when task sync fails', async () => {
+    const jobId = randomUUID()
+    const now = new Date().toISOString()
+    const redis = {
+      scan: vi.fn(async () => ['0', [`course-duplication:${jobId}`]]),
+      get: vi.fn(async () =>
+        JSON.stringify({
+          id: jobId,
+          status: 'FAILED',
+          sourceCourseId: randomUUID(),
+          sourceCourseName: 'Source course',
+          targetCourseName: 'Copied course',
+          createdAt: now,
+          updatedAt: now,
+          userId: randomUUID(),
+        })
+      ),
+      eval: vi.fn(async () => 1),
+    }
+    const prisma = {
+      asyncTask: {
+        updateMany: vi.fn(async () => {
+          throw new Error('task database unavailable')
+        }),
+      },
+    }
+    const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
+
+    await expect(
+      handleSweepStaleCourseDuplications(
+        {},
+        { prisma, redisExec: redis } as never,
+        { logger } as never
+      )
+    ).resolves.toBe(true)
+
+    expect(redis.eval).toHaveBeenCalledOnce()
+    expect(prisma.asyncTask.updateMany).toHaveBeenCalledOnce()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to restore async task')
+    )
+  })
+
+  it('synchronizes a normalized stale job only once when reading statuses', async () => {
+    const jobId = randomUUID()
+    const userId = randomUUID()
+    const staleTime = new Date(0).toISOString()
+    const redis = {
+      get: vi.fn(async () =>
+        JSON.stringify({
+          id: jobId,
+          status: 'RUNNING',
+          sourceCourseId: randomUUID(),
+          sourceCourseName: 'Source course',
+          targetCourseName: 'Copied course',
+          createdAt: staleTime,
+          updatedAt: staleTime,
+          userId,
+        })
+      ),
+      set: vi.fn(async () => 'OK'),
+      eval: vi.fn(async () => 1),
+    }
+    const prisma = {
+      course: { findUnique: vi.fn(async () => ({ id: jobId })) },
+      asyncTask: {
+        updateMany: vi.fn(async () => ({ count: 1 })),
+        findUnique: vi.fn(async () => ({ id: jobId })),
+      },
+    }
+
+    const statuses = await getCourseDuplicationStatuses({ ids: [jobId] }, {
+      prisma,
+      redisExec: redis,
+      user: { sub: userId },
+    } as never)
+
+    expect(statuses[0]?.status).toBe('COMPLETED')
+    expect(prisma.asyncTask.updateMany).toHaveBeenCalledOnce()
   })
 })

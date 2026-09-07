@@ -3869,6 +3869,11 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('listitem')
       .filter({ hasText: restoredJobs[0].name })
     await expect(restoredCompletionToast).toBeVisible()
+    // Dismiss the completion notification before using the header underneath it.
+    await restoredCompletionToast
+      .getByRole('button', { name: 'Close toast', exact: true })
+      .click()
+    await expect(restoredCompletionToast).toBeHidden()
     await expect
       .poll(() =>
         page.evaluate(
