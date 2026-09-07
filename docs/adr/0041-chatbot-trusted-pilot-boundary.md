@@ -24,10 +24,15 @@ invariants.
 
 ## Decision
 
-- Account usage enforcement remains **default-off**. The existing lifecycle
-  claim, participant-credit behavior, and completion semantics remain active
-  while the switch is false. Enabling enforcement is a separate operational
-  cutover decision for a named environment and cohort.
+- Account usage enforcement remains **default-off**. Lifecycle attempt
+  tracking uses an independent default-off switch. The initial R1 rollout writes
+  a hidden `IN_PROGRESS` marker before provider work, while supported
+  complete-only history reads keep that marker away from participants; empty or
+  failed attempts remove it. A thread-plus-parent claim lock prevents
+  concurrent normal requests from creating multiple provider attempts.
+  Explicit regeneration remains the opt-in path for a sibling answer. Enabling
+  account enforcement and enabling lifecycle writers are separate operational
+  cutovers for a named environment and cohort.
 - The budget mutation is an operations boundary. It is available only to the
   existing `ADMIN` role and requires an explicit target owner ID. Account
   owners retain read access to their own two usage lanes but cannot write
@@ -42,10 +47,16 @@ invariants.
   bounded contract. Every entry has an integer `maxOutputTokens` value from 1
   through 4096, supplied-invalid JSON is rejected rather than replaced by a
   warning fallback, and model-class/fallback invariants remain fail-closed.
-- New chatbots start with the safe pilot policy: model selection disabled,
-  GPT-5.6 Luna as the only allowed base model and fallback, low and medium
-  reasoning, the standard prompt override unset, and no MCP relation. Existing
-  chatbot rows are not migrated or normalized by this policy.
+- New chatbots start with the safe pilot policy: model selection disabled and
+  exactly one allowed `auto` model. The registry must provide exactly one
+  non-reasoning, non-fallback `ADVANCED` Auto entry before creation; no
+  reasoning configuration is stored. Existing chatbot rows are not migrated or
+  normalized by this policy. They remain readable through the current
+  `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists
+  retaining the Luna fallback. The strict owner-only
+  `updateChatbotModelPolicy` mutation canonicalizes fixed and participant-choice
+  rows, while `updateChatbotModelSettings` remains available for rolling
+  clients.
 - Manage renders a localized lifecycle status for every chatbot. A participant
   link is rendered only for `PUBLISHED`; every other state explains that the
   link becomes available after publication. Published model-policy edits stay
@@ -54,6 +65,10 @@ invariants.
   provider hard caps, secret or configuration writes, enforcement activation,
   deployment, and live smoke testing are separate tasks requiring explicit
   authority and their own evidence.
+- R2 lifecycle attempt tracking may be enabled only after all Chat pods run
+  R1-compatible, complete-only readers. R1 then becomes the application
+  rollback floor because R2 may leave `IN_PROGRESS` or `FAILED` rows. A
+  pre-lifecycle unfiltered reader is not a compatible R1 rollout target.
 
 ## Consequences
 
@@ -62,6 +77,12 @@ invariants.
 - The first release is transparent about estimates and bounded overruns while
   deferring reservations, immutable ledgers, refunds, invoices, and routed-cost
   reconciliation to a later usage-accounting package.
+- R1's hidden marker makes the claim boundary durable without exposing an empty
+  assistant row. The completed-message transition remains the charging
+  boundary: one normal non-empty turn persists and charges the owner and
+  participant balances together, while duplicate, failed, and successful empty
+  attempts do not. Explicit regeneration may still create and charge a sibling
+  answer by design.
 - Strict startup parsing can prevent readiness after a bad registry change;
   deployment configuration must therefore be validated and rolled back to the
   last valid registry before any later activation.

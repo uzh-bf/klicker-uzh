@@ -5,9 +5,11 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as AsyncTaskService from '../services/asyncTasks.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -26,7 +28,12 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import { asChatbotAuthor } from './authScopes.js'
+import {
+  Course,
+  CourseDeletionRequestPayload,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -85,6 +92,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotStandardModeConfigInput,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -99,6 +107,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
   User,
@@ -120,7 +129,6 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
@@ -671,9 +679,9 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      deleteCourse: t.withAuth(asUser).field({
+      requestCourseDeletion: t.withAuth(asUser).field({
         nullable: true,
-        type: Course,
+        type: CourseDeletionRequestPayload,
         args: {
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
@@ -682,7 +690,11 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.deleteCourse(args, ctx)
+            const request = await CourseDeletionService.requestCourseDeletion(
+              args,
+              ctx
+            )
+            return { courseId: request.courseId }
           }
         ),
       }),
@@ -1384,9 +1396,23 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
-          } else {
-            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
+
+          return await withPermission<
+            unknown,
+            typeof args,
+            Awaited<ReturnType<typeof CourseDuplicationService.duplicateCourse>>
+          >(
+            (duplicationArgs) => ({
+              courseId: duplicationArgs.sourceCourseId!,
+            }),
+            DB.PermissionLevel.ADMIN,
+            async (_root, duplicationArgs, duplicationCtx) =>
+              CourseDuplicationService.duplicateCourse(
+                duplicationArgs,
+                duplicationCtx
+              )
+          )(_, args, ctx)
         },
       }),
 
@@ -1458,7 +1484,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asUser).field({
+      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
@@ -1472,6 +1498,41 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
+        },
+      }),
+
+      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          config: t.arg({
+            type: ChatbotStandardModeConfigInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotStandardModeConfig(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1491,67 +1552,75 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createChatbot: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          type: Chatbot,
-          args: {
-            name: t.arg.string({
-              required: true,
-              validate: { minLength: 1 },
-            }),
-            description: t.arg.string({ required: false }),
-            avatar: t.arg.string({ required: false }),
-            courseId: t.arg.string({ required: true }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.createChatbot(args, ctx)
-          },
-        }),
+      createChatbot: t.withAuth(asChatbotAuthor).field({
+        type: Chatbot,
+        args: {
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.createChatbot(args, ctx)
+        },
+      }),
 
-      updateChatbot: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: Chatbot,
-          args: {
-            id: t.arg.string({ required: true }),
-            name: t.arg.string({
-              required: false,
-              validate: { minLength: 1 },
-            }),
-            description: t.arg.string({ required: false }),
-            avatar: t.arg.string({ required: false }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.updateChatbot(args, ctx)
-          },
-        }),
+      updateChatbot: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({
+            required: false,
+            validate: { minLength: 1 },
+          }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
 
-      requestChatbotPublication: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: Chatbot,
-          args: {
-            id: t.arg.string({ required: true }),
-            useCase: t.arg.string({
-              required: true,
-              validate: { minLength: 1, maxLength: 2000 },
-            }),
-            expectedStudentCount: t.arg.int({
-              required: true,
-              validate: { min: 1 },
-            }),
-            proposedCredits: t.arg.int({
-              required: true,
-              validate: { min: 1 },
-            }),
-          },
-          resolve: async (_, args, ctx) => {
-            return await ChatbotsService.requestChatbotPublication(args, ctx)
-          },
-        }),
+      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedDisclaimerId: t.arg.string({ required: false }),
+          title: t.arg.string({ required: true }),
+          introText: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
+        },
+      }),
+
+      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          proposedCredits: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({
         nullable: true,
@@ -1857,6 +1926,14 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      setBetaEnrollment: t.withAuth(asUserFullAccess).field({
+        type: BetaEnrollmentCapability,
+        args: { enabled: t.arg.boolean({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await BetaEnrollmentService.setBetaEnrollment(args, ctx)
         },
       }),
 

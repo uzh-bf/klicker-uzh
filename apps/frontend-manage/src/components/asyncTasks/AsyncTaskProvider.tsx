@@ -126,6 +126,7 @@ function getCourseDuplicationErrorType(
 ): CourseDuplicationErrorType {
   const code = getGraphQLErrorCode(error)
   if (code === COURSE_DUPLICATION_ERROR_CODES.partialFailure) return 'partial'
+  if (code === 'FORBIDDEN') return 'access'
 
   const normalizedMessage = getErrorMessage(error).toLowerCase()
   if (normalizedMessage.includes('not all')) return 'partial'
@@ -286,7 +287,10 @@ export function AsyncTaskProvider({
       return
     }
 
-    const storedIds = readStoredCourseDuplicationJobIds(userId)
+    const storedIds = getBoundedCourseDuplicationJobIds([
+      ...readStoredCourseDuplicationJobIds(userId),
+      ...trackedCourseDuplicationIdsRef.current,
+    ])
     trackedCourseDuplicationIdsRef.current = storedIds
     setTrackedCourseDuplicationIds([...storedIds])
   }, [userId])
@@ -511,6 +515,11 @@ export function AsyncTaskProvider({
       inFlightSourceCourseIdsRef.current.add(course.id)
 
       try {
+        if (!values.startDate || !values.endDate) {
+          onError('invalidDates')
+          return false
+        }
+
         const result = await startCourseDuplicationMutation({
           variables: {
             name: values.name,
@@ -569,7 +578,7 @@ export function AsyncTaskProvider({
         onError(
           result.errors?.[0]
             ? getCourseDuplicationErrorType(result.errors[0])
-            : 'generic'
+            : 'access'
         )
       } catch (error) {
         onError(getCourseDuplicationErrorType(error))

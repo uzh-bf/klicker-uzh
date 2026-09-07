@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import usePaginationPageNumbers from '../../lib/hooks/usePaginationPageNumbers'
+import { computeResultRange } from '../../lib/resultRange'
 
 export type PaginationPageSize = 10 | 20 | 50 | 'all'
 
@@ -42,6 +43,11 @@ function Pagination({
 }) {
   const t = useTranslations()
   const pageNumbers = usePaginationPageNumbers({ currentPage, totalPages })
+  const { start, end, total } = computeResultRange({
+    currentPage,
+    pageSize,
+    numOfElements: numOfObjects,
+  })
 
   return (
     <div
@@ -51,14 +57,14 @@ function Pagination({
       )}
     >
       {/* Left zone: result range summary */}
-      <div className="text-muted-foreground text-center text-xs lg:col-start-1 lg:justify-self-start lg:text-left">
+      <div
+        data-cy="result-range-summary"
+        className="text-muted-foreground text-center text-xs lg:col-start-1 lg:justify-self-start lg:text-left"
+      >
         {t('manage.general.showingResults', {
-          start: pageSize === 'all' ? 1 : (currentPage - 1) * pageSize + 1,
-          end:
-            pageSize === 'all'
-              ? numOfObjects
-              : Math.min(currentPage * pageSize, numOfObjects),
-          total: numOfObjects,
+          start,
+          end,
+          total,
         })}
       </div>
 

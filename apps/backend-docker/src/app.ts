@@ -23,6 +23,7 @@ function prepareApp({
   emitter,
   hatchet,
   tasks,
+  featureFlags,
 }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -168,6 +169,7 @@ function prepareApp({
       emitter,
       hatchet,
       tasks,
+      featureFlags,
     }),
     logging: true,
     cors: false,

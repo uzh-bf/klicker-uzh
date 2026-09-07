@@ -11,6 +11,8 @@ export type ThreadSuggestionId =
   | 'workThroughProblem'
   | 'explainConcept'
   | 'compareConcepts'
+  | 'startPracticeQuiz'
+  | 'practiceWeakSpot'
 
 export interface ThreadSuggestion {
   id: ThreadSuggestionId
@@ -19,6 +21,7 @@ export interface ThreadSuggestion {
 const THREAD_SUGGESTIONS_BY_MODE: Record<KnownMode, ThreadSuggestion[]> = {
   tutor: [{ id: 'practiceTopic' }, { id: 'workThroughProblem' }],
   explainer: [{ id: 'explainConcept' }, { id: 'compareConcepts' }],
+  quizzer: [{ id: 'startPracticeQuiz' }, { id: 'practiceWeakSpot' }],
 }
 
 export function getThreadSuggestions(mode: string): ThreadSuggestion[] {

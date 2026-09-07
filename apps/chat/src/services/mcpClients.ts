@@ -1,17 +1,25 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  assertDocQueryRequestScope,
+  assertDocQueryTransportSecurity,
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbIds,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -39,6 +47,8 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+  kbIds?: readonly string[]
+  sessionId?: string
 }
 
 function toToolNameHash(rawName: string): string {
@@ -105,16 +115,66 @@ function toSafeToolName(
   return candidate
 }
 
+async function applyDocQueryAuthHeaders(
+  headers: Record<string, string>,
+  server: MCPServerConfig,
+  chatbotId: string,
+  options: MCPRequestOptions,
+  authType: string
+): Promise<boolean> {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+  if (!options.kbIds || !options.sessionId) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+  if (authType !== 'bearer' || !server.authSecret) {
+    throw new Error('Doc Query transport authentication is invalid')
+  }
+  if (
+    typeof options.sessionId !== 'string' ||
+    options.sessionId.trim().length === 0
+  ) {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  assertDocQueryTransportSecurity(server.url)
+
+  const kbIds = normalizeDocQueryKbIds(options.kbIds)
+  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  const token = await signDocQueryScopeToken({
+    kbIds,
+    chatbotId,
+    sessionId: options.sessionId,
+    jti: randomUUID(),
+  })
+  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+  return true
+}
+
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  options: MCPRequestOptions = {}
+): Promise<Record<string, string>> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const authType = server.authType.toLowerCase()
+
+  if (
+    await applyDocQueryAuthHeaders(
+      baseHeaders,
+      server,
+      chatbotId,
+      options,
+      authType
+    )
+  ) {
+    return baseHeaders
+  }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -129,7 +189,7 @@ function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -182,7 +242,7 @@ function createAuthHeaders(
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-export async function createMCPClient(
+async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
   options: MCPRequestOptions = {}
@@ -192,7 +252,7 @@ export async function createMCPClient(
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const headers = await createAuthHeaders(server, chatbotId, options)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -232,8 +292,9 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
   }
 
   return allowedTools.some((pattern) => {
-    // Convert wildcard pattern to regex
+    // Escape regex syntax so only the documented wildcards stay special.
     const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*') // Replace * with .*
       .replace(/\?/g, '.') // Replace ? with .
 
@@ -258,7 +319,7 @@ async function loadServerTools(
     const configuredTool = config.allowedTools?.[0]
     if (
       !Array.isArray(config.allowedTools) ||
-      config.allowedTools?.length !== 1 ||
+      config.allowedTools.length !== 1 ||
       typeof configuredTool !== 'string' ||
       configuredTool.length === 0 ||
       /[*?]/.test(configuredTool)
@@ -276,6 +337,9 @@ async function loadServerTools(
   }
 
   try {
+    if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+      assertDocQueryRequestScope(config.parameters, options.kbIds)
+    }
     const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
 

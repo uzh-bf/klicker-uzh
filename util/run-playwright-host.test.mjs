@@ -89,6 +89,11 @@ test('workspace URLs and the loopback database port resolve together', () => {
     'https://manage.klicker.rs-host-playwright.localhost'
   )
   assert.equal(
+    environment.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
+    'https://manage.klicker.rs-host-playwright.localhost/__growthbook__'
+  )
+  assert.equal(environment.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY, 'sdk-test')
+  assert.equal(
     environment.DATABASE_URL,
     'postgres://user:password@127.0.0.1:49153/database'
   )

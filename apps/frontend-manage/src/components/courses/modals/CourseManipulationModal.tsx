@@ -297,7 +297,11 @@ function CourseManipulationModal({
                     name="startDate"
                     disabled={startDatePast}
                     label={t('manage.courseList.startDate')}
-                    tooltip={t('manage.courseList.startDateTooltip')}
+                    tooltip={
+                      startDatePast
+                        ? t('manage.courseList.startDatePastTooltip')
+                        : t('manage.courseList.startDateTooltip')
+                    }
                     dataTrigger={{ cy: 'course-start-date' }}
                     dataCalendar={{ cy: 'course-start-date-calendar' }}
                     dataPreviousMonth={{

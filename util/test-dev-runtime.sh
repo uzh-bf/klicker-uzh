@@ -62,6 +62,9 @@ if [ "${1:-}" = "--version" ]; then
   echo "11.5.0"
   exit 0
 fi
+if [ -n "${KLICKER_TEST_PNPM_FAIL_MATCH:-}" ] && [[ "$*" == *"$KLICKER_TEST_PNPM_FAIL_MATCH"* ]]; then
+  exit 17
+fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
 write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
 exit 0'
@@ -121,6 +124,7 @@ export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
+export KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR="$TEST_ROOT/bootstrap-state"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
@@ -129,6 +133,120 @@ mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
+
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'missing bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+assert_equal \
+  "$(cat "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete")" \
+  'klicker-devcontainer-bootstrap-v1'
+write_file "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete" 'wrong-bootstrap-token'
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'malformed bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'invalidated bootstrap completion marker was accepted'
+fi
+write_file "$TEST_ROOT/outside-bootstrap-marker" 'klicker-devcontainer-bootstrap-v1'
+ln -s "$TEST_ROOT/outside-bootstrap-marker" \
+  "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'symlinked bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+
+assert_before() {
+  local file="$1" earlier="$2" later="$3" earlier_line later_line
+
+  earlier_line="$(grep -nF -m1 "$earlier" "$file" | cut -d: -f1 || true)"
+  later_line="$(grep -nF -m1 "$later" "$file" | cut -d: -f1 || true)"
+  [ -n "$earlier_line" ] || fail "expected line in $file: $earlier"
+  [ -n "$later_line" ] || fail "expected line in $file: $later"
+  [ "$earlier_line" -lt "$later_line" ] || \
+    fail "expected '$earlier' before '$later' in $file"
+}
+
+last_semantic_line() {
+  awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
+}
+
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-create.sh" \
+  'bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap' \
+  'ROOT="$(cd "$ROOT" && pwd)"'
+assert_equal \
+  "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
+  'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-start.sh" \
+  'ROOT="$(cd "$ROOT" && pwd)"' \
+  'bash "$ROOT/util/dev-runtime.sh" require-bootstrap'
+assert_equal \
+  "$(grep -Fc '/workspaces/klicker-uzh' "$REPO_ROOT/.devcontainer/post-start.sh")" \
+  '1'
+grep -Fq '"waitFor": "postCreateCommand"' \
+  "$REPO_ROOT/.devcontainer/devcontainer.json" || \
+  fail 'devcontainer does not wait for postCreateCommand'
+
+mkdir -p \
+  "$ROOT/.devcontainer" \
+  "$ROOT/apps/response-api" \
+  "$ROOT/apps/hatchet-worker-general" \
+  "$ROOT/apps/hatchet-worker-response-processor" \
+  "$ROOT/packages/graphql" \
+  "$ROOT/util"
+write_file "$ROOT/.devcontainer/devcontainer.env" ''
+cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create accepted a missing configured root'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create ignored a failing middle bootstrap step'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+write_file "$TEST_ROOT/hatchet-token" 'synthetic-test-token'
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/hatchet-token" \
+    bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+assert_exists "$ROOT/.devcontainer/.hatchet.env"
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'relative post-create root wrote the Hatchet environment incorrectly'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+
+post_start_status=0
+post_start_output="$(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || post_start_status=$?
+[ "$post_start_status" -ne 0 ] || fail 'post-start bypassed the process-helper gate'
+process_helper_error='Run devrouter ensure to start this managed application process.'
+[[ "$post_start_output" == *"$process_helper_error"* ]] || \
+  fail 'post-start did not use the configured root before its process-helper gate'
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
@@ -195,6 +313,35 @@ done
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
 assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '1'
 write_file "$ROOT/apps/chat/.next/dev/cache.bin" 'stale development cache'
+
+# Preservation refuses both new repairs and a pending repair from an earlier
+# run. A dangling symlink or directory also counts as an enabled marker.
+preserve_marker="$ROOT/.devcontainer/.runtime/preserve-next-cache"
+for marker_kind in file symlink directory; do
+  case "$marker_kind" in
+    file) touch "$preserve_marker" ;;
+    symlink) ln -s "$TEST_ROOT/missing-marker-target" "$preserve_marker" ;;
+    directory) mkdir "$preserve_marker" ;;
+  esac
+  if bash "$RUNTIME_SCRIPT" request-repair auth >/dev/null 2>&1; then
+    fail 'cache preservation accepted a new repair request'
+  fi
+  if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- \
+    touch "$TEST_ROOT/unexpected-start" >/dev/null 2>&1; then
+    fail 'cache preservation applied a pending repair'
+  fi
+  assert_absent "$TEST_ROOT/unexpected-start"
+  assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '1'
+  assert_equal "$(cat "$ROOT/.devcontainer/.runtime/next-repair-request")" 'chat'
+  assert_equal "$(cat "$ROOT/apps/chat/.next/dev/cache.bin")" 'stale development cache'
+  assert_exists "$ROOT/apps/auth/.next/production.bin"
+  if [ "$marker_kind" = directory ]; then
+    rmdir "$preserve_marker"
+  else
+    rm "$preserve_marker"
+  fi
+done
+
 bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- true
 assert_absent "$ROOT/apps/chat/.next"
 assert_exists "$ROOT/apps/auth/.next/production.bin"
@@ -326,5 +473,83 @@ READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
 unset READINESS_APPS
 bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
+
+cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
+cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+export DEVROUTER_PROFILE=manage
+build_filters="$(bash "$RUNTIME_SCRIPT" preparation-filters)"
+assert_equal "$build_filters" '--filter=@klicker-uzh/backend-docker^... --filter=@klicker-uzh/auth^... --filter=@klicker-uzh/frontend-manage^...'
+for selection in ai mcp email ai,email; do
+  assert_equal "$(DEVROUTER_PROFILE="$selection" bash "$RUNTIME_SCRIPT" preparation-filters)" ''
+done
+if DEVROUTER_PROFILE=unsupported bash "$RUNTIME_SCRIPT" preparation-filters >/dev/null 2>&1; then
+  fail 'preparation accepted an unknown profile'
+fi
+
+write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0","scripts":{"dev:container":"turbo run dev --filter=@klicker-uzh/example --concurrency 30"}}'
+assert_equal "$(DEVROUTER_PROFILE=full bash "$RUNTIME_SCRIPT" preparation-filters)" '--filter=@klicker-uzh/example^...'
+for command in \
+  'turbo run dev --concurrency 30' \
+  'turbo run dev --filter=./apps/*' \
+  'turbo run dev --filter=@klicker-uzh/example...' \
+  'turbo run dev --filter=@klicker-uzh/example ; true' \
+  'turbo run dev --filter=@klicker-uzh/example --concurrency invalid'; do
+  node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p.scripts["dev:container"]=process.argv[2];fs.writeFileSync(process.argv[1],JSON.stringify(p))' "$ROOT/package.json" "$command"
+  if DEVROUTER_PROFILE=full bash "$RUNTIME_SCRIPT" preparation-filters >/dev/null 2>&1; then
+    fail 'preparation accepted unsupported full-profile syntax'
+  fi
+done
+
+: >"$INSTALL_LOG"
+if bash "$RUNTIME_SCRIPT" prepare --filter=@klicker-uzh/auth >/dev/null 2>&1; then
+  fail 'preparation accepted an app build selector'
+fi
+[ ! -s "$INSTALL_LOG" ] || fail 'invalid preparation changed dependencies'
+# shellcheck disable=SC2086 # validated flags emitted by preparation-filters
+bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'exec turbo run build'
+status=0
+# shellcheck disable=SC2086
+KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
+assert_equal "$status" 17
+
+HELPER_LOG="$TEST_ROOT/helper.log"
+export KLICKER_TEST_HELPER_LOG="$HELPER_LOG"
+write_file "$FAKE_BIN/process-helper" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  [ "${KLICKER_TEST_OLD_HELPER:-false}" = false ] && echo --prepare-command
+  exit 0
+fi
+printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
+[ "$1" = ensure ] || exit 0
+shift
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = --prepare-command ]; then
+    bash -c "$2"
+    shift 2
+  else
+    shift
+  fi
+done
+echo launched >>"$KLICKER_TEST_HELPER_LOG"'
+chmod +x "$FAKE_BIN/process-helper"
+: >"$HELPER_LOG"
+: >"$CURL_LOG"
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_TEST_OLD_HELPER=true bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
+  fail 'post-start accepted a helper without preparation support'
+fi
+[ ! -s "$HELPER_LOG" ] || fail 'unsupported helper caused a lifecycle operation'
+[ ! -s "$CURL_LOG" ] || fail 'unsupported helper reached readiness'
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
+  fail 'post-start ignored preparation failure'
+fi
+if grep -Fx launched "$HELPER_LOG" >/dev/null; then
+  fail 'post-start launched after failed preparation'
+fi
+[ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
 echo '[test-dev-runtime] PASS'
