@@ -1,4 +1,6 @@
-# Restore staging release-write authentication
+# Restore staging release-write authentication — PR #5823
+
+Draft PR: <https://github.com/uzh-bf/klicker-uzh/pull/5823>.
 
 ## Approval summary
 
@@ -79,5 +81,5 @@ through `9586807d9e` with no findings. Source is ready for draft publication;
 human review and required hosted CI remain before merge. Reports
 are in `project/_local/reviews/2026-09-07-stg-write-token-*.md`.
 Optional AGY challenge unavailable due to catalog/authentication errors.
-No operational state changed. Next: publish the approved draft PR; do not
-retry promotion.
+Draft publication complete. No operational state changed. Next: human review
+and hosted CI before any separately authorized merge; do not retry promotion.
