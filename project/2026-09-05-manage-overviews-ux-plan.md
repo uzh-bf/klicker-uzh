@@ -86,11 +86,18 @@ the exact task container. No hooks are bypassed or dependency versions changed.
 
 Runtime repair reaches the upstream authenticated MCP bootstrap but rejects
 the local fixture: its synthetic course, chatbot, and two mode bindings are
-absent after the course suites. The standard repository synthetic seed is being
-restored before another canonical repair. The earlier 79 passing browser tests
+absent after the course suites. Standard repository reseeding fails with a
+unique course-PIN constraint (`P2002`). A fresh task-database reset and reseed
+is proposed; deletion of the test data created since the last clean setup
+awaits explicit user approval. The earlier 79 passing browser tests
 remain earlier-branch evidence; no post-integration browser pass is claimed.
 Activity and wizard implementation remain pending, as does the full visual
 matrix and integrated final review.
+
+The integration is published to the existing draft PR at
+`34cc6de1fa26eb02b4532869f494c1f200810ffa`; the target head is verified as an
+ancestor. Commit and pre-push hooks pass. This progress correction changes no
+tested source. Exact-head hosted CI remains a separate pending gate.
 
 ### Restart limitation after the passing clean run, 2026-09-07
 
