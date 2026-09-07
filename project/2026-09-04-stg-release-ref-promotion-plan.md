@@ -309,9 +309,12 @@ passes, including 40 type-check tasks; it ran in the container, with secret
 and Git identity checks on the host before committing. No dedicated simplifier
 is required for the small exact-match and existing test-table extension.
 The guard's configured slice reviewer failed before useful work because its
-model was at capacity. A trusted read-only continuity reviewer is evaluating
-the same committed two-file scope. Integrated final review waits for the
-unresolved package gates.
+model was at capacity. The trusted read-only continuity reviewer completed
+the same committed two-file scope with no actionable findings. Slice review:
+done, with its report at
+`project/_local/reviews/2026-09-07-stg-publish-guard-slice-review.md`.
+Unknown future Buildx diagnostics still fail closed. Integrated final review
+and publication wait for the unresolved package gates, not new push approval.
 
 Playwright has now finished. Shard eight reproduces both feature-access
 fixture failures and a separate horizontal-overflow assertion in
