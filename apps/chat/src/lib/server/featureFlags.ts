@@ -51,16 +51,18 @@ export function manageFeatureFlagAttributes(
 export async function isManageAiEnabled(
   user: AuthenticatedManageUser
 ): Promise<boolean> {
-  const featureFlags = getFeatureFlagClient()
-  await featureFlags.initialize()
-  if (!featureFlags.isEnabled('ai-beta', manageFeatureFlagAttributes(user))) {
+  const account = await prisma.user.findUnique({
+    select: { aiFeaturesEnabled: true, betaEnabled: true },
+    where: { id: user.sub },
+  })
+  if (account?.betaEnabled !== true || account.aiFeaturesEnabled !== true) {
     return false
   }
 
-  const account = await prisma.user.findUnique({
-    select: { aiFeaturesEnabled: true },
-    where: { id: user.sub },
+  const featureFlags = getFeatureFlagClient()
+  await featureFlags.initialize()
+  return featureFlags.isEnabled('ai-beta', {
+    ...manageFeatureFlagAttributes(user),
+    betaEnabled: account.betaEnabled,
   })
-
-  return account?.aiFeaturesEnabled === true
 }

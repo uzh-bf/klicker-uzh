@@ -1,6 +1,14 @@
 {
   "extends": "./tsconfig.json",
+  "include": [
+    "src/index.ts",
+    "src/client.ts",
+    "src/prisma/client/**/*.ts",
+    "scripts/**/*.ts",
+    "test/**/*.ts"
+  ],
   "compilerOptions": {
+    "rootDir": ".",
     "declaration": false,
     "declarationMap": false,
     "noEmit": true

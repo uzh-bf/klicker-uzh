@@ -17,6 +17,8 @@ on:
       - 'packages/shared-components/**'
       - 'packages/types/**'
       - 'packages/util/**'
+      - '.devcontainer/disposable-test-init.sql'
+      - '.github/scripts/provision-disposable-postgres.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -39,6 +41,8 @@ on:
       - 'packages/shared-components/**'
       - 'packages/types/**'
       - 'packages/util/**'
+      - '.devcontainer/disposable-test-init.sql'
+      - '.github/scripts/provision-disposable-postgres.sh'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -87,24 +91,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test Prisma disposable guard
+        run: pnpm --filter @klicker-uzh/prisma test:disposable
+
       - name: Build unit-test dependencies
         id: build
         shell: bash
         run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --filter=@klicker-uzh/graphql --filter=@klicker-uzh/markdown --filter=@klicker-uzh/feature-flags --concurrency=4
 
-      - name: Setup chat test database
+      - name: Provision disposable PostgreSQL
+        id: provision_db
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: bash .github/scripts/provision-disposable-postgres.sh "${{ job.services.postgres.id }}"
+
+      - name: Setup chat test database
+        id: setup_chat_db
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.provision_db.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force
         env:
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
       - name: Test chat app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/chat test:run
         env:
           CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
           CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
       - name: Test frontend PWA
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

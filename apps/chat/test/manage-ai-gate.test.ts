@@ -31,14 +31,20 @@ describe('isManageAiEnabled', () => {
   })
 
   test('opens only when the flag and the account entitlement both hold', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(true)
   })
 
   test('stays closed for an entitled account outside the beta', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate()
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
@@ -47,7 +53,10 @@ describe('isManageAiEnabled', () => {
   // The expensive half of the gate: an account inside the beta that has not
   // supplied a cost center must not be able to spend model budget.
   test('stays closed inside the beta without the account entitlement', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: false })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: false,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
@@ -60,11 +69,13 @@ describe('isManageAiEnabled', () => {
     await expect(isEnabled(lecturer)).resolves.toBe(false)
   })
 
-  // The flag is checked first so a lecturer outside the beta costs no query.
-  test('does not read the account when the flag is off', async () => {
-    const isEnabled = await loadGate()
+  test('denies a disabled preference even with a forced rollout and approval', async () => {
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: false,
+    })
+    const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
-    expect(mocks.findUniqueUser).not.toHaveBeenCalled()
   })
 })

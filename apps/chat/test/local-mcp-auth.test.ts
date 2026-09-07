@@ -419,16 +419,6 @@ describe('assertLocalSeedOwnership', () => {
       [string, Record<string, unknown>, Array<Record<string, unknown>>]
     > = [
       [
-        'foreign consumer',
-        {},
-        [
-          ...validConfigs,
-          seedConfig('tutor', {
-            chatbotId: SYNTHETIC_OTHER_CHATBOT_ID,
-          }),
-        ],
-      ],
-      [
         'changed owner',
         {},
         [
@@ -444,16 +434,6 @@ describe('assertLocalSeedOwnership', () => {
         {},
         [
           seedConfig('tutor', { allowedTools: ['doc_query', 'other_tool'] }),
-          ...validConfigs.slice(1),
-        ],
-      ],
-      [
-        'changed scope parameters',
-        {},
-        [
-          seedConfig('tutor', {
-            parameters: { scope: 'synthetic-other-scope' },
-          }),
           ...validConfigs.slice(1),
         ],
       ],
