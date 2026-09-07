@@ -1,17 +1,26 @@
 # Show retrieved chunks and reliable source references
 
+Draft delivery: [RAG chunk display and stable citations](https://github.com/uzh-bf/klicker-uzh/pull/5831).
+
 ## Approval summary
 
 ### Current acceptance status
 
-Implementation is committed, with the unused legacy panel helper and its tests
-removed following the native simplifier's accepted finding. Focused verification
-after that removal passes all 35 retrieval/chip tests, Chat typechecking, and
-formatting. Broader passing checks below preceded this behavior-preserving
-removal. The exact task runtime is again verified Stopped with zero routes;
-data and the worktree are retained. Target mergeability against fetched `v3`
-passes without integrating unrelated changes. Bounded slice review is active;
-integrated final review and draft publication are still pending.
+Source-only draft delivery is complete at implementation head
+`16a47ebad03dc5504da4d113bb3cda94671045a6`. Simplification, bounded slice review,
+and integrated final review pass with all accepted findings resolved. Corrections
+remove an unused panel helper, reject encoded ingestion paths, and progressively
+reveal source groups in batches of five without changing citation numbering.
+
+After the corrections, 100 source/retrieval tests, 35 chip/retrieval tests,
+Chat and Playwright typechecks, formatting, and both browser regressions pass.
+Separate agent-browser inspection confirms progressive disclosure through all
+fourteen groups. Desktop/mobile screenshots were inspected. The exact task
+runtime is verified Stopped with zero routes; data and the worktree are retained.
+Target mergeability against fetched `v3` passes without integrating unrelated
+changes. Hosted checks and human review remain prerequisites before merge.
+No staging deployment or live retrieval proof is claimed. The entries below
+record earlier verification and recovery states, not active delivery blockers.
 
 Both focused host browser tests pass through the explicit Chat-profile,
 preserve-database launcher path. The larger-result test proves shared citation
