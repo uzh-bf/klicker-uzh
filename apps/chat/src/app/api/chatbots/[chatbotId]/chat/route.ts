@@ -855,9 +855,9 @@ export async function POST(
     selectedMode
   )
 
-  let scopedKbId: string | undefined
+  let scopedKbIds: string[] | undefined
   try {
-    scopedKbId = resolveMcpScope(
+    scopedKbIds = resolveMcpScope(
       enabledMCPConfigurations,
       selectedMode,
       selectedMCPConfigurations
@@ -1054,7 +1054,7 @@ export async function POST(
         chatbotId,
         participantId,
         authMode,
-        kbId: scopedKbId,
+        kbIds: scopedKbIds,
         sessionId: mcpScopeSessionId,
       })
       mcpTools = mcpToolsHandle.tools

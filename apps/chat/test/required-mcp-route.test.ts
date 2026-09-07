@@ -240,7 +240,7 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
-        kbId: undefined,
+        kbIds: undefined,
         sessionId: 'thread-1',
       }
     )
@@ -343,7 +343,7 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
-        kbId: KB_ID,
+        kbIds: [KB_ID],
         sessionId: 'thread-1',
       }
     )
@@ -516,7 +516,7 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
-        kbId: KB_ID,
+        kbIds: [KB_ID],
         sessionId: 'thread-1',
       }
     )
@@ -618,7 +618,7 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
-        kbId: undefined,
+        kbIds: undefined,
         sessionId: 'thread-1',
       }
     )

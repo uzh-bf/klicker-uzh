@@ -83,9 +83,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.STORE_PATH }}
-        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
-        restore-keys: |
-          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
 
     - name: Restore turbo build artifacts
       if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
@@ -221,4 +219,4 @@ runs:
         name: playwright-build-telemetry
         path: playwright-build-telemetry.json
         if-no-files-found: ignore
-        retention-days: 1
+        retention-days: 7

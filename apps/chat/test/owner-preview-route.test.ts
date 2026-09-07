@@ -232,7 +232,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbId: 'kb-id',
+        kbIds: ['kb-id'],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
