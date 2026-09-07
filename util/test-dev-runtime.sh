@@ -513,6 +513,32 @@ status=0
 KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
 assert_equal "$status" 17
 
+write_file "$FAKE_BIN/ps" '#!/usr/bin/env bash
+if [ "$1" = -o ]; then
+  echo 4242
+elif [ "${KLICKER_TEST_GIT_CHILD_PERSISTENT:-false}" = true ]; then
+  echo "4242 S git"
+elif [ "${KLICKER_TEST_PROCESS_SCAN_FAIL:-false}" = true ]; then
+  exit 17
+elif [ ! -f "$KLICKER_TEST_GIT_CHILD_OBSERVED" ]; then
+  touch "$KLICKER_TEST_GIT_CHILD_OBSERVED"
+  echo "4242 S git"
+fi'
+chmod +x "$FAKE_BIN/ps"
+export KLICKER_TEST_GIT_CHILD_OBSERVED="$TEST_ROOT/git-child-observed"
+# shellcheck disable=SC2086
+bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_exists "$KLICKER_TEST_GIT_CHILD_OBSERVED"
+preparation_started=$SECONDS
+if KLICKER_TEST_GIT_CHILD_PERSISTENT=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null 2>&1; then
+  fail 'preparation accepted a Git child that never exits'
+fi
+[ "$((SECONDS - preparation_started))" -ge 4 ] || fail 'preparation skipped the grace interval'
+if KLICKER_TEST_PROCESS_SCAN_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null 2>&1; then
+  fail 'preparation accepted a failed process scan'
+fi
+rm "$FAKE_BIN/ps"
+
 HELPER_LOG="$TEST_ROOT/helper.log"
 export KLICKER_TEST_HELPER_LOG="$HELPER_LOG"
 write_file "$FAKE_BIN/process-helper" '#!/usr/bin/env bash

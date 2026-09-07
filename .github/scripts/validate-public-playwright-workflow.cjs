@@ -1,5 +1,67 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const YAML = require('yaml')
+
+const EXECUTION_GROUP =
+  '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+const OPEN_EVENT =
+  "github.event_name != 'pull_request' || github.event.action != 'closed'"
+const CLOSED_EVENT =
+  "github.event_name == 'pull_request' && github.event.action == 'closed'"
+
+function validateCallerLifecycle(caller) {
+  const issues = []
+  const jobs = caller?.jobs ?? {}
+  const execution = jobs['test-playwright-execution']
+  const close = jobs['cancel-closed-pr']
+  if (
+    caller?.name !== 'Klicker automated testing with playwright' ||
+    !caller?.on?.pull_request?.types?.includes('closed') ||
+    caller.concurrency !== undefined
+  ) {
+    issues.push(
+      'caller must preserve workflow identity and handle closed PRs without workflow concurrency'
+    )
+  }
+  for (const [name, job] of Object.entries(jobs)) {
+    if (['test-playwright-execution', 'cancel-closed-pr'].includes(name)) {
+      if (
+        job.concurrency?.group !== EXECUTION_GROUP ||
+        job.concurrency?.['cancel-in-progress'] !== true
+      ) {
+        issues.push(`${name} must use the exact PR execution concurrency group`)
+      }
+    } else if (job.concurrency !== undefined) {
+      issues.push(`${name} must remain outside execution concurrency`)
+    }
+  }
+  if (execution?.if !== OPEN_EVENT) {
+    issues.push('execution must exclude closed PR events')
+  }
+  for (const name of ['test-playwright-status', 'playwright-queue-telemetry']) {
+    if (jobs[name]?.if !== `always() && (${OPEN_EVENT})`) {
+      issues.push(`${name} must retain always() and exclude closed PR events`)
+    }
+  }
+  if (
+    close?.if !== CLOSED_EVENT ||
+    close.needs !== undefined ||
+    close['runs-on'] !== 'ubuntu-latest' ||
+    close['timeout-minutes'] !== 5 ||
+    JSON.stringify(close.permissions) !== '{}' ||
+    close.uses !== undefined ||
+    close.container !== undefined ||
+    close.services !== undefined ||
+    close.steps?.length !== 1 ||
+    close.steps[0].uses !== undefined ||
+    close.steps[0].run !== ':'
+  ) {
+    issues.push(
+      'close cancellation must be an independent permission-free hosted no-op'
+    )
+  }
+  return issues
+}
 
 const EXPECTED_CALL =
   'uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3'
@@ -39,6 +101,11 @@ function namedSteps(text) {
 function validatePublicPlaywrightWorkflow(root) {
   const issues = []
   const caller = readWorkflow(root, 'test-playwright.yml', issues)
+  try {
+    issues.push(...validateCallerLifecycle(YAML.parse(caller)))
+  } catch {
+    issues.push('caller lifecycle policy must be valid YAML')
+  }
   const publicWorkflow = readWorkflow(
     root,
     'public-pr-playwright-shards.yml',
@@ -169,7 +236,6 @@ function validatePublicPlaywrightWorkflow(root) {
         /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@v3/g
       ) ?? []
     ).length !== 1 ||
-    (caller.match(/concurrency:/g) ?? []).length !== 1 ||
     caller.includes('group: public-pr-arm64')
   ) {
     issues.push(
@@ -283,6 +349,7 @@ function main(argv = process.argv.slice(2)) {
 if (require.main === module) main()
 
 module.exports = {
+  validateCallerLifecycle,
   EXPECTED_BUILD_ACTION,
   EXPECTED_CALL,
   EXPECTED_SHARD_ACTION,

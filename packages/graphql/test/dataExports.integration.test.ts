@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   CourseAuthType,
   DataExportStatus,
@@ -319,6 +319,7 @@ async function createFixture(): Promise<SyntheticFixture> {
 }
 
 async function cleanupFixture() {
+  await requireDisposableDatabase(prisma)
   if (fixtureIds.receipts.length > 0) {
     await prisma.researchExportReceipt.deleteMany({
       where: { id: { in: fixtureIds.receipts } },
@@ -341,6 +342,7 @@ async function cleanupFixture() {
 
 describe('research export PostgreSQL integration', () => {
   beforeAll(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.$connect()
     fixture = await createFixture()
   })

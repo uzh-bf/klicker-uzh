@@ -1,11 +1,14 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const YAML = require('yaml')
 
 const {
   EXPECTED_CALL,
+  validateCallerLifecycle,
   validatePublicPlaywrightWorkflow,
 } = require('./validate-public-playwright-workflow.cjs')
 
@@ -61,10 +64,16 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'utf8'
   )
 
-  assert.match(
-    workflow,
-    /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/
-  )
+  const parsed = YAML.parse(workflow)
+  assert.deepEqual(parsed.on.push.branches, ['v3', 'v3*'])
+  assert.deepEqual(parsed.on.pull_request.types, [
+    'opened',
+    'synchronize',
+    'reopened',
+    'ready_for_review',
+    'converted_to_draft',
+    'closed',
+  ])
   assert.match(workflow, /test-playwright-execution:/)
   assert.match(
     workflow,
@@ -72,6 +81,62 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   )
   assert.doesNotMatch(workflow, /group: public-pr-arm64/)
   assert.match(workflow, /test-playwright-status:/)
+})
+
+test('lifecycle policy rejects cancellation outside the exact closed-PR boundary', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/test-playwright.yml'),
+    'utf8'
+  )
+  const mutations = {
+    'wrong close key': (w) => {
+      w.jobs['cancel-closed-pr'].concurrency.group = 'other'
+    },
+    'wrong execution key': (w) => {
+      w.jobs['test-playwright-execution'].concurrency.group = 'other'
+    },
+    'missing cancellation': (w) => {
+      w.jobs['cancel-closed-pr'].concurrency['cancel-in-progress'] = false
+    },
+    'workflow concurrency': (w) => {
+      w.concurrency = 'other'
+    },
+    'reporter concurrency': (w) => {
+      w.jobs['test-playwright-status'].concurrency = 'other'
+    },
+    'missing close job': (w) => {
+      delete w.jobs['cancel-closed-pr']
+    },
+    'missing close guard': (w) => {
+      delete w.jobs['cancel-closed-pr'].if
+    },
+    'execution on close': (w) => {
+      delete w.jobs['test-playwright-execution'].if
+    },
+    'status on close': (w) => {
+      w.jobs['test-playwright-status'].if = 'always()'
+    },
+    'telemetry on close': (w) => {
+      w.jobs['playwright-queue-telemetry'].if = 'always()'
+    },
+    'elevated token': (w) => {
+      w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
+    },
+    'candidate checkout': (w) => {
+      w.jobs['cancel-closed-pr'].steps = [{ uses: 'actions/checkout@v4' }]
+    },
+    'self-hosted runner': (w) => {
+      w.jobs['cancel-closed-pr']['runs-on'] = ['self-hosted']
+    },
+    'waits for obsolete execution': (w) => {
+      w.jobs['cancel-closed-pr'].needs = 'test-playwright-execution'
+    },
+  }
+  for (const [name, mutate] of Object.entries(mutations)) {
+    const workflow = YAML.parse(source)
+    mutate(workflow)
+    assert.notDeepEqual(validateCallerLifecycle(workflow), [], name)
+  }
 })
 
 test('missing policy files produce actionable validator issues', (t) => {
@@ -87,5 +152,65 @@ test('missing policy files produce actionable validator issues', (t) => {
     result.issues.some((issue) =>
       issue.includes('.github/workflows/test-playwright.yml')
     )
+  )
+})
+
+test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      'utf8'
+    )
+  )
+  const fetchStep = workflow.jobs.prepare.steps.find((step) =>
+    step.run?.includes('git -C .candidate fetch')
+  )
+  const fetchCommand = fetchStep.run
+    .match(/^\s*git -C \.candidate fetch .+$/m)[0]
+    .trim()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'playwright-history-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+  Object.assign(env, {
+    GIT_AUTHOR_NAME: 'Fixture',
+    GIT_COMMITTER_NAME: 'Fixture',
+    GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
+    GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
+  })
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: root,
+      env,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  git('init', '-q', '-b', 'base', 'source')
+  git('-C', 'source', 'commit', '-q', '--allow-empty', '-m', 'root')
+  const ancestor = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'branch', 'candidate')
+  git('-C', 'source', 'commit', '-q', '--allow-empty', '-m', 'base-advance')
+  env.BASE_SHA = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'checkout', '-q', 'candidate')
+  git(
+    '-C',
+    'source',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    'candidate-advance'
+  )
+  git('clone', '-q', `file://${root}/source`, '.candidate')
+  git('-C', '.candidate', 'remote', 'add', 'base', `file://${root}/source`)
+  execFileSync('bash', ['-euc', fetchCommand], {
+    cwd: root,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  assert.equal(
+    git('-C', '.candidate', 'merge-base', env.BASE_SHA, 'HEAD'),
+    ancestor
   )
 })

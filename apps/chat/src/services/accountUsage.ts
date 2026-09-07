@@ -105,7 +105,7 @@ export async function isChatAccountUsageAvailable({
   const [owner, usage] = await Promise.all([
     prisma.user.findUnique({
       where: { id: ownerId },
-      select: { aiChatbotPublishingEnabled: true },
+      select: { aiFeaturesEnabled: true },
     }),
     getEffectiveChatAccountUsage(prisma, {
       ownerId,
@@ -115,7 +115,7 @@ export async function isChatAccountUsageAvailable({
   ])
 
   return Boolean(
-    owner?.aiChatbotPublishingEnabled &&
+    owner?.aiFeaturesEnabled &&
       usage?.budgetCredits.greaterThan(0) &&
       usage.usedCredits.lessThan(usage.budgetCredits)
   )

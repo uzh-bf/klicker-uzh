@@ -39,6 +39,10 @@ export interface Context extends BaseContext {
   tasks: PreparedHatchetTasks
   // request-local evaluations on a process-level, multi-user client
   featureFlags?: FeatureFlagEvaluator
+  betaPreference?: {
+    userId: string
+    value: Promise<boolean | null>
+  }
 }
 
 export interface ContextWithUser extends Context {
