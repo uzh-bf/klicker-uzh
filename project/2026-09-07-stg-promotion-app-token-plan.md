@@ -103,8 +103,11 @@ authentication in process-local environment configuration, never command argumen
 ## Progress
 
 Planning approved by the native planner and external advisor; user source scope
-approved. Implementation is next. No implementation commit or PR yet.
-The baseline promoter suite passes all 20 tests in Node 24.16.0 with Git.
+approved. The implementation is written and its 23 tests pass in Node 24.16.0
+with Git. Three behavior tests were added and the existing workflow contract
+was extended. The credential fallback regression failed before the fix and
+passed afterward. Scoped Biome and Prettier formatting and diff checks pass.
+Independent committed-range reviews and draft publication remain pending.
 The disposable verification image is `klicker-stg-promoter-verify:local`; test
 containers use `--rm`, and no application runtime was started.
 
@@ -115,5 +118,5 @@ Its verified canonical checksum covers candidate
 16 images, dry-run mode, and `update_result.result=not-attempted`.
 Receipt files remain in `project/_local/stg-preflight-34130485520/`.
 
-Next: implement and verify the approved slice, then complete committed-range
-reviews and draft PR publication.
+Next: commit the verified slice, complete its independent reviews, then publish
+the draft PR. App configuration and live write proof remain separate gates.

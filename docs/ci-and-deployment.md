@@ -184,9 +184,32 @@ Operational notes.
   staging ArgoCD Application to track that ref and pass
   `global.imageTag=$ARGOCD_APP_REVISION` as a forced string. Preview, apply,
   runtime health, and acceptance remain separate evidence and approvals.
-- The controller uses the repository `GITHUB_TOKEN`; no promotion PAT,
-  pull-request permission, source-branch bypass actor, auto-merge setting, or
-  squash-title behavior is part of the new path.
+- The controller uses read-only `GITHUB_TOKEN` access for Actions and repository
+  metadata. A permitted write mints a short-lived GitHub App installation token
+  scoped to this repository with **Contents: write** and **Workflows: write**.
+  The latter is required when the promoted Git tree changes workflow files;
+  it cannot be added to `GITHUB_TOKEN` through workflow YAML. Configure the
+  App ID in `STG_PROMOTION_APP_ID` and its private key in
+  `STG_PROMOTION_APP_PRIVATE_KEY` through the approved secret-management path.
+  Dry runs and disabled automatic promotion do not require or mint this token.
+
+The App token is used only for the validated release-ref Git operation, with no
+fallback to `GITHUB_TOKEN`. Git authentication stays in process-local environment
+configuration, not command arguments or stored Git configuration. Git failures
+report fixed diagnostic guidance rather than raw subprocess errors, which may
+contain credentials. The token action revokes its token after the job; runner
+loss can prevent cleanup, so account for the installation token's one-hour
+lifetime. See [GitHub App tokens in workflows](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow).
+
+App installation and these repository-wide permissions require separate
+approval: the token itself is not restricted to `stg-release`. Before applying
+the first promotion, inspect applicable branch rules and all workflows that
+can run on an App-authored `stg-release` push. App pushes are not suppressed like
+`GITHUB_TOKEN` pushes; they may run candidate workflows and incur CI costs.
+The source-publisher branch filters and selected-source guard must continue to
+prevent promotion loops. Do not add bypass permissions or alter candidate
+commits to evade required checks. No promotion PAT, pull-request permission,
+auto-merge setting, or squash-title behavior is part of this path.
 
 The superseded annotation-write-back rationale remains in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).

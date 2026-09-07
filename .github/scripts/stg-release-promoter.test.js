@@ -25,6 +25,7 @@ const {
   getSourceBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  resolveInputs,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,
@@ -1047,6 +1048,104 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
   )
 })
 
+test('requires explicit write credentials and keeps raw tokens out of Git inheritance', (t) => {
+  for (const name of ['GITHUB_TOKEN', 'STG_PROMOTION_TOKEN']) {
+    const previous = process.env[name]
+    t.after(() => {
+      if (previous === undefined) delete process.env[name]
+      else process.env[name] = previous
+    })
+    process.env[name] = 'synthetic-environment-token'
+  }
+  const calls = []
+  const input = {
+    context: reviewContext(),
+    expectedSha: null,
+    candidateSha: CANDIDATE_SHA,
+    gitRunner: (args, options) => calls.push({ args, options }),
+  }
+  assert.throws(() => pushReleaseRefWithLease(input), /App token/)
+  assert.equal(calls.length, 0)
+  pushReleaseRefWithLease({ ...input, gitToken: 'synthetic-app-token' })
+  for (const { args, options } of calls) {
+    assert.equal(options.env.GITHUB_TOKEN, undefined)
+    assert.equal(options.env.STG_PROMOTION_TOKEN, undefined)
+    assert.doesNotMatch(JSON.stringify(args), /synthetic-/)
+    assert.equal(
+      options.env.GIT_CONFIG_VALUE_0,
+      `AUTHORIZATION: basic ${Buffer.from('x-access-token:synthetic-app-token').toString('base64')}`
+    )
+  }
+})
+
+test('sanitizes credential-bearing fetch and push failures', async () => {
+  for (const operation of ['fetch', 'push']) {
+    const refs = refGithub()
+    const sensitive = 'synthetic-private-token'
+    const original = Object.assign(new Error(sensitive), {
+      stderr: `refusing to allow a GitHub App without workflows permission ${sensitive}`,
+      cause: new Error(sensitive),
+      env: { STG_PROMOTION_TOKEN: sensitive },
+    })
+    await assert.rejects(
+      compareAndSwapReleaseRef({
+        github: refs.github,
+        context: reviewContext(),
+        expectedSha: null,
+        candidateSha: CANDIDATE_SHA,
+        gitToken: sensitive,
+        gitRunner: (args) => {
+          if (args[0] === operation) throw original
+        },
+      }),
+      (error) => {
+        assert.equal(error.cause, undefined)
+        assert.match(error.message, /App installation.*Contents.*Workflows/)
+        assert.doesNotMatch(
+          require('node:util').inspect(error),
+          /synthetic-private-token/
+        )
+        return true
+      }
+    )
+  }
+})
+
+test('resolves write authorization before requesting an App token', async () => {
+  const cases = [
+    [reviewContext(), 'true', false],
+    [reviewContext('workflow_dispatch', { dry_run: 'true' }), 'true', false],
+    [
+      reviewContext('workflow_dispatch', {
+        dry_run: 'false',
+        confirm_ref_update: MANUAL_CONFIRMATION,
+      }),
+      'false',
+      true,
+    ],
+    [reviewContext('workflow_run'), 'false', false],
+    [reviewContext('workflow_run'), 'true', true],
+  ]
+  const wrongSource = reviewContext('workflow_run')
+  wrongSource.payload.workflow_run.head_branch = 'other'
+  cases.push([wrongSource, 'true', false])
+  for (const [context, promotionEnabled, expected] of cases) {
+    const result = await resolveInputs({
+      context,
+      promotionEnabled,
+      sourceBranch: 'v3',
+    })
+    assert.equal(result.allowWrite === true, expected)
+  }
+  await assert.rejects(
+    resolveInputs({
+      context: reviewContext('workflow_dispatch', { dry_run: 'false' }),
+      sourceBranch: 'v3',
+    }),
+    /confirm_ref_update/
+  )
+})
+
 test('recovers from a transient post-push ref readback failure', async () => {
   const refs = refGithub(null, {
     postPushReadbacks: [transientReadbackFailure(), CANDIDATE_SHA],
@@ -1522,8 +1621,33 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
     ...workflow
       .match(/\npermissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/)[1]
       .matchAll(/^  ([a-z-]+): (read|write)$/gm),
-  ].map((match) => match[1])
-  assert.deepEqual([...new Set(permissions)].sort(), ['actions', 'contents'])
+  ].map((match) => [match[1], match[2]])
+  assert.deepEqual(permissions, [
+    ['actions', 'read'],
+    ['contents', 'read'],
+  ])
+  const tokenStep = workflow
+    .split('      - name: Mint the release-ref token')[1]
+    .split('      - name:')[0]
+  assert.match(tokenStep, /if: steps\.policy\.outputs\.allow_write == 'true'/)
+  assert.match(tokenStep, /actions\/create-github-app-token@[a-f0-9]{40}/)
+  assert.match(
+    tokenStep,
+    /repositories: \$\{\{ github\.event\.repository\.name \}\}/
+  )
+  assert.match(tokenStep, /permission-contents: write/)
+  assert.match(tokenStep, /permission-workflows: write/)
+  assert.doesNotMatch(tokenStep, /skip-token-revoke: true/)
+  assert.match(workflow, /promoter\.resolveInputs\(/)
+  assert.match(
+    workflow,
+    /core\.setOutput\('allow_write', inputs\.allowWrite === true\)/
+  )
+  assert.match(
+    workflow,
+    /STG_PROMOTION_TOKEN: \$\{\{ steps\.promotion_token\.outputs\.token \}\}/
+  )
+  assert.match(workflow, /gitToken: process\.env\.STG_PROMOTION_TOKEN/)
 
   const promoter = fs.readFileSync(
     `${__dirname}/stg-release-promoter.js`,
