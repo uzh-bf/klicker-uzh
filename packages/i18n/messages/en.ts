@@ -3201,6 +3201,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{count, plural, =0 {No tasks need attention} one {# task needs attention} other {# tasks need attention}}',
       markCompletedRead: 'Mark completed read',
       acknowledgeFailed: 'Failed to mark tasks as read.',
+      unavailableTitle: 'Tasks temporarily unavailable',
+      unavailableDescription:
+        "We couldn't load your background tasks. Try again.",
+      retry: 'Retry',
       empty: 'No background tasks yet.',
       inProgress: 'In progress ({count})',
       recent: 'Recent',

@@ -179,6 +179,8 @@ export default function AsyncTaskCenter() {
     tasks,
     activeTasks,
     attentionCount,
+    loading,
+    unavailable,
     acknowledgeTask,
     acknowledgeTerminalTasks,
     refetchTasks,
@@ -190,9 +192,13 @@ export default function AsyncTaskCenter() {
   return (
     <Popover>
       <PopoverTrigger
-        aria-label={t('manage.asyncTasks.triggerLabel', {
-          count: attentionCount,
-        })}
+        aria-label={
+          unavailable
+            ? t('manage.asyncTasks.unavailableTitle')
+            : t('manage.asyncTasks.triggerLabel', {
+                count: attentionCount,
+              })
+        }
         className="relative flex h-10 w-10 items-center justify-center rounded-sm text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80"
         data-cy="async-task-center-trigger"
         onClick={() => void refetchTasks()}
@@ -210,6 +216,7 @@ export default function AsyncTaskCenter() {
       <PopoverContent
         align="end"
         className="z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden border-t-2 border-t-primary-100 p-0"
+        data-cy="async-task-center-content"
         side="bottom"
       >
         <div className="flex items-start justify-between gap-4 border-slate-100 border-b p-4">
@@ -234,7 +241,33 @@ export default function AsyncTaskCenter() {
         </div>
 
         <div aria-live="polite" aria-relevant="additions text">
-          {tasks.length === 0 ? (
+          {unavailable ? (
+            <div
+              className="flex flex-col items-center px-6 py-8 text-center"
+              data-cy="async-task-unavailable"
+            >
+              <FontAwesomeIcon
+                aria-hidden="true"
+                className="mb-3 h-5 w-5 text-red-700"
+                icon={faTriangleExclamation}
+              />
+              <div className="font-semibold text-slate-900 text-sm">
+                {t('manage.asyncTasks.unavailableTitle')}
+              </div>
+              <div className="mt-1 text-slate-500 text-sm">
+                {t('manage.asyncTasks.unavailableDescription')}
+              </div>
+              <button
+                className="mt-4 rounded-sm bg-primary-100 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                data-cy="async-task-retry"
+                disabled={loading}
+                onClick={() => void refetchTasks()}
+                type="button"
+              >
+                {t('manage.asyncTasks.retry')}
+              </button>
+            </div>
+          ) : tasks.length === 0 ? (
             <div
               className="px-4 py-8 text-center text-slate-500 text-sm"
               data-cy="async-task-empty"

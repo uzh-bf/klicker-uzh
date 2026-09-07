@@ -9,6 +9,7 @@
 import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page, type Response } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import deMessages from '../../packages/i18n/messages/de.js'
 import {
   chooseActivityAction,
   chooseCourseAction,
@@ -3304,6 +3305,268 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       messages.manage.asyncTasks.status.queued
     )
     await expect(asyncTaskCenterTrigger(page)).toContainText('2')
+  })
+
+  test('Shows a retryable unavailable state when tasks cannot be loaded', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(60_000)
+
+    const recoveredTask = {
+      id: '44444444-4444-4444-8444-444444444444',
+      name: 'Recovered background task',
+    }
+
+    await loginLecturer()
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const tasksHash = persistedOperations.GetAsyncTasks
+
+    await page.addInitScript(
+      ({ tasksHash, task }) => {
+        const originalFetch = window.fetch.bind(window)
+        ;(
+          window as typeof window & {
+            __asyncTaskQueryCanRecover?: boolean
+          }
+        ).__asyncTaskQueryCanRecover = false
+
+        window.fetch = async (input, init) => {
+          let isTaskQuery = false
+
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(String(input), window.location.origin)
+              const extensions = url.searchParams.get('extensions') || ''
+              isTaskQuery =
+                url.searchParams.get('operationName') === 'GetAsyncTasks' ||
+                extensions.includes(tasksHash)
+            } catch {
+              // malformed request; use the request body below
+            }
+          }
+
+          if (!isTaskQuery && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body) as {
+                operationName?: string
+              }
+              isTaskQuery = body.operationName === 'GetAsyncTasks'
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isTaskQuery) return originalFetch(input, init)
+
+          const canRecover = (
+            window as typeof window & {
+              __asyncTaskQueryCanRecover?: boolean
+            }
+          ).__asyncTaskQueryCanRecover
+          if (!canRecover) {
+            return new window.Response(
+              JSON.stringify({
+                errors: [{ message: 'Synthetic task query failure' }],
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+
+          return new window.Response(
+            JSON.stringify({
+              data: {
+                asyncTaskAttentionCount: 1,
+                asyncTasks: [
+                  {
+                    id: task.id,
+                    kind: 'COURSE_DUPLICATION',
+                    status: 'QUEUED',
+                    subjectId: 'source-recovered',
+                    subjectName: 'Synthetic source course',
+                    targetName: task.name,
+                    resultId: null,
+                    errorCode: null,
+                    startedAt: null,
+                    finishedAt: null,
+                    readAt: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                ],
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      { tasksHash, task: recoveredTask }
+    )
+
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.goto(`${manageUrl}/?task-query-retry=1`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const trigger = asyncTaskCenterTrigger(page)
+    await expect(trigger).toHaveAttribute(
+      'aria-label',
+      'Tasks temporarily unavailable'
+    )
+    await trigger.focus()
+    await trigger.press('Enter')
+    await expect(page.getByTestId('async-task-unavailable')).toContainText(
+      'Tasks temporarily unavailable'
+    )
+    await expect(page.getByTestId('async-task-empty')).toHaveCount(0)
+
+    await page.evaluate(() => {
+      ;(
+        window as typeof window & {
+          __asyncTaskQueryCanRecover?: boolean
+        }
+      ).__asyncTaskQueryCanRecover = true
+    })
+    const retryButton = page.getByTestId('async-task-retry')
+    await retryButton.focus()
+    await retryButton.press('Enter')
+
+    await expect(
+      page.getByTestId(`async-task-${recoveredTask.id}`)
+    ).toContainText(recoveredTask.name)
+    await expect(trigger).toHaveAttribute(
+      'aria-label',
+      '1 task needs attention'
+    )
+  })
+
+  test('Supports the German task center at phone width with a keyboard', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(60_000)
+
+    const mobileTask = {
+      id: '33333333-3333-4333-8333-333333333333',
+      name: 'Mobile Kurskopie',
+    }
+
+    await loginLecturer()
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const tasksHash = persistedOperations.GetAsyncTasks
+
+    await page.addInitScript(
+      ({ tasksHash, task }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isTaskQuery = false
+
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(String(input), window.location.origin)
+              isTaskQuery =
+                url.searchParams.get('operationName') === 'GetAsyncTasks' ||
+                (url.searchParams.get('extensions') || '').includes(tasksHash)
+            } catch {
+              // malformed request; use the request body below
+            }
+          }
+
+          if (!isTaskQuery && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body) as {
+                operationName?: string
+              }
+              isTaskQuery = body.operationName === 'GetAsyncTasks'
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isTaskQuery) return originalFetch(input, init)
+
+          return new window.Response(
+            JSON.stringify({
+              data: {
+                asyncTaskAttentionCount: 1,
+                asyncTasks: [
+                  {
+                    id: task.id,
+                    kind: 'COURSE_DUPLICATION',
+                    status: 'QUEUED',
+                    subjectId: 'source-mobile',
+                    subjectName: 'Synthetischer Ausgangskurs',
+                    targetName: task.name,
+                    resultId: null,
+                    errorCode: null,
+                    startedAt: null,
+                    finishedAt: null,
+                    readAt: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                ],
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      { tasksHash, task: mobileTask }
+    )
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.goto(`${manageUrl}/de/?task-center-mobile=1`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const trigger = asyncTaskCenterTrigger(page)
+    await trigger.focus()
+    await trigger.press('Enter')
+
+    const taskCenter = page.getByTestId('async-task-center-content')
+    await expect(taskCenter).toBeVisible()
+    await expect(taskCenter).toContainText(deMessages.manage.asyncTasks.title)
+    await expect(taskCenter).toContainText(
+      deMessages.manage.asyncTasks.description
+    )
+    await expect(taskCenter).toContainText(
+      deMessages.manage.asyncTasks.status.queued
+    )
+    await expect(taskCenter).toContainText(mobileTask.name)
+    const taskCenterBox = await taskCenter.boundingBox()
+    expect(taskCenterBox).not.toBeNull()
+    expect(taskCenterBox!.x).toBeGreaterThanOrEqual(0)
+    expect(taskCenterBox!.x + taskCenterBox!.width).toBeLessThanOrEqual(390)
+
+    await page.keyboard.press('Escape')
+    await expect(taskCenter).toBeHidden()
+    await expect(trigger).toBeFocused()
   })
 
   test('Keeps an opened task acknowledged when the task refetch fails', async ({

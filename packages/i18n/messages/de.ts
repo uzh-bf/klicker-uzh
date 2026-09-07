@@ -3252,6 +3252,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       markCompletedRead: 'Erledigte als gelesen markieren',
       acknowledgeFailed:
         'Die Aufgaben konnten nicht als gelesen markiert werden.',
+      unavailableTitle: 'Aufgaben vorübergehend nicht verfügbar',
+      unavailableDescription:
+        'Deine Hintergrundaufgaben konnten nicht geladen werden. Versuche es erneut.',
+      retry: 'Erneut versuchen',
       empty: 'Noch keine Hintergrundaufgaben.',
       inProgress: 'In Bearbeitung ({count})',
       recent: 'Kürzlich',

@@ -62,6 +62,7 @@ interface AsyncTaskContextValue {
   activeTasks: AsyncTaskData[]
   attentionCount: number
   loading: boolean
+  unavailable: boolean
   acknowledgeTask: (id: string) => Promise<void>
   acknowledgeTerminalTasks: () => Promise<void>
   refetchTasks: () => Promise<void>
@@ -219,6 +220,7 @@ export function AsyncTaskProvider({
   const trackedCourseDuplicationIdsRef = useRef(new Set<string>())
   const [trackedCourseDuplicationIds, setTrackedCourseDuplicationIds] =
     useState<string[]>([])
+  const [taskQueryUnavailable, setTaskQueryUnavailable] = useState(false)
   const requestedTrackedIds = useMemo(
     () => trackedCourseDuplicationIds.slice(0, ASYNC_TASK_TRACKED_IDS_LIMIT),
     [trackedCourseDuplicationIds]
@@ -254,7 +256,9 @@ export function AsyncTaskProvider({
     activeTasks.length + unreadTerminalTasks.length
   const hasActiveTasks = activeTasks.length > 0
   const hasTasksToPoll =
-    hasActiveTasks || trackedCourseDuplicationIds.length > 0
+    hasActiveTasks ||
+    trackedCourseDuplicationIds.length > 0 ||
+    taskQueryUnavailable
 
   const refetchTasks = useCallback(async () => {
     if (!userId) return
@@ -265,6 +269,14 @@ export function AsyncTaskProvider({
       console.error('Failed to refresh asynchronous tasks', error)
     }
   }, [refetch, userId])
+
+  useEffect(() => {
+    if (data) {
+      setTaskQueryUnavailable(false)
+    } else if (taskQueryError) {
+      setTaskQueryUnavailable(true)
+    }
+  }, [data, taskQueryError])
 
   useEffect(() => {
     previousStatusesRef.current.clear()
@@ -577,6 +589,7 @@ export function AsyncTaskProvider({
       activeTasks,
       attentionCount,
       loading,
+      unavailable: taskQueryUnavailable,
       acknowledgeTask,
       acknowledgeTerminalTasks,
       refetchTasks,
@@ -592,6 +605,7 @@ export function AsyncTaskProvider({
       loading,
       refetchTasks,
       startCourseDuplication,
+      taskQueryUnavailable,
       tasks,
     ]
   )
