@@ -76,4 +76,11 @@ review, missing verification capability or drift requiring integration.
 Planner round 1 returned REVISE; round 2 APPROVED after the refusal, test
 execution, real smoke and postmerge gates were made explicit. Main accepted
 all findings. Baseline 27f2474547df045cc11302c7d9e195798ec66870 matches v3.
-Implementation is starting. The beta worktree remains untouched.
+The provisioner, trusted action wiring, documentation and 19 behavioral tests
+are implemented. The beta worktree remains untouched. Tests pass in the pinned
+Playwright image. In an isolated PostgreSQL 15 tmpfs service with no host ports,
+provisioning created the restricted role and marked database; all five prohibited
+role flags were false. Prisma reset completed 184 migrations and preserved the
+marker. The existing test seed passed under the restricted login using Node
+24.16.0 and pnpm 11.5.0. The 60 Playwright CI contract tests also passed.
+Independent implementation reviews and publication remain pending.
