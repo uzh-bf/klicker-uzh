@@ -1,5 +1,7 @@
 # Harden staging promotion error handling
 
+Draft PR: [staging token error hardening](https://github.com/uzh-bf/klicker-uzh/pull/5824).
+
 ## Approval summary
 
 Retain the existing STG_PROMOTE_TOKEN credential design merged in
@@ -65,14 +67,20 @@ block the independent source-hardening package.
 
 ## Progress
 
-The one approved target integration is in progress. Conflicts are resolved by
-retaining the merged workflow and documentation, with error sanitization and
-token-alias cleanup carried over. No external write or deployment was attempted.
+The approved target integration is committed at
+3df71afee02505f06552c94b4ef73631ca6ad87a. All 22 promoter tests pass in
+network-disabled Node 24.16 with Git. Biome, diff checks and staged/history
+Gitleaks scans pass. Test delta against the target: one added, one extended.
 
-Earlier tests passed before reconciliation; the integrated suite must be rerun.
-Next: verify, commit the merge, finish independent integrated review, and publish
-the draft PR. The existing-token permissions check is blocked on approved access;
-no permission claim will be made from secret existence.
+Independent integrated final review passes with no findings. Its report is
+project/_local/reviews/2026-09-07-stg-token-integrated-final.md. The task branch
+and draft PR are published. Required hosted CI and human review remain before
+merge. Source delivery is complete; this final metadata update does not alter
+the tested implementation. No release-ref write or deployment was attempted.
+
+Token permissions remain unverified because approved operator access excludes
+the credential. Next operational step requires approved credential access and
+a separately authorized promotion. Do not infer permissions from secret presence.
 
 Slice review: done — project/_local/reviews/2026-09-07-stg-app-slice-review.md
 for the retained error-sanitization behavior. The final reviewer owns verification
