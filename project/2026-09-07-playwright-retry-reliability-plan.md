@@ -88,3 +88,20 @@ after requiring a precise argument boundary and mandatory command-wiring proof.
 Native agents are now available again; OpenCodex readiness reports ready.
 Current work is the isolated launcher extension. Browser qualification and
 independent implementation reviews remain outstanding; there is no PR yet.
+
+Launcher source and guidance are committed at `b359fae8dd`. All 17 launcher
+tests, syntax checks, scoped Prettier and staged Gitleaks pass. Source-only
+checks replaced broad application hooks; no full build or browser pass is
+claimed. The executor repeatedly revisited design without an edit after a
+narrowing message, so it was closed and main completed the same approved scope.
+There was no replacement executor or runtime operation.
+
+Slice simplification is complete: no justified reduction in the four changed
+paths. Report: `_local/reviews/2026-09-07-runtime-profile-simplifier.md`.
+Lifecycle-risk review is running as
+Planck (`01a07c1d-6e4c-7972-ad81-45ae273376f5`). Both cover the complete
+committed launcher slice, not final package readiness. Installed Devrouter
+remains 0.0.55. Its owner reports synthetic recovery and eLearning warm-resume
+proof but no new release, and neither the Klicker preparation-child failure
+nor the cockpit ENOENT is qualified. The next delivery gate is complete
+Klicker browser verification after that owned runtime blocker is resolved.
