@@ -430,19 +430,23 @@ export async function acquireCohortActivationReentrySessionLock(
   predecessorPath: string,
   successorPath: string
 ): Promise<CohortActivationSessionLock> {
-  const paths = [predecessorPath, successorPath].sort()
+  const paths = [predecessorPath, successorPath].sort((left, right) =>
+    left < right ? -1 : left > right ? 1 : 0
+  )
   const locks: CohortActivationSessionLock[] = []
   try {
     for (const path of paths) {
       locks.push(await acquireCohortActivationSessionLock(path))
     }
   } catch (error) {
-    for (const lock of locks.reverse()) await lock.release()
+    locks.reverse()
+    for (const lock of locks) await lock.release()
     throw error
   }
   return {
     release: async () => {
-      for (const lock of locks.reverse()) await lock.release()
+      locks.reverse()
+      for (const lock of locks) await lock.release()
     },
   }
 }

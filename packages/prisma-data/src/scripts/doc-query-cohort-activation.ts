@@ -328,6 +328,12 @@ function compareStrings(left: string, right: string): number {
   return left.localeCompare(right)
 }
 
+function trimTrailingSlashes(pathname: string): string {
+  let end = pathname.length
+  while (end > 0 && pathname[end - 1] === '/') end -= 1
+  return pathname.slice(0, end)
+}
+
 function cloneJson(value: JsonValue): JsonValue {
   if (value === null || typeof value !== 'object') return value
   return structuredClone(value)
@@ -422,10 +428,11 @@ function canonicalSourcePin<
   if (value.rollbackMode !== rollbackMode) {
     fail(invalidCode, 'source exception rollback mode is malformed')
   }
+  configIds.sort(compareStrings)
   return {
     sourceServerId,
     chatbotId,
-    configIds: configIds.sort(compareStrings),
+    configIds,
     snapshotDigest: value.snapshotDigest.toLowerCase(),
     rollbackMode: rollbackMode,
   }
@@ -1196,7 +1203,7 @@ function assertInactiveSourceSnapshot(
   if (
     server.name === target.serverName ||
     server.description?.trim() === DOC_QUERY_TARGET_DESCRIPTION ||
-    new URL(server.url).pathname.replace(/\/+$/, '') === target.routePath
+    trimTrailingSlashes(new URL(server.url).pathname) === target.routePath
   ) {
     fail('SOURCE_IS_TARGET', 'inactive source is a managed or shared target')
   }

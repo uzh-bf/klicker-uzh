@@ -659,3 +659,11 @@ passed again with this correction; the 116 activation tests are unaffected.
 Five executable/test files remain byte-identical to the prior reviewed source;
 the sixth differs only by this behavior-preserving correction. Prior independent
 reviews remain applicable with this explicitly recorded main-session check.
+
+PR quality-gate follow-up preserves UTF-16 lock-path ordering with an explicit
+comparator, separates the existing in-place reverse/sort operations, and replaces
+trailing-slash regex trimming with an equivalent linear scan. All 116 activation
+tests passed again with canonical TMPDIR; Biome passed with the same two existing
+warnings. No receipt, activation or production proof was executed. The remaining
+Playwright CI job is unassigned to its public-pr-arm64 runner group; organization
+runner inspection requires permissions not available to this CLI session.
