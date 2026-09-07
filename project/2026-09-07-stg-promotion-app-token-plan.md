@@ -1,141 +1,79 @@
-# Repair staging promotion credentials
+# Harden staging promotion error handling
 
 ## Approval summary
 
-The staging promoter cannot publish a release ref containing workflow changes
-with the default GitHub Actions token. Use a short-lived GitHub App installation
-token scoped to this repository with Contents write and Workflows write for the
-validated Git push. Keep metadata access on a read-only default token.
+Retain the existing STG_PROMOTE_TOKEN credential design merged in
+[the staging write-token repair](https://github.com/uzh-bf/klicker-uzh/pull/5823).
+The user approved retaining that design, carrying over credential-safe Git error
+handling, and checking existing token permissions without a release-ref write.
+The proposed GitHub App migration is deferred; its earlier implementation remains
+in branch history only.
 
-The user approved source implementation, testing, independent reviews, ordinary
-task-branch publication, and a draft PR targeting `v3`. App installation,
-permission grants, secret configuration, release-ref writes, merging, and
-deployment are not authorized. These permissions are repository-wide, not
-branch-scoped. App-authored pushes can trigger workflows, unlike default-token
-pushes; activation requires a separate trigger audit and approval.
+Strip the GitHub action's inherited token alias from Git subprocess environments.
+Replace raw credential-bearing Git error causes with fixed diagnostic guidance.
+Preserve the merged read/write token separation, dry-run defaults, confirmation,
+promotion switch, provenance, ancestry, exact leases, and readback.
 
-Preserve dry-run defaults, manual confirmation, the automatic promotion switch,
-trusted-controller execution, image provenance, ancestry checks, exact remote
-leases, and post-push readback. Completion means focused checks pass and the
-complete committed source package receives independent review before draft PR
-publication. Live App write capability remains unverified until separately
-approved setup and activation.
+Authority: one integration of v3 at
+2b8e6716fc83c2067c5a69480c2871c45445313f into this task branch, scoped edits,
+checks, local commits, independent review, ordinary task push, and draft PR.
+Merging into v3, credential grants or changes, release-ref writes, deployment,
+and App setup remain excluded. Terminal: reviewed source draft PR.
+Boundary owner: self. Pause: unavailable required review or unsafe verification.
 
 ## Execution details
 
-### Working context and authority
-
-- Branch: `rs/stg-promotion-app-token`, the credential repair task branch.
-- Base and upstream: `v3` at `65ae8a3523f6230290b0b99f8a8e263b61e562a6`.
-- Artifacts root: `project/`; private local verification stays in ignored `_local/`.
-- Authority: source-only implementation and routine draft PR delivery.
-- Terminal: reviewed draft PR; boundary owner: self.
-- Pause: unavailable required review or verification, changed security scope,
-  or a need for one of the withheld external actions.
-
-### Credential and error contracts
-
-Reuse one input resolver before token minting and during promotion. Mint only
-when its explicit boolean output permits writing. Default manual dry runs,
-invalid confirmation, disabled automatic promotion, and wrong-source events
-must not mint a token. Existing candidate validation still precedes any ref write.
-
-Use the official `actions/create-github-app-token` action pinned to
-`fee1f7d63c2ff003460e3d139729b119787bc349`, whose inspected inputs support explicit
-repository scoping, `permission-contents`, `permission-workflows`, and automatic
-post-job revocation. Proposed configuration is `STG_PROMOTION_APP_ID` as a
-repository variable and `STG_PROMOTION_APP_PRIVATE_KEY` as a secret. This package
-does not configure either value.
-
-Pass the resulting token through a distinct `STG_PROMOTION_TOKEN` variable only
-to the Git write path. Remove the implicit `process.env.GITHUB_TOKEN` fallback.
-Strip both raw token variables from the subprocess environment. Keep credentials
-out of argv, files, logs, receipts, and error causes. Fetch and push failures
-must return sanitized, actionable errors. Preserve credential-free local Git
-fixtures and the existing expected-old lease behavior.
-
 ### Scope and delegation
 
-One coherent implementation slice belongs to `main` because the change is
-security-sensitive and tightly coupled. Acceptance is the extended existing
-promoter suite, scoped formatting and diff checks, independent reviews, and
-draft PR delivery. No product primitives, dependencies, schema, or runtime
-application behavior change.
+Branch: rs/stg-promotion-app-token. Target: v3. Artifacts root: project/.
+One integration slice stays with main because of security-sensitive coupling.
+Acceptance: existing promoter tests in network-isolated Node 24 with Git,
+formatting, exact diff inspection, staged secret scan, and integrated final review.
 
-Included source paths are `.github/workflows/deploy-stg-promote.yml`,
-`.github/scripts/stg-release-promoter.js`, and its existing `.test.js` suite.
-Update `docs/ci-and-deployment.md` and the supersession section of
-`docs/adr/0003-promote-stg-via-release-annotation-write-back.md` for the revised
-credential contract. Extend the existing decision rather than creating a
-second deployment architecture. No new contract-test file is needed.
+Only .github/scripts/stg-release-promoter.js and its existing test suite need
+behavioral changes. Keep upstream workflow and deployment documentation unchanged.
+No dependency, schema, product primitive, or new architecture decision is added.
+No new ADR is required; changing the credential architecture would reopen it.
 
-### Verification and delivery
+### Test obligations and review reuse
 
-Extend existing tests for input-policy-before-mint behavior, exact workflow
-permission values and token wiring, absent App credentials despite a present
-default token, and sanitized fetch/push failures. Use synthetic token markers
-in message, stderr, nested causes, and attached environment. Reuse existing
-ancestry, image evidence, lease, readback, dry-run, and receipt tests.
+Extend the existing credential-separation test to cover INPUT_GITHUB-TOKEN.
+Retain the reviewed synthetic fetch/push failure test, asserting no nested cause
+or sensitive marker in the exposed error. Do not pin human diagnostic wording.
+Reuse existing lease, readback, receipt, provenance, and dry-run coverage.
 
-Run tests with Node 24 and Git in a disposable container without network access;
-do not start the application stack. After focused verification and data hygiene,
-commit implementation, dispatch independent simplifier and security slice review,
-resolve findings, then review the complete committed range with final-reviewer.
-Publish an ordinary task-branch push and draft PR targeting `v3` only after
-required gates pass. Do not integrate another source branch or move a release ref.
+The original planner and slice reviewer covered the retained error-sanitization
+contract. The original simplifier found no justified reduction. This narrower
+scope restores the upstream credential design rather than introducing another.
+The final reviewer must inspect the integrated range, including its requested
+token-alias cleanup. Prior final review was blocked by the then-unresolved
+upstream overlap and does not establish current readiness.
 
-### Research and review evidence
+Run focused container checks before the merge commit. Application-wide hooks
+are replaced by scoped workflow-script checks for this source-only repair.
+No application runtime is needed. Scan the complete task history before push,
+including superseded App commits, for secrets and personal data.
 
-The official action definition and GitHub Actions documentation confirm the
-supported installation-token inputs and the default token permission limitation.
-The configured native planner approved the revised draft after correcting the
-test-file inventory, committed-range review order, and credential test obligations.
-Child: `01a07c2f-7664-70d1-9993-c0142400c121`.
+### Credential verification boundary
 
-The user approved external disclosure of this design without secrets or runtime
-data. Gemini 3.8 Flash (High) returned APPROVED with cautions. Its CLI requires
-the explicit High model label without a separate effort flag. Retain the
-pre-activation trigger and ruleset audit and document best-effort revocation.
-Reject adding skip-CI commits or automatic ruleset bypass: promotion must retain
-the original candidate commit and existing repository protections. Keep Git
-authentication in process-local environment configuration, never command arguments.
+Only secret-name metadata and approved operator permissions may be inspected.
+The GitHub secret exists, but its presence does not prove scope or usability.
+The klicker-dev operator profile does not allow reading STG_PROMOTE_TOKEN.
+Do not broaden its allowlist or retrieve credentials through another client.
+Token permissions and live write capability remain unverified. This does not
+block the independent source-hardening package.
 
 ## Progress
 
-Planning approved by the native planner and external advisor; user source scope
-approved. The implementation is written and its 23 tests pass in Node 24.16.0
-with Git. Three behavior tests were added and the existing workflow contract
-was extended. The credential fallback regression failed before the fix and
-passed afterward. Scoped Biome and Prettier formatting and diff checks pass.
-The independent simplifier found no justified reductions. The security slice
-review found no blocking findings on the implementation commit. Reports are in
-`project/_local/reviews/`. New tests assert error behavior without pinning
-diagnostic prose.
+The one approved target integration is in progress. Conflicts are resolved by
+retaining the merged workflow and documentation, with error sanitization and
+token-alias cleanup carried over. No external write or deployment was attempted.
 
-Delivery is pending a material target decision. During final review,
-[the existing-token repair](https://github.com/uzh-bf/klicker-uzh/pull/5823)
-merged into `v3` at `2b8e6716fc83c2067c5a69480c2871c45445313f`. It uses the
-existing `STG_PROMOTE_TOKEN`, removes the same fallback, and overlaps every
-implementation/documentation path. Only the secret name's presence is verified;
-its value and permissions were not read. This branch remains at
-`d946162614092c419af9e68d5e3c935fbf6a572a`, three commits ahead and one behind
-the new target. No merge, rebase, push, or draft PR was performed.
+Earlier tests passed before reconciliation; the integrated suite must be rerun.
+Next: verify, commit the merge, finish independent integrated review, and publish
+the draft PR. The existing-token permissions check is blocked on approved access;
+no permission claim will be made from secret existence.
 
-The final reviewer `01a07c47-1c2c-7833-bad9-62b4374e3ed4` was instructed to
-finish with current-target readiness blocked and retain any verified findings
-on the old immutable range. Do not treat that review as current-target approval.
-The disposable verification image is `klicker-stg-promoter-verify:local`; test
-containers use `--rm`, and no application runtime was started.
-
-The correct staging dry run succeeded:
-https://github.com/uzh-bf/klicker-uzh/actions/runs/34130485520.
-Its verified canonical checksum covers candidate
-`654621094c63b977937202269c210edc0af1e8c2`, source `v3-ai`, 15 workflows,
-16 images, dry-run mode, and `update_result.result=not-attempted`.
-Receipt files remain in `project/_local/stg-preflight-34130485520/`.
-
-Slice review: done — `project/_local/reviews/2026-09-07-stg-app-slice-review.md`.
-Next: ask whether to retain the now-merged existing-token route or continue
-replacing it with the scoped App route. Preserve this implementation until that
-decision. Integration of the new target and any credential setup or live write
-proof remain separate gates.
+Slice review: done — project/_local/reviews/2026-09-07-stg-app-slice-review.md
+for the retained error-sanitization behavior. The final reviewer owns verification
+of its token-alias correction and the integrated upstream credential contract.

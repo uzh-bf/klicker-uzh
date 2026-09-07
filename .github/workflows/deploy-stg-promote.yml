@@ -75,53 +75,13 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${TRUSTED_WORKFLOW_SHA}"
 
-      - name: Resolve promotion write policy
-        id: policy
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const promoter = require('./.github/scripts/stg-release-promoter.js')
-            const inputs = await promoter.resolveInputs({
-              context,
-              sourceBranch: process.env.SOURCE_BRANCH,
-              promotionEnabled: process.env.PROMOTION_ENABLED,
-            })
-            core.setOutput('allow_write', inputs.allowWrite === true)
-
-      - name: Check release-ref credential configuration
-        if: steps.policy.outputs.allow_write == 'true'
-        env:
-          APP_ID: ${{ vars.STG_PROMOTION_APP_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.STG_PROMOTION_APP_PRIVATE_KEY }}
-        run: |
-          if [ -z "$APP_ID" ] || [ -z "$APP_PRIVATE_KEY" ]; then
-            echo '::error::Configure STG_PROMOTION_APP_ID and STG_PROMOTION_APP_PRIVATE_KEY for the repository-scoped promotion App before applying a promotion.'
-            exit 1
-          fi
-
-      - name: Mint the release-ref token
-        id: promotion_token
-        if: steps.policy.outputs.allow_write == 'true'
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
-        with:
-          app-id: ${{ vars.STG_PROMOTION_APP_ID }}
-          private-key: ${{ secrets.STG_PROMOTION_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
-          permission-workflows: write
-
       - name: Validate and promote the selected candidate
         id: promote
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.event.inputs.sha }}
           GITHUB_TOKEN: ${{ github.token }}
-          STG_PROMOTION_TOKEN: ${{ steps.promotion_token.outputs.token }}
+          STG_PROMOTE_TOKEN: ${{ ((github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' && github.event.inputs.confirm_ref_update == 'stg-release') || (github.event_name == 'workflow_run' && vars.STG_RELEASE_PROMOTION_ENABLED == 'true')) && secrets.STG_PROMOTE_TOKEN || '' }}
           PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
           SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
           RECEIPT_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.json
@@ -135,7 +95,7 @@ jobs:
               context,
               core,
               github,
-              gitToken: process.env.STG_PROMOTION_TOKEN,
+              gitToken: process.env.STG_PROMOTE_TOKEN,
               promotionEnabled: process.env.PROMOTION_ENABLED,
               sourceBranch: process.env.SOURCE_BRANCH,
               receiptPath: process.env.RECEIPT_PATH,

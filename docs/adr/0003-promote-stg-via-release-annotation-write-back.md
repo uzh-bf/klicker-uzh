@@ -23,23 +23,15 @@ closed.
 
 The controller executes only code checked out at `github.workflow_sha`.
 Candidate Git objects, API metadata, and registry manifests are data; candidate
-actions, scripts, caches, and artifacts are never executed or consumed by the
-controller. It uses `actions: read` and `contents: read` on `GITHUB_TOKEN` for
-metadata. Writes use a separate short-lived GitHub App token scoped to this
-repository with Contents write and Workflows write. The default token cannot
-publish workflow-file changes, so an explicit App credential replaces the
-earlier default-token-only assumption. The input policy gates token minting;
-dry runs and disabled automatic promotion need no App configuration. Automatic writes require
+actions, scripts, caches, and artifacts are never executed or consumed. It uses
+`actions: read` and `contents: read` on `GITHUB_TOKEN` for API and Git fetch
+reads. The lease-protected push uses the existing `STG_PROMOTE_TOKEN`, which
+must permit repository contents and workflow-file writes. There is no
+job-token fallback for writes. Separate credentials can trigger downstream
+workflows, so release-ref event filters must be checked before activation.
+Automatic writes require
 `STG_RELEASE_PROMOTION_ENABLED=true`; manual runs default to dry-run and require
 the exact input `confirm_ref_update=stg-release` before a write.
-
-The App's write permissions are repository-wide, not release-ref scoped. Its
-pushes can trigger workflows, unlike `GITHUB_TOKEN` pushes. Installation, grants,
-branch-rule compatibility, and downstream workflow-trigger review are separate
-activation gates. Preserve candidate commits and existing protection rules;
-neither skip-CI commits nor bypass permissions are implicit in this decision.
-The [deployment guide](../ci-and-deployment.md#staging-promotion) owns setup and
-token-lifecycle guidance. Production and its release-tag flow remain unchanged.
 
 The companion selected-source and platform work makes staging track
 `stg-release` and render all first-party images with its resolved full commit

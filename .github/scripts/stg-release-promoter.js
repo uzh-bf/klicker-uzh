@@ -1138,7 +1138,7 @@ function gitEnvironment(gitToken, repositoryUrl) {
   }
   delete environment.GITHUB_TOKEN
   delete environment['INPUT_GITHUB-TOKEN']
-  delete environment.STG_PROMOTION_TOKEN
+  delete environment.STG_PROMOTE_TOKEN
   if (!gitToken) return environment
 
   const origin = new URL(repositoryUrl).origin
@@ -1173,9 +1173,7 @@ function pushReleaseRefWithLease({
     throw new Error('expected release SHA is invalid')
   }
   if (!gitToken && /^https:/i.test(repositoryUrl)) {
-    throw new Error(
-      'An explicit GitHub App token is required for the ref update'
-    )
+    throw new Error('STG_PROMOTE_TOKEN is unavailable for the ref update')
   }
 
   const options = {
@@ -1191,7 +1189,7 @@ function pushReleaseRefWithLease({
       repositoryUrl,
       candidateSha,
     ],
-    options
+    { ...options, env: gitEnvironment(process.env.GITHUB_TOKEN, repositoryUrl) }
   )
   gitRunner(
     [
@@ -1279,7 +1277,7 @@ async function compareAndSwapReleaseRef({
     // Git errors can retain subprocess credentials in attached fields. Report
     // only fixed guidance, never the raw error or its nested cause.
     throw new Error(
-      'stg-release compare-and-swap failed; verify the App installation, Contents and Workflows write permissions, ref protection, and concurrent ref updates'
+      'stg-release compare-and-swap failed; verify the write token permissions, ref protection, and concurrent ref updates'
     )
   }
 
@@ -1625,7 +1623,6 @@ module.exports = {
   matchesApprovedBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
-  resolveInputs,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,
