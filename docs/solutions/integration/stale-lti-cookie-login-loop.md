@@ -4,7 +4,7 @@ date: 2026-09-07
 problem_type: integration
 severity: medium
 symptoms:
-  - "Course-to-chatbot navigation returns to login despite a participant session"
+  - 'Course-to-chatbot navigation returns to login despite a participant session'
 root_cause: The LTI cookie outlived its JWT and took precedence over the participant session
 tags: [authentication, lti, cookies, pwa]
 ---
