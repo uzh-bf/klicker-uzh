@@ -190,11 +190,13 @@ export function createProofReceiptSources({
   collection,
   passedCounts,
   failedCounts,
+  proofMode,
 }: {
   environment: string
   collection: string
   passedCounts: string
   failedCounts: string
+  proofMode?: string
 }) {
   function passedReceiptSource(
     extra = '',
@@ -207,6 +209,7 @@ export function createProofReceiptSources({
       '  receiptVersion: 1,',
       `  environment: '${environment}',`,
       `  collection: '${collection}',`,
+      ...(proofMode ? [`  mode: '${proofMode}',`] : []),
       "  phase: 'complete',",
       "  result: 'passed',",
       "  failureClass: 'none',",
@@ -230,6 +233,7 @@ export function createProofReceiptSources({
       '  receiptVersion: 1,',
       `  environment: '${environment}',`,
       `  collection: '${collection}',`,
+      ...(proofMode ? [`  mode: '${proofMode}',`] : []),
       "  phase: 'canary',",
       "  result: 'failed',",
       "  failureClass: 'canary_positive_failed',",
@@ -367,6 +371,7 @@ export function defineProofMatrixSuite(
     rejectionWithArguments: () => MockToolResult
     expectedDirectCalls: number
     expectedCounts: Record<string, number>
+    expectedMode?: string
   }
 ) {
   describe(`${label} Doc Query proof matrix`, () => {
@@ -417,6 +422,7 @@ export function defineProofMatrixSuite(
 
       expect(call).toBe(config.expectedDirectCalls)
       expect(receipt.result).toBe('passed')
+      if (config.expectedMode) expect(receipt.mode).toBe(config.expectedMode)
       expect(receipt.counts).toMatchObject(config.expectedCounts)
     })
 
@@ -540,6 +546,7 @@ export function defineProofSupervisorSuite(
     passedReceiptSource: (extra?: string, preservation?: string) => string
     failedReceiptSource: (preservation?: string) => string
     expectProofManifestFingerprint?: boolean
+    expectedProofMode?: string
   }
 ) {
   const suiteRegistry = createTemporaryDirectoryRegistry()
@@ -565,6 +572,12 @@ export function defineProofSupervisorSuite(
       ]
       if (config.expectProofManifestFingerprint) {
         expectedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
+      if (config.expectedProofMode) {
+        expectedEnvironmentNames.push('DOC_QUERY_PROOF_MODE')
+        expect(childEnvironment.DOC_QUERY_PROOF_MODE).toBe(
+          config.expectedProofMode
+        )
       }
       expect(Object.keys(childEnvironment).sort(compareStrings)).toEqual(
         expectedEnvironmentNames.sort(compareStrings)
@@ -722,6 +735,9 @@ export function defineProofSupervisorSuite(
       ]
       if (config.expectProofManifestFingerprint) {
         allowedEnvironmentNames.push('DOC_QUERY_PROOF_MANIFEST_FINGERPRINT')
+      }
+      if (config.expectedProofMode) {
+        allowedEnvironmentNames.push('DOC_QUERY_PROOF_MODE')
       }
       const source = [
         "import { fstatSync, readFileSync } from 'node:fs'",

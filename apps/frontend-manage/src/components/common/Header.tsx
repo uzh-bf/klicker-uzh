@@ -368,6 +368,7 @@ function Header({
         },
       ],
       className: {
+        label: 'hidden lg:block',
         content: 'mr-1',
       },
     },

@@ -205,27 +205,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     page,
     loginLecturer,
   }) => {
-    const growthbookApiHost =
-      process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST ?? 'https://growthbook.test'
-    const growthbookClientKey =
-      process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
-    const growthbookFeaturesUrl = `${growthbookApiHost.replace(
-      /\/$/,
-      ''
-    )}/api/features/${growthbookClientKey}*`
-    await page.unroute(growthbookFeaturesUrl)
-    await page.route(growthbookFeaturesUrl, (route) =>
-      route.fulfill({
-        contentType: 'application/json',
-        body: JSON.stringify({
-          features: {
-            'beta-signup': { defaultValue: false },
-            'learning-analytics': { defaultValue: true },
-          },
-        }),
-      })
-    )
-
+    await mockGrowthBookFeatureFlags(page, { aiBeta: false })
     await loginLecturer()
 
     // Production builds send hashed queries as GET requests without an
@@ -539,7 +519,10 @@ test.describe('Tests the availability of standard activity creation formats', ()
         activityAnalyticsRequests += 1
       }
 
-      if (resolvedOperationName === 'ManageUserProfile') {
+      if (
+        resolvedOperationName === 'ManageUserProfile' ||
+        resolvedOperationName === 'UserProfile'
+      ) {
         profileFailureIntercepted += 1
         await route.fulfill({
           status: 200,
