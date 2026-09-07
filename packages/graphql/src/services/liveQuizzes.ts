@@ -1124,7 +1124,6 @@ export async function activateLiveQuizBlock(
         },
       })
 
-      await initializeLiveQuizBlockCache(updatedQuiz, ctx)
       return { quiz, updatedQuiz }
     },
     { timeout: 30000 }
@@ -1132,6 +1131,32 @@ export async function activateLiveQuizBlock(
   if (!activation) return null
   const { quiz, updatedQuiz } = activation
   if (!updatedQuiz) return quiz
+
+  // Cache writes cannot be rolled back with PostgreSQL. Recheck the committed
+  // activation while holding its parent lock before initializing Redis.
+  const initialized = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockLiveQuiz(prisma, quizId)
+      const current = await prisma.liveQuiz.findUnique({
+        where: { id: quizId },
+        include: { activeBlock: true },
+      })
+      if (
+        current?.activeBlockId !== blockId ||
+        current.status !== updatedQuiz.status ||
+        current.isAssessmentEnabled !== updatedQuiz.isAssessmentEnabled ||
+        current.activeBlock?.status !== DB.ElementBlockStatus.ACTIVE ||
+        current.activeBlock.execution !== updatedQuiz.activeBlock!.execution ||
+        current.activeBlock.startedAt?.getTime() !==
+          updatedQuiz.activeBlock!.startedAt?.getTime()
+      )
+        return false
+      await initializeLiveQuizBlockCache(updatedQuiz, ctx)
+      return true
+    },
+    { timeout: 30000 }
+  )
+  if (!initialized) return updatedQuiz
 
   if (updatedQuiz.activeBlock?.expiresAt) {
     scheduledJobs[blockId] = schedule.scheduleJob(
@@ -1388,21 +1413,6 @@ export async function deactivateLiveQuizBlock(
           updateLeaderboards: true, // always update the leaderboard when a block is closed
         })
         if (!result) return null
-        const block = result.updatedQuiz.blocks.find(
-          (candidate) => candidate.id === blockId
-        )!
-        const timestamps = redis.multi()
-        for (const instance of block.elements) {
-          timestamps.hset(
-            `lq:${quizId}:i:${instance.id}:info`,
-            'blockClosedAt',
-            Number(block.closedAt)
-          )
-        }
-        const timestampResults = await timestamps.exec()
-        if (!timestampResults || timestampResults.some(([error]) => error)) {
-          throw new GraphQLError('Could not record live quiz block closure')
-        }
         return result
       },
       { timeout: 30000 }
@@ -1416,6 +1426,48 @@ export async function deactivateLiveQuizBlock(
     const closedBlock = updatedQuiz.blocks.find(
       (block) => block.id === blockId
     )!
+    // Record only a committed closure. A later activation owns its own cache.
+    const closure = await ctx.prisma.$transaction(
+      async (prisma) => {
+        await lockLiveQuiz(prisma, quizId)
+        const current = await prisma.liveQuiz.findUnique({
+          where: { id: quizId },
+          include: {
+            blocks: { where: { id: blockId }, include: { elements: true } },
+          },
+        })
+        const block = current?.blocks[0]
+        if (
+          !block ||
+          current!.status !== updatedQuiz.status ||
+          current!.isAssessmentEnabled !== isAssessmentEnabled ||
+          block.status !== DB.ElementBlockStatus.EXECUTED ||
+          block.execution !== closedBlock.execution ||
+          block.startedAt?.getTime() !== closedBlock.startedAt?.getTime() ||
+          block.closedAt?.getTime() !== closedBlock.closedAt?.getTime()
+        )
+          return null
+        const redis = isAssessmentEnabled
+          ? ctx.redisAssessmentExec
+          : ctx.redisExec
+        await verifyBlockCache(redis, block)
+        const timestamps = redis.multi()
+        for (const instance of block.elements) {
+          timestamps.hset(
+            `lq:${quizId}:i:${instance.id}:info`,
+            'blockClosedAt',
+            Number(block.closedAt)
+          )
+        }
+        const results = await timestamps.exec()
+        if (!results || results.some(([error]) => error)) {
+          throw new GraphQLError('Could not record live quiz block closure')
+        }
+        return { publish: current!.activeBlockId === null }
+      },
+      { timeout: 30000 }
+    )
+    if (!closure) return false
     aggregationInput = {
       liveQuizId: quizId,
       blockId,
@@ -1424,19 +1476,20 @@ export async function deactivateLiveQuizBlock(
     }
 
     // update the running live quiz with the updated block information
-    ctx.pubSub.publish('runningLiveQuizUpdated', {
-      id: updatedQuiz.id,
-      beforeFirstBlock: false,
-      activeBlock: null,
-      // for future blocks, do not return the elements
-      blocks: updatedQuiz.blocks.map((block) => ({
-        ...block,
-        elements:
-          block.status === DB.ElementBlockStatus.EXECUTED
-            ? removeSolutionFromInstances({ instances: block.elements })
-            : [],
-      })),
-    })
+    if (closure.publish)
+      ctx.pubSub.publish('runningLiveQuizUpdated', {
+        id: updatedQuiz.id,
+        beforeFirstBlock: false,
+        activeBlock: null,
+        // for future blocks, do not return the elements
+        blocks: updatedQuiz.blocks.map((block) => ({
+          ...block,
+          elements:
+            block.status === DB.ElementBlockStatus.EXECUTED
+              ? removeSolutionFromInstances({ instances: block.elements })
+              : [],
+        })),
+      })
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
@@ -1484,7 +1537,11 @@ export async function deactivateLiveQuizBlock(
 
 type CachedBlock = DB.ElementBlock & { elements: DB.ElementInstance[] }
 
-async function verifyBlockCache(redis: Redis, block: CachedBlock) {
+async function verifyBlockCache(
+  redis: Redis,
+  block: CachedBlock,
+  allowMissingCache = false
+) {
   if (!block.startedAt || block.elements.length === 0) {
     throw new GraphQLError('Missing live quiz block cache identity')
   }
@@ -1499,6 +1556,22 @@ async function verifyBlockCache(redis: Redis, block: CachedBlock) {
   const values = await reads.exec()
   if (!values || values.some(([error]) => error)) {
     throw new GraphQLError('Could not read live quiz block cache')
+  }
+  const cacheIsAbsent =
+    allowMissingCache &&
+    block.elements.every((_, index) => {
+      const info = values[index * 2]![1] as Record<string, string>
+      const participants = values[index * 2 + 1]![1]
+      return Object.keys(info).length === 0 && participants === null
+    })
+  if (cacheIsAbsent) {
+    const cacheKeys = await Promise.all([
+      ...block.elements.map((instance) =>
+        redis.keys(`lq:${block.liveQuizId}:i:${instance.id}:*`)
+      ),
+      redis.keys(`lq:${block.liveQuizId}:b:${block.id}:*`),
+    ])
+    if (cacheKeys.every((keys) => keys.length === 0)) return
   }
   for (let index = 0; index < block.elements.length; index++) {
     const info = values[index * 2]![1] as Record<string, string>
@@ -1537,7 +1610,7 @@ async function expireBlockCache(
 ) {
   const target = blocks[blocks.length - 1]!
   const liveQuizId = target.liveQuizId!
-  const keys = isLastBlock
+  const discoveredKeys = isLastBlock
     ? await redis.keys(`lq:${liveQuizId}:*`)
     : [
         ...(
@@ -1549,20 +1622,50 @@ async function expireBlockCache(
         ).flat(),
         ...(await redis.keys(`lq:${liveQuizId}:b:${target.id}:*`)),
       ]
-  if (keys.length === 0) return
+  const keys = [...new Set(discoveredKeys)]
   const guards = blocks.flatMap((block) =>
     block.elements.map((instance) => ({
       key: `lq:${liveQuizId}:i:${instance.id}:info`,
+      resultsKey: `lq:${liveQuizId}:i:${instance.id}:results`,
       execution: String(block.execution),
       startedAt: block.startedAt ? String(block.startedAt.getTime()) : '',
+      allowMissing: isLastBlock && block.id !== target.id,
+      cachePatterns: [
+        ...block.elements.map(
+          (element) => `lq:${liveQuizId}:i:${element.id}:*`
+        ),
+        `lq:${liveQuizId}:b:${block.id}:*`,
+      ],
     }))
   )
   const result = await redis.eval(
     `local guards = cjson.decode(ARGV[1])
      for _, guard in ipairs(guards) do
-       if redis.call('HGET', guard.key, 'blockExecution') ~= guard.execution
-          or redis.call('HGET', guard.key, 'blockStartedAt') ~= guard.startedAt then
-         return 0
+       local hasCache = false
+       if guard.allowMissing then
+         for _, pattern in ipairs(guard.cachePatterns) do
+           if #redis.call('KEYS', pattern) > 0 then
+             hasCache = true
+             break
+           end
+         end
+       end
+       if not guard.allowMissing or hasCache then
+         local execution = redis.call('HGET', guard.key, 'blockExecution')
+         local startedAt = redis.call('HGET', guard.key, 'blockStartedAt')
+         local participants = redis.call('HGET', guard.resultsKey, 'participants')
+         if execution ~= guard.execution
+            or startedAt ~= guard.startedAt
+            or participants == false then
+           return 0
+         end
+         local participantCount = tonumber(participants)
+         if not participantCount
+            or participantCount ~= participantCount
+            or participantCount == math.huge
+            or participantCount == -math.huge then
+           return 0
+         end
        end
      end
      for _, key in ipairs(KEYS) do redis.call('EXPIRE', key, 86400) end
@@ -3494,8 +3597,13 @@ async function aggregateClosedLiveQuizBlock(
       const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
       const affectedBlocks = isLastBlock ? quiz.blocks : [block]
       if (!assessment || (isLastBlock && quiz.isGamificationEnabled)) {
-        for (const cachedBlock of affectedBlocks)
-          await verifyBlockCache(redis, cachedBlock)
+        for (const cachedBlock of affectedBlocks) {
+          await verifyBlockCache(
+            redis,
+            cachedBlock,
+            isLastBlock && cachedBlock.id !== blockId
+          )
+        }
         const result = await updateLiveQuizBlockResultsFromCache({
           quizId: liveQuizId,
           blockId,

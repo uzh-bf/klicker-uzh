@@ -8,6 +8,7 @@ import {
   processElementData,
 } from '@klicker-uzh/util'
 import { Redis } from 'ioredis'
+import { GraphQLError } from 'graphql'
 import {
   afterAll,
   afterEach,
@@ -19,10 +20,15 @@ import {
 } from 'vitest'
 import {
   activateLiveQuizBlock,
+  deactivateLiveQuizBlock,
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleStandardLiveQuizBlockClosureAggregation,
 } from '../src/services/liveQuizzes.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+
+vi.mock('../src/services/notifications.js', () => ({
+  sendTeamsNotification: vi.fn(),
+}))
 
 type Handler = HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation']
 
@@ -73,6 +79,120 @@ describe('Closed live quiz aggregation ownership', () => {
     expect(await redis.hget(infoKey(), 'blockStartedAt')).toBe(
       String(block.startedAt!.getTime())
     )
+  })
+
+  it('preserves cache identity when activation rolls back after cache initialization', async () => {
+    const originalInfo = await redis.hgetall(infoKey())
+    const originalResults = await redis.hgetall(resultsKey())
+    const ctx = {
+      ...globalCtx,
+      prisma: {
+        $transaction: (
+          work: (tx: Prisma.TransactionClient) => Promise<unknown>
+        ) =>
+          prisma.$transaction(async (tx) => {
+            await work(tx)
+            throw new Error('Synthetic commit failure')
+          }),
+      },
+      pubSub: { publish: vi.fn() },
+    } as unknown as ContextWithUser
+    await expect(
+      activateLiveQuizBlock({ quizId, blockId }, ctx)
+    ).rejects.toThrow('Synthetic commit failure')
+    expect(await redis.hgetall(infoKey())).toEqual(originalInfo)
+    expect(await redis.hgetall(resultsKey())).toEqual(originalResults)
+  })
+
+  it('does not close the cache when closure persistence rolls back', async () => {
+    await prisma.liveQuiz.update({
+      where: { id: quizId },
+      data: { activeBlockId: blockId },
+    })
+    await prisma.elementBlock.update({
+      where: { id: blockId },
+      data: { status: 'ACTIVE', closedAt: null },
+    })
+    await redis.hdel(infoKey(), 'blockClosedAt')
+    const ctx = {
+      ...globalCtx,
+      prisma: {
+        $transaction: (
+          work: (tx: Prisma.TransactionClient) => Promise<unknown>
+        ) =>
+          prisma.$transaction(async (tx) => {
+            await work(tx)
+            throw new Error('Synthetic commit failure')
+          }),
+      },
+      pubSub: { publish: vi.fn() },
+    } as unknown as ContextWithUser
+    await expect(
+      deactivateLiveQuizBlock({ quizId, blockId }, ctx)
+    ).rejects.toThrow('Synthetic commit failure')
+    expect(await redis.hget(infoKey(), 'blockClosedAt')).toBeNull()
+    const block = await prisma.elementBlock.findUniqueOrThrow({
+      where: { id: blockId },
+    })
+    expect(block.status).toBe('ACTIVE')
+    expect(block.closedAt).toBeNull()
+  })
+
+  it('retains committed activation identity when the cache transaction fails after its writes', async () => {
+    let transactions = 0
+    const ctx = {
+      ...globalCtx,
+      prisma: {
+        $transaction: (
+          work: (tx: Prisma.TransactionClient) => Promise<unknown>
+        ) =>
+          prisma.$transaction(async (tx) => {
+            const result = await work(tx)
+            if (++transactions === 2)
+              throw new Error('Synthetic second-phase failure')
+            return result
+          }),
+      },
+      pubSub: { publish: vi.fn() },
+    } as unknown as ContextWithUser
+    await expect(
+      activateLiveQuizBlock({ quizId, blockId }, ctx)
+    ).rejects.toThrow('Synthetic second-phase failure')
+    const block = await prisma.elementBlock.findUniqueOrThrow({
+      where: { id: blockId },
+    })
+    expect(block.status).toBe('ACTIVE')
+    expect(await redis.hget(infoKey(), 'blockStartedAt')).toBe(
+      String(block.startedAt!.getTime())
+    )
+    expect(await redis.hget(infoKey(), 'blockClosedAt')).toBeNull()
+  })
+
+  it('skips activation cache writes when ownership changes between phases', async () => {
+    const originalInfo = await redis.hgetall(infoKey())
+    const publish = vi.fn()
+    let transactions = 0
+    const ctx = {
+      ...globalCtx,
+      prisma: {
+        $transaction: async (
+          work: (tx: Prisma.TransactionClient) => Promise<unknown>
+        ) => {
+          const result = await prisma.$transaction(work)
+          if (++transactions === 1) {
+            await prisma.elementBlock.update({
+              where: { id: blockId },
+              data: { execution: 3 },
+            })
+          }
+          return result
+        },
+      },
+      pubSub: { publish },
+    } as unknown as ContextWithUser
+    await activateLiveQuizBlock({ quizId, blockId }, ctx)
+    expect(await redis.hgetall(infoKey())).toEqual(originalInfo)
+    expect(publish).not.toHaveBeenCalled()
   })
 
   beforeEach(async () => {
@@ -380,7 +500,12 @@ describe('Closed live quiz aggregation ownership', () => {
     expect(await redis.ttl(resultsKey())).toBe(-1)
   })
 
-  it('validates all block cache identities before last-block quiz-wide expiry', async () => {
+  it.each([
+    'present',
+    'expired',
+    'reappeared',
+    'partial',
+  ] as const)('finalizes the last block with %s historical cache', async (historicalCache) => {
     await prisma.liveQuiz.update({
       where: { id: quizId },
       data: { activeBlockId: null },
@@ -423,6 +548,45 @@ describe('Closed live quiz aggregation ownership', () => {
       blockId: newerBlockId,
       blockExecution: 0,
       blockStartedAt: closedAt.toISOString(),
+    }
+    if (historicalCache !== 'present') {
+      await redis.del(infoKey(), resultsKey())
+      if (historicalCache === 'partial') {
+        await redis.hset(
+          `lq:${quizId}:i:${instanceId}:responseHashes`,
+          'synthetic',
+          '1'
+        )
+      }
+      if (historicalCache === 'reappeared') {
+        const evaluate = redis.eval.bind(redis)
+        vi.spyOn(redis, 'eval').mockImplementationOnce(async (...args) => {
+          await redis.hset(infoKey(), {
+            blockExecution: 3,
+            blockStartedAt: closedAt.getTime(),
+          })
+          return evaluate(...args)
+        })
+      }
+      if (historicalCache !== 'expired') {
+        await expect(
+          handleStandardLiveQuizBlockClosureAggregation(
+            lastInput,
+            globalCtx,
+            executionCtx
+          )
+        ).rejects.toBeInstanceOf(GraphQLError)
+        expect(await redis.ttl(lastResults)).toBe(-1)
+        return
+      }
+      await handleStandardLiveQuizBlockClosureAggregation(
+        lastInput,
+        globalCtx,
+        executionCtx
+      )
+      expect(await redis.ttl(lastResults)).toBeGreaterThan(86390)
+      expect(await redis.exists(infoKey(), resultsKey())).toBe(0)
+      return
     }
     await redis.hset(infoKey(), 'blockExecution', 3)
     await expect(
