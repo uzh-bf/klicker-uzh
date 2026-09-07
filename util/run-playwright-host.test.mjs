@@ -461,6 +461,13 @@ test('every local Playwright package script routes through the host launcher', (
 })
 
 test('devcontainer dependency mounts isolate every workspace package', () => {
+  const devcontainer = JSON.parse(
+    readFileSync(join(repoRoot, '.devcontainer', 'devcontainer.json'), 'utf8')
+  )
+  assert.deepEqual(devcontainer.dockerComposeFile.slice(0, 2), [
+    'docker-compose.yml',
+    'docker-compose.dependencies.yml',
+  ])
   const compose = parseYaml(
     readFileSync(join(repoRoot, '.devcontainer', 'docker-compose.yml'), 'utf8')
   )
