@@ -246,10 +246,13 @@ analytics image and lint CI so the root quality gate runs inside the container.
 ## Notes
 
 - The root `node_modules` is a named volume because pnpm hoists native packages
-  into `node_modules/.pnpm`. Playwright, Prisma, and shared types also have
-  package-level volumes. Those prevent the Linux install from overwriting the
-  host Playwright runner's Darwin dependency links. The dependency stamp
-  prevents reuse after lockfile or workspace-manifest changes.
+  into `node_modules/.pnpm`. Every workspace package listed by
+  `pnpm-workspace.yaml` also has its own project-scoped `node_modules` volume;
+  the existing Playwright, Prisma, and shared-types volume names remain stable.
+  These mounts keep host and container dependency links separate, including
+  the host Playwright runner's Darwin dependencies. The
+  dependency stamp prevents reuse after lockfile or workspace-manifest
+  changes.
 - `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL

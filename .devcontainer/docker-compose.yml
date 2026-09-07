@@ -108,6 +108,36 @@ services:
       - node_modules_playwright:/workspaces/klicker-uzh/playwright/node_modules
       - node_modules_prisma:/workspaces/klicker-uzh/packages/prisma/node_modules
       - node_modules_types:/workspaces/klicker-uzh/packages/types/node_modules
+      # Every other pnpm workspace package gets its own project-scoped volume.
+      # Keep these sources distinct so a host install cannot rewrite a
+      # container dependency link for another package.
+      - node_modules_apps_analytics:/workspaces/klicker-uzh/apps/analytics/node_modules
+      - node_modules_apps_auth:/workspaces/klicker-uzh/apps/auth/node_modules
+      - node_modules_apps_backend-docker:/workspaces/klicker-uzh/apps/backend-docker/node_modules
+      - node_modules_apps_chat:/workspaces/klicker-uzh/apps/chat/node_modules
+      - node_modules_apps_docs:/workspaces/klicker-uzh/apps/docs/node_modules
+      - node_modules_apps_frontend-control:/workspaces/klicker-uzh/apps/frontend-control/node_modules
+      - node_modules_apps_frontend-manage:/workspaces/klicker-uzh/apps/frontend-manage/node_modules
+      - node_modules_apps_frontend-pwa:/workspaces/klicker-uzh/apps/frontend-pwa/node_modules
+      - node_modules_apps_hatchet-worker-general:/workspaces/klicker-uzh/apps/hatchet-worker-general/node_modules
+      - node_modules_apps_hatchet-worker-response-processor:/workspaces/klicker-uzh/apps/hatchet-worker-response-processor/node_modules
+      - node_modules_apps_lti:/workspaces/klicker-uzh/apps/lti/node_modules
+      - node_modules_apps_office-addin:/workspaces/klicker-uzh/apps/office-addin/node_modules
+      - node_modules_apps_olat-api:/workspaces/klicker-uzh/apps/olat-api/node_modules
+      - node_modules_apps_response-api:/workspaces/klicker-uzh/apps/response-api/node_modules
+      - node_modules_packages_export:/workspaces/klicker-uzh/packages/export/node_modules
+      - node_modules_packages_feature-flags:/workspaces/klicker-uzh/packages/feature-flags/node_modules
+      - node_modules_packages_grading:/workspaces/klicker-uzh/packages/grading/node_modules
+      - node_modules_packages_graphql:/workspaces/klicker-uzh/packages/graphql/node_modules
+      - node_modules_packages_hatchet:/workspaces/klicker-uzh/packages/hatchet/node_modules
+      - node_modules_packages_i18n:/workspaces/klicker-uzh/packages/i18n/node_modules
+      - node_modules_packages_markdown:/workspaces/klicker-uzh/packages/markdown/node_modules
+      - node_modules_packages_next-config:/workspaces/klicker-uzh/packages/next-config/node_modules
+      - node_modules_packages_prisma-data:/workspaces/klicker-uzh/packages/prisma-data/node_modules
+      - node_modules_packages_shared-components:/workspaces/klicker-uzh/packages/shared-components/node_modules
+      - node_modules_packages_transactional:/workspaces/klicker-uzh/packages/transactional/node_modules
+      - node_modules_packages_util:/workspaces/klicker-uzh/packages/util/node_modules
+      - node_modules_packages_word-cloud:/workspaces/klicker-uzh/packages/word-cloud/node_modules
       # Machine-local, content-addressed package cache shared by every worktree.
       # node_modules remains isolated in the project-scoped volume above.
       - pnpm_store:/pnpm/.pnpm-store
@@ -161,6 +191,33 @@ volumes:
   node_modules_playwright:
   node_modules_prisma:
   node_modules_types:
+  node_modules_apps_analytics:
+  node_modules_apps_auth:
+  node_modules_apps_backend-docker:
+  node_modules_apps_chat:
+  node_modules_apps_docs:
+  node_modules_apps_frontend-control:
+  node_modules_apps_frontend-manage:
+  node_modules_apps_frontend-pwa:
+  node_modules_apps_hatchet-worker-general:
+  node_modules_apps_hatchet-worker-response-processor:
+  node_modules_apps_lti:
+  node_modules_apps_office-addin:
+  node_modules_apps_olat-api:
+  node_modules_apps_response-api:
+  node_modules_packages_export:
+  node_modules_packages_feature-flags:
+  node_modules_packages_grading:
+  node_modules_packages_graphql:
+  node_modules_packages_hatchet:
+  node_modules_packages_i18n:
+  node_modules_packages_markdown:
+  node_modules_packages_next-config:
+  node_modules_packages_prisma-data:
+  node_modules_packages_shared-components:
+  node_modules_packages_transactional:
+  node_modules_packages_util:
+  node_modules_packages_word-cloud:
   pnpm_store:
     external: true
     name: klicker-uzh-pnpm-store-v1
