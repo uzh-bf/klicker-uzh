@@ -103,49 +103,54 @@ export async function joinCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, deletionRequestedAt: null },
-    select: { id: true },
-  })
+  const result = await ctx.prisma.$transaction(async (prisma) => {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId, deletionRequestedAt: null },
+      select: { id: true },
+    })
 
-  if (!course) return null
+    if (!course) return null
 
-  // upsert or activate participation in the course
-  const participation = await ctx.prisma.participation.upsert({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
+    // upsert or activate participation in the course
+    const participation = await prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
       },
-    },
-    create: {
-      isActive: true,
-      course: { connect: { id: courseId } },
-      participant: { connect: { id: ctx.user.sub } },
-    },
-    update: { isActive: true },
-  })
+      create: {
+        isActive: true,
+        course: { connect: { id: courseId } },
+        participant: { connect: { id: ctx.user.sub } },
+      },
+      update: { isActive: true },
+    })
 
-  if (!participation) return null
-
-  // upsert a course leaderboard entry with zero points
-  const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
-    where: {
-      type_participantId_courseId: {
+    // Preserve an existing balance when publishing it again.
+    const lbEntry = await prisma.leaderboardEntry.upsert({
+      where: {
+        type_participantId_courseId: {
+          type: DB.LeaderboardType.COURSE,
+          participantId: ctx.user.sub,
+          courseId,
+        },
+      },
+      create: {
         type: DB.LeaderboardType.COURSE,
-        participantId: ctx.user.sub,
-        courseId,
+        participant: { connect: { id: ctx.user.sub } },
+        course: { connect: { id: courseId } },
+        participation: { connect: { id: participation.id } },
+        score: 0,
       },
-    },
-    create: {
-      type: DB.LeaderboardType.COURSE,
-      participant: { connect: { id: ctx.user.sub } },
-      course: { connect: { id: courseId } },
-      participation: { connect: { id: participation.id } },
-      score: 0,
-    },
-    update: {},
+      update: {},
+    })
+
+    return { participation, lbEntry }
   })
+
+  if (!result) return null
+  const { participation, lbEntry } = result
 
   // invalidate participation and leaderboard entry
   ctx.emitter.emit('invalidate', {
@@ -203,9 +208,7 @@ export async function leaveCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  // leave a course leaderboard as a participant
-  // deletes the leaderboard entries related to the course and sets the participation to inactive
-  // meaning that no further points will be collected
+  // Hide public leaderboard entries while retaining private activity and points.
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
@@ -218,38 +221,10 @@ export async function leaveCourseLeaderboard(
     },
   })
 
-  // delete the course leaderboard entry linked to the participation
-  await ctx.prisma.leaderboardEntry.delete({
-    where: {
-      type_participantId_courseId: {
-        type: DB.LeaderboardType.COURSE,
-        participantId: ctx.user.sub,
-        courseId,
-      },
-    },
+  ctx.emitter.emit('invalidate', {
+    typename: 'Participation',
+    id: participation.id,
   })
-
-  // TODO: check if this deletion operation has any effect or can be removed
-  await ctx.prisma.leaderboardEntry.deleteMany({
-    where: { participation: { id: participation.id } },
-  })
-
-  // delete all session leaderboard entries linked to the participation
-  await ctx.prisma.leaderboardEntry.deleteMany({
-    where: { sessionParticipationId: participation.id },
-  })
-
-  // reset collected points on timeline entries linked to this participation
-  await ctx.prisma.timelineEntry.updateMany({
-    where: { participationId: participation.id },
-    data: {
-      collectedPoints: 0,
-    },
-  })
-
-  // TODO: reset collected points and points dates on questionresponse and questionresponsedetail
-
-  if (!participation) return null
 
   return {
     id: `${courseId}-${ctx.user.sub}`,
