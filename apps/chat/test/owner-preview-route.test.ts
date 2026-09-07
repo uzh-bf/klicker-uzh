@@ -118,13 +118,10 @@ describe('POST owner preview chat', () => {
       value: { messages: uiMessages, selectedMode: 'tutor' },
     })
     mocks.validateManageChatRequest.mockResolvedValue({ messages: uiMessages })
-    mocks.findChatbot.mockImplementation(async ({ include }) => ({
+    mocks.findChatbot.mockResolvedValue({
       id: 'chatbot-id',
       course: { displayName: 'Test Course' },
-      knowledgeBases: [{ kbId: 'kb-id' }, { kbId: 'second-kb-id' }].slice(
-        0,
-        include.knowledgeBases.take
-      ),
+      knowledgeBases: [{ kbId: 'kb-id' }],
       mcpConfigurations: [
         {
           allowedTools: ['*', 'delete_all'],
@@ -146,13 +143,8 @@ describe('POST owner preview chat', () => {
         },
       ],
       ownerId: 'owner-id',
-      standardModeConfig: {
-        tutorEnabled: true,
-        explainerEnabled: true,
-        quizzerEnabled: false,
-      },
       systemPrompts: { tutor: 'Tutor instructions' },
-    }))
+    })
     mocks.getAggregatedMCPTools.mockResolvedValue({
       close: mocks.closeMcpTools,
       tools: {
@@ -240,7 +232,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbIds: ['kb-id', 'second-kb-id'],
+        kbIds: ['kb-id'],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
@@ -248,11 +240,6 @@ describe('POST owner preview chat', () => {
       'tutor',
       {
         courseDisplayName: 'Test Course',
-        standardModeConfig: {
-          tutorEnabled: true,
-          explainerEnabled: true,
-          quizzerEnabled: false,
-        },
         toolNames: ['KB_doc_query'],
       }
     )
@@ -307,13 +294,10 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  it.each([
-    'exam',
-    'quizzer',
-  ])('rejects unsupported or disabled mode %s before MCP or model work', async (selectedMode) => {
+  it('rejects an unsupported mode before MCP or model work', async () => {
     mocks.readBoundedJson.mockResolvedValue({
       ok: true,
-      value: { messages: uiMessages, selectedMode },
+      value: { messages: uiMessages, selectedMode: 'exam' },
     })
 
     const response = await POST(request(), {

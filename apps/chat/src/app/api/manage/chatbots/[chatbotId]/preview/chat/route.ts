@@ -135,6 +135,7 @@ export async function POST(
       knowledgeBases: {
         where: { isEnabled: true },
         select: { kbId: true },
+        take: 1,
       },
       mcpConfigurations: {
         where: { isEnabled: true },
@@ -149,8 +150,7 @@ export async function POST(
 
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.mcpConfigurations
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
@@ -239,7 +239,6 @@ export async function POST(
       selectedMode,
       {
         courseDisplayName: chatbot.course.displayName,
-        standardModeConfig: chatbot.standardModeConfig,
         toolNames,
       }
     )

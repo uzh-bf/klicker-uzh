@@ -4,7 +4,7 @@ import {
   ChatbotStatus,
   type LocaleType,
   MUpdateChatbotStandardModeConfigDocument,
-  QManageChatbotsDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
   SaveChatbotDisclaimerDocument,
   UpdateChatbotDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -516,7 +516,9 @@ function ChatbotAuthoring({
                           name: normalizedValues.name,
                           description: normalizedValues.description || null,
                         },
-                        refetchQueries: [{ query: QManageChatbotsDocument }],
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values: normalizedValues })
@@ -639,7 +641,9 @@ function ChatbotAuthoring({
                           chatbotId: chatbot.id,
                           config: values,
                         },
-                        refetchQueries: [{ query: QManageChatbotsDocument }],
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values })
@@ -926,7 +930,9 @@ function ChatbotAuthoring({
                           title: normalizedValues.title,
                           introText: normalizedValues.introText,
                         },
-                        refetchQueries: [{ query: QManageChatbotsDocument }],
+                        refetchQueries: [
+                          { query: QGetChatbotsInfoWithStandardModesDocument },
+                        ],
                         awaitRefetchQueries: true,
                       })
                       resetForm({ values: normalizedValues })

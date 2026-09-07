@@ -8,7 +8,7 @@ import {
   CreditResetPeriod,
   QGetCatalystRequestAccessDocument,
   MUpdateChatbotModelPolicyDocument,
-  QManageChatbotsDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -493,7 +493,7 @@ function ChatbotDetails({
           allowedModelIds: normalizedAllowedModelIds,
           allowedReasoningEffortsByModel: normalizedReasoningConfig,
         },
-        refetchQueries: [{ query: QManageChatbotsDocument }],
+        refetchQueries: [{ query: QGetChatbotsInfoWithStandardModesDocument }],
         awaitRefetchQueries: true,
       })
 
