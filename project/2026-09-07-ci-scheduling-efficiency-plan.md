@@ -17,9 +17,11 @@ execution time before proposing another scheduling change.
 The user approved this package and a goal on 2026-09-07. Approval covers local
 source edits, focused verification, independent reviews, and local commits.
 Canary activation is a conditional follow-on after qualification and reporting
-the exact target. Push, PR publication, merge, forced events, retroactive run
-cancellation, and runner changes remain withheld. The immediate terminal is
-reviewed local source plus a qualified or not-qualified canary receipt.
+the exact target. The user subsequently approved branch pushes and draft PR
+publication as routine delivery of implementation packages. Merge, forced
+events, retroactive run cancellation, and runner changes remain withheld.
+The current terminal is a draft PR against `v3` with verified publication
+and a qualified or not-qualified canary receipt.
 
 The main risk is cancelling the wrong invocation; exact concurrency keys and
 event guards are binding contracts. GitHub cancellation is asynchronous and
@@ -128,7 +130,7 @@ common ancestor `fbc5f4fcc2ffa1c8d25695679823134985c5a8d8` in complete history.
 Remove only the shallow fetch option and protect full ancestry in a focused
 workflow contract. This completes selector qualification prerequisites without
 changing selection policy. Ten representative live comparisons remain pending;
-no canary activation is justified. Publication is withheld.
+no canary activation is justified. Publication was withheld at this checkpoint.
 
 Local source is committed at `78f16a9a51a8604766592abf8ad84741b22ec7c9`.
 Fresh verification passes all 62 CI contracts and the standalone workflow
@@ -148,5 +150,7 @@ No repository variables, runner settings, or concurrency limits changed.
 Remote refresh succeeded through a command-local HTTPS override after SSH
 signing was refused. The branch remains three commits ahead and zero behind
 `origin/v3`; no upstream integration occurred. Immediate delivery remains local
-source and the not-qualified canary receipt. Push and draft PR publication need
-separate approval; live cancellation and selective execution are not yet proven.
+source and the not-qualified canary receipt. The user subsequently approved
+push and draft PR publication; live cancellation and selective execution are
+not yet proven. Publication is the next action, without upstream integration
+or runner/settings changes.
