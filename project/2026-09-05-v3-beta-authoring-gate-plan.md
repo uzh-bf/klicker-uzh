@@ -1,5 +1,81 @@
 # V3 beta discovery and chatbot authoring gates
 
+## Approved destructive database guard extension
+
+Prevent repository test cleanup, test seeds and destructive Prisma development
+commands from using staging, production or retained databases through port
+forwards. User approval on September 7 covers implementation, verification,
+reviews and publication to the existing beta PR, but not its merge, upstream
+integration, deployment, cluster connectivity or retained-data mutation.
+Local restoration is not required. Existing beta/AI product decisions below
+remain unchanged.
+
+The trusted Playwright provisioning prerequisite
+[PR #5812 — disposable CI databases](https://github.com/uzh-bf/klicker-uzh/pull/5812)
+was merged by the user as d8e29ee75168b61e5c6902a5a8d8afa12495e261.
+Its non-skipped postmerge shard proof remains required before readiness.
+No branch integration is needed to consume that trusted action.
+
+Require explicit test login and database identities plus the database comment
+`klicker-disposable-test-v1`. Neither localhost, CI flags nor force options are
+proof. Check the actual connected client before mutation, including cleanup
+after failed setup, and recheck newly opened pooled connections. Never validate
+only an environment URL when a cached Prisma client holds another connection.
+Reject missing, ambiguous or overridden destinations before connecting.
+Production application access and `prisma migrate deploy` stay unchanged.
+
+The permitted main database and login are `klicker_test`; the explicit migration
+shadow is `klicker_test_shadow`, owned by that same restricted login and marked
+independently. Development migration requires that shadow because the role has
+no database-creation privilege. Migration diff may read its configured main
+datasource, but replay must validate the shadow. Guard CLI configuration,
+schema and connection overrides as well as URI parameters; accept only the
+necessary documented operation flags. Do not introduce an unsafe bypass.
+
+Fresh self-contained PostgreSQL volumes receive dedicated init SQL creating the
+test login, main database and shadow with markers. Mount it only in the local
+devcontainer. Switch local application/test defaults to that identity. Existing
+volumes lacking provisioned objects fail with guidance; never mark, adopt or
+delete retained databases automatically. Preserve unrelated dump-support init
+SQL and production behavior.
+
+GraphQL and Chat unit CI are candidate-owned and need equivalent provisioning.
+Run it inside the exact GitHub PostgreSQL service container ID, not through
+localhost administration. Refuse existing target objects. Reset runs only after
+provisioning succeeds; Chat integration requires provisioning and reset success.
+Preserve all existing suites. Extend relevant workflow path filters. Do not add
+Docker access to Playwright shards. The legacy local test helper must not delete
+existing volumes; use an ownership-proven isolated service or fail before work.
+
+| Work | Owner | Acceptance |
+| --- | --- | --- |
+| Guard, actual-client integration and CLI | Main; coupled security boundary | URI/override refusal, actual identity/marker, setup-failure cleanup and reconnect refusal; production path unchanged |
+| Guard behavior tests | Executor after API is defined | Consequential failure cases and successful marked disposable operations, no prose/seed-content assertions |
+| Cold bootstrap and candidate CI | Executor on disjoint local init/config and GraphQL/unit workflow files | Fresh provisioning, existing-object refusal, explicit failure dependencies and sentinel preservation |
+| Beta amendment completion | Main | Affected tests/browser evidence, committed reviews, whole-package review and current-head PR checks |
+
+Use existing pg and Prisma dependencies. The installed pg-pool callback `verify`
+hook blocks release of each new connection; do not use an asynchronous connect
+event as a gate. Guard GraphQL initialization/cleanup, Playwright's shared
+client, Chat account-usage integration, demo-participant integration, test and
+assessment seed entrypoints, and reset/push/dev-migration/shadow replay wrappers.
+Keep legitimate production administration scripts outside this test-only guard.
+
+Verify unmarked and mismatched targets using only synthetic isolated databases
+or mocks, with zero destructive calls on refusal. Prove reconnect checks, marked
+reset/push/seed, guarded shadow migration and fresh bootstrap. Update testing and
+development guidance. Preserve already passing beta/browser evidence when its
+source and environment contract remain unchanged; rerun affected checks. Commit
+coherent slices, run simplification/risk reviews and integrated final review,
+then update the existing PR without merging it.
+
+Planner round 2 required Chat unit CI provisioning and explicit dependency
+gates; round 3 APPROVED after both were included. The earlier advisor's dedicated
+identity, external marker and actual-connection guidance remains applicable.
+Implementation is starting; no guard verification is claimed yet. A single
+watcher owns postmerge Playwright run 34096758497; the prerequisite heartbeat
+is paused to avoid duplicate watches.
+
 ## Approved amendment: database beta preference and one AI approval
 
 The September 6 user ruling supersedes the saved-group storage and separate
@@ -11,9 +87,13 @@ Per-chatbot publication review remains separate. Token provisioning and
 validation belong to v3-ai and are not implemented here.
 
 Authority: scoped local source, generated migrations, isolated verification,
-independent reviews and commits on the existing branch. Terminal: locally
-committed, verified and independently reviewed source. No push, merge, branch
-integration, deployment, live GrowthBook changes or retained-data deletion.
+independent reviews and commits on the existing branch. On September 7 the
+user additionally requested a destructive-test database guard and publication
+to the existing PR. Push to origin/rs/v3-release-verification and updating
+[PR #5799 — beta authoring](https://github.com/uzh-bf/klicker-uzh/pull/5799)
+are authorized after verification and review. Terminal: merge-ready source
+with passing current-head checks. Merge, branch integration, deployment,
+live GrowthBook changes and retained-data deletion remain excluded.
 Boundary owner: self. Pause for contradictory deployment evidence, failed test
 isolation, an unavailable required gate, or a new material authority boundary.
 
@@ -75,7 +155,40 @@ flagged eligibility, cache and migration-lineage risks; the contracts above
 resolve them. Generic beta naming is intentional. No global cache is added.
 Baseline: clean `5e5b1d69c8cf08a58f27dee6c81d618844116b77`, matching upstream,
 15 commits ahead and 5 behind `v3`. The 42 feature-flag baseline tests pass.
-Implementation and amendment verification remain pending.
+Implementation is uncommitted. Browser verification on the disposable database
+proved default-on preference, real opt-out/in, opt-out persistence after process
+restart, backend denial while opted out, and authoring availability without AI
+approval after opt-in. English desktop and German mobile settings were inspected.
+The temporary database override and fixture marker have been restored/removed.
+
+Incident: a repeated integration run omitted its explicit disposable DATABASE_URL.
+It failed with missing `aiFeaturesEnabled` columns. The publication test's cleanup
+hook performs unscoped deletes even after setup failure, so retained local data
+were changed: read-only verification confirmed `/klicker-prod` and zero rows in
+User, Course, Participant, and CatalogCollection. Recovery is not established.
+On September 7 the user confirmed that local restoration is unnecessary and
+requested a guard against staging/production port forwards before publication.
+No recovery or reseeding is planned. Destructive verification must wait for
+the fail-closed guard and explicit disposable provisioning. The exact runtime
+`rs-v3-release-verification` is stopped: its container is exited and its source
+path has zero routes. Volumes were not deleted. The isolated browser is closed.
+No production system was accessed. Prior
+passing checks do not make this attempt successful. Independent amendment reviews
+have not run.
+
+September 7 safety-extension planning: no guard code has been written yet.
+The planner returned REVISE because both hosted and public Playwright routes
+load the reset/seed action from trusted v3. That action hardcodes the generic
+database identity; a candidate-only dedicated-test guard would correctly reject
+it. A trusted CI provisioning prerequisite must land first, under separate
+authorization. Switching runner routes does not resolve this dependency.
+The proposed guard requires dedicated test database/login identities and an
+actual database-side disposable marker; localhost and CI flags are not proof.
+The planner also requires resolving shadow targets, CLI argument overrides,
+and cold local bootstrap before accepting the extension. The Gemini high
+advisor consultation completed with concerns about connection reuse and
+credential isolation. No runtime, database, CI setting or PR was changed in
+this planning pass. Existing implementation remains uncommitted.
 
 ## Approval summary
 
