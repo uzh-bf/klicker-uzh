@@ -184,9 +184,19 @@ Operational notes.
   staging ArgoCD Application to track that ref and pass
   `global.imageTag=$ARGOCD_APP_REVISION` as a forced string. Preview, apply,
   runtime health, and acceptance remain separate evidence and approvals.
-- The controller uses the repository `GITHUB_TOKEN`; no promotion PAT,
-  pull-request permission, source-branch bypass actor, auto-merge setting, or
-  squash-title behavior is part of the new path.
+- API and Git fetch reads use `GITHUB_TOKEN` with `actions: read` and
+  `contents: read`. Only the lease-protected Git push uses the existing
+  `STG_PROMOTE_TOKEN`. Its credential must have repository contents write and
+  permission to write workflow files; the job token cannot provide the latter.
+  Confirm the existing credential's scope before activation. Missing write
+  credentials fail before Git runs, without falling back to the job token.
+  Dry-runs, disabled runs, and equal/stale no-ops require no write credential.
+  No pull-request permission, source-branch bypass actor, auto-merge setting,
+  or squash-title behavior is part of the new path.
+- Unlike `GITHUB_TOKEN`, a separate promotion credential can trigger workflows
+  on ref updates. Check the candidate's push/create filters and default-branch
+  downstream controllers before activation; a release-ref write must not
+  rebuild staging images. The publishers accept `v3`/`v3*`, not `stg-release`.
 
 The superseded annotation-write-back rationale remains in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
