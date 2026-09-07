@@ -1183,6 +1183,7 @@ function pushReleaseRefWithLease({
       'fetch',
       '--no-tags',
       '--no-write-fetch-head',
+      '--no-recurse-submodules',
       repositoryUrl,
       candidateSha,
     ],

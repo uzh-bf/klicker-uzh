@@ -1069,7 +1069,7 @@ test('recovers from a transient post-push ref readback failure', async () => {
   )
 })
 
-test('exercises create, fast-forward, and race rejection against a bare remote', (t) => {
+test('promotes without fetching submodules and rejects a concurrent ref update', (t) => {
   const temporaryDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'stg-release-cas-')
   )
@@ -1079,6 +1079,13 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
   const client = path.join(temporaryDirectory, 'client')
   execFileSync('git', ['init', '--bare', '--quiet', remote])
   execFileSync('git', ['init', '--quiet', client])
+  execFileSync('git', [
+    '-C',
+    client,
+    'config',
+    'fetch.recurseSubmodules',
+    'true',
+  ])
   const fixtureEnvironment = {
     ...process.env,
     GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
@@ -1087,6 +1094,15 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
     GIT_COMMITTER_NAME: 'Fixture',
   }
   const makeCommit = (label, parent = null) => {
+    const modules = execFileSync(
+      'git',
+      ['--git-dir', remote, 'hash-object', '-w', '--stdin'],
+      {
+        encoding: 'utf8',
+        input:
+          '[submodule "unavailable-submodule"]\n\tpath = unavailable-submodule\n\turl = ./missing.git\n',
+      }
+    ).trim()
     const blob = execFileSync(
       'git',
       ['--git-dir', remote, 'hash-object', '-w', '--stdin'],
@@ -1094,7 +1110,7 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
     ).trim()
     const tree = execFileSync('git', ['--git-dir', remote, 'mktree'], {
       encoding: 'utf8',
-      input: `100644 blob ${blob}\tfixture.txt\n`,
+      input: `100644 blob ${modules}\t.gitmodules\n100644 blob ${blob}\tfixture.txt\n160000 commit ${(parent ? '2' : '1').repeat(40)}\tunavailable-submodule\n`,
     }).trim()
     return execFileSync(
       'git',
@@ -1111,6 +1127,22 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
   const baseSha = makeCommit('base')
   const racedSha = makeCommit('raced', baseSha)
   const candidateSha = makeCommit('candidate', racedSha)
+  execFileSync('git', [
+    '-C',
+    client,
+    'fetch',
+    '--quiet',
+    '--no-recurse-submodules',
+    remote,
+    baseSha,
+  ])
+  execFileSync('git', ['-C', client, 'checkout', '--quiet', baseSha])
+  execFileSync('git', ['-C', client, 'submodule', 'init'], { stdio: 'pipe' })
+  execFileSync('git', [
+    'init',
+    '--quiet',
+    path.join(client, 'unavailable-submodule'),
+  ])
   const readRemoteRef = () =>
     execFileSync('git', ['--git-dir', remote, 'rev-parse', PROMOTION_REF], {
       encoding: 'utf8',
