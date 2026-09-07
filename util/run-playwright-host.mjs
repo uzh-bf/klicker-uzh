@@ -16,13 +16,9 @@ function fail(message) {
   throw new Error(`[playwright:host] ${message}`)
 }
 
-function run(
-  command,
-  args,
-  { capture = false, env = process.env, cwd = repoRoot, spawn = spawnSync } = {}
-) {
-  const result = spawn(command, args, {
-    cwd,
+function run(command, args, { capture = false, env = process.env } = {}) {
+  const result = spawnSync(command, args, {
+    cwd: repoRoot,
     encoding: 'utf8',
     env,
     stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
@@ -39,8 +35,8 @@ function run(
   return capture ? result.stdout.trim() : ''
 }
 
-function commandExists(command, spawn = spawnSync) {
-  const result = spawn(command, ['--version'], { stdio: 'ignore' })
+function commandExists(command) {
+  const result = spawnSync(command, ['--version'], { stdio: 'ignore' })
   return result.status === 0
 }
 
