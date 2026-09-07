@@ -77,7 +77,7 @@ Course-scoped analytics joins through that owner, which keeps course ownership
 consistent by construction. Participant live-quiz point totals retain the
 canonical fractional `REAL` values.
 
-Public group averages include personal course points only from active leaderboard participants. Inactive members contribute zero while remaining in the group denominator; group-earned points are independent. Joining or leaving the individual leaderboard refreshes the average atomically. A one-member group retains its existing zero personal-average rule.
+Gamification group averages include the personal course points of all group members, regardless of individual leaderboard opt-in. Opting out hides the individual leaderboard entry but does not remove points from the group average. Group-earned points are independent. A one-member group retains its existing zero personal-average rule.
 
 ### Assessment participant invitations
 
