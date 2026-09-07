@@ -1,5 +1,6 @@
 const {
   getPermission,
+  isEligibleBaseBranch,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -29,6 +30,7 @@ const {
   parseDispositionRecord,
   validateDispositionRecord,
   validateFinding,
+  validateOCRResult: validateProducerOCRResult,
   requiresColdIncrementalReview,
   runGhApi,
 } = require('./final-ai-review.js')
@@ -42,6 +44,7 @@ const STACK_REVIEW_COMMAND = '/final-review-stack'
 const FINAL_STACK_REVIEW_MODEL = 'z-ai/glm-5.3-flash'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
+const STACK_COMBINED_OCR_SCHEMA = 'final-ai-stack-combined-ocr/v1'
 const STACK_CLEAN_EVIDENCE_SCHEMA = 'final-ai-stack-clean-evidence/v1'
 const STACK_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI stack clean evidence'
 const STACK_REVIEW_WORKFLOW_PATH =
@@ -528,8 +531,10 @@ function canUseStackReviewBaseAdvance(membership, context) {
   const rootRange = membership.ranges[0]?.response?.data
   if (
     !['behind', 'diverged'].includes(rootRange?.status) ||
-    membership.members[0].pull.base.ref !==
-      context.payload.repository.default_branch ||
+    !isEligibleBaseBranch({
+      baseRef: membership.members[0].pull.base.ref,
+      context,
+    }) ||
     membership.members[0].pull.base.repo?.full_name !== repositoryName(context)
   ) {
     return false
@@ -1007,7 +1012,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     if (
       !['behind', 'diverged'].includes(rootRange?.status) ||
       !upperRanges.every((range) => range.response?.data?.status === 'ahead') ||
-      rootPull.base.ref !== context.payload.repository.default_branch ||
+      !isEligibleBaseBranch({ baseRef: rootPull.base.ref, context }) ||
       rootPull.base.repo?.full_name !== repositoryName(context) ||
       !membership.members.every(({ pull }, index) =>
         index === 0
@@ -2297,7 +2302,7 @@ function validateUsage(usage, label) {
   }
 }
 
-function validateOCRResult(result, knownPaths = null) {
+function validateStackOCRResult(result, knownPaths = null) {
   if (
     result?.status !== 'complete' ||
     result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
@@ -2322,6 +2327,9 @@ function validateOCRResult(result, knownPaths = null) {
   ) {
     throw new Error('Cumulative OCR result has incomplete summary counters')
   }
+  const findings = result.comments.map((comment, index) =>
+    validateFinding(comment, index)
+  )
   const usage = validateUsage(
     {
       total_tokens: summary.total_tokens,
@@ -2331,8 +2339,7 @@ function validateOCRResult(result, knownPaths = null) {
     'Cumulative OCR result'
   )
   if (knownPaths) {
-    result.comments.forEach((comment, index) => {
-      const finding = validateFinding(comment, index)
+    findings.forEach((finding, index) => {
       if (!knownPaths.has(finding.filePath)) {
         throw new Error(
           `Cumulative OCR finding ${index + 1} is outside the stack`
@@ -2341,6 +2348,25 @@ function validateOCRResult(result, knownPaths = null) {
     })
   }
   return { comments: result.comments, summary, usage }
+}
+
+function validateProducerOCRResultForStack(result, knownPaths = null) {
+  validateProducerOCRResult(result)
+  return validateStackOCRResult(result, knownPaths)
+}
+
+function validateCombinedOCRResult(result, knownPaths = null) {
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    Array.isArray(result) ||
+    result.schema_version !== STACK_COMBINED_OCR_SCHEMA ||
+    result.finish_reason !== 'stop' ||
+    result.summary?.coverage !== 'complete'
+  ) {
+    throw new Error('Generated cumulative OCR result is incomplete')
+  }
+  return validateStackOCRResult(result, knownPaths)
 }
 
 function combineOCRResults(results, layerNumbers = null) {
@@ -2358,7 +2384,9 @@ function combineOCRResults(results, layerNumbers = null) {
   ) {
     throw new Error('OCR layer provenance is incomplete')
   }
-  const validated = results.map((result) => validateOCRResult(result))
+  const validated = results.map((result) =>
+    validateProducerOCRResultForStack(result)
+  )
   const comments = validated.flatMap(({ comments: items }, resultIndex) =>
     items.map((item) =>
       layerNumbers === null
@@ -2383,7 +2411,9 @@ function combineOCRResults(results, layerNumbers = null) {
     }
   )
   return {
+    schema_version: STACK_COMBINED_OCR_SCHEMA,
     comments,
+    finish_reason: 'stop',
     llm: { model: FINAL_STACK_REVIEW_MODEL },
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
@@ -2392,6 +2422,7 @@ function combineOCRResults(results, layerNumbers = null) {
     status: 'complete',
     summary: {
       ...summary,
+      coverage: 'complete',
       elapsed: `${results.length} bounded OCR range(s)`,
     },
     warnings: [],
@@ -2595,7 +2626,10 @@ function renderStackReview({
   workflowSha,
   workflowRunId,
 }) {
-  const code = validateOCRResult(codeResult)
+  const code =
+    mode === 'incremental'
+      ? validateCombinedOCRResult(codeResult)
+      : validateProducerOCRResultForStack(codeResult)
   const manifest = manifestBundle.manifest
   const manifestDigest =
     manifestBundle.manifest_digest ?? manifestBundle.manifestDigest
@@ -2899,7 +2933,10 @@ function topologyCodeSummary(
   reviewRanges = []
 ) {
   const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
-  const code = validateOCRResult(codeResult, knownPaths)
+  const code =
+    mode === 'incremental'
+      ? validateCombinedOCRResult(codeResult, knownPaths)
+      : validateProducerOCRResultForStack(codeResult, knownPaths)
   const pathEntries = new Map(
     manifest.path_index.map((entry) => [entry.filename, entry])
   )

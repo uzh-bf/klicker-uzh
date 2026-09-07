@@ -12,6 +12,14 @@ const DEFAULT_DEVROUTER_BIN = resolve(
   'node_modules/.bin/devrouter'
 )
 const PROFILE_PLAN_CONTRACT = 'playwright/runtime-contract.yml'
+const PLAYWRIGHT_FULL_PROFILE = 'playwright'
+const TRUSTED_FULL_PROFILE_COMPONENTS = new Set([
+  'chat',
+  'full',
+  'live-quiz',
+  'manage',
+  'pwa',
+])
 const PROFILE_PLAN_BINDINGS = ['serviceEndpoints', 'turboFilters']
 const TURBO_FILTER = /^--filter=@klicker-uzh\/[a-z0-9][a-z0-9-]*$/
 const LOOPBACK_ENDPOINT =
@@ -162,6 +170,15 @@ export function resolveRuntimePlan({
   requireString(output, 'output path')
   requireString(contract, 'contract path')
 
+  const profileComponents = profile.split(',')
+  const runtimeProfile =
+    profileComponents.includes('full') &&
+    profileComponents.every((component) =>
+      TRUSTED_FULL_PROFILE_COMPONENTS.has(component)
+    )
+      ? PLAYWRIGHT_FULL_PROFILE
+      : profile
+
   const result = spawnSync(
     devrouterBin,
     [
@@ -170,7 +187,7 @@ export function resolveRuntimePlan({
       '--repo',
       repo,
       '--profile',
-      profile,
+      runtimeProfile,
       '--contract',
       contract,
       '--output',

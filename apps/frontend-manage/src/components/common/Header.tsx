@@ -9,7 +9,8 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  type UserProfileQuery,
+  type ManageUserProfileQuery,
+  UserLoginScope,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -27,13 +28,25 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-type UserProfile = NonNullable<UserProfileQuery['userProfile']>
+type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
 
-function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
+function Header({
+  user,
+  userScope,
+}: {
+  user?: UserProfile | null
+  userScope?: ManageUserProfileQuery['userScope']
+}): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const betaSignupEnabled = useFeatureFlag('beta-signup')
+  const canDiscoverBetaFeatures =
+    betaSignupEnabled &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -258,6 +271,17 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
+        ...(canDiscoverBetaFeatures
+          ? [
+              {
+                key: 'beta-features',
+                type: 'link' as const,
+                label: t('manage.settings.betaFeaturesTitle'),
+                onClick: () => router.push('/user/settings#beta-features'),
+                data: { cy: 'menu-beta-features' },
+              },
+            ]
+          : []),
         {
           key: 'settings',
           type: 'link',

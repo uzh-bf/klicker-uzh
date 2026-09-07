@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.46 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -70,7 +70,7 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 
 ## Profiles
 
-This repository pins devrouter 0.0.46. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -80,6 +80,9 @@ Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
 generated configuration when a cold or warm transition fails. Version 0.0.46
 also queues parallel provider transitions fairly, reports wait progress, and
 keeps detached-state recovery fail-closed while prior containers still exist.
+Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
+and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
+retained-runtime configuration and mount comparison.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -213,6 +216,13 @@ preserves each worktree's `.next/dev` output; a changed dependency fingerprint
 runs one frozen install against the persistent `node_modules` volume and shared
 pnpm content store.
 
+For recovery that must preserve Next.js caches, create the ignored marker
+`.devcontainer/.runtime/preserve-next-cache` in the worktree before `ensure`.
+Its presence refuses new cache-repair requests and applying pending requests,
+leaving caches, pending requests, and the runtime generation unchanged. The
+marker remains effective across retries until explicitly removed. With a
+custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
+
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
 a nested API route, the committed shell pages of auth, PWA, manage, and control
@@ -244,6 +254,12 @@ analytics image and lint CI so the root quality gate runs inside the container.
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
   data remain worktree-scoped.
+- The same store volume is also mounted at `<workspace>/.pnpm-store`. The
+  workspace bind and the store volume are different devices inside the
+  container, so pnpm can fall back from the configured store to a workspace
+  store during installs; the second mount makes that fallback land in the
+  shared volume instead of writing a per-worktree store onto the host bind
+  mount.
 - Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.

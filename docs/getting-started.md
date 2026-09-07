@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-29'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -52,7 +52,7 @@ Postgres and Hatchet as the boot-critical base.
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.46 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery.
+     1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -74,7 +74,11 @@ tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
 keep separate app caches, database state, routes, and processes while sharing
 only the package-download cache. Do not default every parallel worktree to
 `full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
-workers in each environment.
+workers in each environment. The Turbo local cache is shared across all
+worktrees and bounded in size/age; see
+[Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
+the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
+commands.
 
 Playwright is the deliberate toolchain exception. Run
 `pnpm playwright:host -- <args>` from the host; the launcher calls
@@ -118,7 +122,7 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.46`.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -219,11 +223,11 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.

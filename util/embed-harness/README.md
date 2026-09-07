@@ -1,11 +1,19 @@
 # Embed Harness
 
-Static parent page for verifying the embedded practice-quiz handshake locally.
+Static parent page for verifying the embedded practice-quiz handshake and
+navigation locally.
 
 ## What it verifies
 
 - parent sends `klicker:embed-init`
+- parent retries initialization after 250 ms and 1 s so child hydration cannot
+  lose the one-time iframe `load` handshake
+- parent can negotiate resize-only or host-navigation capabilities
 - embedded practice quiz emits `klicker:quiz-state`
+- resize-aware parents receive `klicker:embed-resize` and apply the iframe
+  content height
+- host-navigation parents validate `phase` and `canAdvance`, then send a
+  versioned `klicker:quiz-advance` request only when the child allows it
 - payload transitions through `overview`, `in-progress`, and `completed`
 - accepted and rejected events are visible in the harness log
 
@@ -77,6 +85,16 @@ http://127.0.0.1:3101/en/course/test-course/practiceQuizzes/test-quiz?embed=true
 }
 ```
 
+### Resize-aware embed
+
+1. Keep `Let the host own vertical scrolling` enabled.
+2. Click `Load iframe` and confirm the harness receives an
+   `embed-resize` message.
+3. Confirm `Viewport height` follows the reported height and the iframe has
+   no independent vertical scrollbar.
+4. Uncheck the option, reload the iframe, and confirm the harness no longer
+   applies resize messages.
+
 ### In-progress payload
 
 1. Click `Start` inside the iframe.
@@ -90,6 +108,22 @@ http://127.0.0.1:3101/en/course/test-course/practiceQuizzes/test-quiz?embed=true
   "totalSteps": 1
 }
 ```
+
+### Negotiated host navigation
+
+1. Check `Let the host control quiz navigation`.
+2. Reload the iframe and send init again.
+3. Confirm the latest quiz-state payload includes `phase` and
+   `canAdvance`, and that `Request quiz advance` stays disabled while the
+   child is not ready.
+4. Answer the current question inside the iframe. Confirm the payload reports
+   `canAdvance: true`, then click `Request quiz advance`.
+5. Confirm the child moves to feedback and the host control becomes available
+   again. Click it once more to continue; after the last stack, confirm the
+   payload becomes `completed` and the host control is disabled.
+
+The harness sends the advance request only for a validated, non-completed
+state with `canAdvance: true`, using the iframe's exact origin.
 
 ### Completed payload
 

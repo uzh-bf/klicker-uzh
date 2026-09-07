@@ -2,6 +2,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const DEFAULT_DURATION_SECONDS = 30
+const SELECTED_FALLBACK_DURATION_SECONDS = 120
+const SELECTED_TARGET_SHARD_SECONDS = 600
+const SELECTED_MAX_SHARDS = 4
 const SUPPORTED_TIMING_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 
@@ -167,6 +170,85 @@ function buildShardPlans(allFiles, durationMap, profiles, numShards) {
   }))
 }
 
+function positiveMedian(values) {
+  const positiveValues = values
+    .filter((value) => typeof value === 'number' && Number.isFinite(value))
+    .filter((value) => value > 0)
+    .sort((a, b) => a - b)
+
+  if (positiveValues.length === 0) return null
+
+  const middle = Math.floor(positiveValues.length / 2)
+  if (positiveValues.length % 2 === 1) return positiveValues[middle]
+  return (positiveValues[middle - 1] + positiveValues[middle]) / 2
+}
+
+function selectedDurationMap(selectedFiles, durationMap, profiles) {
+  const durationsByProfile = new Map()
+  const knownDurations = []
+  for (const [file, duration] of durationMap.entries()) {
+    if (!profiles.has(file)) continue
+    knownDurations.push(duration)
+    const profile = profiles.get(file)
+    const profileDurations = durationsByProfile.get(profile) ?? []
+    profileDurations.push(duration)
+    durationsByProfile.set(profile, profileDurations)
+  }
+  const globalMedian = positiveMedian(knownDurations)
+  const selectedDurations = new Map()
+
+  for (const file of selectedFiles) {
+    const directDuration = durationMap.get(file)
+    if (
+      typeof directDuration === 'number' &&
+      Number.isFinite(directDuration) &&
+      directDuration > 0
+    ) {
+      selectedDurations.set(file, directDuration)
+      continue
+    }
+
+    const profile = profiles.get(file)
+    const profileMedian = positiveMedian(durationsByProfile.get(profile) ?? [])
+    selectedDurations.set(
+      file,
+      profileMedian ?? globalMedian ?? SELECTED_FALLBACK_DURATION_SECONDS
+    )
+  }
+
+  return selectedDurations
+}
+
+function selectedShardCount(selectedFiles, durationMap) {
+  const totalDuration = [...selectedFiles].reduce(
+    (total, file) => total + durationMap.get(file),
+    0
+  )
+  return Math.min(
+    SELECTED_MAX_SHARDS,
+    selectedFiles.length,
+    Math.max(1, Math.ceil(totalDuration / SELECTED_TARGET_SHARD_SECONDS))
+  )
+}
+
+function buildSelectedShardPlans(selectedFiles, durationMap, profiles) {
+  if (!Array.isArray(selectedFiles) || selectedFiles.length === 0) {
+    fail('selected spec files must be a non-empty array')
+  }
+  if (new Set(selectedFiles).size !== selectedFiles.length) {
+    fail('selected spec files must be unique')
+  }
+  for (const file of selectedFiles) {
+    if (typeof file !== 'string' || !profiles.has(file)) {
+      fail(`selected spec ${file} has no validated profile`)
+    }
+  }
+
+  const estimates = selectedDurationMap(selectedFiles, durationMap, profiles)
+  const numShards = selectedShardCount(selectedFiles, estimates)
+  return buildShardPlans(selectedFiles, estimates, profiles, numShards)
+}
+
 function readJson(filePath, label) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'))
@@ -240,9 +322,16 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_DURATION_SECONDS,
+  SELECTED_FALLBACK_DURATION_SECONDS,
+  SELECTED_MAX_SHARDS,
+  SELECTED_TARGET_SHARD_SECONDS,
   buildShardPlans,
+  buildSelectedShardPlans,
   canonicalProfile,
   parseProfileManifest,
   parseTimings,
   planShards,
+  positiveMedian,
+  selectedDurationMap,
+  selectedShardCount,
 }

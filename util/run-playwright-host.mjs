@@ -98,6 +98,8 @@ export function resolvePlaywrightEnvironment({
     DATABASE_URL: databaseUrl.toString(),
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
+    NEXT_PUBLIC_GROWTHBOOK_API_HOST: `${appUrl('manage')}/__growthbook__`,
+    NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY: 'sdk-test',
     URL_AUTH: appUrl('auth'),
     URL_CHAT: appUrl('chat'),
     URL_CONTROL: appUrl('control'),

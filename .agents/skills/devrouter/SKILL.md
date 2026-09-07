@@ -136,6 +136,8 @@ profiles:
 - Validation is strict at config load: unknown keys, non-routed `apps`, non-dependency `dependencies`, `readiness` outside the profile's apps, and multiple defaults are rejected.
 - Selection: `devrouter ensure <path> --profile <name>`. Comma-separated selections (`--profile manage,pwa`) merge with deduplication; the canonical name is sorted-unique so order never affects identity or fingerprints. A wildcard member collapses to everything.
 - Managed adapters receive `DEVROUTER_PROFILE` (canonical resolved name) in the post-start env; profile switches replace the owned process group via the fingerprint.
+- Adapters may pass `--prepare-command <command>` to `devrouter-process ensure` for synchronous dependency preparation under the process lock before application launch. Unchanged owned processes skip preparation; preparation participates in default fingerprints and must not daemonize or detach.
+- Exact managed Devsy stop proves the complete retained container population, ownership and configuration before stopping residual services after a stopped primary. Unknown evidence blocks cleanup, and an original provider failure remains an error even if residual cleanup succeeds.
 
 ### Managed devcontainer resources
 
@@ -187,6 +189,27 @@ profiles:
   `postCreateCommand` or `postStartCommand` before provider mutation. Generated
   selective configuration preserves lifecycle fields and changes only
   `runServices`.
+
+## Automation profile plans
+
+Use `devrouter profile resolve --json` when automation only needs exact selected
+resources. Use `devrouter profile plan` when a repository-owned contract must
+bind selected app names to build arguments, readiness URLs, or other literals:
+
+```bash
+devrouter profile plan --repo . --profile <selection> \
+  --contract <repo-relative-yaml> --output <plan.json> --json
+```
+
+The version-1 contract is separate from `.devrouter.yml`. It maps every allowed
+app to named non-empty string arrays, constrains dependencies and managed
+services to allowed sets, and requires an exact managed-process set. All
+resource names must exist in `.devrouter.yml`. The path must be a regular,
+non-symlink file inside the repository. Devrouter emits canonical, deduplicated
+literal arrays and atomically writes mode `0600`; it never interprets binding
+names, expands values, or runs a shell or runtime. Consumers validate expected
+keys and pass values as literal data. Keep separate contracts for workloads
+with different exact process policies.
 
 ## Env var injection
 
@@ -266,8 +289,9 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter -V [--repo .]`: show installed CLI version, local repo version, and next upgrade target
 - `devrouter upgrade [version] [--repo .]`: list upgrade targets or print target Agent Adaptation Prompt
 - `devrouter setup --yes [--repo .] [--json] [--workspace-runtime <devpod|devsy>]`: first-run machine setup plus structured diagnostics; explicit Devsy selection acquires its verified agent
-- `devrouter ensure [path] [--profile <name>] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; a managed profile selects its independent resource dimensions
+- `devrouter ensure [path] [--profile <name>] [--repair] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; explicit repair uses the recorded degraded profile and unchanged retained configuration
 - `devrouter profile resolve --repo <path> [--profile <selection>] [--json]`: resolve exact profile resources for automation without starting or inspecting a runtime
+- `devrouter profile plan --repo <path> [--profile <selection>] --contract <repo-relative-yaml> [--output <path>] [--json]`: validate repository-owned resource policy and emit literal bindings without runtime access
 - `devrouter stop [path] [--delete] [--json]`: stop the exact workspace runtime and remove exact routes; `--delete` explicitly deletes its ownership-proven data without removing the checkout
 - `devrouter exec [path] -- <command...>`: literal one-shot command inside the exact running workspace runtime
 - `devrouter up` / `devrouter down`: start/stop shared Traefik router
@@ -290,7 +314,7 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter app exec <name> [--shell] [--env <env>] [--workspace <slug>] -- <cmd>`: one-shot command with resolved dep env
 - `devrouter app rm <name> [--keep-config]`: remove app entry (`--keep-config` frees only the live route/hostname, leaves `.devrouter.yml` untouched)
 - `devrouter workspace up <branch> [--path <dir>] [--no-devpod] [--open]`: create a worktree and start/prove it unless create-only mode is requested
-- `devrouter workspace ensure [path] [--profile <name>] [--open] [--json]`: compatibility alias of `devrouter ensure`
+- `devrouter workspace ensure [path] [--profile <name>] [--repair] [--open] [--json]`: compatibility alias of `devrouter ensure`
 - `devrouter workspace ls [--json]`: list ownership, Git, workspace runtime, route, path, and branch evidence
 - `devrouter workspace cleanup [--repo .] [--inactive-for 30d] [--check-merged] [--measure-size] [--json]`: report-only cleanup evidence and exact guarded suggestions; no `--yes` or apply mode
 - `devrouter workspace stop <workspace|branch>`: stop DevPod and routes; preserve checkout, owner record, and data
