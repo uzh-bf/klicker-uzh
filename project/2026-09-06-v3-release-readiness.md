@@ -177,37 +177,75 @@ historical, not the current delivery state.
 
 ## Database payload
 
-Comparison of current `origin/v3` with the general production tag
-`v3.4.0-alpha.73` contains five added migrations and no modified or deleted
+Comparison of PR head `7ba2082aef1139dfc18cda348f0057eed84e273a` with the general production tag
+`v3.4.0-alpha.73` contains seven added migrations and no modified or deleted
 historical migration SQL files. Chat-only `alpha.73.3` is not the database
-baseline. The earlier four-migration report is stale.
+baseline. The earlier four- and five-migration reports are stale. This is a
+source inventory, not a readback of the production migration ledger.
 
 | Migration | Effect and compatibility |
 | --- | --- |
 | `20260820151622_chatbot_lifecycle_and_ai_capability` | Adds chatbot publication status and owner capability fields. Existing bots are backfilled to PUBLISHED; subsequently created bots default to DRAFT. The SQL is transactional. |
 | `20260822075407_chat_account_usage` | Adds owner/month/usage-class accounting with decimal credits and an owner foreign key. The table starts empty; the SQL is transactional. |
+| `20260823120459_ai_features_enabled` | Adds the sole account AI approval with default false and no approval backfill. Reuses the v3-ai migration identity and SQL. Unapproved owners cannot publish or serve model turns after activation. |
 | `20260826012006_chat_turn_lifecycle_claim` | Adds lifecycle status and a nullable attempt identifier. Existing rows default to COMPLETED. The file has no explicit transaction wrapper. |
 | `20260902100000_course_deletion_request` | Adds a nullable asynchronous course-deletion timestamp. Existing courses remain unmarked. |
 | `20260903120000_chatbot_standard_mode_config` | Adds nullable JSONB configuration to Chatbot, without a backfill. Existing null values use the application's legacy-mode normalization. |
+| `20260906212500_beta_preference_and_ai_approval` | Adds default-true `betaEnabled` and drops `aiChatbotPublishingEnabled`. The drop is irreversible without a compensating migration and incompatible with any running or rollback image that still selects the removed column. Ship only with its creating lifecycle migration. |
 
-The fifth migration arrived with the already-merged
+The standard-mode configuration migration arrived with the already-merged
 [lecturer authoring and model-policy package](https://github.com/uzh-bf/klicker-uzh/pull/5744).
 The Prisma field is optional. Chat's effective-mode resolver explicitly defaults
 its configuration argument to null, and its existing tests cover absent and
 malformed typed configuration falling back to legacy flags. All 16 effective-mode
-tests passed in a fresh run for this checkpoint. No new migration is needed for
-the feature-flag cleanup.
+tests passed in that earlier checkpoint. The subsequent database-preference
+amendment adds the two approval/preference migrations listed above.
 
 This is source evidence, not a new production database read or migration run.
 Earlier synthetic tests and historical generation-provenance caveats remain
 separate. Apply the complete migration payload before running applications that
 select the new fields; a disabled UI flag does not make missing columns safe.
 
+### Release activation prerequisites
+
+Source merge is not deployment approval. These gates remain unresolved until
+the environment owner records evidence; this document does not satisfy them.
+
+- Preserve `aiFeaturesEnabled=false` and the explicit account-approval policy.
+  Do not infer approval from an existing published chatbot or auto-backfill its
+  owner. Before activating the new Chat image, establish the approved owner
+  population and the token-provisioning/validation path owned by v3-ai. If any
+  currently serving owner is unapproved, resolve that account explicitly or
+  approve its interruption before rollout. The column cannot be populated by a
+  pre-migration step because it does not yet exist; any staged approval cutover
+  requires a separately reviewed deployment sequence. Until then, hold activation.
+- Ship the lifecycle migration, shared AI-approval migration and preference/drop
+  migration together. The first release carrying the lifecycle/approval code
+  must also carry [PR #5799 — unified approval and safe test databases](https://github.com/uzh-bf/klicker-uzh/pull/5799).
+  Never cherry-pick the drop alone. The known general production reference is
+  `v3.4.0-alpha.73` (Chat has a separate `alpha.73.3` patch); neither this reference
+  nor a successful build proves full rollback compatibility. Exclude every
+  intermediate image whose generated client selects `aiChatbotPublishingEnabled`.
+- Before v3-ai reintegration, inspect the actual staging schema and approval
+  population under separate read authority. Source on v3-ai still selects the
+  removed column and contains an AI-approval writer. A direct PreSync drop while
+  those pods serve is unsafe; settle an expand-contract staging sequence first.
+  The prior user statement about no approval data is not live staging evidence.
+- Rehearse the complete migration payload and approve compatibility with the
+  previous application clients, including independently deployed Analytics.
+  Verify whether assessment uses the same migrated database. Confirm managed
+  backup retention, the database team's recovery procedure and lock-contention
+  observation for this rollout. No production backup or data was accessed here.
+- Follow the ordered [GrowthBook rule transition](../docs/feature-flags.md#transition-from-saved-group-targeting)
+  only after application deployment. Record canary results and the back-out;
+  default-on beta preference never substitutes for AI approval.
+
 ## Release requirements
 
 - Complete local verification and independent review of beta discovery and the
-  fail-closed `ai-beta` authoring gate. `beta-signup` governs new enrollment;
-  discovery remains visible and existing-member opt-out is preserved.
+  fail-closed `ai-beta` authoring gate. The database owns default-on beta
+  preference; Catalyst gates opt-in, and full-access opt-out remains available
+  without Catalyst. `beta-signup` is removed; discovery remains visible.
 - Preserve [the deployed disclaimer dark-mode fix](https://github.com/uzh-bf/klicker-uzh/pull/5696).
   The PR is still open. Comparing `origin/v3` against `alpha.73.3` confirms that
   `disclaimer-modal.tsx` lacks its `primary` button prop. Do not duplicate the PR

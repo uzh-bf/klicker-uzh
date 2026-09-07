@@ -285,7 +285,8 @@ signal, not a GrowthBook enrollment switch.
 The backend passes the trusted preference to the read-only GrowthBook `ai-beta`
 evaluation with the existing stable actor id, `actorType: user`, role, and
 Catalyst attributes. The rollout rule must require `betaEnabled: true`,
-`catalyst: true`, and the existing actor conditions. A missing, false, or
+`catalyst: true`, and `actorType: user`; preserve the environment boundary and
+any deliberately narrower role or rollout restrictions. A missing, false, or
 unreadable preference fails closed, and a remote force-true result cannot
 override a false database value.
 
@@ -299,6 +300,39 @@ gate for chatbot publication and model usage, even when budget enforcement is
 disabled. Beta preference and `ai-beta` never grant that approval. Per-chatbot
 publication review and published participant access remain separate and
 unchanged.
+
+### Transition from saved-group targeting
+
+This is an operator checklist, not authorization to deploy or edit live flags.
+No live rule or saved-group contents were verified for this change.
+
+1. Before deployment, record the current rule configuration and check which
+   other flags reference the old beta saved group. Keep any targeting identifiers
+   in the restricted operator system, not Git or PR comments. Confirm the
+   [release approval prerequisites](../project/2026-09-06-v3-release-readiness.md#release-activation-prerequisites),
+   including account AI approval; changing `ai-beta` cannot grant it.
+2. Deploy the complete migration and application candidate first. Old images
+   do not send `betaEnabled`, so switching the rule first can exclude everyone.
+   During the interim window, the old rule still selects the rollout cohort,
+   but the new backend additionally denies a false or unreadable database
+   preference. Default-on preference alone does not broaden the old rule.
+3. Verify the new attribute in both Manage and backend evaluation for a synthetic
+   eligible lecturer. If the old rule has an eligible canary, prove `ai-beta`
+   remains true there; otherwise record the expected false result and require
+   a controlled rule-change canary. Then replace only the saved-group membership
+   condition with `betaEnabled: true`, retaining `catalyst: true`,
+   `actorType: user`, and the intended environment/role/rollout restrictions.
+   Prove enabled authoring, opt-out denial, and unchanged participant access
+   independently of the owner's beta preference.
+4. If verification fails, restore the prior rule configuration while retaining
+   the new application and its database opt-out guard. Do not force-enable the
+   flag or roll back to a binary that selects the removed approval column.
+   Rolling the rule back narrows the cohort but does not undo saved preferences.
+5. Once the rollback window closes, the GrowthBook operator checks again for
+   other consumers and obtains explicit approval to delete the obsolete group.
+   Do not export its personal membership list by default. Any required retention
+   needs a separately approved purpose, restricted destination and deletion date.
+   Keep the general backend management API configuration for future flag writers.
 
 ## Failure and rollout behavior
 

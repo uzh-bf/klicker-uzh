@@ -9,6 +9,41 @@ export interface BetaEnrollmentCapability {
   signupAvailable: boolean
 }
 
+function errorDiagnostics(error: unknown) {
+  const name = error instanceof Error ? error.name : undefined
+  const code =
+    error instanceof Error && 'code' in error ? error.code : undefined
+  return {
+    errorType:
+      name &&
+      [
+        'Error',
+        'TypeError',
+        'PrismaClientKnownRequestError',
+        'PrismaClientUnknownRequestError',
+        'PrismaClientInitializationError',
+        'PrismaClientValidationError',
+      ].includes(name)
+        ? name
+        : 'UnknownError',
+    prismaCode:
+      typeof code === 'string' &&
+      [
+        'P1000',
+        'P1001',
+        'P1002',
+        'P1010',
+        'P1017',
+        'P2021',
+        'P2022',
+        'P2024',
+        'P2025',
+      ].includes(code)
+        ? code
+        : undefined,
+  }
+}
+
 function hasFullAccess(ctx: ContextWithUser): boolean {
   return (
     ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
@@ -39,8 +74,8 @@ export async function getBetaEnrollment(
   if (!hasFullAccess(ctx)) return capability(ctx, null)
   try {
     return capability(ctx, await getBetaPreference(ctx))
-  } catch {
-    console.error('Failed to read beta preference')
+  } catch (error) {
+    console.error('Failed to read beta preference', errorDiagnostics(error))
     return capability(ctx, null)
   }
 }
@@ -74,8 +109,8 @@ export async function setBetaEnrollment(
       value: Promise.resolve(user.betaEnabled),
     }
     return capability(ctx, user.betaEnabled)
-  } catch {
-    console.error('Failed to update beta preference')
+  } catch (error) {
+    console.error('Failed to update beta preference', errorDiagnostics(error))
     throw new GraphQLError('Failed to update beta enrollment', {
       extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
     })

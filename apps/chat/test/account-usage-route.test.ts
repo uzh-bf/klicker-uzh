@@ -297,6 +297,11 @@ describe('account usage chat route', () => {
     })
     expect(response.status).toBe(403)
     expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
+      requestId: expect.any(String),
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()

@@ -23,6 +23,11 @@ privileges. A localhost address, port forward, CI variable or `--force` is not
 proof that a database is disposable. Never mark an existing retained database
 to get past a refusal.
 
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` before its first database operation. Arm
+the same actual client used for mutation; cleanup must also check it when setup
+has failed. Do not substitute a hostname check or a separate verification client.
+
 `packages/prisma/src/disposableDatabase.ts:requireDisposableDatabase` checks
 the actual registered Prisma client and its captured connection string.
 It rejects a client already used without the guard, checks the live identity
@@ -45,6 +50,15 @@ disposable environment. The legacy `test:local` Compose helper is disabled
 because it deletes shared volumes. Run the serialized GraphQL suite inside a
 provisioned self-contained environment using
 `pnpm --filter @klicker-uzh/graphql test` (config-derived).
+
+On a refusal, stop destructive work. Without displaying connection strings,
+check that the invoking process uses the intended disposable database/login,
+that no ambient `PG*` override is present, and that the exact PostgreSQL service
+completed fresh provisioning. The current sanitized refusal can represent a
+connection failure, wrong identity/marker, or a client used before arming;
+it does not identify which one. Do not retry reset blindly or print driver
+errors, which can contain credentials. For retained volumes, follow the
+[fresh-environment guidance](../.devcontainer/README.md#retained-postgresql-volumes).
 
 ### Test selection
 

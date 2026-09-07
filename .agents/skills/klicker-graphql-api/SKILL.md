@@ -68,7 +68,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    its persisted hash remains in `server.json`.
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
-8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+8. **Tests** — run `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment with marked disposable Postgres, Redis and Hatchet. The legacy `test:local` helper is disabled because it deletes shared volumes. Route further via `klicker-testing-verification`.
 
 For pagination changes, test both finite `take`/`skip` values and omitted
 values in the service, and verify that the generated operation variables and

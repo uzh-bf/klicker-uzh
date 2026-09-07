@@ -753,6 +753,11 @@ export async function POST(
   }
 
   if (!chatbot.owner.aiFeaturesEnabled) {
+    console.warn('Chat admission denied', {
+      requestId,
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
     return NextResponse.json(
       { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
       { status: 403 }

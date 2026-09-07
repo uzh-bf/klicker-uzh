@@ -28,6 +28,12 @@ atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` on the actual client before its first
+database operation, including cleanup after failed setup. Do not use a separate
+verification client or a hostname-only check. A refusal requires correcting the
+disposable environment, never bypassing the guard or marking retained data.
+
 For Git fixture or hook changes, run the focused Node test that exercises the
 fixture plus `pnpm run check:git-identity` and
 `bash util/check-git-identity.sh current`. The guard test covers synthetic

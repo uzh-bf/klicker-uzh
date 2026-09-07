@@ -97,13 +97,23 @@ describe('beta enrollment service', () => {
 
   it('returns an unknown, non-changeable capability when the read fails', async () => {
     const { ctx, prisma } = createContext()
-    prisma.user.findUnique.mockRejectedValue(new Error())
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    prisma.user.findUnique.mockRejectedValue(
+      Object.assign(new Error('synthetic-private-connection'), {
+        name: 'PrismaClientKnownRequestError',
+        code: 'P2022',
+        meta: { privateValue: 'synthetic-private-metadata' },
+      })
+    )
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
       mayChange: false,
       membership: null,
       signupAvailable: true,
+    })
+    expect(log).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'PrismaClientKnownRequestError',
+      prismaCode: 'P2022',
     })
   })
 
@@ -252,14 +262,24 @@ describe('beta enrollment service', () => {
   it('leaves the request cache unchanged after a failed write', async () => {
     const { ctx, prisma } = createContext()
     prisma.user.findUnique.mockResolvedValue({ betaEnabled: false })
-    prisma.user.update.mockRejectedValue(new Error())
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    prisma.user.update.mockRejectedValue(
+      Object.assign(new Error('synthetic-private-connection'), {
+        name: 'synthetic-private-error-name',
+        code: 'synthetic-private-error-code',
+        meta: { privateValue: 'synthetic-private-metadata' },
+      })
+    )
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     await getBetaEnrollment({}, ctx)
     await expect(
       setBetaEnrollment({ enabled: true }, ctx)
     ).rejects.toMatchObject({
       extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
+    })
+    expect(log).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'UnknownError',
+      prismaCode: undefined,
     })
     await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
       membership: false,

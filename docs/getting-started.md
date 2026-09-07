@@ -216,7 +216,15 @@ Two paths, depending on whether you have Infisical access:
 1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
 
-Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
+Compose infra needs no secrets; the app dev servers are the secret consumers.
+The legacy Compose database is not a supported target for guarded reset, push,
+development migration or test seeds. Use the provisioned self-contained
+container and the [raw migration and seed sequence](./data-and-migrations.md)
+instead (config-derived). Retained volumes are not adopted automatically; see
+[retained PostgreSQL volumes](../.devcontainer/README.md#retained-postgresql-volumes)
+before rebuilding an old checkout. Seeded test credentials are documented in
+the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values
+into other documents.
 
 ## Agent addendum
 

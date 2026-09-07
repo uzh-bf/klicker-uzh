@@ -13,8 +13,10 @@ one-at-a-time.
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
 > Hatchet workers**. All run in the one `app` container; the workers have no
 > port/route. Still skipped: `analytics` (Python), `office-addin`, and `docs`
-> (no `dev` task / extra toolchain). The legacy host-based stack (`docker-compose.yml`,
-> `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
+> (no `dev` task / extra toolchain). Legacy host-based infrastructure definitions
+> (`docker-compose.yml`, `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`)
+> remain available, but retained databases cannot use the guarded development
+> mutation/test-seed commands. See [Data & Migrations](../docs/data-and-migrations.md).
 
 ## How to Run
 
@@ -67,6 +69,27 @@ devrouter stop .
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
+
+### Retained PostgreSQL volumes
+
+The Compose-scoped `<compose-project>_pgdata` volume retains PostgreSQL data.
+Initialization SQL runs only for a fresh volume. A retained volume without the
+marked `klicker_test` and `klicker_test_shadow` databases cannot run the guarded
+reset, push, development migration or test seed. Repeated resets do not provision
+those objects, and restarting the app does not make the volume disposable.
+
+Prefer a separately approved fresh worktree/runtime, leaving retained data
+untouched. If replacing an obsolete local volume is necessary, first resolve
+the exact checkout's Compose project and PostgreSQL container through devrouter.
+Inspect only its mount metadata with
+`docker inspect <exact-postgres-container-id> --format '{{json .Mounts}}'`
+(config-derived), and record the named volume mounted at
+`/var/lib/postgresql/data`. Stop the exact runtime and obtain explicit approval
+for that volume and its data loss before any removal. The narrowly scoped command
+is `docker volume rm <verified-exact-pgdata-volume>`; it cannot run while a
+container still references the volume, so container teardown also needs its
+own approved scope. Never use `docker compose down -v`, broad pruning, or manual
+marker creation to work around a refusal.
 
 ## Profiles
 

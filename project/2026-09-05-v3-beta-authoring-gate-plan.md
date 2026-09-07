@@ -1,5 +1,57 @@
 # V3 beta discovery and chatbot authoring gates
 
+## September 7 readiness corrections
+
+The user requested review and incorporation of relevant findings from the
+production-readiness report at head `7ba2082aef1139dfc18cda348f0057eed84e273a`.
+The report is an input to verify, not authority to change the approved product
+policy. Preserve default-on beta preference, Catalyst-required opt-in, one
+default-off AI approval, the guarded shadow, and general backend GrowthBook
+management configuration. No approval backfill, migration rewrite, live rule
+change, staging integration, deployment or retained-volume mutation is included.
+
+The native planner approved the bounded corrective scope: release inventory and
+activation prerequisites; developer migration/test guidance; ordered GrowthBook
+transition and back-out; privacy-safe beta failure and Chat admission diagnostics;
+obsolete saved-group pass-through removal and fixture-specific CI triggers.
+Main owns the safety-sensitive diagnostics and release decisions. The bounded
+documentation inspection used trusted native continuity after the configured
+exploration provider failed before work. Its create-only claim was rejected:
+`prisma:migrate:only` runs `migrate dev`; only the separately named create-only
+script supplies `--create-only`.
+
+Verification extends existing beta failure and Chat denial cases, adding no
+new suites or UI contract. Mocked tests run without services or network access;
+configuration checks cover CI inclusions/exclusions and retained management
+wiring. Documentation commands are config-derived, not live operational proof.
+Follow-up UX states and a richer rollout-availability API remain separate from
+these corrections; no permission widening or new GraphQL capability is implied.
+
+### Correction progress
+
+The migration inventory now lists seven entries, including the shared AI approval
+and preference/drop migration. Activation remains blocked on explicit owner
+approval/token readiness, staging expand-contract coordination, full migration
+rehearsal, assessment-database coverage, Analytics ordering and recovery evidence.
+Neither existing publication nor a beta preference grants AI approval.
+
+Local focused evidence: 18 beta-preference tests and 28 Chat-route tests pass,
+including safe diagnostic fields and denial before provider work. CI filter
+checks and retained GrowthBook management-variable/Secret checks pass. No model
+provider, database, managed runtime or live GrowthBook service was contacted.
+GraphQL and Chat typechecks, documentation links, AGENTS.md validation, syncpack
+and formatting pass, with one pre-existing Chat `any` warning. Six of seven
+root lint tasks pass; unchanged Analytics cannot locate its pinned Python in
+the offline checks container and its attempted download fails. This is not
+full-root lint or frozen-install proof. Committed correction review is pending.
+Existing hosted final review is
+incomplete, not a code verdict; do not claim merge or production readiness.
+
+Prior reviews are reusable by unchanged content, not invalid merely because
+the commit id moved. The report's blanket SHA-based stale classification does
+not supersede that rule. No new hosted review budget or automatic retry is
+authorized by this correction.
+
 ## Approved destructive database guard extension
 
 Prevent repository test cleanup, test seeds and destructive Prisma development

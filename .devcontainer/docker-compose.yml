@@ -28,8 +28,8 @@ services:
       default: {}
       devnet: {}
     volumes:
-      # init.sql preserves production-dump support; the disposable bootstrap
-      # creates the explicit local test login and its marked databases.
+      # init.sql retains the legacy database for separate operator workflows;
+      # apps use only the marked databases created by the disposable bootstrap.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - ./disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
       - pgdata:/var/lib/postgresql/data
@@ -83,7 +83,6 @@ services:
     env_file:
       - devcontainer.env
     environment:
-      - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
       - WORKSPACE=${WORKSPACE:-}
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
