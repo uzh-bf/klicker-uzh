@@ -73,6 +73,38 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+### Runtime repair and course verification pass, 2026-09-08
+
+Local commit `11db845b3ece0e092e182bb0c7d74c6e1f2a5b07` contains the atomic
+synthetic MCP-parent restoration and temporary-table regression coverage.
+The dedicated slice reviewer approved its complete committed range without
+findings. The simplifier identified unused test-helper overrides; removal
+preserves all scenarios and the temporary-table acceptance passed again.
+Reports are under `project/_local/reviews/2026-09-08-local-mcp-parent-repair-*`.
+Pre-commit secret scan, 35 check tasks, seven lint tasks and staged formatting
+passed using the exact container toolchain and host Git orchestration.
+
+The course suite now passes all 55 Chromium tests in 4.7 minutes:
+`/tmp/manage-course-group-creation-sync.log`. The separate activity-log suite
+passes all 24 tests in 2.7 minutes: `/tmp/manage-repair-activity-log.log`.
+The combined 79 acceptance cases are green across those two producing runs.
+The group-sharing failure was resolved by waiting for each synthetic group
+row after creation, before navigation/logout. The deletion test waits for
+its cancelled modal to disappear and its reopened Delete action to appear.
+No permission, deletion or comment-scope assertion was weakened.
+
+Repeated managed startups and the complete suites verify the development-only
+Manage/PWA cache setting; retain it as a local development workaround, without
+claiming the underlying Turbopack mechanism has been established. Production
+settings are unchanged. The local fixture no longer requires manual parent
+restoration after test cleanup. One intervening preparation stall required
+managed cancellation/stop; the subsequent clean restart passed. There is no
+claim that the fixture repair resolves unrelated build-process stalls.
+
+Activity and wizard implementation, the remaining visual acceptance matrix,
+integrated final review and draft-stack publication remain outstanding. No
+handoff was created or synchronized; no new remote publication occurred.
+
 ### Approved atomic local fixture restoration, 2026-09-08
 
 The user approved extending local MCP startup repair to recreate only missing

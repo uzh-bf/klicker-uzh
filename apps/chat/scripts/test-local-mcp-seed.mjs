@@ -161,17 +161,16 @@ async function insertSyntheticCourse(db) {
   )
 }
 
-async function insertSyntheticChatbot(
-  db,
-  {
-    id = LOCAL_CHATBOT_ID,
-    ownerId = SYNTHETIC_OWNER_ID,
-    courseId = SYNTHETIC_COURSE_ID,
-  } = {}
-) {
+async function insertSyntheticChatbot(db) {
   await db.query(
     'INSERT INTO "Chatbot" (id, "ownerId", "courseId", name, "updatedAt") VALUES ($1, $2, $3, $4, $5)',
-    [id, ownerId, courseId, 'Synthetic local MCP fixture', SYNTHETIC_TIMESTAMP]
+    [
+      LOCAL_CHATBOT_ID,
+      SYNTHETIC_OWNER_ID,
+      SYNTHETIC_COURSE_ID,
+      'Synthetic local MCP fixture',
+      SYNTHETIC_TIMESTAMP,
+    ]
   )
 }
 

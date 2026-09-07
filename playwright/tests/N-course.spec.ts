@@ -2508,10 +2508,12 @@ test.describe('Part 4: Course deletion', () => {
     )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
     await page.getByTestId('course-deletion-modal-cancel').click()
+    await expect(page.getByTestId('course-deletion-modal-cancel')).toBeHidden()
 
     await openActionMenuByTestId(
       page,
-      `course-list-actions-${DELETION.courseName}`
+      `course-list-actions-${DELETION.courseName}`,
+      `delete-course-${DELETION.courseName}`
     )
     await page.getByTestId(`delete-course-${DELETION.courseName}`).click()
 
@@ -4444,6 +4446,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('user-group-name').fill(SHARING.group1)
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_IND_EMAIL)
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group1}`)).toBeVisible()
 
     // Create group2 with pro2 as admin
     await page.getByTestId('create-user-group').click()
@@ -4451,6 +4454,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_INST_EMAIL)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group2}`)).toBeVisible()
 
     // Create group3 with pro3 as admin
     await page.getByTestId('create-user-group').click()
@@ -4460,6 +4464,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
       .fill(LECTURER_INST2_SHORTNAME)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group3}`)).toBeVisible()
     await logoutUser()
 
     // Create group4 in pro4 account with lecturer as user
@@ -4470,6 +4475,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('user-group-name').fill(SHARING.group4)
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_SHORTNAME)
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group4}`)).toBeVisible()
     await logoutUser()
 
     // Create group5 in pro5 account with lecturer as admin
@@ -4481,6 +4487,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await page.getByTestId('member-shortname-email-0').fill(LECTURER_SHORTNAME)
     await page.getByTestId('member-admin-0').click()
     await page.getByTestId('submit-create-user-group').click()
+    await expect(page.getByTestId(`user-group-${SHARING.group5}`)).toBeVisible()
     await logoutUser()
 
     // Share course with groups
