@@ -27,7 +27,7 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
 
-Public group averages include personal course points only from active leaderboard participants. Inactive members contribute zero while remaining in the group denominator; group-earned points are independent. Joining or leaving the individual leaderboard refreshes the average atomically. A one-member group retains its existing zero personal-average rule.
+Gamification group averages include the personal course points of all group members, regardless of individual leaderboard opt-in. Opting out hides the individual leaderboard entry but does not remove points from the group average. Group-earned points are independent. A one-member group retains its existing zero personal-average rule.
 
 ### Assessment participant invitations
 

@@ -143,7 +143,7 @@ describe('leaderboard publication retains private balances', () => {
       prisma.participantGroup.findUniqueOrThrow({ where: { id: group.id } })
     await refreshGroup()
     expect(await groupState()).toMatchObject({
-      averageMemberScore: 38,
+      averageMemberScore: 100,
       groupActivityScore: 20,
     })
     const publicGroups = await getParticipantGroups(
@@ -184,7 +184,7 @@ describe('leaderboard publication retains private balances', () => {
     await leaveCourseLeaderboard({ courseId }, ctx)
     await leaveCourseLeaderboard({ courseId }, ctx)
     expect(await groupState()).toMatchObject({
-      averageMemberScore: 38,
+      averageMemberScore: 100,
       groupActivityScore: 20,
     })
     await Promise.all([
@@ -196,7 +196,7 @@ describe('leaderboard publication retains private balances', () => {
       refreshGroup(),
       leaveCourseLeaderboard({ courseId }, ctx),
     ])
-    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
+    expect(await groupState()).toMatchObject({ averageMemberScore: 100 })
     await leaveParticipantGroup({ groupId: group.id, courseId }, ctx)
     expect(await groupState()).toMatchObject({ averageMemberScore: 0 })
     await joinCourseLeaderboard({ courseId }, ctx)
@@ -204,15 +204,15 @@ describe('leaderboard publication retains private balances', () => {
       joinParticipantGroup({ courseId, code: group.code }, ctx),
       leaveCourseLeaderboard({ courseId }, ctx),
     ])
-    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
+    expect(await groupState()).toMatchObject({ averageMemberScore: 100 })
     const peerCtx = { ...ctx, user: { ...ctx.user, sub: groupPeerId } }
     await leaveCourseLeaderboard({ courseId }, peerCtx)
     expect(await groupState()).toMatchObject({
-      averageMemberScore: 0,
+      averageMemberScore: 100,
       groupActivityScore: 20,
     })
     await joinCourseLeaderboard({ courseId }, peerCtx)
-    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
+    expect(await groupState()).toMatchObject({ averageMemberScore: 100 })
     const failingPrisma = prisma.$extends({
       query: {
         leaderboardEntry: {

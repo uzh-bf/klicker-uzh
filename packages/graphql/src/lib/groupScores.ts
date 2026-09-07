@@ -36,7 +36,6 @@ export async function refreshParticipantGroupScores(
           leaderboards: {
             where: {
               type: DB.LeaderboardType.COURSE,
-              participation: { isActive: true },
             },
             select: { courseId: true, score: true },
           },

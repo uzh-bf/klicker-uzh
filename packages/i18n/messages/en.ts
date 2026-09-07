@@ -959,7 +959,7 @@ While answering questions, logged-in participants can set personal bookmarks on 
 
 Some courses use group activities that can only be solved collaboratively. Lecturers may enable randomized group creation and specify a preferred group size. Once groups are formed and a group activity is published, hints are distributed across group members, and the group can solve the activity together within a limited time window (one submission per group). Group formation and activities are available to participants with a KlickerUZH account.
 
-Within a group, you can compare published points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the average personal points of group members. Members who have not joined the course leaderboard contribute zero to this average; their points remain private.
+Within a group, you can compare published points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the average personal points of group members. The average includes all group members, whether or not they participate in the course leaderboard.
 
 #### Courses, Leaderboards, and Achievements
 
@@ -1394,7 +1394,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       alreadySubmittedAt:
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
-        'Your personal points remain private while you are not on the course leaderboard. They do not contribute to the public group average. Group membership and points earned together in group activities are unaffected.',
+        'Your individual entry is hidden while you are not on the course leaderboard. Your points still count towards the group average. Group membership and points earned together in group activities are unaffected.',
       singleParticipantAutomaticAssignment:
         'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
       maxNumberOfGroupMembers:
