@@ -5,9 +5,16 @@ import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
+import { GraphQLError } from 'graphql'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  LEARNING_ANALYTICS_ADVISORY_LOCK,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  type ParticipantDataUseFields,
+  participantDataUseSelect,
+} from '../lib/learningAnalytics.js'
 
 dayjs.extend(isoWeek)
 
@@ -251,6 +258,177 @@ export async function getParticipation(
   })
 
   return participation
+}
+
+type ParticipantConsentArgs = { consent: boolean }
+
+function isRecordedChoice(
+  choiceAt: Date | null,
+  disclosureVersion: string | null
+) {
+  return (
+    choiceAt !== null &&
+    disclosureVersion === PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+  )
+}
+
+function dataUseError(code: string) {
+  return new GraphQLError(code, { extensions: { code } })
+}
+
+function isLockTimeoutError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+
+  const candidate = error as {
+    code?: unknown
+    meta?: unknown
+    cause?: unknown
+  }
+  if (candidate.code === '55P03') return true
+  const metaCode =
+    candidate.meta && typeof candidate.meta === 'object'
+      ? (candidate.meta as { code?: unknown }).code
+      : undefined
+  const driverCause =
+    candidate.meta && typeof candidate.meta === 'object'
+      ? (
+          candidate.meta as {
+            driverAdapterError?: { cause?: { code?: unknown } }
+          }
+        ).driverAdapterError?.cause
+      : undefined
+  if (
+    candidate.code === 'P2010' &&
+    (metaCode === '55P03' || driverCause?.code === '55P03')
+  ) {
+    return true
+  }
+
+  return isLockTimeoutError(candidate.cause)
+}
+
+async function getDatabaseTime(prisma: PrismaTransactionClient) {
+  const rows = await prisma.$queryRaw<Array<{ now: Date }>>`
+    SELECT clock_timestamp() AS "now"
+  `
+  const now = rows[0]?.now
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw dataUseError('PARTICIPANT_DATA_USE_CLOCK_FAILURE')
+  }
+  return now
+}
+
+export async function getParticipantDataUse(
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  return ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    select: participantDataUseSelect,
+  })
+}
+
+export async function setResearchConsent(
+  { consent }: ParticipantConsentArgs,
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const participant = await prisma.participant.findUnique({
+        where: { id: ctx.user.sub },
+        select: participantDataUseSelect,
+      })
+      if (!participant) return null
+
+      if (
+        participant.researchConsent === consent &&
+        isRecordedChoice(
+          participant.researchConsentChoiceAt,
+          participant.researchConsentDisclosureVersion
+        )
+      ) {
+        return participant
+      }
+
+      const choiceAt = await getDatabaseTime(prisma)
+      return prisma.participant.update({
+        where: { id: ctx.user.sub },
+        data: {
+          researchConsent: consent,
+          researchConsentChoiceAt: choiceAt,
+          researchConsentDisclosureVersion:
+            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        },
+        select: participantDataUseSelect,
+      })
+    },
+    { maxWait: 10_000, timeout: 60_000 }
+  )
+}
+
+export async function setLearningAnalyticsConsent(
+  { consent }: ParticipantConsentArgs,
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  try {
+    return await ctx.prisma.$transaction(
+      async (prisma) => {
+        await prisma.$executeRaw`
+          SET LOCAL lock_timeout = '5s'
+        `
+        await prisma.$executeRaw`
+          SELECT pg_advisory_xact_lock(
+            ${LEARNING_ANALYTICS_ADVISORY_LOCK.classId},
+            ${LEARNING_ANALYTICS_ADVISORY_LOCK.objectId}
+          )
+        `
+
+        // The participant is intentionally read only after the global gate.
+        const participant = await prisma.participant.findUnique({
+          where: { id: ctx.user.sub },
+          select: participantDataUseSelect,
+        })
+        if (!participant) return null
+
+        const sameRecordedChoice =
+          participant.learningAnalyticsConsent === consent &&
+          isRecordedChoice(
+            participant.learningAnalyticsChoiceAt,
+            participant.learningAnalyticsDisclosureVersion
+          )
+        if (sameRecordedChoice) return participant
+
+        const choiceAt = await getDatabaseTime(prisma)
+        const data: DB.Prisma.ParticipantUpdateInput = {
+          learningAnalyticsConsent: consent,
+          learningAnalyticsChoiceAt: choiceAt,
+          learningAnalyticsDisclosureVersion:
+            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        }
+
+        return prisma.participant.update({
+          where: { id: ctx.user.sub },
+          data,
+          select: participantDataUseSelect,
+        })
+      },
+      {
+        maxWait: 10_000,
+        timeout: 60_000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.ReadCommitted,
+      }
+    )
+  } catch (error) {
+    if (isLockTimeoutError(error)) {
+      throw dataUseError('PARTICIPANT_DATA_USE_LOCK_TIMEOUT')
+    }
+    throw error
+  }
 }
 
 // interface RegisterParticipantFromLTIArgs {
@@ -905,7 +1083,7 @@ export async function upsertDailyTimelineEntry({
     create: {
       type: DB.TimelineEntryType.DAILY,
       timestamp: new Date(),
-      collectedPoints: participation.isActive ? pointsAwarded : 0,
+      collectedPoints: pointsAwarded,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {

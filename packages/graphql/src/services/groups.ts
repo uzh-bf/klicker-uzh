@@ -1,5 +1,6 @@
 import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
   ElementStackInput,
@@ -24,6 +25,7 @@ import {
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { refreshParticipantGroupScores } from '../lib/groupScores.js'
 import {
   splitGroupsFinal,
   splitGroupsRunning,
@@ -624,133 +626,120 @@ export async function joinParticipantGroup(
   { courseId, code }: { courseId: string; code: number },
   ctx: ContextWithUser
 ) {
-  // find participantgroup with code
-  const participantGroup = await ctx.prisma.participantGroup.findUnique({
-    where: {
-      courseId_code: { courseId, code },
-    },
-    include: {
-      course: true,
-      participants: { include: { leaderboards: true } },
-    },
+  return await ctx.prisma.$transaction(async (prisma) => {
+    // Serialize new group membership with leaderboard publication changes.
+    await prisma.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "Participation"
+      WHERE "courseId" = ${courseId}::uuid
+        AND "participantId" = ${ctx.user.sub}::uuid
+      FOR UPDATE
+    `)
+    const lockedGroups = await prisma.$queryRaw<{ id: string }[]>(
+      Prisma.sql`
+        SELECT "id"
+        FROM "ParticipantGroup"
+        WHERE "courseId" = ${courseId}::uuid AND "code" = ${code}
+        FOR UPDATE
+      `
+    )
+
+    const lockedGroup = lockedGroups[0]
+    if (!lockedGroup) return 'FAILURE'
+
+    const participantGroup = await prisma.participantGroup.findUnique({
+      where: { id: lockedGroup.id },
+      include: { course: true, participants: true },
+    })
+
+    // if no participant group exists in this course with the provided code, return failure
+    if (!participantGroup || !participantGroup.course) {
+      return 'FAILURE'
+    }
+
+    // if the group is full, return full
+    if (
+      participantGroup.participants.length >=
+      participantGroup.course.maxGroupSize
+    ) {
+      return 'FULL'
+    }
+
+    // otherwise update the participant group with the current participant and return it
+    await prisma.participantGroup.update({
+      where: { id: participantGroup.id },
+      data: { participants: { connect: { id: ctx.user.sub } } },
+    })
+    await refreshParticipantGroupScores(prisma, { id: participantGroup.id })
+
+    return participantGroup.id
   })
-
-  // if no participant group exists in this course with the provided code, return failure
-  if (!participantGroup || !participantGroup.course) {
-    return 'FAILURE'
-  }
-
-  // if the group is full, return full
-  if (
-    participantGroup.participants.length >= participantGroup.course.maxGroupSize
-  ) {
-    return 'FULL'
-  }
-
-  // fetch the current participants score
-  const lbEntry = await ctx.prisma.leaderboardEntry.findFirst({
-    where: {
-      participantId: ctx.user.sub,
-      courseId: courseId,
-      type: DB.LeaderboardType.COURSE,
-    },
-  })
-
-  const numGroupMembersOld = participantGroup.participants.length
-  const aggregateScore =
-    participantGroup.averageMemberScore * numGroupMembersOld +
-    (lbEntry?.score ?? 0)
-  const aggregateCount = numGroupMembersOld + 1
-  const averageMemberScore = Math.round(aggregateScore / aggregateCount)
-
-  // otherwise update the participant group with the current participant and return it
-  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
-    where: { courseId_code: { courseId, code } },
-    data: {
-      participants: { connect: { id: ctx.user.sub } },
-      averageMemberScore: averageMemberScore,
-    },
-    include: { participants: true, course: true },
-  })
-
-  return updatedParticipantGroup.id
 }
 
 export async function leaveParticipantGroup(
-  { groupId, courseId }: { groupId: string; courseId: string },
+  { groupId }: { groupId: string; courseId: string },
   ctx: ContextWithUser
 ) {
-  // find participantgroup with corresponding id
-  const participantGroup = await ctx.prisma.participantGroup.findUnique({
-    where: { id: groupId },
-    include: { participants: { include: { leaderboards: true } } },
-  })
+  return await ctx.prisma.$transaction(async (prisma) => {
+    const lockedGroups = await prisma.$queryRaw<{ id: string }[]>(
+      Prisma.sql`
+        SELECT "id"
+        FROM "ParticipantGroup"
+        WHERE "id" = ${groupId}::uuid
+        FOR UPDATE
+      `
+    )
 
-  // if no participant group with the provided id exists in this course or at all, return null
-  if (!participantGroup) return null
+    if (lockedGroups.length === 0) return null
 
-  // if the participant is the only one in the group, delete the group
-  if (participantGroup.participants.length === 1) {
-    const deletedGroup = await ctx.prisma.participantGroup.delete({
+    const participantGroup = await prisma.participantGroup.findUnique({
       where: { id: groupId },
+      include: { participants: true },
     })
 
-    // invalidate graphql response cache
-    ctx.emitter.emit('invalidate', {
-      typename: 'ParticipantGroup',
-      id: groupId,
-    })
+    // if no participant group with the provided id exists in this course or at all, return null
+    if (!participantGroup) return null
 
-    return deletedGroup
-  }
+    // if the participant is the only one in the group, delete the group
+    if (participantGroup.participants.length === 1) {
+      const deletedGroup = await prisma.participantGroup.delete({
+        where: { id: groupId },
+      })
 
-  // compute new average member score for the group without the participant that is leaving
-  const aggregate = participantGroup.participants.reduce(
-    (acc, participant) => {
-      // skip the participant that is about to leave
-      if (participant.id === ctx.user.sub) return acc
+      // invalidate graphql response cache
+      ctx.emitter.emit('invalidate', {
+        typename: 'ParticipantGroup',
+        id: groupId,
+      })
 
-      const matchingLeaderboard = participant.leaderboards.find(
-        (lb) =>
-          lb.courseId === courseId && lb.type === DB.LeaderboardType.COURSE
-      )
-      return {
-        sum: acc.sum + (matchingLeaderboard?.score ?? 0),
-        count: acc.count + 1,
-      }
-    },
-    {
-      sum: 0,
-      count: 0,
+      return deletedGroup
     }
-  )
-  const averageMemberScore = Math.round(aggregate.sum / aggregate.count)
 
-  // otherwise update the participant group with the current participant and return it
-  const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
-    where: {
-      id: groupId,
-    },
-    data: {
-      participants: {
-        disconnect: {
-          id: ctx.user.sub,
+    // otherwise update the participant group with the current participant and return it
+    await prisma.participantGroup.update({
+      where: { id: groupId },
+      data: {
+        participants: {
+          disconnect: {
+            id: ctx.user.sub,
+          },
         },
       },
-      averageMemberScore: averageMemberScore,
-    },
-    include: {
-      participants: true,
-      course: true,
-    },
-  })
+    })
+    await refreshParticipantGroupScores(prisma, { id: groupId })
 
-  return {
-    ...updatedParticipantGroup,
-    score:
-      updatedParticipantGroup.averageMemberScore +
-      updatedParticipantGroup.groupActivityScore,
-  }
+    const updatedParticipantGroup =
+      await prisma.participantGroup.findUniqueOrThrow({
+        where: { id: groupId },
+        include: { participants: true, course: true },
+      })
+
+    return {
+      ...updatedParticipantGroup,
+      score:
+        updatedParticipantGroup.averageMemberScore +
+        updatedParticipantGroup.groupActivityScore,
+    }
+  })
 }
 
 export async function renameParticipantGroup(
@@ -795,7 +784,11 @@ export async function getParticipantGroups(
           participants: {
             include: {
               leaderboards: {
-                where: { courseId, type: DB.LeaderboardType.COURSE },
+                where: {
+                  courseId,
+                  type: DB.LeaderboardType.COURSE,
+                  participation: { isActive: true },
+                },
               },
             },
           },
@@ -1140,15 +1133,7 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
     const groupsWithParticipants =
       await globalCtx.prisma.participantGroup.findMany({
         where: { course: { endDate: { gt: new Date() } } },
-        include: {
-          participants: {
-            include: {
-              leaderboards: {
-                where: { type: DB.LeaderboardType.COURSE },
-              },
-            },
-          },
-        },
+        select: { id: true },
       })
 
     await executionCtx.logger.info(
@@ -1157,44 +1142,16 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
 
     try {
       await Promise.all(
-        groupsWithParticipants.map((group) => {
-          const aggregate = group.participants.reduce(
-            (acc, participant) => {
-              const matchingLeaderboard = participant.leaderboards.find(
-                (item) => item.courseId === group.courseId
-              )
-              return {
-                sum: acc.sum + (matchingLeaderboard?.score ?? 0),
-                count: acc.count + 1,
-              }
-            },
-            {
-              sum: 0,
-              count: 0,
-            }
+        groupsWithParticipants.map(async (group) => {
+          const touchedGroupIds = await globalCtx.prisma.$transaction(
+            (prisma) => refreshParticipantGroupScores(prisma, { id: group.id })
           )
 
-          if (aggregate.count === 0) return Promise.resolve()
-
-          // compute the average score of all participants in the group
-          // if it has not changed, exit early
-          // if the group consists of only one participant, the member score should be zero
-          const averageMemberScore =
-            aggregate.count > 1
-              ? Math.round(aggregate.sum / aggregate.count)
-              : 0
-
-          if (averageMemberScore === group.averageMemberScore)
-            return Promise.resolve()
-
-          globalCtx.emitter.emit('invalidate', {
-            typename: 'ParticipantGroup',
-            id: group.id,
-          })
-
-          return globalCtx.prisma.participantGroup.update({
-            where: { id: group.id },
-            data: { averageMemberScore },
+          touchedGroupIds.forEach((id) => {
+            globalCtx.emitter.emit('invalidate', {
+              typename: 'ParticipantGroup',
+              id,
+            })
           })
         })
       )

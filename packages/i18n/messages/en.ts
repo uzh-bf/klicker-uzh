@@ -871,9 +871,7 @@ export default {
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
-You are currently **not** participating in the course leaderboard, meaning that you can participate in all activities but will not collect any points, will not be listed on the leaderboard, and will not be eligible for achievements and awards. If you would like to participate in the gamified activities throughout this course, **click the button** below to join. You can leave the course leaderboard at any time, upon which all of your collected points will be **deleted**.
-
-Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
+Leaderboard participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining. Joining makes your username, rank, points and achievements visible to other participants. You can leave and rejoin at any time; your points and personal statistics remain available.
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
@@ -961,7 +959,7 @@ While answering questions, logged-in participants can set personal bookmarks on 
 
 Some courses use group activities that can only be solved collaboratively. Lecturers may enable randomized group creation and specify a preferred group size. Once groups are formed and a group activity is published, hints are distributed across group members, and the group can solve the activity together within a limited time window (one submission per group). Group formation and activities are available to participants with a KlickerUZH account.
 
-Within a group, you can compare your points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the aggregated points of all group members.
+Within a group, you can compare published points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the average personal points of group members. The average includes all group members, whether or not they participate in the course leaderboard.
 
 #### Courses, Leaderboards, and Achievements
 
@@ -1088,11 +1086,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
+      joinLeaderboardTitle: 'Join the leaderboard for {name}',
+      joinLeaderboardDescription:
+        'Participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining the leaderboard. If you join, other participants see your username {username}, your rank, points and achievements in the leaderboard. You can leave and rejoin at any time. Your retained points count immediately; historical rank-dependent awards are not awarded retroactively. Your research and Learning Analytics choices are unaffected.',
+      joinLeaderboardConfirm: 'Join leaderboard',
+      joinLeaderboardError: 'Could not join the leaderboard. Please try again.',
+      leaveLeaderboardError:
+        'Could not leave the leaderboard. Please try again.',
       leaveLeaderboardTitle: 'Leave Leaderboard',
       leaveLeaderboardConfirmation:
         'Are you sure you want to leave the course leaderboard?',
       leaveLeaderboardInformation:
-        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+        'After leaving, you no longer appear in the course leaderboard. Your points and personal statistics remain available, and you can continue collecting points. You can rejoin at any time; your retained points count immediately.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
       groupActivityEndedToast:
@@ -1255,6 +1260,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Yes allows future research exports to include all data stored for your account. No excludes your data from future research exports. If you turn this back on, data already stored for your account can be included again. Research exports that have already been created are not recalled.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Yes allows KlickerUZH to use all eligible stored activity data for your account for individual learning analytics after the course is recomputed following your current choice. No means that no individual learning-analytics data is used; existing individual learning-analytics data is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, all eligible stored activity data can be included again.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1389,7 +1415,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       alreadySubmittedAt:
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
-        'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
+        'Your individual entry is hidden while you are not on the course leaderboard. Your points still count towards the group average. Group membership and points earned together in group activities are unaffected.',
       singleParticipantAutomaticAssignment:
         'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
       maxNumberOfGroupMembers:

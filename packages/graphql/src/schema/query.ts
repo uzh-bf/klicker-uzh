@@ -85,6 +85,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
+  ParticipantDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -151,6 +152,14 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getParticipantDataUse(ctx)
+        },
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({

@@ -414,10 +414,6 @@ export async function updateLiveQuizBlockResultsFromCache({
                 !!quiz.courseId &&
                 quiz.course?.isGamificationEnabled &&
                 !!participant.participations?.[0],
-              courseParticipationActive:
-                !!quiz.courseId &&
-                !!participant.participations?.[0] &&
-                participant.participations?.[0].isActive,
               score,
             }
           })
@@ -435,19 +431,14 @@ export async function updateLiveQuizBlockResultsFromCache({
         }[]
       }>(
         (acc, result) => {
-          // filter out failed requests and those which have a valid gamified course participation,
-          // which is not active -> active decision to not be on leaderboard
-          if (
-            result.status !== 'fulfilled' ||
-            !result.value ||
-            (result.value.gamifiedCourseParticipation &&
-              !result.value.courseParticipationActive)
-          ) {
+          // retain registered gamified-course participants privately; public
+          // leaderboard reads filter inactive participation separately
+          if (result.status !== 'fulfilled' || !result.value) {
             return acc
           }
 
           if (result.value.gamifiedCourseParticipation) {
-            // active gamified course participation (inactive already filtered) -> regular leaderboard
+            // registered gamified course participation -> regular leaderboard
             acc.regularParticipantLeaderboard.push({
               participantId: result.value.participantId,
               score: parseInt(result.value.score, 10),
