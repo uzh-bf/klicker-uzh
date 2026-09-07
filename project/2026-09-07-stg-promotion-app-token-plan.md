@@ -109,8 +109,21 @@ was extended. The credential fallback regression failed before the fix and
 passed afterward. Scoped Biome and Prettier formatting and diff checks pass.
 The independent simplifier found no justified reductions. The security slice
 review found no blocking findings on the implementation commit. Reports are in
-`project/_local/reviews/`; final committed-package review and draft publication
-remain pending. New tests assert error behavior without pinning diagnostic prose.
+`project/_local/reviews/`. New tests assert error behavior without pinning
+diagnostic prose.
+
+Delivery is pending a material target decision. During final review,
+[the existing-token repair](https://github.com/uzh-bf/klicker-uzh/pull/5823)
+merged into `v3` at `2b8e6716fc83c2067c5a69480c2871c45445313f`. It uses the
+existing `STG_PROMOTE_TOKEN`, removes the same fallback, and overlaps every
+implementation/documentation path. Only the secret name's presence is verified;
+its value and permissions were not read. This branch remains at
+`d946162614092c419af9e68d5e3c935fbf6a572a`, three commits ahead and one behind
+the new target. No merge, rebase, push, or draft PR was performed.
+
+The final reviewer `01a07c47-1c2c-7833-bad9-62b4374e3ed4` was instructed to
+finish with current-target readiness blocked and retain any verified findings
+on the old immutable range. Do not treat that review as current-target approval.
 The disposable verification image is `klicker-stg-promoter-verify:local`; test
 containers use `--rm`, and no application runtime was started.
 
@@ -122,5 +135,7 @@ Its verified canonical checksum covers candidate
 Receipt files remain in `project/_local/stg-preflight-34130485520/`.
 
 Slice review: done — `project/_local/reviews/2026-09-07-stg-app-slice-review.md`.
-Next: complete final package review, then publish the draft PR. App configuration
-and live write proof remain separate gates.
+Next: ask whether to retain the now-merged existing-token route or continue
+replacing it with the scoped App route. Preserve this implementation until that
+decision. Integration of the new target and any credential setup or live write
+proof remain separate gates.
