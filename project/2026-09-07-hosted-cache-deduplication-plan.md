@@ -146,7 +146,7 @@ part of rollback.
 
 ## Progress
 
-Goal active. Baseline and cache inventory inspected. The independent planner
+Local package complete. Baseline and cache inventory inspected. The independent planner
 approved revision 2 on 2026-09-07 after two accepted corrections: harmless
 setup-node post steps are allowed, and cold installs can increase job minutes.
 
@@ -161,8 +161,24 @@ dependencies read-only. No application runtime was started. Local hooks are
 split: scoped container checks and staged Gitleaks replace the broad host hook
 for this CI-only package; no all-app build or full check:all run is claimed.
 
-Committed slice reviews and integrated final review remain. Remote publication
-and hosted CI proof require separate authority. No cache or setting was changed.
+The simplifier and slice reviewer completed with no code findings. Their reports
+are in `project/_local/reviews/2026-09-07-hosted-cache-deduplication-simplifier.md`
+and `project/_local/reviews/2026-09-07-hosted-cache-deduplication-slice-review.md`.
+Integrated final review covered
+`27f2474547df045cc11302c7d9e195798ec66870..fa6caa624bbb5226b4e6b0bdd528bf16ccfbbf39`.
+It found only the stale progress entry, corrected here; no code correction was
+required. Its report is
+`project/_local/reviews/2026-09-07-hosted-cache-deduplication-final-review.md`.
+Test delta: three added policy tests; existing tests unchanged.
+
+The slice reviewer unexpectedly installed ignored dependencies on the host.
+No tracked file changed; its host invocation does not replace the pinned
+container verification above. No managed application runtime was started.
+
+Remote publication and hosted CI proof require separate authority. No PR exists
+for this package yet. The next delivery step is a draft PR and natural Actions
+verification after approval. No cache or setting was changed, and no storage or
+hosted performance saving is claimed.
 
 Boundary owner: self. Pause for material reuse, trust, or cost changes,
 overlapping edits, an unavailable required review, or a necessary external
