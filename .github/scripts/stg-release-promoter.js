@@ -1137,6 +1137,7 @@ function gitEnvironment(gitToken, repositoryUrl) {
     GIT_TERMINAL_PROMPT: '0',
   }
   delete environment.GITHUB_TOKEN
+  delete environment.STG_PROMOTE_TOKEN
   if (!gitToken) return environment
 
   const origin = new URL(repositoryUrl).origin
@@ -1161,7 +1162,7 @@ function pushReleaseRefWithLease({
   context,
   expectedSha,
   candidateSha,
-  gitToken = process.env.GITHUB_TOKEN,
+  gitToken,
   repositoryUrl = releaseRepositoryUrl(context),
   gitRunner = runGit,
   workspace = process.cwd(),
@@ -1171,7 +1172,7 @@ function pushReleaseRefWithLease({
     throw new Error('expected release SHA is invalid')
   }
   if (!gitToken && /^https:/i.test(repositoryUrl)) {
-    throw new Error('GITHUB_TOKEN is unavailable for the ref update')
+    throw new Error('STG_PROMOTE_TOKEN is unavailable for the ref update')
   }
 
   const options = {
@@ -1187,7 +1188,7 @@ function pushReleaseRefWithLease({
       repositoryUrl,
       candidateSha,
     ],
-    options
+    { ...options, env: gitEnvironment(process.env.GITHUB_TOKEN, repositoryUrl) }
   )
   gitRunner(
     [
