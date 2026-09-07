@@ -2,7 +2,7 @@
 
 ## Status and identity
 
-Local qualification is in progress. This is not permission to publish or deploy.
+Local qualification and preparation review are complete. This is not permission to publish or deploy, and does not establish production readiness.
 
 | Reference                                | Value and evidence                                                                                                                                                                                                                                                        |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -84,11 +84,11 @@ Final dry-run at `83ed4ca36a3d18a882e70ecd7646d283ea1f7ba8` passed with pinned N
 
 ## Pending release fields
 
-Integrated final review remains pending. Production image digests, topology/ledger, approvals, provider validity, rehearsal, backup/recovery and activation remain separately gated in the cutover packets.
+Production image digests, topology/ledger, approvals, provider validity, rehearsal, backup/recovery and activation remain separately gated in the cutover packets.
 
 ## Source image and client inventory
 
-All references below are source at the candidate, not running deployment receipts. Registry prefix: `ghcr.io/uzh-bf/klicker-uzh/`. Each repository has a corresponding `.github/workflows/v3_*prd.yml` build; workflows produce ARM and AMD variants, while the checked-in PRD values select ARM. New-release run IDs, tags and digests are pending for every row.
+All references below are source at the candidate, not running deployment receipts. Registry prefix: `ghcr.io/uzh-bf/klicker-uzh/`. Each repository has a corresponding `.github/workflows/v3_*prd.yml` build. Current workflows produce ARM artifacts; AMD jobs, including the migrator, remain disabled with `if: ${{ false }}`. PRD values select ARM, and the artifact gate requires those ARM receipts only. New-release run IDs, tags and digests are pending for every row.
 
 | Image repository before architecture suffix | PRD source consumers and reference                                                                     |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -124,3 +124,11 @@ Container Biome and direct Prisma/Analytics parity checks pass. This mechanical 
 Fresh PostgreSQL 15 container `542bfc724b8f897dd6c95d2e77b69926a66292570ba3205b38e708b1502648d8` used network `none`, zero published ports and tmpfs PGDATA. Repository bootstrap created the restricted marked test identity on this fresh target. The probe checked database/session identity, restricted role and marker before creating its test-owned minimal table. It applied the exact AI-approval and beta-preference SQL files, verified defaults on an existing and a new row, then verified opt-out persistence and independent approval. All assertions passed.
 
 This deliberately tests only the relevant defaults and separation; it does not establish whole-schema/client compatibility or upgrade rehearsal. The exact container is stopped with state `exited`; tmpfs synthetic data is gone. No retained database, port forward or managed devrouter runtime was touched. The stopped container object remains; no cleanup deletion was inferred.
+
+## Final review and local completion
+
+Native final review covered the complete five-path preparation range `7c73ed231ce89885f634d37fece86c621424f617..28a38fe2ec92786aa76f62f25fe0f8524eda4373`. It found one documentation error: AMD jobs were described as producing artifacts despite being disabled. Parent verified every PRD workflow and corrected the inventory to ARM only. No other actionable finding was reported. This documentation-only correction and the later solution note preserve executable behavior and were verified by the parent without repeating the review.
+
+Required AGY advisor consultation completed on the sanitized preparation contract. Its automation-fencing, database-ledger and AI-activation concerns are reflected in the packets. Reports remain under ignored `project/_local/reviews/`. The unpublished complete package was not sent to ChatGPT Browser because that destination lacks separate authorization.
+
+All package commits used scoped container checks, host identity and staged data-hygiene checks; host hooks were disabled per commit to avoid running the container toolchain on the host. No hook configuration was changed. Four document link checks and formatting passed. No source publication, release tag or deployment is included in local completion.
