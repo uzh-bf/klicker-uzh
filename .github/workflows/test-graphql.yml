@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.devcontainer/|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/scripts/provision-disposable-postgres\.sh)'
 
   test-graphql:
     needs: filter
@@ -153,14 +153,22 @@ jobs:
           cd ../../apps/hatchet-worker-general
           pnpm run build
 
+      - name: Provision disposable PostgreSQL
+        id: provision_db
+        run: bash .github/scripts/provision-disposable-postgres.sh "${{ job.services.postgres.id }}"
+
       - name: Setup database
+        id: setup_db
+        if: ${{ !cancelled() && steps.provision_db.outcome == 'success' }}
         run: |
           cd packages/prisma
           pnpm run prisma:reset:raw -f
         env:
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
       - name: Run tests
+        if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}
         run: |
           set -euo pipefail
 
@@ -185,7 +193,8 @@ jobs:
           HATCHET_WORKER_NAME=hatchet-worker-general
           LOG_LEVEL=info
           NODE_ENV=test
-          DATABASE_URL=postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL=postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL=postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
           REDIS_HOST=localhost
           REDIS_PORT=6379
           REDIS_ASSESSMENT_HOST=localhost
@@ -225,7 +234,8 @@ jobs:
           cd packages/graphql
           pnpm vitest run
         env:
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
           HATCHET_CLIENT_TLS_STRATEGY: none
           HATCHET_CLIENT_HOST_PORT: localhost:7077
           NODE_ENV: test

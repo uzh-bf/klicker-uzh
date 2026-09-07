@@ -48,7 +48,7 @@ async function cleanupAuthoringChatbots() {
 
   await prisma.user.update({
     where: { id: USER_ID_TEST },
-    data: { aiChatbotPublishingEnabled: false },
+    data: { aiFeaturesEnabled: false },
   })
 }
 
@@ -96,7 +96,7 @@ async function setPublishingAuthorization(enabled: boolean) {
   const prisma = await getPrisma()
   await prisma.user.update({
     where: { id: USER_ID_TEST },
-    data: { aiChatbotPublishingEnabled: enabled },
+    data: { aiFeaturesEnabled: enabled },
   })
 }
 

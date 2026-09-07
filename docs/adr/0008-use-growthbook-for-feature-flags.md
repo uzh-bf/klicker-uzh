@@ -35,14 +35,33 @@ The shared actor attributes are stable Klicker id, actor type, and role. Each
 adapter owns the normalized deployment environment and adds it to evaluations.
 Email is excluded. Missing configuration, an invalid non-empty environment,
 and unavailable boolean definitions fail closed to false. Flags control rollout
-and presentation; they never authenticate actors or grant permissions.
+and presentation. A server-side flag may be a restrictive condition in an
+authorization gate, but it never replaces authentication, role, login-scope,
+ownership, or account-approval checks.
 
-Amendment, 2026-09-06: the approved beta authoring gate additionally requires
-server-evaluated `ai-beta` for lecturer chatbot authoring. This is a restrictive
-rollout condition alongside existing role, Catalyst, login-scope and ownership
-checks, not a replacement for them. Browser evaluation is not authoritative.
-Publication entitlement, administrative approval and participant access remain
-separate and unchanged. See the
+Amendment, 2026-09-06: the approved beta authoring gate uses the database-owned
+`User.betaEnabled` preference, default `true`, as a trusted input to the
+server-side, read-only `ai-beta` rollout. The backend reads the authenticated
+actor's preference per request with request-local reuse, then evaluates
+GrowthBook with the existing stable actor id, user actor type, role, and
+Catalyst attributes. The rollout rule must require `betaEnabled: true`,
+`catalyst: true`, and the existing actor conditions; browser evaluation is not
+authoritative. A false or unreadable preference stays false even when a remote
+definition would otherwise force the flag on.
+
+The preference is not stored in GrowthBook. This contract has no saved group,
+GrowthBook enrollment or management API, management Secret, `beta-signup` flag,
+or Redis membership lock. `FULL_ACCESS` and `ACCOUNT_OWNER` sessions may edit
+the preference; the enrollment capability returns unknown membership for weaker
+scopes without reading the preference. Catalyst is required to opt in, while full-access opt-out remains
+available without Catalyst.
+
+The database-owned `User.aiFeaturesEnabled`, default `false`, is the sole
+account approval gate for chatbot publication and model usage, even when budget
+enforcement is disabled. Beta preference and `ai-beta` rollout never grant
+that approval. Per-chatbot publication review and published participant access
+remain separate and unchanged. Token provisioning and validation belong to
+v3-ai, not this flag contract. See the
 [approved beta authoring plan](../../project/2026-09-05-v3-beta-authoring-gate-plan.md)
 and [the publication approval decision](./0020-two-tier-chatbot-approval.md).
 

@@ -9,6 +9,7 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
+  ManageFeaturePreferencesDocument,
   type ManageUserProfileQuery,
   UserLoginScope,
   UserRole,
@@ -42,6 +43,7 @@ function Header({
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -65,6 +67,7 @@ function Header({
       data: { cy: 'answer-collections' },
     },
     ...(aiBetaEnabled &&
+    preferences?.userProfile?.betaEnabled === true &&
     user?.catalyst === true &&
     (userScope === UserLoginScope.FullAccess ||
       userScope === UserLoginScope.AccountOwner)

@@ -1947,7 +1947,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
       betaFeaturesDescription:
-        'Beta features include chatbot creation. Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
       betaFeaturesSignupClosed:
         'New beta enrollment is currently closed. You can still discover beta features here.',
       betaFeaturesEnrollmentRestricted:
@@ -1960,11 +1960,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesError:
         'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
       betaFeaturesRefreshFailure:
-        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
       betaFeaturesRefreshing:
-        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Refreshing the displayed settings.',
       betaFeaturesSaved:
-        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
       betaFeaturesPending:
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',

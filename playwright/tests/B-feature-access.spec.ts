@@ -244,7 +244,7 @@ test.describe('Beta feature enrollment discovery', () => {
     page,
     loginLecturer,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { aiBeta: true, betaSignup: true })
+    await mockGrowthBookFeatureFlags(page, { aiBeta: true })
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
       mayChange: true,
@@ -257,7 +257,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
   })
 
-  test('First login explains chatbot beta features even when signup is closed', async ({
+  test('First login explains chatbot beta features when preference editing is unavailable', async ({
     page,
     loginLecturer,
   }) => {
@@ -308,7 +308,7 @@ test.describe('Beta feature enrollment discovery', () => {
     page,
     loginLecturer,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: false,
       mayChange: true,
@@ -325,7 +325,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
   })
 
-  test('Closed signup keeps beta discovery visible without an opt-in control', async ({
+  test('Unavailable preference editing keeps beta discovery visible without an opt-in control', async ({
     page,
     loginLecturer,
   }) => {
@@ -345,7 +345,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 
-  test('Existing members can opt out after signup closes', async ({
+  test('Existing members can opt out after eligibility changes', async ({
     page,
     loginLecturer,
   }) => {
@@ -381,12 +381,10 @@ test.describe('Beta feature enrollment discovery', () => {
     const setResponseGate = new Promise<void>((resolve) => {
       releaseSetResponse = resolve
     })
-    await mockGrowthBookFeatureFlags(page, {
-      betaSignup: true,
-      failRefresh: true,
-    })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       beforeSetResponse: () => setResponseGate,
+      failPreferenceRefresh: true,
       membership: false,
       mayChange: true,
       signupAvailable: true,
@@ -407,7 +405,7 @@ test.describe('Beta feature enrollment discovery', () => {
     page,
     loginFreeUser,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
       mayChange: false,
@@ -427,7 +425,7 @@ test.describe('Beta feature enrollment discovery', () => {
     page,
     loginFactory,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
       mayChange: false,

@@ -38,6 +38,13 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
+Fresh volumes provision the restricted `klicker_test` login, the application
+test database of the same name and `klicker_test_shadow`. Both databases carry
+the disposable marker required by reset, seed and development migration.
+Existing volumes are not adopted or marked automatically. If bootstrap refuses
+an old database, preserve it and use an explicitly approved fresh disposable
+environment; do not bypass the guard. See [Testing](./testing.md#disposable-database-boundary).
+
 Clone-and-run via a self-contained devcontainer — no Infisical, no external
 EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
 routed app plus the two Hatchet workers. Dependency-aware profiles select only

@@ -72,9 +72,51 @@ then update the existing PR without merging it.
 Planner round 2 required Chat unit CI provisioning and explicit dependency
 gates; round 3 APPROVED after both were included. The earlier advisor's dedicated
 identity, external marker and actual-connection guidance remains applicable.
-Implementation is starting; no guard verification is claimed yet. A single
-watcher owns postmerge Playwright run 34096758497; the prerequisite heartbeat
-is paused to avoid duplicate watches.
+Implementation is complete locally and awaits committed review. The original
+postmerge run was cancelled. Its successor
+[run 34099313029 — hosted Playwright proof](https://github.com/uzh-bf/klicker-uzh/actions/runs/34099313029)
+passed all eight shards. Shard 4 executed the expected provisioner checksum
+`5a42839332cf620086237564494b0050f3e56b38f411ff416bbf3ce15c933534`,
+provisioned the database, reset successfully and passed 109 tests. No watcher
+remains active; both previous heartbeats remain paused.
+
+### Guard extension progress
+
+The actual-client guard and CLI wrappers are implemented without new
+dependencies. GraphQL setup/cleanup, Playwright client acquisition, Chat
+integration and both test seeds now require the guard. The demo-participant
+suite creates a dedicated guarded client. The unsafe legacy Compose helper
+fails before service or volume operations. Fresh local and candidate-owned CI
+bootstrap use a restricted login and independently marked main/shadow databases.
+
+Verification on September 7: 16 guard/CLI tests, 120 beta/authoring tests and
+61 Chat tests (including actual PostgreSQL integration) pass. Prisma,
+GraphQL, Chat, Manage and Prisma-data focused typechecks pass. Prisma builds;
+Analytics schema parity and the reused v3-ai migration byte comparison pass.
+The bounded Opengrep scan reports zero findings on the three guard source files.
+
+New tmpfs-only PostgreSQL 15 services with no host ports proved guarded reset,
+schema push, development migration, shadow-backed diff and both test seeds.
+The diff is empty. An actual Prisma reconnect after marker removal refused a
+delete and preserved its sentinel row. Fresh CI helper provisioning succeeded;
+a repeated invocation refused before CREATE. Both database markers, owners and
+all five restricted-role flags were verified. Both exact services were stopped
+and auto-removed; retained volumes and cluster connections were untouched.
+
+The slim Node image lacked OpenSSL, so migration proof used the pinned official
+Playwright image (Node 24). The seed wrapper used installed pnpm 11.5.0 with
+dependency verification in warning mode to avoid replacing the existing
+node_modules; this is not frozen-install evidence. A separate checks image was
+built from the repository Dockerfile, without starting the retained runtime.
+All changed-file formatting, syncpack, repository policy checks and seven lint
+tasks pass. Broad type verification passed 34 of 35 tasks; only the container's
+Git-based SDL check failed because its host Git metadata was not mounted.
+That exact SDL diff check passes on the host, and fresh GraphQL types pass
+after generation. Nine demo-participant integration tests also pass against a
+new marked tmpfs database. Production build is still running at Hatchet's
+Rollup step; a read-only diagnostic investigates its lingering process.
+Committed simplification/risk reviews and integrated final review remain
+required before publishing the amendment to the existing PR.
 
 ## Approved amendment: database beta preference and one AI approval
 

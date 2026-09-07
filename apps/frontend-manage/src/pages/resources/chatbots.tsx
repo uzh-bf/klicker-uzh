@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
+  ManageFeaturePreferencesDocument,
   ManageUserProfileDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -14,12 +15,14 @@ import Chatbots from '../../components/resources/Chatbots'
 function ChatbotsPage() {
   const t = useTranslations()
   const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
   const { data } = useQuery(ManageUserProfileDocument, {
     fetchPolicy: 'cache-first',
     ssr: false,
   })
   const canAuthor =
     aiBetaEnabled &&
+    preferences?.userProfile?.betaEnabled === true &&
     data?.userProfile?.catalyst === true &&
     (data.userScope === UserLoginScope.FullAccess ||
       data.userScope === UserLoginScope.AccountOwner)

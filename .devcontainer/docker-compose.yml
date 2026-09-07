@@ -12,7 +12,7 @@
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.
 services:
-  # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
+  # --- main database (disposable test DBs plus dump-support DBs via init SQL) ---
   postgres:
     image: postgres:15
     environment:
@@ -28,8 +28,10 @@ services:
       default: {}
       devnet: {}
     volumes:
-      # init.sql creates shadow + lti + qa + hatchet DBs and roles.
+      # init.sql preserves production-dump support; the disposable bootstrap
+      # creates the explicit local test login and its marked databases.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
       - pgdata:/var/lib/postgresql/data
 
   # --- redis: live-quiz exec, assessment exec, page cache + pub/sub ---

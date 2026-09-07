@@ -45,9 +45,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    return explicit per-object outcomes. Never infer permission for the whole
    batch from one selected object.
 
-   Capability-gated reads add a fail-closed feature check after the auth scope
-   and before the first data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
-   return `null` when the flag is off, keep authorization errors unchanged, and
+   Capability-gated reads await the fail-closed feature check after the auth scope
+   and before the protected data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
+   the helper reads the trusted beta preference once per request.
+   Return `null` when the flag is off, keep authorization errors unchanged, and
    never gate administrative mutations with a visibility flag (see
    `services/chatAccountUsage.ts` for the pattern).
 

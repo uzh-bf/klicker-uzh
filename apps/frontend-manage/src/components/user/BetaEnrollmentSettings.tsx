@@ -1,10 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  useFeatureFlag,
-  useRefreshFeatureFlags,
-} from '@klicker-uzh/feature-flags/react'
-import {
   BetaEnrollmentDocument,
+  ManageFeaturePreferencesDocument,
   SetBetaEnrollmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -27,13 +24,14 @@ function BetaEnrollmentSettings({
   dataCy?: string
 }) {
   const t = useTranslations()
-  const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const refreshFeatureFlags = useRefreshFeatureFlags()
   const { data, loading, refetch } = useQuery(BetaEnrollmentDocument, {
     fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   })
   const [setBetaEnrollment] = useMutation(SetBetaEnrollmentDocument)
+  const { refetch: refetchPreferences } = useQuery(
+    ManageFeaturePreferencesDocument
+  )
   const [confirmedMembership, setConfirmedMembership] = useState<
     boolean | null | undefined
   >(undefined)
@@ -59,10 +57,6 @@ function BetaEnrollmentSettings({
     membershipKnown &&
     (membership === true || capability.signupAvailable)
   const saving = status === 'pending'
-  const accessConverged =
-    status === 'saved' &&
-    membershipKnown &&
-    aiBetaEnabled === (membership === true)
 
   async function handleEnrollmentChange(enabled: boolean) {
     if (!canToggle || saving || isRefreshing) return
@@ -83,16 +77,7 @@ function BetaEnrollmentSettings({
       setIsRefreshing(true)
 
       try {
-        try {
-          await refetch()
-        } catch {
-          // The mutation response remains the last confirmed membership.
-        }
-
-        const refreshed = await refreshFeatureFlags()
-        if (!refreshed) {
-          setStatus('refresh-failed')
-        }
+        await Promise.all([refetch(), refetchPreferences()])
       } catch {
         setStatus('refresh-failed')
       } finally {
@@ -115,9 +100,7 @@ function BetaEnrollmentSettings({
                 {t(
                   !capability || (capability.mayChange && !membershipKnown)
                     ? 'manage.settings.betaFeaturesUnavailable'
-                    : !capability.signupAvailable && membership === false
-                      ? 'manage.settings.betaFeaturesSignupClosed'
-                      : 'manage.settings.betaFeaturesEnrollmentRestricted'
+                    : 'manage.settings.betaFeaturesEnrollmentRestricted'
                 )}
               </UserNotification>
             </div>
@@ -139,22 +122,9 @@ function BetaEnrollmentSettings({
           )}
 
           {status === 'saved' && !isRefreshing ? (
-            <div
-              data-cy={
-                accessConverged
-                  ? 'beta-enrollment-converged'
-                  : 'beta-enrollment-saved'
-              }
-              role="status"
-            >
+            <div data-cy="beta-enrollment-saved" role="status">
               <UserNotification type="success">
-                {t(
-                  accessConverged
-                    ? membership
-                      ? 'manage.settings.betaFeaturesConvergedOn'
-                      : 'manage.settings.betaFeaturesConvergedOff'
-                    : 'manage.settings.betaFeaturesSaved'
-                )}
+                {t('manage.settings.betaFeaturesSaved')}
               </UserNotification>
             </div>
           ) : null}

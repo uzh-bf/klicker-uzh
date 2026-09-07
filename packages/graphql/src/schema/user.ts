@@ -48,6 +48,8 @@ export const User = UserRef.implement({
 
     publicPreview: t.exposeBoolean('publicPreview'),
     privatePreview: t.exposeBoolean('privatePreview'),
+    betaEnabled: t.exposeBoolean('betaEnabled'),
+    aiFeaturesEnabled: t.exposeBoolean('aiFeaturesEnabled'),
 
     numChatbots: t.int({
       resolve: async (user, _, ctx) => {

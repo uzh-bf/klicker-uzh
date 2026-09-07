@@ -16,10 +16,20 @@ test('Playwright flag preload rejects non-test startup', () => {
   assert.match(result.stderr, /requires NODE_ENV=test/)
 })
 
-test('Playwright flags tie ai-beta to saved-group membership', () => {
+test('Playwright flags target the synthetic beta-enabled user', () => {
+  const safeFetchPreload = `data:text/javascript,${encodeURIComponent(
+    "globalThis.fetch = async () => new Response('safe-original-fetch', { status: 418 })"
+  )}`
+  const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: 'test' }
+  delete env.GROWTHBOOK_MANAGEMENT_API_URL
+  delete env.GROWTHBOOK_MANAGEMENT_API_KEY
+  delete env.GROWTHBOOK_BETA_SAVED_GROUP_ID
+
   const result = spawnSync(
     process.execPath,
     [
+      '--import',
+      safeFetchPreload,
       '--import',
       fixture,
       '--input-type=module',
@@ -27,88 +37,68 @@ test('Playwright flags tie ai-beta to saved-group membership', () => {
       `
     import assert from 'node:assert/strict'
     import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
-    const savedGroupUrl =
+    const managementUrl =
       'https://growthbook.test/api/v1/saved-groups/local-beta-enrollment'
     const lecturer = {
       id: '76047345-3801-4628-ae7b-adbebcfe8821',
       actorType: 'user',
       catalyst: true,
+      betaEnabled: true,
     }
 
-    async function createClient() {
+    async function createClient(environment) {
       const flags = new NodeFeatureFlagClient({
         apiHost: process.env.GROWTHBOOK_API_HOST,
         clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
-        environment: process.env.GROWTHBOOK_ENV,
+        environment,
         refreshIntervalMs: 0,
       })
       assert.equal(await flags.initialize(), true)
       return flags
     }
 
-    async function writeSavedGroup(values) {
-      const response = await fetch(savedGroupUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: \`Bearer \${process.env.GROWTHBOOK_MANAGEMENT_API_KEY}\`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bypassApproval: true, values }),
-      })
-      assert.equal(response.status, 200)
-    }
-
-    const enrolled = await createClient()
-    assert.equal(enrolled.isEnabled('ai-beta', lecturer), true)
-    assert.equal(enrolled.isEnabled('beta-signup', lecturer), true)
-    for (const change of [
-      { id: 'another-synthetic-user' },
-      { actorType: 'participant' },
-      { catalyst: false },
-    ]) {
+    for (const environment of ['test', 'development']) {
+      const flags = await createClient(environment)
+      assert.equal(flags.isEnabled('ai-beta', lecturer), true)
       assert.equal(
-        enrolled.isEnabled('ai-beta', { ...lecturer, ...change }),
+        flags.isEnabled('ai-beta', { ...lecturer, betaEnabled: false }),
         false,
       )
-      assert.equal(
-        enrolled.isEnabled('beta-signup', { ...lecturer, ...change }),
-        false,
-      )
+
+      const missingBetaEnabled = { ...lecturer }
+      delete missingBetaEnabled.betaEnabled
+      assert.equal(flags.isEnabled('ai-beta', missingBetaEnabled), false)
+
+      for (const restrictedAttributes of [
+        { ...lecturer, catalyst: false },
+        { ...lecturer, actorType: 'participant' },
+        { ...lecturer, actorType: 'anonymous' },
+        { ...lecturer, id: 'another-synthetic-user' },
+      ]) {
+        assert.equal(
+          flags.isEnabled('ai-beta', restrictedAttributes),
+          false,
+        )
+      }
+      flags.destroy()
     }
-    enrolled.destroy()
 
-    await writeSavedGroup([])
-    const unenrolled = await createClient()
-    assert.equal(unenrolled.isEnabled('ai-beta', lecturer), false)
-    assert.equal(unenrolled.isEnabled('beta-signup', lecturer), true)
-    unenrolled.destroy()
+    for (const environment of ['staging', 'production']) {
+      const flags = await createClient(environment)
+      assert.equal(flags.isEnabled('ai-beta', lecturer), false)
+      flags.destroy()
+    }
 
-    await writeSavedGroup([lecturer.id])
-    const enrolledAgain = await createClient()
-    assert.equal(enrolledAgain.isEnabled('ai-beta', lecturer), true)
-    enrolledAgain.destroy()
-
-    const unauthorized = await fetch(savedGroupUrl)
-    assert.equal(unauthorized.status, 401)
-
-    const invalidMembership = await fetch(savedGroupUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: \`Bearer \${process.env.GROWTHBOOK_MANAGEMENT_API_KEY}\`,
-      },
-      body: JSON.stringify({ values: ['another-synthetic-user'] }),
-    })
-    assert.equal(invalidMembership.status, 400)
-    const unchanged = await createClient()
-    assert.equal(unchanged.isEnabled('ai-beta', lecturer), true)
-    assert.equal(unchanged.isEnabled('ai-beta', {
-      ...lecturer, id: 'another-synthetic-user',
-    }), false)
-    unchanged.destroy()
+    assert.equal(process.env.GROWTHBOOK_MANAGEMENT_API_URL, undefined)
+    assert.equal(process.env.GROWTHBOOK_MANAGEMENT_API_KEY, undefined)
+    assert.equal(process.env.GROWTHBOOK_BETA_SAVED_GROUP_ID, undefined)
+    const managementResponse = await fetch(managementUrl)
+    assert.equal(managementResponse.status, 418)
+    assert.equal(await managementResponse.text(), 'safe-original-fetch')
   `,
     ],
     {
-      env: { ...process.env, NODE_ENV: 'test' },
+      env,
       encoding: 'utf8',
     }
   )

@@ -114,8 +114,9 @@ const builder = new SchemaBuilder<{
       },
       catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
       aiBeta: () =>
-        !!ctx.user &&
-        isFeatureFlagEnabled({ ...ctx, user: ctx.user }, 'ai-beta'),
+        ctx.user
+          ? isFeatureFlagEnabled(ctx as ContextWithUser, 'ai-beta')
+          : false,
     }),
   },
   zod: {

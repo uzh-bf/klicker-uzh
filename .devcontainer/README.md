@@ -160,8 +160,8 @@ compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
 `hatchet:7077`). Connect to the DB from the host with direct-SSL:
 
 ```bash
-psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker-prod password=klicker \
-      dbname=klicker-prod sslmode=require sslnegotiation=direct"
+psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
+      dbname=klicker_test sslmode=require sslnegotiation=direct"
 ```
 
 ## Auth model in dev
@@ -187,14 +187,14 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 
-| Service                             | Image                                      | Purpose                                                              |
-| ----------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers                   |
-| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)               |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                        |
-| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                        |
-| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                             |
-| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net) |
+| Service                             | Image                                      | Purpose                                                                          |
+| ----------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers                               |
+| `postgres`                          | `postgres:15`                              | Marked klicker_test + klicker_test_shadow; separate legacy/LTI/Hatchet databases |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                                    |
+| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                                    |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                                         |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)             |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
@@ -261,6 +261,10 @@ analytics image and lint CI so the root quality gate runs inside the container.
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
+- Reset, push and test seeds require the restricted `klicker_test` login and
+  marked database. Development migration also requires marked
+  `klicker_test_shadow`. Fresh volumes provision these; retained volumes are
+  never marked or adopted automatically. See [the database safety boundary](../docs/testing.md#disposable-database-boundary).
 - `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
   with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
   `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the

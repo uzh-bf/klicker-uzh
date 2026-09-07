@@ -503,14 +503,14 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
 
-  return user.aiChatbotPublishingEnabled
+  return user.aiFeaturesEnabled
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
-  if (!isFeatureFlagEnabled(ctx, 'ai-beta')) return null
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
 
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
@@ -1350,9 +1350,9 @@ export async function requestChatbotPublication(
   // a JWT claim — ops flips this flag out of band after the token was issued.
   const owner = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
-  if (!owner.aiChatbotPublishingEnabled) {
+  if (!owner.aiFeaturesEnabled) {
     throw new GraphQLError('Account is not approved for chatbot publishing')
   }
 
@@ -1395,7 +1395,7 @@ export async function requestChatbotPublication(
       status: {
         in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
       },
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PENDING_APPROVAL,
@@ -1447,10 +1447,10 @@ export async function approveChatbotPublication(
       publishedAt: true,
       // Re-check the owner's account-level publishing capability at approval
       // time (S3 review): the manual queue can sit for days, and ops may revoke
-      // aiChatbotPublishingEnabled while a request is pending. Checking only at
+      // aiFeaturesEnabled while a request is pending. Checking only at
       // request time would let an unaware admin publish a bot under an account
       // that no longer holds the capability. See ADR 0020 (two-tier approval).
-      owner: { select: { aiChatbotPublishingEnabled: true } },
+      owner: { select: { aiFeaturesEnabled: true } },
     },
   })
   if (!chatbot) {
@@ -1459,7 +1459,7 @@ export async function approveChatbotPublication(
   if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
     throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
   }
-  if (!chatbot.owner.aiChatbotPublishingEnabled) {
+  if (!chatbot.owner.aiFeaturesEnabled) {
     throw new GraphQLError(
       'Account is no longer approved for chatbot publishing'
     )
@@ -1469,7 +1469,7 @@ export async function approveChatbotPublication(
     where: {
       id: chatbot.id,
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PUBLISHED,

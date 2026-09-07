@@ -363,8 +363,6 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  betaSavedGroupId: ''
-
   replicaCount: 3
 
   image:

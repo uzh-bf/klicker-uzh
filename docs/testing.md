@@ -14,14 +14,48 @@ tags:
 
 ## Which level for which change
 
-| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
-| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
-| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+### Disposable database boundary
+
+Destructive test setup, cleanup, test seeds and Prisma development commands
+require the `klicker_test` database and login, plus the database comment
+`klicker-disposable-test-v1`. The login must have no elevated PostgreSQL role
+privileges. A localhost address, port forward, CI variable or `--force` is not
+proof that a database is disposable. Never mark an existing retained database
+to get past a refusal.
+
+`packages/prisma/src/disposableDatabase.ts:requireDisposableDatabase` checks
+the actual registered Prisma client and its captured connection string.
+It rejects a client already used without the guard, checks the live identity
+and marker before setup or cleanup, and gates each new pooled connection.
+Changing `DATABASE_URL` after importing Prisma does not change that client's
+destination. GraphQL tests no longer provide a default URL.
+
+The repository reset, push, development-migration and seed wrappers validate
+their destinations before invoking Prisma. Development migration requires a
+separately marked `klicker_test_shadow`; migration diff guards its shadow replay
+while allowing its main datasource to remain read-only. Configuration/schema
+overrides, unsupported CLI flags and ambient `PG*` overrides are refused.
+Production application access and `prisma migrate deploy` are unchanged.
+These guards protect repository entrypoints, not arbitrary administrative SQL
+or direct invocation of the installed Prisma binary.
+
+Fresh self-contained volumes provision the dedicated test databases. Existing
+volumes without them fail closed and require an explicitly approved fresh
+disposable environment. The legacy `test:local` Compose helper is disabled
+because it deletes shared volumes. Run the serialized GraphQL suite inside a
+provisioned self-contained environment using
+`pnpm --filter @klicker-uzh/graphql test` (config-derived).
+
+### Test selection
+
+| Change                                                                            | Test level                                                                                              | Command                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                          | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                                | `npx agent-browser@0.32.2` against the adopting app                                                                 |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs marked disposable Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment                         |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
 sizes, the opt-in `All` transition, the reset back to 50, and explicit

@@ -47,12 +47,12 @@ describe('AI beta listing boundary', () => {
     'missing',
     'off',
     'throwing',
-  ] as const)('returns no data before Prisma access with a %s evaluator', async (state) => {
+  ] as const)('returns no chatbot data with a %s evaluator', async (state) => {
     const ctx = buildDeniedBetaContext(state)
     const read = vi.fn(() => {
       throw new Error('Unexpected Prisma access')
     })
-    Object.defineProperty(ctx, 'prisma', { get: read })
+    Object.assign(ctx.prisma, { chatbot: { findMany: read } })
     expect(await getChatbotsInfo(ctx)).toBeNull()
     expect(read).not.toHaveBeenCalled()
   })
@@ -134,6 +134,19 @@ describe('AI beta authoring field boundary', () => {
       expect(serviceMocks[field]).not.toHaveBeenCalled()
     })
 
+    it('denies a database opt-out even when the rollout is forced on', async () => {
+      const ctx = buildContext({
+        scope: UserLoginScope.FULL_ACCESS,
+        catalyst: true,
+      })
+      vi.mocked(ctx.prisma.user.findUnique).mockResolvedValue({
+        betaEnabled: false,
+      } as never)
+      const result = await execute(ctx)
+      expect(result.errors).toBeDefined()
+      expect(serviceMocks[field]).not.toHaveBeenCalled()
+    })
+
     it('allows an eligible lecturer when AI beta is enabled', async () => {
       const result = await execute(
         buildContext({
@@ -179,6 +192,9 @@ function buildContext({
   catalyst: boolean
 }) {
   return {
+    prisma: {
+      user: { findUnique: vi.fn(async () => ({ betaEnabled: true })) },
+    },
     featureFlags: { isEnabled: () => true, refresh: async () => {} },
     user: {
       sub: '00000000-0000-4000-8000-000000000001',
