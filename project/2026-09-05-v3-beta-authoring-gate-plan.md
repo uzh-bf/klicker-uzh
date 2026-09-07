@@ -128,13 +128,32 @@ risk review inspected all 72 paths and found no blocking defect. Its advisory
 about direct operator-script use is outside the explicitly test-only guard
 scope; legitimate operator behavior remains unchanged. Both children are closed.
 
-The required advisor request was rejected before execution: the unpublished
-amendment and verification manifest need explicit approval for transfer to
-Gemini through AGY. The isolated payload passed a secret scan, but that does not
-grant external-transfer authority. Nothing was sent. Required advisor and
-integrated final review remain pending; no publication or merge-readiness claim
-is made. Fresh fetch leaves the branch 18 ahead and eight behind v3, with no
-upstream integration.
+The user explicitly approved sending the isolated amendment and sanitized
+verification manifest to Gemini through AGY. The required advisor completed
+with no blocking source finding after receiving the full payload directly.
+The parent retained the operational caveats and corrected unsupported summary
+claims about the initial build's cause and test attribution. Integrated final
+review inspected the complete 81-path committed branch through 4738150bc2 and
+returned three findings. All are accepted: make the new account fields self-only,
+adapt OLAT test provisioning to the shared guard, and avoid account-restriction
+messaging when beta preference is unknown. OLAT setup and cleanup also arm the
+guard before use, and its localhost fallback is removed.
+
+Correction verification: 21 schema-authorization tests (including ten privacy
+cases), guarded reset and all 22 OLAT integration tests pass. GraphQL generation,
+fresh GraphQL types, Manage and OLAT types and changed-file formatting pass.
+The generated SDL is unchanged. A real Manage-only runtime with synthetic API
+responses shows the incorrect old message and corrected neutral message for the
+same failed-read state. English desktop and German mobile screenshots confirm
+readability and absence of a beta toggle. This is UI-state proof, not real-login
+proof. The browser and exact Manage runtime are stopped; the fresh tmpfs OLAT
+database is stopped with no published port or retained volume.
+
+Production build passes all 23 tasks (14 cached) in 2m5.024s. The same reviewer's
+one correction pass remains pending.
+No publication or merge-readiness claim is made yet. Fresh refs leave the branch
+19 ahead and eleven behind v3, with no upstream integration. Current-head hosted
+checks remain pending publication.
 
 ## Approved amendment: database beta preference and one AI approval
 

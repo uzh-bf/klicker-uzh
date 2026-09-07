@@ -8,6 +8,9 @@ const USER_ID = '00000000-0000-4000-8000-000000000001'
 
 function createPrisma() {
   return {
+    course: {
+      findUnique: vi.fn(),
+    },
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -68,6 +71,52 @@ async function execute(source: string, ctx: Context) {
 describe('beta enrollment schema authorization', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe.each(['betaEnabled', 'aiFeaturesEnabled'])('%s privacy', (field) => {
+    it.each([
+      'anonymous',
+      'other-user',
+      'participant',
+      'otp',
+      'self',
+    ])('allows only the authenticated owner through the course-owner field: %s', async (actor) => {
+      const { ctx, prisma } = createContext({
+        authenticated: actor !== 'anonymous',
+        scope:
+          actor === 'otp' ? UserLoginScope.OTP : UserLoginScope.FULL_ACCESS,
+      })
+      if (ctx.user && actor === 'other-user') {
+        ctx.user.sub = '00000000-0000-4000-8000-000000000002'
+      }
+      if (ctx.user && actor === 'participant') {
+        ctx.user.role = UserRole.PARTICIPANT
+      }
+      prisma.course.findUnique.mockResolvedValue({
+        owner: { id: USER_ID, betaEnabled: true, aiFeaturesEnabled: false },
+      })
+
+      const result = await execute(
+        `query {
+            basicCourseInformation(courseId: "synthetic-course") {
+              owner { ${field} }
+            }
+          }`,
+        ctx
+      )
+
+      if (actor === 'self') {
+        expect(result.errors).toBeUndefined()
+        expect(result.data).toEqual({
+          basicCourseInformation: {
+            owner: { [field]: field === 'betaEnabled' },
+          },
+        })
+      } else {
+        expect(result.errors).toHaveLength(1)
+        expect(result.data?.basicCourseInformation).toBeNull()
+      }
+    })
   })
 
   it('rejects an anonymous capability query', async () => {

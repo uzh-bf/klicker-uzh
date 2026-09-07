@@ -1971,7 +1971,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotBetaAccessRequired:
         'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
-        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:

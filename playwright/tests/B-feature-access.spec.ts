@@ -247,7 +247,7 @@ test.describe('Beta feature enrollment discovery', () => {
     await mockGrowthBookFeatureFlags(page, { aiBeta: true })
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
-      mayChange: true,
+      mayChange: false,
       signupAvailable: true,
     })
     await loginLecturer()

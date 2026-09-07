@@ -98,7 +98,7 @@ function BetaEnrollmentSettings({
             <div data-cy="beta-enrollment-unavailable" role="status">
               <UserNotification type="info">
                 {t(
-                  !capability || (capability.mayChange && !membershipKnown)
+                  !capability || !membershipKnown
                     ? 'manage.settings.betaFeaturesUnavailable'
                     : 'manage.settings.betaFeaturesEnrollmentRestricted'
                 )}
