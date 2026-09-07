@@ -32,31 +32,12 @@ Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
 names chatbot creation as a beta feature. Discovery never grants access.
 
-The personal beta preference is the database field `User.betaEnabled`, whose
-default is `true`. `FULL_ACCESS` and `ACCOUNT_OWNER` sessions may read and edit
-it through the enrollment capability; weaker scopes receive unknown membership
-from that capability without a database read. The
-existing GraphQL capability projects this preference as membership and exposes
-Catalyst eligibility as `signupAvailable`: Catalyst is required to opt in, while
-full-access opt-out remains available without Catalyst. This preference is not
-an approval entitlement.
-
-`ai-beta` is a server-side, read-only GrowthBook rollout condition. The backend
-supplies the trusted request-local `betaEnabled` value with the existing stable
-actor id, user actor type, role, and Catalyst attributes. The rollout rule must
-require `betaEnabled: true`, `catalyst: true`, and the existing user-actor
-conditions. A false or unknown database preference therefore stays false even
-when a remote definition would otherwise force the flag on. GrowthBook does
-not store or mutate enrollment membership.
+See [Beta preference and rollout ownership](#beta-preference-and-rollout-ownership)
+for preference permissions, rollout attributes and the independent AI approval.
 
 Chatbot authoring requires `ai-beta`, Catalyst, and `FULL_ACCESS` or
 account-owner scope in both Manage and GraphQL. A denied direct route displays
 an explanation and a link to beta settings without mounting authoring queries.
-The database field `User.aiFeaturesEnabled`, default `false`, is the sole
-account approval gate for chatbot publication and model usage, including when
-budget enforcement is disabled. Beta preference and `ai-beta` rollout never
-grant that approval. Per-chatbot publication review and published participant
-access remain unchanged.
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable

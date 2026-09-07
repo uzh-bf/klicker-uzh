@@ -13,7 +13,7 @@ remain unchanged.
 The trusted Playwright provisioning prerequisite
 [PR #5812 — disposable CI databases](https://github.com/uzh-bf/klicker-uzh/pull/5812)
 was merged by the user as d8e29ee75168b61e5c6902a5a8d8afa12495e261.
-Its non-skipped postmerge shard proof remains required before readiness.
+Its non-skipped postmerge shard proof passed in the run recorded below.
 No branch integration is needed to consume that trusted action.
 
 Require explicit test login and database identities plus the database comment
@@ -113,10 +113,28 @@ tasks pass. Broad type verification passed 34 of 35 tasks; only the container's
 Git-based SDL check failed because its host Git metadata was not mounted.
 That exact SDL diff check passes on the host, and fresh GraphQL types pass
 after generation. Nine demo-participant integration tests also pass against a
-new marked tmpfs database. Production build is still running at Hatchet's
-Rollup step; a read-only diagnostic investigates its lingering process.
-Committed simplification/risk reviews and integrated final review remain
-required before publishing the amendment to the existing PR.
+new marked tmpfs database, which is now stopped and auto-removed. Helm chart
+rendering and the three host Git-identity contract tests pass.
+The first production build emitted Hatchet's bundle but retained TypeScript
+watch handles. It was stopped without changing source. An isolated Hatchet
+build passed, and the full retry passed all 23 tasks (seven cached) in
+3m14.456s. No build-source fix was required. All verification containers are
+stopped and absent; the generated public SDL remains unchanged.
+
+Implementation commit 5f7ab0c6a2 is local only. The native simplifier inspected
+all 72 changed paths and recommended only consolidating repeated feature-flag
+documentation; parent accepted that behavior-preserving change. Native slice
+risk review inspected all 72 paths and found no blocking defect. Its advisory
+about direct operator-script use is outside the explicitly test-only guard
+scope; legitimate operator behavior remains unchanged. Both children are closed.
+
+The required advisor request was rejected before execution: the unpublished
+amendment and verification manifest need explicit approval for transfer to
+Gemini through AGY. The isolated payload passed a secret scan, but that does not
+grant external-transfer authority. Nothing was sent. Required advisor and
+integrated final review remain pending; no publication or merge-readiness claim
+is made. Fresh fetch leaves the branch 18 ahead and eight behind v3, with no
+upstream integration.
 
 ## Approved amendment: database beta preference and one AI approval
 
@@ -197,7 +215,7 @@ flagged eligibility, cache and migration-lineage risks; the contracts above
 resolve them. Generic beta naming is intentional. No global cache is added.
 Baseline: clean `5e5b1d69c8cf08a58f27dee6c81d618844116b77`, matching upstream,
 15 commits ahead and 5 behind `v3`. The 42 feature-flag baseline tests pass.
-Implementation is uncommitted. Browser verification on the disposable database
+Implementation is committed locally as recorded above. Browser verification on the disposable database
 proved default-on preference, real opt-out/in, opt-out persistence after process
 restart, backend denial while opted out, and authoring availability without AI
 approval after opt-in. English desktop and German mobile settings were inspected.
