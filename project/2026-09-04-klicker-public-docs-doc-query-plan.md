@@ -46,6 +46,63 @@
 - Remote-state evidence was refreshed on 2026-09-04. Authoritative source bases
   are recorded in the worktree table below.
 
+## September 6 verification checkpoint
+
+The installed devrouter 0.0.55 passed the earlier configuration-drift repair;
+the repository pin remains 0.0.51. The exact task runtime used profile
+`chat,manage`, workspace `rs-manage-assistant-public-doc-q`, and the approved
+non-secret Blob port override 10023. Guarded repair reported ready with no
+drift and no container recreation. Auth returned HTTP 200, and seeded
+delegated login reached the Manage question pool.
+
+The behavior-only cleanup now also removes four prompt-wording-only tests.
+It retains synthetic context preservation, signed proposal fields, machine
+protocol fencing, model selection, and capability filtering. The four focused
+Chat files passed all 45 tests. Chat and Playwright typechecks passed. Scoped
+Biome and Prettier checks passed; the unchanged welcome component still has
+its pre-existing array-index-key lint finding. Production prompts are unchanged.
+These checks do not establish model obedience or browser acceptance.
+
+Browser verification reached the assistant's delayed shell. The app log then
+reported backend exit 137; task cgroup counters showed two OOM kills and a
+peak near 8.16 GB, supporting memory pressure without identifying each kill.
+A serialized runtime retry was started after compiler checks finished.
+On continuation its process was gone, and Docker reported the former task
+container absent. Devrouter reported every task service missing with five
+stale routes. This task did not remove those containers. Recreation and its
+effect on retained synthetic data require clarification before another startup.
+
+The browser session is closed. Exact-owner managed stop failed closed with
+`Managed stop cannot prove the complete retained service population.` Runtime
+release is not verified; no guard bypass or data deletion was attempted.
+Browser source cards,
+fallback, drafting, and the focused host Playwright run remain incomplete.
+The six changed files remain uncommitted. No publication, upstream integration,
+secret operation, ingestion, or tenant activation occurred. Fresh remote refs
+show this branch has no upstream and is 134 commits ahead of and 37 behind
+remote default `v3`; that drift does not authorize integration.
+
+### Confirmed reset and recreation attempt
+
+The user confirmed another complete OrbStack reset and authorized fresh stack
+startup. One managed `chat,manage` ensure recreated the exact task container
+`b7ce10912ad8bc0f28a5a0f41979504fe8ce8f5eca24c809aa6ab824efd385cf`
+and its dependencies. Internal Auth, Chat, Manage, PWA, and lecturer endpoint
+readiness passed. During reconciliation a later hook selected `full`; final
+routed Chat readiness timed out with HTTP 502 and the candidate rolled back.
+No browser acceptance ran against this candidate.
+
+Readback reported generated-configuration drift, stopped app processes and
+Redis services, and healthy retained Postgres, Hatchet, and Azurite services.
+One guarded repair refused with `Repair requires a persisted degraded managed
+runtime.` The app log ended with the managed shutdown; it did not establish
+another memory failure. Exact managed stop also refused with `Managed stop
+requires unchanged recorded resources and configuration.` The retained base
+services and five stale routes therefore remain unreleased; no keep-running
+lease or successful shutdown is claimed. Continue only after
+the lifecycle-state mismatch is resolved; do not edit global state, bypass
+guards, or retry the same failed path without new evidence.
+
 ## Product primitive impact
 
 | Product primitive | Disposition | Contract delta | Preserved behavior |
@@ -421,6 +478,20 @@ run. Do not add a hosted evaluation service or dependency.
 
 ## Progress
 
+- [ ] Verification checkpoint, 2026-09-05: the post-OrbStack-reset managed
+  `chat,manage` startup completed with healthy dependencies and no drift.
+  The Chat command ran the complete suite: 890 passed, 22 skipped. The
+  synthetic manifest suite passed all 12 tests. Browser login still returned
+  HTTP 404 at `/api/auth/signin`; browser acceptance remains incomplete.
+  The read-only test-mapping worker failed before work with provider HTTP 400;
+  its single trusted continuity worker then hit the account usage limit.
+  No child result was accepted. Existing test cleanup remains uncommitted.
+  Runtime shutdown completed for this exact worktree; fresh managed status
+  confirms stopped services, zero active apps, and no drift. Resume by
+  investigating local auth routing, finishing behavior-only
+  test cleanup, and running focused browser verification. No publication or
+  activation authority has changed.
+
 - [x] Refreshed remote refs and recorded authoritative bases.
 - [x] Inspected the existing Manage search, MCP client, citation, tenant,
   ingestion, secret-projection, and deployment seams.
@@ -464,7 +535,86 @@ run. Do not add a hosted evaluation service or dependency.
 - [x] Reached clean local commits across data-catalog, data-ingestion,
   deployment, df-cloud, and Klicker. No branch was pushed and no runtime or
   secret was activated.
-- [x] Reached the source-ready terminal. Live retrieval, ingestion, tenant
-  isolation, secret readiness, and runtime health remain intentionally deferred
-  to the separately authorized activation task.
+- [ ] Complete the local browser acceptance before declaring the source-ready
+  terminal. Existing EN/DE desktop and compact screenshots cover welcome and
+  layout only; source cards, fallback, and drafting still need browser proof.
+  Live retrieval, ingestion, tenant isolation, secret readiness, and deployed
+  runtime health remain deferred to the separately authorized activation task.
+- [ ] Verify the September 5 welcome-test cleanup. Exact welcome prose and CSS
+  assertions are replaced with capability-list and limits-note presence plus
+  a starter that fills the composer without sending. `git diff --check` passes;
+  browser execution and container checks are blocked because another runtime's
+  `default-fe-df332-azurite-1` owns local port 10003. The attempted task runtime
+  primary container was stopped without modifying that owner. Status readback
+  reports no active apps or processes, but Redis, Postgres, and Hatchet remain
+  healthy: complete runtime release is not verified. Delegated-login diagnosis
+  remains unconfirmed until the isolated runtime can start.
+- [ ] Resolve the isolated runtime recovery boundary found on September 5.
+  With explicit approval, the conflicting Azurite container was temporarily
+  stopped and then restored. Startup still failed with `ENOTFOUND
+  rs-manage-assistant-public-doc-q-azurite`; Docker inspection showed the task's
+  Azurite container running with no attached networks. Subsequent checks and
+  normal shutdown failed with `could not determine process identity for
+  workspace lifecycle lock`. No manual lock or networking repair was attempted.
+  The host Playwright command also aborted during pnpm's dependency-install
+  preflight before executing tests. Formatting and browser acceptance remain
+  unverified; task runtime cleanup remains incomplete.
+- [ ] Complete acceptance after the later runtime interruption. Outside-sandbox
+  Devrouter execution passed, showing the earlier process-identity failure was
+  sandbox-related. After the provider queue cleared, managed stop verified all
+  task services stopped. The approved repair restored the task Azurite network
+  aliases and preserved its failed-transition record as a backup; a subsequent
+  `chat,manage` ensure reported ready with no drift. Delegated sign-in through
+  `/api/auth/signin` succeeded and the seeded lecturer reached the question pool.
+  The host Playwright launcher then attempted its full profile and rolled back;
+  no passing test receipt was obtained. On the next continuation, Docker showed
+  neither the task container group nor the formerly conflicting container.
+  Devrouter retained a failed `route-publication` transition. Their removal was
+  not performed by this task; confirm ownership before recreating runtime data.
+  Browser session `docs-verification` was closed.
+- [ ] Recreate the isolated runtime after the confirmed OrbStack reset. The
+  user identified the container removal as their reset and explicitly requested
+  startup again. One `devrouter ensure . --profile chat,manage --json` command
+  is queued behind other workspace operations; no duplicate startup or lock
+  bypass was launched. Complete focused checks only after fresh readiness.
+- [ ] Verify the expanded behavior-only test cleanup: welcome and German locale
+  tests no longer pin wording or content counts, docs fallback uses synthetic
+  URL-contract fixtures, and manifest determinism uses synthetic source inputs
+  instead of a checked-in documentation snapshot. Changes remain uncommitted.
 - [ ] Request separate publication and activation authority.
+
+### September 6 draft-publication checkpoint
+
+The user authorized committing and publishing this package as draft PRs/MRs for
+cross-device continuation. Activation, ingestion, deployment and merging remain
+outside that authorization. The existing Klicker PRs #5753 and #5754 are draft.
+Supporting branches are published as data-catalog !83, data-ingestion !132,
+deployment !734 and df-cloud !524. The task-local runtime recovery fix is
+published as devrouter draft PR #56 at `71aa5a8d33ea8966c76705e41273cb7d3d384b5e`;
+its integrated final review passes with no findings.
+
+The task-local CLI completed the `chat,manage` ensure with ready status and no
+drift, without recreating the attached runtime. That does not prove the detached
+reset failure path live. The subsequent full `pnpm run check:all` encountered an
+unrelated Analytics dependency failure: the reset environment selected Python
+3.14 and pandas 2.2.2 could not compile without a C compiler. The producing
+terminal session was lost before its overall exit status could be recovered.
+Do not treat this run as a passing full check. Staged secret scanning and focused
+formatting passed. Browser acceptance and exact managed shutdown still require
+fresh proof. The behavior-only cleanup remains staged pending commit checks.
+
+### September 7 transfer checkpoint
+
+The user explicitly requested publication of all remaining work for another task
+to take over, despite the verification blocker. This checkpoint skips the
+blocked commit and pre-push build hooks for transfer only. Staged gitleaks and
+diff whitespace checks pass; this is not a merge-readiness receipt.
+
+The runtime retry failed before checks because another workspace owns Blob
+port 10023. Recovery could not prove the complete candidate ownership. One
+guarded stop failed with `Managed stop requires consistent provider and primary
+container state.` Task Hatchet, Postgres and three Redis containers remain
+running; app and Azurite remain Created. No other workspace was modified.
+The next task must recover the exact managed runtime, finish full checks and
+browser acceptance, and verify shutdown. The earlier Analytics Python/pandas
+failure has not been retested. No merge, deployment or ingestion is authorized.

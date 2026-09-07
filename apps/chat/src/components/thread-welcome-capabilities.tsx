@@ -14,7 +14,7 @@ export const ThreadWelcomeCapabilities: FC<{
   limitsNote?: string
 }> = ({ capabilities, limitsNote }) => (
   <div className="mt-3 flex w-full max-w-sm flex-col gap-1.5 text-left">
-    <ul className="flex flex-col gap-1">
+    <ul data-cy="chat-welcome-capabilities" className="flex flex-col gap-1">
       {capabilities.map(({ icon: Icon, text }, index) => (
         <li
           key={`${text}-${index}`}
@@ -26,7 +26,10 @@ export const ThreadWelcomeCapabilities: FC<{
       ))}
     </ul>
     {limitsNote && (
-      <p className="text-muted-foreground text-[11px] leading-snug">
+      <p
+        data-cy="chat-welcome-limits"
+        className="text-muted-foreground text-[11px] leading-snug"
+      >
         {limitsNote}
       </p>
     )}

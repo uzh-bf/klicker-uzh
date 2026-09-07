@@ -9,7 +9,6 @@ import {
 } from '@/src/services/docsSearch'
 import { mergeManageAssistantToolSets } from '@/src/services/docsSearchTool'
 import { fenceToolResultText } from '@/src/services/toolOutputFencing'
-import realDocsManifest from '../../docs/src/generated/docs-manifest.json'
 
 function makeManifest(): KlickerDocsManifest {
   return {
@@ -124,14 +123,13 @@ describe('docs search ranking', () => {
 })
 
 describe('deterministic docs search fallback', () => {
-  test('real bundled manifest is usable', () => {
-    const manifest = realDocsManifest as unknown as KlickerDocsManifest
-    expect(manifest.schemaVersion).toBe(1)
-    expect(manifest.pages.length).toBeGreaterThanOrEqual(49)
-    expect(manifest.useCases.length).toBeGreaterThanOrEqual(11)
+  test('matching fallback results link to the canonical public site', () => {
+    const manifest = makeManifest()
     const outcome = searchKlickerDocs(manifest, 'live quiz')
     expect(outcome.kind).not.toBe('no-result')
-    expect(outcome.results[0].url.startsWith(KLICKER_DOCS_BASE_URL)).toBe(true)
+    for (const result of outcome.results) {
+      expect(result.url).toBe(new URL(result.route, KLICKER_DOCS_BASE_URL).href)
+    }
   })
 
   test('instruction-like text inside docs results cannot forge the fence', () => {
