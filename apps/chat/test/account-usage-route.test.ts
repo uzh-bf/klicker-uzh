@@ -307,6 +307,19 @@ describe('account usage chat route', () => {
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
   })
 
+  test('allows participant model use when an approved owner opts out of beta', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
   test('rejects a completed assistant key before MCP or provider work', async () => {
     mocks.claimChatTurn.mockResolvedValueOnce({
       outcome: 'completed',
