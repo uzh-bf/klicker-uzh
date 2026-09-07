@@ -82,6 +82,8 @@ Provider.onConnect(async (token, req, res) => {
   )
 
   res.cookie('lti-token', jwt, {
+    maxAge: 5 * 60 * 1000,
+    path: '/',
     secure: true,
     sameSite: 'none',
     domain: process.env.COOKIE_DOMAIN as string,

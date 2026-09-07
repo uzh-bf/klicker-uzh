@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/)'
 
   test-graphql:
     needs: filter
@@ -127,11 +127,7 @@ jobs:
           version: 11.5.0
 
       - name: Set up Node.js with pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

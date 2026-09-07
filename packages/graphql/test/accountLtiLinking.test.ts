@@ -170,10 +170,16 @@ describe('LTI participant linking and creation', () => {
       email: emailFor('manual-link').toUpperCase(),
     })
 
-    const result = await loginParticipantWithLti({ signedLtiData }, createCtx())
+    const ctx = createCtx()
+    const result = await loginParticipantWithLti({ signedLtiData }, ctx)
 
     expect(result?.participant?.id).toBe(participant.id)
     expect(result?.participantToken).toBeDefined()
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ path: '/', maxAge: 0 })
+    )
 
     const linkedAccount = await prisma.participantAccount.findUnique({
       where: { ssoId: ssoIdFor('manual-link') },
@@ -282,9 +288,11 @@ describe('LTI participant linking and creation', () => {
       email: emailFor('no-match'),
     })
 
-    const result = await loginParticipantWithLti({ signedLtiData }, createCtx())
+    const ctx = createCtx()
+    const result = await loginParticipantWithLti({ signedLtiData }, ctx)
 
     expect(result).toBeNull()
+    expect(ctx.res.cookie).not.toHaveBeenCalled()
   })
 
   it('creates a new SSO participant from LTI create flow when no match exists', async () => {

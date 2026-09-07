@@ -147,17 +147,31 @@ fi
 # read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
 # selection drops it, stop the exact owned process instead of leaving it stale.
 if [ "$PROFILE_WANTS_MCP" = yes ]; then
+  # Rotate the fixture and Chat together. Only the child receives the ephemeral
+  # credentials; the parent owns cleanup if any later readiness check fails.
+  if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" != 1 ]; then
+    exec node apps/chat/scripts/local-mcp-bootstrap.mjs
+  fi
+  : "${LOCAL_MCP_GENERATION:?Missing local MCP credential generation}"
+  export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},LOCAL_MCP_GENERATION"
   MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
   MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
   "$DEVROUTER_PROCESS_HELPER" ensure \
     --name klicker-local-mcp \
     --match 'apps/chat/scripts/local-mcp-server.mjs' \
     --log /tmp/local-mcp.log \
-    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
+    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256" "$LOCAL_MCP_GENERATION"
 
   # Keep startup bounded: this fixture check must not delay managed-app readiness.
   for attempt in $(seq 1 20); do
-    if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
+    if curl --fail --silent http://localhost:1417/health | node -e '
+      let body = ""; process.stdin.on("data", chunk => body += chunk)
+      process.stdin.on("end", () => {
+        try {
+          const health = JSON.parse(body)
+          process.exit(health.status === "ok" && health.generation === process.env.LOCAL_MCP_GENERATION ? 0 : 1)
+        } catch { process.exit(1) }
+      })'; then
       break
     fi
     if [ "$attempt" -eq 20 ]; then
