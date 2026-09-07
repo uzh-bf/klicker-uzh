@@ -8,6 +8,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import type {
   CourseDeletionEvent,
   HatchetHandlers,
+  LiveQuizBlockAggregationInput,
   PreparedHatchetTasks,
 } from '@klicker-uzh/types'
 import type { PubSub } from 'graphql-yoga'
@@ -204,22 +205,16 @@ export function prepareHatchetTasks({
     name: 'aggregate-block-closure-standard',
     retries: 3,
     defaultPriority: Priority.MEDIUM,
-    fn: async (
-      {
-        liveQuizId,
-        blockId,
-      }: {
-        liveQuizId: string
-        blockId: number
-      },
-      executionContext
-    ) => {
+    fn: async (input: LiveQuizBlockAggregationInput, executionContext) => {
       const success =
         await handlers.handleStandardLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
+          input,
           globalContext,
           executionContext
         )
+      if (!success) {
+        throw new Error('Standard live quiz block aggregation failed')
+      }
       return { success }
     },
   })
@@ -228,22 +223,16 @@ export function prepareHatchetTasks({
     name: 'aggregate-block-closure-assessment',
     retries: 3,
     defaultPriority: Priority.MEDIUM,
-    fn: async (
-      {
-        liveQuizId,
-        blockId,
-      }: {
-        liveQuizId: string
-        blockId: number
-      },
-      executionContext
-    ) => {
+    fn: async (input: LiveQuizBlockAggregationInput, executionContext) => {
       const success =
         await handlers.handleAssessmentLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
+          input,
           globalContext,
           executionContext
         )
+      if (!success) {
+        throw new Error('Assessment live quiz block aggregation failed')
+      }
       return { success }
     },
   })

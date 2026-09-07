@@ -1,26 +1,28 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
+  type LiveQuizBlockAggregationInput,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,7 +30,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -1080,44 +1081,57 @@ export async function activateLiveQuizBlock(
   { quizId, blockId }: { quizId: string; blockId: number },
   ctx: ContextWithUser
 ) {
-  const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
-    include: { blocks: { orderBy: { id: 'asc' } } },
-  })
+  const activation = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockLiveQuiz(prisma, quizId)
+      const quiz = await prisma.liveQuiz.findUnique({
+        where: { id: quizId },
+        include: { blocks: { orderBy: { id: 'asc' } } },
+      })
 
-  if (!quiz) return null
+      if (!quiz) return null
 
-  const newBlock = quiz.blocks.find((block) => block.id === blockId)
+      const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
-  // if the block is not from the current quiz or it is already active, return early
-  if (!newBlock || quiz.activeBlockId === blockId) return quiz
+      // if the block is not from the current quiz or it is already active, return early
+      if (!newBlock || quiz.activeBlockId === blockId)
+        return { quiz, updatedQuiz: null }
 
-  // set the new block to active
-  const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: { id: quizId },
-    data: {
-      activeBlock: { connect: { id: blockId } },
-      blocks: {
-        update: {
-          where: { id: blockId },
-          data: {
-            status: DB.ElementBlockStatus.ACTIVE,
-            startedAt: new Date(),
-            expiresAt: newBlock.timeLimit
-              ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
-              : undefined,
+      // set the new block to active
+      const updatedQuiz = await prisma.liveQuiz.update({
+        where: { id: quizId },
+        data: {
+          activeBlock: { connect: { id: blockId } },
+          blocks: {
+            update: {
+              where: { id: blockId },
+              data: {
+                status: DB.ElementBlockStatus.ACTIVE,
+                startedAt: new Date(),
+                expiresAt: newBlock.timeLimit
+                  ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
+                  : undefined,
+              },
+            },
           },
         },
-      },
+        include: {
+          activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+      })
+
+      await initializeLiveQuizBlockCache(updatedQuiz, ctx)
+      return { quiz, updatedQuiz }
     },
-    include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
-        orderBy: { order: 'asc' },
-      },
-    },
-  })
+    { timeout: 30000 }
+  )
+  if (!activation) return null
+  const { quiz, updatedQuiz } = activation
+  if (!updatedQuiz) return quiz
 
   if (updatedQuiz.activeBlock?.expiresAt) {
     scheduledJobs[blockId] = schedule.scheduleJob(
@@ -1177,6 +1191,24 @@ export async function activateLiveQuizBlock(
     })),
   })
 
+  return updatedQuiz
+}
+
+async function lockLiveQuiz(
+  prisma: DB.Prisma.TransactionClient,
+  quizId: string
+) {
+  await prisma.$queryRaw`SELECT "id" FROM "LiveQuiz" WHERE "id" = ${quizId}::uuid FOR UPDATE`
+}
+
+async function initializeLiveQuizBlockCache(
+  updatedQuiz: DB.LiveQuiz & {
+    activeBlock: (DB.ElementBlock & { elements: DB.ElementInstance[] }) | null
+  },
+  ctx: ContextWithUser
+) {
+  const quiz = updatedQuiz
+  const blockId = updatedQuiz.activeBlock!.id
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec.pipeline()
@@ -1184,6 +1216,8 @@ export async function activateLiveQuizBlock(
 
   updatedQuiz.activeBlock!.elements.forEach((instance) => {
     const elementData = instance.elementData
+
+    redisMulti.hdel(`lq:${quiz.id}:i:${instance.id}:info`, 'blockClosedAt')
 
     const commonInfo = {
       namespace: updatedQuiz.namespace,
@@ -1317,8 +1351,10 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
-  return updatedQuiz
+  const results = await redisMulti.exec()
+  if (!results || results.some(([error]) => error)) {
+    throw new GraphQLError('Could not initialize live quiz block cache')
+  }
 }
 
 export async function deactivateLiveQuizBlock(
@@ -1327,23 +1363,65 @@ export async function deactivateLiveQuizBlock(
   isScheduled?: boolean
 ) {
   let isAssessmentEnabled = false
+  let aggregationInput: LiveQuizBlockAggregationInput
   try {
-    const res = await updateLiveQuizBlockResultsFromCache({
-      quizId,
-      blockId,
-      prisma: ctx.prisma,
-      redisExec: ctx.redisExec,
-      redisAssessmentExec: ctx.redisAssessmentExec,
-      updateResults: true,
-      updateLeaderboards: true, // always update the leaderboard when a block is closed
-    })
+    const res = await ctx.prisma.$transaction(
+      async (prisma) => {
+        await lockLiveQuiz(prisma, quizId)
+        const activeQuiz = await prisma.liveQuiz.findUnique({
+          where: { id: quizId },
+          include: { activeBlock: { include: { elements: true } } },
+        })
+        if (!activeQuiz?.activeBlock || activeQuiz.activeBlockId !== blockId)
+          return null
+        const redis = activeQuiz.isAssessmentEnabled
+          ? ctx.redisAssessmentExec
+          : ctx.redisExec
+        await verifyBlockCache(redis, activeQuiz.activeBlock)
+        const result = await updateLiveQuizBlockResultsFromCache({
+          quizId,
+          blockId,
+          prisma,
+          redisExec: ctx.redisExec,
+          redisAssessmentExec: ctx.redisAssessmentExec,
+          updateResults: true,
+          updateLeaderboards: true, // always update the leaderboard when a block is closed
+        })
+        if (!result) return null
+        const block = result.updatedQuiz.blocks.find(
+          (candidate) => candidate.id === blockId
+        )!
+        const timestamps = redis.multi()
+        for (const instance of block.elements) {
+          timestamps.hset(
+            `lq:${quizId}:i:${instance.id}:info`,
+            'blockClosedAt',
+            Number(block.closedAt)
+          )
+        }
+        const timestampResults = await timestamps.exec()
+        if (!timestampResults || timestampResults.some(([error]) => error)) {
+          throw new GraphQLError('Could not record live quiz block closure')
+        }
+        return result
+      },
+      { timeout: 30000 }
+    )
 
     // if the update was not successful, return false
     if (!res) return false
 
     const updatedQuiz = res.updatedQuiz
-    const activeInstanceIds = res.activeInstanceIds
     isAssessmentEnabled = updatedQuiz.isAssessmentEnabled
+    const closedBlock = updatedQuiz.blocks.find(
+      (block) => block.id === blockId
+    )!
+    aggregationInput = {
+      liveQuizId: quizId,
+      blockId,
+      blockExecution: closedBlock.execution,
+      blockStartedAt: closedBlock.startedAt!.toISOString(),
+    }
 
     // update the running live quiz with the updated block information
     ctx.pubSub.publish('runningLiveQuizUpdated', {
@@ -1369,27 +1447,6 @@ export async function deactivateLiveQuizBlock(
       await scheduledJobs[blockId].cancel()
       delete scheduledJobs[blockId]
     }
-
-    // add the closure timestamp of the block to the instance info in the redis cache
-    const updatedBlock = updatedQuiz.blocks.find(
-      (block) => block.id === blockId
-    )
-    if (updatedBlock && updatedBlock.closedAt) {
-      // select the correct redis cache for the live quiz depending on the assessment flag
-      const redis = updatedQuiz.isAssessmentEnabled
-        ? ctx.redisAssessmentExec.pipeline()
-        : ctx.redisExec.pipeline()
-
-      // add the blockClosedAt timestamp to the instance info cache
-      for (const instanceId of activeInstanceIds) {
-        redis.hset(
-          `lq:${updatedQuiz.id}:i:${instanceId}:info`,
-          'blockClosedAt',
-          Number(updatedBlock.closedAt)
-        )
-      }
-      await redis.exec()
-    }
   } catch (error: any) {
     await sendTeamsNotification({
       scope: 'graphql/deactivateLiveQuizBlock',
@@ -1407,12 +1464,12 @@ export async function deactivateLiveQuizBlock(
     if (isAssessmentEnabled) {
       await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        aggregationInput
       )
     } else {
       await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        aggregationInput
       )
     }
   } catch (error) {
@@ -1425,51 +1482,97 @@ export async function deactivateLiveQuizBlock(
   return true
 }
 
-async function removeCacheEntriesBlock({
-  liveQuizId,
-  blockId,
-  block,
-  isLastBlock,
-  redis,
-}: {
-  liveQuizId: string
-  blockId: number
-  block: DB.ElementBlock & { elements: DB.ElementInstance[] }
-  isLastBlock: boolean
-  redis: Redis
-}) {
-  if (isLastBlock) {
-    // if the last block was closed, clean up the entire cache for this live quiz
-    const keys = await redis.keys(`lq:${liveQuizId}:*`)
-    if (keys.length > 0) {
-      const pipe = redis.pipeline()
-      for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
-      }
-      await pipe.exec()
-    }
-  } else {
-    // only remove information from the cache that is specific to the closed block and the instances therein
-    const instanceIds = block.elements.map((instance) => instance.id)
-    const instanceKeysNested = await Promise.all(
-      instanceIds.map(
-        async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
-      )
-    )
-    const instanceKeys = instanceKeysNested.flat()
-    const blockKeys = await redis.keys(`lq:${liveQuizId}:b:${blockId}:*`)
-    const keys = [...instanceKeys, ...blockKeys]
+type CachedBlock = DB.ElementBlock & { elements: DB.ElementInstance[] }
 
-    if (keys.length > 0) {
-      const pipe = redis.pipeline()
-      for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
-      }
-      await pipe.exec()
+async function verifyBlockCache(redis: Redis, block: CachedBlock) {
+  if (!block.startedAt || block.elements.length === 0) {
+    throw new GraphQLError('Missing live quiz block cache identity')
+  }
+  const reads = redis.multi()
+  for (const instance of block.elements) {
+    reads.hgetall(`lq:${block.liveQuizId}:i:${instance.id}:info`)
+    reads.hget(
+      `lq:${block.liveQuizId}:i:${instance.id}:results`,
+      'participants'
+    )
+  }
+  const values = await reads.exec()
+  if (!values || values.some(([error]) => error)) {
+    throw new GraphQLError('Could not read live quiz block cache')
+  }
+  for (let index = 0; index < block.elements.length; index++) {
+    const info = values[index * 2]![1] as Record<string, string>
+    const participants = values[index * 2 + 1]![1]
+    if (
+      info.blockExecution !== String(block.execution) ||
+      info.blockStartedAt !== String(block.startedAt.getTime()) ||
+      participants === null ||
+      !Number.isFinite(Number(participants))
+    ) {
+      throw new GraphQLError(
+        'Live quiz block cache is missing or belongs to another activation'
+      )
     }
   }
+}
+
+function blockOwnership(blocks: CachedBlock[]) {
+  return JSON.stringify(
+    blocks.map((block) => ({
+      id: block.id,
+      execution: block.execution,
+      startedAt: block.startedAt?.toISOString(),
+      status: block.status,
+      elements: block.elements
+        .map((instance) => instance.id)
+        .sort((a, b) => a - b),
+    }))
+  )
+}
+
+async function expireBlockCache(
+  redis: Redis,
+  blocks: CachedBlock[],
+  isLastBlock: boolean
+) {
+  const target = blocks[blocks.length - 1]!
+  const liveQuizId = target.liveQuizId!
+  const keys = isLastBlock
+    ? await redis.keys(`lq:${liveQuizId}:*`)
+    : [
+        ...(
+          await Promise.all(
+            target.elements.map((instance) =>
+              redis.keys(`lq:${liveQuizId}:i:${instance.id}:*`)
+            )
+          )
+        ).flat(),
+        ...(await redis.keys(`lq:${liveQuizId}:b:${target.id}:*`)),
+      ]
+  if (keys.length === 0) return
+  const guards = blocks.flatMap((block) =>
+    block.elements.map((instance) => ({
+      key: `lq:${liveQuizId}:i:${instance.id}:info`,
+      execution: String(block.execution),
+      startedAt: block.startedAt ? String(block.startedAt.getTime()) : '',
+    }))
+  )
+  const result = await redis.eval(
+    `local guards = cjson.decode(ARGV[1])
+     for _, guard in ipairs(guards) do
+       if redis.call('HGET', guard.key, 'blockExecution') ~= guard.execution
+          or redis.call('HGET', guard.key, 'blockStartedAt') ~= guard.startedAt then
+         return 0
+       end
+     end
+     for _, key in ipairs(KEYS) do redis.call('EXPIRE', key, 86400) end
+     return 1`,
+    keys.length,
+    ...keys,
+    JSON.stringify(guards)
+  )
+  if (result !== 1)
+    throw new GraphQLError('Live quiz cache ownership changed before expiry')
 }
 
 function aggregateLiveQuizResponses({
@@ -3321,206 +3424,167 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
   }
 
 export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation'] =
-  async ({ liveQuizId, blockId }, globalCtx, executionCtx) => {
-    executionCtx.logger.info(
-      `Aggregating results for standard live quiz with ID ${liveQuizId} and block ID ${blockId}`
-    )
-
-    // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
-    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
-      where: {
-        id: liveQuizId,
-        status: {
-          in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
-        },
-      },
-      include: {
-        blocks: { include: { elements: true }, orderBy: { order: 'asc' } },
-      },
-    })
-    if (!quiz) return true
-    if (quiz.blocks.length === 0) return false
-
-    // check if the block that was closed is the last one of the quiz
-    const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
-    const block = quiz.blocks.find((b) => b.id === blockId)
-    if (!block) return false
-
-    // update the aggregated instance results based on the cache data after a waiting period for processing remaining submissions
-    await updateLiveQuizBlockResultsFromCache({
-      quizId: liveQuizId,
-      blockId,
-      prisma: globalCtx.prisma,
-      redisExec: globalCtx.redisExec,
-      redisAssessmentExec: globalCtx.redisAssessmentExec,
-      // update the instance results based on the cache data again with the latest information
-      updateResults: true,
-      // only update the leaderboard for the quiz, if this is the last block of the quiz
-      // -> otherwise leaderboard updates at the block closures of other blocks might interfere with this update
-      updateLeaderboards: isLastBlock,
-    })
-
-    // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
-    await removeCacheEntriesBlock({
-      liveQuizId,
-      blockId,
-      block,
-      isLastBlock,
-      redis: globalCtx.redisExec,
-    })
-
-    return true
-  }
+  async (input, globalCtx, executionCtx) =>
+    aggregateClosedLiveQuizBlock(input, globalCtx, executionCtx, false)
 
 export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['handleAssessmentLiveQuizBlockClosureAggregation'] =
-  async ({ liveQuizId, blockId }, globalCtx, executionCtx) => {
-    executionCtx.logger.info(
-      `Aggregating results for assessment live quiz with ID ${liveQuizId} and block ID ${blockId}`
+  async (input, globalCtx, executionCtx) =>
+    aggregateClosedLiveQuizBlock(input, globalCtx, executionCtx, true)
+
+async function aggregateClosedLiveQuizBlock(
+  input: LiveQuizBlockAggregationInput,
+  globalCtx: Parameters<
+    HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation']
+  >[1],
+  executionCtx: Parameters<
+    HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation']
+  >[2],
+  assessment: boolean
+) {
+  const { liveQuizId, blockId, blockExecution, blockStartedAt } = input
+  if (
+    !Number.isInteger(blockExecution) ||
+    blockExecution < 0 ||
+    typeof blockStartedAt !== 'string' ||
+    !Number.isFinite(Date.parse(blockStartedAt))
+  ) {
+    throw new GraphQLError(
+      'Aggregation task is missing its originating block identity'
     )
-
-    // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
-    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
-      where: {
-        id: liveQuizId,
-        status: {
-          in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+  }
+  const startedAt = new Date(blockStartedAt)
+  const redis = assessment ? globalCtx.redisAssessmentExec : globalCtx.redisExec
+  const persisted = await globalCtx.prisma.$transaction(
+    async (prisma) => {
+      await lockLiveQuiz(prisma, liveQuizId)
+      const quiz = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuizId },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  liveQuizResponses: {
+                    where: { elementBlockExecution: blockExecution },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
         },
-      },
-      include: {
-        blocks: {
-          include: { elements: { include: { liveQuizResponses: true } } },
-          orderBy: { order: 'asc' },
-        },
-      },
-    })
-    if (!quiz) {
-      executionCtx.logger.info(
-        `No quiz found for ID ${liveQuizId} in status PUBLISHED or ENDED`
+      })
+      const block = quiz?.blocks.find((candidate) => candidate.id === blockId)
+      if (
+        !quiz ||
+        !block ||
+        (quiz.status !== DB.PublicationStatus.PUBLISHED &&
+          quiz.status !== DB.PublicationStatus.ENDED) ||
+        block.status !== DB.ElementBlockStatus.EXECUTED ||
+        block.execution !== blockExecution ||
+        block.startedAt?.getTime() !== startedAt.getTime()
       )
-      return true
-    }
-
-    if (quiz.blocks.length === 0) {
-      executionCtx.logger.error(`Quiz with ID ${liveQuizId} has no blocks`)
-      return false
-    }
-
-    // check if the block that was closed is the last one of the quiz
-    const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
-    const block = quiz.blocks.find((b) => b.id === blockId)
-    if (!block) {
-      executionCtx.logger.error(
-        `No block found with ID ${blockId} in quiz with ID ${liveQuizId}`
-      )
-      return false
-    }
-
-    if (block.elements.length === 0) {
-      executionCtx.logger.error(
-        `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
-      )
-      return false
-    }
-
-    if (block.elements.every((el) => el.liveQuizResponses.length === 0)) {
-      executionCtx.logger.info(
-        `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
-      )
-
-      try {
-        // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
-        await removeCacheEntriesBlock({
-          liveQuizId,
-          blockId,
-          block,
-          isLastBlock,
-          redis: globalCtx.redisAssessmentExec,
-        })
-      } catch (error) {
-        executionCtx.logger.error(
-          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
+        return null
+      if (quiz.isAssessmentEnabled !== assessment) {
+        throw new GraphQLError(
+          'Aggregation task does not match the live quiz mode'
         )
       }
-
-      return true
-    }
-
-    // results are aggregated based on db data, only update the leaderboard if this is the last block
-    if (isLastBlock && quiz.isGamificationEnabled) {
-      executionCtx.logger.info(
-        `Updating leaderboard in gamified live quiz with ID ${liveQuizId}`
-      )
-
-      await updateLiveQuizBlockResultsFromCache({
-        quizId: liveQuizId,
-        blockId,
-        prisma: globalCtx.prisma,
-        redisExec: globalCtx.redisExec,
-        redisAssessmentExec: globalCtx.redisAssessmentExec,
-        updateResults: false,
-        updateLeaderboards: true,
-      })
-    }
-
-    try {
-      // update the instance results based on the live quiz response entries
-      await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          blocks: {
-            update: {
-              where: { id: blockId },
-              data: {
-                elements: {
-                  update: block.elements.map((instance) => ({
-                    where: { id: Number(instance.id) },
-                    // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
-                    data: {
-                      anonymousResults: quiz.isAssessmentEnabled
-                        ? undefined
-                        : aggregateLiveQuizResponses({
-                            responses: instance.liveQuizResponses,
-                            elementData: instance.elementData,
-                          }),
-                      results: quiz.isAssessmentEnabled
-                        ? aggregateLiveQuizResponses({
-                            responses: instance.liveQuizResponses,
-                            elementData: instance.elementData,
-                          })
-                        : undefined,
-                    },
-                  })),
+      const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
+      const affectedBlocks = isLastBlock ? quiz.blocks : [block]
+      if (!assessment || (isLastBlock && quiz.isGamificationEnabled)) {
+        for (const cachedBlock of affectedBlocks)
+          await verifyBlockCache(redis, cachedBlock)
+        const result = await updateLiveQuizBlockResultsFromCache({
+          quizId: liveQuizId,
+          blockId,
+          prisma,
+          redisExec: globalCtx.redisExec,
+          redisAssessmentExec: globalCtx.redisAssessmentExec,
+          updateResults: !assessment,
+          updateLeaderboards: isLastBlock,
+          closedBlock: { execution: blockExecution, startedAt },
+        })
+        if (!result)
+          throw new GraphQLError(
+            'Closed block aggregation did not persist results'
+          )
+      }
+      if (assessment) {
+        // Reactivating a block retains responses from the same execution.
+        await prisma.liveQuiz.update({
+          where: { id: liveQuizId },
+          data: {
+            blocks: {
+              update: {
+                where: { id: blockId },
+                data: {
+                  elements: {
+                    update: block.elements.map((instance) => ({
+                      where: { id: instance.id },
+                      data: {
+                        results: aggregateLiveQuizResponses({
+                          responses: instance.liveQuizResponses,
+                          elementData: instance.elementData,
+                        }),
+                      },
+                    })),
+                  },
                 },
               },
             },
           },
-        },
-      })
-    } catch (error) {
-      executionCtx.logger.error(
-        `Error updating instance results for block with ID ${blockId} in quiz with ID ${liveQuizId} based on live quiz responses: ${error}`
-      )
-    }
-
-    try {
-      // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
-      await removeCacheEntriesBlock({
-        liveQuizId,
-        blockId,
-        block,
+        })
+      }
+      return {
+        affectedBlocks,
+        ownership: blockOwnership(affectedBlocks),
         isLastBlock,
-        redis: globalCtx.redisAssessmentExec,
-      })
-    } catch (error) {
-      executionCtx.logger.error(
-        `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
-      )
-    }
-
-    executionCtx.logger.info(
-      `Successfully conducted final results update for instances in block with ID ${blockId} in quiz with ID ${liveQuizId}`
-    )
-
+      }
+    },
+    { timeout: 30000 }
+  )
+  if (!persisted) {
+    executionCtx.logger.info('Skipped stale live quiz aggregation task')
     return true
   }
+  // Cache retention changes only after aggregation has successfully committed.
+  await globalCtx.prisma.$transaction(
+    async (prisma) => {
+      await lockLiveQuiz(prisma, liveQuizId)
+      const quiz = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuizId },
+        include: {
+          blocks: { include: { elements: true }, orderBy: { order: 'asc' } },
+        },
+      })
+      const blocks = persisted.isLastBlock
+        ? quiz?.blocks
+        : quiz?.blocks.filter((block) => block.id === blockId)
+      if (
+        !quiz ||
+        quiz.isAssessmentEnabled !== assessment ||
+        !blocks ||
+        (persisted.isLastBlock && quiz.activeBlockId !== null) ||
+        (quiz.status !== DB.PublicationStatus.PUBLISHED &&
+          quiz.status !== DB.PublicationStatus.ENDED) ||
+        blockOwnership(blocks) !== persisted.ownership
+      ) {
+        executionCtx.logger.info(
+          'Skipped cache expiry for a changed live quiz execution'
+        )
+        return
+      }
+      await expireBlockCache(
+        redis,
+        persisted.affectedBlocks,
+        persisted.isLastBlock
+      )
+    },
+    { timeout: 30000 }
+  )
+  globalCtx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: liveQuizId })
+  return true
+}
 // #endregion
