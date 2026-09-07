@@ -248,6 +248,13 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {

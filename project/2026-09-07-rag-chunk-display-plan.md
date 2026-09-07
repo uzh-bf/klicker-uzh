@@ -2,6 +2,77 @@
 
 ## Approval summary
 
+### Current acceptance status
+
+Both focused host browser tests pass through the explicit Chat-profile,
+preserve-database launcher path. The larger-result test proves shared citation
+numbering across two documents-mode calls, disclosure from five to seven chunks,
+and inspectable groups beyond the twelve-citation cap, before and after reload.
+The original test also passes with desktop and mobile German/reduced-motion
+coverage. These are synthetic persisted-message UI checks, not live retrieval
+or staging deployment proof.
+
+The launcher defaults remain unchanged. Its new explicit local-only options
+skip global reset/seed but do not suppress selected specs' own fixture writes.
+Fresh verification passed 608 Chat tests (21 skipped), the Playwright typecheck,
+all 35 package checks, lint and other container-native repository guards, and
+all 62 host CI/Devrouter contract tests. The combined check command cannot run
+the host-only Devrouter contract in the container; equivalent checks ran on
+their required sides. The unchanged application build passed all 23 tasks.
+Source review, commit, and draft publication remain pending. Historical
+recovery entries below describe earlier states, not current blockers.
+
+### Recovery checkpoint, 2026-09-07 evening
+
+Follow-up root cause is confirmed: a Git subprocess remained in the preparation
+group after Turbo exited and drained naturally within one second. The reviewed
+local Devrouter correction `4906119` allows at most ten 0.1-second natural-drain
+checks, retaining cancellation and persistent-child rejection. Linux process
+reconciliation tests now pass in the exact RAG container, including the new
+drain regression and existing cancellation/persistent-child cases.
+
+Controlled Chat-only recovery passes with ready status, zero drift, and no
+recreation. All eight retained container IDs and named/anonymous volume
+identities match the preflight; six selected containers run, while LiteLLM and
+MailHog remain stopped. The ineffective consumer `--no-daemon` change and its
+assertion were removed, restoring both runtime scripts to the branch baseline.
+The repository runtime-helper suite passes in the container.
+
+Required agent-browser inspection now passes on the existing persisted synthetic
+conversation after normal test-participant login: keyboard tool expansion,
+full-passage disclosure, exact origin query/fragment, two groups/three chunks,
+unchanged citation 1, reload, and mobile reduced-motion rendering without
+horizontal overflow. Screenshots inspected at `/tmp/rag-chunks-expanded.png`
+and `/tmp/rag-chunks-mobile.png`. No database reset or upstream model request
+was needed. This does not cover the remaining larger-result acceptance matrix:
+more than five chunks, multiple documents-mode calls, and groups past the
+twelve-citation cap. RAG source review and draft publication remain pending.
+Managed shutdown completed after these checks and freed all four task routes;
+the exact provider is Stopped. Browser session `rag-acceptance` is closed.
+The host Playwright launcher still requests the default full profile and its
+global setup resets the database. Before the remaining matrix, use a reviewed
+scoped profile/fixture path; do not run that reset as incidental verification.
+
+Installed Devrouter and latest published release both verify as 0.0.57.
+The local stopped-profile recovery candidate now includes cancellation fencing
+in commit `df0eed3` in the existing Devrouter recovery worktree. All 1,119
+Vitest tests, TypeScript, Biome, build, package smoke, staged secret scan and
+commit hooks pass. The same independent final reviewer cleared the correction.
+Linux process tests remain skipped on macOS.
+
+Controlled `ensure --repair --profile chat` reached the selected Chat preparation
+without replaying the full-profile seed guard. All nine selected dependency
+build tasks passed from cache. Startup nevertheless failed with `Preparation
+for 'klicker-dev' left running children; a synchronous foreground command is
+required.` The rollback retained diagnostic containers. A subsequent process
+identity snapshot showed only init, sleep, and the diagnostic ps process; it
+does not establish which child triggered the guard because cleanup ran first.
+The next investigation must capture process identity at that failure boundary,
+not assume disabling Turbo's daemon fixed it or relax the guard. Exact managed
+stop completed; source-path ownership is present, provider state is Stopped,
+and route count is zero. No browser acceptance, reset, deployment, or staging change
+ran in this continuation. RAG implementation remains uncommitted.
+
 The Chat tool badge currently reports an empty search when retrieval returned material that cannot become a citation card. Participants also cannot inspect all retrieved chunks. The proposed repair separates retrieval status from citation availability and shows readable chunks grouped by source, with full-text disclosure, a document name, an available original URL, and each chunk's supplied page or timestamp.
 
 Existing numbered citations must keep their meaning after reload. Previously excluded sources will therefore appear as unnumbered chunk groups, not enter the historical citation sequence. Missing names receive a neutral label. Missing public origins remain explicitly unavailable; links are never inferred from document text or internal ingestion addresses. Supplied website anchors remain intact. PDF and video jump links require verified locator semantics.
@@ -85,3 +156,81 @@ This is a repository-contract repair, not an external framework migration. Main-
 Native planner reviewed draft v1 and requested explicit historical numbering, result validity, identity/locator semantics, and existing browser seams. All findings were accepted in v2. The planner approved v2 with the existing Playwright fixture instead of a new mounted-test fixture. The optional opposing-provider challenge failed before work because the CLI rejected its required model/effort selection; it is not a passed review.
 
 Investigation and plan review are complete for the Chat correction. The user approved execution and the goal is active. Source implementation and isolated-runtime preparation are next; verification, reviews, and draft publication remain. Staging acceptance remains pending a separately authorized deployment.
+
+### Execution checkpoint, 2026-09-07
+
+#### Current progress after acceptance audit
+
+The user approved managed startup repair without another database reset.
+Latest-release verification through host `gh release view` confirms Devrouter
+v0.0.57, matching the installed CLI. The task's `.devrouter.yml` now declares
+0.0.57. Both intervening adaptation prompts were inspected. Foreground
+preparation now passes `--no-daemon` to Turbo, with a command-contract regression
+in `util/test-dev-runtime.sh`; the synthetic runtime-helper suite passes.
+This is a candidate repair, not successful application proof.
+
+The next `ensure --profile chat` still fails during retained recovery of the
+old full profile, before the revised Chat preparation executes. Managed
+`exec` remains blocked. Source inspection confirms Playwright cleanup deletes
+courses/users, cascading to Chatbot and ChatbotMCPConfig, while retaining the
+standalone KB server. The authenticated seed guard therefore cannot pass on
+that test baseline. No guard relaxation or database mutation was performed.
+The exact runtime is verified Stopped with zero routes after this attempt.
+Profile resolution itself passes and selects Chat/API/Auth/PWA without MCP.
+
+Delivery is pending. Implementation remains uncommitted at plan commit
+`683608d167cb9c51385b1ef4bce0a256a6c173ce`; no PR exists. Ref refresh
+confirms the task tracks `origin/v3`, one commit ahead and one behind.
+No target integration is currently required by the source diff.
+
+Reuse the recorded passing full build, package checks, Chat tests, and
+desktop/mobile persisted-browser proof for unchanged source. The acceptance
+audit confirms three remaining panel obligations: disclosure beyond five
+chunks, shared numbering across multiple documents-mode calls, and inspectable
+groups beyond the twelve-citation cap. Extend the existing synthetic browser
+fixture for these cases and repeat them after reload. The separate required
+agent-browser inspection has not run. Slice and final review remain unstarted.
+
+Fresh host verification passed all 27 dependency-free tests across the
+Playwright profile runtime, host launcher, and Git identity guard. Bounded
+Opengrep analysis ran 210 rules on the five changed RAG source files with zero
+findings. Whitespace validation passed.
+
+Managed Chat-profile startup failed with `Preparation for 'klicker-dev' left
+running children; a synchronous foreground command is required.` Its rollback
+then hit `Authenticated fixture startup failed; no credentials logged` in the
+stored full profile. A focused container test invocation was rejected with
+`Lifecycle transition is blocked.` These failures occurred with installed
+Devrouter 0.0.57. No new reset, seed repair, process-guard bypass, or runtime
+configuration edit was performed. Managed stop was requested for the exact
+task source path; final stopped-state verification is recorded below.
+
+Managed stop completed successfully. `devsy workspace status` confirms
+`rs-rag-chunk-display` is `Stopped`; managed shutdown reports zero routes freed.
+The worktree and synthetic runtime data are preserved.
+
+The next executable acceptance step requires repaired managed lifecycle.
+Do not repeat database resets as a substitute for that repair. The main session
+retains implementation ownership after the prior executor's bounded failure;
+the read-only acceptance audit is complete and its child is closed. Earlier
+checkpoint paragraphs below are historical, not current gate status.
+
+Implementation is present, uncommitted, in this task worktree: dedicated chunk groups, full-text disclosure, safe origin navigation, chunk-specific video timestamps, neutral unavailable states, and legacy citation identity preservation. Added regression coverage for unnamed retrieval status, nested errors, question arguments, safe URLs, timestamp navigation, and persisted chunk disclosure/reload. No staging mutation or deployment occurred.
+
+Fresh verification: Chat Vitest passed 608 tests (21 integration tests skipped); root package check passed all 35 Turbo tasks; focused Biome and Prettier formatting passed. Root check:all did not pass as one combined command: its host-only Devrouter profile test cannot run inside the container. The isolated profile test passed all 11 tests on the host. Remaining lint/build and browser verification are not complete.
+
+Browser evidence from the earlier run exists under ignored playwright/test-results, and the expanded screenshot was inspected. After adding keyboard coverage, rerunning through the host launcher failed during managed post-start with `Authenticated fixture startup failed; no credentials logged`. Devrouter reported degraded lifecycle drift. Subsequent lint/build commands were blocked by that transition. The exact task runtime is being stopped through devrouter; no raw container repair or deletion is authorized or performed. Resume by resolving that exact lifecycle, running remaining checks and browser matrix, then committing and completing the required reviews before draft publication.
+
+Remote refresh: task branch tracks origin/v3 and is one commit ahead and one behind it. The target moved to 7c73ed231c; no upstream merge or rebase was performed. The goal remains active and the source-only draft PR terminal condition is not yet achieved.
+
+Managed stop subsequently succeeded for rs-rag-chunk-display and reported all 10 task routes freed. Worktree and runtime data were preserved. Browser re-entry must first prove managed startup; do not treat the generic bootstrap failure as a diagnosed credential defect.
+
+Follow-up diagnosis: exact-container read-only metadata confirms one local KB server with bearer authentication and zero ChatbotMCPConfig rows. The seed ownership assertion fails; it requires two specific Benibot mode configurations. Playwright uses a separate chatbot and baseline, so its persisted fixture is not the dev MCP seed. A requested chat-only recovery still executes the stored full-profile post-start first and fails at this guard. No guard bypass, credential output, database reset, or seed repair was performed. The next decision is whether to authorize a reset/reseed of this task's isolated synthetic database or repair the launcher/profile lifecycle separately. Added mobile German/reduced-motion browser variant remains unverified. Managed stop is again in progress after this recovery attempt.
+
+Final recovery checkpoint: managed stop completed successfully; exact application container state is exited and task route count is zero. Diff whitespace validation passes. The same local runtime blocker has persisted across three goal turns; further runtime verification requires the requested synthetic-database reset approval or a separately scoped lifecycle repair. Goal is blocked pending that decision; implementation, required reviews, and draft publication are not complete.
+
+The user subsequently approved the isolated database reset and reseed. After managed startup reached the known guard, the exact owned container ran the repository-native Prisma reset, schema push/generate, and seed:raw sequence against its validated local postgres service. All commands exited successfully; the seed recreated KB tutor and explainer configurations. Synthetic conversations were removed as approved. Source files, staging, and other worktrees were untouched. Managed full-profile readiness is being re-established before verification resumes.
+
+Managed full-profile recovery now passes with healthy services, running MCP/application processes, and no drift. Lint passed all seven tasks. The host Playwright dependency refresh passed with the exact pnpm 11.5.0 binary and frozen lockfile; the Volta wrapper previously selected incompatible configuration. Run managed commands serially: devrouter exec also holds the lifecycle lock, so concurrent ensure is rejected. Full build is in progress; Chat compilation and its production route generation have passed, but aggregate build completion and browser matrix are not yet proven.
+
+Verification after recovery: full build passed all 23 tasks. The focused host Playwright test passed in 15.3 seconds, covering desktop, persisted reload, keyboard expansion, full passage disclosure, original URL and citation identity, and mobile German with reduced motion. Desktop and mobile screenshots were inspected. Run the host launcher with Node 24.16.0 prepended to the existing PATH, preserving provider discovery; replacing PATH hides the supported Devsy executable. Managed stop is completing; the exact application container is already exited. Required slice/final reviews, remaining acceptance audit, commit, and draft PR remain pending. No further reset or staging action is required for the verified evidence.

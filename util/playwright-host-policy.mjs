@@ -2,6 +2,15 @@ import { existsSync } from 'node:fs'
 
 export const HOST_RUNNER_ENV = 'KLICKER_PLAYWRIGHT_HOST_RUNNER'
 
+export function preserveLocalDatabase(env = process.env) {
+  return (
+    env[HOST_RUNNER_ENV] === '1' &&
+    env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE === '1' &&
+    !env.CI &&
+    !env.GITHUB_ACTIONS
+  )
+}
+
 export function isContainerRuntime({
   cwd = process.cwd(),
   env = process.env,

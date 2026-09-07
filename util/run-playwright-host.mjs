@@ -77,6 +77,30 @@ export function parsePublishedPort(output) {
   fail('the workspace Postgres container has no loopback host port')
 }
 
+export function parseLocalOptions(argv) {
+  const args = [...argv]
+  let profile
+  let preserveDatabase = false
+  while (args.length) {
+    if (args[0] === '--runtime-profile') {
+      args.shift()
+      profile = args.shift()
+      if (
+        !profile ||
+        !/^[a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*$/.test(profile)
+      ) {
+        fail(
+          '--runtime-profile requires a profile name or comma-separated names'
+        )
+      }
+    } else if (args[0] === '--preserve-database') {
+      args.shift()
+      preserveDatabase = true
+    } else break
+  }
+  return { args, profile, preserveDatabase }
+}
+
 export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
@@ -214,7 +238,9 @@ export function main(argv = process.argv.slice(2)) {
   const hostEnvironment = { ...process.env, [HOST_RUNNER_ENV]: '1' }
   assertPlaywrightHostBoundary({ env: hostEnvironment })
 
-  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
+  const { args, profile, preserveDatabase } = parseLocalOptions(
+    argv[0] === '--' ? argv.slice(1) : argv
+  )
   const showReport = args[0] === '--show-report'
   if (showReport) args.shift()
 
@@ -239,7 +265,11 @@ export function main(argv = process.argv.slice(2)) {
 
   const devrouter = resolveDevrouter({ repo: repoRoot })
   console.log('[playwright:host] Reconciling the devcontainer runtime')
-  run(devrouter, ['ensure', repoRoot])
+  run(devrouter, [
+    'ensure',
+    repoRoot,
+    ...(profile ? ['--profile', profile] : []),
+  ])
 
   const workspace = resolveWorkspace()
   const databasePort = resolveDatabasePort()
@@ -289,7 +319,11 @@ export function main(argv = process.argv.slice(2)) {
       'test',
       ...args,
     ],
-    { ...process.env, ...resolvedEnvironment }
+    {
+      ...process.env,
+      ...resolvedEnvironment,
+      KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+    }
   )
 }
 

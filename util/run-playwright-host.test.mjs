@@ -15,8 +15,10 @@ import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
+  preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  parseLocalOptions,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
 } from './run-playwright-host.mjs'
@@ -25,6 +27,46 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+test('database preservation requires explicit local launcher selection and excludes CI', () => {
+  const selected = {
+    [HOST_RUNNER_ENV]: '1',
+    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+  }
+  assert.equal(preserveLocalDatabase(selected), true)
+  for (const env of [
+    {},
+    { ...selected, [HOST_RUNNER_ENV]: '0' },
+    { ...selected, CI: 'true' },
+    { ...selected, CI: '1' },
+    { ...selected, GITHUB_ACTIONS: 'true' },
+  ]) {
+    assert.equal(preserveLocalDatabase(env), false)
+  }
+})
+
+test('local runner options preserve defaults and forward test selectors', () => {
+  assert.deepEqual(parseLocalOptions(['--project=chromium']), {
+    args: ['--project=chromium'],
+    profile: undefined,
+    preserveDatabase: false,
+  })
+  assert.deepEqual(
+    parseLocalOptions([
+      '--runtime-profile',
+      'chat',
+      '--preserve-database',
+      'tests/Y-chat.spec.ts',
+    ]),
+    {
+      args: ['tests/Y-chat.spec.ts'],
+      profile: 'chat',
+      preserveDatabase: true,
+    }
+  )
+  assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
+  assert.throws(() => parseLocalOptions(['--runtime-profile']))
+})
 
 function cliFixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))

@@ -21,6 +21,35 @@ function baseParams(
 }
 
 describe('getDocQueryChipState', () => {
+  test('unnamed retrieved chunks are not an empty search', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({
+          result: {
+            mode: 'documents',
+            sources: [
+              {
+                reference: 'http://backend.svc.cluster.local/resource',
+                chunks: [{ content: 'Synthetic evidence' }],
+              },
+            ],
+          },
+        })
+      )
+    ).toBe('done')
+  })
+
+  test('nested tool errors take precedence over an empty source list', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({
+          result: {
+            structuredContent: { isError: true, sources: [] },
+          },
+        })
+      )
+    ).toBe('failed')
+  })
   // Note: `isFailed` and `isRunning` are mutually exclusive by contract (the
   // caller derives `isFailed` as `isError && !isRunning`), so there is no
   // "both true" case to guard against here.
@@ -80,6 +109,16 @@ describe('getDocQueryChipState', () => {
 })
 
 describe('parseDocQueryArgsQuery', () => {
+  test('supports the producer question argument and falls back to query', () => {
+    expect(parseDocQueryArgsQuery(JSON.stringify({ question: 'topic' }))).toBe(
+      'topic'
+    )
+    expect(
+      parseDocQueryArgsQuery(
+        JSON.stringify({ question: ' ', query: 'fallback' })
+      )
+    ).toBe('fallback')
+  })
   test('extracts the query field from valid args JSON', () => {
     expect(
       parseDocQueryArgsQuery(JSON.stringify({ query: 'What is the deadline?' }))
