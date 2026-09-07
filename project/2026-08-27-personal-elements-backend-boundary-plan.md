@@ -10,12 +10,16 @@ This plan also removes language-specific retrieval and presentation heuristics,
 reduces the Chat route and supporting modules, and keeps one small extension
 seam for future personal-element types.
 
-Status: The core implementation is published on
+Status: The reviewed prototype is published on
 [pull request #5483](https://github.com/uzh-bf/klicker-uzh/pull/5483).
-The approved target integration is present locally at `91bd487e71`, thirty
-commits ahead of the published top branch. Post-integration verification,
-correction review, and publication remain pending. On 2026-09-06 the exact
-workspace is running with fresh synthetic data and the `ai,chat,mcp` profile.
+The application head is `a92e67f4af`; local, remote, and PR heads match.
+The approved target integration, correction reviews, and stack publication
+are complete. Fresh synthetic Auto Mode and browser acceptance passed on
+2026-09-07. The receiving-device runtime is stopped with its data retained.
+Delivery remains pending: all three PRs remain draft, forge reviews are
+unresolved, and real dev Doc Query acceptance remains unverified. The broader
+student-practice roadmap requires a separately planned ownership and lifecycle
+correction before this prototype becomes its persistence foundation.
 No deployment, physical migration, PR merge, or release is authorized.
 
 ## Plan identity and prior decisions
@@ -39,6 +43,12 @@ The Sol planner report is recorded locally at
 `project/_local/reviews/2026-08-27-personal-elements-backend-boundary-planner.md`.
 
 ## Execution contract
+
+The execution contract below records the approved implementation scope.
+Its historical starting heads and runtime assumptions are superseded by the
+2026-09-07 Progress entry. Remaining work does not authorize another target
+integration, marking the stack ready, provider reconfiguration, cluster
+connectivity, or the broader roadmap's schema and lifecycle changes.
 
 The original S0 through S6 authority and stack state are historical and remain
 recorded in Progress. They do not govern the proposed S7 follow-up.
@@ -716,6 +726,74 @@ no migration.
 
 ## Progress
 
+### Current checkpoint: 2026-09-07
+
+Status: `delivery_pending`. Boundary owner: self. Required delivery is the
+reviewed prototype on the existing draft stack with bounded acceptance
+evidence; merge and deployment remain separate. Implementation and source
+publication are complete. No implementation child or review child is active.
+
+| Layer | Published head | Delivery |
+| --- | --- | --- |
+| Backend foundation | `ef9a77691c72bf5da479bd20e596c9d6e5c2ac0a` | [Draft PR #5481](https://github.com/uzh-bf/klicker-uzh/pull/5481), base `v3-ai` |
+| Personal practice PWA | `e3753b9fa4fc26a49135d46fb9f69e4d8876c244` | [Draft PR #5482](https://github.com/uzh-bf/klicker-uzh/pull/5482), base backend foundation |
+| Retrieval-backed Chat | `a92e67f4af1feed20ab8cecfd6bc155436380563` | [Draft PR #5483](https://github.com/uzh-bf/klicker-uzh/pull/5483), base personal practice PWA |
+
+The exact Chat head contains the approved `v3-ai` integration at
+`e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1`. The receiving-device checkout is
+`trees/student-generated-practice-elements-plan`; its branch matches its own
+origin upstream. No additional integration occurred.
+
+Verification and review evidence:
+
+- The source-device publication handoff and PR body record 910 passing Chat
+  tests with 13 integration skips, 39 approval tests, 29 typecheck tasks,
+  seven lint tasks, and 26 production-build tasks at the application head.
+  These suites were not rerun on the receiving device. They also record the
+  completed integrated Sol review with no publication-blocking findings.
+  The deferred prompt-wording assertions remain unchanged.
+- Fresh receiving-device browser acceptance used only seeded synthetic data,
+  the local retrieval fixture, and OpenRouter through Auto Mode. Producing-run
+  metadata shows `KB_doc_query`, `select_response_type`, and
+  `propose_card_plan`. Explicit approval generated two cards. The accepted
+  plan, Saved/Discarded decisions, and page references survived reload.
+- Personal practice hid citations before reveal, displayed them afterward,
+  accepted a rating, returned to its overview, and showed Nothing due after
+  reload. Unavailable source links retained their title and page spans.
+  This does not prove a real source-open action or real multitenant Doc Query.
+- Local session evidence is under the receiving device's Codex visualization
+  directory for task `01a07ad5-2e62-7a60-857b-4003b70cb393`, dated 2026-09-07:
+  `cards-persisted.png`, `card-before-reveal.png`, `card-after-reveal.png`, and
+  `practice-complete.png`. No screenshot or synthetic conversation is committed.
+- The exact runtime `rs-student-generated-practice-el`, Devsy Compose project
+  `default-rs-997e5`, passed managed readiness with no drift. After acceptance,
+  the supported stop freed four routes; source-path readback showed zero
+  routes and the identified app container was exited, without an OOM kill.
+  Synthetic data is retained. No other runtime was stopped.
+
+Remaining gates and next actions:
+
+| Gate | Evidence and next action | Authority boundary |
+| --- | --- | --- |
+| Forge provider access | OpenCodeReview failed with HTTP 403 for every selected file on all three layers: 36 backend, 9 PWA, and 60 Chat files. Diagnose and repair the configured provider access before one deliberate retry. This is failed review execution, not a clean code review. | Provider or credential reconfiguration requires explicit authorization. |
+| Final forge reviews | The individual final-review status requests a manual trigger. Stack review rejects draft members. Preserve draft status until the owner explicitly authorizes readiness. | Existing public-diff review authority does not authorize marking ready or merging. |
+| Real-service acceptance | Synthetic local MCP acceptance passes; real dev Doc Query and GrowthBook connectivity remain unverified. | Establishing cluster connectivity or widening the data boundary needs explicit instruction. |
+| Local model selection | The initial UI selection was GPT-5.5; LiteLLM rejected `model=gpt-5.5`. Selecting Auto Mode completed the test. Record the default-selection mismatch for a bounded runtime follow-up. | No model configuration or production behavior changed. |
+| Roadmap foundation | The student-practice roadmap in the separate `student-practice-product-model` worktree requires course-independent ownership, immutable versions, and append-only review history. This prototype still has a required Course relation with `onDelete: Cascade`. Resolve the foundation owner and approve its correction plan before extension or treating this as roadmap completion. | The roadmap explicitly withholds implementation authority; this checkpoint does not authorize a migration or stack restructure. |
+
+Route: main. Acceptance: reconcile Git ancestry and exact PR heads with the
+recorded review and fresh browser evidence; inspect the documentation diff.
+Execution-tier skip reason: delegation costs more than this status correction.
+Slice review: not required — documentation-only reconciliation; no tested
+application behavior changed. Reuse existing implementation reviews rather
+than dispatching a new final review while delivery gates remain unresolved.
+
+### Historical execution record
+
+The dated entries below retain their original evidence. Current heads,
+runtime state, completed publication, and remaining gates are owned by the
+checkpoint above.
+
 - 2026-09-06 runtime restoration completed with the approved fresh synthetic
   bootstrap and Blob host port `10143`. The supported repair cleared malformed
   generated Chat route types and proved the managed runtime ready. Earlier
@@ -1040,8 +1118,9 @@ no migration.
   `/private/tmp/student-generated-practice-cards-generated-proof.png` and
   `/private/tmp/student-generated-practice-cards-persisted-proof.png`. The
   exact workspace remains running for manual verification.
-- [ ] Incorporate the newly fetched `origin/v3-ai` head
+- [x] Incorporate the newly fetched `origin/v3-ai` head
   `e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1` through A, B, and C with the
   approved merge-commit topology, rerun the affected checks and browser smoke,
   complete the correction review gates, publish the exact reviewed stack
-  heads, and update pull request #5483.
+  heads, and update pull request #5483. Completed by the 2026-09-06 source
+  publication; verified against Git ancestry and published heads on 2026-09-07.
