@@ -1,5 +1,7 @@
 # Authenticated local Doc Query acceptance
 
+Draft delivery: [PR #5817 — authenticated local Doc Query and source links](https://github.com/uzh-bf/klicker-uzh/pull/5817).
+
 ## Approved outcome and authority
 
 Restore the seeded Benibot's local `doc_query` integration through the unchanged
@@ -177,3 +179,10 @@ at resumption. No integration is assumed.
   frontmatter errors in other files. The edited page has no conformance errors;
   its source links resolve in the repository but trigger the validator's
   bundle-root warning. No unrelated wiki cleanup is included.
+- Slice review and integrated final review pass with no reportable findings.
+  The final review covers `27f2474547..5aff22f65a`; subsequent changes are
+  plan metadata only. Reports are retained under `_local/reviews/`.
+  The reviewed branch is pushed and its draft PR is created. Full-range
+  Gitleaks and whitespace checks pass. Hosted checks and forge feedback remain
+  pending; marking ready, integration, merge and deployment are not performed.
+  Staging retrieval and live website/PDF accessibility remain unverified.
