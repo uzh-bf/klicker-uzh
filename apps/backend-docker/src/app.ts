@@ -166,33 +166,21 @@ function prepareApp({
         if (res.destroyed) return
         const candidate = error as { extensions?: { code?: unknown } }
         const code = candidate.extensions?.code
-        const knownCodes = [
-          'DATA_EXPORT_FORBIDDEN',
-          'DATA_EXPORT_INVALID_REQUEST',
-          'DATA_EXPORT_CLASS_UNAVAILABLE',
-          'DATA_EXPORT_TOO_LARGE',
-          'DATA_EXPORT_ELIGIBILITY_CHANGED',
-          'DATA_EXPORT_REQUEST_ALREADY_USED',
-          'DATA_EXPORT_CANCELLED',
-        ]
+        const statuses = {
+          DATA_EXPORT_FORBIDDEN: 403,
+          DATA_EXPORT_INVALID_REQUEST: 400,
+          DATA_EXPORT_CLASS_UNAVAILABLE: 400,
+          DATA_EXPORT_TOO_LARGE: 413,
+          DATA_EXPORT_ELIGIBILITY_CHANGED: 409,
+          DATA_EXPORT_REQUEST_ALREADY_USED: 409,
+          DATA_EXPORT_CANCELLED: 400,
+          DATA_EXPORT_FAILED: 500,
+        }
         const safeCode =
-          typeof code === 'string' && knownCodes.includes(code)
-            ? code
+          typeof code === 'string' && Object.hasOwn(statuses, code)
+            ? (code as keyof typeof statuses)
             : 'DATA_EXPORT_FAILED'
-        const status =
-          safeCode === 'DATA_EXPORT_FORBIDDEN'
-            ? 403
-            : safeCode === 'DATA_EXPORT_TOO_LARGE'
-              ? 413
-              : [
-                    'DATA_EXPORT_ELIGIBILITY_CHANGED',
-                    'DATA_EXPORT_REQUEST_ALREADY_USED',
-                  ].includes(safeCode)
-                ? 409
-                : safeCode === 'DATA_EXPORT_FAILED'
-                  ? 500
-                  : 400
-        res.status(status).json({ code: safeCode })
+        res.status(statuses[safeCode]).json({ code: safeCode })
       } finally {
         res.off('close', cancel)
       }
