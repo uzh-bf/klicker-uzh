@@ -91,6 +91,24 @@ export type CohortActivationSessionLock = {
   release: () => Promise<void>
 }
 
+async function releaseCohortActivationSessionLocks(
+  locks: readonly CohortActivationSessionLock[]
+): Promise<void> {
+  let failed = false
+  let firstError: unknown
+  for (const lock of [...locks].reverse()) {
+    try {
+      await lock.release()
+    } catch (error) {
+      if (!failed) {
+        failed = true
+        firstError = error
+      }
+    }
+  }
+  if (failed) throw firstError
+}
+
 function usage(): never {
   throw new Error('usage')
 }
@@ -406,8 +424,11 @@ export async function acquireCohortActivationSessionLock(
   try {
     database = new DatabaseSync(lockPath, { timeout: 0 })
     database.exec('BEGIN EXCLUSIVE')
+    let released = false
     return {
       release: async () => {
+        if (released) return
+        released = true
         try {
           database?.exec('ROLLBACK')
         } finally {
@@ -439,14 +460,18 @@ export async function acquireCohortActivationReentrySessionLock(
       locks.push(await acquireCohortActivationSessionLock(path))
     }
   } catch (error) {
-    locks.reverse()
-    for (const lock of locks) await lock.release()
+    try {
+      await releaseCohortActivationSessionLocks(locks)
+    } catch {
+      // Preserve the lock-acquisition error after attempting every cleanup.
+    }
     throw error
   }
+  let releasePromise: Promise<void> | undefined
   return {
-    release: async () => {
-      locks.reverse()
-      for (const lock of locks) await lock.release()
+    release: () => {
+      releasePromise ??= releaseCohortActivationSessionLocks(locks)
+      return releasePromise
     },
   }
 }
@@ -914,6 +939,11 @@ async function runReentryCommand(args: ParsedArgs): Promise<void> {
       targetEnabled: state.targetEnabled,
     })
   } catch (error) {
+    if (error instanceof Error && error.message === 'SESSION_LOCKED') {
+      printResult({ status: 'refused', reason: 'session_locked' })
+      process.exitCode = 3
+      return
+    }
     printResult({ status: 'failed', category: classifyError(error) })
     process.exitCode = 1
   } finally {

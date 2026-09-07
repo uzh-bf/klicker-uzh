@@ -667,3 +667,29 @@ tests passed again with canonical TMPDIR; Biome passed with the same two existin
 warnings. No receipt, activation or production proof was executed. The remaining
 Playwright CI job is unassigned to its public-pr-arm64 runner group; organization
 runner inspection requires permissions not available to this CLI session.
+
+## Review follow-up: recovery limits
+
+The final AI review at 72beea1cf4 raised legacy receipt recovery after source
+deactivation and retained claims after failed re-entry. Legacy fingerprints
+remain compatible, but recovery is not promised after live source eligibility
+changes. Switch, rollback and readback reject an unpinned inactive source.
+Operators must preserve receipts and obtain a separately reviewed recovery
+plan; do not reactivate sources, rewrite receipts or bypass eligibility as an
+automatic unblock. Legacy recovery is a parked compatibility decision.
+
+Retaining a claim after any post-claim failure is the approved one-attempt
+contract, protected by crash-boundary tests. Automatic expiry, deletion or
+retry is intentionally unsupported. The corresponding review suggestion is
+rejected; preserve claim and successor evidence for separately authorized
+recovery. The publication does not execute recovery or production proof.
+
+Ordinary review corrections now attempt every acquired lock release, share the
+cleanup promise across repeated dual-lock releases, and preserve the original
+acquisition error after cleanup. Re-entry lock contention reports the same
+refused/session_locked result and exit3 as other commands. Missing receipt
+transitions report concurrent-write failure before source-pin comparison,
+without changing nonmissing receipt tamper checks. The119activation tests pass,
+including three regression cases; Biome and native script compilation pass.
+The prior42proof tests remain applicable. Host dependency reuse restored every
+temporary source copy; no service or production operation was started.

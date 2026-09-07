@@ -2313,6 +2313,12 @@ export function assertReceiptTransition(
   current: CohortActivationReceiptFile | null,
   next: CohortActivationReceiptFile
 ): void {
+  if (expected !== null && current === null) {
+    fail(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt disappeared before the expected transition'
+    )
+  }
   if (
     expected &&
     (!inactiveSourceEqual(expected.inactiveSource, current?.inactiveSource) ||
@@ -2340,12 +2346,6 @@ export function assertReceiptTransition(
       )
     }
     return
-  }
-  if (current === null) {
-    fail(
-      'RECEIPT_CONCURRENT_WRITE',
-      'receipt disappeared before the expected transition'
-    )
   }
   validateReceiptFile(current)
   if (

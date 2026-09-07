@@ -1,7 +1,10 @@
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
+import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -9,6 +12,7 @@ import {
   assertCohortActivationReentryRoot,
   assertReceiptMatchesManifest,
   assertReceiptTransition,
+  COHORT_ACTIVATION_MANIFEST_FINGERPRINT_ENV,
   type CohortActivationConfigRecord,
   type CohortActivationConfigUpdate,
   type CohortActivationManifest,
@@ -39,6 +43,7 @@ import {
 } from './doc-query-cohort-activation.js'
 import { createPrismaCohortActivationStore } from './doc-query-cohort-activation-prisma.js'
 import {
+  acquireCohortActivationReentrySessionLock,
   acquireCohortActivationSessionLock,
   clearPreparingReceipt,
   cohortActivationReentryClaimPath,
@@ -1062,6 +1067,100 @@ describe('cohort activation contract', () => {
     }
   })
 
+  it('attempts both re-entry lock releases after one fails and remains idempotent', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-lock-'))
+    const predecessorPath = join(directory, 'predecessor.json')
+    const successorPath = join(directory, 'successor.json')
+    const originalExec = DatabaseSync.prototype.exec
+    let failRollback = true
+    const execSpy = vi
+      .spyOn(DatabaseSync.prototype, 'exec')
+      .mockImplementation(function (this: DatabaseSync, sql: string) {
+        if (sql === 'ROLLBACK' && failRollback) {
+          failRollback = false
+          throw new Error('synthetic release failure')
+        }
+        return originalExec.call(this, sql)
+      })
+
+    try {
+      const lock = await acquireCohortActivationReentrySessionLock(
+        predecessorPath,
+        successorPath
+      )
+      const release = lock.release()
+      expect(lock.release()).toBe(release)
+      await expect(release).rejects.toThrow('synthetic release failure')
+      expect(lock.release()).toBe(release)
+
+      const reacquired = await acquireCohortActivationReentrySessionLock(
+        predecessorPath,
+        successorPath
+      )
+      await reacquired.release()
+    } finally {
+      execSpy.mockRestore()
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('returns the refused session-locked result for re-entry CLI contention', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-cli-'))
+    const manifestPath = join(directory, 'manifest.json')
+    const predecessorPath = join(directory, 'predecessor.json')
+    const successorPath = join(directory, 'successor.json')
+    const manifest = makeManifest([sourceConfig, secondModeConfig])
+    await writeFile(manifestPath, JSON.stringify(manifest))
+    await writeFile(predecessorPath, '{}')
+    const lock = await acquireCohortActivationReentrySessionLock(
+      predecessorPath,
+      successorPath
+    )
+
+    try {
+      let failure: { status?: number; stdout?: string | Buffer } | undefined
+      try {
+        execFileSync(
+          process.execPath,
+          [
+            '../../node_modules/tsx/dist/cli.mjs',
+            'doc-query-cohort-activation-run.ts',
+            'reenter',
+            '--manifest',
+            manifestPath,
+            '--receipt',
+            predecessorPath,
+            '--successor',
+            successorPath,
+          ],
+          {
+            cwd: fileURLToPath(new URL('.', import.meta.url)),
+            encoding: 'utf8',
+            env: {
+              ...process.env,
+              DATABASE_URL:
+                'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
+              [COHORT_ACTIVATION_MANIFEST_FINGERPRINT_ENV]:
+                manifest.fingerprint,
+            },
+            timeout: 30000,
+          }
+        )
+      } catch (error) {
+        failure = error as { status?: number; stdout?: string | Buffer }
+      }
+
+      expect(failure?.status).toBe(3)
+      expect(JSON.parse(String(failure?.stdout ?? ''))).toEqual({
+        status: 'refused',
+        reason: 'session_locked',
+      })
+    } finally {
+      await lock.release()
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it('refuses stale and out-of-order receipt replacement', async () => {
     const directory = await mkdtemp(
       join(tmpdir(), 'cohort-activation-receipt-')
@@ -1088,6 +1187,21 @@ describe('cohort activation contract', () => {
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
+  })
+
+  it('reports a concurrent write before comparing source pins when the receipt disappears', async () => {
+    const fake = fakeStore([sourceConfig, secondModeConfig], targetServer)
+    fake.replaceSourceServer(inactiveSourceServer)
+    const manifest = makeInactiveSourceManifest()
+    const prepared = await prepareCohortActivation(fake.store, manifest, {
+      encryptedBearer: 'encrypted-synthetic-bearer',
+    })
+
+    expect(() =>
+      assertReceiptTransition(receiptExpectation(prepared), null, prepared)
+    ).toThrowError(
+      expect.objectContaining({ code: 'RECEIPT_CONCURRENT_WRITE' })
+    )
   })
 
   it('clears only the exact preparing receipt expectation', async () => {
