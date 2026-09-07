@@ -966,7 +966,7 @@ Während der Beantwortung können eingeloggte Teilnehmende persönliche Lesezeic
 
 Einige Kurse setzen Gruppenaktivitäten ein, die nur kollaborativ gelöst werden können. Dozierende können eine zufällige Gruppenzuteilung aktivieren und eine bevorzugte Gruppengrösse vorgeben. Sobald die Gruppen gebildet und eine Gruppenaktivität publiziert ist, werden Hinweise auf die Gruppenmitglieder verteilt. Die Gruppe kann die Aktivität innerhalb eines begrenzten Zeitfensters gemeinsam lösen (eine Abgabe pro Gruppe). Gruppenbildung und Gruppenaktivitäten stehen nur Teilnehmenden mit KlickerUZH‑Account zur Verfügung.
 
-Innerhalb einer Gruppe können Sie Ihre Punkte mit Ihren Mitstudierenden vergleichen; als Gruppe können Sie sich zudem mit anderen Gruppen messen. Die Gesamtpunktzahl Ihrer Gruppe setzt sich zusammen aus Punkten aus Gruppenaktivitäten und den aggregierten Punkten aller Gruppenmitglieder.
+Innerhalb einer Gruppe können Sie veröffentlichte Punkte mit Ihren Mitstudierenden vergleichen; als Gruppe können Sie sich zudem mit anderen Gruppen messen. Die Gesamtpunktzahl Ihrer Gruppe setzt sich zusammen aus Punkten aus Gruppenaktivitäten und den durchschnittlichen persönlichen Punkten der Gruppenmitglieder. Mitglieder, die nicht am Kurs-Leaderboard teilnehmen, tragen null Punkte zu diesem Durchschnitt bei; ihre Punkte bleiben privat.
 
 #### Kurse, Leaderboards und Errungenschaften
 
@@ -1399,7 +1399,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       alreadySubmittedAt:
         'Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.',
       joinLeaderboard:
-        'Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme.',
+        'Deine persönlichen Punkte bleiben privat, solange du nicht am Kurs-Leaderboard teilnimmst. Sie zählen nicht zum öffentlichen Gruppendurchschnitt. Deine Gruppenmitgliedschaft und gemeinsam in Gruppenaktivitäten gesammelte Punkte bleiben unverändert.',
       singleParticipantAutomaticAssignment:
         'Sie sind der einzige Teilnehmer in Ihrer Gruppe. Sobald die Frist für die Gruppenbildung abgelaufen ist am {groupFormationDeadline} oder der Dozent die Gruppenbildung manuell gestoppt hat, werden Sie automatisch einer zufälligen Gruppe zugewiesen.',
       maxNumberOfGroupMembers:

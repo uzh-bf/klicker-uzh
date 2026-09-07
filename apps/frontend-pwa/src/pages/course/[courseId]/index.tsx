@@ -697,11 +697,9 @@ function CourseOverview({
             <LeaveLeaderboardModal
               loading={leavingLeaderboard}
               onClose={() => {
-                if (!leavingLeaderboard)
-                  setIsLeaveCourseLeaderboardModalOpen(false)
+                setIsLeaveCourseLeaderboardModalOpen(false)
               }}
               onConfirm={async () => {
-                if (leavingLeaderboard) return
                 try {
                   const result = await leaveCourseLeaderboard()
                   if (

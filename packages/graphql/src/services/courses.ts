@@ -23,6 +23,7 @@ import { prop, sortBy } from 'remeda'
 import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
+import { refreshParticipantGroupScores } from '../lib/groupScores.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
@@ -127,6 +128,11 @@ export async function joinCourseLeaderboard(
       update: { isActive: true },
     })
 
+    const groupIds = await refreshParticipantGroupScores(prisma, {
+      courseId,
+      participants: { some: { id: ctx.user.sub } },
+    })
+
     // Preserve an existing balance when publishing it again.
     const lbEntry = await prisma.leaderboardEntry.upsert({
       where: {
@@ -146,11 +152,14 @@ export async function joinCourseLeaderboard(
       update: {},
     })
 
-    return { participation, lbEntry }
+    return { participation, lbEntry, groupIds }
   })
 
   if (!result) return null
   const { participation, lbEntry } = result
+  result.groupIds.forEach((id) => {
+    ctx.emitter.emit('invalidate', { typename: 'ParticipantGroup', id })
+  })
 
   // invalidate participation and leaderboard entry
   ctx.emitter.emit('invalidate', {
@@ -209,16 +218,27 @@ export async function leaveCourseLeaderboard(
   ctx: ContextWithUser
 ) {
   // Hide public leaderboard entries while retaining private activity and points.
-  const participation = await ctx.prisma.participation.update({
-    where: {
-      courseId_participantId: {
+  const { participation, groupIds } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const participation = await prisma.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        data: { isActive: false },
+      })
+      const groupIds = await refreshParticipantGroupScores(prisma, {
         courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    data: {
-      isActive: false,
-    },
+        participants: { some: { id: ctx.user.sub } },
+      })
+      return { participation, groupIds }
+    }
+  )
+
+  groupIds.forEach((id) => {
+    ctx.emitter.emit('invalidate', { typename: 'ParticipantGroup', id })
   })
 
   ctx.emitter.emit('invalidate', {

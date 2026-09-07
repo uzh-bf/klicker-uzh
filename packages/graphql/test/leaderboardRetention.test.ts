@@ -4,11 +4,17 @@ import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { refreshParticipantGroupScores } from '../src/lib/groupScores.js'
 import {
   getStudentCourseLeaderboard,
   joinCourseLeaderboard,
   leaveCourseLeaderboard,
 } from '../src/services/courses.js'
+import {
+  getParticipantGroups,
+  joinParticipantGroup,
+  leaveParticipantGroup,
+} from '../src/services/groups.js'
 import {
   endLiveQuiz,
   getLiveQuizLeaderboard,
@@ -17,6 +23,7 @@ import { respondToQuestion } from '../src/services/stacks.js'
 
 const ownerId = randomUUID()
 const participantId = randomUUID()
+const groupPeerId = randomUUID()
 const courseId = randomUUID()
 
 vi.mock('@klicker-uzh/util', async (importOriginal) => ({
@@ -33,7 +40,9 @@ const ctx = {
 describe('leaderboard publication retains private balances', () => {
   afterAll(async () => {
     await prisma.course.deleteMany({ where: { id: courseId } })
-    await prisma.participant.deleteMany({ where: { id: participantId } })
+    await prisma.participant.deleteMany({
+      where: { id: { in: [participantId, groupPeerId] } },
+    })
     await prisma.user.deleteMany({ where: { id: ownerId } })
   })
 
@@ -101,23 +110,109 @@ describe('leaderboard publication retains private balances', () => {
       },
     })
 
+    await prisma.participant.create({
+      data: { id: groupPeerId, username: groupPeerId, password: 'unused' },
+    })
+    const peerParticipation = await prisma.participation.create({
+      data: { participantId: groupPeerId, courseId, isActive: true },
+    })
+    await prisma.leaderboardEntry.create({
+      data: {
+        type: 'COURSE',
+        participantId: groupPeerId,
+        courseId,
+        score: 75,
+        participation: { connect: { id: peerParticipation.id } },
+      },
+    })
+    const group = await prisma.participantGroup.create({
+      data: {
+        name: 'Synthetic group',
+        code: 123456,
+        courseId,
+        groupActivityScore: 20,
+        averageMemberScore: 100,
+        participants: { connect: [{ id: participantId }, { id: groupPeerId }] },
+      },
+    })
+    const refreshGroup = () =>
+      prisma.$transaction((tx) =>
+        refreshParticipantGroupScores(tx, { id: group.id })
+      )
+    const groupState = () =>
+      prisma.participantGroup.findUniqueOrThrow({ where: { id: group.id } })
+    await refreshGroup()
+    expect(await groupState()).toMatchObject({
+      averageMemberScore: 38,
+      groupActivityScore: 20,
+    })
+    const publicGroups = await getParticipantGroups(
+      { courseId },
+      { ...ctx, user: { ...ctx.user, sub: groupPeerId } }
+    )
+    expect(
+      publicGroups[0]?.participants.find(
+        (member) => member.id === participantId
+      )?.score
+    ).toBe(0)
+
     const publicCourse = () =>
       getStudentCourseLeaderboard({ courseId, mode: 'course' }, ctx)
     const publicSession = () => getLiveQuizLeaderboard({ quizId: quiz.id }, ctx)
-    expect((await publicCourse()).leaderboard).toEqual([])
+    expect(
+      (await publicCourse()).leaderboard.some(
+        (entry) => entry.participantId === participantId
+      )
+    ).toBe(false)
     expect(await publicSession()).toEqual([])
 
     const joined = await joinCourseLeaderboard({ courseId }, ctx)
     expect(joined?.lbEntry.score).toBe(125)
-    expect((await publicCourse()).leaderboard).toEqual([
-      expect.objectContaining({ participantId, score: 125 }),
-    ])
+    expect(await groupState()).toMatchObject({
+      averageMemberScore: 100,
+      groupActivityScore: 20,
+    })
+    expect((await publicCourse()).leaderboard).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ participantId, score: 125 }),
+      ])
+    )
     expect(await publicSession()).toEqual([
       expect.objectContaining({ participantId, score: 25 }),
     ])
 
     await leaveCourseLeaderboard({ courseId }, ctx)
     await leaveCourseLeaderboard({ courseId }, ctx)
+    expect(await groupState()).toMatchObject({
+      averageMemberScore: 38,
+      groupActivityScore: 20,
+    })
+    await Promise.all([
+      refreshGroup(),
+      joinCourseLeaderboard({ courseId }, ctx),
+    ])
+    expect(await groupState()).toMatchObject({ averageMemberScore: 100 })
+    await Promise.all([
+      refreshGroup(),
+      leaveCourseLeaderboard({ courseId }, ctx),
+    ])
+    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
+    await leaveParticipantGroup({ groupId: group.id, courseId }, ctx)
+    expect(await groupState()).toMatchObject({ averageMemberScore: 0 })
+    await joinCourseLeaderboard({ courseId }, ctx)
+    await Promise.all([
+      joinParticipantGroup({ courseId, code: group.code }, ctx),
+      leaveCourseLeaderboard({ courseId }, ctx),
+    ])
+    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
+    const peerCtx = { ...ctx, user: { ...ctx.user, sub: groupPeerId } }
+    await leaveCourseLeaderboard({ courseId }, peerCtx)
+    expect(await groupState()).toMatchObject({
+      averageMemberScore: 0,
+      groupActivityScore: 20,
+    })
+    await joinCourseLeaderboard({ courseId }, peerCtx)
+    expect(await groupState()).toMatchObject({ averageMemberScore: 38 })
     const failingPrisma = prisma.$extends({
       query: {
         leaderboardEntry: {
@@ -138,7 +233,11 @@ describe('leaderboard publication retains private balances', () => {
         where: { id: participation.id },
       })
     ).toMatchObject({ isActive: false })
-    expect((await publicCourse()).leaderboard).toEqual([])
+    expect(
+      (await publicCourse()).leaderboard.some(
+        (entry) => entry.participantId === participantId
+      )
+    ).toBe(false)
     expect(await publicSession()).toEqual([])
     expect(
       await prisma.leaderboardEntry.findUnique({
@@ -225,7 +324,11 @@ describe('leaderboard publication retains private balances', () => {
         where: { participationId: participation.id, id: { not: timeline.id } },
       })
     ).toMatchObject({ collectedPoints: points })
-    expect((await publicCourse()).leaderboard).toEqual([])
+    expect(
+      (await publicCourse()).leaderboard.some(
+        (entry) => entry.participantId === participantId
+      )
+    ).toBe(false)
     expect(
       await prisma.leaderboardEntry.findUnique({
         where: { id: courseEntry.id },
