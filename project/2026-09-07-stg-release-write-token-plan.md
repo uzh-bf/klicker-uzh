@@ -74,9 +74,10 @@ and receipt checks were extended, and no tests were removed. Full application
 build/check and Node 24 proof were not run; no application runtime was started.
 
 Simplifier complete with no recommended reduction. Credential-risk review
-complete with no findings. Integrated-final review remains required before
-draft publication. Reports
+complete with no findings. Integrated-final review passed the complete range
+through `9586807d9e` with no findings. Source is ready for draft publication;
+human review and required hosted CI remain before merge. Reports
 are in `project/_local/reviews/2026-09-07-stg-write-token-*.md`.
 Optional AGY challenge unavailable due to catalog/authentication errors.
-No operational state changed. Next: finish required review and publish the
-approved draft PR; do not retry promotion.
+No operational state changed. Next: publish the approved draft PR; do not
+retry promotion.
