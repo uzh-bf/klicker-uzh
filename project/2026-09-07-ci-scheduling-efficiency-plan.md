@@ -129,3 +129,21 @@ Remove only the shallow fetch option and protect full ancestry in a focused
 workflow contract. This completes selector qualification prerequisites without
 changing selection policy. Ten representative live comparisons remain pending;
 no canary activation is justified. Publication is withheld.
+
+Local source is committed at `78f16a9a51a8604766592abf8ad84741b22ec7c9`.
+Fresh verification passes all 62 CI contracts and the standalone workflow
+validator. Both simplification passes are complete; the duplicate assertion
+was removed. Cancellation risk review passed without findings; the history
+slice risk review and integrated final review remain pending.
+
+The completed disposable-database PR run used 148m40s of build/shard capacity
+after its merge. This supports removing obsolete work first, not changing
+concurrency or claiming measured savings. Canary qualification remains blocked
+on ten representative live comparisons after delivery of the history fix.
+No repository variables, runner settings, or concurrency limits changed.
+
+Remote refresh succeeded through a command-local HTTPS override after SSH
+signing was refused. The branch remains three commits ahead and zero behind
+`origin/v3`; no upstream integration occurred. Immediate delivery remains local
+source and the not-qualified canary receipt. Push and draft PR publication need
+separate approval; live cancellation and selective execution are not yet proven.
