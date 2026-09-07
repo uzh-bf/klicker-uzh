@@ -951,6 +951,7 @@ test('separates Git read and write credentials without an ambient write fallback
   const writeToken = 'synthetic-write-token'
   const previous = {
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    'INPUT_GITHUB-TOKEN': process.env['INPUT_GITHUB-TOKEN'],
     STG_PROMOTE_TOKEN: process.env.STG_PROMOTE_TOKEN,
   }
   t.after(() => {
@@ -960,6 +961,7 @@ test('separates Git read and write credentials without an ambient write fallback
     }
   })
   process.env.GITHUB_TOKEN = readToken
+  process.env['INPUT_GITHUB-TOKEN'] = readToken
   process.env.STG_PROMOTE_TOKEN = writeToken
   const calls = []
   const options = {
@@ -976,6 +978,7 @@ test('separates Git read and write credentials without an ambient write fallback
     const { args, options } = calls[index]
     assert.equal(args[0], index === 0 ? 'fetch' : 'push')
     assert.equal(options.env.GITHUB_TOKEN, undefined)
+    assert.equal(options.env['INPUT_GITHUB-TOKEN'], undefined)
     assert.equal(options.env.STG_PROMOTE_TOKEN, undefined)
     assert.equal(
       options.env.GIT_CONFIG_VALUE_0,
@@ -1085,6 +1088,39 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
     ),
     false
   )
+})
+
+test('sanitizes credential-bearing fetch and push failures', async () => {
+  for (const operation of ['fetch', 'push']) {
+    const refs = refGithub()
+    const sensitive = 'synthetic-private-token'
+    const original = Object.assign(new Error(sensitive), {
+      stderr: `refusing to allow a GitHub App without workflows permission ${sensitive}`,
+      cause: new Error(sensitive),
+      env: { STG_PROMOTE_TOKEN: sensitive },
+    })
+    await assert.rejects(
+      compareAndSwapReleaseRef({
+        github: refs.github,
+        context: reviewContext(),
+        expectedSha: null,
+        candidateSha: CANDIDATE_SHA,
+        gitToken: sensitive,
+        gitRunner: (args) => {
+          if (args[0] === operation) throw original
+        },
+      }),
+      (error) => {
+        assert.equal(error.cause, undefined)
+        assert.ok(error instanceof Error)
+        assert.doesNotMatch(
+          require('node:util').inspect(error),
+          /synthetic-private-token/
+        )
+        return true
+      }
+    )
+  }
 })
 
 test('recovers from a transient post-push ref readback failure', async () => {

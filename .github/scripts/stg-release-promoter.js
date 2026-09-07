@@ -1137,6 +1137,7 @@ function gitEnvironment(gitToken, repositoryUrl) {
     GIT_TERMINAL_PROMPT: '0',
   }
   delete environment.GITHUB_TOKEN
+  delete environment['INPUT_GITHUB-TOKEN']
   delete environment.STG_PROMOTE_TOKEN
   if (!gitToken) return environment
 
@@ -1272,8 +1273,12 @@ async function compareAndSwapReleaseRef({
       gitRunner,
       workspace,
     })
-  } catch (error) {
-    throw new Error('stg-release compare-and-swap failed', { cause: error })
+  } catch {
+    // Git errors can retain subprocess credentials in attached fields. Report
+    // only fixed guidance, never the raw error or its nested cause.
+    throw new Error(
+      'stg-release compare-and-swap failed; verify the write token permissions, ref protection, and concurrent ref updates'
+    )
   }
 
   const readbackAttempts = []
