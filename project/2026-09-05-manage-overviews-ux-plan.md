@@ -73,6 +73,78 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+### Clean setup and passing course suites, 2026-09-07
+
+The user requested a clean setup. Source-path ownership was verified before
+canonical deletion of only the task runtime and its synthetic data. Existing
+Next.js output and task runtime markers were moved into the ignored
+`project/_local/clean-setup-backup/20260907-123336` directory. The Git worktree,
+shared router, global tool installation and other workspaces were preserved.
+Installed global Devrouter 0.0.55 then completed fresh full-profile bootstrap.
+Repeated host-launcher reconciliation passed without source workarounds.
+This supersedes the runtime-blocked checkpoints below.
+
+The self-contained keyboard-navigation and missing-metadata test passed.
+Broader tests exposed a hardcoded student localhost URL and two permission
+assertions that still expected badges inside the former whole-row button.
+The course spec now honors the launcher-provided student login URL, matching
+the existing shared fixture. Badge assertions retain the same course-specific
+permission levels but locate the badge beside the semantic course link.
+No product authorization or routing behavior changed.
+
+The full course and activity-log command passed all 79 Chromium tests in
+7.2 minutes. It covers creation, editing, keyboard navigation, empty tabs,
+archive/delete, duplication, individual/group permission levels, revocation,
+ownership transfer, removal, and comments. Evidence is the producing log
+`/tmp/manage-clean-suites-final.log`; earlier failed runs are superseded only
+for these corrected behaviors. The test helper's type check and formatting
+also passed. No new tests or dependencies were added.
+
+Manual delegated-login verification captured the seeded course at 1024x768
+and 1440x900 in EN and DE under `project/_local/visuals/manage-clean/`.
+The missing-email value remains aligned and controls remain visible. This
+is bounded visual evidence, not the full long-name/read-only matrix or
+activity-density acceptance. Activity and wizard implementation, the remaining
+visual matrix, publication and integrated final review are still pending.
+
+### Latest runtime diagnosis, 2026-09-07
+
+This entry supersedes the earlier pending commit and startup experiments.
+The selector correction and prior checkpoint are committed locally at
+`31530a777e7bc4a0da4a63ef2cabf739b3df1404`. No push occurred. The branch
+is one commit ahead of its own upstream and three ahead/twelve behind fetched
+`origin/v3`; no integration occurred. Primary checkout remains clean.
+
+The full build passed all 23 tasks. Commit checks passed all 35 check tasks,
+seven lint tasks, remaining policy checks and staged formatting; gitleaks
+reported no leaks. The initial hook failed because container-side lint-staged
+could not operate the host Git index. A temporary bridge keeps lint-staged Git
+operations on the host and runs the unchanged configured formatters inside the
+exact container. Other check:all commands also run there. No hook was skipped.
+
+A clean committed tree still reproduces the preparation-child failure.
+Draining build logs synchronously also leaves Turbo's Git subprocess alive.
+A temporary `--force` on dependency preparation completes with no live child
+and permits canonical startup. That experiment was restored completely;
+there is no persistent build-cache or lifecycle workaround in the branch.
+The installed global Devrouter remains 0.0.55 and was not changed.
+
+The focused course-navigation test never started: its host launcher attempted
+canonical full-profile reconciliation, recovered stale Auth output, then hit
+stale Chat output. It ended with `Managed post-start failed. Candidate runtime
+was rolled back.` One readiness pass had exhausted its single repair attempt.
+Runtime readiness is therefore not repeatable. Earlier course-route 404
+acceptance failure remains unresolved; no UI routing workaround was applied.
+Logs: `/tmp/manage-clarity-force.log`, `/tmp/manage-clarity-focused.log`,
+`/tmp/manage-clarity-commit.log`, and `/tmp/manage-clarity-build.log`.
+
+Browser acceptance, focused suites, correction publication, activity and wizard
+layers, and integrated final review remain pending. Next capability required:
+stable canonical startup and repeatable host-launcher reconciliation in this
+exact task runtime. The runtime platform owner retains broader platform repair.
+The task runtime is being stopped for this checkpoint; the global handoff
+records the final provider and route readback.
+
 ### Device takeover, 2026-09-07
 
 The user authorized continuing route diagnosis and repair. A later full-profile

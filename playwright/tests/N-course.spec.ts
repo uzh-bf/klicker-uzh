@@ -903,7 +903,10 @@ async function verifyCourseAccessLost(page: Page) {
 async function loginStudentPassword(page: Page, username: string) {
   await page.context().clearCookies()
   await page.goto('about:blank').catch(() => undefined)
-  await page.goto(URL_STUDENT_LOGIN, { waitUntil: 'commit', timeout: 300_000 })
+  await page.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN, {
+    waitUntil: 'commit',
+    timeout: 300_000,
+  })
   await page.evaluate(() => {
     try {
       localStorage.clear()
@@ -1212,8 +1215,9 @@ async function expectCourseCardPermission(
   permissionLevel: string
 ) {
   const courseCard = page.getByTestId(`course-list-button-${courseName}`)
+  await expect(courseCard).toBeVisible()
   await expect(
-    courseCard.getByTestId(`permission-level-${courseName}-${permissionLevel}`)
+    page.getByTestId(`permission-level-${courseName}-${permissionLevel}`)
   ).toBeVisible()
 }
 
@@ -1793,9 +1797,7 @@ async function verifyCopiedCoursePermissionBadges({
   await page.getByTestId('courses').click()
   const courseCard = page.getByTestId(`course-list-button-${courseName}`)
   await expect(
-    courseCard.getByTestId(
-      `permission-level-${courseName}-${coursePermissionLevel}`
-    )
+    page.getByTestId(`permission-level-${courseName}-${coursePermissionLevel}`)
   ).toBeVisible()
   await courseCard.click()
   await page.getByTestId('tab-liveQuizzes').click()
