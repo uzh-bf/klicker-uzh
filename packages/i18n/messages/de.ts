@@ -1391,6 +1391,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Ja erlaubt, dass künftige Forschungsexporte alle für Dein Konto gespeicherten Daten enthalten. Nein schliesst Deine Daten von künftigen Forschungsexporten aus. Wenn Du diese Einstellung wieder aktivierst, können bereits gespeicherte Daten wieder einbezogen werden. Bereits erstellte Forschungsexporte werden nicht zurückgerufen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Ja erlaubt KlickerUZH, nach einer Neuberechnung des Kurses nach Deiner aktuellen Entscheidung alle berechtigten in Deinem Konto gespeicherten Aktivitätsdaten für individuelle Learning Analytics zu verwenden. Nein bedeutet, dass keine individuellen Learning-Analytics-Daten verwendet werden; bereits erstellte individuelle Learning-Analytics-Daten werden beim nächsten erfolgreichen nächtlichen Verarbeitungslauf gelöscht. Aggregierte Ergebnisse werden bei ihrer nächsten regulären Neuberechnung aktualisiert. Wenn Du diese Einstellung wieder aktivierst, können alle berechtigten gespeicherten Aktivitätsdaten wieder einbezogen werden.',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
