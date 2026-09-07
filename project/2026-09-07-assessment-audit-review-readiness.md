@@ -1,17 +1,20 @@
 # Assessment audit stack — local review-readiness verification
 
-Date: 2026-09-07. Base: `b40bda462546a47faeefafadf14a34cdf2d32a32`
-on `feat/assessment-audit-submissions`.
+Date: 2026-09-07. Verified code: `93e4bee81c4d063efcabf73ea24b4a527ed942cd`
+on `feat/assessment-audit-submissions`, rebased onto `origin/v3` at `27f247454`.
 
 ## Status
 
-The fixes below are local and uncommitted. The published five-layer stack is
-not yet cleared for review: restacking, publication, and fresh CI remain pending.
-No PR was merged and no cluster was changed.
+The fixes below are committed and all five layers have been restacked using the
+native stack workflow. Publication is authorized; fresh CI and independent
+per-layer reviews remain required. All PRs remain draft. No PR was merged and
+no cluster was changed.
 
 An independent source review found no remaining confirmed P1/P2 issues in the
 repaired paths. This is not a guarantee that the entire feature is defect-free,
-nor production approval.
+nor production approval. A separate read-only rebase review found no confirmed
+regression in the workflow, dependency, or course-transaction conflict resolutions.
+The upstream course-deletion guard and feature-flags dependency are preserved.
 
 ## Repaired paths
 
@@ -48,7 +51,7 @@ services; no production data or credentials were used.
 | GraphQL audit activation, baseline, rollout, and producer specs | 19 passed, 4 files |
 | GraphQL `assessmentRestrictions.test.ts` | 4 passed, 1 file |
 | Audit, processor, Response API checks; GraphQL `check:ts` | Passed |
-| Audit and shared types builds | Passed |
+| Scoped Turbo build: audit, GraphQL, general worker, response processor, Response API and dependencies | Passed after rebase |
 | Biome checks on 20 changed TypeScript files | No errors; existing warnings remain |
 | Prettier checks and `git diff --check` | Passed |
 
@@ -65,13 +68,15 @@ No full browser E2E or live Azure RBAC/conformance run was completed here.
 
 ## Required delivery follow-up
 
-1. Obtain approval to commit, restack, and push. Keep fixes with their owning
-   layers and resolve the lower-layer conflicts against current `v3` using the
-   native stack workflow. Re-run checks after conflict resolution.
+1. Inspect fresh CI for all five rebased layers. Local results above verify the
+   integrated stack tip, not each intermediate layer independently. The final
+   review-hardening fixes remain in layer 5; earlier-layer historical results
+   are not substituted for current CI.
 2. Land the Playwright artifact prerequisite through a reviewed change to
    trusted `v3`. PR workflows consume trusted CI control; changing the candidate
    artifact list alone cannot repair the running PR workflow.
-3. Publish the stack, update PR verification summaries, and inspect fresh CI.
+3. Complete independent per-layer reviews; retain draft status until the recorded
+   review and verification gates are satisfied.
 4. Before launch, deploy matching Response API/processor contracts, drain legacy
    queued commands without execution bindings, and complete the documented
    staging owner-export, Azure identity/immutability, full browser, and load gates.
