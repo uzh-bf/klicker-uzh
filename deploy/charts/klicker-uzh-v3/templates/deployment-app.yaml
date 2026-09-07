@@ -378,6 +378,9 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook-management
+                optional: true
           livenessProbe:
             httpGet:
               path: /healthz

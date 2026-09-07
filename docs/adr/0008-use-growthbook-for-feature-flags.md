@@ -49,9 +49,11 @@ Catalyst attributes. The rollout rule must require `betaEnabled: true`,
 authoritative. A false or unreadable preference stays false even when a remote
 definition would otherwise force the flag on.
 
-The preference is not stored in GrowthBook. This contract has no saved group,
-GrowthBook enrollment or management API, management Secret, `beta-signup` flag,
-or Redis membership lock. `FULL_ACCESS` and `ACCOUNT_OWNER` sessions may edit
+The preference is not stored in GrowthBook. Beta enrollment uses no saved group,
+management API, `beta-signup` flag, or Redis membership lock. The separate
+backend management API configuration remains available for other flag-control
+use cases; beta enrollment does not depend on it.
+`FULL_ACCESS` and `ACCOUNT_OWNER` sessions may edit
 the preference; the enrollment capability returns unknown membership for weaker
 scopes without reading the preference. Catalyst is required to opt in, while full-access opt-out remains
 available without Catalyst.

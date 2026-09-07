@@ -253,6 +253,20 @@ to that Deployment in the same change that initializes the Node adapter.
 
 ## Beta preference and rollout ownership
 
+### Separate backend management connection
+
+The primary GraphQL backend retains the optional external
+`<rendered-chart-fullname>-secret-growthbook-management` reference for other
+backend flag-control use cases. It supplies `GROWTHBOOK_MANAGEMENT_API_URL`
+and `GROWTHBOOK_MANAGEMENT_API_KEY`; both remain in `turbo.json` for server
+task environment forwarding. This configuration is separate from SDK evaluation.
+Never pass the management key to `NodeFeatureFlagClient`, frontend builds, or
+`NEXT_PUBLIC_*` variables. Other workloads do not receive this management Secret.
+No management API call is introduced here; future writers need their own
+authorization and target contracts. Beta preference requires neither variable.
+
+### Database-owned preference
+
 The database owns the personal beta preference. `User.betaEnabled` defaults to
 `true`, and the GraphQL enrollment service reads and writes the authenticated
 actor's own row. Request-local reuse prevents duplicate reads without turning
@@ -275,7 +289,7 @@ Catalyst attributes. The rollout rule must require `betaEnabled: true`,
 unreadable preference fails closed, and a remote force-true result cannot
 override a false database value.
 
-This flow has no saved group, GrowthBook Management API, management Secret,
+This flow does not use a saved group, GrowthBook Management API, management Secret,
 `beta-signup` flag, or Redis membership lock. GrowthBook supplies rollout
 evaluation only; it does not persist or mutate beta membership. Token
 provisioning and validation belong to v3-ai and are outside this contract.
