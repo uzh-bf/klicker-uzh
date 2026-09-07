@@ -1943,6 +1943,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       unavailableTitle: 'AI features unavailable',
       unavailableDescription:
         'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+      temporarilyUnavailableTitle: 'AI features temporarily unavailable',
+      temporarilyUnavailableDescription:
+        'AI features are temporarily unavailable. Please try again in a moment.',
+      retry: 'Try again',
     },
     general: {
       qrCode: 'QR Code',

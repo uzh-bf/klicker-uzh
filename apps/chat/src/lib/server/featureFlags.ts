@@ -1,4 +1,7 @@
-import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
+import type {
+  AiBetaDecision,
+  FeatureFlagAttributes,
+} from '@klicker-uzh/feature-flags'
 import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { prisma } from '@klicker-uzh/prisma'
 import type { AuthenticatedManageUser } from './manageAuth'
@@ -44,23 +47,37 @@ export function manageFeatureFlagAttributes(
  * next sign-in — it is the switch that stops spending, and a stale snapshot
  * would keep spending against a revoked cost center.
  *
- * Unconfigured or unreachable GrowthBook yields `false`, as does an account
- * that no longer exists, so a gate written with this refuses rather than opens
- * when either side is missing.
+ * An absent account entitlement returns `disabled` before GrowthBook is
+ * evaluated. An unavailable GrowthBook answer stays distinct so callers can
+ * preserve the AI entry point while refusing requests and asking the client to
+ * retry.
  */
-export async function isManageAiEnabled(
+export async function getManageAiCapability(
   user: AuthenticatedManageUser
-): Promise<boolean> {
-  const featureFlags = getFeatureFlagClient()
-  await featureFlags.initialize()
-  if (!featureFlags.isEnabled('ai-beta', manageFeatureFlagAttributes(user))) {
-    return false
-  }
-
+): Promise<AiBetaDecision> {
   const account = await prisma.user.findUnique({
     select: { aiFeaturesEnabled: true },
     where: { id: user.sub },
   })
 
-  return account?.aiFeaturesEnabled === true
+  if (account?.aiFeaturesEnabled !== true) {
+    return 'disabled'
+  }
+
+  const featureFlags = getFeatureFlagClient()
+  try {
+    await featureFlags.initialize()
+    return featureFlags.getAiBetaDecision(manageFeatureFlagAttributes(user))
+  } catch {
+    console.warn(
+      '[feature-flags] AI beta evaluation failed; temporarily unavailable'
+    )
+    return 'temporarilyUnavailable'
+  }
+}
+
+export async function isManageAiEnabled(
+  user: AuthenticatedManageUser
+): Promise<boolean> {
+  return (await getManageAiCapability(user)) === 'enabled'
 }

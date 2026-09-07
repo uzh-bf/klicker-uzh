@@ -1968,6 +1968,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       unavailableTitle: 'KI-Funktionen nicht verfügbar',
       unavailableDescription:
         'Die KI-Funktionen befinden sich in der Beta-Phase und sind für Ihr Konto noch nicht verfügbar. Bitte wenden Sie sich für den Zugang an Ihre Administratorin oder Ihren Administrator.',
+      temporarilyUnavailableTitle:
+        'KI-Funktionen vorübergehend nicht verfügbar',
+      temporarilyUnavailableDescription:
+        'KI-Funktionen sind vorübergehend nicht verfügbar. Bitte versuchen Sie es gleich noch einmal.',
+      retry: 'Erneut versuchen',
     },
     general: {
       qrCode: 'QR Code',

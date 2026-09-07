@@ -24,6 +24,26 @@ async function loadGate(forcedOn?: string) {
   return isManageAiEnabled
 }
 
+async function loadCapability({
+  apiHost,
+  clientKey,
+  forcedOn,
+}: {
+  apiHost?: string
+  clientKey?: string
+  forcedOn?: string
+} = {}) {
+  vi.resetModules()
+  vi.stubEnv('GROWTHBOOK_ENV', 'development')
+  vi.stubEnv('GROWTHBOOK_API_HOST', apiHost ?? '')
+  vi.stubEnv('GROWTHBOOK_CLIENT_KEY', clientKey ?? '')
+  vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
+  const { getManageAiCapability } = await import(
+    '@/src/lib/server/featureFlags'
+  )
+  return getManageAiCapability
+}
+
 describe('isManageAiEnabled', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
@@ -60,11 +80,27 @@ describe('isManageAiEnabled', () => {
     await expect(isEnabled(lecturer)).resolves.toBe(false)
   })
 
-  // The flag is checked first so a lecturer outside the beta costs no query.
-  test('does not read the account when the flag is off', async () => {
+  test('reads the live account entitlement before evaluating GrowthBook', async () => {
     const isEnabled = await loadGate()
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
-    expect(mocks.findUniqueUser).not.toHaveBeenCalled()
+    expect(mocks.findUniqueUser).toHaveBeenCalledTimes(1)
+  })
+
+  test('reports a temporary state when an entitled account has no usable payload', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('unavailable', { status: 503 }))
+    )
+    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    const getCapability = await loadCapability({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+    })
+
+    await expect(getCapability(lecturer)).resolves.toBe(
+      'temporarilyUnavailable'
+    )
+    vi.unstubAllGlobals()
   })
 })

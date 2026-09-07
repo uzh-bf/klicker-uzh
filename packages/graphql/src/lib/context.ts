@@ -1,6 +1,7 @@
 import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import type {
+  AiBetaDecision,
   FeatureFlagAttributes,
   FeatureFlagKey,
 } from '@klicker-uzh/feature-flags'
@@ -22,6 +23,7 @@ interface BaseContext {
 
 export interface FeatureFlagEvaluator {
   isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
+  getAiBetaDecision(attributes: FeatureFlagAttributes): AiBetaDecision
   refresh(): Promise<void>
 }
 

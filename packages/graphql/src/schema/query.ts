@@ -26,6 +26,7 @@ import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -106,6 +107,7 @@ import {
   LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
+import { ManageAiCapabilityState } from './manageAi.js'
 import {
   Participant,
   ParticipantGroup,
@@ -268,6 +270,12 @@ export const Query = builder.queryType({
         },
       }),
 
+      manageAiCapability: t.withAuth(asUser).field({
+        type: ManageAiCapabilityState,
+        resolve: async (_, __, ctx) => {
+          return await AiFeatureGateService.getManageAiCapability(ctx)
+        },
+      }),
       userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,

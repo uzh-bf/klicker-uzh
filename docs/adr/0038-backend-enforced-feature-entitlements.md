@@ -20,12 +20,15 @@ browser evaluation is presentation state and is never trusted as the data
 boundary.
 
 Backend evaluation uses the read-only SDK connection and a minimal authenticated
-actor projection. Missing configuration, invalid environments, unavailable
-definitions, false results, and evaluation failures deny the feature with a
-generic error. Flags may not carry sensitive targeting attributes or replace
-durable domain state. A flag whose rules or attributes are sensitive must use a
-reviewed server-only or remote-evaluation design instead of browser-visible
-targeting.
+actor projection. The backend may distinguish an explicit denial from a
+temporarily unavailable GrowthBook decision when the product needs a stable
+recovery path, but neither state authorizes the feature. For the lecturer AI
+capability, a live `User.aiFeaturesEnabled` value of `false` or `null` is an
+immediate denial without a GrowthBook lookup; an entitled account with no
+usable `ai-beta` answer is temporarily unavailable. Flags may not carry
+sensitive targeting attributes or replace durable domain state. A flag whose
+rules or attributes are sensitive must use a reviewed server-only or
+remote-evaluation design instead of browser-visible targeting.
 
 This decision supersedes only ADR 0008's blanket prohibition on authorization.
 Ordinary rollout-only flags remain presentation concerns, and GrowthBook never
@@ -37,9 +40,11 @@ Every backend-enforced flag needs equivalent browser and backend definitions,
 explicit allow and deny coverage, and an operational check in each deployment
 environment. Backend consumers must own an abortable refresh lifecycle and a
 bounded stale window so both grants and revocations propagate without restarts;
-an expired payload denies access. The backend result is authoritative: a
+an expired payload denies access or reports temporary unavailability according
+to the feature's explicit contract. The backend result is authoritative: a
 backend `false` always denies, while a backend `true` still cannot bypass the
 existing authentication and resource-permission checks. A browser `false` may
-hide the feature even when the backend result is true. GrowthBook availability
-therefore joins the feature's access path, but not application startup or
-unrelated Klicker functionality.
+hide the feature even when the backend result is true. A temporary state may
+keep recovery UI present, but protected operations must return a retryable
+outage response. GrowthBook availability therefore joins the feature's access
+path, but not application startup or unrelated Klicker functionality.

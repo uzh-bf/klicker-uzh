@@ -27,6 +27,7 @@ describe('requireFeatureFlagAccess', () => {
           user,
           featureFlags: {
             isEnabled,
+            getAiBetaDecision: vi.fn(),
             refresh: vi.fn(async () => undefined),
           },
         },
@@ -47,6 +48,7 @@ describe('requireFeatureFlagAccess', () => {
       'a disabled flag',
       {
         isEnabled: vi.fn().mockReturnValue(false),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
     ],
@@ -56,6 +58,7 @@ describe('requireFeatureFlagAccess', () => {
         isEnabled: vi.fn(() => {
           throw new Error('SDK failure')
         }),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
     ],
@@ -110,6 +113,7 @@ describe('learning analytics services', () => {
       user,
       featureFlags: {
         isEnabled: vi.fn().mockReturnValue(false),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
       prisma,

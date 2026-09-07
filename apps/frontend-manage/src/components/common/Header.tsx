@@ -30,7 +30,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
+import { useManageAiCapability } from '../featureFlags/ManageFeatureFlagProvider'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
@@ -46,7 +46,7 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
-  const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const { state: aiCapability } = useManageAiCapability()
   const betaSignupEnabled = useFeatureFlag('beta-signup')
   const canDiscoverBetaFeatures =
     betaSignupEnabled &&
@@ -168,67 +168,72 @@ function Header({
         content: 'flex flex-col gap-0.5',
       },
     },
-    ...(aiFeaturesEnabled
-      ? [
-          {
-            type: 'dropdown',
-            key: 'ai-menubar-item',
-            label: t('manage.general.ai'),
-            icon: faWandMagicSparkles,
-            active:
-              router.pathname.startsWith('/resources/knowledgeBases') ||
-              router.pathname === '/resources/chatbots' ||
-              router.pathname === '/elements/generate',
-            elements: [
-              {
-                key: 'element-generation-item',
-                type: 'link' as const,
-                label: t('manage.elementGeneration.title'),
-                onClick: () => router.push('/elements/generate'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'element-generation' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-              {
-                key: 'knowledge-bases-item',
-                type: 'link' as const,
-                label: t('kb.title'),
-                onClick: () => router.push('/resources/knowledgeBases'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'knowledge-bases' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-              {
-                key: 'chatbots-item',
-                type: 'link' as const,
-                label: t('manage.resources.chatbots'),
-                onClick: () => router.push('/resources/chatbots'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'chatbots' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-            ],
-            data: { cy: 'ai' },
-            className: {
-              icon: 'text-orange-400',
-              content: 'flex flex-col gap-0.5',
-            },
-          } as NavigationItemProps,
-        ]
-      : []),
   ]
+
+  const aiNavigation: NavigationDropdownItemProps = {
+    type: 'dropdown',
+    key: 'ai-menubar-item',
+    label: t('manage.general.ai'),
+    icon: faWandMagicSparkles,
+    disabled: aiCapability !== 'enabled',
+    active:
+      router.pathname.startsWith('/resources/knowledgeBases') ||
+      router.pathname === '/resources/chatbots' ||
+      router.pathname === '/elements/generate',
+    elements: [
+      {
+        key: 'element-generation-item',
+        type: 'link' as const,
+        label: t('manage.elementGeneration.title'),
+        onClick: () => router.push('/elements/generate'),
+        badge: t('manage.general.betaFeatures'),
+        data: { cy: 'element-generation' },
+        className: {
+          label: 'bg-opacity-100',
+          text: 'mr-8',
+          badge: 'bg-green-700 hover:bg-green-800',
+        },
+      },
+      {
+        key: 'knowledge-bases-item',
+        type: 'link' as const,
+        label: t('kb.title'),
+        onClick: () => router.push('/resources/knowledgeBases'),
+        badge: t('manage.general.betaFeatures'),
+        data: { cy: 'knowledge-bases' },
+        className: {
+          label: 'bg-opacity-100',
+          text: 'mr-8',
+          badge: 'bg-green-700 hover:bg-green-800',
+        },
+      },
+      {
+        key: 'chatbots-item',
+        type: 'link' as const,
+        label: t('manage.resources.chatbots'),
+        onClick: () => router.push('/resources/chatbots'),
+        badge: t('manage.general.betaFeatures'),
+        data: { cy: 'chatbots' },
+        className: {
+          label: 'bg-opacity-100',
+          text: 'mr-8',
+          badge: 'bg-green-700 hover:bg-green-800',
+        },
+      },
+    ],
+    data: { cy: 'ai' },
+    className: {
+      trigger:
+        aiCapability === 'temporarilyUnavailable'
+          ? 'data-disabled:pointer-events-auto'
+          : undefined,
+      icon: 'text-orange-400',
+      content: 'flex flex-col gap-0.5',
+    },
+  }
+  const aiMenu = (
+    <Navigation items={[aiNavigation]} className={{ root: 'shadow-none' }} />
+  )
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
     ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
@@ -393,6 +398,18 @@ function Header({
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
+          {aiCapability === 'temporarilyUnavailable' ? (
+            <Tooltip
+              tooltip={t('manage.ai.temporarilyUnavailableDescription')}
+              delay={0}
+              dataContent={{ cy: 'ai-disabled-reason' }}
+              className={{ tooltip: 'z-30' }}
+            >
+              {aiMenu}
+            </Tooltip>
+          ) : aiCapability === 'enabled' ? (
+            aiMenu
+          ) : null}
           {learningAnalyticsEnabled ? (
             analyticsMenu
           ) : (
