@@ -126,15 +126,17 @@ function AsyncTaskRow({
     >
       <AsyncTaskStatusIcon task={task} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           <FontAwesomeIcon
             aria-hidden="true"
-            className="h-3 w-3 shrink-0 text-slate-500"
+            className="h-3 w-3 shrink-0"
             icon={getTaskIcon(task.kind)}
           />
           <span className="truncate">{taskKindLabel}</span>
         </div>
-        <div className="truncate text-sm text-slate-700">{taskName}</div>
+        <div className="mt-0.5 truncate text-sm font-semibold text-slate-800">
+          {taskName}
+        </div>
         {task.kind === AsyncTaskKind.CourseDuplication && task.targetName ? (
           <div className="truncate text-xs text-slate-500">
             {t('manage.asyncTasks.courseDuplicationSource', {
