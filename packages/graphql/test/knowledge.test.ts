@@ -26,6 +26,20 @@ import {
 } from 'graphql'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+
+vi.mock('@/src/lib/config/toolNames', async () =>
+  vi.importActual('../../../apps/chat/src/lib/config/toolNames.ts')
+)
+vi.mock('@/src/lib/server/mcpRuntimePolicy', async () =>
+  vi.importActual('../../../apps/chat/src/lib/server/mcpRuntimePolicy.ts')
+)
+const { resolveMcpScope } = await vi.importActual<{
+  resolveMcpScope: (
+    configurations: readonly unknown[],
+    selectedMode: string,
+    effectiveConfigurations: readonly unknown[]
+  ) => string[] | undefined
+}>('../../../apps/chat/src/services/mcpScope.ts')
 import {
   attachKbToChatbot,
   confirmKbFileReplacement,
@@ -567,6 +581,61 @@ describe('Integration tests for knowledge base CRUD', () => {
       { kbId: firstKb.id, chatbotId: chatbot.id },
       userOneCtx
     )
+
+    const readConfigurations = () =>
+      prisma.chatbotMCPConfig.findMany({
+        where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+        include: { mcpServer: { select: { id: true, name: true } } },
+        orderBy: { chatMode: 'asc' },
+      })
+    const expectScopedConfigurations = async (kbId: string) => {
+      const configurations = await readConfigurations()
+      expect(configurations).toHaveLength(2)
+      expect(configurations).toEqual([
+        expect.objectContaining({
+          chatMode: 'explainer',
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: kbId,
+          },
+          isEnabled: true,
+        }),
+        expect.objectContaining({
+          chatMode: 'tutor',
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: kbId,
+          },
+          isEnabled: true,
+        }),
+      ])
+      expect(
+        resolveMcpScope(
+          configurations,
+          'tutor',
+          configurations.filter(
+            (configuration) => configuration.chatMode === 'tutor'
+          )
+        )
+      ).toEqual([kbId])
+      expect(
+        resolveMcpScope(
+          configurations,
+          'explainer',
+          configurations.filter(
+            (configuration) => configuration.chatMode === 'explainer'
+          )
+        )
+      ).toEqual([kbId])
+      return configurations
+    }
+
+    await expectScopedConfigurations(firstKb.id)
+
     await attachKbToChatbot(
       { kbId: secondKb.id, chatbotId: chatbot.id },
       userOneCtx
@@ -581,23 +650,16 @@ describe('Integration tests for knowledge base CRUD', () => {
       expect.objectContaining({ kbId: secondKb.id }),
     ])
 
-    const configurations = await prisma.chatbotMCPConfig.findMany({
-      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
-      orderBy: { chatMode: 'asc' },
-    })
-    expect(configurations).toHaveLength(2)
-    expect(configurations).toEqual([
-      expect.objectContaining({
-        chatMode: 'explainer',
-        allowedTools: ['doc_query'],
-        isEnabled: true,
-      }),
-      expect.objectContaining({
-        chatMode: 'tutor',
-        allowedTools: ['doc_query'],
-        isEnabled: true,
-      }),
-    ])
+    const configurations = await expectScopedConfigurations(secondKb.id)
+    expect(
+      resolveMcpScope(
+        configurations,
+        'tutor',
+        configurations.filter(
+          (configuration) => configuration.chatMode === 'tutor'
+        )
+      )
+    ).not.toContain(firstKb.id)
   })
 
   it('serializes concurrent replacements to one enabled binding', async () => {
@@ -729,9 +791,22 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(0)
     const configurations = await prisma.chatbotMCPConfig.findMany({
       where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+      include: { mcpServer: { select: { id: true, name: true } } },
     })
     expect(configurations).toHaveLength(2)
     expect(configurations.every(({ isEnabled }) => !isEnabled)).toBe(true)
+    const enabledConfigurations = configurations.filter(
+      ({ isEnabled }) => isEnabled
+    )
+    expect(
+      resolveMcpScope(
+        enabledConfigurations,
+        'tutor',
+        enabledConfigurations.filter(
+          (configuration) => configuration.chatMode === 'tutor'
+        )
+      )
+    ).toBeUndefined()
   })
 
   it('disables chatbot retrieval when its knowledge base is tombstoned', async () => {
