@@ -225,10 +225,17 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-The root dependency pins `@devrouter/cli` to exact version `0.0.55`; its reviewed
-minimum-release-age exception is exact as well. The package's optional native
-SSH helpers are explicitly denied build scripts because profile planning has no
-Docker or SSH path.
+CI installs `@devrouter/cli` version `0.0.55` through
+`.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
+scripts disabled. The shard action uses the trusted control checkout's installer
+and passes its absolute executable path to the runtime adapter, including for
+older caller branches. The codebase-check job uses the same installer for real
+profile-contract tests. No Docker or SSH setup runs through this CLI in CI.
+Local launchers use the host installation, excluding workspace executable bins,
+and check its version against `.devrouter.yml` before runtime access. Set
+`KLICKER_DEVROUTER_BIN` to an absolute host executable when PATH is ambiguous.
+Devrouter is not a repository dependency; update the reviewed CI tool release
+alongside `.devrouter.yml` when raising the required version.
 The repository-owned contract maps app identities to literal Turbo filters and
 loopback readiness endpoints, constrains managed services, and requires the
 exact process marker. `util/playwright-profile-runtime.mjs` remains a thin
