@@ -1049,7 +1049,11 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
 })
 
 test('requires explicit write credentials and keeps raw tokens out of Git inheritance', (t) => {
-  for (const name of ['GITHUB_TOKEN', 'STG_PROMOTION_TOKEN']) {
+  for (const name of [
+    'GITHUB_TOKEN',
+    'STG_PROMOTION_TOKEN',
+    'INPUT_GITHUB-TOKEN',
+  ]) {
     const previous = process.env[name]
     t.after(() => {
       if (previous === undefined) delete process.env[name]
@@ -1069,6 +1073,7 @@ test('requires explicit write credentials and keeps raw tokens out of Git inheri
   pushReleaseRefWithLease({ ...input, gitToken: 'synthetic-app-token' })
   for (const { args, options } of calls) {
     assert.equal(options.env.GITHUB_TOKEN, undefined)
+    assert.equal(options.env['INPUT_GITHUB-TOKEN'], undefined)
     assert.equal(options.env.STG_PROMOTION_TOKEN, undefined)
     assert.doesNotMatch(JSON.stringify(args), /synthetic-/)
     assert.equal(

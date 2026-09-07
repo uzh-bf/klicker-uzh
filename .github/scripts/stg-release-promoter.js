@@ -1137,6 +1137,7 @@ function gitEnvironment(gitToken, repositoryUrl) {
     GIT_TERMINAL_PROMPT: '0',
   }
   delete environment.GITHUB_TOKEN
+  delete environment['INPUT_GITHUB-TOKEN']
   delete environment.STG_PROMOTION_TOKEN
   if (!gitToken) return environment
 
