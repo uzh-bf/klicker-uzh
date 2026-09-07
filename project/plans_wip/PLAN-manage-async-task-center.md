@@ -95,6 +95,15 @@ duplication status into the generic task contract.
 4. Regenerate Prisma/GraphQL outputs, sync Analytics, verify static and runtime
    behavior, update async-worker documentation, and run independent review.
 
+## Future work
+
+- Support tasks with multiple meaningful stages by keeping the generic
+  `QUEUED`, `RUNNING`, `SUCCEEDED`, and `FAILED` lifecycle and adding optional,
+  producer-specific phase or progress metadata. Do not add task-specific phases
+  to the shared status enum. Show a localized phase label when progress cannot
+  be measured reliably, and expose counts or percentages only when the producer
+  can report them truthfully.
+
 ## Progress
 
 - 2026-08-28: Approved visual and product direction. Traced the current Manage
