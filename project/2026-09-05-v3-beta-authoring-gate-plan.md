@@ -40,17 +40,25 @@ including safe diagnostic fields and denial before provider work. CI filter
 checks and retained GrowthBook management-variable/Secret checks pass. No model
 provider, database, managed runtime or live GrowthBook service was contacted.
 GraphQL and Chat typechecks, documentation links, AGENTS.md validation, syncpack
-and formatting pass, with one pre-existing Chat `any` warning. Six of seven
-root lint tasks pass; unchanged Analytics cannot locate its pinned Python in
-the offline checks container and its attempted download fails. This is not
-full-root lint or frozen-install proof. Correction commit `7357b9e2bb` passed
+and formatting pass, with one pre-existing Chat `any` warning. All seven root
+lint tasks have passing evidence. Six passed in the offline checks container;
+Analytics subsequently passed with frozen dependencies and Python 3.12.13 in
+a temporary container-local environment. The initial offline download failure
+is resolved without changing retained environments or dependency files.
+This is not frozen Node-install proof: the installed node_modules still reports
+a minimumReleaseAgeExclude mismatch. Correction commit `7357b9e2bb` passed
 the native simplifier and risk-selected slice review with no findings.
 The slice review is recorded in
 `project/_local/reviews/2026-09-07-pr5799-readiness-corrections-slice-review.md`.
 Prisma-sync and removed-doc-artifact checks also pass. All disposable checks
 containers exited and were removed; the managed runtime was not started.
-The correction is local only; publication and whole-package readiness remain
-pending the broader verification/review gates, with the Analytics gap above.
+The integrated-final addendum reviewed the complete 86-path PR range through
+`d55be1e536` and found no source blocker, reusing accepted unchanged-content
+review evidence. Its only finding was the stale Analytics status corrected here.
+No further source change or review rerun is needed for this evidence update.
+Source publication to the existing PR is the next action. Current-head hosted
+CI, GitGuardian disposition and hosted final-review completion remain merge
+gates; production activation remains separately withheld.
 Existing hosted final review is
 incomplete, not a code verdict; do not claim merge or production readiness.
 
