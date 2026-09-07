@@ -4,6 +4,15 @@
 
 ### Current acceptance status
 
+Implementation is committed, with the unused legacy panel helper and its tests
+removed following the native simplifier's accepted finding. Focused verification
+after that removal passes all 35 retrieval/chip tests, Chat typechecking, and
+formatting. Broader passing checks below preceded this behavior-preserving
+removal. The exact task runtime is again verified Stopped with zero routes;
+data and the worktree are retained. Target mergeability against fetched `v3`
+passes without integrating unrelated changes. Bounded slice review is active;
+integrated final review and draft publication are still pending.
+
 Both focused host browser tests pass through the explicit Chat-profile,
 preserve-database launcher path. The larger-result test proves shared citation
 numbering across two documents-mode calls, disclosure from five to seven chunks,
