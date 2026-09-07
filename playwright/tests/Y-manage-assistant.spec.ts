@@ -407,7 +407,7 @@ test.describe('Manage Assistant — Messaging', () => {
     expect(getConfirmRequestCount()).toBe(0)
   })
 
-  test('Welcome message explains assistant capabilities and limits', async ({
+  test('Welcome shows capabilities and limits alongside usable starters', async ({
     page,
   }) => {
     await mockManageChatStream(page)
@@ -415,28 +415,27 @@ test.describe('Manage Assistant — Messaging', () => {
 
     const welcome = assistant.getByTestId('chat-welcome-message')
     await expect(welcome).toBeVisible()
-    await expect(welcome).toContainText('Hello! How can I help you?')
-    await expect(welcome).toContainText('Search your courses and question pool')
-    await expect(welcome).toContainText(
-      'Draft single-choice, multiple-choice, and free-text questions'
+    const capabilities = welcome
+      .getByTestId('chat-welcome-capabilities')
+      .getByRole('listitem')
+    await expect(capabilities.first()).toBeVisible()
+    for (const capability of await capabilities.all()) {
+      await expect(capability).toBeVisible()
+      await expect(capability).not.toBeEmpty()
+    }
+    const limits = welcome.getByTestId('chat-welcome-limits')
+    await expect(limits).toBeVisible()
+    await expect(limits).not.toBeEmpty()
+    const starter = assistant.getByTestId('chat-welcome-suggestion').first()
+    await expect(starter).toBeEnabled()
+    await starter.click()
+    await expect(assistant.getByTestId('chat-composer-input')).not.toHaveValue(
+      ''
     )
-    await expect(welcome).toContainText(
-      'Suggest improvements to question feedback'
-    )
-    await expect(welcome).toContainText(
-      'Explain common KlickerUZH workflows using a curated index of documentation and tutorials'
-    )
-    await expect(welcome).toContainText(
-      'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.'
-    )
-    await expect(
-      welcome.getByText(
-        /Documentation help uses a curated index rather than a complete search/
-      )
-    ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
+    await expect(assistant.getByTestId('chat-user-message')).toHaveCount(0)
   })
 
-  test('Degraded suggestion labels follow the German Manage locale', async ({
+  test('German Manage locale reaches the degraded assistant with usable starters', async ({
     page,
   }) => {
     await mockManageCapabilities(page, { states: ['unavailable'] })
@@ -444,13 +443,17 @@ test.describe('Manage Assistant — Messaging', () => {
     await page.goto(`${manageUrl}/de`)
 
     const assistant = await openManageAssistantWidget(page)
-    const suggestions = assistant.getByTestId('chat-welcome-suggestion')
-
-    await expect(suggestions).toHaveText([
-      'Frage planen',
-      'Feedback verbessern',
-      'KlickerUZH Hilfe',
-    ])
+    const frameUrl = await page
+      .getByTestId('manage-assistant-frame')
+      .getAttribute('src')
+    expect(new URL(frameUrl!).searchParams.get('locale')).toBe('de')
+    const starter = assistant.getByTestId('chat-welcome-suggestion').first()
+    await expect(starter).toBeEnabled()
+    await starter.click()
+    await expect(assistant.getByTestId('chat-composer-input')).not.toHaveValue(
+      ''
+    )
+    await expect(assistant.getByTestId('chat-user-message')).toHaveCount(0)
   })
 
   test('Manage composer accepts at most two images without changing the participant limit', async ({

@@ -1,4 +1,5 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { unfenceToolResultText } from '../../services/toolFenceSyntax'
 import type { ChatSource, ChatSourceType } from './types'
 
 export const MAX_SOURCES = 12
@@ -165,6 +166,10 @@ export function parseDocQueryPayload(
       return textItem ? parseJsonObject(textItem.text) : undefined
     }
 
+    if ('toolResult' in envelope) {
+      return parseDocQueryPayload(envelope.toolResult)
+    }
+
     return envelope
   }
 
@@ -184,7 +189,7 @@ function parseStructuredContent(
 function parseJsonObject(raw: unknown): Record<string, unknown> | undefined {
   if (typeof raw !== 'string') return undefined
   try {
-    const parsed = JSON.parse(raw)
+    const parsed = JSON.parse(unfenceToolResultText(raw))
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : undefined

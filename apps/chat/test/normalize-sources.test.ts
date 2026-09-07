@@ -3,6 +3,7 @@ import {
   isDocQueryToolName,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
+import { fenceToolResultText } from '../src/services/toolOutputFencing'
 
 function toolCallPart(toolName: string, result: unknown, isError = false) {
   return { type: 'tool-call', toolName, result, isError }
@@ -475,6 +476,57 @@ describe('normalizeSourcesFromParts', () => {
     expect(result).toHaveLength(1)
     expect(result[0]?.title).toBe('kapitel-4.pdf')
     expect(result[0]?.page).toBe(4)
+  })
+
+  test('normalizes sources from a fenced composite-tool result', () => {
+    const payload = {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'https://www.klicker.uzh.ch/tutorials/live_quiz/',
+          reference_type: 'url',
+          source_type: 'webpage',
+          title: 'Live Quizzes',
+          chunks: [{ content: 'Create and run a live quiz.' }],
+        },
+      ],
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('klicker_docs_doc_query', {
+        content: [
+          {
+            type: 'text',
+            text: fenceToolResultText(JSON.stringify(payload), 'request-1'),
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      title: 'Live Quizzes',
+      type: 'link',
+      url: 'https://www.klicker.uzh.ch/tutorials/live_quiz/',
+    })
+  })
+
+  test('unwraps a legacy toolResult envelope before source parsing', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('klicker_docs_doc_query', {
+        toolResult: JSON.stringify({
+          mode: 'documents',
+          sources: [
+            {
+              reference: 'https://www.klicker.uzh.ch/faq/',
+              title: 'FAQ',
+              chunks: [{ content: 'Frequently asked questions.' }],
+            },
+          ],
+        }),
+      }),
+    ])
+
+    expect(result[0]?.url).toBe('https://www.klicker.uzh.ch/faq/')
   })
 
   test('prefers structuredContent over text content in the envelope', () => {

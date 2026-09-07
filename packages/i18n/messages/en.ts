@@ -111,7 +111,7 @@ export default {
       capabilityNoSaveDraft: 'Prepare question drafts without saving them',
       capabilityFeedback: 'Suggest improvements to question feedback',
       capabilityDocumentation:
-        'Search the KlickerUZH documentation bundled with this release and link the matching source pages',
+        'Search the indexed public KlickerUZH documentation and link the matching source pages',
       capabilityChecking: 'Checking live data and draft availability…',
       capabilityReadOnly:
         'Live lookups are available, but this session cannot save draft proposals. No-save drafting and documentation help remain available.',
@@ -146,7 +146,7 @@ export default {
         documentation: 'KlickerUZH help',
       },
       limitsNote:
-        'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.',
+        'Documentation help uses the public documentation index with a release-bundled fallback. The assistant never publishes or edits existing content.',
       degradedLimitsNote:
         'Provide missing content directly when live lookup is unavailable. Nothing is saved without a proposal card and your confirmation.',
       proposalReview: {
@@ -353,6 +353,11 @@ export default {
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
+      searchingDocumentation: 'Searching KlickerUZH documentation...',
+      searchedDocumentation: 'Searched KlickerUZH documentation',
+      searchedDocumentationEmpty:
+        'Searched KlickerUZH documentation · no results',
+      searchDocumentationFailed: 'KlickerUZH documentation search failed',
       imageAnalyzed: 'Image analyzed',
     },
     sources: {

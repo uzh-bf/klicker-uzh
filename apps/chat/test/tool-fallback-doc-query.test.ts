@@ -86,6 +86,14 @@ describe('parseDocQueryArgsQuery', () => {
     ).toBe('What is the deadline?')
   })
 
+  test('extracts the Manage documentation question field', () => {
+    expect(
+      parseDocQueryArgsQuery(
+        JSON.stringify({ question: 'How do I create a live quiz?' })
+      )
+    ).toBe('How do I create a live quiz?')
+  })
+
   test('ignores extra fields alongside query', () => {
     expect(
       parseDocQueryArgsQuery(

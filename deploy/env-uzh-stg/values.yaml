@@ -186,6 +186,10 @@ chat:
   telemetry:
     enabled: false
 
+  publicDocsDocQuery:
+    enabled: true
+    url: 'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker-public-docs'
+
   automaticModels:
     primaryId: auto
     fallbackId: gpt-5.6-luna

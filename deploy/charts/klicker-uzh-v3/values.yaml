@@ -231,6 +231,10 @@ chat:
     audience: ''
     keyId: ''
 
+  publicDocsDocQuery:
+    enabled: false
+    url: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always

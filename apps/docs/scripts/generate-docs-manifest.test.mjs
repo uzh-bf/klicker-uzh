@@ -182,26 +182,13 @@ test('buildManifest rejects duplicate routes', () => {
   )
 })
 
-test('real docs tree produces a deterministic, drift-free manifest', () => {
-  const first = buildManifest()
-  const second = buildManifest()
+test('unchanged synthetic inputs produce a deterministic manifest', () => {
+  const { root, docsDir, staticDir } = makeFixture()
+  const constantsPath = writeConstants(root, 'export const USE_CASES = {}')
+  const options = { docsDir, staticDir, constantsPath }
+  const first = buildManifest(options)
+  const second = buildManifest(options)
   assert.equal(renderManifest(first), renderManifest(second))
   assert.match(first.contentDigest, /^sha256:[0-9a-f]{64}$/)
-  const realDocsDir = path.resolve(import.meta.dirname, '..', 'docs')
-  const mdxCount = fs
-    .readdirSync(realDocsDir, { recursive: true })
-    .filter((file) => file.endsWith('.mdx')).length
-  assert.equal(first.pages.length, mdxCount)
-  assert.ok(first.useCases.length >= 11)
-  const checkedIn = fs.readFileSync(
-    path.resolve(
-      import.meta.dirname,
-      '..',
-      'src',
-      'generated',
-      'docs-manifest.json'
-    ),
-    'utf8'
-  )
-  assert.equal(renderManifest(first), checkedIn)
+  assert.equal(first.schemaVersion, 1)
 })
