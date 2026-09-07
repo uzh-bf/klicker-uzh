@@ -43,7 +43,14 @@ GraphQL and Chat typechecks, documentation links, AGENTS.md validation, syncpack
 and formatting pass, with one pre-existing Chat `any` warning. Six of seven
 root lint tasks pass; unchanged Analytics cannot locate its pinned Python in
 the offline checks container and its attempted download fails. This is not
-full-root lint or frozen-install proof. Committed correction review is pending.
+full-root lint or frozen-install proof. Correction commit `7357b9e2bb` passed
+the native simplifier and risk-selected slice review with no findings.
+The slice review is recorded in
+`project/_local/reviews/2026-09-07-pr5799-readiness-corrections-slice-review.md`.
+Prisma-sync and removed-doc-artifact checks also pass. All disposable checks
+containers exited and were removed; the managed runtime was not started.
+The correction is local only; publication and whole-package readiness remain
+pending the broader verification/review gates, with the Analytics gap above.
 Existing hosted final review is
 incomplete, not a code verdict; do not claim merge or production readiness.
 
