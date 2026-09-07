@@ -116,7 +116,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 - **stg** (`*.klicker.stg.df-app.ch`): the committed values retain `v3-ai` as their no-override fallback and keep all rollout annotations during the stability window. At Phase 1 activation, the Application will track `stg-release`; ArgoCD will resolve that ref to a commit and pass `$ARGOCD_APP_REVISION` as the forced-string Helm parameter `global.imageTag`, which overrides all 18 first-party image tags without editing the values file. See [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. Production stays on `v3`, receives no `global.imageTag` parameter, and keeps the existing release-tag flow.
-- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY` for beta enrollment. Its non-secret `GROWTHBOOK_BETA_SAVED_GROUP_ID` renders only from a configured `backendGraphql.betaSavedGroupId`; the chart default is empty. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
+- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
@@ -220,9 +220,19 @@ Operational notes:
   staging ArgoCD Application to track that ref and pass
   `global.imageTag=$ARGOCD_APP_REVISION` as a forced string. Preview, apply,
   runtime health, and acceptance remain separate evidence and approvals.
-- The controller uses the repository `GITHUB_TOKEN`; no promotion PAT,
-  pull-request permission, source-branch bypass actor, auto-merge setting, or
-  squash-title behavior is part of the new path.
+- API and Git fetch reads use `GITHUB_TOKEN` with `actions: read` and
+  `contents: read`. Only the lease-protected Git push uses the existing
+  `STG_PROMOTE_TOKEN`. Its credential must have repository contents write and
+  permission to write workflow files; the job token cannot provide the latter.
+  Confirm the existing credential's scope before activation. Missing write
+  credentials fail before Git runs, without falling back to the job token.
+  Dry-runs, disabled runs, and equal/stale no-ops require no write credential.
+  No pull-request permission, source-branch bypass actor, auto-merge setting,
+  or squash-title behavior is part of the new path.
+- Unlike `GITHUB_TOKEN`, a separate promotion credential can trigger workflows
+  on ref updates. Check the candidate's push/create filters and default-branch
+  downstream controllers before activation; a release-ref write must not
+  rebuild staging images. The publishers accept `v3`/`v3*`, not `stg-release`.
 
 The static contract test at
 `.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow

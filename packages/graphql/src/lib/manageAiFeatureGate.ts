@@ -1,6 +1,7 @@
 import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from './context.js'
+import { isFeatureFlagEnabled } from './featureFlags.js'
 
 export function manageAiFeatureFlagAttributes(
   user: ContextWithUser['user']
@@ -16,19 +17,7 @@ export function manageAiFeatureFlagAttributes(
 export async function isManageAiEnabled(
   ctx: ContextWithUser
 ): Promise<boolean> {
-  let flagEnabled = false
-
-  try {
-    flagEnabled =
-      ctx.featureFlags?.isEnabled(
-        'ai-beta',
-        manageAiFeatureFlagAttributes(ctx.user)
-      ) ?? false
-  } catch {
-    console.warn('[feature-flags] AI beta evaluation failed; denying access')
-  }
-
-  if (!flagEnabled) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     return false
   }
 
