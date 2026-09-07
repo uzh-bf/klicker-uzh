@@ -410,15 +410,9 @@ function writeAtomicIfChanged(outputPath, contents) {
   return true
 }
 
-export function generateDependencyMounts(
-  root = SCRIPT_ROOT,
-  { discover = discoverWorkspacePackages } = {}
-) {
+export function generateDependencyMounts(root = SCRIPT_ROOT) {
   const checkoutRoot = canonicalRoot(root)
-  const packagePaths = validateWorkspacePackagePaths(
-    checkoutRoot,
-    discover(checkoutRoot)
-  )
+  const packagePaths = discoverWorkspacePackages(checkoutRoot)
   const compose = createDependencyCompose(packagePaths)
   const outputPath = join(
     checkoutRoot,

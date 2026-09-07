@@ -229,11 +229,8 @@ test('a discovery or validation failure preserves the previous artifact', () => 
     const previousBytes = readFileSync(first.outputPath)
     const previousMtime = statSync(first.outputPath, { bigint: true }).mtimeNs
 
-    assert.throws(() =>
-      generateDependencyMounts(root, {
-        discover: () => ['../outside'],
-      })
-    )
+    writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages: [\n')
+    assert.throws(() => generateDependencyMounts(root))
 
     assert.deepEqual(readFileSync(first.outputPath), previousBytes)
     assert.equal(
