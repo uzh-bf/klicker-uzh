@@ -180,7 +180,11 @@ export async function* activeAssessmentMediaReferences(
         eventCursor = events.at(-1)!.eventId
       }
     }
-    scopeCursor = scopes.at(-1)!
+    const lastScope = scopes.at(-1)!
+    scopeCursor = {
+      liveQuizId: lastScope.liveQuizId,
+      lifecycleEpoch: lastScope.lifecycleEpoch,
+    }
   }
 
   for (const [blobName, reference] of references) {

@@ -29,10 +29,15 @@ type EventInput = {
   correlationId: string
   eventType: string
   recordedAt: Date
+  hatchetEventId?: string
 }
 
 async function createOutboxEvent(input: EventInput, index: number) {
   const token = randomUUID().replaceAll('-', '').repeat(2)
+  const canonicalEnvelope = JSON.stringify({
+    fixture: index,
+    hatchetEventId: input.hatchetEventId ?? input.correlationId,
+  })
   return prisma.assessmentAuditOutboxEvent.create({
     data: {
       eventId: randomUUID(),
@@ -51,8 +56,8 @@ async function createOutboxEvent(input: EventInput, index: number) {
       correlationId: input.correlationId,
       receivedAt: input.recordedAt,
       recordedAt: input.recordedAt,
-      canonicalEnvelope: '{}',
-      canonicalByteLength: index + 2,
+      canonicalEnvelope,
+      canonicalByteLength: Buffer.byteLength(canonicalEnvelope, 'utf8'),
     },
   })
 }
@@ -67,6 +72,10 @@ async function createScope(
       liveQuizId,
       lifecycleEpoch,
       coverageState,
+      ...(coverageState !== 'FAILED'
+        ? { baselineId: randomUUID(), baselineKind: 'CREATION' as const }
+        : {}),
+      activatedAt: coverageState === 'COVERED' ? new Date() : null,
     },
   })
 }
@@ -80,7 +89,7 @@ afterAll(async () => {
 })
 
 describe('assessment audit monitor PostgreSQL queries', () => {
-  it('counts exact covered submission gaps by quiz, epoch, and correlation', async () => {
+  it('counts exact covered submission gaps by quiz, epoch, correlation, and Hatchet command', async () => {
     const ids = Array.from({ length: 8 }, () => randomUUID())
     const [q1, q2, q3, q4, q5, q6, q7, q8] = ids
     const correlations = Array.from({ length: 6 }, () => randomUUID())
@@ -134,8 +143,8 @@ describe('assessment audit monitor PostgreSQL queries', () => {
         3
       )
 
-      // q3 has duplicate accepted rows but only one logical submission, and a
-      // duplicate terminal outcome.
+      // q3 has two Hatchet commands for one submission. A terminal for the
+      // first command must not hide the second command's missing outcome.
       await createScope(q3!, 1, 'COVERED')
       await createOutboxEvent(
         {
@@ -154,6 +163,7 @@ describe('assessment audit monitor PostgreSQL queries', () => {
           correlationId: correlations[2]!,
           eventType: 'SUBMISSION_SERVER_ACCEPTED',
           recordedAt: new Date('2026-08-11T08:04:01.000Z'),
+          hatchetEventId: 'second-command',
         },
         5
       )
@@ -206,6 +216,8 @@ describe('assessment audit monitor PostgreSQL queries', () => {
           liveQuizId: q8!,
           lifecycleEpoch: 1,
           coverageState: 'ACTIVATING',
+          baselineId: randomUUID(),
+          baselineKind: 'CREATION',
           updatedAt: new Date('2026-08-11T07:00:00.000Z'),
         },
       })
@@ -230,7 +242,7 @@ describe('assessment audit monitor PostgreSQL queries', () => {
       const counts: AuditMonitorCounts = await repository.readCounts()
 
       expect(counts.requiredMediaCaptureFailureCount).toBe(3)
-      expect(counts.coveredSubmissionWithoutTerminalCount).toBe(3)
+      expect(counts.coveredSubmissionWithoutTerminalCount).toBe(4)
       expect(counts.oldestCoveredSubmissionWithoutTerminalAt).toEqual(
         new Date('2026-08-11T08:00:00.000Z')
       )

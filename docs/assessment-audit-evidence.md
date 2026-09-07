@@ -130,6 +130,21 @@ without creating a second authoritative response.
 
 ## Contract and identity
 
+Owner exports cross-check the retention index against the independent locator
+inventory. Missing retention rows therefore produce explicit verification
+failures instead of silently disappearing from an export. The locator lookup
+filters by quiz and optional epoch, but Azure must scan non-key properties;
+this additional read cost is confined to owner exports. Until manifest sealing
+ships, simultaneous loss of both inventories cannot prove completeness.
+Missing rows are classified by their provider 404 response, while other read
+errors remain verification failures. A participant scope must match exactly,
+including the absence of a participant UUID on shared evidence.
+
+Playwright build artifacts must include `packages/audit/dist`: both Hatchet
+workers import the package at runtime. The build and shard actions are loaded
+from trusted `v3`, so this artifact-list change must reach that trusted branch
+before hosted stack checks can exercise the updated workers.
+
 `packages/audit/src/contract/event-registry.ts:EVENT_REGISTRY` is the single
 registry for stable event names and their delivery tier, emission path, evidence
 class, criticality, allowed recorder, producer owner, durability point, and
@@ -405,7 +420,9 @@ weeks. Production capacity and growth values are supplied through
 positive when monitoring is enabled.
 
 The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
-lifecycle epoch, and correlation ID. A migration-owned partial index covers
+lifecycle epoch, and correlation ID. The anti-join also matches the canonical envelope's
+`hatchetEventId`. Two transport commands sharing a submission UUID each need
+their own terminal outcome. A migration-owned partial index covers
 `SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates
 terminal-event lookups; Prisma does not currently express the partial-index
 predicate in the schema. Before launch, staging must capture
@@ -457,6 +474,22 @@ Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer
 commands, late and missing-participation rejection, persistence/evidence
 rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
+It also covers inactive participation, delayed processing and retries across
+reopening, and stale Redis/database block executions. The Response API forwards
+the execution number from the signed correlation token, never from a caller
+field. The processor binds acceptance to that execution and the receipt-time
+audit epoch; subsequent retries keep the same command binding. A completed old
+command is replayed without changing the new lifecycle; an unfinished old
+command receives a terminal rejection in its original epoch. Redis aggregation
+checks execution atomically with its writes. Quiz reset serializes with response
+persistence and captures deleted-response evidence inside that transaction.
+
+Deploy the Response API and assessment processor contract together. Drain
+pre-upgrade Hatchet submissions before enabling coverage: a legacy queued
+command without a signed execution binding is explicitly rejected, not assigned
+the current execution. Owner exports require matching baseline IDs and epochs
+for coverage, preserve duplicate-root conflicts, and report
+`EVIDENCE_INCOMPLETE` instead of `COVERED` when any other event fails verification.
 The Playwright core workflow also proves that a PWA retry reuses the same
 submission UUID; the Response API tests prove the receipt contract itself.
 These local proofs do not replace the staging Azure conformance, owner export,

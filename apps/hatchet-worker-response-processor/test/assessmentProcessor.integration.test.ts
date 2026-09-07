@@ -144,6 +144,13 @@ describe.runIf(runDatabaseTests)(
     })
 
     beforeEach(async () => {
+      await prisma.assessmentAuditScope.deleteMany({
+        where: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: { gt: 1 } },
+      })
+      await prisma.elementBlock.update({
+        where: { id: blockId },
+        data: { execution: 1, startedAt: null, closedAt: null },
+      })
       await prisma.liveQuizResponse.deleteMany({
         where: { instanceId },
       })
@@ -174,6 +181,7 @@ describe.runIf(runDatabaseTests)(
         participantId: PARTICIPANT_ID,
         liveQuizId: LIVE_QUIZ_ID,
         instanceId: String(instanceId),
+        blockExecution: 1,
         response: { choices: [{ ix: 0, selected: true }] },
         responseTimestamp: Date.parse('2026-08-12T12:00:00.000Z'),
         receivedAt: '2026-08-12T12:00:00.000Z',
@@ -432,13 +440,13 @@ describe.runIf(runDatabaseTests)(
           testHarness.context,
           testHarness.dependencies
         )
-        const reused = await processAssessmentResponse(
-          command({ response: { choices: [{ ix: 1, selected: true }] } }),
-          testHarness.context,
-          testHarness.dependencies
-        )
-
-        expect(reused.status).toBe(208)
+        await expect(
+          processAssessmentResponse(
+            command({ response: { choices: [{ ix: 1, selected: true }] } }),
+            testHarness.context,
+            testHarness.dependencies
+          )
+        ).rejects.toThrow('SUBMISSION_ID_SCOPE_MISMATCH')
         expect(testHarness.push).toHaveBeenCalledTimes(1)
       } finally {
         await prisma.assessmentAuditScope.create({
@@ -574,7 +582,7 @@ describe.runIf(runDatabaseTests)(
       ).toBe(1)
     })
 
-    it('rolls back persistence and records a retryable processing failure', async () => {
+    it('rejects a missing authoritative instance before persistence', async () => {
       const testHarness = harness()
 
       await expect(
@@ -594,7 +602,7 @@ describe.runIf(runDatabaseTests)(
         await prisma.assessmentAuditOutboxEvent.count({
           where: {
             liveQuizId: LIVE_QUIZ_ID,
-            eventType: 'SUBMISSION_PROCESSING_FAILED',
+            eventType: 'SUBMISSION_REJECTED',
           },
         })
       ).toBe(1)
@@ -605,6 +613,199 @@ describe.runIf(runDatabaseTests)(
             eventType: 'SUBMISSION_PERSISTED',
           },
         })
+      ).toBe(0)
+    })
+
+    it.each([
+      'delayed',
+      'failed',
+      'persisted',
+      'persisted-failed',
+    ] as const)('keeps a %s command in its original lifecycle after reopening', async (state) => {
+      const testHarness = harness()
+      if (state === 'failed') {
+        testHarness.dependencies.redis.hgetall.mockRejectedValueOnce(
+          new Error('redis temporarily unavailable')
+        )
+        await expect(
+          processAssessmentResponse(
+            command(),
+            testHarness.context,
+            testHarness.dependencies
+          )
+        ).rejects.toThrow('redis temporarily unavailable')
+      } else if (state === 'persisted' || state === 'persisted-failed') {
+        if (state === 'persisted-failed')
+          testHarness.push.mockRejectedValueOnce(
+            new Error('aggregation unavailable')
+          )
+        const first = processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+        if (state === 'persisted-failed')
+          await expect(first).rejects.toThrow('aggregation unavailable')
+        else await first
+        await prisma.liveQuizResponse.deleteMany({ where: { instanceId } })
+        testHarness.push.mockClear()
+      }
+      await prisma.assessmentAuditScope.create({
+        data: {
+          liveQuizId: LIVE_QUIZ_ID,
+          lifecycleEpoch: 2,
+          coverageState: 'COVERED',
+          baselineId: '10000000-0000-4000-8000-000000000007',
+          baselineKind: 'REOPENING',
+          activatedAt: new Date('2026-08-12T13:00:00.000Z'),
+        },
+      })
+      const replay = processAssessmentResponse(
+        command(),
+        testHarness.context,
+        testHarness.dependencies
+      )
+      if (state === 'persisted' || state === 'persisted-failed')
+        await expect(replay).resolves.toMatchObject({ status: 208 })
+      else await expect(replay).rejects.toThrow('SUBMISSION_LIFECYCLE_CHANGED')
+      expect(testHarness.push).not.toHaveBeenCalled()
+      expect(
+        await prisma.liveQuizResponse.count({ where: { instanceId } })
+      ).toBe(0)
+      expect(
+        await prisma.assessmentAuditOutboxEvent.count({
+          where: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: 2 },
+        })
+      ).toBe(0)
+      expect(
+        await prisma.assessmentAuditOutboxEvent.count({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+            eventType:
+              state === 'persisted' || state === 'persisted-failed'
+                ? 'SUBMISSION_PERSISTED'
+                : 'SUBMISSION_REJECTED',
+          },
+        })
+      ).toBe(1)
+      if (state === 'persisted-failed') {
+        await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+        expect(
+          await prisma.assessmentAuditOutboxEvent.count({
+            where: {
+              liveQuizId: LIVE_QUIZ_ID,
+              lifecycleEpoch: 1,
+              eventType: 'SUBMISSION_PROCESSING_RECOVERED',
+            },
+          })
+        ).toBe(1)
+      }
+    })
+
+    it.each([
+      'redis',
+      'database',
+      'reactivated',
+    ] as const)('rejects an outdated block binding from %s', async (source) => {
+      const testHarness = harness()
+      if (source === 'database')
+        await prisma.elementBlock.update({
+          where: { id: blockId },
+          data: { execution: 2 },
+        })
+      else
+        testHarness.dependencies.redis.hgetall.mockResolvedValue({
+          ...testHarness.info,
+          ...(source === 'redis'
+            ? { blockExecution: '2' }
+            : {
+                blockStartedAt: String(Date.parse('2026-08-12T13:00:00.000Z')),
+              }),
+        })
+      await expect(
+        processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_BLOCK_EXECUTION_CHANGED')
+      expect(
+        await prisma.liveQuizResponse.count({ where: { instanceId } })
+      ).toBe(0)
+      expect(testHarness.push).not.toHaveBeenCalled()
+    })
+
+    it('persists a fresh command in the reopened lifecycle', async () => {
+      await prisma.assessmentAuditScope.create({
+        data: {
+          liveQuizId: LIVE_QUIZ_ID,
+          lifecycleEpoch: 2,
+          coverageState: 'COVERED',
+          baselineId: '10000000-0000-4000-8000-000000000007',
+          baselineKind: 'REOPENING',
+          activatedAt: new Date('2026-08-12T13:00:00.000Z'),
+        },
+      })
+      const testHarness = harness()
+      await expect(
+        processAssessmentResponse(
+          command({
+            receivedAt: '2026-08-12T14:00:00.000Z',
+            responseTimestamp: Date.parse('2026-08-12T14:00:00.000Z'),
+            transportAttemptedAt: '2026-08-12T14:00:00.100Z',
+          }),
+          testHarness.context,
+          {
+            ...testHarness.dependencies,
+            now: () => new Date('2026-08-12T14:00:01.000Z'),
+          }
+        )
+      ).resolves.toMatchObject({ status: 200 })
+      expect(
+        await prisma.assessmentAuditOutboxEvent.count({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 2,
+            eventType: 'SUBMISSION_PERSISTED',
+          },
+        })
+      ).toBe(1)
+    })
+
+    it('rejects a legacy queued command without a signed execution binding', async () => {
+      const testHarness = harness()
+      await expect(
+        processAssessmentResponse(
+          command({ blockExecution: undefined as unknown as number }),
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_BLOCK_EXECUTION_MISSING')
+      expect(
+        await prisma.liveQuizResponse.count({ where: { instanceId } })
+      ).toBe(0)
+    })
+
+    it('rejects a response after database closure even while Redis is stale', async () => {
+      await prisma.elementBlock.update({
+        where: { id: blockId },
+        data: { closedAt: new Date('2026-08-12T11:59:59.000Z') },
+      })
+      const testHarness = harness()
+      await expect(
+        processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_AFTER_BLOCK_CLOSE')
+      expect(
+        await prisma.liveQuizResponse.count({ where: { instanceId } })
       ).toBe(0)
     })
 
@@ -637,6 +838,50 @@ describe.runIf(runDatabaseTests)(
       expect(rejection.canonicalEnvelope).toContain(
         'SUBMISSION_AFTER_BLOCK_CLOSE'
       )
+    })
+
+    it('rejects an inactive participant without persisting a response', async () => {
+      const testHarness = harness()
+      await prisma.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID,
+            participantId: PARTICIPANT_ID,
+          },
+        },
+        data: { isActive: false },
+      })
+      try {
+        await expect(
+          processAssessmentResponse(
+            command(),
+            testHarness.context,
+            testHarness.dependencies
+          )
+        ).rejects.toThrow('PARTICIPATION_NOT_FOUND')
+        expect(
+          await prisma.liveQuizResponse.count({ where: { instanceId } })
+        ).toBe(0)
+        expect(
+          await prisma.assessmentAuditOutboxEvent.count({
+            where: {
+              liveQuizId: LIVE_QUIZ_ID,
+              participantId: PARTICIPANT_ID,
+              eventType: 'SUBMISSION_REJECTED',
+            },
+          })
+        ).toBe(1)
+      } finally {
+        await prisma.participation.update({
+          where: {
+            courseId_participantId: {
+              courseId: COURSE_ID,
+              participantId: PARTICIPANT_ID,
+            },
+          },
+          data: { isActive: true },
+        })
+      }
     })
 
     it('rejects an unknown participant without persisting a response', async () => {
@@ -779,13 +1024,16 @@ describe.runIf(runDatabaseTests)(
       )
 
       const repository = new PrismaAuditOutboxRepository(prisma)
+      // The database schedules new rows using its wall clock, independently
+      // of the historical timestamps used in the synthetic evidence.
+      const dispatchAt = new Date(Date.now() + 60_000)
       const outage = await dispatchAssessmentAuditOutbox({
         repository,
         sink: {
           append: vi.fn().mockRejectedValue(new Error('synthetic outage')),
         },
         workerId: 'layer-5-outage-proof',
-        now: () => new Date('2026-08-13T12:05:00.000Z'),
+        now: () => dispatchAt,
         random: () => 0,
         maxBatches: 1,
       })
@@ -808,7 +1056,7 @@ describe.runIf(runDatabaseTests)(
         repository,
         sink: { append },
         workerId: 'layer-5-recovery-proof',
-        now: () => new Date('2026-08-13T12:10:00.000Z'),
+        now: () => new Date(dispatchAt.getTime() + 300_000),
         maxBatches: 1,
       })
 

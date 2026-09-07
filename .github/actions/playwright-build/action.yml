@@ -175,6 +175,7 @@ runs:
           apps/mcp-lecturer/dist
           apps/olat-api/dist
           apps/response-api/dist
+          packages/audit/dist
           packages/export/dist
           packages/feature-flags/dist
           packages/grading/dist

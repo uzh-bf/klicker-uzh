@@ -21,6 +21,7 @@ export const ASSESSMENT_SCORING_ALGORITHM_VERSION = 'klicker-grading-v1'
 
 export type CoveredAssessmentScope = {
   lifecycleEpoch: number
+  activatedAt?: Date | null
 }
 
 type SubmissionCommand = AssessmentResponseCommand<unknown>
@@ -169,12 +170,19 @@ const TERMINAL_EVENT_TYPES = [
 
 export async function findCoveredAssessmentScope(
   client: Pick<Prisma.TransactionClient, 'assessmentAuditScope'>,
-  liveQuizId: string
+  liveQuizId: string,
+  receivedAt?: string
 ): Promise<CoveredAssessmentScope | null> {
   return client.assessmentAuditScope.findFirst({
-    where: { liveQuizId, coverageState: 'COVERED' },
+    where: {
+      liveQuizId,
+      coverageState: 'COVERED',
+      ...(receivedAt === undefined
+        ? {}
+        : { activatedAt: { lte: new Date(receivedAt) } }),
+    },
     orderBy: { lifecycleEpoch: 'desc' },
-    select: { lifecycleEpoch: true },
+    select: { lifecycleEpoch: true, activatedAt: true },
   })
 }
 
@@ -311,7 +319,13 @@ export async function emitSubmissionAuditEvents(input: {
       participantId: input.message.participantId,
     },
     authorization: {
-      decision: 'ALLOWED',
+      decision: missing.some(
+        (draft) =>
+          draft.eventType === 'SUBMISSION_REJECTED' &&
+          draft.payload.reasonCode === 'PARTICIPATION_NOT_FOUND'
+      )
+        ? 'DENIED'
+        : 'ALLOWED',
       authScope: 'ASSESSMENT_PARTICIPANT_SESSION',
       requiredPermission: 'SUBMIT_ASSESSMENT_RESPONSE',
       resolvedObjectScope: {
@@ -417,6 +431,8 @@ export async function commandHasRecordedFailure(input: {
 }
 
 export type AcceptedSubmissionBinding = {
+  hatchetEventId: string
+  elementBlockExecution: number
   answerStateHash: string
   participantId: string | null
   elementInstanceId: number | null
@@ -442,14 +458,26 @@ export async function findAcceptedSubmissionBindings(input: {
   return accepted.flatMap((row): AcceptedSubmissionBinding[] => {
     try {
       const envelope = JSON.parse(row.canonicalEnvelope) as {
-        payload?: { answerStateHash?: unknown }
+        hatchetEventId?: unknown
+        payload?: { answerStateHash?: unknown; elementBlockExecution?: unknown }
         scope?: { elementInstanceId?: unknown }
       }
       const answerStateHash = envelope.payload?.answerStateHash
-      if (typeof answerStateHash !== 'string') return []
+      const elementBlockExecution = envelope.payload?.elementBlockExecution
+      if (
+        typeof answerStateHash !== 'string' ||
+        typeof envelope.hatchetEventId !== 'string' ||
+        !envelope.hatchetEventId ||
+        typeof elementBlockExecution !== 'number' ||
+        !Number.isSafeInteger(elementBlockExecution) ||
+        elementBlockExecution < 0
+      )
+        throw new Error('Stored submission acceptance binding is incomplete')
       const elementInstanceId = envelope.scope?.elementInstanceId
       return [
         {
+          hatchetEventId: envelope.hatchetEventId,
+          elementBlockExecution,
           answerStateHash,
           participantId: row.participantId,
           elementInstanceId:

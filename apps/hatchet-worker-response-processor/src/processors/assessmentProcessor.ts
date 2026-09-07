@@ -5,7 +5,11 @@ import {
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hashCanonicalValue, runInAuditTransaction } from '@klicker-uzh/audit'
 import { prisma } from '@klicker-uzh/prisma'
-import { ElementType, ResponseCorrectness } from '@klicker-uzh/prisma/client'
+import {
+  ElementType,
+  Prisma,
+  ResponseCorrectness,
+} from '@klicker-uzh/prisma/client'
 import type {
   AssessmentResponseCommand,
   FreeTextRestrictions,
@@ -196,11 +200,46 @@ export async function processAssessmentResponse(
     throw new NonRetryableError(reasonCode)
   }
 
+  const recoverTerminalReplay = async (
+    input: Pick<
+      Parameters<typeof emitSubmissionAuditEvents>[0],
+      'tx' | 'auditTx'
+    >
+  ) => {
+    if (
+      coveredScope !== null &&
+      (await commandHasRecordedFailure({
+        tx: input.tx,
+        message,
+        hatchetEventId: requireHatchetEventId(),
+      }))
+    ) {
+      await emitSubmissionAuditEvents({
+        ...input,
+        message,
+        scope: coveredScope,
+        hatchetEventId: requireHatchetEventId(),
+        courseId,
+        recordedAt: dependencies.now(),
+        drafts: [recoveryDraft()],
+      })
+    }
+  }
+
   try {
     coveredScope = await findCoveredAssessmentScope(
       dependencies.client,
       message.liveQuizId
     )
+    const latestScope = coveredScope
+    if (latestScope !== null) {
+      coveredScope =
+        (await findCoveredAssessmentScope(
+          dependencies.client,
+          message.liveQuizId,
+          message.receivedAt
+        )) ?? latestScope
+    }
     if (coveredScope !== null) {
       try {
         hatchetEventId = await dependencies.resolveHatchetEventId(message, ctx)
@@ -229,7 +268,13 @@ export async function processAssessmentResponse(
         }
         throw error
       }
-      const scope = coveredScope
+      if (
+        !Number.isSafeInteger(message.blockExecution) ||
+        message.blockExecution < 0
+      ) {
+        await reject('SUBMISSION_BLOCK_EXECUTION_MISSING')
+      }
+      let scope = coveredScope
       let submissionReuseReasonCode:
         | 'SUBMISSION_ID_ANSWER_MISMATCH'
         | 'SUBMISSION_ID_SCOPE_MISMATCH'
@@ -240,10 +285,21 @@ export async function processAssessmentResponse(
           tx,
           message,
         })
+        const commandBindings = previousBindings.filter(
+          (binding) => binding.hatchetEventId === requireHatchetEventId()
+        )
+        if (commandBindings.length > 1)
+          throw new Error('Submission command has multiple acceptance bindings')
+        const commandBinding = commandBindings[0]
+        if (commandBinding !== undefined) {
+          scope = { lifecycleEpoch: commandBinding.lifecycleEpoch }
+          coveredScope = scope
+        }
         const scopeMismatch = previousBindings.some(
           (binding) =>
             binding.participantId !== message.participantId ||
             binding.elementInstanceId !== Number(message.instanceId) ||
+            binding.elementBlockExecution !== message.blockExecution ||
             binding.lifecycleEpoch !== scope.lifecycleEpoch
         )
         const answerMismatch = previousBindings.some(
@@ -270,6 +326,7 @@ export async function processAssessmentResponse(
                   submissionId: message.submissionId,
                   stage: 'SERVER_ACCEPTED',
                   answerStateHash,
+                  elementBlockExecution: message.blockExecution,
                 },
               }),
             ],
@@ -278,6 +335,27 @@ export async function processAssessmentResponse(
       })
       if (submissionReuseReasonCode !== undefined) {
         await reject(submissionReuseReasonCode)
+      }
+      if (
+        scope.lifecycleEpoch !== latestScope?.lifecycleEpoch ||
+        (scope.activatedAt !== undefined &&
+          scope.activatedAt !== null &&
+          Date.parse(message.receivedAt) < scope.activatedAt.getTime())
+      ) {
+        const terminal = await getTerminalStageForCommand({
+          tx: dependencies.client,
+          message,
+          hatchetEventId: requireHatchetEventId(),
+        })
+        if (terminal === 'SUBMISSION_REJECTED')
+          throw new NonRetryableError('SUBMISSION_PREVIOUSLY_REJECTED')
+        if (terminal !== undefined) {
+          await runInAuditTransaction(dependencies.client, (tx, auditTx) =>
+            recoverTerminalReplay({ tx, auditTx })
+          )
+          return { status: 208 }
+        }
+        await reject('SUBMISSION_LIFECYCLE_CHANGED')
       }
     }
 
@@ -301,8 +379,19 @@ export async function processAssessmentResponse(
       pointsMultiplier,
       blockExecution,
       blockClosedAt,
+      blockStartedAt,
     } = instanceInfo
     courseId = instanceCourseId
+
+    if (
+      !Number.isSafeInteger(message.blockExecution) ||
+      message.blockExecution < 0 ||
+      message.blockExecution !== Number(blockExecution) ||
+      (blockStartedAt !== undefined &&
+        Date.parse(message.receivedAt) < Number(blockStartedAt))
+    ) {
+      await reject('SUBMISSION_BLOCK_EXECUTION_CHANGED')
+    }
 
     if (!message.response && type !== ElementType.CONTENT) {
       await reject('RESPONSE_MISSING')
@@ -350,7 +439,10 @@ export async function processAssessmentResponse(
     const normalizedAnswer = normalizeAssessmentAnswer({
       type: type as ElementType,
       response: message.response,
-      restrictions: parsedRestrictions,
+      restrictions:
+        type === ElementType.NUMERICAL
+          ? (parsedRestrictions as NumericalRestrictions | undefined)
+          : undefined,
     })
     if (coveredScope !== null) {
       await emitStandalone([
@@ -487,6 +579,34 @@ export async function processAssessmentResponse(
     const transactionResult = await runInAuditTransaction(
       dependencies.client,
       async (tx, auditTx) => {
+        // Shared locks permit concurrent submissions but serialize them with
+        // quiz reset/reopening, which updates this row before deleting answers.
+        await tx.$queryRaw(
+          Prisma.sql`SELECT id FROM "LiveQuiz" WHERE id = ${message.liveQuizId}::uuid FOR SHARE`
+        )
+        const currentScope =
+          coveredScope === null
+            ? null
+            : await findCoveredAssessmentScope(tx, message.liveQuizId)
+        const lifecycleChanged =
+          coveredScope !== null &&
+          currentScope?.lifecycleEpoch !== coveredScope.lifecycleEpoch
+        if (lifecycleChanged) {
+          const terminal = await getTerminalStageForCommand({
+            tx,
+            message,
+            hatchetEventId: requireHatchetEventId(),
+          })
+          if (terminal === 'SUBMISSION_REJECTED')
+            return {
+              kind: 'rejected' as const,
+              reasonCode: 'SUBMISSION_PREVIOUSLY_REJECTED',
+            }
+          if (terminal !== undefined) {
+            await recoverTerminalReplay({ tx, auditTx })
+            return { kind: 'duplicate' as const }
+          }
+        }
         const participation = await tx.participation.findUnique({
           where: {
             courseId_participantId: {
@@ -495,7 +615,37 @@ export async function processAssessmentResponse(
             },
           },
         })
-        if (!participation) {
+        const instance = await tx.elementInstance.findUnique({
+          where: { id: Number(message.instanceId) },
+          select: {
+            elementBlock: {
+              select: {
+                execution: true,
+                liveQuizId: true,
+                startedAt: true,
+                closedAt: true,
+              },
+            },
+          },
+        })
+        const block = instance?.elementBlock
+        let rejectionReason: string | undefined
+        if (lifecycleChanged) rejectionReason = 'SUBMISSION_LIFECYCLE_CHANGED'
+        else if (!participation?.isActive)
+          rejectionReason = 'PARTICIPATION_NOT_FOUND'
+        else if (
+          block?.liveQuizId !== message.liveQuizId ||
+          block.execution !== message.blockExecution ||
+          (block.startedAt !== null &&
+            block.startedAt.getTime() > Date.parse(message.receivedAt))
+        )
+          rejectionReason = 'SUBMISSION_BLOCK_EXECUTION_CHANGED'
+        else if (
+          block.closedAt !== null &&
+          Date.parse(message.receivedAt) > block.closedAt.getTime()
+        )
+          rejectionReason = 'SUBMISSION_AFTER_BLOCK_CLOSE'
+        if (rejectionReason !== undefined) {
           if (coveredScope !== null) {
             await assertTerminalStageAvailable({
               tx,
@@ -517,14 +667,14 @@ export async function processAssessmentResponse(
               courseId,
               recordedAt: dependencies.now(),
               drafts: [
-                rejectionDraft('PARTICIPATION_NOT_FOUND'),
+                rejectionDraft(rejectionReason),
                 ...(recovered ? [recoveryDraft()] : []),
               ],
             })
           }
           return {
             kind: 'rejected' as const,
-            reasonCode: 'PARTICIPATION_NOT_FOUND',
+            reasonCode: rejectionReason,
           }
         }
 
@@ -752,6 +902,8 @@ export async function processAssessmentResponse(
       liveQuizId: message.liveQuizId,
       blockId: sessionBlockId,
       instanceId: message.instanceId,
+      blockExecution: message.blockExecution,
+      receivedAt: message.receivedAt,
       elementType: type,
       isGamificationEnabled: quizInfo.isGamificationEnabled === 'true',
       pointsAwarded: awardedBasePoints,

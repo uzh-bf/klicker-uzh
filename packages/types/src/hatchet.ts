@@ -64,6 +64,8 @@ export interface AssessmentResponseCommand<TResponse = unknown> {
   participantId: string
   liveQuizId: string
   instanceId: string
+  /** Execution from the server-signed assessment correlation token. */
+  blockExecution: number
   response: TResponse
   responseTimestamp: number
   receivedAt: string

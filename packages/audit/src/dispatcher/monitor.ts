@@ -85,10 +85,11 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
         Prisma.sql`
           SELECT COUNT(*)::bigint AS count, MIN(accepted."recordedAt") AS oldest
           FROM (
-            SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId")
+            SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId')
               accepted."liveQuizId",
               accepted."lifecycleEpoch",
               accepted."correlationId",
+              accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId' AS "hatchetEventId",
               accepted."recordedAt"
             FROM "AssessmentAuditOutboxEvent" accepted
             INNER JOIN "AssessmentAuditScope" scope
@@ -96,7 +97,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
               AND scope."lifecycleEpoch" = accepted."lifecycleEpoch"
               AND scope."coverageState" = 'COVERED'
             WHERE accepted."eventType" = 'SUBMISSION_SERVER_ACCEPTED'
-            ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."recordedAt", accepted."eventId"
+            ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId', accepted."recordedAt", accepted."eventId"
           ) accepted
           WHERE NOT EXISTS (
             SELECT 1
@@ -104,6 +105,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
             WHERE terminal."liveQuizId" = accepted."liveQuizId"
               AND terminal."lifecycleEpoch" = accepted."lifecycleEpoch"
               AND terminal."correlationId" = accepted."correlationId"
+              AND terminal."canonicalEnvelope"::jsonb ->> 'hatchetEventId' = accepted."hatchetEventId"
               AND terminal."eventType" IN (
                 'SUBMISSION_REJECTED',
                 'SUBMISSION_DUPLICATE',

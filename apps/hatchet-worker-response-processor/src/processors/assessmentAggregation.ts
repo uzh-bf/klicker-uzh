@@ -29,16 +29,21 @@ type HashOperation = {
 }
 
 const APPLY_AGGREGATION_ONCE_SCRIPT = `
+local execution = redis.call('HGET', KEYS[2], 'blockExecution')
+local startedAt = redis.call('HGET', KEYS[2], 'blockStartedAt')
+if execution ~= ARGV[2] or (startedAt and tonumber(startedAt) > tonumber(ARGV[3])) then
+  return 0
+end
 local marker = redis.call('HGET', KEYS[1], ARGV[1])
 if marker == 'aggregated' then
   return 0
 end
 
-if ((#ARGV - 1) % 4) ~= 0 then
+if ((#ARGV - 3) % 4) ~= 0 then
   return redis.error_reply('INVALID_AGGREGATION_ARGUMENTS')
 end
 
-for index = 2, #ARGV, 4 do
+for index = 4, #ARGV, 4 do
   local command = ARGV[index]
   local key = ARGV[index + 1]
   local value = ARGV[index + 3]
@@ -57,7 +62,7 @@ for index = 2, #ARGV, 4 do
   end
 end
 
-for index = 2, #ARGV, 4 do
+for index = 4, #ARGV, 4 do
   redis.call(
     ARGV[index],
     ARGV[index + 1],
@@ -81,6 +86,8 @@ export async function aggregateAssessmentResponses(
     liveQuizId: string
     blockId: string
     instanceId: string
+    blockExecution: number
+    receivedAt: string
     elementType: ElementType
     isGamificationEnabled: boolean
     pointsAwarded: number
@@ -199,9 +206,12 @@ export async function aggregateAssessmentResponses(
   try {
     const applied = await dependencies.redis.eval(
       APPLY_AGGREGATION_ONCE_SCRIPT,
-      1,
+      2,
       `${instanceKey}:votes`,
+      `${instanceKey}:info`,
       message.correlationId,
+      String(message.blockExecution),
+      String(Date.parse(message.receivedAt)),
       ...operations.flatMap((operation) => [
         operation.command,
         operation.key,

@@ -17,6 +17,7 @@ describe.runIf(runRedisTests)('assessment response aggregation', () => {
   const liveQuizKey = `lq:${LIVE_QUIZ_ID}`
   const instanceKey = `${liveQuizKey}:i:${INSTANCE_ID}`
   const keys = [
+    `${instanceKey}:info`,
     `${instanceKey}:votes`,
     `${instanceKey}:results`,
     `${instanceKey}:responseHashes`,
@@ -30,6 +31,8 @@ describe.runIf(runRedisTests)('assessment response aggregation', () => {
     liveQuizId: LIVE_QUIZ_ID,
     blockId: BLOCK_ID,
     instanceId: INSTANCE_ID,
+    blockExecution: 1,
+    receivedAt: '2026-08-12T12:00:00.000Z',
     elementType: ElementType.SC,
     isGamificationEnabled: true,
     pointsAwarded: 10,
@@ -43,12 +46,24 @@ describe.runIf(runRedisTests)('assessment response aggregation', () => {
   beforeEach(async () => {
     await redis.del(...keys)
     await redis.hset(`${instanceKey}:votes`, SUBMISSION_ID, 'accepted')
+    await redis.hset(`${instanceKey}:info`, 'blockExecution', '1')
     vi.clearAllMocks()
   })
 
   afterAll(async () => {
     await redis.del(...keys)
     redis.disconnect()
+  })
+
+  it('does not aggregate a delayed command into a new block execution', async () => {
+    await redis.hset(`${instanceKey}:info`, 'blockExecution', '2')
+    await expect(
+      aggregateAssessmentResponses(message, context)
+    ).resolves.toMatchObject({ status: 208 })
+    expect(
+      await redis.hget(`${instanceKey}:results`, 'participants')
+    ).toBeNull()
+    expect(await redis.hget(`${liveQuizKey}:lb`, PARTICIPANT_ID)).toBeNull()
   })
 
   it('aggregates duplicate Hatchet events exactly once', async () => {

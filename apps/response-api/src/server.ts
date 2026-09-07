@@ -301,7 +301,10 @@ async function handleAddAssessmentResponse(
 
   if (
     correlationData.instanceId !== instanceId ||
-    correlationData.liveQuizId !== liveQuizId
+    correlationData.liveQuizId !== liveQuizId ||
+    typeof correlationData.execution !== 'number' ||
+    !Number.isSafeInteger(correlationData.execution) ||
+    correlationData.execution < 0
   ) {
     return badRequest(
       req,
@@ -348,6 +351,7 @@ async function handleAddAssessmentResponse(
     participantId: participant.sub,
     liveQuizId,
     instanceId: String(instanceId),
+    blockExecution: correlationData.execution,
     response,
     responseTimestamp: receivedAt.getTime(),
     receivedAt: receivedAt.toISOString(),

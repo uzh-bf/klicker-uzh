@@ -46,6 +46,7 @@ function dependencies(
           sub: PARTICIPANT_ID,
           liveQuizId: LIVE_QUIZ_ID,
           instanceId: 7,
+          execution: 1,
         }
       }
       if (token === PARTICIPANT_TOKEN) {
@@ -123,6 +124,7 @@ describe('assessment response receipt', () => {
         correlationId: SUBMISSION_ID,
         participantId: PARTICIPANT_ID,
         receivedAt: '2026-08-12T12:00:00.000Z',
+        blockExecution: 1,
         transportAttemptedAt: '2026-08-12T12:00:00.000Z',
       }),
       { additionalMetadata: { submissionId: SUBMISSION_ID } }
@@ -175,6 +177,24 @@ describe('assessment response receipt', () => {
     expect(serializedLogs).not.toContain(CORRELATION_TOKEN)
     expect(serializedLogs).not.toContain(PARTICIPANT_TOKEN)
     expect(serializedLogs).not.toContain('transport details')
+  })
+
+  it.each([
+    undefined,
+    -1,
+    1.5,
+    '1',
+  ])('rejects an invalid signed execution claim %s before transport', async (execution) => {
+    const deps = dependencies({
+      verifyToken: vi.fn().mockResolvedValue({
+        instanceId: 7,
+        liveQuizId: LIVE_QUIZ_ID,
+        execution,
+      }),
+    })
+    const response = await submit(await startServer(deps))
+    expect(response.status).toBe(400)
+    expect(deps.pushEvent).not.toHaveBeenCalled()
   })
 
   it('rejects invalid submission IDs before transport', async () => {
