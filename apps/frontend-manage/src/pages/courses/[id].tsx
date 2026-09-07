@@ -239,7 +239,7 @@ function CourseOverviewPage() {
           </div>
           <div
             className="min-w-0 break-words"
-            data-cy="course-notification-email"
+            data-cy="course-notification-email-value"
           >
             {course.notificationEmail || t('manage.course.noNotificationEmail')}
           </div>

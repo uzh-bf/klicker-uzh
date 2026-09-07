@@ -2203,7 +2203,7 @@ test.describe('Part 3: Course overview, editing, and archiving', () => {
       ).toBeFocused()
       await link.focus()
       await page.keyboard.press('Enter')
-      const email = page.getByTestId('course-notification-email')
+      const email = page.getByTestId('course-notification-email-value')
       const language = page.getByTestId('course-language')
       await expect(email).toBeVisible()
       await expect(email).not.toBeEmpty()

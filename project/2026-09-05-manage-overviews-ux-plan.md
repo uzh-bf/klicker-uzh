@@ -73,6 +73,77 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+### Device takeover, 2026-09-07
+
+The user authorized continuing route diagnosis and repair. A later full-profile
+resume hit a separate preparation guard: all dependency builds pass, but
+Turbo leaves `git diff HEAD --no-ext-diff --no-color` briefly running after
+its own exit. A bounded process-group probe reproduces this with normal,
+no-daemon and run-summary modes. The managed helper correctly rejects the
+live preparation child. No helper or global installation was modified.
+The next experiment commits the already-verified selector correction and
+this checkpoint after normal checks, then resumes from a clean source tree.
+This tests the dirty-tree hashing trigger without relaxing lifecycle guards.
+
+Read-only navigation mapping found no changed pathname, query or locale:
+the previous row used `router.push('/courses/<id>')`, and the new semantic
+link uses the same URL. The dynamic page's static-generation contract is
+unchanged. Link prefetch and cold dynamic-route compilation remain hypotheses,
+not established causes. The configured exploration provider failed before
+work with insufficient credits; trusted Luna continuity completed the mapping.
+
+Restored `rs/manage-course-clarity` in `trees/rs/manage-course-clarity` on
+the receiving device. It tracks `origin/rs/manage-course-clarity` at
+`577db334cf3da9c2f2130c49b638fb61aab3eb68`, with no upstream drift.
+[The course clarity draft PR](https://github.com/uzh-bf/klicker-uzh/pull/5798)
+remains open against `v3`. The task is two commits ahead and eleven behind
+the fetched target; no target integration occurred.
+
+Hosted checks pass except Playwright shard 6 and automated code review.
+The Playwright log proves that the new email display shares the edit input's
+test identifier. A local two-line correction gives the display its own
+identifier and updates its assertion; `git diff --check` passes. Browser
+verification, repository checks, commit and publication of this correction
+remain pending. Automated code review failed authentication on all 16 files
+and supplies no usable review.
+
+The initial shell selected Devrouter 0.0.51. Canonical Manage startup failed with
+`Managed startup requires a helper with --prepare-command support.`
+The handoff used 0.0.55, also declared by current `origin/v3`. The user corrected
+the installation diagnosis: the global Volta package already contains 0.0.55.
+Direct invocation of its `dist/devrouter.js` verifies that version and resumes
+Manage startup without installation or configuration changes. The Volta shim
+fails to resolve the executable in this worktree. Initial task-only stop
+completed, and independent Devsy readback
+reports `Stopped` with zero exact-source routes. Runtime data is preserved.
+The resumed startup passed with no recreation and zero drift. Auth returned
+JSON 200 and Manage returned its expected redirect. Delegated synthetic
+lecturer login and course detail/edit inspection passed. With the edit dialog
+open, the email input and renamed display each match exactly one element.
+Current `check:all` passes (35 check tasks and seven lint tasks). Focused host
+Playwright course/activity-log verification is blocked. The package-script
+invocation prepends an old local Devrouter binary, so the unchanged host
+launcher must be invoked directly with Node and a temporary PATH wrapper to
+the installed global 0.0.55 executable. Canonical Manage recovery then passed,
+and the full profile reached readiness. The 79-test run passed cleanup and
+non-gamified creation, then course navigation returned Next.js
+`PageNotFoundError: Cannot find module for page: /courses/<synthetic-id>`.
+The parent interrupted the cascading failures. This is a framework route
+failure, not a completed acceptance run; its root cause remains unresolved.
+Logs are `/tmp/manage-clarity-playwright.log` and
+`/tmp/manage-clarity-runtime.log` on this device. Platform repair remains owned
+outside this UX task; no cache deletion or source workaround was attempted.
+Final task-only stop completed and freed ten routes. The manual browser is
+closed. No test run remains active.
+
+The original action-safety reviewer cannot be resumed on this device and its
+report did not transfer. Replacement slice review completed with the duplicate
+selector finding accepted and fixed locally; action protections are preserved.
+Its report and evidence corrections are in
+`project/_local/reviews/2026-09-07-course-clarity-slice-review.md`.
+Activity and wizard layers remain
+unimplemented; final review remains pending.
+
 Latest runtime checkpoint (supersedes pending approval and session references
 below): the scoped Auth readiness repair is approved. Its focused shell
 regression suite passed. Auth still returns HTML 404 internally at
