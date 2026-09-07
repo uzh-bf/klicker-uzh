@@ -281,9 +281,11 @@ suites pass locally with built dependencies (53 tests). Playwright remains
 running; no completed final AI review is available. Image-build success on a
 PR does not establish registry publication or deployment provenance.
 
-The current approval covers local diagnosis, source fixes, checks, review, and
-commits. It does not permit another push, upstream integration, remote retry,
-merge, deployment, credential change, or release-ref movement.
+The updated user instructions authorize diagnosis, source fixes, checks,
+reviews, local commits, ordinary task-branch pushes, and routine draft PR
+updates. Required verification and review still block delivery. Upstream
+integration, remote retry, merge, deployment, credential changes, and
+release-ref movement remain separately gated.
 The build-dependency correction is assigned to the native executor, limited
 to `test-unit.yml`; acceptance is the dependency build graph and affected tests.
 The publish-guard correction stays with the main session because its
@@ -306,8 +308,20 @@ evidence is retained, not represented as a fresh run. Repository `check:all`
 passes, including 40 type-check tasks; it ran in the container, with secret
 and Git identity checks on the host before committing. No dedicated simplifier
 is required for the small exact-match and existing test-table extension.
-The guard's independent slice review remains pending. Integrated final review
-waits for the unresolved package gates.
+The guard's configured slice reviewer failed before useful work because its
+model was at capacity. A trusted read-only continuity reviewer is evaluating
+the same committed two-file scope. Integrated final review waits for the
+unresolved package gates.
+
+Playwright has now finished. Shard eight reproduces both feature-access
+fixture failures and a separate horizontal-overflow assertion in
+`W4-activity-wizard-safety.spec.ts`. Shard four exits 127 before tests because
+the moving `playwright-shard@refs/heads/v3` action calls
+`.ci-control/.github/scripts/install-devrouter.sh`, while its trusted checkout
+is frozen to `1fb8b852684c4155f5d375f7c211c5d0be1f923d`, before that script
+arrived. This shared CI revision mismatch is not a browser assertion failure.
+The local fixture corrections have not yet
+received browser acceptance, and these failures prevent merge readiness.
 
 The two Playwright fixture corrections are restored and remain unstaged, not
 only stashed. Their recovery stashes remain intact. Browser acceptance is
