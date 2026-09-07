@@ -90,6 +90,61 @@ function buildFingerprint({
   return `v${CACHE_SCHEMA}-${hash.digest('hex').slice(0, 32)}`
 }
 
+function dependencyFingerprint({
+  root,
+  files = trackedFiles(root),
+  buildImageDigest = BUILD_IMAGE_DIGEST,
+}) {
+  const hash = crypto.createHash('sha256')
+  hash.update(
+    JSON.stringify({
+      schema: 2,
+      node: NODE_VERSION,
+      pnpm: PNPM_VERSION,
+      buildImageDigest,
+    })
+  )
+  const dependencyFiles = files.filter(
+    (file) =>
+      isPackageManifest(file) ||
+      [
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        '.npmrc',
+        '.pnpmfile.cjs',
+      ].includes(file) ||
+      file.startsWith('patches/')
+  )
+  for (const file of [...new Set(dependencyFiles)].sort(compareNames)) {
+    hash.update('\0')
+    hash.update(file)
+    hash.update('\0')
+    let contents = fs.readFileSync(path.join(root, file))
+    if (isPackageManifest(file)) {
+      const manifest = JSON.parse(contents.toString('utf8'))
+      // The pnpm store is reused before a fresh frozen install, not as node_modules.
+      // Keep installation hooks and all other fields; omit routine task scripts.
+      manifest.scripts = Object.fromEntries(
+        Object.entries(manifest.scripts ?? {}).filter(([name]) =>
+          [
+            'pnpm:devPreinstall',
+            'preinstall',
+            'install',
+            'postinstall',
+            'prepublish',
+            'preprepare',
+            'prepare',
+            'postprepare',
+          ].includes(name)
+        )
+      )
+      contents = JSON.stringify(manifest)
+    }
+    hash.update(contents)
+  }
+  return `v2-${hash.digest('hex').slice(0, 32)}`
+}
+
 function main(argv = process.argv.slice(2)) {
   const rootIndex = argv.indexOf('--root')
   const root = rootIndex === -1 ? process.cwd() : argv[rootIndex + 1]
@@ -98,10 +153,12 @@ function main(argv = process.argv.slice(2)) {
   }
 
   const fingerprint = buildFingerprint({ root: path.resolve(root) })
+  const dependency = dependencyFingerprint({ root: path.resolve(root) })
   // biome-ignore lint/suspicious/noUndeclaredEnvVars: GitHub Actions output contract
   const output = process.env.GITHUB_OUTPUT
   if (output) {
     fs.appendFileSync(output, `fingerprint=${fingerprint}\n`)
+    fs.appendFileSync(output, `dependency-fingerprint=${dependency}\n`)
   }
   console.log(fingerprint)
 }
@@ -123,6 +180,7 @@ module.exports = {
   NODE_VERSION,
   PNPM_VERSION,
   buildFingerprint,
+  dependencyFingerprint,
   isPackageManifest,
   relevantFiles,
 }

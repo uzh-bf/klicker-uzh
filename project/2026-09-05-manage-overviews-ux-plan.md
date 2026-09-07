@@ -73,6 +73,38 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+### Target integration, 2026-09-07
+
+The user explicitly authorized pulling in the latest target branch. The live
+draft PR targets `v3`; its fetched head is
+`6af9532fe9b1ffd5a92e0466ada93121a90ba8ce`. The one authorized merge applies
+without conflicts and preserves the course implementation and local test fixes.
+The integrated source passes 35 check tasks, seven lint tasks, all staged
+format checks, and the full 23-task build. The new upstream Devrouter contract
+test runs on the host with global 0.0.55; the remaining toolchain checks run in
+the exact task container. No hooks are bypassed or dependency versions changed.
+
+Runtime repair reaches the upstream authenticated MCP bootstrap but rejects
+the local fixture: its synthetic course, chatbot, and two mode bindings are
+absent after the course suites. The standard repository synthetic seed is being
+restored before another canonical repair. The earlier 79 passing browser tests
+remain earlier-branch evidence; no post-integration browser pass is claimed.
+Activity and wizard implementation remain pending, as does the full visual
+matrix and integrated final review.
+
+### Restart limitation after the passing clean run, 2026-09-07
+
+The test corrections and clean-run evidence are committed at `051798817b`.
+All commit hooks pass and no push occurred. A final canonical reconciliation
+at that commit reproduced the preparation-child failure: nine cached dependency
+builds complete in 84ms while a Git subprocess remains alive. Rollback reports
+degraded process drift. Clean bootstrap and all 79 tests passed, but a fresh
+setup does not repair the cached-preparation lifecycle race after a commit.
+The prior passing test and visual evidence remains valid for its examined
+content. Stable restart capability is still required for further runtime work.
+Log: `/tmp/manage-clean-postcommit.log`. The exact runtime is being stopped;
+the global handoff records final provider and route verification.
+
 ### Clean setup and passing course suites, 2026-09-07
 
 The user requested a clean setup. Source-path ownership was verified before

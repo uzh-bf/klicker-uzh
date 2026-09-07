@@ -43,20 +43,33 @@ jobs:
           python-version: '3.12'
           enable-cache: false
 
+      - name: Test Playwright timing aggregation
+        run: uv run --no-project --python 3.12 python -m unittest discover -s .github/scripts -p test_update_playwright_timings.py
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.5.0
 
       - name: Set up Node.js with pnpm cache
-        uses: actions/setup-node@v4
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version-file: package.json
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          cache-write: 'true'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Devrouter profile planner
+        run: bash .github/scripts/install-devrouter.sh
+
+      - name: Check hosted pnpm cache policy
+        run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
+
+      - name: Check Playwright CI contracts
+        run: pnpm run check:playwright-ci
+
+      - name: Check Playwright host launcher
+        run: pnpm run check:playwright-host
 
       - name: Check file formatting
         shell: bash

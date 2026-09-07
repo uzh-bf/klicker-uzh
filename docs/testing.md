@@ -153,6 +153,23 @@ provider-level acceptance check.
 
 ## CI matrix
 
+Playwright's trusted shard action provisions a fresh `klicker_test` database
+and login on each shard's private PostgreSQL service before reset or seed.
+The login owns that database without superuser, role-management, replication
+or row-security-bypass privileges. The database comment
+`klicker-disposable-test-v1` identifies its disposable purpose and survives a
+schema reset. Existing test roles or databases cause provisioning to fail;
+partial failures require a fresh service, never adoption of existing data.
+The provisioner ignores caller database URLs and targets only the fixed CI
+service. It is not a local reset helper and must not be used to mark staging,
+production or a retained development database.
+
+Both runner routes load this action from trusted v3. A candidate PR cannot
+change its own provisioning action. Local PostgreSQL reset/seed proof is
+therefore required before changing the action, followed by a non-skipped
+postmerge shard run. The action logs its provisioner checksum so that run can
+be matched to the reviewed source.
+
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
 suites with one frozen install. It builds Prisma, types, grading, and util once,
 then keeps each suite as a separately visible step. The chat suite runs against
@@ -208,10 +225,17 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-The root dependency pins `@devrouter/cli` to exact version `0.0.51`; its reviewed
-minimum-release-age exception is exact as well. The package's optional native
-SSH helpers are explicitly denied build scripts because profile planning has no
-Docker or SSH path.
+CI installs `@devrouter/cli` version `0.0.55` through
+`.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
+scripts disabled. The shard action uses the trusted control checkout's installer
+and passes its absolute executable path to the runtime adapter, including for
+older caller branches. The codebase-check job uses the same installer for real
+profile-contract tests. No Docker or SSH setup runs through this CLI in CI.
+Local launchers use the host installation, excluding workspace executable bins,
+and check its version against `.devrouter.yml` before runtime access. Set
+`KLICKER_DEVROUTER_BIN` to an absolute host executable when PATH is ambiguous.
+Devrouter is not a repository dependency; update the reviewed CI tool release
+alongside `.devrouter.yml` when raising the required version.
 The repository-owned contract maps app identities to literal Turbo filters and
 loopback readiness endpoints, constrains managed services, and requires the
 exact process marker. `util/playwright-profile-runtime.mjs` remains a thin

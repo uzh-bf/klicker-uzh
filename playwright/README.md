@@ -23,6 +23,17 @@ Run from a host shell at the repository root. The launcher starts or reconciles
 the exact devrouter workspace, resolves its namespaced routes and database, and
 keeps the Playwright process and browser binaries on the host.
 
+Install Devrouter on the host; it is not a workspace dependency. The launcher
+ignores `node_modules` executable directories, reports the selected absolute
+path and version, and rejects a CLI older than `.devrouter.yml` before runtime
+reconciliation. When multiple global installations exist, set
+`KLICKER_DEVROUTER_BIN` to the intended executable's absolute path. It never
+installs or upgrades the host CLI automatically.
+
+CI installs its reviewed Devrouter release separately for read-only profile
+planning. It continues to run Playwright in the official container without
+starting Devrouter infrastructure.
+
 ```bash
 # run all Chromium tests
 pnpm playwright:host -- --project=chromium
