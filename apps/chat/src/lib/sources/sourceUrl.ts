@@ -18,7 +18,7 @@ export function getPublicSourceUrl(value: unknown): string | undefined {
       /^172\.(?:1[6-9]|2\d|3[01])\./.test(host) ||
       /^100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host) ||
       /^(?:22[4-9]|23\d|24\d|25[0-5])\./.test(host) ||
-      url.pathname.startsWith('/api/ingestion/resources/')
+      decodeURIComponent(url.pathname).startsWith('/api/ingestion/resources/')
     )
       return undefined
     return raw

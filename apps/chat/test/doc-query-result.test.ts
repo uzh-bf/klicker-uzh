@@ -79,6 +79,7 @@ describe('retrieval display independent of citation eligibility', () => {
     'http://[::1]/x',
     'http://backend.stg.svc.cluster.local/x',
     'https://example.org/api/ingestion/resources/private/3',
+    'https://example.org/api/%69ngestion/resources/fixture/3',
   ])('does not expose unsafe transport targets', (value) => {
     expect(getPublicSourceUrl(value)).toBeUndefined()
   })
