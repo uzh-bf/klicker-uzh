@@ -166,3 +166,14 @@ at resumption. No integration is assumed.
   repository pre-push build passes: 23 tasks successful, zero cache hits.
   Earlier full-suite and root pre-commit results remain applicable to unchanged
   production code. Report: `_local/reviews/2026-09-07-local-doc-query-simplifier.md`.
+- Retry succeeds: remote refresh works and the exact runtime is freshly
+  confirmed Stopped with zero routes and no hosts. Head `e5f3eb2973` has three
+  local commits and remains five behind `origin/v3`, with no upstream or
+  integration. The existing slice reviewer remains active; final review and
+  draft publication follow its terminal result without another permission ask.
+- Captured the authenticated-fixture diagnostic lesson in the existing local
+  Chat solution. Host-side repository Prettier and diff checks pass; no runtime
+  was restarted for documentation. The wiki validator reports 33 pre-existing
+  frontmatter errors in other files. The edited page has no conformance errors;
+  its source links resolve in the repository but trigger the validator's
+  bundle-root warning. No unrelated wiki cleanup is included.
