@@ -60,8 +60,22 @@ event filters are a publication gate, not an assumed equivalence.
 
 Approved scope; planner approved credential-repair-v2 after accepting explicit
 environment scrubbing, write-only token requirements, and test/audit details.
-Native explore failed before work with provider HTTP 400; the same bounded
-audit uses generic-continuity Luna. Optional AGY challenge unavailable due to
-catalog/authentication errors. No operational state changed.
+Native explore failed before work with provider HTTP 400. Generic-continuity
+Luna did not converge after a narrowing prompt; the main session completed the
+trigger audit. No push/create definition matches stg-release in either tree;
+no downstream build chain or filter edit is needed. Independently configured
+GitHub Apps and future candidates remain outside this source audit.
 
-Next: implement and verify the source slice, review, then publish a draft PR.
+Source slice `df64f832ba` passes all 21 promoter tests on Node 22.21.0 and
+Git 2.39.5 in a network-disabled disposable container. The credential regression
+failed before the repair. Biome, Prettier, staged Gitleaks, Git identity, and
+diff checks pass. One credential-boundary test was added, existing workflow
+and receipt checks were extended, and no tests were removed. Full application
+build/check and Node 24 proof were not run; no application runtime was started.
+
+Simplifier complete with no recommended reduction. Credential-risk and
+integrated-final reviews remain required before draft publication. Reports
+are in `project/_local/reviews/2026-09-07-stg-write-token-*.md`.
+Optional AGY challenge unavailable due to catalog/authentication errors.
+No operational state changed. Next: finish required review and publish the
+approved draft PR; do not retry promotion.
