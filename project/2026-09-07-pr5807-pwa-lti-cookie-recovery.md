@@ -1,4 +1,4 @@
-# Restore participant login after stale LTI state
+# Restore participant login after stale LTI state — PR #5807
 
 ## Outcome and authority
 
@@ -57,5 +57,9 @@ e6081a2d7f (authentication recovery).
 The separate branch contains only the fix, regression tests, the
 [root-cause lesson](../docs/solutions/integration/stale-lti-cookie-login-loop.md),
 and this publication record. The earlier task runtime is stopped with zero
-routes; no runtime was started for this branch. Draft PR publication is pending.
+routes; no runtime was started for this branch.
+[Draft PR #5807 — stale LTI cookie recovery](https://github.com/uzh-bf/klicker-uzh/pull/5807)
+is published against v3. The user approved deferring the local pre-push full
+build to CI for draft publication only. Current-head checks and navigation
+verification remain blocking before merge.
 Production rollout and both requested test-account checks remain pending.
