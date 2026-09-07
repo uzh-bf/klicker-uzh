@@ -255,6 +255,7 @@ export default {
       openSource: 'Open source',
       showFullChunk: 'Show full passage',
       moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {

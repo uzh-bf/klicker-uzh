@@ -126,11 +126,25 @@ function SourceGroup({ group }: { group: DocQueryGroup }) {
 }
 
 export function DocQueryResults({ groups }: { groups: DocQueryGroup[] }) {
+  const t = useTranslations()
+  const [visible, setVisible] = useState(5)
   return (
     <div className="mt-3 space-y-3">
-      {groups.map((group) => (
+      {groups.slice(0, visible).map((group) => (
         <SourceGroup key={group.id} group={group} />
       ))}
+      {groups.length > visible && (
+        <button
+          type="button"
+          data-cy="chat-doc-query-more-sources"
+          onClick={() => setVisible(visible + 5)}
+          className="min-h-9 text-xs underline underline-offset-2 focus-visible:outline focus-visible:outline-2"
+        >
+          {t('chat.toolFallback.moreSources', {
+            count: groups.length - visible,
+          })}
+        </button>
+      )}
     </div>
   )
 }

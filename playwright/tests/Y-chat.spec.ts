@@ -2458,7 +2458,15 @@ test.describe('Chatbot Source Citations', () => {
       }
 
       const groups = page.getByTestId('chat-doc-query-group')
+      await expect(groups).toHaveCount(6)
+      const moreSources = page.getByTestId('chat-doc-query-more-sources')
+      await moreSources.focus()
+      await page.keyboard.press('Enter')
+      await expect(groups).toHaveCount(11)
+      await moreSources.focus()
+      await page.keyboard.press('Enter')
       await expect(groups).toHaveCount(14)
+      await expect(moreSources).toHaveCount(0)
       await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(12)
       await expect(page.getByTestId('chat-doc-query-citation')).toHaveText(
         Array.from({ length: 12 }, (_, index) => String(index + 1))

@@ -257,6 +257,7 @@ export default {
       openSource: 'Quelle öffnen',
       showFullChunk: 'Vollständigen Abschnitt anzeigen',
       moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
