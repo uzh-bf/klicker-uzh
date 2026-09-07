@@ -17,6 +17,7 @@ import {
   HOST_RUNNER_ENV,
 } from './playwright-host-policy.mjs'
 import {
+  main,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
 } from './run-playwright-host.mjs'
@@ -25,6 +26,127 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+function launcherFixture() {
+  const calls = []
+  const record =
+    (name, result) =>
+    (...args) => {
+      calls.push([name, ...args])
+      return result
+    }
+  const effects = {
+    resolveCli: record('resolve', '/synthetic/devrouter'),
+    execute: record('execute'),
+    workspaceFor: record('workspace', 'synthetic-worktree'),
+    databasePortFor: record('port', 49153),
+    readEnvironment: record(
+      'environment',
+      new Map([
+        ['DATABASE_URL', 'postgres://user:password@postgres:5432/test'],
+        ['APP_SECRET', 'synthetic-test-value'],
+      ])
+    ),
+    dependenciesFor: record('dependencies'),
+    pnpm: record('pnpm'),
+    log: record('log'),
+  }
+  return { calls, effects }
+}
+
+test('launcher preserves the full default and forwards Playwright arguments verbatim', () => {
+  const { calls, effects } = launcherFixture()
+  const args = [
+    '--project=chromium',
+    '--grep',
+    'a phrase',
+    '--runtime-profile=literal',
+  ]
+  main(['--', ...args], effects)
+  assert.deepEqual(
+    calls.filter(([name]) => name === 'execute'),
+    [['execute', '/synthetic/devrouter', ['ensure', repoRoot]]]
+  )
+  assert.deepEqual(calls.find(([name]) => name === 'pnpm')[1], [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    ...args,
+  ])
+})
+
+test('explicit profiles reach runtime reconciliation for testing and print-env', () => {
+  for (const prefix of [
+    ['--runtime-profile', 'manage,live-quiz'],
+    ['--runtime-profile=manage,live-quiz'],
+  ]) {
+    for (const mode of [[], ['--print-env']]) {
+      const { calls, effects } = launcherFixture()
+      main([...prefix, ...mode, '--', '--project=chromium'], effects)
+      assert.deepEqual(
+        calls.filter(([name]) => name === 'execute'),
+        [
+          [
+            'execute',
+            '/synthetic/devrouter',
+            ['ensure', repoRoot, '--profile', 'manage,live-quiz'],
+          ],
+        ]
+      )
+      assert.equal(
+        calls.some(([name]) => name === 'pnpm'),
+        mode.length === 0
+      )
+    }
+  }
+})
+
+test('invalid launcher options have no external effects', () => {
+  const invalid = [
+    ['--runtime-profile'],
+    ['--runtime-profile='],
+    ...[
+      'manage,',
+      ',manage',
+      'manage,,pwa',
+      'manage,manage',
+      'manage, pwa',
+      'Manage',
+      '../manage',
+    ].map((value) => ['--runtime-profile', value]),
+    ['--runtime-profile=manage', '--runtime-profile=pwa'],
+    ['--print-env', '--print-env'],
+    ['--show-report', '--show-report'],
+    ['--print-env', '--show-report'],
+    ['--show-report', '--print-env'],
+    ['--runtime-profile=manage', '--show-report'],
+    ['--show-report', '--runtime-profile=manage'],
+  ]
+  for (const args of invalid) {
+    const { calls, effects } = launcherFixture()
+    assert.throws(() => main(args, effects), undefined, JSON.stringify(args))
+    assert.deepEqual(calls, [])
+  }
+})
+
+test('report mode never reconciles a runtime and respects the prefix terminator', () => {
+  const { calls, effects } = launcherFixture()
+  main(['--show-report', '--', '--runtime-profile=literal'], effects)
+  assert.deepEqual(
+    calls.map(([name]) => name),
+    ['dependencies', 'pnpm']
+  )
+  assert.deepEqual(calls[1][1], [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'show-report',
+    '--runtime-profile=literal',
+  ])
+})
 
 function cliFixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))

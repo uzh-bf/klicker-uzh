@@ -127,6 +127,19 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
+The default starts the full profile. For focused activity tests, request the
+required profile union explicitly before the Playwright arguments:
+
+```bash
+pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+```
+
+The caller must include every profile the selected tests need; the launcher
+does not infer them from spec names or reuse a previous narrow selection.
+Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
+to end the launcher-option prefix. `--print-env` still reconciles the runtime
+and can start services. `--show-report` does not accept a runtime profile.
+
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright
 or install browsers through `devrouter exec` or a DevPod shell. GitHub Actions

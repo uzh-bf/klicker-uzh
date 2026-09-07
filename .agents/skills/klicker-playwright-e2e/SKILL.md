@@ -61,8 +61,15 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
-The launcher starts the full devrouter profile, including response-api and both
-Hatchet workers. Ensure the response processor is not running with
+The launcher defaults to the full devrouter profile, including response-api and
+both Hatchet workers. Focused activity runs may explicitly request
+`pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+The caller owns profile sufficiency; the launcher does not infer profiles from
+test arguments or preserve an arbitrary previous narrow selection. Put launcher
+options before Playwright arguments; an explicit `--` ends their prefix.
+`--print-env` also reconciles the selected runtime and can start services.
+`--show-report` cannot be combined with a runtime profile.
+Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded

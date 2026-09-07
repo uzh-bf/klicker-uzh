@@ -210,17 +210,70 @@ function ensureHostDependencies(playwrightArgs) {
   ])
 }
 
-export function main(argv = process.argv.slice(2)) {
+function parseLauncherArgs(argv) {
+  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
+  let profile
+  let mode
+  while (args.length) {
+    const option = args[0]
+    if (option === '--') {
+      args.shift()
+      break
+    }
+    if (
+      option === '--runtime-profile' ||
+      option.startsWith('--runtime-profile=')
+    ) {
+      if (profile !== undefined) fail('Specify --runtime-profile only once')
+      args.shift()
+      profile = option === '--runtime-profile' ? args.shift() : option.slice(18)
+      const names = profile?.split(',') ?? []
+      if (
+        !names.length ||
+        names.some((name) => !/^[a-z][a-z0-9-]*$/.test(name)) ||
+        new Set(names).size !== names.length
+      ) {
+        fail('Invalid runtime profile list')
+      }
+    } else if (option === '--print-env' || option === '--show-report') {
+      if (mode) fail('Specify only one launcher mode')
+      mode = args.shift()
+    } else {
+      break
+    }
+  }
+  if (mode === '--show-report' && profile !== undefined) {
+    fail('--show-report cannot select a runtime profile')
+  }
+  return { args, profile, mode }
+}
+
+export function main(
+  argv = process.argv.slice(2),
+  {
+    resolveCli = resolveDevrouter,
+    execute = run,
+    workspaceFor = resolveWorkspace,
+    databasePortFor = resolveDatabasePort,
+    readEnvironment = () =>
+      readCommittedEnvironment(
+        readFileSync(
+          join(repoRoot, '.devcontainer', 'devcontainer.env'),
+          'utf8'
+        )
+      ),
+    dependenciesFor = ensureHostDependencies,
+    pnpm = runPnpm,
+    log = console.log,
+  } = {}
+) {
+  const { args, profile, mode } = parseLauncherArgs(argv)
   const hostEnvironment = { ...process.env, [HOST_RUNNER_ENV]: '1' }
   assertPlaywrightHostBoundary({ env: hostEnvironment })
 
-  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
-  const showReport = args[0] === '--show-report'
-  if (showReport) args.shift()
-
-  if (showReport) {
-    ensureHostDependencies(['--list'])
-    runPnpm(
+  if (mode === '--show-report') {
+    dependenciesFor(['--list'])
+    pnpm(
       [
         '--filter',
         '@klicker-uzh/playwright',
@@ -234,18 +287,17 @@ export function main(argv = process.argv.slice(2)) {
     return
   }
 
-  const printEnvironment = args[0] === '--print-env'
-  if (printEnvironment) args.shift()
+  const devrouter = resolveCli({ repo: repoRoot })
+  log('[playwright:host] Reconciling the devcontainer runtime')
+  execute(devrouter, [
+    'ensure',
+    repoRoot,
+    ...(profile === undefined ? [] : ['--profile', profile]),
+  ])
 
-  const devrouter = resolveDevrouter({ repo: repoRoot })
-  console.log('[playwright:host] Reconciling the devcontainer runtime')
-  run(devrouter, ['ensure', repoRoot])
-
-  const workspace = resolveWorkspace()
-  const databasePort = resolveDatabasePort()
-  const committedEnvironment = readCommittedEnvironment(
-    readFileSync(join(repoRoot, '.devcontainer', 'devcontainer.env'), 'utf8')
-  )
+  const workspace = workspaceFor()
+  const databasePort = databasePortFor()
+  const committedEnvironment = readEnvironment()
   const databaseTemplate = committedEnvironment.get('DATABASE_URL')
   const appSecret = committedEnvironment.get('APP_SECRET')
 
@@ -260,8 +312,8 @@ export function main(argv = process.argv.slice(2)) {
     workspace,
   })
 
-  if (printEnvironment) {
-    console.log(
+  if (mode === '--print-env') {
+    log(
       JSON.stringify(
         {
           databaseHost: `127.0.0.1:${databasePort}`,
@@ -276,11 +328,11 @@ export function main(argv = process.argv.slice(2)) {
     return
   }
 
-  ensureHostDependencies(args)
-  console.log(
+  dependenciesFor(args)
+  log(
     `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
   )
-  runPnpm(
+  pnpm(
     [
       '--filter',
       '@klicker-uzh/playwright',
