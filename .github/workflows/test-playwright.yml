@@ -5,13 +5,36 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        converted_to_draft,
+        closed,
+      ]
 
 jobs:
+  # Joining the same PR group cancels obsolete execution without an API token.
+  # Push verification uses its branch ref and remains independent.
+  cancel-closed-pr:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    concurrency:
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Finish closed pull request execution
+        run: ':'
+
   # The called workflow is the only execution envelope. It recomputes the
   # route and selector state from the immutable event payload and exposes one
   # result to the required status job.
   test-playwright-execution:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -26,7 +49,7 @@ jobs:
   # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
     needs: test-playwright-execution
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {}
@@ -94,7 +117,7 @@ jobs:
   # actions: read permission and never runs on the public self-hosted pool.
   playwright-queue-telemetry:
     needs: [test-playwright-execution, test-playwright-status]
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
