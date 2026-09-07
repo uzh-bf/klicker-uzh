@@ -650,3 +650,12 @@ to GitHub CI; no local application runtime was started for publication.
 
 The separate roadmap reconciliation is published in deployment MR 739.
 No production activation, proof replay, rollback or secret/data change occurred.
+
+
+PR static analysis found one unused initial assignment in `runProofMatrix`.
+Removed only that initializer; the successful resolution always assigns the
+mode and the exception path returns immediately. All 42 synthetic proof tests
+passed again with this correction; the 116 activation tests are unaffected.
+Five executable/test files remain byte-identical to the prior reviewed source;
+the sixth differs only by this behavior-preserving correction. Prior independent
+reviews remain applicable with this explicitly recorded main-session check.

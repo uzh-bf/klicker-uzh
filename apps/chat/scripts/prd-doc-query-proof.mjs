@@ -781,7 +781,7 @@ export async function runProofMatrix({
   invoke = invokeMcp,
   createSigner = createScopeSigner,
 }) {
-  let proofMode = FULL_PROOF_MODE
+  let proofMode
   try {
     proofMode = resolveProofMode(environment.DOC_QUERY_PROOF_MODE)
   } catch {
