@@ -16,4 +16,10 @@ Run focused GraphQL knowledge tests on an isolated synthetic test database, rele
 
 ## Progress
 
-2026-09-07: native planner approved this bounded contract. Source head rechecked; missing parameter writes remain. Worktree created, no implementation yet. No live tunnels or data touched.
+2026-09-07: implemented in f5f32a0208. Both create and update persist the required single-KB scope. The isolated synthetic database suite passed all 63 knowledge tests; removing the two source additions made the regression fail, then the original source was restored. GraphQL checks, scoped formatting, diff checks, Gitleaks and focused Opengrep passed.
+
+All hook checks passed with the required environment split: 40 container build/typecheck tasks plus lint and auxiliary checks; 68 host workflow/Devrouter tests. The combined host hook failed on container toolchain outputs; the combined container hook required the host-only Devrouter executable. Equivalent checks ran in their correct environments before committing.
+
+Native slice review found no correctness or scope-isolation issues. Simplifier and final reviewer identified a redundant old-KB exclusion assertion; removed it and the unused helper return, retaining exact equality assertions for both modes. Final review also requested this progress reconciliation. These assertion-only and documentation corrections preserve the tested behavior; prior verification and reviews remain applicable, with final diff inspection of the correction.
+
+Runtime fix-kb-attachment-scope was stopped through devrouter; its recorded container is exited and exact worktree route count is zero. No live data, migration, deployment or browser acceptance was performed. API tunnels are now listening; live reconciliation remains separate. Remaining delivery: ordinary branch push and draft PR targeting v3-ai, followed by human review and required CI. No merge authority.

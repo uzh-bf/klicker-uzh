@@ -631,7 +631,6 @@ describe('Integration tests for knowledge base CRUD', () => {
           )
         )
       ).toEqual([kbId])
-      return configurations
     }
 
     await expectScopedConfigurations(firstKb.id)
@@ -650,16 +649,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       expect.objectContaining({ kbId: secondKb.id }),
     ])
 
-    const configurations = await expectScopedConfigurations(secondKb.id)
-    expect(
-      resolveMcpScope(
-        configurations,
-        'tutor',
-        configurations.filter(
-          (configuration) => configuration.chatMode === 'tutor'
-        )
-      )
-    ).not.toContain(firstKb.id)
+    await expectScopedConfigurations(secondKb.id)
   })
 
   it('serializes concurrent replacements to one enabled binding', async () => {
