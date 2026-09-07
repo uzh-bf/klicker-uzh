@@ -1,5 +1,7 @@
 # Deduplicate hosted pnpm cache writes
 
+Delivery: [PR #5811, hosted cache deduplication](https://github.com/uzh-bf/klicker-uzh/pull/5811), targeting `v3`.
+
 ## Approval summary
 
 Reduce cache churn without deleting stored data, increasing storage allowances,
@@ -19,11 +21,13 @@ increase existing job minutes; it adds no jobs, runner allocation, or paid
 capacity. Ordinary source changes retain exact-key base/default-branch reuse.
 
 The user approved this deduplication direction and a goal on 2026-09-07.
-Authority covers local worktree setup, bounded edits, checks, reviews, plan
-updates, and local commits. Publication, merge, dispatches, retries, cache
-deletion, storage or runner settings, Docker caching, and deployment remain
-excluded. The terminal result is a reviewed local source package. Hosted
-compatibility and storage savings remain pending separately authorized CI proof.
+Authority initially covered local worktree setup, bounded edits, checks, reviews,
+plan updates, and local commits. The user subsequently approved pushing the
+branch, opening a draft PR against v3, and verifying natural Actions runs.
+Merge, manual dispatches, cache deletion, storage or runner settings, Docker
+caching, and deployment remain excluded. The local reviewed source package is
+complete; published consumer proof is now in progress. Storage savings remain
+unproven until a representative post-merge cohort exists.
 
 ## Execution details
 
@@ -175,10 +179,12 @@ The slice reviewer unexpectedly installed ignored dependencies on the host.
 No tracked file changed; its host invocation does not replace the pinned
 container verification above. No managed application runtime was started.
 
-Remote publication and hosted CI proof require separate authority. No PR exists
-for this package yet. The next delivery step is a draft PR and natural Actions
-verification after approval. No cache or setting was changed, and no storage or
-hosted performance saving is claimed.
+The user approved remote publication and natural Actions verification after the
+local goal completed. Draft [PR #5811](https://github.com/uzh-bf/klicker-uzh/pull/5811)
+is open against v3. Verify the latest published head's restoration and absence
+of reader uploads, then report checks and feedback without marking ready or
+merging. No cache or setting was changed, and no storage or hosted performance
+saving is claimed.
 
 Boundary owner: self. Pause for material reuse, trust, or cost changes,
 overlapping edits, an unavailable required review, or a necessary external
