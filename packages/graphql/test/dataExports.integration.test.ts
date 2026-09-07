@@ -543,6 +543,76 @@ describe('research export PostgreSQL integration', () => {
     }
   })
 
+  it('fails when research consent is granted after live rows are read', async () => {
+    const request = buildRequest(fixture.courseId, {
+      selectedClasses: ['LIVE_QUIZ_RESPONSES'],
+    })
+    fixtureIds.receipts.push(request.requestId)
+    let liveRowsRead = false
+    const grantingPrisma = prisma.$extends({
+      query: {
+        liveQuizResponse: {
+          async findMany({ args, query }) {
+            const rows = await query(args)
+            if (!liveRowsRead) {
+              await prisma.participant.update({
+                where: { id: fixture.explicitResearchRefusal.id },
+                data: {
+                  researchConsent: true,
+                  researchConsentChoiceAt: new Date(),
+                  researchConsentDisclosureVersion:
+                    PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+                },
+              })
+              liveRowsRead = true
+            }
+            return rows
+          },
+        },
+      },
+    })
+
+    try {
+      await expect(
+        downloadResearchExport(
+          request,
+          contextFor(
+            fixture.adminId,
+            UserRole.USER,
+            UserLoginScope.FULL_ACCESS,
+            grantingPrisma as unknown as typeof prisma
+          )
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'DATA_EXPORT_ELIGIBILITY_CHANGED' },
+      })
+
+      expect(liveRowsRead).toBe(true)
+      await expect(
+        prisma.researchExportReceipt.findUnique({
+          where: { id: request.requestId },
+        })
+      ).resolves.toMatchObject({
+        status: DataExportStatus.FAILED,
+        sha256: null,
+        byteCount: null,
+        recordCount: null,
+        failureCode: 'DATA_EXPORT_ELIGIBILITY_CHANGED',
+        releasedAt: null,
+      })
+    } finally {
+      await prisma.participant.update({
+        where: { id: fixture.explicitResearchRefusal.id },
+        data: {
+          researchConsent: false,
+          researchConsentChoiceAt: choiceAt,
+          researchConsentDisclosureVersion:
+            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        },
+      })
+    }
+  })
+
   it('rejects reuse of a requestId after the first receipt is released', async () => {
     const request = buildRequest(fixture.courseId)
     fixtureIds.receipts.push(request.requestId)
@@ -609,7 +679,10 @@ describe('research export PostgreSQL integration', () => {
     })
   })
 
-  it('persists cancellation during preparation as a failed receipt', async () => {
+  it.each([
+    'preparation',
+    'release-write',
+  ] as const)('persists cancellation during %s as a failed receipt', async (boundary) => {
     const request = buildRequest(fixture.courseId)
     fixtureIds.receipts.push(request.requestId)
     const cancellation = new AbortController()
@@ -618,7 +691,20 @@ describe('research export PostgreSQL integration', () => {
         researchExportReceipt: {
           async create({ args, query }) {
             const receipt = await query(args)
-            if (args.data.id === request.requestId) cancellation.abort()
+            if (
+              boundary === 'preparation' &&
+              args.data.id === request.requestId
+            )
+              cancellation.abort()
+            return receipt
+          },
+          async update({ args, query }) {
+            const receipt = await query(args)
+            if (
+              boundary === 'release-write' &&
+              args.data.status === DataExportStatus.RELEASED
+            )
+              cancellation.abort()
             return receipt
           },
         },

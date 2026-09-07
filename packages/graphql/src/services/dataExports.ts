@@ -92,6 +92,41 @@ export async function downloadResearchExport(
           throw exportError('DATA_EXPORT_FORBIDDEN')
         }
 
+        const cohortFilters: DB.Prisma.ParticipantWhereInput[] = []
+        if (request.selectedClasses.includes('LIVE_QUIZ_RESPONSES')) {
+          cohortFilters.push({
+            liveQuizResponses: {
+              some: {
+                instance: {
+                  elementBlock: { liveQuiz: { courseId: request.courseId } },
+                },
+              },
+            },
+          })
+        }
+        if (request.selectedClasses.includes('ASYNCHRONOUS_RESPONSES')) {
+          cohortFilters.push({
+            detailQuestionResponses: {
+              some: {
+                OR: [
+                  { practiceQuiz: { courseId: request.courseId } },
+                  { microLearning: { courseId: request.courseId } },
+                ],
+              },
+            },
+          })
+        }
+        // Include refusals so a grant during preparation cannot go unnoticed.
+        const cohort = await prisma.participant.findMany({
+          where: { OR: cohortFilters },
+          select: {
+            id: true,
+            researchConsent: true,
+            researchConsentChoiceAt: true,
+            researchConsentDisclosureVersion: true,
+          },
+          orderBy: { id: 'asc' },
+        })
         const participant = {
           researchConsent: true,
           researchConsentChoiceAt: { not: null },
@@ -157,28 +192,41 @@ export async function downloadResearchExport(
           throw exportError('DATA_EXPORT_TOO_LARGE')
         }
 
-        const ids = [
-          ...new Set(
-            [...liveRows, ...asyncRows].map((row) => row.participantId)
-          ),
-        ].sort()
-        const eligible = ids.length
-          ? await prisma.$queryRaw<
-              Array<{ id: string; researchConsentChoiceAt: Date }>
-            >(DB.Prisma.sql`
-              SELECT "id", "researchConsentChoiceAt" FROM "Participant"
+        const ids = cohort.map((row) => row.id)
+        const lockedCohort = ids.length
+          ? await prisma.$queryRaw<typeof cohort>(DB.Prisma.sql`
+              SELECT "id", "researchConsent", "researchConsentChoiceAt",
+                     "researchConsentDisclosureVersion" FROM "Participant"
               WHERE "id" IN (${DB.Prisma.join(ids.map((id) => DB.Prisma.sql`${id}::uuid`))})
-                AND "researchConsent" = true
-                AND "researchConsentChoiceAt" IS NOT NULL
-                AND "researchConsentDisclosureVersion" = ${PARTICIPANT_DATA_USE_DISCLOSURE_VERSION}
               ORDER BY "id" FOR SHARE
             `)
           : []
         // A changed cohort requires a new request; never release stale selections.
-        if (eligible.length !== ids.length)
+        if (
+          lockedCohort.length !== cohort.length ||
+          lockedCohort.some((row, index) => {
+            const previous = cohort[index]!
+            return (
+              row.id !== previous.id ||
+              row.researchConsent !== previous.researchConsent ||
+              row.researchConsentChoiceAt?.getTime() !==
+                previous.researchConsentChoiceAt?.getTime() ||
+              row.researchConsentDisclosureVersion !==
+                previous.researchConsentDisclosureVersion
+            )
+          })
+        )
           throw exportError('DATA_EXPORT_ELIGIBILITY_CHANGED')
         const choices = new Map(
-          eligible.map((row) => [row.id, row.researchConsentChoiceAt.getTime()])
+          lockedCohort
+            .filter(
+              (row) =>
+                row.researchConsent &&
+                row.researchConsentChoiceAt !== null &&
+                row.researchConsentDisclosureVersion ===
+                  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+            )
+            .map((row) => [row.id, row.researchConsentChoiceAt!.getTime()])
         )
         if (
           [...liveRows, ...asyncRows].some(
@@ -231,6 +279,7 @@ export async function downloadResearchExport(
             releasedAt: now,
           },
         })
+        checkCancellation()
         return { ...artifact, exportId }
       },
       { timeout: 60_000, maxWait: 10_000 }
