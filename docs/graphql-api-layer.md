@@ -95,6 +95,31 @@ The authenticated source gateway in `packages/graphql/src/services/knowledgeSour
 
 `packages/prisma/src/prisma/schema/knowledge.prisma:KB.owner` still uses `onDelete: Cascade`. There is no current user hard-delete path, but a future account-deletion or GDPR workflow must drain every KB through the tombstone/external/blob cleanup lifecycle before deleting the User; relying on the database cascade would remove the reconciliation rows and orphan external or Blob state.
 
+### Participant data-use API
+
+`selfDataUse` is the only GraphQL read for participant research and
+learning-analytics choices. It requires an authenticated `PARTICIPANT` login
+and returns exactly the six current-state `Participant` fields: the two
+Boolean choices, their choice timestamps, and disclosure versions. The generic
+`Participant` object does not expose any of these fields, so public profiles and
+lecturer-facing queries cannot reveal them.
+
+`setResearchConsent` and `setLearningAnalyticsConsent` are separate participant
+mutations. Each accepts only a Boolean `consent`; the server records disclosure
+version `v1`. The mutations retain current state only. Same-value requests with
+recorded `v1` metadata are no-ops; otherwise the server records the new choice
+timestamp and disclosure version. Learning-analytics changes use PostgreSQL
+`clock_timestamp()` and the global advisory gate after a bounded `SET LOCAL
+lock_timeout`; research changes do not take that gate.
+
+Existing individual analytics reads apply the learning-analytics predicate in
+their source queries. A participant result is returned only when the current
+choice is true, all choice metadata is present, and the course's
+`analyticsLastComputedAt` is strictly newer than the current choice timestamp.
+Aggregate and canonical outputs are unaffected. The read paths use a repeatable
+database snapshot while resolving eligible participant IDs, so withdrawn or
+not-yet-recomputed individual rows never reach the response for that snapshot.
+
 ### Assessment invitation API
 
 The lecturer invitation surface is intentionally course-scoped: `assessmentParticipantInvitations`, `createAssessmentParticipantInvitations`, and `deletePendingAssessmentParticipantInvitation` all combine the USER role with course `ADMIN` permission; mutations additionally require `FULL_ACCESS` login scope (`packages/graphql/src/schema/query.ts:assessmentParticipantInvitations`, `packages/graphql/src/schema/mutation.ts:createAssessmentParticipantInvitations`). The service rejects non-assessment courses and scopes deletion by both invitation id and course id. Bulk creation returns per-row statuses plus aggregate counts so one malformed email does not discard valid rows, while unexpected database failures propagate as GraphQL errors (`packages/graphql/src/schema/participantInvitation.ts:CreateAssessmentParticipantInvitationsPayload`). Auto-acceptance requires exactly one active participant behind verified eligible accounts, preserves `Participation.isActive`, and accepted invitation metadata is immutable.

@@ -27,6 +27,38 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. The existence of the `Participation` row is the course-membership check used by participant chatbot discovery, participant chatbot access regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`), and student MCP practice access. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment and practice access.
 
+### Participant data-use choices
+
+Research and learning-analytics choices are participant-global current state on
+`Participant`, not course-scoped history. `researchConsent` and
+`learningAnalyticsConsent` both default to `false`; their choice timestamps and
+disclosure-version fields describe the current decision. This foundation has no
+append-only choice ledger.
+
+`researchConsent = true` allows a future research export to include all stored
+canonical data for that participant; `false` excludes all of it. Returning to
+`true` makes all stored canonical data eligible for future exports again.
+`learningAnalyticsConsent = true` allows eligible individual learning analytics
+to include all stored activity history after a course has been recomputed
+strictly after the current choice; `false` excludes individual learning
+analytics. The separate `Course.isLearningAnalyticsEnabled` course control also
+defaults to `false`.
+
+`Participation` remains the course-membership row and keeps its existing
+leaderboard meaning. It carries no research or learning-analytics choice or
+history, and participants have no per-course data-use choice in this schema.
+
+The public Prisma schema is the sole authority for these models. Catalyst must
+pin the exact immutable public commit and digest it consumes; a moving branch,
+dirty tree, or generated Analytics mirror is not provenance. The stored fields
+alone do not enable export, computation, or workflow dispatch.
+
+Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
+`LiveQuiz` instead of storing a second, independently writable `courseId`.
+Course-scoped analytics joins through that owner, which keeps course ownership
+consistent by construction. Participant live-quiz point totals retain the
+canonical fractional `REAL` values.
+
 ### Assessment participant invitations
 
 `ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.

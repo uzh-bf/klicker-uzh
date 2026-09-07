@@ -19,7 +19,7 @@ pnpm run prisma:sync      # 3. mirror model files into apps/analytics
 pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Participant research and learning-analytics choices are participant-global current-state fields in the public schema; the generated Analytics mirror is not an authority for their meaning. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
 
 ## Prisma 7 client and datasource ownership
 
@@ -29,7 +29,7 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 
 ## Split schema
 
-The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`. The public Prisma schema is the sole authority for participant data-use semantics; Catalyst integrations must pin an exact immutable public commit and digest rather than a branch or generated mirror.
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
@@ -41,12 +41,46 @@ a digest. Candidate creation and evidence-eligibility writes are confined to
 local and test fixtures; no production seed or runtime caller may create them.
 The owner lifecycle is documented in the [GraphQL API layer](./graphql-api-layer.md#chatbot-response-examples).
 
+Participant-global data-use state lives in `Participant`: both research and
+learning-analytics choices default to `false` and retain only the current
+choice, choice time, and disclosure version. The participant-only
+`selfDataUse` query exposes those six fields; the generic `Participant`
+GraphQL object does not. The two Boolean mutations store server-owned
+disclosure version `v1` and capture PostgreSQL `clock_timestamp()` immediately
+before the write. Learning-analytics changes take the global advisory gate with
+a bounded lock timeout; research changes do not take that gate.
+
+A future research export may include all stored canonical data when research
+consent is `true` and none when it is `false`. Learning-analytics consent
+follows the same current-state rule: `true` permits all eligible stored activity
+history after recomputation following the current choice, and `false` permits no
+individual learning-analytics data. Individual reads require complete current
+metadata and a successful recomputation marker strictly newer than the
+learning-analytics choice time; aggregate and canonical outputs are unchanged.
+`Participation` remains course membership and carries no per-course data-use
+choice or history.
+
+Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
+course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents
+cross-course combinations that separate foreign keys cannot reject. Existing-
+table support indexes use one-statement `CREATE INDEX CONCURRENTLY` migrations;
+only indexes on newly created empty analytics tables stay in the schema-creation
+migration.
+
+`ParticipantActivityPerformance` must reference exactly one activity owner:
+either `practiceQuizId` or `microLearningId`, never neither or both. The
+participant data-use and analytics schema migration performs a redacted,
+count-only preflight before adding the PostgreSQL check constraint. Any
+malformed rows fail the migration without automatic remediation or row-level
+output.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 
 The KB resource material category is an additive enum column with a database default of `UNCLASSIFIED`, so existing rows and legacy callers remain valid. Keep this kind of model change in one reviewable migration, run `prisma:sync` for the Analytics twin, and regenerate the shared client before building GraphQL dependents. The migration named `20260831165143_kb_resource_material_type` was isolated from unrelated pre-existing local drift because the development database was not schema-clean; do not reset that database to manufacture a migration.
 
+- A concurrent index build on a populated table gets its own one-statement migration. Multiple statements in one PostgreSQL query can share an implicit transaction, where `CREATE INDEX CONCURRENTLY` is invalid. New empty tables can receive ordinary indexes in their creation migration.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations
