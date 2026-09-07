@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict'
-import { existsSync, globSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import {
+  existsSync,
+  globSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -79,6 +91,7 @@ function createLauncherHarness({
     calls,
     logs,
     dependencies: {
+      resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
       commandRunner,
       environment: { PATH: '/synthetic/bin' },
@@ -280,6 +293,93 @@ function createOriginalMountFixture(compose) {
 
   return original
 }
+function cliFixture(t) {
+  const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const calls = join(root, 'calls.jsonl')
+  function binary(directory, version = '0.0.55', status = 0) {
+    const folder = join(root, directory)
+    mkdirSync(folder, { recursive: true })
+    const path = join(folder, 'devrouter')
+    writeFileSync(
+      path,
+      `#!${process.execPath}\nconst fs = require('node:fs')\nfs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)) + '\\n')\nconsole.log(${JSON.stringify(`Installed CLI version: ${version}\nLocal repo version (${root}/.devrouter.yml): 0.0.55`)})\nprocess.exitCode = ${status}\n`,
+      { mode: 0o755 }
+    )
+    return path
+  }
+  return { root, calls, binary }
+}
+
+test('host CLI selection skips stale worktree bins and symlinked bin directories', (t) => {
+  const { root, calls, binary } = cliFixture(t)
+  const stale = binary('old-worktree/node_modules/.bin', '0.0.51')
+  const host = binary('host/bin')
+  symlinkSync(dirname(stale), join(root, 'alias-bin'))
+  const env = {
+    PATH: [dirname(stale), join(root, 'alias-bin'), dirname(host)].join(
+      delimiter
+    ),
+  }
+  assert.equal(resolveDevrouter({ repo: root, env }), host)
+  assert.deepEqual(
+    readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse),
+    [['-V', '--repo', root]]
+  )
+})
+
+test('a host override resolves multiple global installations without silently selecting another', (t) => {
+  const { root, binary } = cliFixture(t)
+  const old = binary('old-host/bin', '0.0.51')
+  const current = binary('new-host/bin', '0.0.56')
+  const env = { PATH: [dirname(old), dirname(current)].join(delimiter) }
+  assert.throws(() => resolveDevrouter({ repo: root, env }), /too old/)
+  assert.equal(
+    resolveDevrouter({
+      repo: root,
+      env: { ...env, KLICKER_DEVROUTER_BIN: current },
+    }),
+    current
+  )
+})
+
+test('missing, workspace-local, non-executable and broken explicit CLIs fail before runtime access', (t) => {
+  const { root, calls, binary } = cliFixture(t)
+  const stale = binary('node_modules/.bin')
+  const broken = binary('broken/bin', '0.0.55', 1)
+  const nonExecutable = join(root, 'not-executable')
+  writeFileSync(nonExecutable, 'not an executable')
+  for (const executable of [
+    join(root, 'missing'),
+    stale,
+    nonExecutable,
+    './devrouter',
+  ]) {
+    assert.throws(
+      () => resolveDevrouter({ repo: root, executable }),
+      /No executable host Devrouter/
+    )
+  }
+  assert.throws(
+    () => resolveDevrouter({ repo: root, executable: broken }),
+    /version check failed/
+  )
+  assert.deepEqual(
+    readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse),
+    [['-V', '--repo', root]]
+  )
+})
+
+test('unparseable CLI versions cannot pass compatibility checks', (t) => {
+  const { root, binary } = cliFixture(t)
+  for (const version of ['unknown', '0.0.55-rc.1']) {
+    const executable = binary('host/bin', version)
+    assert.throws(
+      () => resolveDevrouter({ repo: root, executable }),
+      /Cannot determine/
+    )
+  }
+})
 
 test('local Playwright rejects direct host execution', () => {
   assert.throws(
@@ -417,9 +517,13 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
 
   runPlaywrightHost(['--list'], harness.dependencies)
 
-  const stop = commandIndex(harness.calls, 'devrouter', 'stop')
+  const stop = commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop')
   const install = commandIndex(harness.calls, 'pnpm', 'install')
-  const ensure = commandIndex(harness.calls, 'devrouter', 'ensure')
+  const ensure = commandIndex(
+    harness.calls,
+    '/synthetic/bin/devrouter',
+    'ensure'
+  )
   assert.ok(stop >= 0)
   assert.ok(install > stop)
   assert.ok(ensure > install)
@@ -446,7 +550,7 @@ test('cold runs complete builds and browser preparation before reconciliation', 
 
   runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
 
-  const stop = commandIndex(harness.calls, 'devrouter', 'stop')
+  const stop = commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop')
   const install = commandIndex(harness.calls, 'pnpm', 'install')
   const prismaBuild = harness.calls.findIndex(
     ({ command, args }) =>
@@ -466,7 +570,11 @@ test('cold runs complete builds and browser preparation before reconciliation', 
       args.includes('playwright') &&
       args.includes('install')
   )
-  const ensure = commandIndex(harness.calls, 'devrouter', 'ensure')
+  const ensure = commandIndex(
+    harness.calls,
+    '/synthetic/bin/devrouter',
+    'ensure'
+  )
 
   assert.ok(stop >= 0)
   assert.ok(stop < install)
@@ -480,7 +588,7 @@ test('cold preparation aborts before reconciliation when stopping fails', () => 
   const harness = createLauncherHarness({
     playwrightCli: false,
     failWhen: ({ command, args }) =>
-      command === 'devrouter' && args[0] === 'stop',
+      command === '/synthetic/bin/devrouter' && args[0] === 'stop',
   })
 
   assert.throws(
@@ -488,7 +596,10 @@ test('cold preparation aborts before reconciliation when stopping fails', () => 
     /synthetic launcher failure/
   )
   assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
 })
 
 test('cold preparation aborts before reconciliation when install fails', () => {
@@ -502,8 +613,13 @@ test('cold preparation aborts before reconciliation when install fails', () => {
     () => runPlaywrightHost(['--list'], harness.dependencies),
     /synthetic launcher failure/
   )
-  assert.ok(commandIndex(harness.calls, 'devrouter', 'stop') >= 0)
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
 })
 
 test('warm preparation aborts before reconciliation when a host build fails', () => {
@@ -519,8 +635,14 @@ test('warm preparation aborts before reconciliation when a host build fails', ()
     () => runPlaywrightHost(['--list'], harness.dependencies),
     /synthetic launcher failure/
   )
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
 })
 
 test('warm runs skip stop and package installation but preserve browser mode', () => {
@@ -528,7 +650,10 @@ test('warm runs skip stop and package installation but preserve browser mode', (
 
   runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
 
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
   assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
   const browserInstall = harness.calls.find(
     ({ command, args }) =>
@@ -553,8 +678,14 @@ test('print-env reconciles without dependency preparation', () => {
 
   runPlaywrightHost(['--print-env'], harness.dependencies)
 
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure') >= 0, true)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') >= 0,
+    true
+  )
   assert.equal(pnpmCalls(harness.calls).length, 0)
 })
 
@@ -567,8 +698,13 @@ test('show-report does not reconcile the runtime', () => {
 
   runPlaywrightHost(['--show-report'], harness.dependencies)
 
-  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
-  assert.ok(commandIndex(harness.calls, 'devrouter', 'stop') >= 0)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0
+  )
   const report = harness.calls.find(
     ({ command, args }) => command === 'pnpm' && args.includes('show-report')
   )

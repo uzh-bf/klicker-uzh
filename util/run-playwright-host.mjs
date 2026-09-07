@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -70,6 +71,7 @@ function runPnpm(
 
 function createRuntime({
   commandRunner = run,
+  resolveDevrouterFn = resolveDevrouter,
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
@@ -77,7 +79,10 @@ function createRuntime({
   environment = process.env,
   log = console.log,
 } = {}) {
+  let devrouter
   return {
+    devrouter: () =>
+      (devrouter ??= resolveDevrouterFn({ repo: root, env: environment })),
     commandRunner,
     commandExistsFn,
     environment,
@@ -223,7 +228,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 
   if (!runtime.pathExists(playwrightCli)) {
     runtime.log('[playwright:host] Stopping the devcontainer before install')
-    runtime.commandRunner('devrouter', ['stop', runtime.repoRoot])
+    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
     runtime.log('[playwright:host] Installing host Playwright dependencies')
     runtime.runPnpm([
       'install',
@@ -306,7 +311,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   if (!printEnvironment) ensureHostDependencies(runtime, args)
 
   runtime.log('[playwright:host] Reconciling the devcontainer runtime')
-  runtime.commandRunner('devrouter', ['ensure', runtime.repoRoot])
+  runtime.commandRunner(runtime.devrouter(), ['ensure', runtime.repoRoot])
 
   const workspace = resolveWorkspace(runtime)
   const databasePort = resolveDatabasePort(runtime)
