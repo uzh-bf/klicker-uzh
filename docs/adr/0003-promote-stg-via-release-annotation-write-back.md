@@ -6,13 +6,34 @@
 
 ## Supersession
 
-The annotation-write-back mechanism below remains the historical response to
-floating-tag drift. Phase 1 replaces it with full-SHA image publication and a
-trusted default-branch controller that advances `stg-release` without a commit
-or pull request. A full-SHA tag is still mutable, so active image workflows use
-a publish-once guard and the controller records canonical registry digests
-before promotion. The privileged `workflow_run` executes only trusted
-default-branch code and treats candidate Git objects and API metadata as data.
+Staging promotion no longer creates a commit or pull request that rewrites
+rollout annotations. A trusted default-branch `workflow_run` controller now
+validates the selected-source workflow definitions, exact-SHA successful runs
+and ARM jobs, and stable full-SHA registry digests before any ref write. For
+each accepted OCI or Docker manifest response, it hashes the raw body and
+requires that value to equal the validated `Docker-Content-Digest` header. It
+then records the evidence and ref-update result in a canonical checksummed
+receipt. An explicit expected-old lease makes the remote write a
+compare-and-swap, while prior graph validation permits only creation or a
+fast-forward and never a history rewrite. After a successful push, bounded
+readback retries record `verified`, `mismatch`, or `uncertain`; the latter two
+fail only after the receipt and checksum have been written. Equal and stale
+candidates are no-ops; divergence and concurrent pre-push ref movement fail
+closed.
+
+The controller executes only code checked out at `github.workflow_sha`.
+Candidate Git objects, API metadata, and registry manifests are data; candidate
+actions, scripts, caches, and artifacts are never executed or consumed. It uses
+only `actions: read` and `contents: write`. Automatic writes require
+`STG_RELEASE_PROMOTION_ENABLED=true`; manual runs default to dry-run and require
+the exact input `confirm_ref_update=stg-release` before a write.
+
+The companion selected-source and platform work makes staging track
+`stg-release` and render all first-party images with its resolved full commit
+SHA. The immutable registry-digest receipt, rather than a mutable branch tag or
+rollout annotation, is the deployment provenance. Keep automatic promotion
+disabled until the SHA publishers, chart override, platform ref, and an initial
+manual receipt-backed ref creation have all been verified.
 
 At activation, staging ArgoCD will resolve `stg-release` to a commit and supply
 `$ARGOCD_APP_REVISION` as the forced-string `global.imageTag`; after sync, each

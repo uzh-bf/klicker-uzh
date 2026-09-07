@@ -71,17 +71,15 @@ neither Node nor pnpm.
 
 ## Image builds
 
-Per-app stg and prd image workflows (`v3_<app>-{stg,prd}.yml`) publish the
-ARM64 images. The PWA has both an ordinary and an assessment pair, and
-`v3_backend-docker-{stg,prd}.yml` additionally builds
-`backend-docker-migrator` (see [Deployment migrations](#deployment-migrations)).
-This includes `mcp-lecturer` and `mcp-student`, which also have full chart
-workloads (`deployment-`, `service-`, `cm-`, `hpa-`,
-`pdb-mcp-{lecturer,student}.yaml`). Most legacy `-amd` jobs stay defined with an
-always-false job condition, while the MCP workflows retain their active AMD64
-builds. Keeping intentionally disabled `build-amd` jobs explicit preserves
-their status context. The no-op `Build Fallback` `build-amd` job remains enabled
-for pull requests that do not start an app image workflow.
+The selected staging source currently has 15 `v3_*-stg.yml` workflows with 16
+active ARM64 image jobs, including the backend migrator and the two MCP images.
+They push images to ghcr.io through their `-arm` jobs. Fourteen legacy `-amd`
+jobs remain defined with an always-false condition. The two MCP workflows also
+publish AMD64 variants, but those repositories are not staging-chart runtime
+inputs and are excluded from the release receipt. Keeping the skipped
+`build-amd` job preserves the required status context where branch protection
+still requires that name. The no-op `Build Fallback` `build-amd` job remains
+enabled for pull requests that do not start an app image workflow.
 
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths. Every metadata block retains branch and pull-request tags and adds the full source commit SHA. Pull requests build without pushing. On push, `.github/scripts/stg-image-publish-guard.sh` checks the full-SHA tag after registry login. A missing tag permits the existing build to push all tags once; an existing tag records its canonical digest and skips the build, so a rerun cannot overwrite the SHA tag or move the floating branch tag backward. An uncertain registry response fails closed.
 - **prd**: tags `v*.*.*` only.
@@ -141,23 +139,57 @@ alongside its branch tag. A SHA-shaped tag is still mutable registry metadata,
 so the publish-once guard is load-bearing: an existing SHA tag is never rebuilt,
 and its canonical registry digest is recorded before the build is skipped.
 
-The privileged `workflow_run` controller runs only code checked out from the
-trusted default branch. It treats the candidate commit, workflow runs, jobs,
-and repository objects as untrusted data. Once every required active image job
-has succeeded for the exact candidate, it resolves every SHA tag to a registry
-digest and writes a sorted canonical receipt containing the source revision,
-workflow, run, job, repository, tag, and digest. Only a complete stable receipt
-may advance `stg-release`, using initial creation or fast-forward
-compare-and-swap without force. Equal or stale candidates are no-ops;
-divergence and concurrent movement fail closed.
+`.github/workflows/deploy-stg-promote.yml` is a trusted default-branch
+`workflow_run` controller. It checks out only `github.workflow_sha`, executes
+only the promoter script from that checkout, and treats candidate workflow
+files, run and job metadata, and registry responses as untrusted data. It does
+not check out or execute candidate actions or scripts and does not consume
+candidate caches or artifacts.
 
-Staging ArgoCD tracks `stg-release`. ArgoCD resolves that ref to an exact commit,
-then the external Application passes `$ARGOCD_APP_REVISION` to Helm as
+For each candidate, the controller validates all of these before considering a
+ref update:
+
+- `STG_SOURCE_BRANCH` is a safe supported `v3*` source and the candidate is its
+  ancestor.
+- The candidate has the exact trusted staging workflow names, paths, push
+  triggers, active ARM jobs, runtime image repositories, and backend migrator
+  ordering. Intentionally disabled AMD jobs are excluded.
+- Every required workflow and job has a successful push run for the exact
+  candidate SHA. Only missing or still-running evidence is retried, for a
+  bounded interval; skipped, failed, cancelled, or mismatched evidence fails
+  immediately.
+- Every expected runtime repository exposes the full candidate SHA tag with a
+  complete digest. Each accepted OCI or Docker manifest response must be
+  redirect-free, complete, and have raw body bytes whose SHA-256 equals its
+  validated `Docker-Content-Digest` header. The controller reads the registry
+  inventory twice and fails if any digest is absent or changes during
+  collection.
+
+At activation, staging ArgoCD will track `stg-release`. ArgoCD resolves that ref
+to an exact commit, then the external Application passes `$ARGOCD_APP_REVISION` to Helm as
 `global.imageTag` with `forceString: true`. The chart applies that tag to all 18
 first-party images, including the PreSync migrator. The values file therefore
 does not need a promotion commit or pull request. The retained rollout
 annotations and old promotion credential are stability-window rollback aids,
 not the new revision source.
+
+The sorted evidence becomes a canonical JSON receipt with the controller run,
+source and candidate revisions, workflow/run/job identities, registry tags and
+digests, retry history, ref decision, update result, post-push verification
+state, and previous/applied release revisions. Its SHA-256 checksum is written
+beside the receipt, and both are uploaded as a workflow artifact; the job
+summary records the same checksum and run identity. A successful Git push is
+followed by bounded ref readback retries. If readback remains unavailable or
+reports another ref, the controller writes the receipt and checksum with
+`uncertain` or `mismatch` verification before failing the run.
+
+`refs/heads/stg-release` is the only write target. An explicit expected-old
+lease provides the remote compare-and-swap after the controller has proved the
+candidate is a fast-forward. Initial creation and fast-forward are the only
+accepted updates; equal and stale candidates are no-ops, while divergence and
+any concurrent ref movement fail. Candidate-SHA concurrency serializes
+duplicate evaluation of one commit without suppressing a different, possibly
+newer candidate.
 
 Keep the evidence layers separate:
 
@@ -168,9 +200,31 @@ Keep the evidence layers separate:
 - successful sync, successful migration, workload health, and user acceptance
   remain independent checks.
 
-Automatic writes stay disabled unless `STG_RELEASE_PROMOTION_ENABLED=true`.
-Manual entry defaults to dry-run and requires exact confirmation of
-`stg-release` before any ref update. The static contract test at
+Operational notes:
+
+- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. It falls back to
+  `v3` in the trusted workflow expression when unset. The promoter requires
+  that resolved input and does not query repository variables itself. Promotion
+  fails closed unless the branch has the exact trusted publisher inventory and
+  full-SHA tags.
+- GitHub evaluates `workflow_run` from the default branch. A correction on a
+  selected-source branch does not change the privileged controller. Candidate
+  source may contain an identical mirror for manual diagnostics, but the
+  automatic run executes only the default-branch revision.
+- Keep `STG_RELEASE_PROMOTION_ENABLED` absent or `false` during Phase 1. A
+  manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
+  exact input `confirm_ref_update=stg-release`. Initial ref creation,
+  repository-variable changes, and activation remain separate operations.
+- Before activation, prove every full-SHA image and retain the receipt, create
+  `stg-release` through the confirmed manual path, then update only the private
+  staging ArgoCD Application to track that ref and pass
+  `global.imageTag=$ARGOCD_APP_REVISION` as a forced string. Preview, apply,
+  runtime health, and acceptance remain separate evidence and approvals.
+- The controller uses the repository `GITHUB_TOKEN`; no promotion PAT,
+  pull-request permission, source-branch bypass actor, auto-merge setting, or
+  squash-title behavior is part of the new path.
+
+The static contract test at
 `.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow
 paths and names, validates all 32 metadata/build pairs and the active
 repository/job map, checks the promoter trigger list, and proves all 18 chart
