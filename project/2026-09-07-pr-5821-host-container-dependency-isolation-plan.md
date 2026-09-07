@@ -1,5 +1,7 @@
 # Isolate host and container workspace dependencies
 
+Draft [PR #5821 — isolate host and container dependencies](https://github.com/uzh-bf/klicker-uzh/pull/5821) targets `v3`. The task branch is pushed and tracks its matching remote branch. Draft publication is complete; exact-head CI, feedback and explicit ready/merge authority remain separate.
+
 ## Approval summary
 
 Host Playwright installs can rewrite dependency links used by the running Linux devcontainer. Root dependencies are isolated, but most package-level dependency directories remain shared. This can make Chat and other apps fail even though their source has not changed.
