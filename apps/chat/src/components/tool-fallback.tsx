@@ -9,10 +9,7 @@ import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
-import {
-  isDocQueryToolName,
-  parseDocQueryPayload,
-} from '@/src/lib/sources/normalizeSources'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { DocQueryResults } from './doc-query-results'
 
@@ -150,54 +147,6 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
   return typeof query === 'string' && query.trim().length > 0
     ? query
     : undefined
-}
-
-export interface DocQueryPanelContent {
-  query?: string
-  showSourcesHint: boolean
-}
-
-/**
- * Friendly, non-raw content for an expanded doc_query tool call's panel, or
- * `undefined` when the raw tool-name/args/result fallback should render
- * instead: a non-doc_query tool, or a doc_query result that never parsed
- * (running, cancelled, or failed calls all leave `result` as a
- * placeholder/error value — see `getDocQueryChipState` — whose raw payload
- * keeps its debugging value).
- *
- * `'done'` only ever reaches here once `parseDocQueryPayload(result)` above
- * has already succeeded, so — unlike the chip label — it unambiguously means
- * "parsed with at least one source" and is safe to key the sources hint on.
- */
-export function getDocQueryPanelContent({
-  isDocQuery,
-  argsText,
-  result,
-  docQueryState,
-}: {
-  isDocQuery: boolean
-  argsText: string
-  result: unknown
-  docQueryState: DocQueryChipState | undefined
-}): DocQueryPanelContent | undefined {
-  if (
-    !isDocQuery ||
-    docQueryState === 'running' ||
-    docQueryState === 'failed' ||
-    !parseDocQueryPayload(result)
-  ) {
-    return undefined
-  }
-
-  const query = parseDocQueryArgsQuery(argsText)
-  const showSourcesHint = docQueryState === 'done'
-  // doneEmpty with unreadable args would yield a panel with nothing in it —
-  // fall back to the raw payload instead.
-  if (query === undefined && !showSourcesHint) {
-    return undefined
-  }
-
-  return { query, showSourcesHint }
 }
 
 interface ToolFallbackProps {
