@@ -133,11 +133,21 @@ runs:
       shell: bash
       run: tar -xf playwright-next-builds.tar
 
+    - name: Provision disposable test database
+      shell: bash
+      env:
+        PROVISIONER_ROOT: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        node --test "$PROVISIONER_ROOT/prepare-test-database.test.cjs"
+        sha256sum "$PROVISIONER_ROOT/prepare-test-database.cjs"
+        node "$PROVISIONER_ROOT/prepare-test-database.cjs"
+
     - name: Generate Prisma Client
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma generate
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Prepare .env files
       shell: bash
@@ -152,13 +162,13 @@ runs:
         cd packages/prisma
         pnpm run prisma:reset:raw -f
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Seed test participants for Playwright
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma-data seed:test
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Start services, wait for readiness, and run Playwright tests
       shell: bash
@@ -218,7 +228,7 @@ runs:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
         APP_SECRET: abcd
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
         PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
         URL_AUTH: http://127.0.0.1:3010
@@ -232,8 +242,8 @@ runs:
         CHECK_INTERVAL: '5'
         POSTGRES_CHECK_HOST: postgres
         POSTGRES_CHECK_PORT: 5432
-        POSTGRES_CHECK_USER: klicker-prod
-        POSTGRES_CHECK_DATABASE: klicker-prod
+        POSTGRES_CHECK_USER: klicker_test
+        POSTGRES_CHECK_DATABASE: klicker_test
         REDIS_HOST: redis_exec
         REDIS_PASS: ''
         REDIS_PORT: 6379

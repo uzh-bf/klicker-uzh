@@ -153,6 +153,23 @@ provider-level acceptance check.
 
 ## CI matrix
 
+Playwright's trusted shard action provisions a fresh `klicker_test` database
+and login on each shard's private PostgreSQL service before reset or seed.
+The login owns that database without superuser, role-management, replication
+or row-security-bypass privileges. The database comment
+`klicker-disposable-test-v1` identifies its disposable purpose and survives a
+schema reset. Existing test roles or databases cause provisioning to fail;
+partial failures require a fresh service, never adoption of existing data.
+The provisioner ignores caller database URLs and targets only the fixed CI
+service. It is not a local reset helper and must not be used to mark staging,
+production or a retained development database.
+
+Both runner routes load this action from trusted v3. A candidate PR cannot
+change its own provisioning action. Local PostgreSQL reset/seed proof is
+therefore required before changing the action, followed by a non-skipped
+postmerge shard run. The action logs its provisioner checksum so that run can
+be matched to the reviewed source.
+
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
 suites with one frozen install. It builds Prisma, types, grading, and util once,
 then keeps each suite as a separately visible step. The chat suite runs against
