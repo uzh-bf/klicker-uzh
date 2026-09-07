@@ -459,7 +459,10 @@ test.describe('Chatbot Messaging Interface', () => {
       'You are chatting with E2E Chatbot.'
     )
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
-      'Tutor mode.'
+      'Selected mode: Tutor'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
   })
@@ -1581,6 +1584,87 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toBeVisible()
   }
 
+  async function setChatLocale(page: Page, locale: 'en' | 'de') {
+    const url = new URL(chatUrl())
+    await page.context().addCookies([
+      {
+        name: 'NEXT_LOCALE',
+        value: locale,
+        url: url.origin,
+        sameSite: 'Lax',
+        secure: url.protocol === 'https:',
+      },
+    ])
+  }
+
+  async function setAllowedModelIds(modelIds: string[]) {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { allowedModelIds: modelIds },
+    })
+  }
+
+  async function assertAutomaticAndFixedModelCopy(
+    page: Page,
+    participantId: string,
+    locale: 'en' | 'de',
+    copy: {
+      automatic: string
+      primary: string
+      fixed: string
+      fallback: string
+    }
+  ) {
+    await setChatLocale(page, locale)
+    await setModelSelection(participantId, false)
+
+    try {
+      // Restricting the list to Auto makes the server's effective fixed model
+      // deterministic, independent of the deployment's primary-model env.
+      await setAllowedModelIds(['auto'])
+      await setCredits(participantId, 50, 100)
+      await visitChat(page)
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+
+      const modelSection = page.getByTestId('chat-model-selection')
+      await expect(modelSection).toContainText('Auto Mode')
+      await expect(modelSection).toContainText(copy.automatic)
+      await expect(modelSection).toContainText(copy.primary)
+      await expect(modelSection).not.toContainText(copy.fixed)
+
+      // A concrete allow-list makes the same lecturer-fixed path display a
+      // concrete model rather than Auto, so the copy must change with it.
+      await setAllowedModelIds(['gpt-4.1'])
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText('GPT-4.1')
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).not.toContainText(copy.automatic)
+      await expect(modelSection).not.toContainText(copy.primary)
+
+      // The fixed model can still use Luna only in the exceptional
+      // participant-credit fallback path.
+      await setCredits(participantId, 0, 100)
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '0 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).toContainText(copy.fallback)
+      await expect(modelSection).not.toContainText(copy.automatic)
+    } finally {
+      await setAllowedModelIds([])
+    }
+  }
+
   test('Settings toggle is visible and opens the panel', async ({ page }) => {
     await visitChat(page)
 
@@ -1679,12 +1763,14 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await page.getByTestId('chat-mode-switcher').click()
-    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
-      'patient'
+    await expect(page.getByTestId('chat-mode-description-tutor')).toHaveText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(
       page.getByTestId('chat-mode-description-explainer')
-    ).toContainText('difficult concepts')
+    ).toHaveText(
+      'Get direct explanations with definitions and course-based examples.'
+    )
   })
 
   test('AI model section displays current model (automatic mode)', async ({
@@ -1700,6 +1786,33 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-model-display')).toBeVisible()
   })
 
+  test('Participant settings distinguish Auto and fixed models in English', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
+      automatic: 'KlickerUZH chooses a suitable model for each message.',
+      primary: 'The automatic choice is used while credits are available.',
+      fixed: 'Your lecturer fixed this model for all participants.',
+      fallback:
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+    })
+  })
+
+  test('Participant settings distinguish Auto and fixed models in German', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
+      automatic:
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      primary:
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
+      fixed:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
+      fallback:
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+    })
+  })
+
   test('Credits display shows current/total and percentage', async ({
     page,
   }) => {
@@ -1712,7 +1825,9 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Zero credits shows "used up all credits" message', async ({ page }) => {
+  test('Zero credits preserves the selected class and shows availability', async ({
+    page,
+  }) => {
     await setCredits(participantId, 0, 100)
     await visitChat(page)
 
@@ -1721,13 +1836,13 @@ test.describe('Chatbot Settings Panel', () => {
       '0 / 100'
     )
     await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
-      'You have used up all your credits'
+      'Some models may no longer be available'
     )
 
     await openSettings(page)
-    await expect(page.getByTestId('chat-model-selection')).toContainText(
-      'GPT-4.1 Mini'
-    )
+    const modelSection = page.getByTestId('chat-model-selection')
+    await expect(modelSection).toContainText('GPT-4.1')
+    await expect(modelSection).not.toContainText('GPT-4.1 Mini')
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
@@ -1742,7 +1857,7 @@ test.describe('Chatbot Settings Panel', () => {
       '0 / 100'
     )
     await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
-      'New messages use the smaller model'
+      'Some models may no longer be available'
     )
   })
 
@@ -1769,8 +1884,8 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1 Mini')
-    await expect(modelSection).toContainText('GPT-4.1 Mini')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
+    await expect(modelSection).toContainText('GPT-4.1')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1781,7 +1896,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1-mini')
+    expect(payload.selectedModel).toBe('gpt-4.1')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -1799,7 +1914,7 @@ test.describe('Chatbot Settings Panel', () => {
     await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
 
     await expect(modelSection).toContainText(
-      'Built for difficult, multi-step questions'
+      'Uses fewer credits and remains available when your credits run out'
     )
     await expect(modelSection).not.toContainText('LiteLLM')
     await expect(modelSection).not.toContainText('OpenAI reasoning model')
@@ -2490,6 +2605,71 @@ test.describe('Chatbot Source Citations', () => {
     ).toContainText('[9]')
   })
 
+  test('A compact citation range renders one citation chip per source number', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Citation ranges',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the sources' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-range',
+              sources: [
+                {
+                  file_name: 'Range One.pdf',
+                  source_url: 'https://example.com/range-one.pdf',
+                  source_type: 'document',
+                  page_number: 1,
+                },
+                {
+                  file_name: 'Range Two.pdf',
+                  source_url: 'https://example.com/range-two.pdf',
+                  source_type: 'document',
+                  page_number: 2,
+                },
+                {
+                  file_name: 'Range Three.pdf',
+                  source_url: 'https://example.com/range-three.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+            { type: 'text', text: 'Compare the evidence in [1–3].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const citations = page.getByTestId('chat-citation')
+    await expect(citations).toHaveCount(3)
+    await expect(citations.nth(0)).toHaveAccessibleName(
+      'Source 1: Range One.pdf'
+    )
+    await expect(citations.nth(1)).toHaveAccessibleName(
+      'Source 2: Range Two.pdf'
+    )
+    await expect(citations.nth(2)).toHaveAccessibleName(
+      'Source 3: Range Three.pdf'
+    )
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).not.toContainText('[1–3]')
+    await expect(
+      page
+        .getByTestId('chat-assistant-message-content')
+        .locator('a[href="#cite-range-separator"]')
+    ).toHaveCount(0)
+  })
+
   test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({
     page,
   }) => {
@@ -2715,11 +2895,13 @@ test.describe('Chatbot Source Citations', () => {
       timeout: 15_000,
     })
     await expect(section).toHaveCount(0)
-    expect(
-      await viewport.evaluate(
-        (element) => element.scrollHeight > element.clientHeight
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
       )
-    ).toBe(true)
+      .toBe(true)
     await expect
       .poll(() => viewport.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(scrollTopBeforeText)

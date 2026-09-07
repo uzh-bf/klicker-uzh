@@ -37,10 +37,7 @@ export async function GET(
       chatbotId
     )
 
-    const availableModels = getModelsForChatbot(
-      chatbotResult.chatbot,
-      credits
-    ).map(
+    const availableModels = getModelsForChatbot(chatbotResult.chatbot).map(
       ({
         id,
         name,
@@ -73,7 +70,6 @@ export async function GET(
       nextResetAt,
       availableModels,
       automaticModelId: getAutomaticModelId(
-        credits,
         chatbotResult.chatbot.allowedModelIds
       ),
     })

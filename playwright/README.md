@@ -19,26 +19,33 @@ playwright/
 
 ## Local run
 
-1. Start dependencies: `./_run_app_dependencies.sh` (from repo root)
-2. Start Playwright app stack: `pnpm run dev:playwright`
-3. Run all tests:
+Run from a host shell at the repository root. The launcher starts or reconciles
+the exact devrouter workspace, resolves its namespaced routes and database, and
+keeps the Playwright process and browser binaries on the host.
 
 ```bash
-# with Infisical secrets (recommended)
-pnpm --filter @klicker-uzh/playwright test:run
+# run all Chromium tests
+pnpm playwright:host -- --project=chromium
 
-# without Infisical (env vars already exported)
-pnpm --filter @klicker-uzh/playwright test:run:raw
+# run one spec
+pnpm playwright:host -- --project=chromium tests/A-login.spec.ts
+
+# inspect the resolved workspace without printing credentials
+pnpm playwright:host -- --print-env
 ```
+
+Direct local `playwright test` calls fail before database cleanup. Never run
+Playwright or install its browsers inside the devcontainer. GitHub Actions keeps
+using the official Playwright container directly.
 
 ## Useful commands
 
 ```bash
 # UI / interactive mode
-pnpm --filter @klicker-uzh/playwright test:ui
+pnpm playwright:host -- --ui
 
 # Headed Chromium only
-pnpm --filter @klicker-uzh/playwright test:headed
+pnpm playwright:host -- --headed --project=chromium
 
 # Show last HTML report
 pnpm --filter @klicker-uzh/playwright show-report

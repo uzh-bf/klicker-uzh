@@ -170,7 +170,7 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, href, ...props }) => {
+  a: ({ className, children, href, ...props }) => {
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />
 
@@ -184,7 +184,9 @@ const defaultComponents = memoizeMarkdownComponents({
         rel="noopener noreferrer"
         href={href}
         {...props}
-      />
+      >
+        {children}
+      </a>
     )
   },
   // Styled as a soft amber info callout (e.g. a model-emitted "Hinweis" note),

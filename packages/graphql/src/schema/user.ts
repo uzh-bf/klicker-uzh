@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import type { BetaEnrollmentCapability as IBetaEnrollmentCapability } from '../services/betaEnrollment.js'
 
 export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),
@@ -11,6 +12,16 @@ export const UserLoginScope = builder.enumType('UserLoginScope', {
 
 export const UserRole = builder.enumType('UserRole', {
   values: Object.values(DB.UserRole),
+})
+
+export const BetaEnrollmentCapabilityRef =
+  builder.objectRef<IBetaEnrollmentCapability>('BetaEnrollmentCapability')
+export const BetaEnrollmentCapability = BetaEnrollmentCapabilityRef.implement({
+  fields: (t) => ({
+    mayChange: t.exposeBoolean('mayChange'),
+    membership: t.exposeBoolean('membership', { nullable: true }),
+    signupAvailable: t.exposeBoolean('signupAvailable'),
+  }),
 })
 
 export interface IUser extends DB.User {

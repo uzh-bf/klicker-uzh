@@ -1,6 +1,7 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export { getChatModelRegistry } from './services/chatbots.js'
 
 import builder from './builder.js'
 
@@ -39,6 +40,7 @@ import './schema/subscription.js'
 //   })
 // }
 
+import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
@@ -89,4 +91,5 @@ export const handlers: HatchetHandlers = {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
+  handleProcessCourseDeletion,
 }

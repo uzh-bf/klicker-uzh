@@ -1,6 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 
-const DEFAULT_FALLBACK_MODEL_ID = 'gpt-4.1-mini'
+const DEFAULT_FALLBACK_MODEL_ID = 'gpt-5.6-luna'
 const APPLY_FLAG = '--apply'
 
 const fallbackModelId =

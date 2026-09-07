@@ -3,30 +3,27 @@ export * from './auth.js'
 
 // export everything from the element blocks module
 export * from './blocks.js'
-
+// export standard chatbot mode configuration validation and normalization
+export * from './chatbotStandardModeConfig.js'
+// export everything from the chat model registry module
+export * from './chatModelRegistry.js'
+// export everything from the chat usage module
+export * from './chatUsage.js'
 // export everything from the crypto module
 export * from './crypto.js'
-
 // export everything from the elements module
 export * from './elements.js'
-
 // export everything from the email module
 export * from './email.js'
-
 // export everything from the identity module
 export * from './identity.js'
-
 // export everything from the jwt module
 export * from './jwt.js'
-
 // export everything from the levels module
 export * from './levels.js'
-
 // export live quiz response tracking helpers
 export * from './liveQuizResponseTracking.js'
-
 // export everything from the permissions module
 export * from './permissions.js'
-
 // export everything from the types module
 export * from './types.js'

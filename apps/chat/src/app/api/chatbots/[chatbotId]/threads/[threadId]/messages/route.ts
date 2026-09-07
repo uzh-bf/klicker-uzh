@@ -22,6 +22,7 @@ export async function GET(
     const messages = await prisma.chatMessage.findMany({
       where: {
         threadId,
+        lifecycleStatus: 'COMPLETED',
         thread: {
           participantId,
           chatbotId,

@@ -1,6 +1,8 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from './client.js'
 
+export * from './chatAccountUsage.js'
+
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'
 // const pool = new Pool(poolConfig)

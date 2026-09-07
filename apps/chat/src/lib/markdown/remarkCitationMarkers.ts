@@ -1,10 +1,12 @@
-// Transforms `[n]` citation markers (written by the model per the S5 prompt
-// contract) into markdown link nodes pointing at `#cite-<n>`, so
-// `markdown-text.tsx`'s `a` component override can render a `CitationChip`
-// instead of a normal anchor. Whether `n` actually resolves to a source is
-// decided later, in `CitationChip` (message-scoped `sources` context) — this
-// module only does the structural markdown transform and knows nothing
-// about sources.
+import { MAX_SOURCES } from '../sources/normalizeSources'
+
+// Transforms `[n]` and contiguous `[n–m]` citation markers (written by the
+// model per the S5 prompt contract) into adjacent markdown link nodes pointing
+// at `#cite-<n>`, so `markdown-text.tsx`'s `a` component override can render a
+// `CitationChip` instead of a normal anchor. Whether an index actually
+// resolves to a source is decided later, in `CitationChip` (message-scoped
+// `sources` context) — this module only does the structural markdown
+// transform and does not inspect message sources.
 //
 // Runs as a `unified`/remark transformer plugin, appended after
 // `remark-gfm`/`remark-math` so it walks the already-fully-parsed mdast tree
@@ -35,11 +37,13 @@ export interface MarkdownAstNode {
 // inside code never reaches the `text`-node branch in the first place.
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 
-// Complete numbered marker, e.g. `[1]` or `[12]`. No `g` flag — safe to
-// `.test()` repeatedly without shared-state bugs; the `g`-flagged exec below
-// is a separate regex instance used only inside `splitCitationMarkers`.
-const HAS_CITATION_MARKER_RE = /\[\d{1,2}\]/
-const CITATION_MARKER_EXEC_RE = /\[(\d{1,2})\]/g
+// Complete numbered marker, e.g. `[1]`, `[12]`, or `[2–4]`. Hyphen and em
+// dash variants are accepted because models do not reliably emit one dash
+// character. No `g` flag — safe to `.test()` repeatedly without shared-state
+// bugs; the `g`-flagged exec below is a separate regex instance used only
+// inside `splitCitationMarkers`.
+const HAS_CITATION_MARKER_RE = /\[\d{1,2}(?:[ \t]*[-–—][ \t]*\d{1,2})?\]/
+const CITATION_MARKER_EXEC_RE = /\[(\d{1,2})(?:[ \t]*[-–—][ \t]*(\d{1,2}))?\]/g
 
 export function citationHrefFor(index: number): string {
   return `#cite-${index}`
@@ -62,11 +66,11 @@ const TRAILING_INLINE_WHITESPACE_RE = /[ \t]+$/
 
 /**
  * Pure: splits a single text value into text/link mdast nodes around any
- * complete `[n]` markers it contains. A partial marker still streaming in
- * (`[1`, no closing bracket) does not match and is left as literal text —
- * this is what makes the transform streaming-safe without any additional
- * state. Returns a single-element array with the original text unchanged
- * when there is nothing to split.
+ * complete `[n]` or contiguous `[n–m]` markers it contains. A partial marker
+ * still streaming in (`[1`, no closing bracket) does not match and is left as
+ * literal text — this is what makes the transform streaming-safe without any
+ * additional state. Returns a single-element array with the original text
+ * unchanged when there is nothing to split.
  *
  * Spaces before a marker are dropped ("Mittel [1]." renders as "Mittel[1]."),
  * which is what glues the chip to the word it cites: browsers only break
@@ -80,42 +84,60 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
   }
 
   const nodes: MarkdownAstNode[] = []
-  let lastIndex = 0
+  let lastTextIndex = 0
   CITATION_MARKER_EXEC_RE.lastIndex = 0
 
-  let match: RegExpExecArray | null
-  while ((match = CITATION_MARKER_EXEC_RE.exec(value))) {
-    const [full, digits] = match
+  while (true) {
+    const match = CITATION_MARKER_EXEC_RE.exec(value)
+    if (!match) break
+
+    const [full, firstDigits, lastDigits] = match
+    const firstIndex = Number(firstDigits)
+    const lastIndex = lastDigits ? Number(lastDigits) : firstIndex
+
+    // Keep malformed descending ranges literal. The custom text cursor is
+    // intentionally unchanged so the marker is included in the next text
+    // slice (or the final remainder below).
+    if (lastIndex < firstIndex) continue
+
+    // A wider range cannot fully resolve and would multiply CitationChip work
+    // on every streaming parse. Keep it literal, like a descending range.
+    if (lastIndex - firstIndex + 1 > MAX_SOURCES) continue
+
     const start = match.index
-    if (start > lastIndex) {
+    if (start > lastTextIndex) {
       const before = value
-        .slice(lastIndex, start)
+        .slice(lastTextIndex, start)
         .replace(TRAILING_INLINE_WHITESPACE_RE, '')
       if (before.length > 0) {
         nodes.push({ type: 'text', value: before })
       }
     }
-    nodes.push({
-      type: 'link',
-      url: citationHrefFor(Number(digits)),
-      children: [{ type: 'text', value: digits }],
-    })
-    lastIndex = start + full.length
+
+    for (let index = firstIndex; index <= lastIndex; index += 1) {
+      nodes.push({
+        type: 'link',
+        url: citationHrefFor(index),
+        children: [{ type: 'text', value: String(index) }],
+      })
+    }
+    lastTextIndex = start + full.length
   }
 
-  if (lastIndex < value.length) {
-    nodes.push({ type: 'text', value: value.slice(lastIndex) })
+  if (lastTextIndex < value.length) {
+    nodes.push({ type: 'text', value: value.slice(lastTextIndex) })
   }
 
   return nodes
 }
 
 /**
- * Pure mdast transform: walks the tree depth-first and replaces `[n]` runs
- * inside plain text nodes with link nodes, skipping text that is already
- * inside a real link (see `SKIPPED_PARENT_TYPES`). Mutates `tree` in place
- * (matching the unified/remark transformer contract) and also returns it
- * for convenience in tests.
+ * Pure mdast transform: walks the tree depth-first and replaces `[n]` and
+ * contiguous `[n–m]` runs inside plain text nodes with adjacent link nodes,
+ * skipping text that is already inside a real link (see
+ * `SKIPPED_PARENT_TYPES`). Mutates `tree` in place (matching the
+ * unified/remark transformer contract) and also returns it for convenience in
+ * tests.
  */
 export function transformCitationMarkers<T extends MarkdownAstNode>(
   tree: T

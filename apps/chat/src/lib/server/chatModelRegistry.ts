@@ -1,5 +1,10 @@
+import {
+  CHAT_BASE_MODEL_ID,
+  getChatModelAutoPolicyIssues,
+  getChatModelBasePolicyIssues,
+} from '@klicker-uzh/util'
 import { z } from 'zod'
-import { type ReasoningEffort } from '../config/reasoning'
+import type { ReasoningEffort } from '../config/reasoning'
 
 const chatModelSchema = z
   .object({
@@ -12,8 +17,11 @@ const chatModelSchema = z
     usesResponsesApi: z.boolean().optional(),
     supportsImageAttachments: z.boolean().default(false),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
-    maxOutputTokens: z.number().positive().optional(),
+    maxOutputTokens: z.number().int().min(1).max(4096),
     apiVersion: z.string().min(1).optional(),
+    // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
+    // omits the class is conservatively normalized to ADVANCED, never BASE.
+    usageClass: z.enum(['BASE', 'ADVANCED']).default('ADVANCED'),
     cost: z.object({
       input: z.number().nonnegative(),
       output: z.number().nonnegative(),
@@ -62,6 +70,19 @@ const chatModelRegistrySchema = z
           'At least one model with "fallback: true" is required for credit-safe automatic selection.',
       })
     }
+
+    for (const issue of getChatModelBasePolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
+    }
+    for (const issue of getChatModelAutoPolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
+    }
   })
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
@@ -104,7 +125,12 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
     .map((model) => normalizeChatModelConfig(model))
 }
 
-export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+/** Parses and normalizes a raw registry value through the chat consumer. */
+export function parseChatModelRegistry(value: unknown): ChatModelConfig[] {
+  return parseRegistryValue(value)
+}
+
+export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
   {
     id: 'auto',
     deploymentId: 'auto-router',
@@ -115,19 +141,23 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
-    cost: { input: 1.25, output: 10.0 },
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
+    cost: { input: 1.0, output: 5.0 },
   },
   {
     id: 'gpt-5.6-luna',
     deploymentId: 'gpt-5.6-luna',
     name: 'GPT-5.6 Luna',
     description: 'OpenAI reasoning model',
-    fallback: false,
+    fallback: true,
     supportsReasoning: true,
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
-    cost: { input: 1.25, output: 10.0 },
+    maxOutputTokens: 4096,
+    usageClass: 'BASE',
+    cost: { input: 0.2, output: 1.2 },
   },
   {
     id: 'gpt-4.1',
@@ -139,21 +169,11 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     cost: { input: 2.0, output: 8.0 },
   },
-  {
-    id: 'gpt-4.1-mini',
-    deploymentId: 'gpt-4.1-mini',
-    name: 'GPT-4.1 Mini',
-    description: 'Small OpenAI model',
-    fallback: true,
-    supportsReasoning: false,
-    usesResponsesApi: false,
-    supportsImageAttachments: true,
-    supportedReasoningEfforts: [],
-    cost: { input: 0.4, output: 1.6 },
-  },
-]
+])
 
 let cachedRegistry: ChatModelConfig[] | null = null
 
@@ -166,17 +186,8 @@ export function getChatModelRegistry(): ChatModelConfig[] {
     return cachedRegistry
   }
 
-  try {
-    cachedRegistry = parseRegistryValue(JSON.parse(raw))
-    return cachedRegistry
-  } catch (error) {
-    console.warn(
-      '[chat] Invalid CHAT_MODEL_REGISTRY_JSON; falling back to built-in defaults.',
-      error
-    )
-    cachedRegistry = DEFAULT_MODEL_REGISTRY
-    return cachedRegistry
-  }
+  cachedRegistry = parseRegistryValue(JSON.parse(raw))
+  return cachedRegistry
 }
 
 export function parseReasoningEffortByModel(
@@ -231,26 +242,33 @@ export function getAllowedReasoningEffortsForModel(
   return intersection.length > 0 ? intersection : supportedEfforts
 }
 
-/**
- * Filters the global model registry by a chatbot's allow-list and credit availability.
- * Empty allowedModelIds means all models are available (backward-compatible default).
- */
-export function getModelsForChatbot(
-  chatbot: {
-    allowedModelIds: string[]
-    allowedReasoningEffortsByModel?: unknown
-  },
-  credits: { current: number }
+function filterRegistryByAllowList(
+  allowedModelIds?: readonly string[]
 ): ChatModelConfig[] {
-  let models = getChatModelRegistry()
-  if (chatbot.allowedModelIds.length > 0) {
-    const allowed = new Set(chatbot.allowedModelIds)
-    models = models.filter((m) => allowed.has(m.id) || m.fallback)
-  }
-  if (credits.current <= 0) {
-    models = models.filter((m) => m.fallback)
-  }
-  return models.map((model) => ({
+  const registry = getChatModelRegistry()
+  if (!allowedModelIds || allowedModelIds.length === 0) return registry
+
+  const allowed = new Set(allowedModelIds)
+  const filtered = registry.filter((model) => allowed.has(model.id))
+  if (filtered.length > 0) return filtered
+
+  // A stored allow-list can outlive every model it names. Keep that chatbot
+  // usable through the unconditional base fallback without widening it to all
+  // current models.
+  const fallbackModelId = getParticipantFallbackModelId()
+  return registry.filter((model) => model.id === fallbackModelId)
+}
+
+/**
+ * Filters the global model registry by a chatbot's allow-list.
+ * Empty allowedModelIds means all models are available (backward-compatible
+ * default). A stale nonempty list retains only the base fallback.
+ */
+export function getModelsForChatbot(chatbot: {
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: unknown
+}): ChatModelConfig[] {
+  return filterRegistryByAllowList(chatbot.allowedModelIds).map((model) => ({
     ...model,
     supportedReasoningEfforts: getAllowedReasoningEffortsForModel(
       model,
@@ -259,25 +277,13 @@ export function getModelsForChatbot(
   }))
 }
 
-export function getAutomaticModelId(
-  credits: { current: number },
-  allowedModelIds?: string[]
-): string {
-  let registry = getChatModelRegistry()
-
-  if (allowedModelIds && allowedModelIds.length > 0) {
-    const allowed = new Set(allowedModelIds)
-    const filtered = registry.filter((m) => allowed.has(m.id) || m.fallback)
-    if (filtered.length > 0) {
-      registry = filtered
-    }
-  }
+export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
+  const registry = filterRegistryByAllowList(allowedModelIds)
+  if (registry.length === 0) return null
 
   const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
-  const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
 
   const defaultPrimary = registry.find((model) => model.fallback === false)
-  const defaultFallback = registry.find((model) => model.fallback === true)
 
   const primary =
     (configuredPrimary &&
@@ -291,26 +297,15 @@ export function getAutomaticModelId(
     )
   }
 
-  const fallbackCandidate = configuredFallback
-    ? registry.find((model) => model.id === configuredFallback)
-    : undefined
+  return primary.id
+}
 
-  const fallback =
-    (fallbackCandidate?.fallback ? fallbackCandidate : null) ||
-    defaultFallback ||
-    primary
-
-  if (configuredFallback && fallback.id !== configuredFallback) {
-    if (fallbackCandidate) {
-      console.warn(
-        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not marked as fallback; using "${fallback.id}".`
-      )
-    } else {
-      console.warn(
-        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not in the registry; using "${fallback.id}".`
-      )
-    }
-  }
-
-  return credits.current > 0 ? primary.id : fallback.id
+export function getParticipantFallbackModelId(): string | null {
+  const fallback = getChatModelRegistry().find(
+    (model) =>
+      model.id === CHAT_BASE_MODEL_ID &&
+      model.usageClass === 'BASE' &&
+      model.fallback
+  )
+  return fallback?.id ?? null
 }

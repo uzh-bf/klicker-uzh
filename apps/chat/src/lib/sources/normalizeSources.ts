@@ -1,7 +1,7 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import type { ChatSource, ChatSourceType } from './types'
 
-const MAX_SOURCES = 12
+export const MAX_SOURCES = 12
 const EXCERPT_MAX_LENGTH = 240
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see

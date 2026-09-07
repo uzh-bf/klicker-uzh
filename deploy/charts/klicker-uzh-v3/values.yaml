@@ -194,6 +194,8 @@ auth:
 
 chat:
   priorityClassName: production-workload
+  accountUsageEnforcementEnabled: false
+  lifecycleWritersEnabled: false
 
   replicaCount: 1
 
@@ -360,6 +362,8 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  betaSavedGroupId: ''
 
   replicaCount: 3
 

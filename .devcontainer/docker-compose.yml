@@ -81,6 +81,7 @@ services:
     env_file:
       - devcontainer.env
     environment:
+      - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
       - WORKSPACE=${WORKSPACE:-}
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
@@ -98,13 +99,24 @@ services:
     volumes:
       - ..:/workspaces/klicker-uzh:cached
       # Named volume shadows host node_modules so Linux-native binaries (Prisma
-      # engines, esbuild, sharp) aren't clobbered. pnpm hoists natives into the
-      # ROOT node_modules/.pnpm, so the single root volume covers the monorepo.
-      # (GOTCHAS #6)
+      # engines, esbuild, sharp) aren't clobbered. pnpm hoists native packages
+      # into the root node_modules/.pnpm. (GOTCHAS #6)
       - node_modules_root:/workspaces/klicker-uzh/node_modules
+      # These package-level links are host-visible unless they are masked too.
+      # Keep the host Playwright runner and its workspace dependencies on Darwin
+      # while the devcontainer retains independent Linux dependency links.
+      - node_modules_playwright:/workspaces/klicker-uzh/playwright/node_modules
+      - node_modules_prisma:/workspaces/klicker-uzh/packages/prisma/node_modules
+      - node_modules_types:/workspaces/klicker-uzh/packages/types/node_modules
       # Machine-local, content-addressed package cache shared by every worktree.
       # node_modules remains isolated in the project-scoped volume above.
       - pnpm_store:/pnpm/.pnpm-store
+      # The workspace bind mount and the store volume are different devices
+      # inside the container, so pnpm can fall back from the configured store
+      # to <workspace>/.pnpm-store during installs. Mounting the same shared
+      # volume at that fallback path keeps such installs off the host bind
+      # mount while still sharing content across every worktree.
+      - pnpm_store:/workspaces/klicker-uzh/.pnpm-store
       # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
       - hatchet_lite_config:/config:ro
       # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
@@ -146,6 +158,9 @@ services:
 volumes:
   pgdata:
   node_modules_root:
+  node_modules_playwright:
+  node_modules_prisma:
+  node_modules_types:
   pnpm_store:
     external: true
     name: klicker-uzh-pnpm-store-v1

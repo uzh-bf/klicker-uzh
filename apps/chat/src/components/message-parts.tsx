@@ -8,6 +8,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   AlertCircleIcon,
+  BrainIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CircleStopIcon,
@@ -15,7 +16,12 @@ import {
   RefreshCwIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type FC, type PropsWithChildren, useState } from 'react'
+import {
+  type FC,
+  type PropsWithChildren,
+  type ReactNode,
+  useState,
+} from 'react'
 
 import {
   MarkdownText,
@@ -23,6 +29,7 @@ import {
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import { resolveDisclosureOpen } from './message-parts-state'
+import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
 
 type MessageWithCustomMetadata = {
@@ -37,6 +44,7 @@ const GroupedDisclosure: FC<
     autoOpen?: boolean
     contentClassName: string
     dataCy: string
+    icon?: ReactNode
     label: string
   }>
 > = ({
@@ -45,28 +53,36 @@ const GroupedDisclosure: FC<
   children,
   contentClassName,
   dataCy,
+  icon,
   label,
 }) => {
   const [manualOpen, setManualOpen] = useState<boolean | null>(null)
   const isOpen = resolveDisclosureOpen(manualOpen, autoOpen, active)
 
   return (
-    <div className="mt-1">
+    <div>
       <button
         type="button"
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-1 text-xs touch-manipulation fine-pointer:min-h-8"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-6 items-center gap-1 rounded-full px-2 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />
         ) : (
           <ChevronRightIcon className="size-3" />
         )}
-        {active ? (
-          <LoaderCircleIcon className="text-primary size-3 animate-spin" />
-        ) : null}
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {active ? (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          ) : (
+            icon
+          )}
+        </span>
         {label}
       </button>
       {isOpen ? <div className={contentClassName}>{children}</div> : null}
@@ -110,6 +126,7 @@ const ReasoningGroup: FC<
       active={active}
       autoOpen
       dataCy="chat-reasoning-toggle"
+      icon={<BrainIcon className="size-3" aria-hidden />}
       label={`${t('chat.message.reasoningToggle')}${effortLabel}`}
       contentClassName="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm"
     >
@@ -151,6 +168,7 @@ type ChatErrorPartData = {
  */
 const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   const t = useTranslations()
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <div
@@ -168,16 +186,18 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           {`: ${data.message}`}
         </p>
       </div>
-      <ActionBarPrimitive.Reload asChild>
-        <button
-          type="button"
-          data-cy="chat-retry-message-button"
-          className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
-        >
-          <RefreshCwIcon className="size-4" aria-hidden />
-          {t('chat.message.retry')}
-        </button>
-      </ActionBarPrimitive.Reload>
+      {hasAvailableMode && (
+        <ActionBarPrimitive.Reload asChild>
+          <button
+            type="button"
+            data-cy="chat-retry-message-button"
+            className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+          >
+            <RefreshCwIcon className="size-4" aria-hidden />
+            {t('chat.message.retry')}
+          </button>
+        </ActionBarPrimitive.Reload>
+      )}
     </div>
   )
 }
@@ -191,6 +211,7 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
  */
 const ChatStoppedPart: FC = () => {
   const t = useTranslations()
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <div
@@ -201,16 +222,18 @@ const ChatStoppedPart: FC = () => {
         <CircleStopIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
         <p>{t('chat.message.stoppedNotice')}</p>
       </div>
-      <ActionBarPrimitive.Reload asChild>
-        <button
-          type="button"
-          data-cy="chat-retry-stopped-button"
-          className="hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
-        >
-          <RefreshCwIcon className="size-4" aria-hidden />
-          {t('chat.message.retry')}
-        </button>
-      </ActionBarPrimitive.Reload>
+      {hasAvailableMode && (
+        <ActionBarPrimitive.Reload asChild>
+          <button
+            type="button"
+            data-cy="chat-retry-stopped-button"
+            className="hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+          >
+            <RefreshCwIcon className="size-4" aria-hidden />
+            {t('chat.message.retry')}
+          </button>
+        </ActionBarPrimitive.Reload>
+      )}
     </div>
   )
 }

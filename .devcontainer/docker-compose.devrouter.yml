@@ -2,6 +2,10 @@
 
 services:
   postgres:
+    # Playwright runs on the host. A random loopback port gives the host Prisma
+    # setup code a portable direct connection without colliding across worktrees.
+    ports:
+      - '127.0.0.1::5432'
     networks:
       devnet:
         aliases:

@@ -7,7 +7,7 @@ import {
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -18,6 +18,8 @@ import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
 } from '@components/common/Pagination'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
+import { computeResultRange } from '@lib/resultRange'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -39,6 +41,7 @@ function Index() {
   const t = useTranslations()
 
   // search, filter and pagination states
+  const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -124,6 +127,7 @@ function Index() {
 
   const {
     loading: loadingElements,
+    error: errorElements,
     data: dataElements,
     refetch: refetchElements,
   } = useQuery(GetUserElementsDocument, {
@@ -180,6 +184,11 @@ function Index() {
   // compute the number of total pagination pages
   const totalPages =
     pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
+  const resultRange = computeResultRange({
+    currentPage,
+    pageSize,
+    numOfElements,
+  })
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -285,11 +294,32 @@ function Index() {
   )
   const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
+  const handleApplySearch = useCallback((value: string) => {
+    setSearchString(value)
+    setCurrentPage(1)
+  }, [])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('')
+    setSearchString('')
+    setCurrentPage(1)
+  }, [])
+
+  const handleCreateElement = useCallback(() => {
+    const value = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
+
+    if (value) {
+      setShowRecoveryPrompt(true)
+    } else {
+      setIsElementCreationModalOpen(true)
+    }
+  }, [])
+
   return (
     <Layout
       displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
-      className={{ children: 'pb-2' }}
+      className={{ children: 'pb-2 sm:overflow-y-auto' }}
     >
       {typeof creationMode === 'undefined' && (
         <Suspense fallback={<div />}>
@@ -298,25 +328,48 @@ function Index() {
       )}
 
       {creationMode && (
-        <>
-          <ActivityCreation
-            creationMode={creationMode}
-            closeWizard={() => {
-              router.push('/')
-              setCreationMode(() => undefined)
-            }}
-            activityId={router.query.elementId as string}
-            editMode={router.query.editMode as ActivityType}
-            conversionMode={router.query.conversionMode as string}
-            duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElements}
-            resetSelection={() => setSelectedElements({})}
-          />
-        </>
+        <ActivityCreation
+          creationMode={creationMode}
+          closeWizard={() => {
+            setSelectedElements({})
+            router.push('/')
+            setCreationMode(() => undefined)
+          }}
+          activityId={router.query.elementId as string}
+          editMode={router.query.editMode as ActivityType}
+          conversionMode={router.query.conversionMode as string}
+          duplicationMode={router.query.duplicationMode as ActivityType}
+          selection={selectedElements}
+          resetSelection={() => setSelectedElements({})}
+          restoreSelection={(selection) =>
+            setSelectedElements(
+              Object.fromEntries(
+                Object.entries(selection).filter(
+                  ([, element]) => element.isManager ?? false
+                )
+              )
+            )
+          }
+        />
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
-        <div>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto sm:flex-row">
+        <aside
+          className="flex w-full shrink-0 flex-col items-start gap-3 sm:w-56"
+          data-cy="element-library-sidebar"
+          aria-label={t('manage.questionPool.createElementaryLabel')}
+        >
+          <Button
+            fluid
+            primary={!creationMode}
+            onClick={handleCreateElement}
+            data={{ cy: 'create-question' }}
+            className={{ root: 'h-9 font-bold' }}
+          >
+            <Button.Label>
+              {t('manage.questionPool.createElement')}
+            </Button.Label>
+          </Button>
           <FilterList
             key={creationMode}
             defaultValue={
@@ -337,19 +390,23 @@ function Index() {
             isArchiveActive={filters.archive}
             refetchElements={refetchElementsForChildren}
           />
-        </div>
+        </aside>
 
-        <div className="flex w-full flex-1 flex-col">
+        <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex flex-row items-center gap-1.5">
+              <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
                   setSelectedElements={setSelectedElements}
                   creationMode={creationMode}
                 />
-                <ElementListSearch setSearchString={setSearchString} />
+                <ElementListSearch
+                  value={searchInput}
+                  onValueChange={setSearchInput}
+                  onApplySearch={handleApplySearch}
+                />
                 <ElementListSorting
                   sort={sort}
                   handleSortByChange={handleSortByChange}
@@ -374,33 +431,42 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
-                <Button
-                  primary
-                  onClick={() => {
-                    const value = localStorage.getItem(
-                      'autosave-element-creation'
-                    )
-
-                    if (value) {
-                      setShowRecoveryPrompt(true)
-                    } else {
-                      setIsElementCreationModalOpen(true)
-                    }
-                  }}
-                  data={{ cy: 'create-question' }}
-                  className={{ root: 'h-9 font-bold' }}
-                >
-                  {t('manage.questionPool.createElement')}
-                </Button>
               </div>
             </div>
 
-            {!dataElements || loadingElements ? (
+            {errorElements && (
+              <UserNotification
+                type="error"
+                message={t('manage.questionPool.elementsLoadError')}
+                className={{ root: 'ml-7 text-sm' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => refetchElements()}
+                  data-cy="elements-error-retry"
+                  className="cursor-pointer font-bold underline"
+                >
+                  {t('manage.questionPool.retry')}
+                </button>
+              </UserNotification>
+            )}
+            {!errorElements && (!dataElements || loadingElements) && (
               <div className="flex flex-1 items-center justify-center">
                 <Loader />
               </div>
-            ) : (
+            )}
+            {!errorElements && dataElements && !loadingElements && (
               <div className="flex min-h-0 flex-1 flex-col">
+                <div
+                  data-cy="result-range-summary-top"
+                  className="text-muted-foreground flex-none pb-2 text-xs"
+                >
+                  {t('manage.general.showingResults', {
+                    start: resultRange.start,
+                    end: resultRange.end,
+                    total: resultRange.total,
+                  })}
+                </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
@@ -436,6 +502,9 @@ function Index() {
                       })
                     }
                     handleFilterReset={handleResetCleanURL}
+                    hasActiveSearch={searchString.trim() !== ''}
+                    onClearSearch={handleClearSearch}
+                    onCreateElement={handleCreateElement}
                     refetchElements={refetchElementsForChildren}
                   />
                 </div>
@@ -461,6 +530,7 @@ function Index() {
       {isElementCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsElementCreationModalOpen}
+          preserveDraftOnDismiss
           triggerSuccessToast={() =>
             toast({
               type: 'success',
@@ -505,7 +575,7 @@ function Index() {
             setIsElementCreationModalOpen(true)
           }}
           onDiscard={() => {
-            localStorage.removeItem('autosave-element-creation')
+            localStorage.removeItem(ELEMENT_CREATION_AUTOSAVE_KEY)
             setShowRecoveryPrompt(false)
             setIsElementCreationModalOpen(true)
           }}

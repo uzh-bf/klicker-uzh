@@ -93,6 +93,8 @@ export interface ContentInputClassName {
   editor?: string
 }
 
+export type ContentInputToolbarPreset = 'full' | 'basic'
+
 interface Props {
   error?: any
   onChange: any
@@ -103,6 +105,12 @@ interface Props {
   autoFocus?: boolean
   content: string
   allowVideoEmbedding?: boolean
+  toolbarPreset?: ContentInputToolbarPreset
+  id?: string
+  'aria-labelledby'?: string
+  'aria-describedby'?: string
+  'aria-required'?: boolean
+  'aria-invalid'?: boolean
   className?: ContentInputClassName
   data?: {
     test?: string
@@ -126,10 +134,17 @@ function ContentInput({
   error = '',
   touched,
   allowVideoEmbedding = false,
+  toolbarPreset = 'full',
+  id,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
+  'aria-required': ariaRequired,
+  'aria-invalid': ariaInvalid,
   className,
   data,
 }: Props): React.ReactElement {
   const t = useTranslations()
+  const hasFullToolbar = toolbarPreset === 'full'
 
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
   const [isVideoInputOpen, setIsVideoInputOpen] = useState(false)
@@ -158,7 +173,11 @@ function ContentInput({
       <Slate
         editor={editor}
         initialValue={editorValue}
-        onChange={(newValue) => onChange(convertToMd(newValue))}
+        onChange={(newValue) => {
+          if (!disabled) {
+            onChange(convertToMd(newValue))
+          }
+        }}
       >
         <div className={twMerge('p-3', className?.content)}>
           <Editable
@@ -167,11 +186,20 @@ function ContentInput({
               className?.editor
             )}
             autoFocus={autoFocus}
+            id={id}
+            aria-labelledby={ariaLabelledBy}
+            aria-describedby={ariaDescribedBy}
+            aria-required={ariaRequired}
+            aria-invalid={ariaInvalid}
+            aria-disabled={disabled}
+            readOnly={disabled}
             spellCheck
             placeholder={placeholder}
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             onKeyDown={(event) => {
+              if (disabled) return
+
               for (const hotkey in HOTKEYS) {
                 if (isHotkey(hotkey, event)) {
                   event.preventDefault()
@@ -187,70 +215,160 @@ function ContentInput({
         <div
           className={twMerge(
             'toolbar bg-uzh-grey-20 mr-10 flex h-8 w-full flex-row px-1 text-sm',
-            allowVideoEmbedding && 'h-auto min-h-8',
+            hasFullToolbar && allowVideoEmbedding && 'h-auto min-h-8',
             showToolbarOnFocus && 'hidden group-focus-within:flex'
           )}
         >
           <div
             className={twMerge(
               'flex flex-1 flex-row gap-1',
-              allowVideoEmbedding && 'flex-wrap',
+              hasFullToolbar && allowVideoEmbedding && 'flex-wrap',
               className?.toolbar
             )}
           >
-            <Tooltip
-              tooltip={t('shared.contentInput.boldStyle')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <MarkButton format="bold" icon={faBold} />
-            </Tooltip>
+            {/* Tooltip renders its own button trigger without asChild; keep the
+                basic preset native and use its title instead of nesting buttons. */}
+            {hasFullToolbar ? (
+              <>
+                <Tooltip
+                  tooltip={t('shared.contentInput.boldStyle')}
+                  className={{
+                    tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+                  }}
+                >
+                  <MarkButton
+                    disabled={disabled}
+                    format="bold"
+                    icon={faBold}
+                    dataCy="content-input-bold"
+                    label={t('shared.contentInput.boldStyle')}
+                  />
+                </Tooltip>
 
-            <Tooltip
-              tooltip={t('shared.contentInput.italicStyle')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <MarkButton format="italic" icon={faItalic} />
-            </Tooltip>
+                <Tooltip
+                  tooltip={t('shared.contentInput.italicStyle')}
+                  className={{
+                    tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+                  }}
+                >
+                  <MarkButton
+                    disabled={disabled}
+                    format="italic"
+                    icon={faItalic}
+                    dataCy="content-input-italic"
+                    label={t('shared.contentInput.italicStyle')}
+                  />
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <MarkButton
+                  native
+                  disabled={disabled}
+                  format="bold"
+                  icon={faBold}
+                  dataCy="content-input-bold"
+                  label={t('shared.contentInput.boldStyle')}
+                />
 
-            <Tooltip
-              tooltip={t('shared.contentInput.codeStyle')}
-              className={{
-                tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
-              }}
-            >
-              <MarkButton format="code" icon={faCode} />
-            </Tooltip>
+                <MarkButton
+                  native
+                  disabled={disabled}
+                  format="italic"
+                  icon={faItalic}
+                  dataCy="content-input-italic"
+                  label={t('shared.contentInput.italicStyle')}
+                />
+              </>
+            )}
 
-            <Tooltip
-              tooltip={t('shared.contentInput.citationStyle')}
-              className={{
-                tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <BlockButton format="block-quote" icon={faQuoteRight} />
-            </Tooltip>
+            {hasFullToolbar ? (
+              <>
+                <Tooltip
+                  tooltip={t('shared.contentInput.codeStyle')}
+                  className={{
+                    tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
+                  }}
+                >
+                  <MarkButton
+                    disabled={disabled}
+                    format="code"
+                    icon={faCode}
+                    dataCy="content-input-code"
+                    label={t('shared.contentInput.codeStyle')}
+                  />
+                </Tooltip>
 
-            <Tooltip
-              tooltip={t('shared.contentInput.numberedList')}
-              className={{
-                tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton format="numbered-list" icon={faListOl} />
-            </Tooltip>
+                <Tooltip
+                  tooltip={t('shared.contentInput.citationStyle')}
+                  className={{
+                    tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
+                  }}
+                >
+                  <BlockButton
+                    disabled={disabled}
+                    format="block-quote"
+                    icon={faQuoteRight}
+                    dataCy="content-input-quote"
+                    label={t('shared.contentInput.citationStyle')}
+                  />
+                </Tooltip>
+              </>
+            ) : null}
 
-            <Tooltip
-              tooltip={t('shared.contentInput.unnumberedList')}
-              className={{
-                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton format="bulleted-list" icon={faListUl} />
-            </Tooltip>
+            {hasFullToolbar ? (
+              <>
+                <Tooltip
+                  tooltip={t('shared.contentInput.numberedList')}
+                  className={{
+                    tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
+                  }}
+                >
+                  <BlockButton
+                    disabled={disabled}
+                    format="numbered-list"
+                    icon={faListOl}
+                    dataCy="content-input-numbered-list"
+                    label={t('shared.contentInput.numberedList')}
+                  />
+                </Tooltip>
+
+                <Tooltip
+                  tooltip={t('shared.contentInput.unnumberedList')}
+                  className={{
+                    tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
+                  }}
+                >
+                  <BlockButton
+                    disabled={disabled}
+                    format="bulleted-list"
+                    icon={faListUl}
+                    dataCy="content-input-bulleted-list"
+                    label={t('shared.contentInput.unnumberedList')}
+                  />
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <BlockButton
+                  native
+                  disabled={disabled}
+                  format="numbered-list"
+                  icon={faListOl}
+                  dataCy="content-input-numbered-list"
+                  label={t('shared.contentInput.numberedList')}
+                />
+
+                <BlockButton
+                  native
+                  disabled={disabled}
+                  format="bulleted-list"
+                  icon={faListUl}
+                  dataCy="content-input-bulleted-list"
+                  label={t('shared.contentInput.unnumberedList')}
+                />
+              </>
+            )}
 
             {/* TODO: Add heading buttons */}
             {/* <Tooltip
@@ -293,31 +411,35 @@ function ContentInput({
               />
             </Tooltip> */}
 
-            <Tooltip
-              delay={2000}
-              tooltip={t('shared.contentInput.image')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={isImageDropzoneOpen}
-                editor={editor}
-                format="paragraph"
-                onClick={() => {
-                  setIsVideoInputOpen(false)
-                  setIsImageDropzoneOpen((prev) => !prev)
+            {hasFullToolbar ? (
+              <Tooltip
+                delay={2000}
+                tooltip={t('shared.contentInput.image')}
+                className={{
+                  tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
                 }}
               >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faImage} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
+                <SlateButton
+                  active={isImageDropzoneOpen}
+                  disabled={disabled}
+                  data-cy="open-image-input"
+                  aria-label={t('shared.contentInput.image')}
+                  onClick={() => {
+                    setIsVideoInputOpen(false)
+                    setIsImageDropzoneOpen((prev) => !prev)
+                  }}
+                >
+                  <div className="ml-1 mt-0.5">
+                    <FontAwesomeIcon icon={faImage} color="grey" />
+                  </div>
+                </SlateButton>
+              </Tooltip>
+            ) : null}
 
-            {allowVideoEmbedding ? (
+            {hasFullToolbar && allowVideoEmbedding ? (
               <button
                 type="button"
+                disabled={disabled}
                 title={t('shared.contentInput.video')}
                 aria-label={t('shared.contentInput.video')}
                 aria-controls="video-embed-panel"
@@ -340,87 +462,95 @@ function ContentInput({
               </button>
             ) : null}
 
-            <Tooltip
-              tooltip={t('shared.contentInput.latex')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertText(editor, '$$1 + 2$$')
-                }}
-              >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
+            {hasFullToolbar ? (
+              <>
+                <Tooltip
+                  tooltip={t('shared.contentInput.latex')}
+                  className={{
+                    tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+                  }}
+                >
+                  <SlateButton
+                    active={false}
+                    disabled={disabled}
+                    data-cy="insert-inline-latex"
+                    aria-label={t('shared.contentInput.latex')}
+                    onClick={(e: React.MouseEvent<HTMLSpanElement>) => {
+                      e.preventDefault()
+                      Transforms.insertText(editor, '$$1 + 2$$')
+                    }}
+                  >
+                    <div className="ml-1 mt-0.5">
+                      <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                    </div>
+                  </SlateButton>
+                </Tooltip>
 
-            <Tooltip
-              tooltip={t('shared.contentInput.latexCentered')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '1 + 2' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
-                }}
-              >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
+                <Tooltip
+                  tooltip={t('shared.contentInput.latexCentered')}
+                  className={{
+                    tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+                  }}
+                >
+                  <SlateButton
+                    active={false}
+                    disabled={disabled}
+                    data-cy="insert-block-latex"
+                    aria-label={t('shared.contentInput.latexCentered')}
+                    onClick={(e: React.MouseEvent<HTMLSpanElement>) => {
+                      e.preventDefault()
+                      Transforms.insertNodes(editor, {
+                        type: 'paragraph',
+                        children: [{ text: '$$' }],
+                      })
+                      Transforms.insertNodes(editor, {
+                        type: 'paragraph',
+                        children: [{ text: '1 + 2' }],
+                      })
+                      Transforms.insertNodes(editor, {
+                        type: 'paragraph',
+                        children: [{ text: '$$' }],
+                      })
+                    }}
+                  >
+                    <div className="ml-1 mt-0.5">
+                      <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                    </div>
+                  </SlateButton>
+                </Tooltip>
+              </>
+            ) : null}
           </div>
-          <SlateButton
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.undo()}
+          <button
             type="button"
-            className="mr-3"
+            disabled={disabled}
+            onClick={() => editor.undo()}
+            onMouseDown={(event) => event.preventDefault()}
+            className="my-auto mr-3 flex h-7 w-7 cursor-pointer items-center justify-center rounded"
+            data-cy="content-input-undo"
+            aria-label={t('shared.contentInput.undo')}
           >
             <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateLeft} color="grey" />
             </div>
-          </SlateButton>
-          <SlateButton
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.redo()}
+          </button>
+          <button
             type="button"
-            className="mr-0.5"
+            disabled={disabled}
+            onClick={() => editor.redo()}
+            onMouseDown={(event) => event.preventDefault()}
+            className="my-auto mr-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded"
+            data-cy="content-input-redo"
+            aria-label={t('shared.contentInput.redo')}
           >
             <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateRight} color="grey" />
             </div>
-          </SlateButton>
+          </button>
         </div>
       </Slate>
 
-      {isImageDropzoneOpen && (
+      {hasFullToolbar && !disabled && isImageDropzoneOpen && (
         <div
           className={twMerge(
             'border-t-0! absolute z-10 flex w-full flex-col rounded-b-md border-2 border-solid bg-white md:flex-row',
@@ -439,7 +569,10 @@ function ContentInput({
         </div>
       )}
 
-      {allowVideoEmbedding && isVideoInputOpen ? (
+      {hasFullToolbar &&
+      allowVideoEmbedding &&
+      !disabled &&
+      isVideoInputOpen ? (
         <div
           id="video-embed-panel"
           className={twMerge(
@@ -601,84 +734,209 @@ const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   return <span {...attributes}>{formattedChildren}</span>
 }
 
-const BlockButton = ({
-  format,
+const ToolbarFormatButton = ({
+  active,
+  disabled,
   icon,
   className,
+  dataCy,
+  label,
+  native,
+  onToggle,
 }: {
-  format: BlockType
+  active: boolean
+  disabled: boolean
   icon: IconDefinition
   className?: string
+  dataCy: string
+  label: string
+  native: boolean
+  onToggle: () => void
 }) => {
-  const editor = useSlate()
-  return (
-    <SlateButton
-      active={isBlockActive(editor, format)}
-      editor={editor}
-      format={format}
-      onClick={(event: React.MouseEvent<HTMLElement>) => {
-        event.preventDefault()
-        toggleBlock(editor, format)
-      }}
+  const content = (
+    <div className={twMerge('mt-0.5', className)}>
+      <FontAwesomeIcon icon={icon} color={active ? 'black' : 'grey'} />
+      <span className="sr-only">{label}</span>
+    </div>
+  )
+  const onClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault()
+    onToggle()
+  }
+
+  return native ? (
+    <NativeSlateButton
+      active={active}
+      disabled={disabled}
+      title={label}
+      data-cy={dataCy}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
     >
-      <div className={twMerge('mt-0.5', className)}>
-        <FontAwesomeIcon
-          icon={icon}
-          color={isBlockActive(editor, format) ? 'black' : 'grey'}
-        />
-      </div>
+      {content}
+    </NativeSlateButton>
+  ) : (
+    <SlateButton
+      active={active}
+      disabled={disabled}
+      title={label}
+      data-cy={dataCy}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {content}
     </SlateButton>
   )
 }
 
-const MarkButton = ({
+const BlockButton = ({
+  disabled = false,
   format,
   icon,
   className,
+  dataCy,
+  label,
+  native = false,
 }: {
+  disabled?: boolean
+  format: BlockType
+  icon: IconDefinition
+  className?: string
+  dataCy: string
+  label: string
+  native?: boolean
+}) => {
+  const editor = useSlate()
+
+  return (
+    <ToolbarFormatButton
+      active={isBlockActive(editor, format)}
+      disabled={disabled}
+      icon={icon}
+      className={className}
+      dataCy={dataCy}
+      label={label}
+      native={native}
+      onToggle={() => toggleBlock(editor, format)}
+    />
+  )
+}
+
+const MarkButton = ({
+  disabled = false,
+  format,
+  icon,
+  className,
+  dataCy,
+  label,
+  native = false,
+}: {
+  disabled?: boolean
   format: FormatType
   icon: IconDefinition
   className?: string
+  dataCy: string
+  label: string
+  native?: boolean
 }) => {
   const editor = useSlate()
+
   return (
-    <SlateButton
+    <ToolbarFormatButton
       active={isMarkActive(editor, format)}
-      onClick={(event: React.MouseEvent<HTMLElement>) => {
-        event.preventDefault()
-        toggleMark(editor, format)
-      }}
-    >
-      <div className={twMerge('mt-0.5', className)}>
-        <FontAwesomeIcon
-          icon={icon}
-          color={isMarkActive(editor, format) ? 'black' : 'grey'}
-        />
-      </div>
-    </SlateButton>
+      disabled={disabled}
+      icon={icon}
+      className={className}
+      dataCy={dataCy}
+      label={label}
+      native={native}
+      onToggle={() => toggleMark(editor, format)}
+    />
   )
 }
 
 const SlateButton = React.forwardRef<
   HTMLSpanElement,
-  PropsWithChildren<{
-    active: boolean
-    reversed: boolean
-    className: string
-    [key: string]: any
-  }>
->(({ className, active, reversed, ...props }, ref) => (
-  <span
-    {...props}
-    className={twMerge(
+  PropsWithChildren<
+    React.HTMLAttributes<HTMLSpanElement> & {
+      active?: boolean
+      disabled?: boolean
+    }
+  >
+>(
+  (
+    {
       className,
-      'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-      active && !reversed && 'bg-uzh-grey-40',
-      !active && reversed && 'bg-uzh-grey-40'
-    )}
-    ref={ref}
-  />
-))
+      active = false,
+      disabled = false,
+      onClick,
+      onKeyDown,
+      tabIndex = 0,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      // biome-ignore lint/a11y/useSemanticElements: Tooltip already renders the surrounding native button trigger.
+      <span
+        {...props}
+        role="button"
+        tabIndex={disabled ? -1 : tabIndex}
+        aria-disabled={disabled}
+        onClick={disabled ? undefined : onClick}
+        onKeyDown={(event) => {
+          onKeyDown?.(event)
+          if (
+            !event.defaultPrevented &&
+            !disabled &&
+            (event.key === 'Enter' || event.key === ' ')
+          ) {
+            event.preventDefault()
+            event.currentTarget.click()
+          }
+        }}
+        className={twMerge(
+          className,
+          'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+          disabled && 'cursor-not-allowed',
+          active && 'bg-uzh-grey-40'
+        )}
+        ref={ref}
+      />
+    )
+  }
+)
 SlateButton.displayName = 'Button'
+
+const NativeSlateButton = React.forwardRef<
+  HTMLButtonElement,
+  PropsWithChildren<
+    React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }
+  >
+>(
+  (
+    { className, active = false, type = 'button', onMouseDown, ...props },
+    ref
+  ) => {
+    return (
+      <button
+        {...props}
+        ref={ref}
+        type={type}
+        onMouseDown={(event) => {
+          event.preventDefault()
+          onMouseDown?.(event)
+        }}
+        className={twMerge(
+          className,
+          'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+          active && 'bg-uzh-grey-40'
+        )}
+      />
+    )
+  }
+)
+NativeSlateButton.displayName = 'NativeSlateButton'
 
 export default ContentInput
