@@ -38,10 +38,10 @@ This repairs development behavior without changing product primitives. No ADR is
 
 ### Delegation and single implementation slice
 
-| Workstream | Owner | Acceptance |
-| --- | --- | --- |
-| Complete dependency isolation | Executor | Compose coverage, strengthened existing regression, focused checks, and scoped local implementation commit |
-| Runtime reconciliation and acceptance | Main | Exact identity checks, guarded preparation before startup, module and route proof, original authoring suite, verified shutdown |
+| Workstream                            | Owner    | Acceptance                                                                                                                     |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Complete dependency isolation         | Executor | Compose coverage, strengthened existing regression, focused checks, and scoped local implementation commit                     |
+| Runtime reconciliation and acceptance | Main     | Exact identity checks, guarded preparation before startup, module and route proof, original authoring suite, verified shutdown |
 
 The executor owns `.devcontainer/docker-compose.yml`, `util/run-playwright-host.test.mjs`, and the existing isolation explanation in `.devcontainer/README.md`. The main session owns lifecycle decisions, patch transfer, integration, and final proof because those steps share runtime state and authority boundaries.
 
@@ -49,12 +49,12 @@ Commit the approved plan first. Implement the cohesive fix, run focused checks, 
 
 ### Test portfolio and acceptance order
 
-| Obligation | Primary evidence |
-| --- | --- |
-| Extend existing mount regression | Structured complete-workspace coverage in `util/run-playwright-host.test.mjs`; demonstrate failure against original mounts |
-| No new bootstrap suite | Effective primary and linked Compose mount models, with environment values suppressed |
-| Direct isolation proof | Guarded host preparation before startup, followed by named-mount/module and Manage, Auth, and Chat route checks; no deliberate live mountpoint replacement |
-| No new browser suite | Existing nine cases in `playwright/tests/T-chatbot-authoring.spec.ts`, through the host launcher |
+| Obligation                       | Primary evidence                                                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Extend existing mount regression | Structured complete-workspace coverage in `util/run-playwright-host.test.mjs`; demonstrate failure against original mounts                                 |
+| No new bootstrap suite           | Effective primary and linked Compose mount models, with environment values suppressed                                                                      |
+| Direct isolation proof           | Guarded host preparation before startup, followed by named-mount/module and Manage, Auth, and Chat route checks; no deliberate live mountpoint replacement |
+| No new browser suite             | Existing nine cases in `playwright/tests/T-chatbot-authoring.spec.ts`, through the host launcher                                                           |
 
 Use repository-native tooling in its prescribed host/container environment. First establish a supported mount-update procedure that does not reset or reseed the database. Record exact source, container, and database-volume identities. Check host mountpoint permissions and package inventory coverage without broad filesystem cleanup.
 
@@ -72,16 +72,18 @@ Pause before destructive bootstrap, unsupported lifecycle operations, dependency
 
 ### Automatic mount generation continuation
 
+Active source continuation on 2026-09-08: executor `mount_generator` owns the generator and its test; main owns the uncommitted wiring and effective-model coverage. Installed and configured Devrouter are now 0.0.59, a compatible patch preserving the 0.0.58 host-hook contract. Its upgrade prompt explicitly leaves warm mount reconciliation unsupported. Combined profile resolution passes without runtime access. Native shell syntax and focused configuration formatting pass. No runtime has been touched during this continuation. Full package completion remains pending consumer hook invocation and safe retained-mount application evidence.
+
 The user approved continuing this package with a goal after Devrouter 0.0.58 was released. Installed parser and upgrade guidance confirm `managedRuntime.devcontainer.prepareCommand` runs literal host argv from the checkout root before Compose inspection, once under lifecycle serialization, with a sixty-second bound. It must preserve `.devrouter.yml`; diagnostics never execute it. This release does not apply changed mounts to retained containers.
 
 Implement one cohesive extension: a Node built-ins generator calls host `pnpm list --recursive --depth -1 --json`, using pnpm's workspace and exclusion semantics without importing installed dependencies. Preserve fail-closed dependency policy. Validate canonical paths inside the checkout, safe mount targets and distinct volume names. Preserve the four historical root/Playwright/Prisma/types names and derive other names from relative package paths. Write deterministic JSON-compatible YAML atomically to ignored `.devcontainer/docker-compose.dependencies.yml`; unchanged output keeps its modification time. Discovery or validation failure leaves previous output untouched and exits nonzero.
 
 Move all dependency mounts and declarations out of the base Compose file, retaining store, build and database mounts. Load the generated overlay between base and routing overlay. Native `initialize.sh` invokes generation first from the explicit checkout root and propagates failure before certificate or Docker effects. The managed hook invokes only the generator. Pin the configured Devrouter version to 0.0.58 and document the host Node/pnpm prerequisite and retained-mount limitation in the README and repository Devrouter skill.
 
-| Slice | Owner | Acceptance |
-| --- | --- | --- |
-| Automatic dependency isolation | Executor | Generator and focused synthetic Node tests: cold discovery, exclusions, deterministic output, failure preservation, path and collision rejection, compatible names |
-| Same slice integration and evidence | Main | Configuration, effective Compose coverage, documentation, commit, isolated hook invocation/abort proof, and runtime gate disposition |
+| Slice                               | Owner    | Acceptance                                                                                                                                                         |
+| ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Automatic dependency isolation      | Executor | Generator and focused synthetic Node tests: cold discovery, exclusions, deterministic output, failure preservation, path and collision rejection, compatible names |
+| Same slice integration and evidence | Main     | Configuration, effective Compose coverage, documentation, commit, isolated hook invocation/abort proof, and runtime gate disposition                               |
 
 Main retains integration because the work crosses shared configuration and runtime authority boundaries. Extend the existing mount regression against the merged model, asserting both coverage and absence of stale excluded/removed mounts and declarations. Run the existing launcher contracts unchanged otherwise. Compare generated real-workspace mappings with the committed manual baseline. Isolated hook verification must prove invocation before overlay consumption and failure propagation; parser acceptance alone is insufficient. No retained runtime is started or recreated merely to test generation. Source verification and committed simplifier/seam review proceed independently; integrated final review and package completion remain pending if safe runtime application proof is unavailable.
 
@@ -92,7 +94,6 @@ Current baseline: clean `340048a905879c85f0f01e36f0ffc1ad402c8edd`, already push
 ### Historical launcher delivery evidence
 
 Before committing or testing the launcher extension, preserve this execution contract: set workspace `verifyDepsBeforeRun: error` and force lowercase `pnpm_config_verify_deps_before_run=error` for every launcher-owned pnpm child. Missing Playwright CLI requires a successful exact-checkout stop before explicit filtered frozen installation. Stop/install failure aborts; no automatic deletion, retry or store repair. Host builds and browser preparation precede `ensure`. Warm runs issue no stop or package installation. Preserve profiles, filters, headed and list behavior. `--print-env` retains reconciliation without dependency preparation; `--show-report` never calls `ensure`, though cold report preparation can stop the runtime and leave it stopped. Documentation distinguishes direct Node cold bootstrap from explicit stale-dependency repair. Executor owns the launcher, existing test, workspace policy and README; main owns runtime proof and integration.
-
 
 The user approved the launcher extension, repository-wide fail-closed pnpm policy, focused tooling checks plus staged secret scanning in place of the full application hook, and reviewed draft PR delivery. No upstream integration, merge, deployment, database deletion or validation-workspace mutation is authorized.
 

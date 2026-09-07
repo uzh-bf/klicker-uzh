@@ -70,7 +70,7 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 
 ## Profiles
 
-This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.59. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -83,6 +83,8 @@ keeps detached-state recovery fail-closed while prior containers still exist.
 Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
 and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
 retained-runtime configuration and mount comparison.
+Version 0.0.58 runs the host dependency-mount generator before Compose inspection.
+It does not apply changed mounts to retained containers.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -273,6 +275,22 @@ analytics image and lint CI so the root quality gate runs inside the container.
   the host Playwright runner's Darwin dependencies. The
   dependency stamp prevents reuse after lockfile or workspace-manifest
   changes.
+- Dependency mounts are generated into ignored
+  `.devcontainer/docker-compose.dependencies.yml`. The host needs the pinned
+  Node and pnpm toolchain, but no installed project dependencies. The generator
+  uses `pnpm list --recursive --depth -1 --json`, so workspace additions,
+  removals and exclusions do not require another handwritten mount list.
+  Devrouter invokes it through `managedRuntime.devcontainer.prepareCommand`;
+  native Dev Container initialization invokes the same script before Compose.
+  For read-only Compose inspection before first startup, explicitly run
+  `node util/generate-dependency-mounts.mjs` first. Diagnostics do not generate it.
+  Generation failures abort startup and retain the previous output; unchanged
+  output is not rewritten.
+- Generating updated configuration does not change mounts in an existing
+  container. Devrouter 0.0.59 does not support warm mount reconciliation.
+  Do not recreate or reset a retained workspace to apply a package addition or
+  removal. Keep its data intact and resolve the supported lifecycle procedure
+  separately. Unchanged package inventories retain the same volume names.
 - `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL

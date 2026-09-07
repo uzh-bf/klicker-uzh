@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
-  globSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
-  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
@@ -16,6 +15,10 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
 import { resolveDevrouter } from './devrouter-cli.mjs'
+import {
+  createDependencyCompose,
+  discoverWorkspacePackages,
+} from './generate-dependency-mounts.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -113,43 +116,6 @@ function commandIndex(calls, command, firstArg) {
 
 function pnpmCalls(calls) {
   return calls.filter(({ command }) => command === 'pnpm')
-}
-
-function discoverWorkspacePackages(root = repoRoot) {
-  const workspace = parseYaml(
-    readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8')
-  )
-
-  assert.ok(
-    Array.isArray(workspace?.packages),
-    'pnpm-workspace.yaml has no packages list'
-  )
-
-  return [
-    ...new Set(
-      workspace.packages.flatMap((pattern) => {
-        assert.equal(
-          typeof pattern,
-          'string',
-          'workspace patterns must be strings'
-        )
-        assert.ok(
-          !pattern.startsWith('!'),
-          'workspace exclusions require explicit discovery support'
-        )
-
-        return globSync(pattern, { cwd: root })
-          .filter((candidate) => {
-            const absolutePath = join(root, candidate)
-            return (
-              statSync(absolutePath).isDirectory() &&
-              existsSync(join(absolutePath, 'package.json'))
-            )
-          })
-          .map((candidate) => candidate.replaceAll('\\', '/'))
-      })
-    ),
-  ].sort()
 }
 
 function parseDependencyMounts(compose) {
@@ -498,7 +464,17 @@ test('devcontainer dependency mounts isolate every workspace package', () => {
   const compose = parseYaml(
     readFileSync(join(repoRoot, '.devcontainer', 'docker-compose.yml'), 'utf8')
   )
-  const workspacePackages = discoverWorkspacePackages()
+  const workspacePackages = discoverWorkspacePackages(repoRoot)
+  const generated = createDependencyCompose(workspacePackages)
+  assert.equal(parseDependencyMounts(compose).size, 0)
+  assert.equal(
+    Object.keys(compose.volumes).some((name) =>
+      name.startsWith('node_modules_')
+    ),
+    false
+  )
+  compose.services.app.volumes.push(...generated.services.app.volumes)
+  Object.assign(compose.volumes, generated.volumes)
 
   assertDependencyMountCoverage(compose, workspacePackages)
 
@@ -510,6 +486,35 @@ test('devcontainer dependency mounts isolate every workspace package', () => {
       ),
     /is not isolated from the host/
   )
+})
+
+test('native initialization aborts before host setup when generation fails', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'native-mount-failure-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  mkdirSync(join(root, '.devcontainer'))
+  mkdirSync(join(root, 'util'))
+  writeFileSync(
+    join(root, '.devcontainer', 'initialize.sh'),
+    readFileSync(join(repoRoot, '.devcontainer', 'initialize.sh'))
+  )
+  writeFileSync(
+    join(root, 'util', 'generate-dependency-mounts.mjs'),
+    'process.exit(42)\n'
+  )
+  const result = spawnSync(
+    'bash',
+    [join(root, '.devcontainer', 'initialize.sh')],
+    {
+      cwd: tmpdir(),
+      env: {
+        ...process.env,
+        PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  )
+  assert.equal(result.status, 42)
+  assert.equal(existsSync(join(root, '.devcontainer', 'certs')), false)
 })
 
 test('cold runs stop before host preparation and reconcile afterward', () => {
