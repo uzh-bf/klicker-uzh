@@ -262,6 +262,70 @@ Phase 2 is a separate task with explicit delivery and operations authority.
 
 ## Progress
 
+### Current delivery and local correction, 2026-09-07
+
+The package is published, but not merge-ready or activated.
+[The staging source PR](https://github.com/uzh-bf/klicker-uzh/pull/5782)
+contains `026852ee11b0e2cebcce8a8995f73d95de71793b`, including the approved
+one-time integration of `v3-ai@168f66f0693700b751dcd7365addf4801941ffe5`.
+At resume, the branch matched `origin/rs/stg-release-ref-promotion`.
+The local corrections below have not been pushed.
+The refreshed default `origin/v3@fddc5b38b9` is four commits ahead of this
+branch's default-branch ancestry; this is not new integration authority.
+The live PR base remains `v3-ai`.
+
+The published head passes codebase, staging image-build, GraphQL, Gitleaks,
+CodeQL, and Sonar checks. The lightweight unit job fails because Chat imports
+unbuilt GraphQL, Markdown, and feature-flags package outputs. Its five failing
+suites pass locally with built dependencies (53 tests). Playwright remains
+running; no completed final AI review is available. Image-build success on a
+PR does not establish registry publication or deployment provenance.
+
+The current approval covers local diagnosis, source fixes, checks, review, and
+commits. It does not permit another push, upstream integration, remote retry,
+merge, deployment, credential change, or release-ref movement.
+The build-dependency correction is assigned to the native executor, limited
+to `test-unit.yml`; acceptance is the dependency build graph and affected tests.
+The publish-guard correction stays with the main session because its
+fail-closed publication decision is tightly coupled to acceptance.
+Local commit `4195843984` adds the three missing package build filters.
+Its exact build command passes nine dependency tasks without an application
+build. The five previously failing Chat suites pass 53 tests. The executor's
+noted transitive path-trigger omissions predate this correction; no unrelated
+trigger redesign is included. Slice review is not required for this mechanical
+build-list correction; main-session diff and focused checks cover it.
+
+Local commit `7181c674cc` contains the publish-guard correction.
+An exact synthetic Buildx missing-image diagnostic failed before the fix and
+passes afterward. The existing regression test now accepts both exact known
+diagnostics and rejects generic or wrong-image errors. The focused container
+test and host Bash syntax/ShellCheck checks pass. No registry call was made.
+Three non-render contract checks pass. The unchanged Helm render check cannot
+run inside this container because `helm` is absent; previous passing render
+evidence is retained, not represented as a fresh run. Repository `check:all`
+passes, including 40 type-check tasks; it ran in the container, with secret
+and Git identity checks on the host before committing. No dedicated simplifier
+is required for the small exact-match and existing test-table extension.
+The guard's independent slice review remains pending. Integrated final review
+waits for the unresolved package gates.
+
+The two Playwright fixture corrections are restored and remain unstaged, not
+only stashed. Their recovery stashes remain intact. Browser acceptance is
+still missing: canonical Devrouter repair fails with
+`Preparation for 'klicker-dev' left running children; a synchronous foreground command is required.`
+Container execution remained available for source tests. No global runtime
+configuration was changed to bypass the failure. After verification, the
+exact checkout `trees/stg-release-ref-promotion`, provider workspace
+`rs-stg-release-ref-promotion`, was stopped. The validated application
+container reports `exited`, and the checkout has zero routes. Worktree and
+runtime data are retained.
+
+### Historical implementation evidence
+
+The entries below describe their recorded checkpoints, not current delivery
+status. In particular, the earlier local-only terminal condition was followed
+by separately approved publication and integration.
+
 - `Local v3 integration, 2026-09-06:` The user explicitly approved integrating
   `v3` into this existing worktree. The merge uses fetched source
   `27f2474547df045cc11302c7d9e195798ec66870` and preserves the staging release
