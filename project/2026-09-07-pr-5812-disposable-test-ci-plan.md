@@ -1,5 +1,7 @@
 # Disposable Playwright database provisioning
 
+[PR #5812 — disposable CI databases](https://github.com/uzh-bf/klicker-uzh/pull/5812)
+
 ## Approval summary
 
 Give every Playwright shard a dedicated disposable database and login, so the
@@ -83,4 +85,9 @@ provisioning created the restricted role and marked database; all five prohibite
 role flags were false. Prisma reset completed 184 migrations and preserved the
 marker. The existing test seed passed under the restricted login using Node
 24.16.0 and pnpm 11.5.0. The 60 Playwright CI contract tests also passed.
-Independent implementation reviews and publication remain pending.
+Independent simplification, risk and integrated final reviews pass with no
+findings on d1004151f5d0f79323be4eaec5279d535c16236d. Published to the approved
+branch and PR. Both disposable verification containers are stopped; no retained
+database was touched. Current-head CI, final AI review, prerequisite merge and
+postmerge trusted-shard proof remain. Target v3 gained unrelated login changes
+in dd9e0c0bb4; no file overlap, and no upstream integration performed.
