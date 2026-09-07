@@ -181,6 +181,7 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    owner: { aiFeaturesEnabled: true },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -281,6 +282,29 @@ describe('account usage chat route', () => {
         },
       }
     })
+  })
+
+  test.each([
+    false,
+    true,
+  ])('requires AI approval with budget enforcement %s', async (enforced) => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(enforced)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: false } })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
+      requestId: expect.any(String),
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {

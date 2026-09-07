@@ -40,7 +40,10 @@ import {
 // construction; importing at the top level would read it before env is set).
 // ---------------------------------------------------------------------------
 export async function getPrisma() {
-  const { prisma } = await import('@klicker-uzh/prisma')
+  const { prisma, requireDisposableDatabase } = await import(
+    '@klicker-uzh/prisma'
+  )
+  await requireDisposableDatabase(prisma)
   return prisma
 }
 
