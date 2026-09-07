@@ -77,6 +77,8 @@ Course-scoped analytics joins through that owner, which keeps course ownership
 consistent by construction. Participant live-quiz point totals retain the
 canonical fractional `REAL` values.
 
+Public group averages include personal course points only from active leaderboard participants. Inactive members contribute zero while remaining in the group denominator; group-earned points are independent. Joining or leaving the individual leaderboard refreshes the average atomically. A one-member group retains its existing zero personal-average rule.
+
 ### Assessment participant invitations
 
 `ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.
