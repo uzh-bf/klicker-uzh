@@ -150,9 +150,19 @@ Goal active. Baseline and cache inventory inspected. The independent planner
 approved revision 2 on 2026-09-07 after two accepted corrections: harmless
 setup-node post steps are allowed, and cold installs can increase job minutes.
 
-Proceeding under the user's approved local deduplication goal. Implementation,
-verification, and committed reviews remain. Remote publication and hosted CI
-proof require separate authority.
+Implementation and focused verification are complete. The three new policy tests
+and all 60 existing Playwright CI contract tests pass in Node 24.16.0. Biome,
+scoped Prettier, YAML parsing, and diff checks pass. An initial broader check
+failed only because the isolated container lacked the node_modules executable
+mount; the corrected mount passed without changing product code.
+
+The toolchain container uses the preceding worktree's unchanged pinned
+dependencies read-only. No application runtime was started. Local hooks are
+split: scoped container checks and staged Gitleaks replace the broad host hook
+for this CI-only package; no all-app build or full check:all run is claimed.
+
+Committed slice reviews and integrated final review remain. Remote publication
+and hosted CI proof require separate authority. No cache or setting was changed.
 
 Boundary owner: self. Pause for material reuse, trust, or cost changes,
 overlapping edits, an unavailable required review, or a necessary external

@@ -19,9 +19,19 @@ GraphQL and lightweight unit CI build their dependencies through scoped Turbo
 includes the general worker and feature-flags package. Unit CI builds only
 Prisma, types, grading, and util; it does not add Chat or PWA application builds.
 Database setup and tests still run after successful dependency builds.
-These jobs retain setup-node's pnpm cache but do not restore the Playwright
+These jobs retain the hosted pnpm cache but do not restore the Playwright
 Turbo snapshot: its `build:test` task identities and test-container environment
 are not compatible with these hosted `build` tasks.
+
+The shared `setup-node-pnpm` action preserves setup-node v4's exact lockfile key,
+runner OS/architecture, and pnpm store path. Only successful codebase-check push
+jobs write this cache; GraphQL, unit, and all PR jobs restore only. Every reader
+still performs a frozen install. Dependency-changing PRs may download packages
+on repeated runs until a matching push cache is available, and a failed check
+push does not seed it. This reduces future duplicate PR entries without deleting
+existing caches or changing storage allowances. A harmless setup-node post step
+can remain on readers; verify the absence of cache upload attempts, not of post
+steps. Playwright's separate trusted seed and cache contracts are unchanged.
 
 Per-commit workflows: required `check` (one install covering format, syncpack,
 lint, schema and guide drift, incremental builds and types, plus advisory Knip)
