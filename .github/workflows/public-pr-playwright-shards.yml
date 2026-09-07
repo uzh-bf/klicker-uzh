@@ -87,7 +87,8 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = 'pull_request' ]; then
             git -C .candidate remote add base "https://github.com/$BASE_REPOSITORY.git"
-            git -C .candidate fetch --no-tags base "$BASE_SHA" --depth=1
+            # Preserve ancestry from the full candidate checkout for merge-base.
+            git -C .candidate fetch --no-tags base "$BASE_SHA"
           fi
           test "$(git -C .candidate rev-parse HEAD)" = "$HEAD_SHA"
 

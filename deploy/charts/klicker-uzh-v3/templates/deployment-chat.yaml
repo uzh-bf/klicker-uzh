@@ -43,7 +43,7 @@ spec:
         - name: chat
           securityContext:
             {{- toYaml .Values.chat.securityContext | nindent 12 }}
-          image: "{{ .Values.chat.image.repository }}:{{ .Values.chat.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.chat.image.repository }}:{{ .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.chat.image.pullPolicy }}
           ports:
             - name: http
