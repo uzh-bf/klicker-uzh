@@ -1,5 +1,8 @@
 # Reduce obsolete Playwright work and qualify selective drafts
 
+Delivery: [draft PR #5816 — Playwright scheduling and selector history](https://github.com/uzh-bf/klicker-uzh/pull/5816),
+targeting `v3` from `rs/ci-scheduling-efficiency`.
+
 ## Approval summary
 
 Free CI capacity when a pull request closes, without cancelling post-merge
@@ -152,5 +155,7 @@ signing was refused. The branch remains three commits ahead and zero behind
 `origin/v3`; no upstream integration occurred. Immediate delivery remains local
 source and the not-qualified canary receipt. The user subsequently approved
 push and draft PR publication; live cancellation and selective execution are
-not yet proven. Publication is the next action, without upstream integration
-or runner/settings changes.
+not yet proven. The implementation branch was pushed and draft PR #5816 opened
+against `v3`. No upstream integration or runner/settings changes occurred.
+Exact-head Actions checks and forge feedback remain pending; merge and live
+canary qualification remain separate delivery gates.
