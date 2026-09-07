@@ -2,10 +2,12 @@ import { createServer } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
+import { createLocalAuthenticator } from './local-mcp-auth.mjs'
 
 const HOST = '127.0.0.1'
 const PORT = 1417
 const MAX_BODY_BYTES = 1024 * 1024
+const authenticate = await createLocalAuthenticator(process.env)
 
 const SYNTHETIC_DOCUMENTS = [
   {
@@ -166,7 +168,10 @@ function sendJson(response, status, body) {
 
 const httpServer = createServer(async (request, response) => {
   if (request.url === '/health' && request.method === 'GET') {
-    sendJson(response, 200, { status: 'ok' })
+    sendJson(response, 200, {
+      status: 'ok',
+      generation: process.env.LOCAL_MCP_GENERATION,
+    })
     return
   }
 
@@ -178,6 +183,11 @@ const httpServer = createServer(async (request, response) => {
   if (request.method !== 'POST') {
     response.writeHead(405, { Allow: 'POST' })
     response.end()
+    return
+  }
+
+  if (!(await authenticate(request.headers))) {
+    sendJson(response, 401, { error: 'Unauthorized' })
     return
   }
 
@@ -198,8 +208,8 @@ const httpServer = createServer(async (request, response) => {
     const body = await readJsonBody(request)
     await mcpServer.connect(transport)
     await transport.handleRequest(request, response, body)
-  } catch (error) {
-    console.error('[local-mcp] Request failed:', error)
+  } catch {
+    console.error('[local-mcp] Invalid request')
     if (!response.headersSent) {
       sendJson(response, 400, {
         jsonrpc: '2.0',
