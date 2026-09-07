@@ -3731,6 +3731,62 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
     },
+    researchExport: {
+      menuLabel: 'Export research data',
+      title: 'Export research data',
+      classification: 'Personal data without direct identifiers',
+      classificationNote:
+        'This file contains personal data without direct identifiers. Individual people may still be identifiable. The data may be used only for the stated research project and only by its staff.',
+      projectDetailsTitle: 'Research project details',
+      projectDetailsDescription:
+        'These details are stored with every export. KlickerUZH has no approval process; you are responsible for the lawfulness of your project.',
+      projectTitle: 'Project title',
+      projectTitlePlaceholder: 'Title of your research project',
+      responsiblePerson: 'Responsible person',
+      contactEmail: 'Contact address',
+      purpose: 'Purpose',
+      purposeHint: 'Required, 1–2 sentences.',
+      deletionDate: 'Planned deletion date',
+      reference: 'Reference',
+      referencePlaceholder: 'e.g. ethics committee 2026-xx',
+      referenceHint:
+        'Optional: ethics, approval, or data management plan number.',
+      dataClassesTitle: 'Required data classes (select at least one)',
+      liveQuizResponses: 'Live quiz responses',
+      asynchronousResponses:
+        'Asynchronous responses (learning elements, microlearning)',
+      learningAnalytics:
+        'Learning Analytics data (individual and group values)',
+      chatTranscripts: 'Chat transcripts',
+      unavailableHint:
+        'Currently unavailable; the core export does not support this class yet.',
+      classDataNote:
+        'Conversation free text may contain personal information, even when account identifiers have been removed. Limit your selection to the data required for your project. The specific data scope and protective measures are determined separately.',
+      attestationTitle: 'With the download I confirm:',
+      attestationPurpose:
+        'Purpose limitation. I use the data only for the research project specified above and only for the stated purpose.',
+      attestationReidentification:
+        'No re-identification or impermissible linkage. I do not attempt to identify people and do not link the file with other data that could enable identification.',
+      attestationAccess:
+        'Restricted access and no onward disclosure. I make the file accessible only to the staff of the specified project and do not disclose it outside the project.',
+      attestationSecurity:
+        'Security, removal of personal reference, and deletion. I process the file only in a suitable, protected environment, remove the personal reference as early as possible, and delete it by the specified date at the latest, unless a retention obligation applies. Only results that do not allow conclusions about individual people will be published.',
+      auditNote:
+        "Your export request and this confirmation are logged with your project details, account, time, and requested data scope. The participants' current research choice applies when the data is provided.",
+      acknowledgement: 'I confirm these four points for this export.',
+      required: 'This field is required.',
+      maxLength: 'Please shorten this value.',
+      invalidEmail: 'Please enter a valid email address.',
+      deletionDateInvalid: 'Enter a valid date.',
+      deletionDatePast: 'The deletion date cannot be in the past.',
+      classesRequired: 'Select at least one available data class.',
+      acknowledgementRequired: 'Confirm all four points before exporting.',
+      requestFailed:
+        'The research export could not be created. Please try again.',
+      downloadStarted: 'The download has started.',
+      cancel: 'Cancel',
+      submit: 'Export research data',
+    },
     pointCorrections: {
       stepIndicator: 'Step {current} of {total}',
       actionApply: 'Apply Corrections',

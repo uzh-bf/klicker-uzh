@@ -3792,6 +3792,61 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
+    researchExport: {
+      menuLabel: 'Forschungsdaten exportieren',
+      title: 'Forschungsdaten exportieren',
+      classification: 'Personendaten ohne direkte Identifikatoren',
+      classificationNote:
+        'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungsprojekt und nur durch dessen Mitarbeitende verwendet werden.',
+      projectDetailsTitle: 'Angaben zum Forschungsprojekt',
+      projectDetailsDescription:
+        'Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.',
+      projectTitle: 'Projekttitel',
+      projectTitlePlaceholder: 'Titel deines Forschungsprojekts',
+      responsiblePerson: 'Verantwortliche Person',
+      contactEmail: 'Kontaktadresse',
+      purpose: 'Zweck',
+      purposeHint: 'Erforderlich, 1–2 Sätze.',
+      deletionDate: 'Geplantes Löschdatum',
+      reference: 'Referenz',
+      referencePlaceholder: 'z. B. Ethikkommission 2026-xx',
+      referenceHint: 'Optional: Ethik-, Bewilligungs- oder DMP-Nummer.',
+      dataClassesTitle: 'Benötigte Datenklassen (mindestens eine auswählen)',
+      liveQuizResponses: 'Live-Quiz-Antworten',
+      asynchronousResponses:
+        'Asynchrone Antworten (Lernelemente, Microlearning)',
+      learningAnalytics: 'Learning-Analytics-Daten (Einzel- und Gruppenwerte)',
+      chatTranscripts: 'Chat-Transkripte',
+      unavailableHint:
+        'Derzeit nicht verfügbar; der Kern unterstützt diese Datenklasse noch nicht.',
+      classDataNote:
+        'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten. Der konkrete Datenumfang und die Schutzmassnahmen werden gesondert festgelegt.',
+      attestationTitle: 'Mit dem Download bestätige ich:',
+      attestationPurpose:
+        'Zweckbindung. Ich verwende die Daten nur für das oben angegebene Forschungsprojekt und nur für den angegebenen Zweck.',
+      attestationReidentification:
+        'Keine Reidentifizierung oder unzulässige Verknüpfung. Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.',
+      attestationAccess:
+        'Beschränkter Zugriff und keine Weitergabe. Ich mache die Datei nur den Mitarbeitenden des angegebenen Projekts zugänglich und gebe sie nicht ausserhalb des Projekts weiter.',
+      attestationSecurity:
+        'Sicherheit, Entfernung des Personenbezugs und Löschung. Ich bearbeite die Datei nur in einer dafür geeigneten, geschützten Umgebung, entferne den Personenbezug so früh wie möglich und lösche sie spätestens zum angegebenen Datum, soweit keine Aufbewahrungspflicht entgegensteht. Veröffentlicht werden nur Ergebnisse, die keine Rückschlüsse auf einzelne Personen zulassen.',
+      auditNote:
+        'Deine Exportanfrage und diese Bestätigung werden mit deinen Projektangaben, Konto, Zeitpunkt und angefragtem Datenumfang protokolliert. Bei der Bereitstellung gilt die aktuelle Forschungswahl der Teilnehmenden.',
+      acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+      required: 'Dieses Feld ist erforderlich.',
+      maxLength: 'Bitte kürze diesen Wert.',
+      invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+      deletionDateInvalid: 'Bitte gib ein gültiges Datum ein.',
+      deletionDatePast:
+        'Das Löschdatum darf nicht in der Vergangenheit liegen.',
+      classesRequired: 'Wähle mindestens eine verfügbare Datenklasse aus.',
+      acknowledgementRequired: 'Bestätige alle vier Punkte vor dem Export.',
+      requestFailed:
+        'Der Forschungsexport konnte nicht erstellt werden. Bitte versuche es erneut.',
+      downloadStarted: 'Der Download wurde gestartet.',
+      cancel: 'Abbrechen',
+      submit: 'Forschungsdaten exportieren',
+    },
     pointCorrections: {
       stepIndicator: 'Schritt {current} von {total}',
       actionApply: 'Korrekturen anwenden',
