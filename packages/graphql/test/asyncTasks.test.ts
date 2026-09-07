@@ -569,6 +569,84 @@ describe('AsyncTask service and GraphQL API', () => {
     )
   })
 
+  it('does not advance the reconciliation cursor past a failed update', async () => {
+    const now = Date.now()
+    const failedTask = await prisma.asyncTask.create({
+      data: {
+        kind: AsyncTaskKind.COURSE_DUPLICATION,
+        status: AsyncTaskStatus.RUNNING,
+        subjectName: 'Retry this reconciliation',
+        ownerId,
+        updatedAt: new Date(now - 76 * 60 * 1000),
+      },
+    })
+    const successfulTask = await prisma.asyncTask.create({
+      data: {
+        kind: AsyncTaskKind.COURSE_DUPLICATION,
+        status: AsyncTaskStatus.RUNNING,
+        subjectName: 'Reconcile independently',
+        ownerId,
+        updatedAt: new Date(now - 77 * 60 * 1000),
+      },
+    })
+    let reconciliationCursor: string | null = null
+    ownerCtx.redisExec = {
+      get: async () => reconciliationCursor,
+      mget: async (...keys: string[]) => keys.map(() => null),
+      set: async (_key: string, value: string) => {
+        reconciliationCursor = value
+        return 'OK'
+      },
+    } as unknown as ContextWithUser['redisExec']
+
+    const originalAsyncTask = prisma.asyncTask
+    const asyncTaskWithFailure = new Proxy(originalAsyncTask, {
+      get(target, property, receiver) {
+        if (property !== 'updateMany') {
+          const value = Reflect.get(target, property, receiver)
+          return typeof value === 'function' ? value.bind(target) : value
+        }
+
+        return async (
+          args: Parameters<typeof originalAsyncTask.updateMany>[0]
+        ) => {
+          if (args.where?.id === failedTask.id) {
+            throw new Error('temporary database failure')
+          }
+          return await originalAsyncTask.updateMany(args)
+        }
+      },
+    })
+    ownerCtx.prisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property === 'asyncTask') return asyncTaskWithFailure
+        const value = Reflect.get(target, property, receiver)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+
+    try {
+      await getAsyncTasks({ trackedIds: [] }, ownerCtx)
+    } finally {
+      ownerCtx.prisma = prisma
+    }
+
+    expect(reconciliationCursor).toBeNull()
+    await expect(
+      prisma.asyncTask.findUniqueOrThrow({ where: { id: failedTask.id } })
+    ).resolves.toMatchObject({ status: AsyncTaskStatus.RUNNING })
+    await expect(
+      prisma.asyncTask.findUniqueOrThrow({ where: { id: successfulTask.id } })
+    ).resolves.toMatchObject({ status: AsyncTaskStatus.FAILED })
+
+    await getAsyncTasks({ trackedIds: [] }, ownerCtx)
+
+    expect(reconciliationCursor).not.toBeNull()
+    await expect(
+      prisma.asyncTask.findUniqueOrThrow({ where: { id: failedTask.id } })
+    ).resolves.toMatchObject({ status: AsyncTaskStatus.FAILED })
+  })
+
   it('mirrors course duplication monotonically and preserves acknowledgement', async () => {
     const id = randomUUID()
     const createdAt = new Date('2026-08-28T08:00:00.000Z')

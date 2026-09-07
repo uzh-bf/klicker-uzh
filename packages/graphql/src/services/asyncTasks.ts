@@ -175,20 +175,30 @@ async function getStaleActiveTaskBatch({
     tasks = await findBatch(null)
   }
 
-  const lastTask = tasks.at(-1)
-  if (lastTask) {
-    await ctx.redisExec.set(
-      cursorKey,
-      JSON.stringify({
-        id: lastTask.id,
-        updatedAt: lastTask.updatedAt.toISOString(),
-      }),
-      'EX',
-      ASYNC_TASK_RECONCILIATION_CURSOR_TTL_SECONDS
-    )
-  }
+  return { cursorKey, tasks }
+}
 
-  return tasks
+async function advanceReconciliationCursor({
+  ctx,
+  cursorKey,
+  tasks,
+}: {
+  ctx: ContextWithUser
+  cursorKey: string
+  tasks: ReconciliationCursor[]
+}) {
+  const lastTask = tasks.at(-1)
+  if (!lastTask) return
+
+  await ctx.redisExec.set(
+    cursorKey,
+    JSON.stringify({
+      id: lastTask.id,
+      updatedAt: lastTask.updatedAt.toISOString(),
+    }),
+    'EX',
+    ASYNC_TASK_RECONCILIATION_CURSOR_TTL_SECONDS
+  )
 }
 
 async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
@@ -201,7 +211,7 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
   const staleCutoff = new Date(
     now.getTime() - COURSE_DUPLICATION_STALE_AFTER_MS
   )
-  const [newestActiveTasks, oldestActiveTasks, staleActiveTasks] =
+  const [newestActiveTasks, oldestActiveTasks, staleActiveTaskBatch] =
     await Promise.all([
       ctx.prisma.asyncTask.findMany({
         where,
@@ -217,6 +227,7 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
       }),
       getStaleActiveTaskBatch({ ctx, staleCutoff, where }),
     ])
+  const staleActiveTasks = staleActiveTaskBatch.tasks
   const activeTasks = [
     ...new Map(
       [...newestActiveTasks, ...oldestActiveTasks, ...staleActiveTasks].map(
@@ -230,7 +241,14 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
     ...activeTasks.map((task) => getCourseDuplicationStatusKey(task.id))
   )
   const missingTasks = activeTasks.filter((_, index) => !redisJobs[index])
-  if (missingTasks.length === 0) return
+  if (missingTasks.length === 0) {
+    await advanceReconciliationCursor({
+      ctx,
+      cursorKey: staleActiveTaskBatch.cursorKey,
+      tasks: staleActiveTasks,
+    })
+    return
+  }
 
   const committedCourses = await ctx.prisma.course.findMany({
     where: { id: { in: missingTasks.map((task) => task.id) } },
@@ -239,7 +257,7 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
   const committedCourseIds = new Set(
     committedCourses.map((course) => course.id)
   )
-  await Promise.all(
+  const reconciliationResults = await Promise.allSettled(
     missingTasks.map(async (task) => {
       const committed = committedCourseIds.has(task.id)
       if (!committed && task.updatedAt.getTime() >= staleCutoff.getTime())
@@ -267,6 +285,29 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
       })
     })
   )
+  const failures = reconciliationResults.flatMap((result, index) =>
+    result.status === 'rejected'
+      ? [{ error: result.reason, taskId: missingTasks[index]!.id }]
+      : []
+  )
+  for (const failure of failures) {
+    console.error(
+      `Failed to reconcile course duplication task ${failure.taskId}`,
+      failure.error
+    )
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map((failure) => failure.error),
+      'Failed to reconcile one or more course duplication tasks'
+    )
+  }
+
+  await advanceReconciliationCursor({
+    ctx,
+    cursorKey: staleActiveTaskBatch.cursorKey,
+    tasks: staleActiveTasks,
+  })
 }
 
 export async function getAsyncTasks(

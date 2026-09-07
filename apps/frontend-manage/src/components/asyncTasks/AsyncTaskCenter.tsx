@@ -29,6 +29,8 @@ function getTaskIcon(kind: AsyncTaskKind): IconDefinition {
       return faDiagramProject
     case AsyncTaskKind.QuestionGeneration:
       return faQuestion
+    default:
+      return faQuestion
   }
 }
 
@@ -51,6 +53,9 @@ function AsyncTaskStatusIcon({ task }: Readonly<{ task: AsyncTaskData }>) {
       icon = faTriangleExclamation
       className = 'text-red-700'
       break
+    default:
+      icon = faTriangleExclamation
+      className = 'text-slate-500'
   }
 
   return (
@@ -101,8 +106,18 @@ function AsyncTaskRow({
     failureLabel = t('manage.asyncTasks.failure.courseDuplicationPartial')
   }
   const statusTimestamp = isActiveTask(task)
-    ? task.updatedAt
-    : (task.finishedAt ?? task.updatedAt)
+    ? (task.updatedAt ?? task.createdAt)
+    : (task.finishedAt ?? task.updatedAt ?? task.createdAt)
+  const statusDate = statusTimestamp ? new Date(statusTimestamp) : null
+  const formattedStatusTime =
+    statusDate && !Number.isNaN(statusDate.getTime())
+      ? format.dateTime(statusDate, {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null
 
   return (
     <li
@@ -132,15 +147,12 @@ function AsyncTaskRow({
         >
           {task.status === AsyncTaskStatus.Failed
             ? failureLabel
-            : t('manage.asyncTasks.statusAt', {
-                status: statusLabel,
-                time: format.dateTime(new Date(statusTimestamp), {
-                  day: '2-digit',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-              })}
+            : formattedStatusTime
+              ? t('manage.asyncTasks.statusAt', {
+                  status: statusLabel,
+                  time: formattedStatusTime,
+                })
+              : statusLabel}
         </div>
       </div>
       {task.status === AsyncTaskStatus.Succeeded &&

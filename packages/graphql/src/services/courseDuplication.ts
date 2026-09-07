@@ -391,12 +391,13 @@ async function updateCourseDuplicationJob(
   try {
     await syncCourseDuplicationTask(updatedJob, prisma)
   } catch (error) {
-    // The durable task center mirrors product state, but it must never change
-    // the worker retry or copy-transaction outcome. The status query and stale
-    // sweep retry this synchronization while the Redis record exists.
     console.error(
       `Failed to synchronize async task ${updatedJob.id}: ${getErrorMessage(error)}`
     )
+    // A terminal result must reach the durable task center before the worker
+    // reports success. Throwing here lets Hatchet retry even if the ephemeral
+    // Redis status expires before a later sweep can restore the task.
+    if (isTerminalCourseDuplicationStatus(updatedJob.status)) throw error
   }
 
   return updatedJob
@@ -715,15 +716,16 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       try {
         await syncCourseDuplicationTask(pendingJob, globalCtx.prisma)
       } catch (error) {
-        executionCtx.logger.warn(
+        executionCtx.logger.error(
           `Failed to restore async task ${jobId}: ${getErrorMessage(error)}`
         )
+        throw error
+      } finally {
+        // A worker may have persisted FAILED and crashed before releasing the
+        // source lock. Always reconcile the lock when a retry observes a
+        // terminal job so a failed duplication cannot block future attempts.
+        await releaseCourseDuplicationSourceLock(redis, pendingJob)
       }
-
-      // A worker may have persisted FAILED and crashed before releasing the
-      // source lock. Always reconcile the lock when a retry observes a
-      // terminal job so a failed duplication cannot block future attempts.
-      await releaseCourseDuplicationSourceLock(redis, pendingJob)
       return true
     }
 
