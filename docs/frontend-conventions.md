@@ -116,6 +116,15 @@ round-complete notice and refetches so the next start uses the server-side
 spaced repetition order; only the per-round UI progress resets, the recorded
 responses stay untouched. A finished individual quiz routes back to the course
 Practice Quiz overview; embedded quizzes keep their in-place completion panel.
+The participant account settings page keeps research and learning-analytics
+choices in a dedicated section outside the profile form
+(`apps/frontend-pwa/src/components/participant/DataUseSettings.tsx`). Each
+account-wide choice has its own mutation and pending state. The controls wait
+for `GetParticipantDataUse`, which uses `network-only` on every mount so the
+singleton browser cache cannot expose a previous participant's choices after an
+account change. After a successful mutation, each control updates only its own
+fields in that query cache so concurrent choices cannot overwrite one another.
+They never infer a choice from missing or nullable query data.
 
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`

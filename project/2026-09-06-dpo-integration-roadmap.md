@@ -4,7 +4,7 @@
 
 Integrate the preserved DPO package into the real KlickerUZH workflows. Participants complete the notices during normal signup or immediately after assessment edu-ID login, change saved choices in their profile, and control leaderboard publication without losing private points. Lecturers encounter the export attestations on Manage course details and the material confirmations before knowledge-base transfers. Existing fonts, colors, components, and navigation conventions remain.
 
-The [completed app draft](./2026-09-05-dpo-app-draft-plan.md) provides reviewed presentation and wording. It does not satisfy this roadmap: completion requires real persistence, server enforcement, actual synthetic downloads/uploads, and browser verification through ordinary routes. The [execution plan](./2026-09-06-dpo-integration-execution-plan.md) owns implementation details.
+The [completed app draft](./2026-09-05-dpo-app-draft-plan.md) provides reviewed presentation and wording. It does not satisfy this roadmap: completion requires real persistence, server enforcement, actual synthetic downloads/uploads, and browser verification through ordinary routes. The [execution plan](./2026-09-06-pr-5819-dpo-integration-execution-plan.md) owns implementation details.
 
 The user authorized planning, this dedicated roadmap, and execution with a goal on 2026-09-06. Local edits, synthetic verification, configured reviews, and commits are authorized. The user settled branch placement: core changes target `v3`; AI-specific changes target `v3-ai`. Do not assemble those branches or pending consent branches into one verification branch. Publication, changes to other owners' branches, deployment, real-data processing, and legal approval are excluded.
 

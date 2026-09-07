@@ -65,6 +65,7 @@ import {
   GroupMessage,
   LeaveCourseParticipation,
   Participant,
+  ParticipantDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantTokenData,
@@ -462,6 +463,28 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.updateParticipantAvatar(args, ctx)
+        },
+      }),
+
+      setResearchConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.setResearchConsent(args, ctx)
+        },
+      }),
+
+      setLearningAnalyticsConsent: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.setLearningAnalyticsConsent(args, ctx)
         },
       }),
 

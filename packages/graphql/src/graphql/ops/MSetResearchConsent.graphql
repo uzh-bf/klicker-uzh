@@ -1,0 +1,5 @@
+mutation SetResearchConsent($consent: Boolean!) {
+  setResearchConsent(consent: $consent) {
+    ...ParticipantDataUseData
+  }
+}

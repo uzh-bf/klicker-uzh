@@ -71,6 +71,7 @@ model QuestionResponse {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+  @@index([courseId, createdAt])
 }
 
 model QuestionResponseDetail {
@@ -106,6 +107,7 @@ model QuestionResponseDetail {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+  @@index([createdAt], map: "QuestionResponseDetail_createdAt_brin_idx", type: Brin)
 }
 
 model LiveQuizResponse {
@@ -142,6 +144,8 @@ model LiveQuizResponse {
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+  @@index([instanceId, participantId, submittedAt])
+  @@index([createdAt], map: "LiveQuizResponse_createdAt_brin_idx", type: Brin)
 }
 
 enum PointCorrectionType {
