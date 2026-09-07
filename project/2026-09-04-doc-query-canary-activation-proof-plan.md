@@ -2,7 +2,7 @@
 
 Date: 2026-09-04
 
-Status: approved and executing
+Status: production activation complete; source publication in PR 5813
 
 ## Goal and non-goals
 
@@ -620,3 +620,33 @@ proof workers or unresolved review children. Private receipts and the sanitized
 proof result remain under /Users/rschlae/Git/ai/_local/klicker-prd-activation/;
 retain them and the original rollback receipt and consumed re-entry claim.
 No publication, merge, infrastructure deployment or cleanup occurred.
+
+
+## Source publication (2026-09-07)
+
+The user authorized source publication and conflict resolution, without merge.
+[PR 5813 — cohort activation source preservation](https://github.com/uzh-bf/klicker-uzh/pull/5813)
+contains the six reviewed executable/test files and this plan on
+`fix/doc-query-activation-publication`, based on `v3` at
+`d8e29ee75168b61e5c6902a5a8d8afa12495e261`. All six files are byte-identical to
+reviewed commit `4434e1a5b8135a2301a7a301fdcaefd4ba968ec0`; prior simplifier,
+data-integrity and final review evidence remains applicable.
+
+The original branch's one target integration resolved the LTI documentation
+conflict by preserving the already-merged PR 5807 version. Mandatory data-hygiene
+checks then rejected unrelated upstream content in the merge commit. No check
+was bypassed: only the seven scoped files were carried to a fresh target-based
+publication branch. The original worktree and prior receipts are preserved.
+
+Fresh focused checks on the resolved target tree: proof 42/42 passed; activation
+116/116 passed with `TMPDIR=/private/tmp`. The default macOS temporary directory
+has a symlinked ancestor, which intentionally fails the re-entry root guard;
+using the canonical temporary directory fixes the test environment without
+weakening the guard or changing source. Host Node was 26.8.1; the prior Node 24
+container checks remain separately recorded. Biome passed with the two known
+warnings, JavaScript syntax passed, and the publication commit's gitleaks scan
+and diff whitespace check passed. Full repository build/check coverage is left
+to GitHub CI; no local application runtime was started for publication.
+
+The separate roadmap reconciliation is published in deployment MR 739.
+No production activation, proof replay, rollback or secret/data change occurred.
