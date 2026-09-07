@@ -127,6 +127,26 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
+The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
+reports stale dependency links instead of installing before the host launcher
+can control the lifecycle. On a cold host run, when the Playwright CLI is
+missing, the launcher stops this exact checkout, performs the filtered frozen
+install, builds the host Prisma and shared-types test dependencies, prepares
+the required browser, and only then reconciles the devcontainer. A warm run
+does not stop the checkout or install packages. `--print-env` still reconciles
+the checkout and resolves its environment without dependency preparation.
+`--show-report` never reconciles the devcontainer; if it needs a cold install,
+that exact checkout may remain stopped after preparation.
+
+When the Playwright CLI is missing, invoke the launcher directly with the
+pinned host Node (`volta run node ./util/run-playwright-host.mjs ...`) so it
+can stop the exact checkout before installing. If the CLI exists but dependency
+links are stale, stop that exact checkout first and run the existing filtered
+frozen install explicitly; the launcher does not repair a warm dependency tree.
+The outer `pnpm playwright:host` entrypoint is still the normal warm-run
+command, but pnpm's fail-closed policy intentionally stops it before the
+launcher when its own dependency validation detects a stale workspace.
+
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright
 or install browsers through `devrouter exec` or a DevPod shell. GitHub Actions

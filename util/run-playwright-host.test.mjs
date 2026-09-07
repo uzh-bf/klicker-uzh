@@ -9,14 +9,98 @@ import {
   HOST_RUNNER_ENV,
 } from './playwright-host-policy.mjs'
 import {
+  PNPM_VERIFY_DEPS_ENV,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
+  main as runPlaywrightHost,
 } from './run-playwright-host.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+function createLauncherHarness({
+  playwrightCli = true,
+  prismaDist = true,
+  typesDist = true,
+  failWhen,
+} = {}) {
+  const calls = []
+  const logs = []
+  const root = '/synthetic/klicker-uzh'
+  const workspaceGitDir = '/synthetic/git/worktrees/launcher'
+
+  const commandRunner = (command, args, options = {}) => {
+    calls.push({ command, args: [...args], options })
+    if (failWhen?.({ command, args, options })) {
+      throw new Error('synthetic launcher failure')
+    }
+
+    if (command === 'git' && args.at(-1) === '--git-dir') {
+      return workspaceGitDir
+    }
+    if (command === 'git' && args.at(-1) === '--git-common-dir') {
+      return '/synthetic/git'
+    }
+    if (command === 'docker' && args[0] === 'ps') return 'container-id'
+    if (command === 'docker' && args[0] === 'port') {
+      return '127.0.0.1:49153'
+    }
+
+    return ''
+  }
+
+  const pathExists = (path) => {
+    if (path.endsWith('/.dockerenv') || path.endsWith('/.containerenv')) {
+      return false
+    }
+    if (path.endsWith('/playwright/node_modules/@playwright/test/cli.js')) {
+      return playwrightCli
+    }
+    if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
+    if (path.endsWith('/packages/types/dist/index.js')) return typesDist
+    if (path.endsWith('/devrouter-workspace')) return true
+    return false
+  }
+
+  const readFile = (path) => {
+    if (path.endsWith('/devrouter-workspace')) return 'synthetic-launcher\n'
+    if (path.endsWith('/devcontainer.env')) {
+      return [
+        'DATABASE_URL=postgres://user:password@postgres:5432/database',
+        'APP_SECRET=synthetic-app-secret',
+      ].join('\n')
+    }
+    throw new Error(`unexpected synthetic file: ${path}`)
+  }
+
+  return {
+    calls,
+    logs,
+    dependencies: {
+      commandExistsFn: () => false,
+      commandRunner,
+      environment: { PATH: '/synthetic/bin' },
+      log: (message) => logs.push(message),
+      pathExists,
+      readFile,
+      root,
+    },
+  }
+}
+
+function commandIndex(calls, command, firstArg) {
+  return calls.findIndex(
+    ({ command: actualCommand, args }) =>
+      actualCommand === command &&
+      (firstArg === undefined || args[0] === firstArg)
+  )
+}
+
+function pnpmCalls(calls) {
+  return calls.filter(({ command }) => command === 'pnpm')
+}
 
 function discoverWorkspacePackages(root = repoRoot) {
   const workspace = parseYaml(
@@ -325,5 +409,190 @@ test('devcontainer dependency mounts isolate every workspace package', () => {
         workspacePackages
       ),
     /is not isolated from the host/
+  )
+})
+
+test('cold runs stop before host preparation and reconcile afterward', () => {
+  const harness = createLauncherHarness({ playwrightCli: false })
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  const stop = commandIndex(harness.calls, 'devrouter', 'stop')
+  const install = commandIndex(harness.calls, 'pnpm', 'install')
+  const ensure = commandIndex(harness.calls, 'devrouter', 'ensure')
+  assert.ok(stop >= 0)
+  assert.ok(install > stop)
+  assert.ok(ensure > install)
+  assert.equal(
+    harness.calls.filter(
+      ({ command, args }) => command === 'pnpm' && args.includes('playwright')
+    ).length,
+    1,
+    'list mode must not install a browser'
+  )
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
+})
+
+test('cold runs complete builds and browser preparation before reconciliation', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
+
+  const stop = commandIndex(harness.calls, 'devrouter', 'stop')
+  const install = commandIndex(harness.calls, 'pnpm', 'install')
+  const prismaBuild = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/prisma') &&
+      args.includes('build')
+  )
+  const typesBuild = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/types') &&
+      args.includes('build')
+  )
+  const browserInstall = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('playwright') &&
+      args.includes('install')
+  )
+  const ensure = commandIndex(harness.calls, 'devrouter', 'ensure')
+
+  assert.ok(stop >= 0)
+  assert.ok(stop < install)
+  assert.ok(install < prismaBuild)
+  assert.ok(prismaBuild < typesBuild)
+  assert.ok(typesBuild < browserInstall)
+  assert.ok(browserInstall < ensure)
+})
+
+test('cold preparation aborts before reconciliation when stopping fails', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    failWhen: ({ command, args }) =>
+      command === 'devrouter' && args[0] === 'stop',
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+})
+
+test('cold preparation aborts before reconciliation when install fails', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    failWhen: ({ command, args }) =>
+      command === 'pnpm' && args[0] === 'install',
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.ok(commandIndex(harness.calls, 'devrouter', 'stop') >= 0)
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+})
+
+test('warm preparation aborts before reconciliation when a host build fails', () => {
+  const harness = createLauncherHarness({
+    failWhen: ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/prisma') &&
+      args.includes('build'),
+    prismaDist: false,
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+})
+
+test('warm runs skip stop and package installation but preserve browser mode', () => {
+  const harness = createLauncherHarness()
+
+  runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
+
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
+  assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
+  const browserInstall = harness.calls.find(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('playwright') &&
+      args.includes('install')
+  )
+  assert.deepEqual(browserInstall?.args.slice(-1), ['chromium'])
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
+})
+
+test('print-env reconciles without dependency preparation', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--print-env'], harness.dependencies)
+
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'stop'), -1)
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure') >= 0, true)
+  assert.equal(pnpmCalls(harness.calls).length, 0)
+})
+
+test('show-report does not reconcile the runtime', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--show-report'], harness.dependencies)
+
+  assert.equal(commandIndex(harness.calls, 'devrouter', 'ensure'), -1)
+  assert.ok(commandIndex(harness.calls, 'devrouter', 'stop') >= 0)
+  const report = harness.calls.find(
+    ({ command, args }) => command === 'pnpm' && args.includes('show-report')
+  )
+  assert.ok(report)
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
+})
+
+test('Volta-routed pnpm commands retain the lowercase dependency guard', () => {
+  const harness = createLauncherHarness()
+  harness.dependencies.commandExistsFn = () => true
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  const pnpmChildren = harness.calls.filter(
+    ({ command, args }) => command === 'corepack' && args[0] === 'pnpm'
+  )
+  assert.ok(pnpmChildren.length > 0)
+  assert.ok(
+    pnpmChildren.every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
   )
 })
