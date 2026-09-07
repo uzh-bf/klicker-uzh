@@ -31,7 +31,8 @@ if [[ "${inspect_status}" -eq 0 ]]; then
   exit 0
 fi
 
-if [[ "${inspect_output}" == "ERROR: ${ref}: not found" ]]; then
+if [[ "${inspect_output}" == "ERROR: ${ref}: not found" ||
+  "${inspect_output}" == "ERROR: failed to solve: ${ref}: not found" ]]; then
   printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
   {
     printf '### Publish staging image\n\n'

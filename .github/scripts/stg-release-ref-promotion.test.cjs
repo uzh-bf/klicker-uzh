@@ -323,18 +323,22 @@ test('the publish-once guard reuses a canonical digest and fails closed', (t) =>
   assert.equal(existing.output, `publish=false\ndigest=${digest}\n`)
   assert.match(existing.summary, /Reused staging image/u)
 
-  const missing = runPublishGuard(
+  for (const output of [
     `ERROR: ghcr.io/example/staging-image:${'a'.repeat(40)}: not found`,
-    1
-  )
-  t.after(missing.cleanup)
-  assert.equal(missing.result.status, 0, missing.result.stderr)
-  assert.equal(missing.output, 'publish=true\n')
-  assert.match(missing.summary, /Publish staging image/u)
+    `ERROR: failed to solve: ghcr.io/example/staging-image:${'a'.repeat(40)}: not found`,
+  ]) {
+    const missing = runPublishGuard(output, 1)
+    t.after(missing.cleanup)
+    assert.equal(missing.result.status, 0, missing.result.stderr)
+    assert.equal(missing.output, 'publish=true\n')
+    assert.match(missing.summary, /Publish staging image/u)
+  }
 
   for (const output of [
     'ERROR: unexpected status from HEAD request: 404 Not Found',
     'ERROR: resource not found',
+    'ERROR: failed to solve: resource not found',
+    `ERROR: failed to solve: ghcr.io/example/other-image:${'a'.repeat(40)}: not found`,
     'ERROR: manifest unknown',
     `ERROR: no such manifest: ghcr.io/example/staging-image:${'a'.repeat(40)}`,
     'unauthorized',
