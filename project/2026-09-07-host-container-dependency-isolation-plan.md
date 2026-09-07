@@ -6,7 +6,7 @@ Host Playwright installs can rewrite dependency links used by the running Linux 
 
 Extend the existing project-scoped named volumes to every workspace package's `node_modules`. Keep the shared content-addressed pnpm store, existing package versions, host Playwright boundary, and runner profiles unchanged. Strengthen the existing mount regression test and document the isolation contract.
 
-The user approved a separate tooling fix. This detailed plan proposes local implementation and commits on the dedicated tooling branch, exact patch application to the stopped disposable E2E workspace, and supported non-destructive runtime verification there. Changing mounts can trigger bootstrap; bootstrap resets the database. Stop if the supported path cannot preserve data. Synthetic data does not imply reset permission.
+The user approved a separate tooling fix, local implementation and commits, and subsequently one fresh disposable test workspace. Use that fresh workspace for bootstrap and runtime verification, preserving both existing workspaces and databases. Changing mounts on a retained runtime can trigger bootstrap and reset its database; that operation remains outside this approval.
 
 Success means a real host dependency rewrite leaves container module resolution and app routes working before any reconciliation can conceal the failure. Record the existing authoring suite results afterward. Leave the user's validation workspace untouched and running. Stop only the test runtime and retain its volumes.
 
@@ -67,6 +67,10 @@ Use the approved host Infisical operator for any upstream-backed runtime. Use sy
 Pause before destructive bootstrap, unsupported lifecycle operations, dependency-policy bypasses, changes to the validation workspace, new provider effects, or expansion into shared build artifacts. A missing safe mount-update procedure is a real prerequisite failure, not permission to recreate or reset data.
 
 ## Progress
+
+2026-09-07: user approved a fresh disposable workspace after the retained-runtime guard blocked safe verification. Created `trees/rs/chatbot-isolation-proof` from feature baseline `50c1c318f1624ee3d7ae2b5665d1fcf3e933d252`. Applied only isolation changes, four feature-specific package mounts, and the test-only launcher profile. All nine host contract tests pass there. Infisical-backed startup completed successfully under Compose project `default-rs-bee49`, with Blob port 10033 and 35 distinct dependency volumes. Existing test and validation runtimes remain untouched. Container Next resolution passes before host installation; the actual frozen-lockfile host install is in progress. This startup is not yet post-install acceptance.
+
+Slice review identified missing CI execution of the host regression suite. Added the existing `check:playwright-host` command to `.github/workflows/check.yml`; all nine host contract tests, workflow formatting, and whitespace checks pass. The reviewer corrected its reported range to `534d0019200169450a1ae25fabf03d1d4e7c1bd5..c75ea6df20784f6ac049f03e7345f60a2831133f`; its earlier unrelated hash is not evidence. Final review and browser acceptance remain pending.
 
 2026-09-07: remote refs fetched; dedicated clean tooling worktree created. No implementation or runtime mutation has started. The native planner requested explicit database preservation, immediate post-rewrite proof, and separate baseline receipts. All findings were accepted; revised plan received APPROVED. Gemini 3.8 Flash High approved the isolated conceptual repair. Its mountpoint-permission concern is an acceptance check, not authority to add setup machinery. Its generic cross-device storage observations are not treated as measured repository behavior.
 

@@ -64,6 +64,9 @@ jobs:
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
 
+      - name: Check Playwright host contracts
+        run: pnpm run check:playwright-host
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check
