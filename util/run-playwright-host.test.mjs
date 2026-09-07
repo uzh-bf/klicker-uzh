@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -16,6 +25,94 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+function cliFixture(t) {
+  const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const calls = join(root, 'calls.jsonl')
+  function binary(directory, version = '0.0.55', status = 0) {
+    const folder = join(root, directory)
+    mkdirSync(folder, { recursive: true })
+    const path = join(folder, 'devrouter')
+    writeFileSync(
+      path,
+      `#!${process.execPath}\nconst fs = require('node:fs')\nfs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)) + '\\n')\nconsole.log(${JSON.stringify(`Installed CLI version: ${version}\nLocal repo version (${root}/.devrouter.yml): 0.0.55`)})\nprocess.exitCode = ${status}\n`,
+      { mode: 0o755 }
+    )
+    return path
+  }
+  return { root, calls, binary }
+}
+
+test('host CLI selection skips stale worktree bins and symlinked bin directories', (t) => {
+  const { root, calls, binary } = cliFixture(t)
+  const stale = binary('old-worktree/node_modules/.bin', '0.0.51')
+  const host = binary('host/bin')
+  symlinkSync(dirname(stale), join(root, 'alias-bin'))
+  const env = {
+    PATH: [dirname(stale), join(root, 'alias-bin'), dirname(host)].join(
+      delimiter
+    ),
+  }
+  assert.equal(resolveDevrouter({ repo: root, env }), host)
+  assert.deepEqual(
+    readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse),
+    [['-V', '--repo', root]]
+  )
+})
+
+test('a host override resolves multiple global installations without silently selecting another', (t) => {
+  const { root, binary } = cliFixture(t)
+  const old = binary('old-host/bin', '0.0.51')
+  const current = binary('new-host/bin', '0.0.56')
+  const env = { PATH: [dirname(old), dirname(current)].join(delimiter) }
+  assert.throws(() => resolveDevrouter({ repo: root, env }), /too old/)
+  assert.equal(
+    resolveDevrouter({
+      repo: root,
+      env: { ...env, KLICKER_DEVROUTER_BIN: current },
+    }),
+    current
+  )
+})
+
+test('missing, workspace-local, non-executable and broken explicit CLIs fail before runtime access', (t) => {
+  const { root, calls, binary } = cliFixture(t)
+  const stale = binary('node_modules/.bin')
+  const broken = binary('broken/bin', '0.0.55', 1)
+  const nonExecutable = join(root, 'not-executable')
+  writeFileSync(nonExecutable, 'not an executable')
+  for (const executable of [
+    join(root, 'missing'),
+    stale,
+    nonExecutable,
+    './devrouter',
+  ]) {
+    assert.throws(
+      () => resolveDevrouter({ repo: root, executable }),
+      /No executable host Devrouter/
+    )
+  }
+  assert.throws(
+    () => resolveDevrouter({ repo: root, executable: broken }),
+    /version check failed/
+  )
+  assert.deepEqual(
+    readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse),
+    [['-V', '--repo', root]]
+  )
+})
+
+test('unparseable CLI versions cannot pass compatibility checks', (t) => {
+  const { root, binary } = cliFixture(t)
+  for (const version of ['unknown', '0.0.55-rc.1']) {
+    const executable = binary('host/bin', version)
+    assert.throws(
+      () => resolveDevrouter({ repo: root, executable }),
+      /Cannot determine/
+    )
+  }
+})
 
 test('local Playwright rejects direct host execution', () => {
   assert.throws(

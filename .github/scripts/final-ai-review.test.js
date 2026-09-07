@@ -6,6 +6,11 @@ const path = require('node:path')
 const test = require('node:test')
 
 const {
+  isConsolidationBaseBranch,
+  isEligibleBaseBranch,
+} = require('./final-ai-review-shared')
+
+const {
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
@@ -2464,6 +2469,146 @@ test('authorizes a verified native stack member', async () => {
   )
   assert.equal(outputs.get('scope_kind'), 'native-stack')
   assert.equal(outputs.get('stack_id'), 'stack-42')
+})
+
+test('treats default-branch-prefixed branches as consolidation bases', () => {
+  const context = reviewContext()
+  for (const baseRef of ['v3-ai', 'v3-polls', 'v3-course-qa', 'v3-x.y_z']) {
+    assert.equal(isEligibleBaseBranch({ baseRef, context }), true, baseRef)
+    assert.equal(
+      isConsolidationBaseBranch({ baseRef, defaultBranch: 'v3' }),
+      true,
+      baseRef
+    )
+  }
+  assert.equal(isEligibleBaseBranch({ baseRef: 'v3', context }), true)
+  assert.equal(
+    isConsolidationBaseBranch({ baseRef: 'v3', defaultBranch: 'v3' }),
+    false
+  )
+  for (const baseRef of [
+    'v3-',
+    'v3-ai/feature',
+    'v3--ai',
+    'v4-ai',
+    'xv3-ai',
+    'feature/v3-ai',
+    'main',
+    undefined,
+    null,
+  ]) {
+    assert.equal(
+      isEligibleBaseBranch({ baseRef, context }),
+      false,
+      String(baseRef)
+    )
+  }
+  assert.equal(
+    isEligibleBaseBranch({
+      baseRef: 'main-ai',
+      context: {
+        ...context,
+        payload: { repository: { default_branch: 'main' } },
+      },
+    }),
+    true
+  )
+})
+
+test('authorizes a verified native stack member whose root targets a consolidation branch', async () => {
+  const parentPull = {
+    number: 41,
+    state: 'open',
+    draft: false,
+    title: 'Parent change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Stacked change',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const stackResponse = [
+    {
+      id: 'stack-42',
+      pull_requests: [
+        {
+          number: 41,
+          state: 'open',
+          draft: false,
+          head: { sha: 'c'.repeat(40) },
+        },
+        {
+          number: 42,
+          state: 'open',
+          draft: false,
+          head: { sha: 'a'.repeat(40) },
+        },
+      ],
+    },
+  ]
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: parentPull },
+      }).github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'native-stack')
+  assert.equal(outputs.get('stack_id'), 'stack-42')
+
+  const unrelatedRoot = {
+    ...parentPull,
+    base: { ...parentPull.base, ref: 'feature/v3-ai' },
+  }
+  const notices = []
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: unrelatedRoot },
+      }).github,
+      context: reviewContext(),
+      core: { ...core, notice: (message) => notices.push(message) },
+    }),
+    false
+  )
+  assert.equal(outputs.get('authorized'), 'false')
+  assert.match(notices.join('\n'), /consolidation branch/)
 })
 
 test('authorizes a pull request targeting a designated consolidation branch', async () => {

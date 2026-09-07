@@ -21,8 +21,10 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'turbo.json'
       - 'tsconfig.json'
       - '.github/workflows/test-unit.yml'
+      - '.github/actions/setup-node-pnpm/**'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
@@ -42,8 +44,10 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'turbo.json'
       - 'tsconfig.json'
       - '.github/workflows/test-unit.yml'
+      - '.github/actions/setup-node-pnpm/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -80,11 +84,7 @@ jobs:
           version: 11.5.0
 
       - name: Set up Node.js with pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -95,11 +95,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: |
-          pnpm --filter @klicker-uzh/prisma build
-          pnpm --filter @klicker-uzh/types build
-          pnpm --filter @klicker-uzh/grading build
-          pnpm --filter @klicker-uzh/util build
+        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --concurrency=4
 
       - name: Provision disposable PostgreSQL
         id: provision_db
