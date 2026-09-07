@@ -611,6 +611,24 @@ export async function startCourseDuplication(
   try {
     await requireCourseDuplicationTask(job, ctx.prisma)
   } catch (error) {
+    const failedJob = {
+      ...job,
+      status: 'FAILED',
+      errorType: 'generic',
+      errorMessage: 'Course duplication could not be started.',
+      updatedAt: new Date(),
+    } satisfies CourseDuplicationJob
+
+    try {
+      await persistCourseDuplicationJob(ctx.redisExec, failedJob)
+      await syncCourseDuplicationTask(failedJob, ctx.prisma)
+    } catch (taskCleanupError) {
+      console.error(
+        `Failed to mark async task ${job.id} as failed: ${getErrorMessage(taskCleanupError)}`
+      )
+      throw error
+    }
+
     const cleanupResults = await Promise.allSettled([
       deleteCourseDuplicationJob(ctx.redisExec, job.id),
       releaseCourseDuplicationSourceLock(ctx.redisExec, job),
@@ -621,21 +639,6 @@ export async function startCourseDuplication(
           `Failed to clean up course duplication ${job.id}: ${getErrorMessage(cleanupResult.reason)}`
         )
       }
-    }
-    try {
-      await syncCourseDuplicationTask(
-        {
-          ...job,
-          status: 'FAILED',
-          errorType: 'generic',
-          updatedAt: new Date(),
-        },
-        ctx.prisma
-      )
-    } catch (taskCleanupError) {
-      console.error(
-        `Failed to mark async task ${job.id} as failed: ${getErrorMessage(taskCleanupError)}`
-      )
     }
     throw error
   }
@@ -713,19 +716,31 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     if (isTerminalCourseDuplicationStatus(pendingJob.status)) {
+      let taskSyncFailed = false
+      let taskSyncError: unknown
+
       try {
         await syncCourseDuplicationTask(pendingJob, globalCtx.prisma)
       } catch (error) {
+        taskSyncFailed = true
+        taskSyncError = error
         executionCtx.logger.error(
           `Failed to restore async task ${jobId}: ${getErrorMessage(error)}`
         )
-        throw error
-      } finally {
-        // A worker may have persisted FAILED and crashed before releasing the
-        // source lock. Always reconcile the lock when a retry observes a
-        // terminal job so a failed duplication cannot block future attempts.
-        await releaseCourseDuplicationSourceLock(redis, pendingJob)
       }
+
+      // A worker may have persisted FAILED and crashed before releasing the
+      // source lock. Always reconcile the lock when a retry observes a
+      // terminal job so a failed duplication cannot block future attempts.
+      try {
+        await releaseCourseDuplicationSourceLock(redis, pendingJob)
+      } catch (releaseError) {
+        executionCtx.logger.warn(
+          `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+        )
+      }
+
+      if (taskSyncFailed) throw taskSyncError
       return true
     }
 
