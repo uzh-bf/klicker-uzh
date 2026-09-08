@@ -1248,7 +1248,7 @@ test.describe('Chatbot Message Actions & Branching', () => {
 
   test('Editing a non-root user message creates a new branch', async ({
     page,
-  }) => {
+  }, testInfo) => {
     await visitChat(page)
     await sendMessage(page, 'First message')
     await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
@@ -1265,8 +1265,42 @@ test.describe('Chatbot Message Actions & Branching', () => {
 
     const editInput = page.getByTestId('chat-edit-composer-input')
     await expect(editInput).toBeVisible()
+    const editSend = page.getByTestId('chat-edit-send-button')
+    const buttonStates: Record<string, unknown> = {}
+    const recordButtonState = async (state: string) => {
+      buttonStates[state] = await editSend.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          disabled: (element as HTMLButtonElement).disabled,
+          color: style.color,
+          backgroundColor: style.backgroundColor,
+          opacity: style.opacity,
+          outline: style.outline,
+          boxShadow: style.boxShadow,
+        }
+      })
+      await page.getByTestId('chat-edit-composer').screenshot({
+        path: testInfo.outputPath(`edit-submit-${state}.png`),
+        animations: 'disabled',
+      })
+    }
+    await expect(editSend).toBeDisabled()
+    await recordButtonState('unchanged-disabled')
     await editInput.fill('Second edited')
-    await page.getByTestId('chat-edit-send-button').click()
+    await expect(editSend).toBeEnabled()
+    await expect(editSend).toHaveCSS('opacity', '1')
+    await recordButtonState('changed-enabled')
+    await editSend.hover()
+    await recordButtonState('hover')
+    await editInput.hover()
+    await editSend.focus()
+    await expect(editSend).toBeFocused()
+    await recordButtonState('focus')
+    await testInfo.attach('Edit submit computed styles', {
+      body: JSON.stringify(buttonStates, null, 2),
+      contentType: 'application/json',
+    })
+    await editSend.click()
 
     await expect(
       page
@@ -2611,7 +2645,11 @@ test.describe('Chatbot Source Citations', () => {
 
     const section = page.getByTestId('chat-sources-section')
     await expect(section).toBeVisible()
-    await expect(section).toContainText('Sources · 3')
+    await expect(section.getByTestId('chat-cited-sources')).toHaveCount(0)
+    await expect(page.locator(`#src-${messageId}-1`)).not.toBeVisible()
+    const otherSources = section.getByTestId('chat-other-sources-toggle')
+    await otherSources.focus()
+    await page.keyboard.press('Enter')
     await expect(page.getByTestId('chat-source-card')).toHaveCount(3)
 
     await expect(page.locator(`#src-${messageId}-1`)).toContainText(
@@ -2637,6 +2675,139 @@ test.describe('Chatbot Source Citations', () => {
       path: screenshotPath,
       contentType: 'image/png',
     })
+  })
+
+  test('Only rendered citations expose source cards before disclosure and after reload', async ({
+    page,
+  }, testInfo) => {
+    const messageId = '4a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
+    const thread = await seedThread(participantId, {
+      title: 'Cited and other material',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the material' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-grouped',
+              sources: Array.from({ length: 5 }, (_, index) => ({
+                file_name: `Material ${index + 1}.pdf`,
+                source_url: `https://example.com/material-${index + 1}.pdf`,
+                source_type: 'document',
+                page_number: index + 1,
+              })),
+            }),
+            {
+              type: 'text',
+              text: 'First claim [1], repeated [1]. Another claim [2–3].',
+            },
+            {
+              type: 'text',
+              text: '[Reference][support]\n\n[support]: #cite-3\n\n`[4]` and $[5]$ are examples. [Ordinary [4]](https://example.com) is an external link. Raw #cite-5 and invalid [99] stay text.',
+            },
+          ],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.reload()
+      const section = page.getByTestId('chat-sources-section')
+      const cited = section.getByTestId('chat-cited-sources')
+      await expect(cited.getByTestId('chat-source-card')).toHaveCount(3)
+      for (const index of [1, 2, 3]) {
+        await expect(cited.locator(`#src-${messageId}-${index}`)).toBeVisible()
+      }
+      for (const index of [4, 5]) {
+        await expect(
+          page.locator(`#src-${messageId}-${index}`)
+        ).not.toBeVisible()
+      }
+      await page.getByTestId('chat-citation').first().click()
+      await expect(page.locator(`#src-${messageId}-1`)).toBeFocused()
+
+      const toggle = section.getByTestId('chat-other-sources-toggle')
+      await toggle.focus()
+      await page.keyboard.press('Enter')
+      await expect(page.locator(`#src-${messageId}-4`)).toBeVisible()
+      await expect(page.locator(`#src-${messageId}-5`)).toBeVisible()
+      await toggle.click()
+      await expect(page.locator(`#src-${messageId}-4`)).not.toBeVisible()
+      await expect(cited.getByTestId('chat-source-card')).toHaveCount(3)
+      await page.screenshot({
+        path: testInfo.outputPath(`grouped-sources-${viewport.width}.png`),
+        animations: 'disabled',
+      })
+    }
+  })
+
+  test('Source grouping resets when switching answer branches', async ({
+    page,
+  }) => {
+    const userId = '4a1b2c3d-0015-4a91-8f6c-2b7d1e5a9c40'
+    const thread = await seedThread(participantId, {
+      title: 'Source grouping branches',
+      messages: [
+        {
+          id: userId,
+          role: 'user',
+          content: [{ type: 'text', text: 'Compare the evidence' }],
+        },
+        ...[
+          'An answer without a citation.',
+          'A supported answer [1] and [1].',
+        ].map((text) => ({
+          role: 'assistant' as const,
+          parentId: userId,
+          content: [
+            docQueryPart({
+              toolCallId: text.includes('[1]') ? 'call-cited' : 'call-uncited',
+              sources: [
+                {
+                  file_name: 'Evidence.pdf',
+                  source_url: 'https://example.com/evidence.pdf',
+                  source_type: 'document',
+                  page_number: 2,
+                },
+              ],
+            }),
+            { type: 'text' as const, text },
+          ],
+        })),
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    const assistant = page.getByTestId('chat-assistant-message')
+    const cited = assistant.getByTestId('chat-cited-sources')
+    await expect(cited.getByTestId('chat-source-card')).toHaveCount(1)
+    await expect(
+      assistant.getByTestId('chat-other-sources-toggle')
+    ).toHaveCount(0)
+    await assistant.hover()
+    await assistant.getByTestId('chat-branch-previous').click()
+    await expect(cited).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-source-card')).not.toBeVisible()
+    await assistant.getByTestId('chat-other-sources-toggle').click()
+    await expect(assistant.getByTestId('chat-source-card')).toBeVisible()
+    await assistant.hover()
+    await assistant.getByTestId('chat-branch-next').click()
+    await expect(cited.getByTestId('chat-source-card')).toHaveCount(1)
+    await expect(
+      assistant.getByTestId('chat-other-sources-toggle')
+    ).toHaveCount(0)
   })
 
   test('Source details stay in hover and focus previews for cards and citations', async ({
@@ -2752,8 +2923,16 @@ test.describe('Chatbot Source Citations', () => {
 
     const section = page.getByTestId('chat-sources-section')
     await expect(section).toBeVisible()
+    await expect(section.getByTestId('chat-cited-sources')).toHaveCount(0)
+    await expect(page.getByTestId('chat-source-card')).not.toBeVisible()
+    await section.getByTestId('chat-other-sources-toggle').click()
     await expect(page.getByTestId('chat-source-card')).toHaveCount(1)
-    await expect(section).toContainText('Terminal Only.pdf')
+    await expect(page.getByTestId('chat-source-card')).toBeVisible()
+    await page.reload()
+    await expect(section).toBeVisible()
+    await expect(page.getByTestId('chat-source-card')).not.toBeVisible()
+    await section.getByTestId('chat-other-sources-toggle').click()
+    await expect(page.getByTestId('chat-source-card')).toBeVisible()
   })
 
   test('Two doc_query calls with an overlapping source dedupe into contiguous 1..N numbering', async ({
@@ -2794,7 +2973,10 @@ test.describe('Chatbot Source Citations', () => {
           content: [
             docQueryPart({ toolCallId: 'call-1', sources: [sourceA, sourceB] }),
             docQueryPart({ toolCallId: 'call-2', sources: [sourceB, sourceC] }),
-            { type: 'text', text: 'Combined findings from both searches.' },
+            {
+              type: 'text',
+              text: 'Combined findings from both searches [1–3].',
+            },
           ],
         },
       ],
@@ -2803,7 +2985,12 @@ test.describe('Chatbot Source Citations', () => {
     await page.getByTestId('chat-thread-select').first().click()
 
     const section = page.getByTestId('chat-sources-section')
-    await expect(section).toContainText('Sources · 3')
+    await expect(section.getByTestId('chat-other-sources-toggle')).toHaveCount(
+      0
+    )
+    await expect(
+      section.getByTestId('chat-cited-sources').getByTestId('chat-source-card')
+    ).toHaveCount(3)
     await expect(page.getByTestId('chat-source-card')).toHaveCount(3)
 
     // Contiguous 1..3 numbering: B (seen in both calls) keeps its first
@@ -3175,9 +3362,11 @@ test.describe('Chatbot Source Citations', () => {
     })
 
     await expect(section).toBeVisible({ timeout: 15_000 })
-    await expect(section).toContainText('Sources · 8')
-    await expect(page.getByTestId('chat-source-card')).toHaveCount(8)
-    await expect(section.getByRole('heading')).toBeInViewport()
+    await expect(
+      section.getByTestId('chat-cited-sources').getByTestId('chat-source-card')
+    ).toHaveCount(2)
+    await expect(section.getByTestId('chat-other-sources-toggle')).toBeVisible()
+    await expect(section.getByRole('heading').first()).toBeInViewport()
     await expect
       .poll(() =>
         viewport.evaluate(
@@ -3196,7 +3385,9 @@ test.describe('Chatbot Source Citations', () => {
       'Source 2: Live Beta.pdf'
     )
 
-    const citedSource = page.getByTestId('chat-source-card').nth(6)
+    const citedSource = section.locator(
+      '[data-cy="chat-source-card"][id$="-7"]'
+    )
     await citations.nth(0).scrollIntoViewIfNeeded()
     await expect(citations.nth(0)).toBeInViewport()
     await expect(citedSource).not.toBeInViewport()
@@ -3273,6 +3464,8 @@ test.describe('Chatbot Source Citations', () => {
       )
     ).toBeLessThanOrEqual(1)
     await selectChatMode(page, 'explainer', 'Explainer')
+
+    await page.getByTestId('chat-other-sources-toggle').click()
 
     const composerInput = page.getByTestId('chat-composer-input')
     await composerInput.fill(

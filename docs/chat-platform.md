@@ -492,6 +492,11 @@ participant had scrolled up, their position is preserved. Terminal incomplete,
 aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
+Within that section, sources with a valid rendered citation appear under
+“Cited in this answer”. Other eligible sources remain available behind a
+collapsed “Other retrieved material” disclosure. With no citations, including
+tool-only turns, all source cards start collapsed. Grouping preserves original
+source indices and does not claim to identify every source the model used.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -850,6 +855,11 @@ number. It skips anything inside a link label (including nested emphasis), and
 Normalization runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both
 the cards and the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf
 component.
+Valid rendered chips register their source index with the message-local context;
+cleanup removes registrations when text parts or answer branches change.
+Duplicate chips keep a source cited until the last registration is removed.
+Grouping therefore follows the existing Markdown renderer, including reference
+links, rather than scanning raw text for markers inside code or math.
 
 A chip must wrap **with** the word it cites, never start a line on its own — and the
 punctuation after it must not wrap alone either. Two mechanisms enforce that and both are
