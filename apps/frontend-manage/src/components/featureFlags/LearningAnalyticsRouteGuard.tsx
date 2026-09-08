@@ -23,8 +23,12 @@ export default function LearningAnalyticsRouteGuard({
   if (!flagsReady) {
     // Resolve profile availability before mounting Layout's login redirect.
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader />
+      <div
+        role="status"
+        className="flex h-full w-full items-center justify-center gap-4 text-lg"
+      >
+        {t('manage.analytics.analyticsLoadingWait')}
+        <Loader basic />
       </div>
     )
   }

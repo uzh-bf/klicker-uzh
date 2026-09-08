@@ -16,7 +16,7 @@ test('Playwright flag preload rejects non-test startup', () => {
   assert.match(result.stderr, /requires NODE_ENV=test/)
 })
 
-test('Playwright flags target the synthetic beta-enabled user', () => {
+test('Playwright flags target scoped synthetic actors and test controller', () => {
   const safeFetchPreload = `data:text/javascript,${encodeURIComponent(
     "globalThis.fetch = async () => new Response('safe-original-fetch', { status: 418 })"
   )}`
@@ -39,11 +39,19 @@ test('Playwright flags target the synthetic beta-enabled user', () => {
     import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
     const managementUrl =
       'https://growthbook.test/api/v1/saved-groups/local-beta-enrollment'
+    const learningAnalyticsControllerUrl =
+      'https://growthbook.test/__test/learning-analytics'
     const lecturer = {
       id: '76047345-3801-4628-ae7b-adbebcfe8821',
       actorType: 'user',
       catalyst: true,
       betaEnabled: true,
+    }
+    const learningAnalyticsActor = {
+      id: lecturer.id,
+      actorType: 'user',
+      catalyst: false,
+      betaEnabled: false,
     }
 
     async function createClient(environment) {
@@ -60,6 +68,10 @@ test('Playwright flags target the synthetic beta-enabled user', () => {
     for (const environment of ['test', 'development']) {
       const flags = await createClient(environment)
       assert.equal(flags.isEnabled('ai-beta', lecturer), true)
+      assert.equal(
+        flags.isEnabled('learning-analytics', learningAnalyticsActor),
+        true,
+      )
       assert.equal(
         flags.isEnabled('ai-beta', { ...lecturer, betaEnabled: false }),
         false,
@@ -80,14 +92,115 @@ test('Playwright flags target the synthetic beta-enabled user', () => {
           false,
         )
       }
+      for (const restrictedAttributes of [
+        { ...learningAnalyticsActor, actorType: 'participant' },
+        { ...learningAnalyticsActor, actorType: 'anonymous' },
+        { ...learningAnalyticsActor, id: 'another-synthetic-user' },
+      ]) {
+        assert.equal(
+          flags.isEnabled('learning-analytics', restrictedAttributes),
+          false,
+        )
+      }
       flags.destroy()
     }
 
     for (const environment of ['staging', 'production']) {
       const flags = await createClient(environment)
       assert.equal(flags.isEnabled('ai-beta', lecturer), false)
+      assert.equal(
+        flags.isEnabled('learning-analytics', learningAnalyticsActor),
+        false,
+      )
       flags.destroy()
     }
+
+    assert.equal(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS, '250')
+
+    async function readLearningAnalyticsState() {
+      const response = await fetch(learningAnalyticsControllerUrl)
+      assert.equal(response.status, 200)
+      const state = await response.json()
+      assert.equal(typeof state.enabled, 'boolean')
+      return state.enabled
+    }
+
+    const actualPriorState = await readLearningAnalyticsState()
+    for (const invalidRequest of [
+      { method: 'HEAD', url: learningAnalyticsControllerUrl, status: 405 },
+      { method: 'PUT', url: learningAnalyticsControllerUrl, status: 405 },
+      {
+        method: 'GET',
+        url: learningAnalyticsControllerUrl + '?enabled=false',
+        status: 400,
+      },
+      { method: 'POST', url: learningAnalyticsControllerUrl, status: 400 },
+      {
+        method: 'POST',
+        url: learningAnalyticsControllerUrl + '?enabled=maybe',
+        status: 400,
+      },
+      {
+        method: 'POST',
+        url: learningAnalyticsControllerUrl + '?enabled=true&extra=false',
+        status: 400,
+      },
+      {
+        method: 'POST',
+        url: learningAnalyticsControllerUrl + '?enabled=true&enabled=false',
+        status: 400,
+      },
+    ]) {
+      const before = await readLearningAnalyticsState()
+      const response = await fetch(invalidRequest.url, {
+        method: invalidRequest.method,
+      })
+      assert.equal(response.status, invalidRequest.status)
+      await response.text()
+      assert.equal(await readLearningAnalyticsState(), before)
+    }
+
+    for (const malformedUrl of [
+      'https://growthbook.test.evil/__test/learning-analytics?enabled=false',
+      'https://growthbook.test/__test/learning-analytics-extra?enabled=false',
+    ]) {
+      const response = await fetch(malformedUrl, { method: 'POST' })
+      assert.equal(response.status, 418)
+      assert.equal(await response.text(), 'safe-original-fetch')
+      assert.equal(await readLearningAnalyticsState(), actualPriorState)
+    }
+
+    for (const enabled of [true, false]) {
+      const response = await fetch(
+        learningAnalyticsControllerUrl + '?enabled=' + enabled,
+        { method: 'POST' },
+      )
+      assert.equal(response.status, 200)
+      assert.deepEqual(await response.json(), { enabled })
+      assert.equal(await readLearningAnalyticsState(), enabled)
+
+      const flags = await createClient('test')
+      assert.equal(
+        flags.isEnabled('learning-analytics', learningAnalyticsActor),
+        enabled,
+      )
+      assert.equal(flags.isEnabled('ai-beta', lecturer), true)
+      assert.equal(
+        flags.isEnabled('ai-beta', { ...lecturer, betaEnabled: false }),
+        false,
+      )
+      flags.destroy()
+    }
+
+    const restoreResponse = await fetch(
+      learningAnalyticsControllerUrl + '?enabled=' + actualPriorState,
+      { method: 'POST' },
+    )
+    assert.equal(restoreResponse.status, 200)
+    assert.deepEqual(await restoreResponse.json(), {
+      enabled: actualPriorState,
+    })
+    assert.equal(await readLearningAnalyticsState(), actualPriorState)
 
     assert.equal(process.env.GROWTHBOOK_MANAGEMENT_API_URL, undefined)
     assert.equal(process.env.GROWTHBOOK_MANAGEMENT_API_KEY, undefined)

@@ -16,8 +16,17 @@ test.describe('Generated element review inbox', () => {
     page,
   }) => {
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
 
     try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
       const fixture = await seedQuestionGenerationReviewFixture()
       await loginLecturer()
 
@@ -148,7 +157,6 @@ test.describe('Generated element review inbox', () => {
         keepRow.getByTestId(`element-generation-open-saved-${keepDraftId}`)
       ).toHaveAttribute('href', /\?editElementId=\d+/)
 
-      const prisma = await getPrisma()
       const savedElementDraft = await prisma.generatedElementDraft.findUnique({
         where: { id: keepDraftId },
         select: {
@@ -326,7 +334,14 @@ test.describe('Generated element review inbox', () => {
         savedEditor.getByTestId('insert-question-title')
       ).toHaveValue(editedTitle)
     } finally {
-      await cleanupQuestionGenerationReviewFixture()
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
     }
   })
 })
