@@ -24,7 +24,12 @@ closed.
 The controller executes only code checked out at `github.workflow_sha`.
 Candidate Git objects, API metadata, and registry manifests are data; candidate
 actions, scripts, caches, and artifacts are never executed or consumed. It uses
-only `actions: read` and `contents: write`. Automatic writes require
+`actions: read` and `contents: read` on `GITHUB_TOKEN` for API and Git fetch
+reads. The lease-protected push uses the existing `STG_PROMOTE_TOKEN`, which
+must permit repository contents and workflow-file writes. There is no
+job-token fallback for writes. Separate credentials can trigger downstream
+workflows, so release-ref event filters must be checked before activation.
+Automatic writes require
 `STG_RELEASE_PROMOTION_ENABLED=true`; manual runs default to dry-run and require
 the exact input `confirm_ref_update=stg-release` before a write.
 

@@ -13,6 +13,7 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
+  ManageFeaturePreferencesDocument,
   type ManageUserProfileQuery,
   UserLoginScope,
   UserRole,
@@ -47,9 +48,11 @@ function Header({
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const aiFeaturesEnabled = useAiFeaturesEnabled()
-  const betaSignupEnabled = useFeatureFlag('beta-signup')
-  const canDiscoverBetaFeatures =
-    betaSignupEnabled &&
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
+  const canAuthorChatbots =
+    aiBetaEnabled &&
+    preferences?.userProfile?.betaEnabled === true &&
     user?.catalyst === true &&
     (userScope === UserLoginScope.FullAccess ||
       userScope === UserLoginScope.AccountOwner)
@@ -168,7 +171,7 @@ function Header({
         content: 'flex flex-col gap-0.5',
       },
     },
-    ...(aiFeaturesEnabled
+    ...(aiFeaturesEnabled || canAuthorChatbots
       ? [
           {
             type: 'dropdown',
@@ -180,45 +183,53 @@ function Header({
               router.pathname === '/resources/chatbots' ||
               router.pathname === '/elements/generate',
             elements: [
-              {
-                key: 'element-generation-item',
-                type: 'link' as const,
-                label: t('manage.elementGeneration.title'),
-                onClick: () => router.push('/elements/generate'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'element-generation' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-              {
-                key: 'knowledge-bases-item',
-                type: 'link' as const,
-                label: t('kb.title'),
-                onClick: () => router.push('/resources/knowledgeBases'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'knowledge-bases' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-              {
-                key: 'chatbots-item',
-                type: 'link' as const,
-                label: t('manage.resources.chatbots'),
-                onClick: () => router.push('/resources/chatbots'),
-                badge: t('manage.general.betaFeatures'),
-                data: { cy: 'chatbots' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
+              ...(aiFeaturesEnabled
+                ? [
+                    {
+                      key: 'element-generation-item',
+                      type: 'link' as const,
+                      label: t('manage.elementGeneration.title'),
+                      onClick: () => router.push('/elements/generate'),
+                      badge: t('manage.general.betaFeatures'),
+                      data: { cy: 'element-generation' },
+                      className: {
+                        label: 'bg-opacity-100',
+                        text: 'mr-8',
+                        badge: 'bg-green-700 hover:bg-green-800',
+                      },
+                    },
+                    {
+                      key: 'knowledge-bases-item',
+                      type: 'link' as const,
+                      label: t('kb.title'),
+                      onClick: () => router.push('/resources/knowledgeBases'),
+                      badge: t('manage.general.betaFeatures'),
+                      data: { cy: 'knowledge-bases' },
+                      className: {
+                        label: 'bg-opacity-100',
+                        text: 'mr-8',
+                        badge: 'bg-green-700 hover:bg-green-800',
+                      },
+                    },
+                  ]
+                : []),
+              ...(canAuthorChatbots
+                ? [
+                    {
+                      key: 'chatbots-item',
+                      type: 'link' as const,
+                      label: t('manage.resources.chatbots'),
+                      onClick: () => router.push('/resources/chatbots'),
+                      badge: t('manage.general.betaFeatures'),
+                      data: { cy: 'chatbots' },
+                      className: {
+                        label: 'bg-opacity-100',
+                        text: 'mr-8',
+                        badge: 'bg-green-700 hover:bg-green-800',
+                      },
+                    },
+                  ]
+                : []),
             ],
             data: { cy: 'ai' },
             className: {
@@ -325,17 +336,6 @@ function Header({
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
-        ...(canDiscoverBetaFeatures
-          ? [
-              {
-                key: 'beta-features',
-                type: 'link' as const,
-                label: t('manage.settings.betaFeaturesTitle'),
-                onClick: () => router.push('/user/settings#beta-features'),
-                data: { cy: 'menu-beta-features' },
-              },
-            ]
-          : []),
         {
           key: 'settings',
           type: 'link',

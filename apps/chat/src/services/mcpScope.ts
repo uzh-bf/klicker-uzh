@@ -311,14 +311,14 @@ export function canLoadMCPServer(
   context: {
     chatbotId?: string
     participantId?: string
-    kbId?: string
+    kbIds?: readonly string[]
     sessionId?: string
   }
 ): boolean {
   const authType = server.authType.toLowerCase()
 
   if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    return Boolean(context.kbId) && Boolean(context.sessionId)
+    return Boolean(context.kbIds?.length) && Boolean(context.sessionId)
   }
 
   return authType !== 'scope_token'

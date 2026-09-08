@@ -306,9 +306,24 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  # Invoke the installed binary directly: pnpm exec can leave a Git child
-  # running after completion, which violates managed foreground preparation.
+  # Invoke the installed binary directly to avoid pnpm wrapper children.
   (cd "$ROOT" && ./node_modules/.bin/turbo run build "$@")
+  # Turbo can return before its Git subprocess exits. Preparation must leave
+  # no live children for the managed process lifecycle to accept it.
+  local preparation_pgid preparation_deadline preparation_processes
+  preparation_pgid="$(ps -o pgid= -p "$$" | tr -d ' ')"
+  preparation_deadline=$((SECONDS + 5))
+  while true; do
+    preparation_processes="$(ps -eo pgid=,stat=,comm=)" ||
+      die 'Unable to inspect preparation child processes.'
+    awk -v group="$preparation_pgid" '
+    $1 == group && $2 !~ /^Z/ && $3 == "git" { found = 1 }
+    END { exit(found ? 0 : 1) }
+    ' <<<"$preparation_processes" || break
+    [ "$SECONDS" -lt "$preparation_deadline" ] ||
+      die 'Preparation still has a live Git child after five seconds.'
+    sleep 0.1
+  done
 }
 
 remove_next_dir() {

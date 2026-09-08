@@ -4,7 +4,7 @@ import {
   type BrowserFeatureFlagConfig,
   FeatureFlagProvider,
 } from '@klicker-uzh/feature-flags/react'
-import { ManageUserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ManageFeaturePreferencesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { type ReactNode, useMemo } from 'react'
 import { isPublicLiveQuizEvaluationRoute } from '../../lib/isPublicLiveQuizEvaluationRoute'
@@ -25,7 +25,7 @@ function ManageFeatureFlagProvider({
 }: ManageFeatureFlagProviderProps) {
   const router = useRouter()
   const skipUserProfile = isPublicLiveQuizEvaluationRoute(router)
-  const { data, loading } = useQuery(ManageUserProfileDocument, {
+  const { data, loading } = useQuery(ManageFeaturePreferencesDocument, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore',
     // HMAC evaluation links are public. An identity query on those links would
@@ -37,6 +37,7 @@ function ManageFeatureFlagProvider({
   const userRole = user?.role
   const userProfileUnavailable = !skipUserProfile && !loading && !userId
   const userCatalyst = user?.catalyst
+  const betaEnabled = user?.betaEnabled
   const attributes = useMemo<FeatureFlagAttributes>(
     () =>
       userId
@@ -45,9 +46,10 @@ function ManageFeatureFlagProvider({
             actorType: 'user',
             role: userRole,
             catalyst: Boolean(userCatalyst),
+            betaEnabled: betaEnabled === true,
           }
         : { actorType: 'anonymous' },
-    [userCatalyst, userId, userRole]
+    [userCatalyst, userId, userRole, betaEnabled]
   )
 
   return (

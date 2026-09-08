@@ -131,6 +131,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    owner: { aiFeaturesEnabled: true },
     course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
@@ -300,6 +301,7 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
       ownerId: 'owner-1',
+      owner: { aiFeaturesEnabled: true },
       allowedModelIds: ['gpt-4.1'],
       modelSelection: true,
       systemPrompts: { tutor: { prompt: 'Use course material.' } },
@@ -393,6 +395,7 @@ describe('required MCP chat preflight', () => {
     expect(mocks.findUnique).toHaveBeenCalledWith({
       where: { id: 'chatbot-1' },
       include: {
+        owner: { select: { aiFeaturesEnabled: true } },
         course: { select: { displayName: true } },
         mcpConfigurations: {
           include: { mcpServer: true },
