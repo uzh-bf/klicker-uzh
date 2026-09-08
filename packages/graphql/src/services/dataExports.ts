@@ -197,7 +197,7 @@ export async function downloadResearchExport(
           ? await prisma.$queryRaw<typeof cohort>(DB.Prisma.sql`
               SELECT "id", "researchConsent", "researchConsentChoiceAt",
                      "researchConsentDisclosureVersion" FROM "Participant"
-              WHERE "id" IN (${DB.Prisma.join(ids.map((id) => DB.Prisma.sql`${id}::uuid`))})
+              WHERE "id" = ANY(${ids}::uuid[])
               ORDER BY "id" FOR SHARE
             `)
           : []

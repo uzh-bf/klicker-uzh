@@ -834,4 +834,37 @@ describe('research export PostgreSQL integration', () => {
       })
     ).resolves.toBeNull()
   })
+
+  it('includes participants present in only one selected response class', async () => {
+    const liveOnly = await createParticipant(fixture.courseId, 'live-only', {
+      researchConsent: true,
+      researchConsentChoiceAt: choiceAt,
+      researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      learningAnalyticsConsent: false,
+    })
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: responseAt,
+        response: { choices: [{ ix: 0, selected: true }] },
+        timeSpent: 4,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 1,
+        correctnessPoints: 2,
+        bonusPoints: 0,
+        instanceId: fixture.liveInstanceId,
+        elementBlockExecution: 0,
+        participantId: liveOnly.id,
+      },
+    })
+    const request = buildRequest(fixture.courseId)
+    fixtureIds.receipts.push(request.requestId)
+    const result = await downloadResearchExport(
+      request,
+      contextFor(fixture.adminId)
+    )
+    const artifact = JSON.parse(result.body)
+    expect(artifact.LIVE_QUIZ_RESPONSES).toHaveLength(2)
+    expect(artifact.ASYNCHRONOUS_RESPONSES).toHaveLength(1)
+    expect(result.recordCount).toBe(3)
+  })
 })
