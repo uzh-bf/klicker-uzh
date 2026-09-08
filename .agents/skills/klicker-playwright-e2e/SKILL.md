@@ -99,7 +99,7 @@ render of the starter grid.
 
 ## Fast Failure Triage
 
-- Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Check the live development pages manifest and the pinned dependency regression; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts.
+- Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
 - `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.

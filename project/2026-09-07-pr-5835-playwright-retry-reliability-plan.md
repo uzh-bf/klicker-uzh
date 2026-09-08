@@ -59,7 +59,8 @@ No profile means the existing `ensure <exact-checkout>` invocation. An explicit
 profile adds one `--profile` value. `--print-env` still reconciles the runtime
 and can start services; it is not a read-only status command. `--show-report`
 retains its no-runtime path. The documented focused activity example uses
-`manage,live-quiz`; it is source-supported, not yet runtime-qualified.
+`manage,live-quiz`; the 12-test element-instance update group qualifies this
+union. That proof does not cover the entire spec file or every profile union.
 
 ### Ownership and acceptance
 
@@ -130,7 +131,42 @@ outside this approval.
 
 Planner Confucius approved revision 2 after requiring source-driven membership,
 repair-isolated failures within the existing deadline and explicit CI coverage.
-The first disposable start uses the scoped candidate; browser proof is running.
+The executor repeatedly revisited implementation choices without producing code
+after a narrowing checkpoint. Main reclaimed its unchanged paths without
+dispatching a replacement.
+
+Three fresh process cycles now resolve unpatched Next 16.2.11 and expose every
+source route: Auth 9, Control 8, Manage 34 and PWA 43. Each synthetic nested
+HTTP probe returns 200. Actual process environments contain no observer hook.
+The effective configuration matrix also verifies the four app wrappers, not
+only the shared helper. Production and test keep the upstream filter default.
+Two exact 12-test activity runs pass with zero retries in 2.1 and 1.7 minutes.
+Post-run inventories remain complete. The third startup includes the new
+source-driven readiness check and passes without cache repair.
+
+One earlier invocation accidentally included unrelated cleanup tests through
+an over-broad grep. It passed the activity group but failed two cleanup-only
+tests whose setup was excluded. That invocation is not qualification evidence;
+the two exact-filter runs above are separate. No test assertion was weakened.
+
+The native unpatched lockfile regeneration uses pnpm 11.5.0 in the disposable
+container, with scripts disabled and no installed dependency changes. Its
+result is byte-identical to the target lockfile. The patch and patch-specific
+handler harness are removed. The configuration matrix and readiness tests now
+run explicitly in the existing checks workflow. The synthetic shell suite
+passes; the readiness suite proves incomplete/malformed/source-missing failure,
+eventual completeness, a shared 15-second request budget and the unchanged
+90-second overall deadline. Full application builds remain for exact-head CI;
+the changed option is absent from production/test configuration.
+
+The final Playwright package typecheck passes in the disposable container.
+The final exact stop is verified outside the sandbox's process-inspection
+restriction: stopped, empty active membership, no drift and zero routes.
+The qualification-only cache-preservation marker is removed after shutdown;
+the worktree, source overlays, diagnostic artifacts and database remain intact.
+All 28 host launcher/configuration checks pass with the Volta-pinned toolchain.
+Scoped Biome, Prettier and diff checks pass. These focused checks replace the
+broad application hooks for source commits; no full monorepo build is claimed.
 
 ### September 8 causal observation and configuration-only comparison
 
