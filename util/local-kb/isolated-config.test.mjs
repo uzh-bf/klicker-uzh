@@ -16,7 +16,10 @@ import {
   resolveIsolatedConfig,
   validateIsolatedConfig,
 } from './isolated-config.mjs'
-import { renderManagedConfiguration } from './managed-configuration.mjs'
+import {
+  renderManagedConfiguration,
+  renderProviderRouting,
+} from './managed-configuration.mjs'
 import { providerCommands } from './provider-commands.mjs'
 import {
   renderRetrievalCompose,
@@ -93,7 +96,7 @@ test('managed application configuration shares only the isolated provider networ
   }
   const original = structuredClone(source)
   const config = resolveIsolatedConfig(makeInput('a'))
-  const result = renderManagedConfiguration(config, source, 'isolated-proof')
+  const result = renderManagedConfiguration(config, source)
   assert.deepEqual(source, original)
   assert.deepEqual(
     result.devrouter.managedRuntime.devcontainer.baseServices,
@@ -127,7 +130,8 @@ test('managed application configuration shares only the isolated provider networ
     'klicker',
   ])
   assert.deepEqual(
-    result.providerRouting.services.blob.networks.devnet.aliases,
+    renderProviderRouting('isolated-proof').services.blob.networks.devnet
+      .aliases,
     ['isolated-proof-azurite']
   )
   assert.equal(
@@ -146,11 +150,25 @@ test('managed application configuration shares only the isolated provider networ
     Object.keys(result.compose.services)
   )
   assert.deepEqual(result.devcontainer.forwardPorts, [])
-  for (const identity of [undefined, '', '../retained', `\${WORKSPACE}`]) {
-    assert.throws(
-      () => renderManagedConfiguration(config, source, identity),
-      /identity/
+  const workspace = `\${WORKSPACE:?Devrouter must supply the workspace}`
+  assert.deepEqual(result.compose.services.app.networks.devnet.aliases, [
+    `${workspace}-app`,
+  ])
+  assert.equal(
+    result.compose.services.app.environment.BLOB_STORAGE_ACCOUNT_URL,
+    `https://blob.klicker.${workspace}.localhost/klickerdev`
+  )
+  assert.ok(
+    result.compose.services.app.extra_hosts.every((entry) =>
+      entry.includes(workspace)
     )
+  )
+  assert.throws(
+    () => renderManagedConfiguration(config, source, 'guessed-name'),
+    /Compose resolution/
+  )
+  for (const identity of [undefined, '', '../retained', `\${WORKSPACE}`]) {
+    assert.throws(() => renderProviderRouting(identity), /identity/)
   }
 })
 

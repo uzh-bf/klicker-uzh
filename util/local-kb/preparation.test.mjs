@@ -23,6 +23,7 @@ import {
   initializeProviderStorage,
   inspectRuntimeCheckout,
   installManagedConfiguration,
+  installProviderRouting,
   prepareLocalConfiguration,
   requirePreparation,
 } from './preparation.mjs'
@@ -58,21 +59,19 @@ async function installationFixture() {
     config,
     checkout,
     inputs,
-    read: (_root, _revision, path) => inputs.get(path),
+    read: (root, candidate, path) => {
+      assert.equal(root, checkout)
+      assert.equal(candidate, revision)
+      return inputs.get(path)
+    },
   }
 }
 
 test('managed installation replaces only candidate config and neutralizes the linked overlay', async () => {
   const { config, checkout, read } = await installationFixture()
-  assert.deepEqual(
-    await installManagedConfiguration(
-      config,
-      revision,
-      'synthetic-runtime',
-      read
-    ),
-    { installed: true }
-  )
+  assert.deepEqual(await installManagedConfiguration(config, revision, read), {
+    installed: true,
+  })
   const json = async (path) =>
     JSON.parse(await readFile(join(checkout, path), 'utf8'))
   assert.deepEqual(
@@ -86,13 +85,28 @@ test('managed installation replaces only candidate config and neutralizes the li
     (await json('.devcontainer/docker-compose.yml')).services.postgres,
     undefined
   )
+  await assert.rejects(
+    stat(join(checkout, '.local-kb/provider-routing.compose.json')),
+    { code: 'ENOENT' }
+  )
+  for (const result of [
+    { kind: 'primary', workspace: 'synthetic-runtime' },
+    { kind: 'linked', workspace: '../unsafe' },
+  ]) {
+    await assert.rejects(installProviderRouting(config, revision, result))
+  }
+  const result = { kind: 'linked', workspace: 'synthetic-runtime' }
+  await installProviderRouting(config, revision, result)
   assert.equal(
     (await json('.local-kb/provider-routing.compose.json')).services.blob
       .networks.devnet.aliases[0],
     'synthetic-runtime-azurite'
   )
+  await assert.rejects(installProviderRouting(config, revision, result), {
+    code: 'EEXIST',
+  })
   await assert.rejects(
-    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    installManagedConfiguration(config, revision, read),
     /differs from the candidate/
   )
 })
@@ -101,7 +115,7 @@ test('changed managed input prevents all installation writes', async () => {
   const { config, checkout, inputs, read } = await installationFixture()
   await writeFile(join(checkout, '.devrouter.yml'), 'changed')
   await assert.rejects(
-    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    installManagedConfiguration(config, revision, read),
     /differs from the candidate/
   )
   assert.equal(
@@ -115,18 +129,13 @@ test('changed managed input prevents all installation writes', async () => {
 
 test('interrupted installation remains claimed and cannot be replayed', async () => {
   const { config, checkout, inputs, read } = await installationFixture()
-  await writeFile(
-    join(checkout, '.local-kb/provider-routing.compose.json'),
-    '{}'
-  )
-  await assert.rejects(
-    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
-    { code: 'EEXIST' }
-  )
-  await assert.rejects(
-    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
-    { code: 'EEXIST' }
-  )
+  await mkdir(join(checkout, '.local-kb/managed-installation'))
+  await assert.rejects(installManagedConfiguration(config, revision, read), {
+    code: 'EEXIST',
+  })
+  await assert.rejects(installManagedConfiguration(config, revision, read), {
+    code: 'EEXIST',
+  })
   assert.equal(
     await readFile(join(checkout, '.devcontainer/devcontainer.json'), 'utf8'),
     inputs.get('.devcontainer/devcontainer.json')
@@ -191,7 +200,13 @@ async function fixture() {
 }
 
 test('runtime observation requires the exact detached candidate without ignored or tracked state', () => {
-  const observations = ['/synthetic/runtime', revision, 'HEAD', '']
+  const observations = [
+    '/synthetic/runtime',
+    revision,
+    'HEAD',
+    '/synthetic/primary/.git/worktrees/runtime',
+    '',
+  ]
   const inspect = (values) => {
     let index = 0
     return inspectRuntimeCheckout(
@@ -205,9 +220,10 @@ test('runtime observation requires the exact detached candidate without ignored 
     [0, '/synthetic/other'],
     [1, 'b'.repeat(40)],
     [2, 'rs/implementation'],
-    [3, ' M tracked'],
-    [3, '?? untracked'],
-    [3, '!! ignored-state'],
+    [3, '.git'],
+    [4, ' M tracked'],
+    [4, '?? untracked'],
+    [4, '!! ignored-state'],
   ]) {
     const altered = [...observations]
     altered[index] = value

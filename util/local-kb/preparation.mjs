@@ -17,7 +17,10 @@ import {
   renderLocalConfiguration,
   renderLocalRetrievalConfiguration,
 } from './local-configuration.mjs'
-import { renderManagedConfiguration } from './managed-configuration.mjs'
+import {
+  renderManagedConfiguration,
+  renderProviderRouting,
+} from './managed-configuration.mjs'
 
 // A failed setup deliberately retains its claim. It must not be mistaken for
 // an unused runtime on the next invocation.
@@ -72,6 +75,7 @@ export function inspectRuntimeCheckout(checkout, candidateRevision, read) {
       git(['rev-parse', '--show-toplevel']).trim() === checkout &&
       git(['rev-parse', 'HEAD']).trim() === candidateRevision &&
       git(['rev-parse', '--abbrev-ref', 'HEAD']).trim() === 'HEAD' &&
+      git(['rev-parse', '--git-dir']).trim().includes('/worktrees/') &&
       git([
         'status',
         '--porcelain',
@@ -91,7 +95,6 @@ export function inspectRuntimeCheckout(checkout, candidateRevision, read) {
 export async function installManagedConfiguration(
   config,
   candidateRevision,
-  workspace,
   readCandidate = readCandidateFile
 ) {
   const { directory } = await verifyClaim(config, candidateRevision)
@@ -129,15 +132,11 @@ export async function installManagedConfiguration(
       }
       inputs.push(candidate)
     }
-    const rendered = renderManagedConfiguration(
-      config,
-      {
-        devcontainer: JSON.parse(inputs[0]),
-        compose: parse(inputs[1]),
-        devrouter: parse(inputs[3]),
-      },
-      workspace
-    )
+    const rendered = renderManagedConfiguration(config, {
+      devcontainer: JSON.parse(inputs[0]),
+      compose: parse(inputs[1]),
+      devrouter: parse(inputs[3]),
+    })
     await mkdir(join(directory, 'managed-installation'), { mode: 0o700 })
     // Devrouter appends this standard overlay for linked worktrees. It must
     // not reintroduce the ordinary backing services or host port bindings.
@@ -148,10 +147,6 @@ export async function installManagedConfiguration(
       rendered.devrouter,
     ]
     rendered.devcontainer.dockerComposeFile = ['docker-compose.yml']
-    await writeExclusive(
-      join(directory, 'provider-routing.compose.json'),
-      rendered.providerRouting
-    )
     for (const [index, file] of handles.entries()) {
       const bytes = Buffer.from(
         `${JSON.stringify(replacements[index], null, 2)}\n`
@@ -168,7 +163,6 @@ export async function installManagedConfiguration(
     await writeExclusive(
       join(directory, 'managed-installation/complete.json'),
       {
-        workspace,
         candidateRevision,
       }
     )
@@ -176,6 +170,28 @@ export async function installManagedConfiguration(
   } finally {
     await Promise.all(handles.map((file) => file.close()))
   }
+}
+
+export async function installProviderRouting(
+  config,
+  candidateRevision,
+  result
+) {
+  const { directory } = await verifyClaim(config, candidateRevision)
+  const installation = await readOwned(
+    join(directory, 'managed-installation/complete.json')
+  )
+  if (
+    installation.candidateRevision !== candidateRevision ||
+    result?.kind !== 'linked'
+  ) {
+    throw new Error('Routing requires the linked checkout setup result.')
+  }
+  await writeExclusive(
+    join(directory, 'provider-routing.compose.json'),
+    renderProviderRouting(result.workspace)
+  )
+  return { configured: true }
 }
 
 function readCandidateFile(checkout, revision, path) {

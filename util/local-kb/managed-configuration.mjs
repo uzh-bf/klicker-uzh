@@ -5,13 +5,15 @@ const redisServices = ['redis_exec', 'redis_assessment', 'redis_cache']
 const applicationRoutes = ['api', 'auth', 'manage', 'pwa', 'chat', 'blob']
 
 // Render for a fresh runtime-only checkout, never the implementation checkout.
-// The caller must obtain workspace from Devrouter's exact-path ownership record.
 // This function performs no filesystem, Docker, or lifecycle operation.
-export function renderManagedConfiguration(config, source, workspace) {
+export function renderManagedConfiguration(config, source, ...unexpected) {
   validateIsolatedConfig(config)
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(workspace ?? '')) {
-    throw new Error('A resolved Devrouter workspace identity is required.')
+  if (unexpected.length !== 0) {
+    throw new Error(
+      'Devrouter must supply the workspace at Compose resolution.'
+    )
   }
+  const workspace = `\${WORKSPACE:?Devrouter must supply the workspace}`
   const checkout = config.project.runtimeCheckoutPath
   if (/[$\r\n]/.test(checkout)) {
     throw new Error('Compose paths must not contain interpolation or newlines.')
@@ -134,16 +136,23 @@ export function renderManagedConfiguration(config, source, workspace) {
         devnet: { external: true },
       },
     },
-    providerRouting: {
-      services: {
-        blob: {
-          networks: {
-            default: {},
-            devnet: { aliases: [`${workspace}-azurite`] },
-          },
+  }
+}
+
+// Use only the identity returned by the exact checkout's successful ensure.
+export function renderProviderRouting(workspace) {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(workspace ?? '')) {
+    throw new Error('A resolved Devrouter workspace identity is required.')
+  }
+  return {
+    services: {
+      blob: {
+        networks: {
+          default: {},
+          devnet: { aliases: [`${workspace}-azurite`] },
         },
       },
-      networks: { devnet: { external: true } },
     },
+    networks: { devnet: { external: true } },
   }
 }
