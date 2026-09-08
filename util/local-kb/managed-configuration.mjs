@@ -100,6 +100,11 @@ export function renderManagedConfiguration(config, source, workspace) {
     delete profiles[name].default
   }
   profiles.manage.default = true
+  profiles['local-kb-setup'] = {
+    apps: [],
+    devcontainerServices: [],
+    processes: [],
+  }
   return {
     devcontainer: {
       ...devcontainer,
