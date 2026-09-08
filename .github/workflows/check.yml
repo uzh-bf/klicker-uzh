@@ -74,6 +74,9 @@ jobs:
       - name: Check Next.js development route aggregation
         run: node --test ./util/next-dev-aggregation.test.mjs
 
+      - name: Check workspace dependency mount generation
+        run: node --test ./util/generate-dependency-mounts.test.mjs
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check

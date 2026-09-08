@@ -82,6 +82,36 @@ material contract change. Do not weaken assertions or increase retry counts.
 
 ## Progress
 
+### September 8 upstream upgrade experiment and conflict resolution
+
+The user approved testing unpatched Next.js 16.3.4, including an exact-version
+exception to the dependency waiting period. Main owns this coupled experiment
+and integration. The candidate was installed with scripts disabled in an isolated
+temporary directory, without changing repository manifests or the lockfile.
+The published package integrity is
+`sha512-/Ztf6CeRH+ejEXUrYtqI4gkS66eFIHuSwqi60RgcpWKodxFZx2/dqVCMKBwILfAHXQ+F1b1vAudgj3mnxqtoIA==`.
+
+The unchanged actual-handler suite loads both distributions successfully:
+4 checks pass and 6 fail. Both overlap checks fail because two scans run before
+the older publication finishes. Four early propagation-error checks also fail;
+the four existing sorting-error checks pass. A separate outcome-only diagnostic
+allows concurrent scans and checks final route membership. Both distributions
+still publish `/old` instead of `/quizzes/[id]/cockpit`. This demonstrates stale
+route state, not merely a preference for a particular locking implementation.
+
+The candidate fails the regression gate. The proposed two browser cycles were
+therefore not run: intermittent browser success cannot establish that this
+deterministically reproduced race is fixed. No version bump or waiting-period
+exception was committed. The existing 16.2.11 patch remains unchanged; its prior
+browser evidence below is not evidence for 16.3.4.
+
+The in-progress target integration uses `e3fb9873c9`, the v3 host/container
+dependency-isolation change. Conflicts preserve its fail-closed pnpm policy and
+host preparation before reconciliation, plus this branch's profile argument
+contract and validation before external commands. Both workflow checks and both
+documentation sections are retained. The combined launcher and dependency-mount
+tests pass 34/34. No application runtime was started for this experiment.
+
 September 8 pinned patch qualification: native pnpm patch and lockfile generated
 for Next.js 16.2.11. Ten actual-handler checks pass across CJS and ESM; both
 unpatched ordering controls fail at the intended overlap assertion. Eighteen
