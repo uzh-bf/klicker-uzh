@@ -6,12 +6,16 @@ import {
   ChatbotStatus,
   type ChatModelCapability,
   CreditResetPeriod,
-  QGetCatalystRequestAccessDocument,
   MUpdateChatbotModelPolicyDocument,
+  QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithStandardModesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Badge,
   Button,
   Checkbox,
@@ -25,15 +29,14 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { type MouseEvent, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChatbotAuthoring, { metadataEditableStatuses } from './ChatbotAuthoring'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
-import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { canUseChatbotOwnerPreview } from './chatbotOwnerPreviewAccess'
 import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
-import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import type {
   ChatbotNavigationState,
@@ -280,24 +283,27 @@ function ChatbotDetails({
     fixedModelId,
   ])
 
-  useEffect(() => {
-    onNavigationStateChange(
-      view === 'advanced'
-        ? { dirty: modelSettingsDirty, pending: isSaving }
-        : view === 'setup'
-          ? authoringNavigationState
-          : { dirty: false, pending: false }
-    )
-  }, [
-    authoringNavigationState,
-    isSaving,
-    modelSettingsDirty,
-    onNavigationStateChange,
-    view,
-  ])
+  const viewNavigationState = useMemo<ChatbotNavigationState>(() => {
+    if (view === 'behavior') {
+      return {
+        dirty: modelSettingsDirty || authoringNavigationState.dirty,
+        pending: isSaving || authoringNavigationState.pending,
+      }
+    }
+
+    if (view === 'overview' || view === 'disclaimer') {
+      return authoringNavigationState
+    }
+
+    return { dirty: false, pending: false }
+  }, [authoringNavigationState, isSaving, modelSettingsDirty, view])
 
   useEffect(() => {
-    if (view === 'advanced' || !chatbot) return
+    onNavigationStateChange(viewNavigationState)
+  }, [onNavigationStateChange, viewNavigationState])
+
+  useEffect(() => {
+    if (view === 'behavior' || !chatbot) return
     setModelSelectionEnabled(chatbot.modelSelection)
     setFixedModelId(getDefaultFixedModelId(chatbot, modelRegistry))
     setAllowedModelIds(getInitialSelectedModelIds(chatbot, modelRegistry))
@@ -371,6 +377,22 @@ function ChatbotDetails({
     chatbotId: chatbot.id,
     chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
   })
+  const ownerPreviewPending = viewNavigationState.pending
+  const ownerPreviewDirty = viewNavigationState.dirty
+  const handleOwnerPreviewClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (ownerPreviewPending) {
+      event.preventDefault()
+      window.alert(t('manage.resources.chatbotNavigationPending'))
+      return
+    }
+
+    if (
+      ownerPreviewDirty &&
+      !window.confirm(t('manage.resources.chatbotPreviewUnsavedConfirmation'))
+    ) {
+      event.preventDefault()
+    }
+  }
   const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
   const modelSettingsEditable = metadataEditableStatuses.includes(
     chatbot.status
@@ -531,7 +553,9 @@ function ChatbotDetails({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="border-primary-100 text-primary-100 hover:bg-primary-20 focus-visible:ring-primary-80 inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2"
+                  aria-disabled={ownerPreviewPending}
                   data-cy="chatbot-owner-preview-link"
+                  onClick={handleOwnerPreviewClick}
                 >
                   <span>{t('manage.resources.openOwnerPreview')}</span>
                   <span className="sr-only">
@@ -551,19 +575,34 @@ function ChatbotDetails({
               {chatbot.description}
             </div>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs text-gray-500">
-            <div>
-              ID: <span className="select-all">{chatbot.id}</span>
-            </div>
-            {chatbot.avatar && (
-              <div className="flex max-w-full items-center gap-1">
-                <span>Avatar:</span>
-                <span className="max-w-[200px] truncate" title={chatbot.avatar}>
-                  {chatbot.avatar}
-                </span>
+          <details
+            className="mt-2 text-xs text-gray-500"
+            data-cy="chatbot-technical-details"
+          >
+            <summary
+              className="cursor-pointer select-none font-medium text-gray-600"
+              data-cy="chatbot-technical-details-trigger"
+            >
+              {t('manage.resources.chatbotTechnicalDetails')}
+            </summary>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+              <div>
+                {t('manage.resources.chatbotTechnicalId')}:{' '}
+                <span className="select-all">{chatbot.id}</span>
               </div>
-            )}
-          </div>
+              {chatbot.avatar && (
+                <div className="flex max-w-full items-center gap-1">
+                  <span>{t('manage.resources.chatbotTechnicalAvatar')}:</span>
+                  <span
+                    className="max-w-[200px] truncate"
+                    title={chatbot.avatar}
+                  >
+                    {chatbot.avatar}
+                  </span>
+                </div>
+              )}
+            </div>
+          </details>
         </div>
 
         {chatbot.courses && chatbot.courses.length > 0 && (
@@ -614,44 +653,40 @@ function ChatbotDetails({
         <ChatbotWorkspaceNavigation
           view={view}
           step={step}
-          setupAvailable={
-            chatbot.status !== ChatbotStatus.PendingApproval &&
-            chatbot.status !== ChatbotStatus.Paused
-          }
           onNavigate={onNavigate}
         />
 
         {view === 'overview' ? (
-          <section
-            className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-            data-cy="chatbot-overview"
-          >
-            <H4>{t('manage.resources.chatbotWorkspaceOverview')}</H4>
-            <p className="text-sm text-gray-600">
-              {t('manage.resources.chatbotWorkspaceOverviewDescription')}
-            </p>
-            <dl className="grid gap-3 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="font-medium text-gray-600">
-                  {t('shared.generic.status')}
-                </dt>
-                <dd className="mt-1 text-gray-900">{chatbotStatusLabel}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-gray-600">
-                  {t('manage.resources.chatbotCreatedAt')}
-                </dt>
-                <dd className="mt-1 text-gray-900">{createdAtLabel}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-gray-600">
-                  {t('manage.resources.chatbotUpdatedAt')}
-                </dt>
-                <dd className="mt-1 text-gray-900">{updatedAtLabel}</dd>
-              </div>
-            </dl>
-            {showOverviewReadOnlyDetails ? (
-              <>
+          <section className="space-y-6" data-cy="chatbot-overview">
+            <div
+              className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              data-cy="chatbot-overview-summary"
+            >
+              <H4>{t('manage.resources.chatbotWorkspaceOverview')}</H4>
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotWorkspaceOverviewDescription')}
+              </p>
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="font-medium text-gray-600">
+                    {t('shared.generic.status')}
+                  </dt>
+                  <dd className="mt-1 text-gray-900">{chatbotStatusLabel}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-gray-600">
+                    {t('manage.resources.chatbotCreatedAt')}
+                  </dt>
+                  <dd className="mt-1 text-gray-900">{createdAtLabel}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-gray-600">
+                    {t('manage.resources.chatbotUpdatedAt')}
+                  </dt>
+                  <dd className="mt-1 text-gray-900">{updatedAtLabel}</dd>
+                </div>
+              </dl>
+              {showOverviewReadOnlyDetails ? (
                 <div className="border-t border-gray-200 pt-3">
                   <H4>{t('manage.resources.chatbotDisclaimerPreview')}</H4>
                   <p className="mb-3 text-sm text-gray-600">
@@ -662,27 +697,150 @@ function ChatbotDetails({
                     introText={chatbot.disclaimerSummary?.introText ?? ''}
                   />
                 </div>
-                <ChatbotPublicationRequest
-                  chatbot={chatbot}
-                  publishingAuthorized={publishingAuthorized}
-                  publishingAuthorizationLoading={
-                    publishingAuthorizationLoading
-                  }
-                  publishingAuthorizationError={publishingAuthorizationError}
-                />
-              </>
-            ) : null}
+              ) : null}
+            </div>
+            <ChatbotAuthoring
+              key={`${chatbot.id}:overview`}
+              chatbot={chatbot}
+              step={step ?? 'basics'}
+              sections={['basics', 'review']}
+              publishingAuthorized={publishingAuthorized}
+              publishingAuthorizationLoading={publishingAuthorizationLoading}
+              publishingAuthorizationError={publishingAuthorizationError}
+              onNavigateSection={(section) => {
+                if (section === 'modes') onNavigate('behavior')
+                if (section === 'disclaimer') {
+                  onNavigate('disclaimer')
+                }
+              }}
+              onNavigationStateChange={setAuthoringNavigationState}
+            />
           </section>
         ) : null}
 
-        {view === 'setup' ? (
+        {view === 'knowledge' ? (
+          <section
+            className="space-y-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+            data-cy="chatbot-knowledge"
+          >
+            <H4>{t('manage.resources.chatbotWorkspaceKnowledge')}</H4>
+            <p className="text-sm text-gray-600">
+              {t('manage.resources.chatbotWorkspaceKnowledgeDescription')}
+            </p>
+            <div data-cy="chatbot-knowledge-base">
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                {t('manage.resources.knowledgeBase')}
+              </div>
+              {chatbot.enabledKnowledgeBase ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href={`/resources/knowledgeBases/${chatbot.enabledKnowledgeBase.id}`}
+                    className="text-primary-100 hover:underline"
+                    data-cy="chatbot-enabled-knowledge-base"
+                  >
+                    {chatbot.enabledKnowledgeBase.name}
+                  </Link>
+                  <span className="text-sm text-gray-600">
+                    {t('manage.resources.chatbotKnowledgeSingleActive')}
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <UserNotification
+                    type="warning"
+                    message={t('manage.resources.noEnabledKnowledgeBase')}
+                    data={{ cy: 'chatbot-no-enabled-knowledge-base' }}
+                  />
+                  <p
+                    className="text-sm text-gray-600"
+                    data-cy="chatbot-knowledge-empty-description"
+                  >
+                    {t('manage.resources.chatbotKnowledgeEmptyDescription')}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotKnowledgeManagementLink')}
+              </p>
+              <Link
+                href="/resources/knowledgeBases"
+                className="text-primary-100 hover:underline"
+                data-cy="chatbot-knowledge-base-management"
+              >
+                {t('manage.resources.knowledgeBase')}
+              </Link>
+            </div>
+            <Accordion
+              type="single"
+              collapsible
+              className="border-t border-gray-200 pt-4"
+              data-cy="chatbot-knowledge-secondary"
+            >
+              <AccordionItem
+                value="response-examples"
+                className="rounded-lg border border-gray-200 px-4"
+                data-cy="chatbot-response-examples-item"
+              >
+                <AccordionTrigger
+                  className="py-3 hover:no-underline"
+                  data-cy="chatbot-response-examples-trigger"
+                >
+                  <span className="flex flex-col gap-1 text-left">
+                    <span>{t('manage.resources.responseExamples')}</span>
+                    <span className="text-sm font-normal text-gray-600">
+                      {t('manage.resources.responseExamplesDescription')}
+                    </span>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent forceMount>
+                  <ChatbotResponseExampleReview
+                    key={chatbot.id}
+                    chatbotId={chatbot.id}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </section>
+        ) : null}
+
+        {view === 'behavior' ? (
           <ChatbotAuthoring
-            key={chatbot.id}
+            key={`${chatbot.id}:behavior`}
             chatbot={chatbot}
-            step={step ?? 'basics'}
+            step="modes"
+            sections={['modes']}
             publishingAuthorized={publishingAuthorized}
             publishingAuthorizationLoading={publishingAuthorizationLoading}
             publishingAuthorizationError={publishingAuthorizationError}
+            onNavigateSection={(section) => {
+              if (section === 'disclaimer') {
+                onNavigate('disclaimer')
+              }
+              if (section === 'basics' || section === 'review') {
+                onNavigate('overview', section)
+              }
+            }}
+            onNavigationStateChange={setAuthoringNavigationState}
+          />
+        ) : null}
+
+        {view === 'disclaimer' ? (
+          <ChatbotAuthoring
+            key={`${chatbot.id}:disclaimer`}
+            chatbot={chatbot}
+            step="disclaimer"
+            sections={['disclaimer']}
+            publishingAuthorized={publishingAuthorized}
+            publishingAuthorizationLoading={publishingAuthorizationLoading}
+            publishingAuthorizationError={publishingAuthorizationError}
+            onNavigateSection={(section) => {
+              if (section === 'modes') onNavigate('behavior')
+              if (section === 'basics' || section === 'review') {
+                onNavigate('overview', section)
+              }
+            }}
             onNavigationStateChange={setAuthoringNavigationState}
           />
         ) : null}
@@ -865,107 +1023,107 @@ function ChatbotDetails({
 
             {chatbot.mcpConfigurations &&
               chatbot.mcpConfigurations.length > 0 && (
-                <div>
-                  <div className="mb-2 text-sm font-medium text-gray-700">
-                    {t('manage.resources.mcpConfigurations')}
-                  </div>
-                  <div className="overflow-hidden rounded-lg border shadow-sm">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                          <th className="px-4 py-2">
-                            {t('shared.generic.server')}
-                          </th>
-                          <th className="px-4 py-2">
-                            {t('manage.resources.mcpChatMode')}
-                          </th>
-                          <th className="px-4 py-2">
-                            {t('manage.resources.mcpStatus')}
-                          </th>
-                          <th className="px-4 py-2">
-                            {t('manage.resources.mcpPriority')}
-                          </th>
-                          <th className="px-4 py-2">
-                            {t('manage.resources.mcpAllowedTools')}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {chatbot.mcpConfigurations.map((config) => (
-                          <tr
-                            key={`${chatbot.id}-${config.serverId}-${config.chatMode}`}
-                          >
-                            <td className="px-4 py-2">
-                              <div className="font-medium text-gray-900">
-                                {config.serverName}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {config.serverIsActive
-                                  ? t('manage.resources.mcpServerActive')
-                                  : t('manage.resources.mcpServerInactive')}
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 text-gray-500">
-                              {config.chatMode}
-                            </td>
-                            <td className="px-4 py-2">
-                              <span
-                                className={twMerge(
-                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                                  config.isEnabled
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                )}
+                <Accordion
+                  type="single"
+                  collapsible
+                  className="border-t border-gray-200 pt-4"
+                  data-cy="chatbot-usage-technical-integrations"
+                >
+                  <AccordionItem
+                    value="technical-integrations"
+                    className="rounded-lg border border-gray-200 px-4"
+                  >
+                    <AccordionTrigger
+                      className="py-3 hover:no-underline"
+                      data-cy="chatbot-usage-technical-integrations-trigger"
+                    >
+                      <span className="flex flex-col gap-1 text-left">
+                        <span>
+                          {t(
+                            'manage.resources.chatbotUsageTechnicalIntegrations'
+                          )}
+                        </span>
+                        <span className="text-sm font-normal text-gray-600">
+                          {t(
+                            'manage.resources.chatbotUsageTechnicalIntegrationsDescription'
+                          )}
+                        </span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent forceMount>
+                      <div className="overflow-hidden rounded-lg border shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                              <th className="px-4 py-2">
+                                {t('shared.generic.server')}
+                              </th>
+                              <th className="px-4 py-2">
+                                {t('manage.resources.mcpChatMode')}
+                              </th>
+                              <th className="px-4 py-2">
+                                {t('manage.resources.mcpStatus')}
+                              </th>
+                              <th className="px-4 py-2">
+                                {t('manage.resources.mcpPriority')}
+                              </th>
+                              <th className="px-4 py-2">
+                                {t('manage.resources.mcpAllowedTools')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 bg-white">
+                            {chatbot.mcpConfigurations.map((config) => (
+                              <tr
+                                key={`${chatbot.id}-${config.serverId}-${config.chatMode}`}
                               >
-                                {config.isEnabled
-                                  ? t('manage.resources.mcpStatusEnabled')
-                                  : t('manage.resources.mcpStatusDisabled')}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2 text-gray-500">
-                              {config.priority}
-                            </td>
-                            <td className="px-4 py-2 text-gray-500">
-                              {config.allowedToolsCount ?? 0}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                                <td className="px-4 py-2">
+                                  <div className="font-medium text-gray-900">
+                                    {config.serverName}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {config.serverIsActive
+                                      ? t('manage.resources.mcpServerActive')
+                                      : t('manage.resources.mcpServerInactive')}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2 text-gray-500">
+                                  {config.chatMode}
+                                </td>
+                                <td className="px-4 py-2">
+                                  <span
+                                    className={twMerge(
+                                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                      config.isEnabled
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    )}
+                                  >
+                                    {config.isEnabled
+                                      ? t('manage.resources.mcpStatusEnabled')
+                                      : t('manage.resources.mcpStatusDisabled')}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-gray-500">
+                                  {config.priority}
+                                </td>
+                                <td className="px-4 py-2 text-gray-500">
+                                  {config.allowedToolsCount ?? 0}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               )}
           </div>
         ) : null}
 
-        {view === 'advanced' ? (
-          <div className="space-y-6" data-cy="chatbot-advanced">
-            <div data-cy="chatbot-knowledge-base">
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                {t('manage.resources.knowledgeBase')}
-              </div>
-              {chatbot.enabledKnowledgeBase ? (
-                <Link
-                  href={`/resources/knowledgeBases/${chatbot.enabledKnowledgeBase.id}`}
-                  className="text-primary-100 hover:underline"
-                  data-cy="chatbot-enabled-knowledge-base"
-                >
-                  {chatbot.enabledKnowledgeBase.name}
-                </Link>
-              ) : (
-                <UserNotification
-                  type="warning"
-                  message={t('manage.resources.noEnabledKnowledgeBase')}
-                  data={{ cy: 'chatbot-no-enabled-knowledge-base' }}
-                />
-              )}
-            </div>
-
-            <ChatbotResponseExampleReview
-              key={chatbot.id}
-              chatbotId={chatbot.id}
-            />
-
+        {view === 'behavior' ? (
+          <div className="space-y-6" data-cy="chatbot-behavior-model">
             <div>
               <div className="mb-2 text-sm font-medium text-gray-700">
                 {t('manage.resources.chatbotModelSettings')}

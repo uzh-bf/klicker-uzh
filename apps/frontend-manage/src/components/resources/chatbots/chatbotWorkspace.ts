@@ -1,6 +1,11 @@
 import { type Chatbot, ChatbotStatus } from '@klicker-uzh/graphql/dist/ops'
 
-type ChatbotWorkspaceView = 'overview' | 'setup' | 'advanced' | 'usage'
+type ChatbotWorkspaceView =
+  | 'overview'
+  | 'knowledge'
+  | 'behavior'
+  | 'disclaimer'
+  | 'usage'
 type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'review'
 
 type ChatbotWorkspaceState = {
@@ -15,8 +20,9 @@ type ChatbotNavigationState = {
 
 const workspaceViews: ChatbotWorkspaceView[] = [
   'overview',
-  'setup',
-  'advanced',
+  'knowledge',
+  'behavior',
+  'disclaimer',
   'usage',
 ]
 const setupSteps: ChatbotSetupStep[] = [
@@ -55,10 +61,40 @@ function getDefaultWorkspaceState(chatbot: Chatbot): ChatbotWorkspaceState {
     chatbot.status === ChatbotStatus.Draft ||
     chatbot.status === ChatbotStatus.Rejected
   ) {
-    return { view: 'setup', step: getDefaultSetupStep(chatbot) }
+    const defaultStep = getDefaultSetupStep(chatbot)
+    return defaultStep === 'disclaimer'
+      ? { view: 'disclaimer' }
+      : { view: 'overview', step: defaultStep }
   }
 
   return { view: 'overview' }
+}
+
+function normalizeLegacyWorkspaceState(
+  chatbot: Chatbot,
+  requestedView: string,
+  requestedStep: string | undefined
+): ChatbotWorkspaceState {
+  if (requestedView === 'advanced') {
+    return { view: 'behavior' }
+  }
+
+  switch (requestedStep) {
+    case 'modes':
+      return { view: 'behavior' }
+    case 'disclaimer':
+      return { view: 'disclaimer' }
+    case 'basics':
+      return { view: 'overview', step: 'basics' }
+    case 'review':
+      return { view: 'overview', step: 'review' }
+    default: {
+      const defaultState = getDefaultWorkspaceState(chatbot)
+      return defaultState.view === 'disclaimer'
+        ? defaultState
+        : { view: 'overview', step: defaultState.step ?? 'basics' }
+    }
+  }
 }
 
 function normalizeWorkspaceState(
@@ -66,34 +102,27 @@ function normalizeWorkspaceState(
   requestedView: string | undefined,
   requestedStep: string | undefined
 ): ChatbotWorkspaceState {
+  if (requestedView === 'setup' || requestedView === 'advanced') {
+    return normalizeLegacyWorkspaceState(chatbot, requestedView, requestedStep)
+  }
+
   if (!includesValue(workspaceViews, requestedView)) {
     return getDefaultWorkspaceState(chatbot)
   }
 
-  if (requestedView !== 'setup') {
-    return { view: requestedView }
-  }
-
-  if (
-    chatbot.status === ChatbotStatus.PendingApproval ||
-    chatbot.status === ChatbotStatus.Paused
-  ) {
-    return { view: 'overview' }
-  }
-
-  if (chatbot.status === ChatbotStatus.Published) {
-    return {
-      view: 'setup',
-      step: includesValue(setupSteps, requestedStep) ? requestedStep : 'basics',
+  if (requestedView === 'overview') {
+    if (requestedStep === 'basics' || requestedStep === 'review') {
+      return { view: 'overview', step: requestedStep }
+    }
+    if (requestedStep === 'modes') {
+      return { view: 'behavior' }
+    }
+    if (requestedStep === 'disclaimer') {
+      return { view: 'disclaimer' }
     }
   }
 
-  const defaultStep = getDefaultSetupStep(chatbot)
-  if (!includesValue(setupSteps, requestedStep)) {
-    return { view: 'setup', step: defaultStep }
-  }
-
-  return { view: 'setup', step: requestedStep }
+  return { view: requestedView }
 }
 
 export type {
