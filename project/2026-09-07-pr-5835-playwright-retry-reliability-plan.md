@@ -34,8 +34,9 @@ is added.
 
 Worktree: `trees/rs/playwright-activity-retry-safety`.
 Branch: `rs/playwright-activity-retry-safety`; target: `v3`.
-Integrated baseline: `d9cf28ab49a422d16e5ab89e4281ffa9ad47ebfd`, including
-target `65ae8a3523`. Boundary owner: self. Artifacts root: `project/`.
+Current target baseline: `e3fb9873c98a664987cc48f0ec9bbf51c9337e8a`, integrated
+with the host/container dependency-isolation correction. Boundary owner: self.
+Artifacts root: `project/`.
 This is a full-path package because the launcher changes a lifecycle contract.
 General lifecycle hardening stays with the existing Devrouter task; this package
 does not edit its repository. No new product primitive, dependency version or
@@ -167,6 +168,19 @@ the worktree, source overlays, diagnostic artifacts and database remain intact.
 All 28 host launcher/configuration checks pass with the Volta-pinned toolchain.
 Scoped Biome, Prettier and diff checks pass. These focused checks replace the
 broad application hooks for source commits; no full monorepo build is claimed.
+
+The configuration/readiness source is committed at `cf3629cea6`; simplification
+and bounded risk review pass without findings. Reports are
+`_local/reviews/2026-09-08-next-no-patch-simplifier.md` and
+`_local/reviews/2026-09-08-next-no-patch-slice-review.md`. The latter uses the
+trusted native route for unpublished source, not the external GLM role.
+Two existing PR comments correctly identified missing command-boundary
+environment assertions. Commit `d7cccf3b13` adds them to existing tests;
+all 28 host checks still pass. The prose-pinning suggestion is rejected because
+validation already proves zero external calls, and the call-order suggestion
+is obsolete after target integration. Whole-branch Gitleaks finds no leaks.
+The final dependency definitions and lockfile match current `v3` exactly.
+Integrated final review and ordinary draft update remain; no merge is included.
 
 ### September 8 causal observation and configuration-only comparison
 
