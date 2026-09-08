@@ -40,21 +40,31 @@ function commandExists(command) {
   return result.status === 0
 }
 
-function runPnpm(args, env = process.env) {
-  if (commandExists('volta')) {
-    const nodeBinary = run('volta', ['which', 'node'], { capture: true })
+export function runPnpm(
+  args,
+  env = process.env,
+  { exists = commandExists, execute = run } = {}
+) {
+  // The host has deliberately filtered dependencies; only explicit installs
+  // may change them, never pnpm's workspace-wide pre-run repair.
+  const hostEnvironment = {
+    ...env,
+    pnpm_config_verify_deps_before_run: 'false',
+  }
+  if (exists('volta')) {
+    const nodeBinary = execute('volta', ['which', 'node'], { capture: true })
     const toolchainDirectory = dirname(nodeBinary)
     const toolchainEnvironment = {
-      ...env,
+      ...hostEnvironment,
       PATH: `${toolchainDirectory}${delimiter}${env.PATH ?? ''}`,
     }
 
-    return run(join(toolchainDirectory, 'corepack'), ['pnpm', ...args], {
+    return execute(join(toolchainDirectory, 'corepack'), ['pnpm', ...args], {
       env: toolchainEnvironment,
     })
   }
 
-  return run('pnpm', args, { env })
+  return execute('pnpm', args, { env: hostEnvironment })
 }
 
 export function readCommittedEnvironment(contents) {

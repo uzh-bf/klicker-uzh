@@ -20,12 +20,44 @@ import {
   main,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
+  runPnpm,
 } from './run-playwright-host.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+test('host pnpm disables implicit repair without changing explicit commands or caller environment', () => {
+  for (const hasVolta of [false, true]) {
+    for (const args of [
+      ['exec', 'playwright', '--version'],
+      ['install', '--frozen-lockfile'],
+    ]) {
+      const calls = []
+      const env = {
+        PATH: '/synthetic/bin',
+        pnpm_config_verify_deps_before_run: 'install',
+      }
+      runPnpm(args, env, {
+        exists: () => hasVolta,
+        execute: (...call) => {
+          calls.push(call)
+          return '/synthetic/toolchain/node'
+        },
+      })
+      const [command, forwarded, options] = calls.at(-1)
+      assert.equal(command, hasVolta ? '/synthetic/toolchain/corepack' : 'pnpm')
+      assert.deepEqual(forwarded, hasVolta ? ['pnpm', ...args] : args)
+      assert.equal(options.env.pnpm_config_verify_deps_before_run, 'false')
+      assert.equal(env.pnpm_config_verify_deps_before_run, 'install')
+      assert.equal(
+        options.env.PATH,
+        hasVolta ? `/synthetic/toolchain${delimiter}${env.PATH}` : env.PATH
+      )
+    }
+  }
+})
 
 function launcherFixture() {
   const calls = []
