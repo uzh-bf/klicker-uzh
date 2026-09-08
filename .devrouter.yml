@@ -26,6 +26,7 @@ project:
   name: klicker-uzh
 managedRuntime:
   devcontainer:
+    prepareCommand: [node, util/generate-dependency-mounts.mjs]
     # Managed base: the DevPod primary `app` is implicit; postgres serves
     # post-create reset/push/seed; hatchet is boot-critical for the backend.
     baseServices: [postgres, hatchet]
