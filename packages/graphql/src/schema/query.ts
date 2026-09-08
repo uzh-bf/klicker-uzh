@@ -1,10 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  ASYNC_TASK_TRACKED_IDS_LIMIT,
+} from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as AsyncTaskService from '../services/asyncTasks.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -43,6 +47,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { AsyncTask } from './asyncTask.js'
 import { asChatbotAuthor } from './authScopes.js'
 import {
   AssessmentParticipant,
@@ -345,6 +350,26 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           return await CourseService.getUserCourses(ctx)
         },
+      }),
+
+      asyncTasks: t.withAuth(asUser).field({
+        type: [AsyncTask],
+        args: {
+          trackedIds: t.arg.stringList({
+            required: true,
+            validate: {
+              items: { uuid: true },
+              maxLength: ASYNC_TASK_TRACKED_IDS_LIMIT,
+            },
+          }),
+        },
+        resolve: (_, args, ctx) => AsyncTaskService.getAsyncTasks(args, ctx),
+      }),
+
+      asyncTaskAttentionCount: t.withAuth(asUser).field({
+        type: 'Int',
+        resolve: (_, __, ctx) =>
+          AsyncTaskService.getAsyncTaskAttentionCount(ctx),
       }),
 
       courseDuplicationStatuses: t.withAuth(asUser).field({

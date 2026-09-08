@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AsyncTaskService from '../services/asyncTasks.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -1437,6 +1438,21 @@ export const Mutation = builder.mutationType({
             )
           }
         ),
+      }),
+
+      acknowledgeAsyncTasks: t.withAuth(asUser).field({
+        type: 'Int',
+        args: {
+          ids: t.arg.stringList({
+            required: true,
+            validate: {
+              items: { uuid: true },
+              maxLength: AsyncTaskService.ASYNC_TASK_ACKNOWLEDGEMENT_LIMIT,
+            },
+          }),
+        },
+        resolve: (_, args, ctx) =>
+          AsyncTaskService.acknowledgeAsyncTasks(args, ctx),
       }),
 
       updateCourseSettings: t.withAuth(asUserFullAccess).field({

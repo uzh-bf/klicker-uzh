@@ -49,9 +49,15 @@ jobs:
           node-version-file: package.json
 
       - uses: pnpm/action-setup@v4
+        id: pnpm
         with:
           version: 11.5.0
           run_install: true
+
+      - name: Verify container workspace installation
+        env:
+          PNPM_EXECUTABLE: ${{ steps.pnpm.outputs.bin_dest }}/pnpm
+        run: node --test apps/olat-api/test/docker/workspace-install.node.cjs
 
       - name: Run tests using Docker
         run: |
