@@ -22,6 +22,13 @@ startup and browser qualification pass. Chat, production and CI serving retain
 their existing configuration. The local Hatchet HTTP correction remains.
 No dependency version changes are included.
 
+The September 8 failed CI continuation also fixes the reproduced rich-text
+clearing race in the existing Playwright helper. Retry only the idempotent
+clear until the attached Slate field contains neither text nodes nor embeds;
+keep the existing save-state and persisted-content assertions. No application
+editor changes, sleeps, dependency patches or test-level retry increases are
+included. The user requested investigation, a fix and a new CI run.
+
 The main risk is under-provisioning a focused test: the caller must request all
 needed profiles. Argument validation must finish before any external command.
 Success requires command-boundary regression tests, unchanged default behavior,
@@ -87,6 +94,36 @@ Pause on a repeated runtime failure, missing required review capability or a
 material contract change. Do not weaken assertions or increase retry counts.
 
 ## Progress
+
+### Rich-text clearing failure in the current ARM64 run
+
+Run `34257127977` at `df833589d478e59c9e9ec67d12d8d196bb05ebd6`
+fails shard four first in single-choice answer clearing. Save remains enabled
+because the answer survives the clear. The later persistence failures follow
+the failed creation. Multiple-choice clearing also fails on its first attempt.
+This is distinct from the development-only Next.js route inventory problem;
+the same symptom appeared on the earlier hosted run.
+
+Main owns the coupled diagnosis, fixture correction and browser qualification.
+No independent implementation item is delegated; the user asked for direct work.
+A multi-field browser probe reproduces the failed clear while the browser
+selection covers the answer but Slate's deferred selection still points at the
+end. The delete then does nothing. Throttling only the clearing interaction
+reproduces both old single-choice and multiple-choice paths on their first
+iteration. The bounded helper passes ten clears of each under the same load.
+An earlier whole-form throttle timed out during typing, before the clear, and
+is not counted as qualification.
+
+The shared helper and the two direct call sites are the only executable changes
+in this correction. Existing answer, feedback, save-state and persistence tests
+retain their intent. Qualification repeats the complete single-choice,
+multiple-choice and Kprim specs with zero test retries and checks that a
+persistently blocked delete still fails. Temporary application instrumentation
+is removed before that run. All 60 checks pass in 4.1 minutes: 57 existing
+workflow checks and three persistent-failure probes, with zero retries.
+The temporary probe is archived outside the active suite. Scoped Prettier
+passes, as does the focused Playwright TypeScript check after archiving the
+temporary diagnostic. Fresh CI on the corrected head remains required.
 
 ### Post-review target integration
 
