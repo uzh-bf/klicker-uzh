@@ -73,6 +73,135 @@ required before resuming the UX acceptance checks.
 Use new worktree's manage profile for Manage/auth/API visual inspection and the repository-resolved test profile for owning Playwright suites (pwa, control or other apps required by existing tests must be present). Read current runtime skills/config and verify selected profile before running; do not modify .devrouter.yml, hostname/TLS/env or release-verification runtime. Only task synthetic data; preserve existing release runtime owned by another task. Stop task runtime after proof; deletion always separate.
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
+
+### Current verified outcome, 2026-09-08 21:22 CEST
+
+Guarded recovery completed without repeating replacement or deleting retained
+mounted data. The recovered full-profile runtime passed all 79 host Chromium
+course and activity-log tests (7.2 minutes). Delegated login, course list,
+overflow actions, and course detail were inspected manually at desktop and
+390px mobile widths. The existing global header clips on mobile; course
+content remains usable. Screenshots are under project/_local/visuals/2026-09-08-course-proof/.
+
+Target integration is committed in 4be4408f1 and 9ced7bca6. The latter includes
+v3 3f6917ecc52d606d212db5b156be502cd5c99973. All 35 typecheck tasks and seven
+lint tasks pass. Host-only CI contracts pass separately; 34 host launcher and
+dependency-mount tests pass. The synthetic recovery suite passes. Host staged
+secret scanning and identity checks pass. Git hooks were split into equivalent
+host/container checks because the toolchain belongs in the container.
+
+The latest target adds generated dependency mounts. Warm ensure refuses this
+configuration drift. Subsequent exec fails with Lifecycle transition is blocked;
+managed stop fails with Managed stop requires unchanged recorded resources and
+configuration. Exact Devsy status is Running and exact source-path routeCount
+is 10. Shutdown is blocked, not retained under a user lease. No raw provider or
+Docker bypass was attempted. Latest-configuration runtime proof and full build
+remain unverified; ordinary publication remains pending that build and review.
+The successful browser run used the recovered mount configuration, not the new
+mount configuration. Source devrouter 0.0.60 handled recovery; global devrouter
+remains 0.0.59. Do not repeat replacement or delete retained storage under the
+current goal. Next runtime action requires supported configuration reconciliation.
+
+### Retained app configuration mismatch resolved, 2026-09-08
+
+Read-only source comparison identifies the omitted removal of
+GROWTHBOOK_BETA_SAVED_GROUP_ID. Restoring that key plus the retained values for
+DATABASE_URL and SHADOW_DATABASE_URL reproduces the app's exact recorded Compose
+hash. PostgreSQL's hash also matches after reversing only the added read-only
+initialization bind. The earlier unknown-drift blocker is resolved.
+
+Devrouter recovery source commit 9d2b24f adds configuration reconstruction and
+mount pinning primitives plus tests. Twenty focused tests and typechecking pass.
+Real synthetic Docker fixture retained-config-fixture-1788872319927 preserved
+named and anonymous volume identities, bind source/read-only access, and all
+three sentinels in a replacement container. Both fixture containers stopped.
+This qualifies storage reuse only, not provider attachment or complete recovery.
+Devsy's supported workspace status command reports this exact task Stopped;
+its registered source path and provider identity agree. No retained task container
+was replaced. The original runtime remains stopped pending adapter integration,
+review, new disposable database provisioning and truthful bootstrap recovery.
+
+### Recovery continuation, 2026-09-08
+
+Latest admission blocker: read-only reconstruction of the PostgreSQL Compose hash
+matches after removing only the added read-only initialization bind. The app hash
+does not match after reversing DATABASE_URL and SHADOW_DATABASE_URL, either from
+container environment or recorded HEAD source. Additional app configuration drift
+is therefore unproven. Replacement must remain blocked until that exact mismatch
+is explained; user approval is not missing. No configuration values were printed
+or persisted. Recovery worker Newton returned incomplete and released ownership;
+main owns the remaining integration, with no replacement worker required.
+
+Approval for the exact retained app/PostgreSQL replacement and isolated synthetic
+qualification persists. No renewed approval is required for those same effects.
+The recovery adapter remains incomplete; no live replacement has occurred.
+All eight exact Compose project containers were verified exited, and the host
+route query returned zero routes for this checkout. The unavailable bare DevPod
+CLI and unsupported Devsy status subcommand do not establish provider status.
+Global and task devrouter are 0.0.59. Remote target now ends at e3fb9873c9; the
+pending merge remains 1a270f3305. The newer target changes dependency mounts and
+must be evaluated after the current recovery boundary, without silently widening
+its unchanged-storage contract.
+
+Consumer bootstrap shell syntax, ShellCheck, and mocked failure/success tests
+pass. Installation/build failures now explicitly prove no completion marker;
+source-mirroring schema assertions were removed. These are orchestration tests,
+not real database readiness or provider storage-preservation proof.
+Devrouter admission plus preview digest regression: 14 tests pass. Draft recovery
+typecheck passes after correcting blocker types. Preview now binds environment
+values into its digest without emitting them. Concrete provider adapter, CLI,
+real synthetic storage qualification, reviews, and runtime/browser proof remain.
+
+### Latest target and retained-runtime reconciliation, 2026-09-08
+
+The user authorized latest target integration and the global devrouter update.
+The pending merge now targets origin/v3 1a270f33053e12d56df6e4536133753edcaae636,
+without conflicts. The prior index exactly matched its automatic merge tree;
+that uncommitted merge was replaced while preserving the unstaged plan edits.
+Global and repository devrouter versions are 0.0.59. No merge commit or new
+verification pass is claimed.
+
+Both canonical ensure and ensure --repair refuse with
+`Managed Compose configuration changed for service 'app'.`
+Inspection of the installed lifecycle worker confirms degraded startup routes
+through assertRepairBaseline, which requires unchanged retained Compose hashes.
+The CLI exposes no retained-configuration replacement operation. Raw provider
+recreation would cross the managed lifecycle boundary and was not performed.
+
+Exact owner rs-manage-course-clarity maps to this checkout and Compose project
+default-rs-c0d01. All eight project containers are exited. PostgreSQL mounts
+named volume default-rs-c0d01_pgdata at /var/lib/postgresql/data. Provider status
+is Stopped and exact checkout routeCount is zero. No database, container or
+volume was changed. A supported devrouter configuration-reconciliation capability
+is required before the approved disposable bootstrap and checks can continue.
+### Target integration and disposable database blocker, 2026-09-08
+
+Fetched and integrated origin/v3 `7f81442ad98138f99a88277d59ba06eada2abe9a`
+into rs/manage-course-clarity without conflicts. The merge remains uncommitted
+pending container checks. Existing task commits and remote publication are unchanged.
+Before integration, full-profile startup passed all readiness contracts with
+healthy services, both processes running and no drift. Created the guarded local
+synthetic activity fixture and read-only login. Delegated owner and READ login
+worked; captured populated rows/details and course layouts under
+project/_local/visuals. The course screenshots cover EN/DE at 1024 and 1440;
+activity baseline confirms unnamed sort, generic clickable titles and generic
+details heading. READ activity edit/start protections remain present. This is
+pre-integration evidence, not acceptance of the integrated runtime.
+
+The integrated environment changes the local database target to klicker_test.
+The retained container uses the old local identity. A values-free check against
+the integrated configuration returns PostgreSQL 28P01; catalog booleans confirm
+that role klicker_test, database klicker_test and klicker_test_shadow are all
+absent. Existing synthetic MCP ownership passes in the old database. Canonical
+startup fails before readiness at the authenticated fixture step. Managed exec
+then refuses the degraded lifecycle. No database or volume was deleted or
+relabelled. Task-only managed shutdown succeeded in /tmp/manage-integration-stop.log.
+Exact source-path readback shows zero routes; the validated application container
+is exited. Both task browser sessions are closed.
+The new upstream retained-volume guidance requires a fresh disposable environment
+with explicit approval; do not bypass its guard. Activity and wizard implementation,
+remaining acceptance, merge commit, reviews and draft-stack publication remain pending.
+
 ### Runtime repair and course verification pass, 2026-09-08
 
 Local commit `11db845b3ece0e092e182bb0c7d74c6e1f2a5b07` contains the atomic
@@ -609,3 +738,58 @@ Runtime release checkpoint: `devrouter stop` for this exact task path and its on
 Latest release evidence supersedes the earlier pending cleanup notes: managed stop completed with `stopped: true` and three freed routes. Fresh source-path workspace readback reports zero routes. Devsy list resolves this source to `rs-manage-course-clarity`; status by that exact ID reports provider `docker`, state `NotFound`, rather than a stopped existing container. No running container remains for this registration. No deletion was performed. The engineering browser is closed. Registry DNS recovery is the remaining environment prerequisite; all implementation and delivery work remains authorized but pending.
 
 Further retry, 2026-09-05: Docker Hub now returns the expected unauthenticated HTTP 401, and fresh fetch still leaves this branch aligned with origin/v3. Startup waited about 17 minutes for the shared provider queue, then created the container and passed internal Auth/Manage readiness. Reconciliation unexpectedly ran the full profile after manage, then exited with `Managed process 'klicker-dev' is not running (foreign). Candidate runtime was rolled back.` No UI implementation or baseline pass is claimed. Both this checkout and the installed CLI declare Devrouter 0.0.51, so a simple declared-version mismatch is not demonstrated. The next investigation is the managed process ownership failure; do not blindly repeat ensure, bypass ownership checks, or change another runtime. Task-only stop is active in terminal session 97487, queued behind a different provider operation. No source, configuration, commit or PR changes were made.
+
+
+Recovery continuation outcome, 2026-09-08: the source task incorporates upstream
+0.0.60 in b2a43ce and commits the original mount-declaration guard in 0b6d8f6.
+The retained app passes that guard and historical hash reconstruction. The fresh
+synthetic storage fixture passes after the guard; all fixture and task containers
+remain stopped. Updated ensure/repair plus recovery tests passed 136 tests before
+the additional guard and replacement-ID tests; those focused additions pass too.
+The callback-based apply draft now uses the new container identity and no longer
+invents a bootstrap marker. It remains uncommitted and is not wired to a live
+replacement command. Main still owns concrete adapter, managed startup, database
+provisioning, final review and UX acceptance. No further user approval is needed
+for the previously approved exact replacement and fresh disposable database work.
+
+
+### Guarded recovery execution, 2026-09-08
+
+Final pre-apply review passed devrouter range 0b6d8f6..04e249e. Digest-bound
+apply replaced only app and PostgreSQL, preserving mounted storage, but consumer
+provisioning failed before SQL execution: its login was hardcoded to klicker,
+whereas the exact retained local configuration specifies klicker-prod. PostgreSQL
+logged role klicker does not exist. All eight containers are stopped; source-path
+routeCount is zero. Journal ccb60d7b15a7b4d06486f233e390e110dad1f51516a362fde8066c60854b403b
+is partial and records successful creation of both replacement containers. Do
+not repeat replacement or clear this journal manually.
+
+The user approves identifying the bootstrap identity and guarded continuation.
+The local provisioner correction keeps the CI default klicker and accepts only
+an explicit klicker-prod alternative already admitted by the SQL identity guard.
+Synthetic checks pass for default, local override and rejection before Docker;
+consumer orchestration tests pass. Local wrapper hash is now
+ce43f74960814470b775235a2fe60d56b5dc3409b3996b868c01d8142b80731f.
+No SQL guard is relaxed. Devrouter executor Epicurus owns the bounded journal
+continuation implementation; main owns consumer correction, integration and
+verification. No recovery retry has run.
+
+
+### Guarded recovery completed, 2026-09-08
+
+The consumer failure was tsx eval rejecting top-level await. Wrapping the
+identity check in async main fixed it; actual read-only checks passed for both
+marked test databases. Provisioning was already complete, so the continuation
+skips it and preserves restricted-identity verification before push and seed.
+Mendel reviewed the frozen consumer, finding no runtime blocker; the sole
+authority-comment correction was applied. Current wrapper hash is
+463ceb4709c4d40edd9e35fd3f351ae30e147bb931642f482d168512fec3911f.
+
+Source devrouter 7ea5a51 recovery-resume completed with status applied and journal
+phase completed. Schema setup, seed and bootstrap checks passed; exact replacements
+were stopped and canonical configuration proved. Mounted data preserved and no
+replacement repeated. Canonical source CLI ensure --repair is now running and
+queued on provider lock; host execution session 79826 owns this startup. Preserve
+that handle/queue. User goal remains runtime startup, target integration checks,
+and Manage course flow verification. No UI acceptance or integration completion
+is claimed yet; global CLI remains unchanged.
