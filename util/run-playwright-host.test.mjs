@@ -22,9 +22,11 @@ import {
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
+  preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
   PNPM_VERIFY_DEPS_ENV,
+  parseLocalOptions,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
   main as runPlaywrightHost,
@@ -35,11 +37,79 @@ const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
 
+test('database preservation is explicit, host-only, and excluded from CI', () => {
+  const selected = {
+    [HOST_RUNNER_ENV]: '1',
+    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+  }
+  assert.equal(preserveLocalDatabase({}), false)
+  assert.equal(preserveLocalDatabase(selected), true)
+
+  assert.throws(
+    () =>
+      preserveLocalDatabase({
+        KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+      }),
+    /host launcher marker/
+  )
+
+  for (const variable of ['CI', 'GITHUB_ACTIONS']) {
+    for (const value of ['true', 'false', '0']) {
+      assert.equal(preserveLocalDatabase({ [variable]: value }), false)
+      assert.throws(
+        () => preserveLocalDatabase({ ...selected, [variable]: value }),
+        /incompatible with CI or GitHub Actions/
+      )
+    }
+  }
+})
+
+test('local runner options preserve defaults and forward test selectors', () => {
+  assert.deepEqual(parseLocalOptions(['--project=chromium']), {
+    args: ['--project=chromium'],
+    profile: undefined,
+    preserveDatabase: false,
+  })
+  assert.deepEqual(
+    parseLocalOptions([
+      '--runtime-profile',
+      'chat',
+      '--preserve-database',
+      'tests/Y-chat.spec.ts',
+    ]),
+    {
+      args: ['tests/Y-chat.spec.ts'],
+      profile: 'chat',
+      preserveDatabase: true,
+    }
+  )
+  assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
+  assert.throws(() => parseLocalOptions(['--runtime-profile']))
+  assert.throws(
+    () => parseLocalOptions(['--runtime-profile=chat']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['--preserve-database=1']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['tests/example.spec.ts', '--preserve-database']),
+    /before Playwright arguments/
+  )
+  assert.throws(
+    () =>
+      parseLocalOptions(['--project=chromium', '--runtime-profile', 'chat']),
+    /before Playwright arguments/
+  )
+})
+
 function createLauncherHarness({
   playwrightCli = true,
   prismaDist = true,
   typesDist = true,
   failWhen,
+  environment = { PATH: '/synthetic/bin' },
 } = {}) {
   const calls = []
   const logs = []
@@ -97,7 +167,7 @@ function createLauncherHarness({
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
       commandRunner,
-      environment: { PATH: '/synthetic/bin' },
+      environment,
       log: (message) => logs.push(message),
       pathExists,
       readFile,
@@ -105,6 +175,36 @@ function createLauncherHarness({
     },
   }
 }
+
+test('invalid preservation and local options fail before launcher effects', () => {
+  for (const { args, environment, error } of [
+    {
+      args: ['--preserve-database', '--list'],
+      environment: { PATH: '/synthetic/bin', CI: 'false' },
+      error: /incompatible with CI or GitHub Actions/,
+    },
+    {
+      args: ['--runtime-profile=chat', '--list'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /space syntax/,
+    },
+    {
+      args: ['--runtime-profile'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /separate profile name/,
+    },
+    {
+      args: ['--list', '--preserve-database'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /before Playwright arguments/,
+    },
+  ]) {
+    const harness = createLauncherHarness({ environment })
+
+    assert.throws(() => runPlaywrightHost(args, harness.dependencies), error)
+    assert.deepEqual(harness.calls, [])
+  }
+})
 
 function commandIndex(calls, command, firstArg) {
   return calls.findIndex(
@@ -551,6 +651,42 @@ test('cold runs stop before host preparation and reconcile afterward', () => {
       ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
     )
   )
+})
+
+test('host preparation preserves explicit runtime profile and database selection', () => {
+  const harness = createLauncherHarness({ playwrightCli: false })
+  runPlaywrightHost(
+    ['--runtime-profile', 'chat', '--preserve-database', '--list'],
+    harness.dependencies
+  )
+  const ensure = harness.calls.find(
+    ({ command, args }) =>
+      command === '/synthetic/bin/devrouter' && args[0] === 'ensure'
+  )
+  assert.deepEqual(ensure.args, [
+    'ensure',
+    '/synthetic/klicker-uzh',
+    '--profile',
+    'chat',
+  ])
+  const testRun = pnpmCalls(harness.calls).find(({ args }) =>
+    args.includes('test')
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') <
+      harness.calls.indexOf(testRun),
+    'runtime must be reconciled before Playwright test execution'
+  )
+  assert.equal(testRun.options.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '1')
+  assert.equal(testRun.options.env[PNPM_VERIFY_DEPS_ENV], 'error')
+  assert.deepEqual(testRun.args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    '--list',
+  ])
 })
 
 test('cold runs complete builds and browser preparation before reconciliation', () => {

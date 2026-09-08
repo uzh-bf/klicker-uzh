@@ -1,4 +1,5 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { getPublicSourceUrl } from './sourceUrl'
 import type { ChatSource, ChatSourceType } from './types'
 
 export const MAX_SOURCES = 12
@@ -370,7 +371,7 @@ function normalizeAnswerModeSources(
       title,
       page,
       labeledPage,
-      url,
+      url: getPublicSourceUrl(url),
       dedupeKey: buildDedupeKey({
         url: ingestionReference ? rawUrl : url,
         title,
@@ -437,7 +438,7 @@ function normalizeDocumentsModeSources(
       title,
       page,
       labeledPage,
-      url,
+      url: getPublicSourceUrl(source.source_url) ?? getPublicSourceUrl(url),
       excerpt,
       startSec,
       endSec,
