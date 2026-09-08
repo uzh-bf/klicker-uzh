@@ -616,7 +616,14 @@ test('host preparation preserves explicit runtime profile and database selection
   )
   assert.equal(testRun.options.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '1')
   assert.equal(testRun.options.env[PNPM_VERIFY_DEPS_ENV], 'error')
-  assert.equal(testRun.args.includes('--preserve-database'), false)
+  assert.deepEqual(testRun.args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    '--list',
+  ])
 })
 
 test('cold runs complete builds and browser preparation before reconciliation', () => {
