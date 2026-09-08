@@ -1847,9 +1847,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     storageLimitError:
-      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+      'Diese Ressource überschreitet das Speicherlimit der Wissensdatenbank.',
     resourceLimitError:
-      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+      'Diese Wissensdatenbank hat ihr Limit von 1000 Ressourcen erreicht.',
     uploadMismatchError:
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',

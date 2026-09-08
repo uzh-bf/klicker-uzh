@@ -1826,9 +1826,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     runStatusSuperseded: 'Superseded',
     ingestionStartError: 'The ingestion operation could not be started.',
     storageLimitError:
-      'This resource exceeds the 500 MiB knowledge base storage limit.',
+      'This resource exceeds the knowledge base storage limit.',
     resourceLimitError:
-      'This knowledge base has reached its limit of 100 resources.',
+      'This knowledge base has reached its limit of 1,000 resources.',
     uploadMismatchError:
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
