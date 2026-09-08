@@ -727,6 +727,8 @@ interpolation data, never template source. One final file newline is omitted fro
 the rendered prompt. The renderer is Node-only and templates stay outside `public`.
 Chat's Next configuration explicitly traces these assets into the standalone build;
 its server starts from the app directory, which is also the template loading root.
+Templates are cached for the server process lifetime; restart the local Chat server
+after editing them and rebuild the standalone artifact before publishing changes.
 
 `src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text and the typed
 standard-mode context as configurable lecturer influence, not as the complete system policy. On
