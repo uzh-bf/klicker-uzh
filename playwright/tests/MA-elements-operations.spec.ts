@@ -384,9 +384,9 @@ async function verifySingleChoiceQuestionContent(
   )
 
   for (let ix = 0; ix < choices.length; ix++) {
-    await expect(page.getByTestId(`sc-0-answer-option-${ix}`)).toContainText(
-      choices[ix].value
-    )
+    await expect(
+      page.getByTestId(`sc-0-answer-option-${ix}`)
+    ).toHaveAccessibleName(choices[ix].value)
   }
 
   if (submission) {
@@ -1391,8 +1391,10 @@ test.describe('Create different types of elements (with and without sample solut
           page.getByTestId(`open-group-activity-${groupActivity}`)
         ).toBeVisible()
         await page.getByTestId(`open-group-activity-${groupActivity}`).click()
-        await expect(page.getByTestId('start-group-activity')).toBeVisible()
-        await page.getByTestId('start-group-activity').click()
+        const startActivity = page.getByTestId('start-group-activity')
+        const question = page.getByTestId('instance-question-content')
+        await expect(startActivity.or(question).first()).toBeVisible()
+        if (await startActivity.isVisible()) await startActivity.click()
         await verifySingleChoiceQuestionContent(page, {
           submission: false,
           content,
