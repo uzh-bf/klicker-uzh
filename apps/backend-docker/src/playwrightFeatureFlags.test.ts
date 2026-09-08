@@ -282,7 +282,7 @@ test('Playwright flags preserve the configured analytics fixture', () => {
 
 for (const preload of [false, true]) {
   test(`Fixture HTTP routes require explicit preload (${preload})`, () => {
-    const env = { ...process.env, NODE_ENV: 'test' }
+    const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: 'test' }
     delete env.GROWTHBOOK_API_HOST
     const result = spawnSync(
       process.execPath,
