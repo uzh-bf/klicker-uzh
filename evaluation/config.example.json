@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "infisical": {
+    "domain": "https://<approved-infisical-host>",
+    "projectId": "<project-id>",
+    "environment": "<environment>",
+    "path": "<secret-path>"
+  },
+  "judge": {
+    "baseUrlSecret": "<judge-url-secret-name>",
+    "apiKeySecret": "<judge-key-secret-name>"
+  }
+}
