@@ -71,6 +71,9 @@ jobs:
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
 
+      - name: Check Next.js development route aggregation
+        run: node --test ./util/next-dev-aggregation.test.mjs
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check
