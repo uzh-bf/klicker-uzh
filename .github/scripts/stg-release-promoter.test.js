@@ -946,6 +946,49 @@ test('plans equal, stale, fast-forward, and divergent release refs without force
   )
 })
 
+test('separates Git read and write credentials without an ambient write fallback', (t) => {
+  const readToken = 'synthetic-read-token'
+  const writeToken = 'synthetic-write-token'
+  const previous = {
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    'INPUT_GITHUB-TOKEN': process.env['INPUT_GITHUB-TOKEN'],
+    STG_PROMOTE_TOKEN: process.env.STG_PROMOTE_TOKEN,
+  }
+  t.after(() => {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
+  })
+  process.env.GITHUB_TOKEN = readToken
+  process.env['INPUT_GITHUB-TOKEN'] = readToken
+  process.env.STG_PROMOTE_TOKEN = writeToken
+  const calls = []
+  const options = {
+    context: reviewContext(),
+    candidateSha: CANDIDATE_SHA,
+    expectedSha: null,
+    gitRunner: (args, options) => calls.push({ args, options }),
+  }
+  assert.throws(() => pushReleaseRefWithLease(options), /STG_PROMOTE_TOKEN/)
+  assert.equal(calls.length, 0)
+  pushReleaseRefWithLease({ ...options, gitToken: writeToken })
+  assert.equal(calls.length, 2)
+  for (const [index, token] of [readToken, writeToken].entries()) {
+    const { args, options } = calls[index]
+    assert.equal(args[0], index === 0 ? 'fetch' : 'push')
+    assert.equal(options.env.GITHUB_TOKEN, undefined)
+    assert.equal(options.env['INPUT_GITHUB-TOKEN'], undefined)
+    assert.equal(options.env.STG_PROMOTE_TOKEN, undefined)
+    assert.equal(
+      options.env.GIT_CONFIG_VALUE_0,
+      `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`
+    )
+    assert.equal(JSON.stringify(args).includes(readToken), false)
+    assert.equal(JSON.stringify(args).includes(writeToken), false)
+  }
+})
+
 test('uses an exact remote lease for create and prevalidated fast-forward updates', async () => {
   const context = reviewContext()
   const create = refGithub()
@@ -1047,6 +1090,39 @@ test('uses an exact remote lease for create and prevalidated fast-forward update
   )
 })
 
+test('sanitizes credential-bearing fetch and push failures', async () => {
+  for (const operation of ['fetch', 'push']) {
+    const refs = refGithub()
+    const sensitive = 'synthetic-private-token'
+    const original = Object.assign(new Error(sensitive), {
+      stderr: `refusing to allow a GitHub App without workflows permission ${sensitive}`,
+      cause: new Error(sensitive),
+      env: { STG_PROMOTE_TOKEN: sensitive },
+    })
+    await assert.rejects(
+      compareAndSwapReleaseRef({
+        github: refs.github,
+        context: reviewContext(),
+        expectedSha: null,
+        candidateSha: CANDIDATE_SHA,
+        gitToken: sensitive,
+        gitRunner: (args) => {
+          if (args[0] === operation) throw original
+        },
+      }),
+      (error) => {
+        assert.equal(error.cause, undefined)
+        assert.ok(error instanceof Error)
+        assert.doesNotMatch(
+          require('node:util').inspect(error),
+          /synthetic-private-token/
+        )
+        return true
+      }
+    )
+  }
+})
+
 test('recovers from a transient post-push ref readback failure', async () => {
   const refs = refGithub(null, {
     postPushReadbacks: [transientReadbackFailure(), CANDIDATE_SHA],
@@ -1069,7 +1145,7 @@ test('recovers from a transient post-push ref readback failure', async () => {
   )
 })
 
-test('exercises create, fast-forward, and race rejection against a bare remote', (t) => {
+test('promotes without fetching submodules and rejects a concurrent ref update', (t) => {
   const temporaryDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'stg-release-cas-')
   )
@@ -1079,6 +1155,13 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
   const client = path.join(temporaryDirectory, 'client')
   execFileSync('git', ['init', '--bare', '--quiet', remote])
   execFileSync('git', ['init', '--quiet', client])
+  execFileSync('git', [
+    '-C',
+    client,
+    'config',
+    'fetch.recurseSubmodules',
+    'true',
+  ])
   const fixtureEnvironment = {
     ...process.env,
     GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
@@ -1087,6 +1170,15 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
     GIT_COMMITTER_NAME: 'Fixture',
   }
   const makeCommit = (label, parent = null) => {
+    const modules = execFileSync(
+      'git',
+      ['--git-dir', remote, 'hash-object', '-w', '--stdin'],
+      {
+        encoding: 'utf8',
+        input:
+          '[submodule "unavailable-submodule"]\n\tpath = unavailable-submodule\n\turl = ./missing.git\n',
+      }
+    ).trim()
     const blob = execFileSync(
       'git',
       ['--git-dir', remote, 'hash-object', '-w', '--stdin'],
@@ -1094,7 +1186,7 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
     ).trim()
     const tree = execFileSync('git', ['--git-dir', remote, 'mktree'], {
       encoding: 'utf8',
-      input: `100644 blob ${blob}\tfixture.txt\n`,
+      input: `100644 blob ${modules}\t.gitmodules\n100644 blob ${blob}\tfixture.txt\n160000 commit ${(parent ? '2' : '1').repeat(40)}\tunavailable-submodule\n`,
     }).trim()
     return execFileSync(
       'git',
@@ -1111,6 +1203,22 @@ test('exercises create, fast-forward, and race rejection against a bare remote',
   const baseSha = makeCommit('base')
   const racedSha = makeCommit('raced', baseSha)
   const candidateSha = makeCommit('candidate', racedSha)
+  execFileSync('git', [
+    '-C',
+    client,
+    'fetch',
+    '--quiet',
+    '--no-recurse-submodules',
+    remote,
+    baseSha,
+  ])
+  execFileSync('git', ['-C', client, 'checkout', '--quiet', baseSha])
+  execFileSync('git', ['-C', client, 'submodule', 'init'], { stdio: 'pipe' })
+  execFileSync('git', [
+    'init',
+    '--quiet',
+    path.join(client, 'unavailable-submodule'),
+  ])
   const readRemoteRef = () =>
     execFileSync('git', ['--git-dir', remote, 'rev-parse', PROMOTION_REF], {
       encoding: 'utf8',
@@ -1431,6 +1539,10 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     assert.equal(enabled.update_result.result, 'push-succeeded')
     assert.equal(enabled.update_result.verification, 'verified')
     assert.equal(refs.current(), CANDIDATE_SHA)
+    assert.equal(
+      fs.readFileSync(enabled.receiptPath, 'utf8').includes('fixture-token'),
+      false
+    )
   } finally {
     fs.rmSync(temporaryDirectory, { recursive: true, force: true })
   }
@@ -1470,13 +1582,17 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.doesNotMatch(workflow, /^ {6}confirm:$/m)
   assert.match(workflow, /stg-release/)
   assert.match(workflow, /github\.event\.workflow_run\.head_sha/)
-  assert.doesNotMatch(workflow, /STG_PROMOTE_TOKEN|git commit|git push|gh pr/)
+  assert.doesNotMatch(workflow, /git commit|git push|gh pr/)
   assert.doesNotMatch(workflow, /promote-stg-writer/)
   assert.doesNotMatch(workflow, /ref: \$\{\{[^}]*head_sha/)
   assert.doesNotMatch(workflow, /actions\/cache@|actions\/download-artifact@/)
   assert.match(workflow, /actions\/upload-artifact@/)
   assert.match(workflow, /persist-credentials: false/)
   assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/)
+  assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/)
+  assert.match(workflow, /gitToken: process\.env\.STG_PROMOTE_TOKEN/)
+  assert.match(workflow, /secrets\.STG_PROMOTE_TOKEN/)
+  assert.match(workflow, /^  contents: read$/m)
 
   const workflowRunNames = [
     ...workflow.matchAll(/^      - '([^']+ \(stg\))'$/gm),
