@@ -5,10 +5,12 @@ fragment EvaluationResults on ActivityEvaluation {
     stackDescription
     stackOrder
     stackActive
+    instanceCount
 
     # live quiz specific information
     status
     expiresAt
+    closedAt
     timeLimit
 
     instances {

@@ -74,7 +74,9 @@ function EvaluationNavigation({
 
   return (
     <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
-      {typeof activeStack === 'number' ? (
+      {typeof activeStack === 'number' &&
+      activeInstance >= 0 &&
+      (stackInstanceMap[activeStack]?.length ?? 0) > 0 ? (
         <InstanceNavigation
           stack={stacks[activeStack]}
           activeInstance={activeInstance ?? 0}

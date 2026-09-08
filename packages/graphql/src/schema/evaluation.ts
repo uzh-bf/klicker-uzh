@@ -13,14 +13,17 @@ import {
   FeedbackRef,
   IFeedback,
 } from './liveQuiz.js'
+import { PublicationStatus } from './practiceQuiz.js'
 import { LocaleType } from './user.js'
 
 export interface IActivityEvaluation {
   id: string
   name: string
-  displayName?: string | null
+  displayName: string
+  status?: DB.PublicationStatus | null
   description?: string | null
   courseId?: string | null
+  courseName?: string | null
   courseLanguage?: DB.Locale | null
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
@@ -42,9 +45,11 @@ export interface IStackEvaluation {
   stackDescription?: string | null
   stackOrder: number
   stackActive: boolean
+  instanceCount: number
   instances: IElementInstanceEvaluation[]
   status?: DB.ElementBlockStatus | null
   expiresAt?: Date | null
+  closedAt?: Date | null
   timeLimit?: number | null
 }
 
@@ -242,8 +247,13 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
-    displayName: t.exposeString('displayName', { nullable: true }),
+    status: t.expose('status', {
+      type: PublicationStatus,
+      nullable: true,
+    }),
+    displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    courseName: t.exposeString('courseName', { nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
     courseLanguage: t.expose('courseLanguage', {
       type: LocaleType,
@@ -279,11 +289,16 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
     stackActive: t.exposeBoolean('stackActive'),
+    instanceCount: t.exposeInt('instanceCount'),
     status: t.expose('status', {
       type: ElementBlockStatus,
       nullable: true,
     }),
     expiresAt: t.expose('expiresAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    closedAt: t.expose('closedAt', {
       type: 'Date',
       nullable: true,
     }),

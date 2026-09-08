@@ -2240,12 +2240,24 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
+  if (typeof hmac === 'string') {
+    const identity = await ctx.prisma.liveQuiz.findUnique({
+      where: { id, isDeleted: false, ...liveQuizCourseVisibilityFilter },
+      select: { id: true, namespace: true },
+    })
+    if (!identity) return null
+
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(identity.namespace + identity.id)
+    const quizHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
+    if (quizHmac !== hmac) return null
+  }
+
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      status: {
-        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
-      },
       isDeleted: false,
       ...liveQuizCourseVisibilityFilter,
     },
@@ -2253,7 +2265,6 @@ export async function getLiveQuizEvaluation(
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
         orderBy: { order: 'asc' },
-        where: { status: { equals: DB.ElementBlockStatus.EXECUTED } },
         include: { elements: { orderBy: { order: 'asc' } } },
       },
       feedbacks: {
@@ -2261,7 +2272,7 @@ export async function getLiveQuizEvaluation(
         orderBy: { updatedAt: 'desc' },
       },
       confusionFeedbacks: { orderBy: { createdAt: 'asc' } },
-      course: { select: { language: true } },
+      course: { select: { language: true, name: true } },
     },
   })
 
@@ -2269,14 +2280,36 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
-  if (typeof hmac === 'string') {
-    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
-    hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
-    const quizHmac = hmacEncoder.digest('hex')
+  const shouldExposeEvaluationResults =
+    liveQuiz.status === DB.PublicationStatus.PUBLISHED ||
+    liveQuiz.status === DB.PublicationStatus.ENDED
 
-    // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
-    if (quizHmac !== hmac) {
-      return null
+  const evaluationMetadata = {
+    id: liveQuiz.id,
+    status: liveQuiz.status,
+    name: liveQuiz.name,
+    displayName: liveQuiz.displayName,
+    description: liveQuiz.description,
+    courseLanguage: liveQuiz.course?.language,
+    courseName: liveQuiz.course?.name,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    pinCode: liveQuiz.pinCode,
+  }
+
+  if (typeof hmac === 'string' && !shouldExposeEvaluationResults) {
+    return {
+      id: liveQuiz.id,
+      status: liveQuiz.status,
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
+      courseLanguage: liveQuiz.course?.language,
+      courseName: liveQuiz.course?.name,
+      description: null,
+      isAssessmentEnabled: null,
+      pinCode: null,
+      results: [],
+      feedbacks: null,
+      confusionFeedbacks: null,
     }
   }
 
@@ -2289,7 +2322,11 @@ export async function getLiveQuizEvaluation(
   let activeBlockWithResults:
     | (DB.ElementBlock & { elements: DB.ElementInstance[] })
     | undefined
-  if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
+  if (
+    shouldExposeEvaluationResults &&
+    liveQuiz.activeBlockId &&
+    liveQuiz.activeBlock
+  ) {
     const cachedResults = await getCachedBlockResults({
       redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
@@ -2310,21 +2347,35 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  const preparedBlocks = liveQuiz.blocks.map((block) => {
+    if (!shouldExposeEvaluationResults) {
+      return {
+        ...block,
+        elements: [],
+        evaluationInstanceCount: block.elements.length,
+      }
+    }
+    if (
+      typeof activeBlockWithResults !== 'undefined' &&
+      block.id === liveQuiz.activeBlockId
+    ) {
+      return { ...activeBlockWithResults, active: true }
+    }
+    if (block.status !== DB.ElementBlockStatus.EXECUTED) {
+      return {
+        ...block,
+        elements: [],
+        evaluationInstanceCount: block.elements.length,
+      }
+    }
+    return block
+  })
+
   // compute evaluation
-  const blockEvaluations = computeStackEvaluation(
-    typeof activeBlockWithResults !== 'undefined'
-      ? [...liveQuiz.blocks, { ...activeBlockWithResults, active: true }]
-      : liveQuiz.blocks
-  )
+  const blockEvaluations = computeStackEvaluation(preparedBlocks)
 
   return {
-    id: liveQuiz.id,
-    name: liveQuiz.name,
-    displayName: liveQuiz.displayName,
-    description: liveQuiz.description,
-    courseLanguage: liveQuiz.course?.language,
-    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
-    pinCode: liveQuiz.pinCode,
+    ...evaluationMetadata,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
@@ -2333,7 +2384,7 @@ export async function getLiveQuizEvaluation(
     confusionFeedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
         ? liveQuiz.confusionFeedbacks
-        : null, // only shown on evaluation for completed quizzes
+        : null, // only shown on evaluation for completed quizzes,
   }
 }
 // #endregion
