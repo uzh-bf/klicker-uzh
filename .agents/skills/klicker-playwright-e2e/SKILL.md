@@ -61,9 +61,15 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
-The launcher starts the full devrouter profile, including response-api and both
+By default, the launcher starts the full devrouter profile, including response-api and both
 Hatchet workers. Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
+
+For a focused test against an existing synthetic database, the explicit local
+options `--runtime-profile chat --preserve-database` may precede Playwright
+arguments. This skips global reset/seed only; selected specs still perform
+their own fixture writes and cleanup. Inspect those fixtures before opting in.
+CI and ordinary invocations retain their existing setup behavior.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
