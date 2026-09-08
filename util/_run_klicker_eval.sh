@@ -319,6 +319,7 @@ validate_framework_args() {
             ;;
           --metrics)
             require_readable_file '--metrics' "$value"
+            EFFECTIVE_METRICS_PATH="$(resolve_input_path "$value")"
             ;;
           --safety-file)
             HAS_SAFETY_FILE_ARGUMENT=true
@@ -365,6 +366,13 @@ validate_framework_args() {
     exit 1
   fi
 }
+
+# The runner changes into its own directory; preserve repository-relative inputs.
+EFFECTIVE_METRICS_PATH="$(resolve_input_path "$EFFECTIVE_METRICS_PATH")"
+EFFECTIVE_TOOLS_PATH="$(resolve_input_path "$EFFECTIVE_TOOLS_PATH")"
+EFFECTIVE_GT_ROOT_DIR="$(resolve_input_path "$EFFECTIVE_GT_ROOT_DIR")"
+EFFECTIVE_DEFAULT_GT_DIR="$(resolve_input_path "$EFFECTIVE_DEFAULT_GT_DIR")"
+EFFECTIVE_LOCAL_GT_DIR="$(resolve_input_path "$EFFECTIVE_LOCAL_GT_DIR")"
 
 validate_framework_args
 set -- "${EVAL_ARGS[@]}"

@@ -254,10 +254,10 @@ def main() -> int:
                 "AGENT_ID": MODEL,
                 "EVAL_EVIDENCE_PROFILE": "generic",
                 "EVAL_OUTPUT_DIR": str(output_dir),
-                "EVAL_TOOLS_PATH": str(tools),
+                "EVAL_TOOLS_PATH": os.path.relpath(tools, ROOT),
                 "EVAL_METRICS_PATH": str(metrics),
-                "GT_ROOT_DIR": str(gt_dir),
-                "DEFAULT_GT_DIR": str(gt_dir),
+                "GT_ROOT_DIR": os.path.relpath(gt_dir, ROOT),
+                "DEFAULT_GT_DIR": os.path.relpath(gt_dir, ROOT),
                 "TOOL_PROFILE": "catalog_expert_v1",
             }
             completed = subprocess.run(

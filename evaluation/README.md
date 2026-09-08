@@ -23,7 +23,7 @@ uv sync --frozen --project evaluation/framework
 
 Use Python 3.12 and uv. The launcher uses the standard Infisical CLI for human
 developer runs. The host validation for the supported CLI was performed with
-Infisical 0.43.129; infisical secrets get --help confirms the explicit
+Infisical 0.43.129. The launcher accepts 0.43.x and rejects other versions before lookup. The CLI help confirms the explicit
 --domain, --projectId, --env, --path, --plain, --silent, and --expand flags
 used by the launcher. Log in once on the host with:
 
@@ -32,28 +32,12 @@ infisical login --domain "https://<approved-infisical-host>"
 ```
 
 Judge scope metadata belongs in the ignored evaluation/config.local.json.
-Start from the committed values-free evaluation/config.example.json, then fill
-the approved scope and secret names through the team's private channel:
-
-```json
-{
-  "schemaVersion": 1,
-  "infisical": {
-    "domain": "https://<approved-infisical-host>",
-    "projectId": "<project-id>",
-    "environment": "<environment>",
-    "path": "/<approved-secret-path>"
-  },
-  "judge": {
-    "baseUrlSecret": "<judge-url-secret-name>",
-    "apiKeySecret": "<judge-key-secret-name>"
-  }
-}
-```
+Start from the committed values-free [configuration example](config.example.json), then fill
+the approved scope and secret names through the team's private channel.
 
 KLICKER_EVAL_CONFIG can select another configuration file; relative paths
 resolve from the repository root. The file must contain exactly the schema
-above, use schema version 1, an HTTPS domain without embedded credentials, an
+in the example file, use schema version 1, an HTTPS domain without embedded credentials, an
 absolute secret path, and environment-variable-style secret names. Do not put
 secret values or broad Infisical exports in this file.
 
