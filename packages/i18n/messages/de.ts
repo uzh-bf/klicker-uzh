@@ -4862,6 +4862,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
+    assessmentExport: {
+      open: 'Assessment-Ergebnisse exportieren',
+      title: 'Assessment-Ergebnisse exportieren',
+      classification: 'Direkt identifizierbare Personendaten',
+      assessmentLabel: 'Assessment',
+      scopeLabel: 'Umfang',
+      courseScope: 'Gesamter Kurs',
+      liveQuizScope: 'Live Quiz',
+      lead: 'Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
+      attestationsHeading: 'Mit dem Download bestätige ich:',
+      attestations: {
+        purposeLabel: 'Zweckbindung.',
+        purposeText:
+          'Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.',
+        accessLabel: 'Beschränkter Zugriff.',
+        accessText:
+          'Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.',
+        storageLabel: 'Sichere Ablage.',
+        storageText:
+          'Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
+        retentionLabel: 'Aufbewahrung und Löschung.',
+        retentionText:
+          'Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
+      },
+      logging:
+        'Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.',
+      acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+      acknowledgementRequired:
+        'Bestätige die vier Punkte, bevor du fortfährst.',
+      requestFailed:
+        'Der Assessment-Export konnte nicht erstellt werden. Bitte versuche es erneut.',
+      cancel: 'Abbrechen',
+      submit: 'Exportieren',
+    },
     researchExport: {
       menuLabel: 'Forschungsdaten exportieren',
       title: 'Forschungsdaten exportieren',

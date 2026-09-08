@@ -10,6 +10,7 @@ import {
   normalizeFeatureFlagEnvironment,
 } from '@klicker-uzh/feature-flags'
 import {
+  downloadAssessmentExport,
   downloadResearchExport,
   enhanceContext,
   schema,
@@ -141,7 +142,7 @@ function prepareApp({
   app.use(jwtMiddleware)
 
   app.post(
-    '/api/data-exports/research',
+    ['/api/data-exports/research', '/api/data-exports/assessment'],
     express.json({ limit: '16kb' }),
     async (req: any, res) => {
       res.setHeader('Cache-Control', 'no-store')
@@ -163,7 +164,11 @@ function prepareApp({
       const cancel = () => controller.abort()
       res.once('close', cancel)
       try {
-        const artifact = await downloadResearchExport(
+        const isAssessment = req.path === '/api/data-exports/assessment'
+        const download = isAssessment
+          ? downloadAssessmentExport
+          : downloadResearchExport
+        const artifact = await download(
           req.body,
           {
             req,
@@ -181,10 +186,15 @@ function prepareApp({
           controller.signal
         )
         if (res.destroyed) return
-        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader(
+          'Content-Type',
+          isAssessment
+            ? 'text/csv; charset=utf-8'
+            : 'application/json; charset=utf-8'
+        )
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="research-${artifact.exportId}.json"`
+          `attachment; filename="${isAssessment ? 'assessment' : 'research'}-${artifact.exportId}.${isAssessment ? 'csv' : 'json'}"`
         )
         res.status(200).send(artifact.body)
       } catch (error) {
@@ -292,7 +302,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 

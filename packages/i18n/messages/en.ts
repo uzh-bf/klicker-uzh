@@ -4762,6 +4762,39 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
     },
+    assessmentExport: {
+      open: 'Export assessment results',
+      title: 'Export assessment results',
+      classification: 'Directly identifiable personal data',
+      assessmentLabel: 'Assessment',
+      scopeLabel: 'Scope',
+      courseScope: 'Entire course',
+      liveQuizScope: 'Live quiz',
+      lead: 'This file contains directly identifiable personal data and assessment results. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
+      attestationsHeading: 'By downloading, I confirm:',
+      attestations: {
+        purposeLabel: 'Purpose limitation.',
+        purposeText:
+          'I use the file only for this assessment and not for research.',
+        accessLabel: 'Restricted access.',
+        accessText:
+          'Only people who need these data to conduct, assess or carry out necessary follow-up work for the assessment receive access.',
+        storageLabel: 'Secure storage.',
+        storageText:
+          'I store and process the file only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
+        retentionLabel: 'Retention and deletion.',
+        retentionText:
+          'I keep the file only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
+      },
+      logging:
+        'Your export request and this confirmation are logged with your account, the time and the data scope.',
+      acknowledgement: 'I confirm these four points for this export.',
+      acknowledgementRequired: 'Confirm the four points before continuing.',
+      requestFailed:
+        'The assessment export could not be created. Please try again.',
+      cancel: 'Cancel',
+      submit: 'Export',
+    },
     researchExport: {
       menuLabel: 'Export research data',
       title: 'Export research data',

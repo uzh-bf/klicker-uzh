@@ -1,6 +1,7 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export { downloadAssessmentExport } from './services/assessmentExports.js'
 export { getChatModelRegistry } from './services/chatbots.js'
 export { downloadResearchExport } from './services/dataExports.js'
 export { settleKbKnowledgeGraphResult } from './services/knowledge.js'
