@@ -16,12 +16,15 @@ export function providerCommands(config) {
   const ingestionRoot = root('ingestion')
   const ingestionApi = join(ingestionRoot, 'modules/ingestion-api')
   const ingestion = join(ingestionRoot, 'modules/ingestion')
+  const docProcessing = root('docProcessing')
   const uv = (cwd, args, env = {}) => ({
     cwd,
     executable: 'uv',
     args: ['run', '--frozen', '--no-sync', ...args],
     env: { PYTHON_DOTENV_DISABLED: '1', ...env },
   })
+  const docProcessingCommand = (args) =>
+    uv(docProcessing, args, { DOC_PROCESSING_AUTO_INITIALIZE: '0' })
   return {
     // Explicit preparation is supported, but startup still requires proof
     // that its storage belongs to this stack and setup completed successfully.
@@ -30,28 +33,36 @@ export function providerCommands(config) {
         name: 'docProcessing',
         reason: 'isolated-storage-preparation-unverified',
         requires: ['isolated-prepared-storage', 'local-api-key'],
-        command: uv(
-          root('docProcessing'),
-          [
-            'uvicorn',
-            'doc_processing.main:app',
-            '--host',
-            '127.0.0.1',
-            '--port',
-            port('docProcessing'),
-            '--workers',
-            '1',
-          ],
-          { DOC_PROCESSING_AUTO_INITIALIZE: '0' }
-        ),
+        command: docProcessingCommand([
+          'uvicorn',
+          'doc_processing.main:app',
+          '--host',
+          '127.0.0.1',
+          '--port',
+          port('docProcessing'),
+          '--workers',
+          '1',
+        ]),
+      },
+      {
+        name: 'docProcessing-hatchet-worker',
+        reason: 'isolated-storage-preparation-unverified',
+        requires: ['isolated-prepared-storage', 'local-api-key'],
+        command: docProcessingCommand(['doc-processing-hatchet-worker']),
+      },
+      {
+        name: 'docProcessing-callback-worker',
+        reason: 'isolated-storage-preparation-unverified',
+        requires: ['isolated-prepared-storage', 'local-api-key'],
+        command: docProcessingCommand(['doc-processing-callback-worker']),
       },
     ],
     setup: {
-      docProcessing: uv(
-        root('docProcessing'),
-        ['python', '-m', 'doc_processing.setup'],
-        { DOC_PROCESSING_AUTO_INITIALIZE: '0' }
-      ),
+      docProcessing: docProcessingCommand([
+        'python',
+        '-m',
+        'doc_processing.setup',
+      ]),
       migrations: uv(ingestionRoot, [
         '--project',
         ingestionApi,
