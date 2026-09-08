@@ -47,6 +47,10 @@ read_judge_config() {
   if [ -n "${LITELLM_API_BASE:-}" ] && [ -n "${LITELLM_API_KEY:-}" ]; then
     return 0
   fi
+  if [ -z "${KLICKER_EVAL_CONFIG+x}" ] && [ ! -e "$REPO_ROOT/evaluation/config.local.json" ]; then
+    echo 'Error: incomplete LITELLM_* overrides. For the local Docker judge, unset LITELLM_API_BASE and LITELLM_API_KEY and run python3 util/klicker-eval-judge.py. For a remote judge, supply both settings or an explicit KLICKER_EVAL_CONFIG.' >&2
+    return 1
+  fi
   if ! command -v node >/dev/null 2>&1; then
     echo 'Error: node is required to read evaluation configuration' >&2
     return 1

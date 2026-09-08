@@ -31,6 +31,59 @@ class JudgeTests(unittest.TestCase):
         self.assertIsNone(values)
         self.assertEqual(missing, JUDGE.REQUIRED_CREDENTIALS)
 
+    def test_infisical_fills_only_missing_settings_without_extra_config(self) -> None:
+        supplied = "https://synthetic.invalid/openai/v1"
+        with (
+            patch.dict(os.environ, {"AZURE_OPENAI_BASE_URL": supplied}, clear=True),
+            patch.object(JUDGE.shutil, "which", return_value="/synthetic/infisical"),
+            patch.object(
+                JUDGE.subprocess,
+                "run",
+                return_value=subprocess.CompletedProcess([], 0, "synthetic-key\n", ""),
+            ) as run,
+        ):
+            self.assertEqual(
+                JUDGE.resolve_credentials(),
+                {
+                    "AZURE_OPENAI_BASE_URL": supplied,
+                    "AZURE_OPENAI_API_KEY": "synthetic-key",
+                },
+            )
+        self.assertEqual(run.call_count, 1)
+        args = run.call_args.args[0]
+        self.assertEqual(args[1:4], ["secrets", "get", "AZURE_OPENAI_API_KEY"])
+        self.assertEqual(args[-4:], ["--env", "dev", "--path", "/"])
+        self.assertEqual(run.call_args.kwargs["cwd"], JUDGE.REPO_ROOT)
+        self.assertNotIn(supplied, str(run.call_args))
+
+    def test_complete_environment_does_not_require_infisical(self) -> None:
+        supplied = {name: "synthetic-value" for name in JUDGE.REQUIRED_CREDENTIALS}
+        with (
+            patch.dict(os.environ, supplied, clear=True),
+            patch.object(JUDGE.subprocess, "run") as run,
+        ):
+            self.assertEqual(JUDGE.resolve_credentials(), supplied)
+            run.assert_not_called()
+
+    def test_infisical_failure_does_not_expose_cli_output(self) -> None:
+        for status, output in [(1, "synthetic-secret"), (0, ""), (0, "one\ntwo")]:
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(
+                    JUDGE.shutil, "which", return_value="/synthetic/infisical"
+                ),
+                patch.object(
+                    JUDGE.subprocess,
+                    "run",
+                    return_value=subprocess.CompletedProcess(
+                        [], status, output, "synthetic-secret"
+                    ),
+                ),
+                self.assertRaises(ValueError) as error,
+            ):
+                JUDGE.resolve_credentials()
+            self.assertNotIn("synthetic-secret", str(error.exception))
+
     def test_run_sends_credentials_only_on_bootstrap_stdin(self) -> None:
         class Sink:
             def __init__(self) -> None:
