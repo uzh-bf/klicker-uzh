@@ -1,4 +1,7 @@
-import { readFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
   type VersionedDidacticFingerprint,
@@ -6,8 +9,8 @@ import {
 import { bootstrapSeededImportExportFingerprints } from '../src/services/importExportFingerprintMaintenance.js'
 import {
   createFingerprintPrisma,
-  markFingerprintCurrent,
   type FakeFingerprintResource,
+  markFingerprintCurrent,
 } from './importExportFingerprintTestSupport.js'
 
 const mocks = vi.hoisted(() => ({
@@ -123,7 +126,7 @@ describe('post-seed import/export fingerprint bootstrap', () => {
       'pnpm --filter @klicker-uzh/prisma-data run seed:raw'
     )
     expect(prismaDataPackage.scripts['seed:test']).toBe(
-      'run-s --continue-on-error --npm-path pnpm seed:test:raw seed:fingerprints'
+      'run-s --npm-path pnpm seed:test:raw seed:fingerprints'
     )
     expect(prismaDataPackage.scripts['seed:flashcards:with-fingerprints']).toBe(
       'run-s --continue-on-error --npm-path pnpm seed:flashcards:raw seed:fingerprints'
@@ -132,7 +135,7 @@ describe('post-seed import/export fingerprint bootstrap', () => {
       '--env dev pnpm run seed:raw'
     )
     expect(prismaDataPackage.scripts['seed:raw']).toBe(
-      'ENV=development run-s --continue-on-error --npm-path pnpm seed:test:raw seed:assessment-course seed:fingerprints'
+      'ENV=development run-s --npm-path pnpm seed:test:raw seed:assessment-course seed:fingerprints'
     )
     expect(prismaDataPackage.scripts['seed:qa']).toContain(
       '--env stg pnpm run seed:test'
@@ -154,5 +157,75 @@ describe('post-seed import/export fingerprint bootstrap', () => {
     expect(seedHelpers).toMatch(
       /prismaClient\.element\.update\([\s\S]*?importFingerprint: null,[\s\S]*?importFingerprintVersion: null,/
     )
+  })
+})
+
+// Exercise the real script runner with synthetic seed commands; no database is used.
+describe('disposable seed wrapper sequencing', () => {
+  it.each([
+    'seed:raw',
+    'seed:test',
+  ])('%s stops before follow-up writes when the guarded seed fails', async (scriptName) => {
+    const { scripts } = JSON.parse(
+      await readFile(
+        new URL('../../prisma-data/package.json', import.meta.url),
+        'utf8'
+      )
+    )
+    const directory = await mkdtemp(join(tmpdir(), 'seed-wrapper-'))
+    try {
+      await writeFile(
+        join(directory, 'package.json'),
+        JSON.stringify({
+          scripts: {
+            'seed:test:raw': 'synthetic seed',
+            'seed:assessment-course': 'synthetic assessment',
+            'seed:fingerprints': 'synthetic fingerprints',
+          },
+        })
+      )
+      const runner = join(directory, 'pnpm')
+      await writeFile(
+        runner,
+        `#!/bin/sh
+printf '%s\n' "$*" >> "$SEED_CALLS"
+case "$*" in
+  *seed:test:raw*) exit "$SEED_EXIT_CODE" ;;
+  *) exit 0 ;;
+esac
+`
+      )
+      await chmod(runner, 0o755)
+      for (const seedExitCode of [1, 0]) {
+        const calls = join(directory, `calls-${seedExitCode}`)
+        const result = spawnSync('sh', ['-c', scripts[scriptName]], {
+          cwd: directory,
+          env: {
+            ...process.env,
+            PATH: `${directory}:${process.env.PATH}`,
+            SEED_CALLS: calls,
+            SEED_EXIT_CODE: String(seedExitCode),
+          },
+          encoding: 'utf8',
+          timeout: 10_000,
+        })
+        expect(result.error).toBeUndefined()
+        const invoked = await readFile(calls, 'utf8')
+        expect(invoked).toContain('seed:test:raw')
+        if (seedExitCode !== 0) {
+          expect(result.status).not.toBe(0)
+          expect(invoked).not.toContain('seed:fingerprints')
+          expect(invoked).not.toContain('seed:assessment-course')
+        } else {
+          expect(result.status, result.stderr).toBe(0)
+          expect(invoked).toContain('seed:fingerprints')
+          if (scriptName === 'seed:raw') {
+            expect(invoked).toContain('seed:assessment-course')
+          }
+        }
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 })
