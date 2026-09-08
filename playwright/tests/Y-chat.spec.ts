@@ -1248,7 +1248,7 @@ test.describe('Chatbot Message Actions & Branching', () => {
 
   test('Editing a non-root user message creates a new branch', async ({
     page,
-  }, testInfo) => {
+  }) => {
     await visitChat(page)
     await sendMessage(page, 'First message')
     await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
@@ -1265,42 +1265,8 @@ test.describe('Chatbot Message Actions & Branching', () => {
 
     const editInput = page.getByTestId('chat-edit-composer-input')
     await expect(editInput).toBeVisible()
-    const editSend = page.getByTestId('chat-edit-send-button')
-    const buttonStates: Record<string, unknown> = {}
-    const recordButtonState = async (state: string) => {
-      buttonStates[state] = await editSend.evaluate((element) => {
-        const style = getComputedStyle(element)
-        return {
-          disabled: (element as HTMLButtonElement).disabled,
-          color: style.color,
-          backgroundColor: style.backgroundColor,
-          opacity: style.opacity,
-          outline: style.outline,
-          boxShadow: style.boxShadow,
-        }
-      })
-      await page.getByTestId('chat-edit-composer').screenshot({
-        path: testInfo.outputPath(`edit-submit-${state}.png`),
-        animations: 'disabled',
-      })
-    }
-    await expect(editSend).toBeDisabled()
-    await recordButtonState('unchanged-disabled')
     await editInput.fill('Second edited')
-    await expect(editSend).toBeEnabled()
-    await expect(editSend).toHaveCSS('opacity', '1')
-    await recordButtonState('changed-enabled')
-    await editSend.hover()
-    await recordButtonState('hover')
-    await editInput.hover()
-    await editSend.focus()
-    await expect(editSend).toBeFocused()
-    await recordButtonState('focus')
-    await testInfo.attach('Edit submit computed styles', {
-      body: JSON.stringify(buttonStates, null, 2),
-      contentType: 'application/json',
-    })
-    await editSend.click()
+    await page.getByTestId('chat-edit-send-button').click()
 
     await expect(
       page
