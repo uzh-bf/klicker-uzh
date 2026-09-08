@@ -6,8 +6,6 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const fixtureUrl = 'https://growthbook.test/api/features/sdk-test'
-const learningAnalyticsControllerUrl =
-  'https://growthbook.test/__test/learning-analytics'
 // USER_ID_TEST from playwright/util/constants.ts; synthetic only.
 const enrolledLecturerId = '76047345-3801-4628-ae7b-adbebcfe8821'
 const evaluationEnvironments = ['test', 'development']
