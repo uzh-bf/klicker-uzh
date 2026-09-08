@@ -2,7 +2,433 @@
 
 ## Approval summary
 
+### Isolated local KB test stack — approved source execution extension
+
+Build a reproducible local Klicker, ingestion and retrieval stack without
+restarting retained jobs or changing the user's existing KBs. Use a separate
+runtime checkout, fresh backing stores and isolated provider processes. Do not
+reset, clone or rebind the retained environment. This replaces the proposed
+queue-emptiness preflight: incomplete Hatchet listings cannot establish that
+restarting old workers is harmless.
+
+The user approved source implementation on 2026-09-08, including offline
+checks, reviews, local commits and ordinary publication to the existing
+draft PR. That stage ends at source-ready, not a
+working-AI claim. It does not create, seed, start or stop a runtime. Runtime
+qualification follows a separate exact-target and capacity proposal. A real
+ingestion and Chat proof additionally needs an explicit request and cost cap.
+
+Preserve all retained data, current source edits, provider contracts and product
+behavior. Do not add provider dependencies, schema changes, production actions,
+graph generation, automatic retries or deletion. The trade-off is extra local
+RAM and disk; available concurrent capacity is not yet established. Docker
+reports about 34 GiB total memory, which is not evidence of free capacity.
+
+Success at the source stage means the launcher can describe the complete
+dependency graph, reject shared mutable state and ambiguous ownership, and pass
+focused offline checks and independent reviews. Documentation must distinguish
+infrastructure health, provider process readiness and external AI capability.
+
+#### Execution details: isolation contract
+
+Continue implementation in `trees/rs/generation-lifecycle-contracts`, branch
+`rs/generation-lifecycle-contracts`, targeting the existing draft PR's `v3-ai`
+base. The refreshed branch is five commits ahead of its tracking branch and
+178 ahead/five behind default `origin/v3`; no integration is required for this
+plan update. Preserve the recovery stash and all existing uncommitted work.
+
+The proposed runtime-only checkout is `trees/rs/local-kb-isolated-e2e` under
+this repository; it does not exist at planning time. Create it only in the
+separately approved runtime stage, detached at the exact committed candidate.
+Use canonical devrouter lifecycle and resolve its generated identity from its
+source path. Do not guess a workspace token or use the primary checkout.
+
+Use a separate Compose project with fresh Postgres databases for Klicker,
+Hatchet and ingestion state; separate Hatchet engine/configuration; Redis;
+Blob storage; Milvus and its object backing; scraper cache; producer registry;
+signing material; and provider process groups. Include ingestion API, workers,
+callback delivery, scraping/Crawl4AI and Doc Query in the declared topology.
+Do not substitute the deterministic MCP fixture for real retrieval.
+
+Validate rendered destinations before any runtime mutation. Reject retained
+or externally shared mutable volumes, generic cross-workspace aliases, remote
+endpoint fallbacks, old KB bindings and inherited signing keys/tokens. Shared
+devrouter routing infrastructure and proven immutable toolchain inputs are
+allowed; shared application state is not. Route attachment does not itself
+establish network isolation.
+
+Provider source roots remain explicit and revision-verified. Reuse the known
+repositories without updating them, and require clean sources mounted read-only.
+Put every generated file, cache, temporary file and state directory in the new
+runtime's owned storage. Stop if a supported entrypoint requires modifying a
+reused provider tree. Never copy ignored files or secret configuration into a
+runtime checkout. Provider edits and a provider MR are not part of this design.
+
+Extend `util/local-kb-stack.mjs`, `util/local-kb/` and a minimal devcontainer
+overlay rather than building a competing harness. Disable dotenv inheritance
+and allowlist the environment. Local generated signing material belongs in
+ignored owner-only files. Real upstream keys remain process-only through the
+restricted operator and are excluded from this first execution stage.
+
+#### Execution details: lifecycle and readiness
+
+Keep plan/status read-only. Setup, start and stop remain explicit operations.
+Before initialization, exclusively create minimal durable ownership evidence
+bound to canonical source path, project/volume identities and candidate/provider
+revisions. Setup refuses existing or ambiguous initialization evidence. A
+partial startup is incomplete, not a fresh stack that may be silently retried.
+
+Setup alone may migrate and seed newly proven isolated databases when runtime
+authority is granted. Start never migrates or resets. Restarting initialized
+workers can resume their own jobs, so it requires explicit resume authority;
+a future bounded cold-start/stop/restart approval may cover that sequence if
+no work has been submitted. Stop only exact owned groups and the exact managed
+checkout. Preserve volumes and data by default, including after failure.
+
+Expose infrastructure health, provider process readiness and external-provider
+capability separately. Missing upstream credentials leave that capability
+unqualified. Start a provider without keys only when its supported mode permits
+it; otherwise leave it stopped. Never invent disabled modes or inject dummy
+credentials to obtain a green result. No producer submission or worker/scheduler
+activation occurs in the source stage.
+
+The future credential-free runtime check must block public application egress
+while allowing declared local dependencies. Verify effective network wiring
+before requests; intercepted browser requests alone do not prove this. Any
+image/dependency provisioning happens before acceptance under the later runtime
+approval. Do not describe credential-free startup as full pipeline readiness.
+
+#### Ownership, sequence and acceptance
+
+| Slice and outcome | Owner | Acceptance and dependency |
+| --- | --- | --- |
+| Isolated configuration | Native executor | Extend launcher configuration/command tests and rendered topology checks; reject shared mutable destinations and dirty provider inputs. Main accepts the result. |
+| Explicit lifecycle | Main | Depends on configuration. Integrate setup/start/status/stop with ownership fences; test mismatch and partial-start paths produce no unapproved mutations. Retained by main because the cross-system lifecycle is coupled. |
+| Source qualification and delivery | Main | Depends on lifecycle. Run affected native checks and committed slice/final reviews; update the existing draft with accurate source-only evidence. |
+
+Use one substantive commit boundary per implementation slice. Apply the existing
+simplifier and risk-review gates, followed by integrated Sol final review. Do
+not restart unrelated passing checks. Document the supported sequence in
+`.devcontainer/README.md` and `docs/solutions/integration/local-kb-stack.md`.
+This is reversible opt-in tooling, so a solution document is sufficient; a new
+product identity or trust contract would reopen the ADR/design decision.
+
+| Test obligation | Existing protection and required extension |
+| --- | --- |
+| Extend launcher/identity/command tests | Two stack configurations cannot share mutable destinations; wrong source/PID/port ownership produces no mutation. |
+| Add rendered configuration contract | The complete dependency graph is represented, sources are read-only and no retained/remote destinations or ambient credentials leak into the new stack. |
+| Extend lifecycle failure tests | Initialization is exclusive, partial state cannot auto-retry, start never migrates and repeated setup refuses existing state. |
+| Reuse citation regression tests | Existing saved-fixture parsing/rendering/reload evidence remains scoped to those contracts; no duplicate tests or new provider calls. |
+
+#### Separately gated runtime and live proof
+
+After source completion, propose the exact candidate and provider revisions,
+new runtime path/identity, rendered limits, image/disk needs and expected memory
+use. Use values-free Docker capacity/current usage and disk readback without
+starting services. Pause if concurrent capacity is insufficient; never stop
+the retained stack to make room without the user's separate instruction.
+
+Before/after runtime qualification, compare source-resolved identities and
+status of the retained runtime, its volumes and already-known KB resource/version
+counts, without content or retained writes. Also prove the launcher never targets
+retained resources; natural retained-stack activity is not attributed to the new
+test. The user's retained manual-verification lease stays unchanged.
+
+Request one bounded fresh setup/start/stop/restart test, synthetic local seeding
+and browser verification only after these prerequisites are available. Stop
+the new runtime after verification unless the user explicitly keeps it running.
+No cleanup or deletion is implied. Later, separately approve one synthetic or
+public fixture and a request/financial cap for real ingestion, callback, READY,
+retrieval, Chat answer and citation/reload evidence. Keep graphs and question
+generation out of that first live proof.
+
+Authority now: approved source execution for this new extension. Terminal:
+reviewed source-ready draft publication. Boundary owner: main. Pause on an
+unsupported isolation seam, unexpected ownership, unavailable required review,
+or a new data/cost boundary. Runtime creation, live secrets, paid calls, merges,
+deployment and deletion remain withheld.
+
+Planning review: native planner approved revision B after one correction round.
+Accepted findings cover source immutability, exclusive initialization, precise
+readiness levels, single-owner slices and separate runtime capacity approval.
+Report: `project/_local/reviews/2026-09-08-isolated-local-kb-plan-hardening.md`.
+External consultation was not used: the complete unpublished cross-repository
+scope is not established as eligible for that destination. No external review
+or runtime acceptance is claimed. Progress: plan approved; isolated configuration
+is the active slice. This extension supersedes the queue-preflight approach below,
+which remains as historical evidence.
+
+Execution finding, 2026-09-08: the plan's service inventory omitted Doc Processing.
+The current ingestion parser routes document inputs to that separate service;
+`steps/parsing/doc_processing.py` requires both `DOC_PROCESSING_BASE_URL` and
+`DOC_PROCESSING_API_KEY`. A cold PDF cannot rely on the retained parsed cache.
+Do not label the planned graph complete for PDFs or inherit a remote endpoint.
+Main has requested a ruling to include local Doc Processing in the source-only
+scope, or explicitly limit initial support to HTML/text. The independent
+configuration slice continues, with document processing marked unqualified.
+No provider file, runtime, queue or database was changed. The existing three
+launcher/helper suites pass 14 tests using the retained container's Node 24;
+this is an offline baseline, not isolated-runtime proof. The exact container
+source mount matches this task worktree and its keep-running lease is preserved.
+
+### Local reconciliation checkpoint — 2026-09-08
+
+The user subsequently approved the bounded data-ingestion source extension:
+add a read-only local queue/retry preflight and consume it from the portable
+launcher. Reuse `data-ingestion/trees/rs/local-kb-e2e`, verified clean at
+`d46282848100beec5a1f571e0cc9b091dcdd4179`, equal to `origin/main`.
+This supersedes the earlier exclusion of provider edits only for this preflight.
+No worker/job execution, deployment, deletion or paid operation is included.
+Main owns the cross-system contract; the existing read-only investigator maps
+Hatchet state coverage. The preflight must include resource operations and
+outbox retries as well as all nonterminal Hatchet work and future triggers,
+and fail closed on missing, partial or unknown evidence. It reports sanitized
+counts/reasons only. A zero snapshot is not a concurrency lock or permission
+to run jobs; startup still requires controlled producers and exact ownership.
+Use focused synthetic adapter/contract tests before any separately gated live
+readback. Preserve the existing review and draft-delivery gates.
+
+Preflight investigation completed on 2026-09-08 against unchanged provider
+`d46282848100beec5a1f571e0cc9b091dcdd4179` and installed Hatchet SDK 1.33.6.
+The SDK exposes paginated task, scheduled-workflow and cron listings. Task
+listing accepts `include_payloads=False`, but has a mandatory time window
+and only QUEUED/RUNNING nonterminal states. No separate delayed-retry feed or
+server guarantee of retry coverage was established. Resource-operation counts
+alone therefore cannot qualify worker startup. Pending/delivering outbox rows
+must also include future attempts and callback events, not only due dispatches.
+Missing pagination or incomplete retry coverage must remain unknown, never idle.
+
+This is source-contract evidence, not live queue evidence. The investigator
+completed without edits or live calls; main checked the SDK signatures and
+pagination models. No provider source was changed and no worker was started.
+The remaining design boundary is how to establish an authoritative empty
+execution scope without consuming retained work. Do not add a nominally green
+preflight based on these incomplete feeds. An isolated fresh local execution
+scope is a possible alternative, but creating/rebinding it needs a concrete
+scope decision before implementation. The retained-data launcher remains
+non-executable until that boundary is resolved.
+
+Local merge `eccc1f5bf0` incorporates published task head `1c8ff98696`.
+All equivalent hook checks passed, split between the container toolchain and
+host-only Playwright contract tests. Initial cached/parallel checks failed on
+generated Prisma types; fresh dependency builds and direct sequential package
+checks passed without changing application code. No database operation ran.
+The saved citation and launcher edits are restored from recovery snapshot
+`e0719fd719a1d757d0e4ddb64bdd7fea522cb21b`, which remains retained.
+Their verification and reviews remain separate from the merge checks.
+
+The runtime-stop receipt below belongs to the earlier published qualification
+on Compose `default-rs-cea28`. It does not describe this device's retained
+`default-rs-6d40c` runtime. This device retains its runtime under the user's
+manual-verification lease. No restart, provider call, cleanup or push occurred
+during this reconciliation. Earlier receipts below remain historical evidence.
+
+### Published qualification history
+
+Post-restoration verification, 2026-09-08: all four focused Chat suites pass
+(101 tests), the launcher/identity/command suites pass (27 tests), and Chat
+typecheck passes. The retained synthetic browser test passes in 6.3 seconds
+including reload and zero local write requests; external requests are blocked.
+This is saved-fixture rendering evidence, not a new provider or ingestion run.
+No publication or new paid operation occurred.
+
+Portable startup remains blocked at the approved provider-preparation boundary.
+The existing read-only provider investigation confirms that API operation counts
+do not cover Hatchet queues. Worker startup can consume retained tasks; the
+resource dispatcher can dispatch due outbox rows. The available idle precheck
+covers only queued/running LLM, embedding and resource-fetch work, not every
+worker or scheduled/retry state. A complete supported no-work preflight was
+not found. Provider source changes are excluded by current approval, and no
+credentialed fleet startup is authorized on incomplete evidence. Request a
+bounded provider-side preflight extension before claiming portable startup.
+
 Current qualification, 2026-09-08: the inherited UI acceptance and guarded retained-runtime recovery pass. The integrated final review passes on e9641fbc900cbfdd76b051ba6df0c7245c760f96 with no findings. The exact task runtime is stopped with zero routes. Approved delivery is an ordinary push to the existing draft; current-head hosted CI, hosted review and explicit merge authority remain separate gates. The earlier device-transfer checkpoint is retained below as history.
+
+### Current KB ingestion and retrieval checkpoint — 2026-09-07
+
+This checkpoint supersedes older runtime and local-delivery claims below.
+The existing PR remains open against `v3-ai`. The local branch is at
+`b0fb93c98a`, with 36 commits not yet published to its tracking branch.
+The Devrouter version pin, selective Turbo concurrency correction, Manage
+Blob route, and task-local signer hook remain uncommitted. Preserve them;
+the signer hook and ignored prototype are not yet portable release artifacts.
+
+The approved public-PDF test proved browser upload, one external ingestion
+operation, callback settlement to the current AI-serving version, and real
+Doc Query retrieval in Chat. The returned tool result contains one PDF source,
+five chunks, and page metadata. It does not prove correct citation display:
+the result badge incorrectly says no results and the answer exposes an internal
+ingestion URL. Exact local evidence is in
+`project/_local/local-kb-e2e/README.md`; do not publish its fixture inventory or
+secret-bearing generated configuration.
+
+The user approved continuing the existing package to correct those acceptance
+failures and make local ingestion/retrieval startup reproducible. The main
+session owns cross-system contracts, runtime effects, and final proof. A bounded
+read-only child maps the existing Chat parser and source-normalization seams.
+Preserve original source identity, signed scope, existing provider contracts,
+and process-only upstream credentials. No new schema, dependency, production
+action, graph build, deletion, merge, or deployment is authorized by this
+continuation. Further product or trust-boundary changes require a fresh ruling.
+
+The runtime is retained for the user's manual verification at the exact task
+checkout, workspace `rs-generation-lifecycle-contract`, Compose project
+`default-rs-6d40c`. Latest canonical ensure reported ready, eight routes,
+no drift, no recreation, and mock MCP stopped. This replaces the older
+`default-rs-f189c` and stopped-runtime receipts; do not act on those old IDs.
+
+### Approved local ingestion and citation execution contract
+
+Authority: the existing approval covers source corrections, focused checks,
+native reviews, ordinary task-branch publication and updating this draft PR.
+No merge, deployment, deletion, provider-repository edits, new schema or access
+endpoint is included. KG and question generation are not part of this proof.
+The remaining paid budget cannot be verified. Do not submit another paid query
+or ingestion until the user approves a fresh cap. Offline and deterministic
+browser checks continue without that gate.
+
+Terminal: reviewed source publication with accurate acceptance limits. Claim
+reproducible startup only after an owned restart and retained-data proof.
+Boundary owner: self. Pause on ownership ambiguity, unsupported provider
+preparation, a new data boundary, or the separately gated paid proof.
+
+#### Delegation map
+
+| Slice | Execution owner | Acceptance |
+| --- | --- | --- |
+| Truthful retrieval and citations | Native executor after main freezes the response boundary; existing explore child maps seams | Focused parser, MCP and activity-chip checks; deterministic browser and reload evidence |
+| Portable local composition | Main; cross-system coupling and secret-handling boundary | Ownership and preflight tests, actual profile planning, bounded startup proof |
+| Integrated qualification and delivery | Main; integration and final proof | Applicable native reviews, focused verification and accurate whole-branch draft publication |
+
+#### Truthful retrieval and citations
+
+Extend the existing normalizer, tool fallback and MCP response boundary rather
+than replacing the merged wrapper support. Reproduce the real documents
+envelope with a gateway reference, missing display metadata and nonempty chunks.
+Count retrieved documents from valid source entries with chunks, not rendered
+cards or chunk count. Distinguish malformed results from a genuinely empty
+result. Preserve one source per document, first-chunk page metadata and current
+citation numbering.
+
+Main owns the model-facing correction at the existing MCP result boundary.
+Remove ingestion gateway destinations from both structured and text payloads,
+retaining opaque identity and non-link title/page metadata. Use established
+metadata, or an honest generic document label when unavailable. Never derive
+an original public URL from an uploaded filename. Verify nested wrappers,
+non-clickable source presentation, result-count distinctions and reload with
+deterministic fixtures.
+
+Owned areas are the existing Chat source normalizer, tool fallback, MCP service
+result mapping and their focused tests. Resolve exact service and browser-test
+paths from the prerequisite mapping before editing.
+
+#### Portable local composition
+
+Implement opt-in setup, start, status, connect and stop under
+`util/local-kb-stack.mjs`, focused tests, and `util/local-kb/` support files.
+Document the supported sequence in the existing devcontainer README and
+`docs/solutions/integration/local-kb-stack.md`. This is not the legacy API-only
+ingestion launcher and must not start a competing fleet.
+
+Require explicit `DATA_INGESTION_REPO`, `WEB_SCRAPING_REPO`, `DOC_QUERY_REPO`,
+local paths and selectable ports. Do not clone or update providers. Record the
+actual immutable provider baselines before implementation. Verify compatible entrypoints,
+scope-header support and prepared state; revision equality alone is not enough.
+
+Setup explicitly owns local configuration, owner-only signing material and
+provider schema preparation. Start accepts only prepared providers and verifies
+exact source/process identity and authoritative absence of queued or retry
+work before credentialed workers run. Missing evidence blocks that provider.
+Start never creates fixtures, migrates implicitly, rebinds a KB, or makes a
+proof submission. Status is read-only and values-free.
+
+Connect is explicit and transactional: validate the expected server, exactly
+the two seeded Benibot Tutor/Explainer consumers, expected old KB and requested
+new KB before changing anything. Mismatch produces zero writes. Stop validates
+source path, PID start identity and port ownership, stops only owned groups and
+preserves data. Upstream credentials remain process-only through the restricted
+operator. The signer file must be an explicit opt-in regular owner-only input.
+
+Use `ai,chat,email,live-quiz,manage`, excluding mock `mcp` and `full`. Reconcile
+the Blob route with `playwright/runtime-contract.yml` and its consumer semantics
+without inventing a Node build target or readiness endpoint. Acceptance includes
+`devrouter profile plan --repo . --profile manage --contract playwright/runtime-contract.yml`
+and affected host profile tests. Cover stale/reused PID, occupied port, partial
+and repeated startup, identity mismatch and no-write preflight/status.
+
+#### Qualification and evidence
+
+Run focused Node 24 checks in the exact container, host profile checks and
+deterministic browser verification. Review committed substantive slices with
+the configured simplifier and risk reviewer, then obtain the integrated Sol
+review. Earlier lifecycle-only reviews do not qualify this extension. New live
+acceptance may remain explicitly pending at source publication; no additional
+paid calls are included. Retain the runtime for the user's manual verification.
+
+Native planner Carson approved the revised draft in round two. The report is
+`project/_local/reviews/2026-09-07-local-kb-acceptance-plan-hardening.md`.
+
+### Current integration and runtime checkpoint — 2026-09-06
+
+The user explicitly approved integrating current v3 and recovering this exact
+workspace with the latest devrouter. Source/runtime custody was released by
+the coordinating task before work. Local merge 479a1045be incorporates
+v3 at 27f2474547df045cc11302c7d9e195798ec66870 into the existing branch;
+no protected branch was changed. Twelve conflicts were reconciled, preserving
+the branch's participant authentication and MCP client cleanup alongside v3's
+multi-KB and standard-mode contracts. The two remaining Next peer ranges were
+aligned to 16.2.11 and the lockfile regenerated inside the container.
+
+Container verification passed: 81 focused Chat tests, Chat/GraphQL/Manage
+typechecks, and literal root check:all with 40 successful tasks. Staged
+redacted gitleaks passed. The host merge hook was split after these container
+checks. The integrated Sol review found one owner-preview scope mismatch:
+KB relations are not the authority for multi-KB MCP scope. The correction
+uses resolveMcpScope and has a passing eight-test route suite, including the
+new configuration-versus-relation regression, and a passing Chat typecheck.
+Sol's correction review passed on 4cb54e47d1 with no actionable findings.
+
+Installed CLI and repository pin both equal the latest official devrouter
+release, 0.0.55. Exact runtime identity remains workspace
+rs-generation-lifecycle-contract, Compose default-rs-f189c, source
+trees/rs/generation-lifecycle-contracts. Port override 10043 and the retained
+Next cache marker were preserved. An initial ensure --repair passed all
+readiness contracts without recreation, and delegated local login worked.
+After dependency relinking during checks, Chat's live Turbopack process failed
+with Next.js package not found and the app group exited. This is not a passing
+final runtime result.
+
+Normal reconciliation then recorded degraded state; two supported repairs
+failed with Preparation for 'klicker-dev' left running children. A bounded
+foreground build diagnostic passed 10/10 tasks but proved its surviving child
+was /usr/bin/git diff HEAD --no-ext-diff --no-color. Disabling the optional
+Turbo daemon did not resolve it. No helper or lock was bypassed. Other owners'
+provider locks were left untouched. The remaining runtime recovery therefore
+requires correcting or accommodating that foreground-process completion seam,
+not another CLI version bump or database reset. A subsequent isolated comparison
+found that invoking the installed Turbo binary directly, without pnpm exec,
+completed with no surviving process in its group. The bounded candidate changes
+only preparation to use that binary; the focused shell runtime suite passes,
+including direct-execution and failure-propagation checks. Canonical repair is
+completed after another workspace released the provider lock. The exact repair
+run passed all six app contracts and both worker checks, reporting ready with
+empty drift, eleven scoped routes, and no recreation or TLS refresh. Normal
+delegated login and settings rendering passed after removing the browser mock.
+The focused shell runtime suite passes; the separate unchanged hanging-response
+test cannot run alongside live Auth because both bind port 3010 (EADDRINUSE).
+That collision is not claimed as passing test evidence. No live service was
+stopped to accommodate that test.
+
+AI navigation has an independent local SDK fixture limitation: the configured
+GrowthBook test endpoint is unavailable. A browser-only interception was used
+for diagnosis and is not normal-browser feature availability or server
+authorization evidence. No ingestion, graph, generation, provider request,
+secret injection, database reset, deployment or cleanup was performed. The
+user's keep-running request retains the exact runtime resources for the next
+recovery checkpoint; the application is now running, but normal-browser AI
+availability remains unverified pending resolution of the local SDK fixture.
+
+Device-transfer checkpoint, 2026-09-06: the user explicitly requests publishing the current work as pushed draft PRs so another device can continue. This permits a work-in-progress source checkpoint before the previously required publication verification completes; it does not waive any verification or review gate before merge. Preserve pending browser, static assertion, runtime and implementation-review obligations. The adopted runtime source remains attributed to PR #5790, now merged; this checkpoint preserves the exact local candidate rather than integrating any upstream branch. Host identity, shell syntax, diff and redacted secret checks run for this checkpoint. Container-only hooks/builds remain unrun because the task runtime is stopped and startup qualification is blocked; do not report the checkpoint as tested or source-reviewed.
 
 This package consolidates generation around the existing Element model and protects existing business behavior before v3-ai can qualify for stable v3. The backend consolidation is published on this draft PR. The approved remaining correction repairs two browser-test fixtures, the header overflow at smaller desktop widths, and the analytics loading-state redirect on profile failure; it does not change eligibility, permissions, account usage, or Element behavior.
 
@@ -281,6 +707,245 @@ The user explicitly requested integrating the latest v3 to consume its host-tool
 Resolve both branches' intents: explicit host Devrouter selection, Turbo CI dependency builds, standard chatbot mode settings, multi-KB scope validation, and request-scoped MCP client cleanup. Preserve the existing Student Practice client export and adapt the owner-preview single-KB request to the array contract without broadening its scope. Main owns the authentication and lifecycle seams; the native executor was closed after continued discovery beyond one narrowing checkpoint. Main resolved the six CI/tooling/lockfile files without a replacement worker. All ten main-owned conflict-related TypeScript files passed syntax parsing; this is not a typecheck or runtime test.
 
 Destination verification: host Devrouter 0.0.55 became available without installation by this task. Canonical Manage startup succeeds with zero drift in destination Compose project default-rs-62e53. This is the newly created task-only synthetic database; source-device volume and port overrides do not apply. All 65 focused MCP tests, 40 package typechecks, 26 production build tasks, staged formatting, 68 host CI-policy tests and 13 host-launcher tests pass. The aggregate container check exits one because its installed-Devrouter test belongs on the host; its equivalent host suite passes. Package-manager regeneration repairs two stale Next.js lockfile references and removes an unused snapshot without changing dependency declarations. Browser regressions and required reviews remain pending. The host launcher proves the full profile ready, then browser startup fails before tests with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY: host pnpm tries to replace container-prepared dependencies. Do not force that replacement or bypass the canonical launcher. Browser qualification and publication remain blocked; preserve the unauthenticated analytics regression unchanged. Complete the independently verified local merge commit and required source review while retaining this runtime-tooling boundary.
+
+### Active local KB acceptance correction — 2026-09-07
+
+2026-09-08 retained-data browser qualification: the executor delivered a
+dedicated config, spec and host-launcher mode. Main moved the spec outside
+the default tests directory to prevent ordinary CI discovery and included it
+explicitly in TypeScript checking. The launcher skips lifecycle, install,
+build and database setup. Main's ignored fixture script passed dry-run and
+created only one synthetic thread with two messages in a transaction; existing
+records and disclaimer acceptance remain unchanged. The fixture is retained.
+
+The host Chromium run passes in 4.4 seconds after external disclaimer-media
+requests were blocked separately from local writes. Source-card, page metadata,
+non-link identity, nonempty retrieval and reload assertions pass. No local
+write request occurred; no provider query or ingestion was submitted. The
+captured source screenshot is obscured by the disclaimer overlay, so visual
+acceptance remains unproven. This proves saved-fixture rendering, not the
+live provider-to-persistence path. Playwright TypeScript, 13 host launcher
+tests and diff checks pass. Required implementation reviews and publication
+remain pending; portable composition still lacks the approved lifecycle.
+The exact generation-lifecycle-contracts workspace remains running under the
+user's manual-verification lease; no data or runtime cleanup occurred.
+
+2026-09-08 implementation continuation: existing citation Playwright setup is
+unsafe for this retained database: global setup resets/reseeds it, and citation
+beforeEach deletes participant chat state. A bounded executor
+01a07fad-9a4a-74b3-a62d-e86a90f57389 owns a separate deterministic browser seam
+with no database setup, writes, provider calls or runtime mutation. Mocked
+history reload will establish rendering only, not database persistence.
+Main replaced the hardcoded signer lookup with explicit LOCAL_KB_SIGNER_ENV_FILE
+selection and regular-file/ownership/mode-600 checks. Temporary fixture tests
+reject symlinks and broad permissions and accept the protected input; runtime
+tests pass in the container and on the host. No live restart applied this edit.
+Provider demand reports queued/running states only; delayed retry absence is
+not established, so credentialed provider startup remains blocked.
+The isolated browser executor did not deliver a test after the narrowing
+checkpoint: normal Chat rendering requires authenticated server-side fixture
+reads, outside its no-DB-read contract. Main requested termination with the
+precise dependency rather than introducing an authentication bypass. No test
+files or launcher mode were delivered. Resume with main-owned, scoped synthetic
+identity readback; do not rerun the destructive standard citation suite.
+
+2026-09-08 continuation: Chat owner preview reloads successfully but contains
+no transcript; its explicit unsaved-conversation contract makes it unsuitable
+for persistence acceptance. No new message was submitted. Focused citation
+verification passes 101 tests across four files, Chat typecheck passes, and
+the local launcher helpers pass 14 tests in the managed container. The host
+profile suite passes 16 tests; running that suite inside the container failed
+because its host Devrouter dependency is deliberately absent. Actual Manage
+profile planning now includes Blob/Azurite without a fabricated build target.
+Read-only provider status reports ingestion, dispatcher, callback, scraping,
+and retrieval unreachable; Crawl4AI and Milvus respond. No provider was
+restarted. The launcher still implements status/plan only, not the approved
+setup/start/connect/stop lifecycle. The browser-test owner is identifying a
+no-reset saved-conversation fixture before any test mutates retained state.
+
+2026-09-08: the user approved continuation of the Manage-only cache repair.
+The exact task runtime was healthy, with no pending cache repairs. The existing
+guard was temporarily moved, the native frontend-manage repair was requested,
+and canonical ensure completed with recreated=false and no drift. The repair
+request was consumed and the original guard restored. The retained NASA KB
+detail route now returns HTTP 200 instead of 404. No database reset, new
+ingestion, model request, or graph build occurred. The runtime remains running
+for the user's manual verification. The authenticated in-app browser confirms
+the retained NASA PDF is Succeeded Version 1 and Available to AI: Current
+version 1, with one connected chatbot and no graph build. This verifies page
+recovery and retained state, not a new retrieval or citation result. The isolated
+agent-browser command stalled and was interrupted; the existing in-app browser
+provided the visual check. Current source is an unfinished candidate, not a published or reviewed
+complete launcher; helper tests alone do not establish end-to-end acceptance.
+
+Process identity helper is implemented and independently verified: 14 combined
+launcher tests pass in the managed container. It refuses reused PID/start
+identity, source/group mismatch, foreign port owners, incomplete observations
+and invalid TCP ports; explicit absent-process evidence is distinct from an
+unknown observation. Main requested and verified the single port-range
+correction. The executor is completed and closed. This is pure classification,
+not yet an operating supervisor or evidence about the live fleet.
+
+Citation correction now also distinguishes retrieved documents from visible
+source cards in the disclosure hint. Malformed objects retain the raw panel,
+and chunks without renderable metadata do not promise nonexistent cards.
+The four focused suites pass 101 tests and Chat typecheck passes. Source checks
+report only the three pre-existing MCP any warnings. The cache guard remains
+unchanged; browser acceptance, full launcher integration and source publication
+are not complete.
+
+Provider command construction now separates the explicit ingestion migration
+entrypoint from individual serving/worker entrypoints. The non-executing plan
+command emits argument arrays with frozen/no-sync dependency behavior and no
+dotenv auto-loading. Scraping uses its verified UVICORN_HOST/UVICORN_PORT
+contract, inline execution and no cache sweep. Retrieval uses its native
+factory without the prototype's binding mutation. The status command now
+includes retrieval's side-effect-free health endpoint. Five isolated tests
+pass in the container. These command definitions have not been executed;
+prepared-state/queue checks and lifecycle integration are still required.
+Native executor McClintock owns only the pure process-identity helper and its
+synthetic tests; no provider, runtime or secret access is delegated.
+
+Portable composition first increment, 2026-09-08: added the configured-path,
+read-only status command at util/local-kb-stack.mjs and four isolated tests.
+It accepts explicit provider roots and loopback health ports, reports source
+heads and HTTP status without response bodies or environment values, and never
+equates reachability with readiness. Container Node tests pass 4/4. Actual host
+readback finds all three recorded provider heads and six HTTP 200 endpoints;
+exit 2 and ready=false correctly retain the unqualified ownership, queue and
+retrieval boundary. No startup, migration, binding update, or job ran.
+
+Provider contract inspection establishes two remaining implementation seams:
+the ingestion worker launcher performs migrations on start, and the ignored
+retrieval prototype couples startup to a chatbot binding transaction. Neither
+may be wrapped unchanged under this plan. Separate explicit setup/connect
+from start before claiming portable orchestration. Status is only the first
+increment, not delivery of the complete launcher.
+
+2026-09-08 independent continuation: the cache-preservation approval remains
+pending; no marker or cache was changed. Four deterministic citation/MCP suites
+passed 95 tests after recovery. Contract inspection then found that document
+counting still depended on card normalization, and parsed objects without a
+sources array could claim an empty retrieval. The bounded correction removes
+that rendering dependency and leaves malformed objects neutral. Four focused
+regressions were added; the combined suites now pass 99 tests, and Chat
+typecheck passes. No external application-provider request occurred.
+
+Provider source refs were refreshed without integration or checkout changes.
+Current inspected baselines are data-ingestion
+d46282848100beec5a1f571e0cc9b091dcdd4179, web-scraping
+b6881533a97fbaa24e09f6fb05d0d99005231f2b, and mcp-doc-query
+80313c4fb842bf7c9a82e0b444d207db5fcf900d. These are source identities, not
+qualification of the planned portable launcher. That implementation and its
+ownership/queue tests remain incomplete. Consumer remains 36 local commits
+ahead of its tracked task branch and 163 ahead/10 behind origin/v3; PR target
+remains v3-ai. No source publication or merge occurred.
+
+Authenticated browser restart proof: the KB list shows NASA PDF local
+verification with one resource and one connected chatbot. Its existing detail
+URL still returns 404 through direct and client-side navigation. The server
+reports PageNotFoundError/ENOENT for the detail URL, while the source dynamic
+page exists. This is not evidence of missing KB data. A repository-supported
+Manage route-cache repair request was refused because the existing coordinated
+preserve-next-cache marker is present; no cache was removed and the marker was
+not changed. A subsequent canonical ensure kept the matching process running.
+The next runtime decision is whether the cache owner permits one exact Manage
+generated-cache repair. Citation/browser acceptance remains blocked, not passed.
+
+Runtime recovery now passes: canonical repair with the retained Blob port and
+restricted runtime-only key injection completed with managedRuntime.status=ready,
+recreated=false, zero drift, all selected services healthy, and both workers
+live. The preparation wrapper waits up to ten seconds for non-zombie Git
+processes in its own process group, without killing them or bypassing the
+lifecycle guard. Isolated shell tests pass on the host and in the managed
+container, including delayed same-group Git and unrelated-group behavior.
+The retained Manage KB URL now reaches delegated authentication instead of
+Bad Gateway. Browser acceptance and source reviews remain incomplete. Keep
+this exact runtime running for the user's requested manual verification;
+revisit that lease at the next verification checkpoint. No data was reset,
+container recreated, ingestion submitted, or paid query performed.
+
+Recovery diagnosis: retained container configuration confirms
+KB_GRAPH_BLOB_HOST_PORT=10043. Restoring that exact non-secret override removes
+the Compose mismatch; earlier commands omitted it. Canonical repair now reaches
+preparation and repeats the foreground-child failure. One temporary values-free
+process snapshot at preparation exit identified PID 13918, PPID 1, PGID 13788,
+state R, command git. The preparation shell is PID/PGID 13788. Thus a Git
+subprocess survives the completed Turbo invocation in its owned process group.
+The temporary snapshot was removed immediately after capture. Do not bypass
+Devrouter's guard or kill unrelated processes. Installed Devrouter is now
+0.0.58; this worktree's local pin remains 0.0.57. Further startup correction must
+address completion of that Git child and review any required version adaptation.
+
+Approved goal restart: restricted Infisical profile authentication and existing
+OpenRouter mapping passed. Canonical ensure for ai,chat,email,live-quiz,manage
+waited in the provider queue, then returned container
+e47aa8e9d4588fe8732c08c8be127684041a2ecab8477fed7a7c251ea992df13.
+Dependency preparation reported ten successful cached builds but failed the
+foreground-process guard: preparation left running children. Managed rollback
+left degraded process state. Exact-container read-only Docker process metadata
+subsequently showed only init and sleep; no surviving preparation child was
+identified. Managed exec now rejects the lifecycle transition.
+
+One canonical ensure --repair with the same profile and restricted mapping
+failed before recovery: Managed Compose configuration changed for service app.
+Do not bypass that guard, recreate the workspace, reset data, or modify shared
+Devrouter state. Resolve the retained configuration difference before retrying.
+All six external ingestion preflight endpoints still return HTTP 200; this is
+reachability only. No ingestion, query, graph build or deletion occurred.
+The goal remains active with runtime recovery unresolved.
+
+Integrated citation checkpoint: executor Popper completed its four-file UI
+correction. Main inspected the diff and ran the combined four focused suites:
+94 tests pass. The combined Chat typecheck passes after a transient
+`next: not found` failure; a subsequent exact-container check found dependencies
+present. Container Biome checked the UI correction. The isolated browser
+successfully opened the current Chat URL but rendered `Bad Gateway`, so no
+browser acceptance is claimed. A process-name-only container read showed only
+the container init/sleep and inspection processes. Recover exact managed app
+startup and establish runtime custody before any lifecycle change; do not
+reset the retained KB or use broad Playwright database cleanup. Current source
+changes are uncommitted, with source reviews and publication still pending.
+
+Agent service recovered with ready=true. Native executor Popper owns the four
+bounded normalizer/tool-fallback implementation and test paths; main owns the
+MCP result boundary. Main added a doc-query-only execution wrapper that removes
+ingestion gateway destinations from structured and JSON-text payloads before
+model context and persistence, retaining opaque document identity and metadata.
+Nineteen focused sanitizer/MCP tests pass; Chat typecheck passes after replacing
+an untyped argument spread with the SDK execute parameter tuple. Container
+Biome passes with three pre-existing explicit-any warnings. Changes remain
+uncommitted. UI integration, deterministic browser proof, committed reviews,
+portable composition and publication remain pending. No new paid calls ran.
+
+Resumed correction: the Manage Blob route now maps to an explicit Azurite
+managed-service binding. The host runtime-plan consumer validates that binding
+only when Blob is selected and requires the actual managed service; no fake
+Turbo filter or health URL was added. The real Manage profile plan passes.
+All 16 host profile-runtime tests pass, including every real shard profile
+union. Container execution passed 15 tests; its host-Devrouter integration test
+cannot run there and passed on the host instead. Container Biome formatted and
+checked both changed JavaScript files. Whitespace checks pass. This candidate
+is uncommitted and does not establish browser upload or restart acceptance.
+
+OpenCodex readiness remains failed at the resumed checkpoint. The existing
+mapping child has not delivered a terminal result and is retained, not replaced.
+Citation corrections, provider composition and required source reviews remain
+pending. No new ingestion, paid query, fixture mutation or runtime restart ran.
+The runtime remains retained for the user's manual verification.
+
+Status: incomplete; achieved delivery is local source and runtime proof, not
+reviewed publication. The latest PDF test passes ingestion and retrieval but
+fails result-count presentation and user-facing citation provenance. Runtime
+fixes remain local. Startup currently depends on an ignored multi-repository
+prototype and therefore is not yet a reproducible published profile.
+
+Next: verify the parser and provenance causes, freeze the smallest compatible
+correction and startup contract, complete the armed planning review, then
+implement and verify within this package. Preserve passing evidence when its
+source and contract are unchanged. Required source reviews, affected tests,
+browser citation proof, and publication remain incomplete. No completed
+review for the earlier lifecycle slice qualifies these new corrections.
 
 ### Approved analytics loading-state correction — 2026-09-06
 
