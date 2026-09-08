@@ -281,7 +281,7 @@ chat:
       cost:
         input: 5.0
         output: 30.0
-  replicaCount: 1
+  replicaCount: 2
 
   autoscaling:
     enabled: false
