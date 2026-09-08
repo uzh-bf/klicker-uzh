@@ -220,6 +220,13 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Reviewed merge candidate — 2026-09-08
+
+Integrated final review passes on 6e2d03c5b0b8261715f1c203160270302a109572..adeb7b87a30e8dcc1204e74e11e460e7f0d2d76c, all 35 paths, no exclusions or findings. Earlier unchanged-code evidence was reused; merge resolutions, loading-state integration and MCP guard were reviewed directly. Simplifier found no further justified reduction. All children are closed. This receipt changes documentation only.
+
+The exact task runtime is Stopped and source-matched route count is zero. Automatic approval review twice rejected deletion of the empty task-created beta-enrollment-fixture marker and /tmp/generation-test-devrouter, despite recorded cleanup authority. Both remain untouched pending explicit user confirmation; do not bypass that rejection. Runtime data remains preserved. Ordinary branch publication follows. GitGuardian incidents 37051630 and 1509424 still require scanner-owner disposition; hosted current-head checks remain a distinct gate. No merge into v3-ai or deployment occurred.
+
+
 ### Merge and feedback acceptance — 2026-09-08
 
 Normal target merge is 1b23be5cf78ecca43b0c51ee259144a1dad4ae73, with second parent 6e2d03c5b0b8261715f1c203160270302a109572. Three preload tests, 75 feature-flag tests, all 47 type/lint tasks and 26 full build tasks pass. Browser qualification passes 16 cases before the profile fix and all 12 affected analytics/recovery cases afterward. The profile test now intercepts ManageFeatureFlagProfile; a provider-owned loading context lets the analytics guard retain its loading status without altering upstream evaluation availability or AI capability semantics. Logs: /tmp/generation-merge-loading-browser.log and /tmp/generation-merge-final-build.log.
