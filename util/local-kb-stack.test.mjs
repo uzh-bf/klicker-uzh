@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { inspectLocalKbStack, resolveLocalKbConfig } from './local-kb-stack.mjs'
 
 const env = {
@@ -8,6 +10,19 @@ const env = {
   DOC_QUERY_REPO: '/synthetic/retrieval',
   DOC_PROCESSING_REPO: '/synthetic/doc-processing',
 }
+
+test('plan CLI stays non-executable until runtime qualification', () => {
+  const result = spawnSync(
+    process.execPath,
+    [fileURLToPath(new URL('./local-kb-stack.mjs', import.meta.url)), 'plan'],
+    { env, encoding: 'utf8' }
+  )
+  assert.equal(result.error, undefined)
+  assert.equal(result.status, 2)
+  const plan = JSON.parse(result.stdout)
+  assert.equal(plan.executable, false)
+  assert.ok(plan.blockers.length > 0)
+})
 
 test('requires all explicit provider paths', () => {
   for (const key of Object.keys(env)) {

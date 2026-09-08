@@ -222,6 +222,18 @@ test('rejects dirty, mismatched, or relocated provider observations', () => {
 
 test('rejects remote endpoint fallback and unknown settings', () => {
   const input = makeInput('a')
+  for (const url of [
+    'https://doc-processing/health',
+    'https://doc-processing:443/health',
+  ]) {
+    assert.throws(() =>
+      resolveIsolatedConfig({
+        ...input,
+        retainedEndpointOrigins: ['https://doc-processing'],
+        endpoints: { ...input.endpoints, docProcessing: url },
+      })
+    )
+  }
   assert.throws(() =>
     resolveIsolatedConfig({
       ...input,
@@ -258,11 +270,10 @@ test('rejects remote endpoint fallback and unknown settings', () => {
 
 test('keeps document processing explicitly unqualified without a remote fallback', () => {
   const config = resolveIsolatedConfig(makeInput('a'))
-  const requirement = config.integrationRequirements.find(
-    ({ id }) => id === 'document-processing-local-integration'
-  )
+  const requirement = config.capabilities.documentProcessing
 
-  assert.equal(requirement.status, 'missing')
+  assert.equal(requirement.status, 'unqualified')
+  assert.equal(requirement.qualified, false)
   assert.equal(requirement.provider, 'docProcessing')
   assert.equal(requirement.noRemoteFallback, true)
   assert.deepEqual(requirement.requiredEnvironment, [

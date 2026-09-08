@@ -403,8 +403,6 @@ function validateInput(input) {
     )
     canonicalPath(root.path, `providerRoots.${name}.path`)
     revision(root.revision, `providerRoots.${name}.revision`)
-    canonicalPath(observation.path, `providerObservations.${name}.path`)
-    revision(observation.revision, `providerObservations.${name}.revision`)
     ensure(
       observation.clean === true,
       `providerObservations.${name} must be clean.`
@@ -590,7 +588,6 @@ function buildConfig(normalized) {
         healthEndpoint: endpoints.docProcessing.url,
         requiredEnvironment: [...DOC_PROCESSING_ENVIRONMENT],
         noRemoteFallback: true,
-        integrationRequirementId: 'document-processing-local-integration',
       },
     },
     integrationRequirements: [
@@ -599,15 +596,6 @@ function buildConfig(normalized) {
         status: 'required',
         description:
           'Render this validation model into concrete Compose/devrouter services before execution.',
-      },
-      {
-        id: 'document-processing-local-integration',
-        status: 'missing',
-        description:
-          'Render and qualify a supported local Doc Processing service; this resolver does not select or inspect a provider repository.',
-        provider: 'docProcessing',
-        requiredEnvironment: [...DOC_PROCESSING_ENVIRONMENT],
-        noRemoteFallback: true,
       },
     ],
   }
