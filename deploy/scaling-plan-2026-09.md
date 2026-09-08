@@ -10,20 +10,18 @@ the temporary window. Operational measurements are retained locally.
 
 | Values key                          | Normal → temporary | Restore after window | Reason                                                                                     |
 | ----------------------------------- | ------------------ | -------------------- | ------------------------------------------------------------------------------------------ |
-| `auth`                              | 3 → 6              | 3                    | More concurrent student logins at class starts.                                            |
 | `frontendPWA`                       | 4 → 8              | 4                    | Double the student-facing serving pool.                                                    |
 | `backendGraphql`                    | 4 → 8              | 4                    | Double the main API serving pool.                                                          |
 | `responseApi`                       | 4 → 8              | 4                    | Double response-ingestion processes for synchronized submissions.                          |
 | `hatchet.workers.responseProcessor` | 4 → 8              | 4                    | Increase aggregate response-processing capacity; per-instance serialization still applies. |
 | `hatchet.workers.general`           | 2 → 4              | 2                    | Increase background-task capacity accompanying activity use.                               |
-| `frontendManage`                    | 3 → 4              | 3                    | Modest lecturer-facing headroom; student growth does not imply twice as many lecturers.    |
-| `frontendControl`                   | 1 → 2              | 1                    | Add lecturer-control redundancy.                                                           |
 | `olatApi`                           | 1 → 2              | 1                    | Add LMS-integration concurrency and redundancy.                                            |
 | `chat`                              | 1 → 2              | 1                    | Add chat-serving capacity; upstream limits remain independent.                             |
 
 **All staging replica settings remain unchanged, including chat at one. All
 assessment replica settings remain unchanged**, including the assessment
-response worker. LTI replica/autoscaling settings are outside this change.
+response worker. Production auth, control and manage stay at 3, 1 and 3 replicas.
+LTI replica/autoscaling settings are outside this change.
 
 Preferred anti-affinity does not guarantee node or zone separation. Check actual
 placement. More pods do not multiply database, Redis, Hatchet or model-provider
@@ -78,8 +76,8 @@ No MCP service changes are included in this chart revision.
 
 ## Reservation deltas and capacity prerequisite
 
-Compared with the base chart, the production proposal adds **25 pods, 1650m CPU
-requests and 9964Mi memory requests (~9.73Gi)**. Of the memory increase, 650Mi
+Compared with the base chart, the production proposal adds **20 pods, 1400m CPU
+requests and 9036Mi memory requests (~8.82Gi)**. Of the memory increase, 650Mi
 belongs to assessment resource corrections, with no extra assessment pods.
 Staging adds **1490Mi memory requests**, with **zero additional pods or CPU
 requests**. These are computed manifest deltas, not private cluster observations.
@@ -112,7 +110,7 @@ Pending pods; do not try to compensate by lowering justified requests.
    response-processing queue delay and chat interruptions throughout the event.
    Investigate dependency bottlenecks before increasing replicas further.
 5. At the recorded end, confirm traffic and queues have subsided and restore
-   **only the ten replica settings in the table** to their normal values in a
+   **only the seven replica settings in the table** to their normal values in a
    follow-up GitOps change. Keep both environments' resource corrections.
    Drain workers and allow in-flight requests/streams to finish; monitor the
    scale-down and pause it if demand remains elevated. No automatic rollback
