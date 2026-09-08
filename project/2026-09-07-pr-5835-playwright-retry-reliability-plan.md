@@ -95,6 +95,34 @@ material contract change. Do not weaken assertions or increase retry counts.
 
 ## Progress
 
+### Course-pool retry correction and CI qualification
+
+Run `34269003393` at `e181d73e9e8517a5836e9724551a62402ab6ee06`
+passes seven shards, including the previously failing editor shard. Shard six
+fails during student login after five students enter the random group pool.
+The screenshot shows an empty username after the recorded fill. Early login
+initialization is a hypothesis, not a proven hydration event sequence.
+The retry then encounters existing pool membership and incorrectly waits for
+the enter control. That retained-state failure is confirmed.
+
+Main owns the narrow correction in `N-course.spec.ts`: wait for normal page
+load, assert both filled credentials before submitting, and leave an existing
+pool membership before exercising entry again. The existing membership
+assertion remains. No application, Next.js, timeout or retry-count change is
+included. The leave mutation updates the course query before the enter control
+returns, which the existing locator click waits for.
+
+The user approved review and ordinary publication to this PR, with browser
+qualification in isolated GitHub CI. Local qualification did not reach tests:
+post-create Prisma initialization failed, and legacy managed configuration
+drift blocked rollback and exact stop. The provider remains running with zero
+exact routes. Devrouter owns the recovery investigation; this task will not
+retry initialization, reset data or bypass managed lifecycle checks.
+Scoped formatting and diff checks pass. Broad local hooks and local browser
+acceptance are unavailable; this is not a passing browser result. Unchanged
+launcher verification remains valid. Passing exact-head CI, final AI review
+and human review remain required before any separately authorized merge.
+
 ### Rich-text clearing failure in the current ARM64 run
 
 Run `34257127977` at `df833589d478e59c9e9ec67d12d8d196bb05ebd6`
