@@ -89,8 +89,10 @@ lockfile changes are limited to patched Next references and peer deduplication.
 Two fresh process startups both resolve the patched package and expose 34 routes,
 including cockpit. The unchanged activity group passes 12/12 with zero retries
 in 2.1 and 1.9 minutes. Between cycles, exact status is stopped, zero routes,
-zero active resources and no drift. Final shutdown and independent reviews
-remain in progress. Launcher/Hatchet corrections are committed at `0c749d6034`.
+zero active resources and no drift. Final shutdown has the same verified state.
+Slice simplification and correctness review pass with no requested changes;
+integrated final review and draft publication remain. Launcher/Hatchet
+corrections are committed at `0c749d6034`.
 No global runner or GitHub setting was changed. No PR exists yet.
 
 ### Approved pinned Next.js patch extension
