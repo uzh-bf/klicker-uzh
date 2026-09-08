@@ -9,6 +9,13 @@ const fixtureUrl = 'https://growthbook.test/api/features/sdk-test'
 // USER_ID_TEST from playwright/util/constants.ts; synthetic only.
 const enrolledLecturerId = '76047345-3801-4628-ae7b-adbebcfe8821'
 const evaluationEnvironments = ['test', 'development']
+// CI provides a loopback fixture whose non-AI flags can change during tests.
+const configuredHost = process.env.GROWTHBOOK_API_HOST
+const analyticsFixtureUrl = /^http:\/\/127\.0\.0\.1:\d+$/.test(
+  configuredHost ?? ''
+)
+  ? `${configuredHost}/api/features/sdk-test`
+  : undefined
 
 process.env.GROWTHBOOK_API_HOST = 'https://growthbook.test'
 process.env.GROWTHBOOK_CLIENT_KEY = 'sdk-test'
@@ -37,10 +44,20 @@ function featurePayload() {
 }
 
 const originalFetch = globalThis.fetch
-globalThis.fetch = (input, init) => {
+globalThis.fetch = async (input, init) => {
   const url = input instanceof Request ? input.url : String(input)
   if (url === fixtureUrl) {
-    return Promise.resolve(Response.json(featurePayload()))
+    const payload = featurePayload()
+    if (analyticsFixtureUrl) {
+      const response = await originalFetch(analyticsFixtureUrl, init)
+      if (!response.ok) return response
+      const configuredPayload = await response.json()
+      return Response.json({
+        ...configuredPayload,
+        features: { ...configuredPayload.features, ...payload.features },
+      })
+    }
+    return Response.json(payload)
   }
   return originalFetch(input, init)
 }

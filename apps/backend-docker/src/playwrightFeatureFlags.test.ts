@@ -104,3 +104,56 @@ test('Playwright flags target the synthetic beta-enabled user', () => {
   )
   assert.equal(result.status, 0, result.stderr)
 })
+
+test('Playwright flags preserve the configured analytics fixture', () => {
+  const safeFetchPreload = `data:text/javascript,${encodeURIComponent(`
+    globalThis.analyticsEnabled = true
+    globalThis.fetch = async (input) => {
+      if (String(input) !== 'http://127.0.0.1:4010/api/features/sdk-test') {
+        throw new Error('Unexpected fixture request')
+      }
+      return Response.json({ features: {
+        'learning-analytics': { defaultValue: globalThis.analyticsEnabled },
+        'ai-beta': { defaultValue: true },
+      } })
+    }
+  `)}`
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      safeFetchPreload,
+      '--import',
+      fixture,
+      '--input-type=module',
+      '-e',
+      `
+      import assert from 'node:assert/strict'
+      import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
+      const flags = new NodeFeatureFlagClient({
+        apiHost: process.env.GROWTHBOOK_API_HOST,
+        clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+        environment: 'test', refreshIntervalMs: 0,
+      })
+      const actor = { id: 'another-synthetic-user', actorType: 'user' }
+      assert.equal(await flags.initialize(), true)
+      assert.equal(flags.isEnabled('learning-analytics', actor), true)
+      assert.equal(flags.isEnabled('ai-beta', actor), false)
+      globalThis.analyticsEnabled = false
+      await flags.refresh()
+      assert.equal(flags.isEnabled('learning-analytics', actor), false)
+      flags.destroy()
+    `,
+    ],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        GROWTHBOOK_API_HOST: 'http://127.0.0.1:4010',
+        GROWTHBOOK_CLIENT_KEY: 'sdk-test',
+      },
+      encoding: 'utf8',
+    }
+  )
+  assert.equal(result.status, 0, result.stderr)
+})
