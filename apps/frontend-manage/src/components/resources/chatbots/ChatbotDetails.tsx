@@ -157,6 +157,7 @@ function ChatbotDetails({
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  focusedResponseExampleId,
 }: {
   chatbot?: Chatbot
   modelRegistry: ChatModelCapability[]
@@ -172,6 +173,7 @@ function ChatbotDetails({
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  focusedResponseExampleId?: string
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
@@ -773,8 +775,12 @@ function ChatbotDetails({
               </Link>
             </div>
             <Accordion
+              key={`${chatbot.id}:${focusedResponseExampleId ?? ''}`}
               type="single"
               collapsible
+              defaultValue={
+                focusedResponseExampleId ? 'response-examples' : undefined
+              }
               className="border-t border-gray-200 pt-4"
               data-cy="chatbot-knowledge-secondary"
             >
@@ -798,6 +804,7 @@ function ChatbotDetails({
                   <ChatbotResponseExampleReview
                     key={chatbot.id}
                     chatbotId={chatbot.id}
+                    focusedExampleId={focusedResponseExampleId}
                   />
                 </AccordionContent>
               </AccordionItem>

@@ -484,6 +484,37 @@ describe('validateManageChatRequest', () => {
     expect(result?.proposalTokens).toEqual([])
   })
 
+  test('removes response-example receipts before model conversion', async () => {
+    const result = await validateManageChatRequest({
+      messages: [
+        {
+          id: 'assistant-1',
+          parts: [
+            { text: 'Earlier grounded answer [1]', type: 'text' },
+            {
+              data: {
+                token: 'signed-response-example-receipt',
+                expiresAt: 1_788_437_400,
+              },
+              type: 'data-response-example-receipt',
+            },
+          ],
+          role: 'assistant',
+        },
+        textMessage('Continue'),
+      ],
+    })
+
+    expect(result?.messages).toEqual([
+      {
+        id: 'assistant-1',
+        parts: [{ text: 'Earlier grounded answer [1]', type: 'text' }],
+        role: 'assistant',
+      },
+      expect.objectContaining({ role: 'user' }),
+    ])
+  })
+
   test('extracts only opaque tokens from the exact signed proposal tool part', async () => {
     const result = await validateManageChatRequest({
       messages: [

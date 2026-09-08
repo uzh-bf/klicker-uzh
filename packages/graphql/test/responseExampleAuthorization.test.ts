@@ -6,6 +6,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 
 const serviceMocks = vi.hoisted(() => ({
   approveResponseExample: vi.fn(),
+  captureResponseExample: vi.fn(),
   editAndApproveResponseExample: vi.fn(),
   rejectResponseExample: vi.fn(),
 }))
@@ -19,9 +20,18 @@ type ResponseExampleMutation = keyof typeof serviceMocks
 
 const mutationArguments: Record<ResponseExampleMutation, string> = {
   approveResponseExample: 'id: "example-id"',
+  captureResponseExample:
+    'chatbotId: "00000000-0000-4000-8000-000000000001", receipt: "receipt", question: "Question", answer: "Answer [1]."',
   editAndApproveResponseExample:
     'id: "example-id", chatMode: "tutor", studentMessage: "Question", referenceAnswer: "Answer [1].", responseStyle: CONCISE_ANSWER, expectedUpdatedAt: "2026-08-26T12:00:00Z"',
   rejectResponseExample: 'id: "example-id"',
+}
+
+const mutationSelection: Record<ResponseExampleMutation, string> = {
+  approveResponseExample: 'id',
+  captureResponseExample: 'exampleId created',
+  editAndApproveResponseExample: 'id',
+  rejectResponseExample: 'id',
 }
 
 function buildContext(scope: UserLoginScope): ContextWithUser {
@@ -50,7 +60,7 @@ async function executeMutation(
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      query: `mutation { ${field}(${mutationArguments[field]}) { id } }`,
+      query: `mutation { ${field}(${mutationArguments[field]}) { ${mutationSelection[field]} } }`,
     }),
   })
   return (await response.json()) as {
@@ -65,6 +75,10 @@ describe('response-example mutation authorization', () => {
       mock.mockReset()
       mock.mockResolvedValue({ id: 'set-id' })
     }
+    serviceMocks.captureResponseExample.mockResolvedValue({
+      exampleId: '00000000-0000-4000-8000-000000000002',
+      created: true,
+    })
   })
 
   it.each([
@@ -90,5 +104,15 @@ describe('response-example mutation authorization', () => {
       expect(result.errors, field).toBeUndefined()
       expect(serviceMocks[field], field).toHaveBeenCalledTimes(1)
     }
+  })
+
+  it('lets the account owner reach response-example capture', async () => {
+    const result = await executeMutation(
+      'captureResponseExample',
+      UserLoginScope.ACCOUNT_OWNER
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(serviceMocks.captureResponseExample).toHaveBeenCalledOnce()
   })
 })

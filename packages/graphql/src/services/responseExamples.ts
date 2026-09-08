@@ -11,6 +11,13 @@ import {
   type ResponseExampleEligibilityReconciliation,
   type StoredResponseExampleEligibilityInput,
 } from '@klicker-uzh/util/response-example-eligibility'
+import {
+  hashResponseExampleReceiptContent,
+  RESPONSE_EXAMPLE_RECEIPT_MAX_TOKEN_CHARACTERS,
+  type ResponseExampleReceiptClaims,
+  ResponseExampleReceiptError,
+  verifyResponseExampleReceipt,
+} from '@klicker-uzh/util/response-example-receipt'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
@@ -48,7 +55,7 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true },
+    select: { systemPrompts: true, standardModeConfig: true },
   },
 } satisfies Prisma.ResponseExampleSetInclude
 
@@ -69,7 +76,10 @@ function withChatbotModes(
 ): ResponseExampleSetWithModes {
   return {
     ...set,
-    chatModes: extractChatbotModes(set.chatbot.systemPrompts),
+    chatModes: extractChatbotModes(
+      set.chatbot.systemPrompts,
+      set.chatbot.standardModeConfig
+    ),
   }
 }
 
@@ -307,6 +317,205 @@ export const RESPONSE_EXAMPLE_MODE_UNAVAILABLE =
 export const RESPONSE_EXAMPLE_STATUS_INVALID = 'RESPONSE_EXAMPLE_STATUS_INVALID'
 export const RESPONSE_EXAMPLE_DUPLICATE = 'RESPONSE_EXAMPLE_DUPLICATE'
 export const RESPONSE_EXAMPLE_STALE_UPDATE = 'RESPONSE_EXAMPLE_STALE_UPDATE'
+export const RESPONSE_EXAMPLE_RECEIPT_INVALID =
+  'RESPONSE_EXAMPLE_RECEIPT_INVALID'
+export const RESPONSE_EXAMPLE_RECEIPT_EXPIRED =
+  'RESPONSE_EXAMPLE_RECEIPT_EXPIRED'
+export const RESPONSE_EXAMPLE_CAPTURE_STALE = 'RESPONSE_EXAMPLE_CAPTURE_STALE'
+export const RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE =
+  'RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE'
+
+const captureResponseExampleSchema = z.object({
+  chatbotId: responseExampleIdSchema,
+  receipt: z.string().min(1).max(RESPONSE_EXAMPLE_RECEIPT_MAX_TOKEN_CHARACTERS),
+  question: z
+    .string()
+    .trim()
+    .min(1)
+    .max(RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH),
+  answer: z
+    .string()
+    .trim()
+    .min(1)
+    .max(RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH),
+})
+
+interface ResponseExampleReceiptVerificationSettings {
+  publicKeyPem: string
+  keyId: string
+  issuer: string
+  audience: string
+}
+
+function loadResponseExampleReceiptVerificationSettings(): ResponseExampleReceiptVerificationSettings {
+  return {
+    publicKeyPem: process.env.RESPONSE_EXAMPLE_RECEIPT_PUBLIC_KEY ?? '',
+    keyId: process.env.RESPONSE_EXAMPLE_RECEIPT_KID ?? '',
+    issuer: process.env.RESPONSE_EXAMPLE_RECEIPT_ISSUER ?? '',
+    audience: process.env.RESPONSE_EXAMPLE_RECEIPT_AUDIENCE ?? '',
+  }
+}
+
+function responseStyleForChatMode(chatMode: string) {
+  if (chatMode === 'tutor') return DB.ResponseExampleStyle.GUIDED_QUESTIONS
+  if (chatMode === 'explainer') {
+    return DB.ResponseExampleStyle.STEP_BY_STEP_EXPLANATION
+  }
+  return DB.ResponseExampleStyle.CONCISE_ANSWER
+}
+
+function captureError(message: string, code: string) {
+  return new GraphQLError(message, { extensions: { code } })
+}
+
+export async function captureResponseExample(
+  args: z.infer<typeof captureResponseExampleSchema>,
+  ctx: ContextWithUser,
+  settings = loadResponseExampleReceiptVerificationSettings()
+) {
+  const input = captureResponseExampleSchema.parse(args)
+  let claims: ResponseExampleReceiptClaims
+  try {
+    claims = await verifyResponseExampleReceipt({
+      token: input.receipt,
+      ...settings,
+    })
+  } catch (error) {
+    if (
+      error instanceof ResponseExampleReceiptError &&
+      error.code === 'EXPIRED'
+    ) {
+      throw captureError(
+        'This response can no longer be saved. Start a new preview and try again.',
+        RESPONSE_EXAMPLE_RECEIPT_EXPIRED
+      )
+    }
+    if (
+      error instanceof ResponseExampleReceiptError &&
+      error.code === 'CONFIGURATION'
+    ) {
+      throw captureError(
+        'Response-example capture is not configured.',
+        RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE
+      )
+    }
+    throw captureError(
+      'The response-example receipt is invalid.',
+      RESPONSE_EXAMPLE_RECEIPT_INVALID
+    )
+  }
+
+  if (
+    claims.ownerId !== ctx.user.sub ||
+    claims.chatbotId !== input.chatbotId ||
+    claims.questionHash !== hashResponseExampleReceiptContent(input.question) ||
+    claims.answerHash !== hashResponseExampleReceiptContent(input.answer)
+  ) {
+    throw captureError(
+      'The response-example receipt does not match this response.',
+      RESPONSE_EXAMPLE_RECEIPT_INVALID
+    )
+  }
+
+  return await ctx.prisma.$transaction(async (tx) => {
+    await tx.$queryRaw<{ id: string }[]>(
+      PrismaRuntime.sql`
+        SELECT "id"
+        FROM "public"."Chatbot"
+        WHERE "id" = ${input.chatbotId}::uuid
+          AND "ownerId" = ${ctx.user.sub}::uuid
+        FOR UPDATE
+      `
+    )
+
+    const chatbot = await tx.chatbot.findFirst({
+      where: { id: input.chatbotId, ownerId: ctx.user.sub },
+      select: {
+        systemPrompts: true,
+        standardModeConfig: true,
+        knowledgeBases: {
+          where: { isEnabled: true, kb: { deletedAt: null } },
+          orderBy: { id: 'asc' },
+          take: 2,
+          select: { kbId: true },
+        },
+      },
+    })
+    if (!chatbot) return null
+
+    if (
+      chatbot.knowledgeBases.length !== 1 ||
+      chatbot.knowledgeBases[0]?.kbId !== claims.kbId ||
+      !extractChatbotModes(
+        chatbot.systemPrompts,
+        chatbot.standardModeConfig
+      ).includes(claims.chatMode)
+    ) {
+      throw captureError(
+        'This response is no longer eligible to be saved.',
+        RESPONSE_EXAMPLE_CAPTURE_STALE
+      )
+    }
+
+    const resources = await loadCurrentResponseExampleResources(
+      tx,
+      input.chatbotId,
+      claims.evidenceReferences.map((reference) => reference.sourceId)
+    )
+    const currentEligibility = evaluateResponseExampleCurrentEligibility(
+      {
+        referenceAnswer: input.answer,
+        evidenceReferences: claims.evidenceReferences,
+      },
+      resources
+    )
+    if (!currentEligibility.eligible) {
+      throw captureError(
+        'The sources for this response changed. Start a new preview before saving it.',
+        RESPONSE_EXAMPLE_CAPTURE_STALE
+      )
+    }
+
+    const set = await tx.responseExampleSet.upsert({
+      where: { chatbotId: input.chatbotId },
+      update: {},
+      create: { chatbotId: input.chatbotId },
+      select: { id: true },
+    })
+    const existing = await tx.responseExample.findFirst({
+      where: {
+        setId: set.id,
+        chatMode: claims.chatMode,
+        studentMessage: input.question,
+      },
+      select: { id: true },
+    })
+    if (existing) {
+      return { exampleId: existing.id, created: false }
+    }
+
+    const created = await tx.responseExample.create({
+      data: {
+        setId: set.id,
+        chatMode: claims.chatMode,
+        studentMessage: input.question,
+        referenceAnswer: input.answer,
+        responseStyle: responseStyleForChatMode(claims.chatMode),
+        status: DB.ResponseExampleStatus.CANDIDATE,
+        evidenceReferences: {
+          create: claims.evidenceReferences.map((reference) => ({
+            ...reference,
+            evidenceEligible: true,
+          })),
+        },
+      },
+      select: { id: true },
+    })
+
+    await refreshResponseExampleSetDigestAfterLock(tx, set.id)
+    return { exampleId: created.id, created: true }
+  })
+}
 
 async function reviewResponseExample(
   { id, status }: { id: string; status: DB.ResponseExampleStatus },
@@ -359,7 +568,9 @@ async function reviewResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: { systemPrompts: true, standardModeConfig: true },
+            },
           },
         },
       },
@@ -385,9 +596,10 @@ async function reviewResponseExample(
 
     if (
       status === DB.ResponseExampleStatus.APPROVED &&
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        example.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig
+      ).includes(example.chatMode)
     ) {
       throw new GraphQLError(
         'The response example uses a chat mode that is not available for this chatbot.',
@@ -513,7 +725,9 @@ export async function editAndApproveResponseExample(
         },
         set: {
           select: {
-            chatbot: { select: { systemPrompts: true } },
+            chatbot: {
+              select: { systemPrompts: true, standardModeConfig: true },
+            },
           },
         },
       },
@@ -545,9 +759,10 @@ export async function editAndApproveResponseExample(
     }
 
     if (
-      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
-        input.chatMode
-      )
+      !extractChatbotModes(
+        example.set.chatbot.systemPrompts,
+        example.set.chatbot.standardModeConfig
+      ).includes(input.chatMode)
     ) {
       throw new GraphQLError(
         'The selected chat mode is not available for this chatbot.',
