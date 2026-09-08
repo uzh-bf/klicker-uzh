@@ -1,7 +1,7 @@
 # GrowthBook-backed AI availability resilience plan — draft PR delivery
 
 - **Date:** 2026-08-31
-- **Status:** Implementation and draft publication complete; hosted checks and merge approval remain pending
+- **Status:** Beta-preference alignment committed; required reviews and draft update pending
 - **Pull request:** [Stable AI availability during GrowthBook outages](https://github.com/uzh-bf/klicker-uzh/pull/5806)
 - **Repository:** `uzh-bf/klicker-uzh`
 - **Worktree:** `trees/growthbook-feature-availability`
@@ -400,6 +400,25 @@ Blob Storage. The user explicitly approved this bounded continuation.
 ## Progress
 
 ### Current alignment with database beta preferences — 2026-09-07
+
+Latest checkpoint: all six focused Chromium cases pass in 12.8 seconds with
+the existing `manage,email` profile selected temporarily through the host
+launcher. Playwright formatting and type checking pass. All temporary launcher
+and MCP source changes are restored; the PR contains no runtime patch. The
+exact task provider is `Stopped` and route readback is zero. Unrelated
+transactional HTML deletions remain unstaged.
+
+On 2026-09-08 the user approved the one-time exception for inherited hygiene
+findings. Merge commit `d6205f2cd6` integrates the exact target recorded below.
+The exception was command-scoped; repository hooks stayed enabled. The normal
+`check:all` hook completed successfully, including 40 type-check tasks and seven
+lint tasks. Gitleaks scanned the staged merge with no leaks. Existing Rollup
+warnings remain. The hook regenerated the three unrelated transactional HTML
+outputs; their copies were moved to recoverable temporary storage to preserve
+the original unstaged deletions. The browser report's enabled and unavailable
+navigation screenshots were visually inspected and show a stable disabled AI
+entry with recovery guidance. Required committed-range reviews and draft
+publication remain pending; no target merge or deployment is authorized.
 
 The user subsequently approved diagnosing and repairing the task-local MCP
 fixture, then finishing verification, reviews and draft delivery. A read-only
