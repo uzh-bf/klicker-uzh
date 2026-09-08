@@ -107,8 +107,10 @@ The merged launcher/configuration suite passes all 32 tests, including default
 database setup, opt-in preservation and both argument syntaxes. The Next
 configuration, readiness helper and activity fixtures are unchanged, so their
 existing browser and deadline evidence remains applicable. No runtime is
-started for this source integration. One continuation of the same final
-reviewer covers the changed integration seam before the next ordinary push.
+started for this source integration. The same final reviewer passes all 20 paths
+at `3f6917ecc5..db9f2cfc98`, including the changed integration seam, with no findings.
+The local package is ready for the ordinary draft update; exact-head GitHub CI
+and human review remain before any separately authorized merge.
 
 ### Approved configuration-only continuation
 
