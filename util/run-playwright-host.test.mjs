@@ -127,6 +127,16 @@ test('launcher preserves the full default and forwards Playwright arguments verb
     'test',
     ...args,
   ])
+  const environment = pnpmCalls(calls).at(-1).options.env
+  assert.equal(
+    environment.DATABASE_URL,
+    'postgres://user:password@127.0.0.1:49153/database'
+  )
+  assert.equal(environment.APP_SECRET, 'synthetic-app-secret')
+  assert.equal(
+    environment.URL_MANAGE,
+    'https://manage.klicker.synthetic-launcher.localhost'
+  )
 })
 
 test('explicit profiles reach runtime reconciliation for testing and print-env', () => {
@@ -135,7 +145,7 @@ test('explicit profiles reach runtime reconciliation for testing and print-env',
     ['--runtime-profile=manage,live-quiz'],
   ]) {
     for (const mode of [[], ['--print-env']]) {
-      const { calls, dependencies } = createLauncherHarness()
+      const { calls, dependencies, logs } = createLauncherHarness()
       runPlaywrightHost(
         [...prefix, ...mode, '--', '--project=chromium'],
         dependencies
@@ -147,6 +157,14 @@ test('explicit profiles reach runtime reconciliation for testing and print-env',
         'manage,live-quiz',
       ])
       assert.equal(pnpmCalls(calls).length > 0, mode.length === 0)
+      if (mode.length > 0) {
+        assert.deepEqual(JSON.parse(logs.at(-1)), {
+          databaseHost: '127.0.0.1:49153',
+          manageUrl: 'https://manage.klicker.synthetic-launcher.localhost',
+          studentUrl: 'https://pwa.klicker.synthetic-launcher.localhost',
+          workspace: 'synthetic-launcher',
+        })
+      }
     }
   }
 })
