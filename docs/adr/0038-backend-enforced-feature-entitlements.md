@@ -23,8 +23,9 @@ Backend evaluation uses the read-only SDK connection and a minimal authenticated
 actor projection. The backend may distinguish an explicit denial from a
 temporarily unavailable GrowthBook decision when the product needs a stable
 recovery path, but neither state authorizes the feature. For the lecturer AI
-capability, a live `User.aiFeaturesEnabled` value of `false` or `null` is an
-immediate denial without a GrowthBook lookup; an entitled account with no
+capability, both live `User.aiFeaturesEnabled` approval and `User.betaEnabled`
+preference must be true. A false or missing value denies immediately without a
+GrowthBook lookup; an eligible account with no
 usable `ai-beta` answer is temporarily unavailable. Flags may not carry
 sensitive targeting attributes or replace durable domain state. A flag whose
 rules or attributes are sensitive must use a reviewed server-only or

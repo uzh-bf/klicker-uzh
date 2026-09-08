@@ -50,9 +50,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    return explicit per-object outcomes. Never infer permission for the whole
    batch from one selected object.
 
-   Capability-gated reads add a fail-closed feature check after the auth scope
-   and before the first data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
-   return `null` when the flag is off, keep authorization errors unchanged, and
+   Capability-gated reads await the fail-closed feature check after the auth scope
+   and before the protected data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
+   the helper reads the trusted beta preference once per request.
+   Return `null` when the flag is off, keep authorization errors unchanged, and
    never gate administrative mutations with a visibility flag (see
    `services/chatAccountUsage.ts` for the pattern).
 
@@ -72,11 +73,11 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    its persisted hash remains in `server.json`.
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
-8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+8. **Tests** — run `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment with marked disposable Postgres, Redis and Hatchet. The legacy `test:local` helper is disabled because it deletes shared volumes. Route further via `klicker-testing-verification`.
 
 Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
 
-Every lecturer KB service query and mutation must start with `assertManageAiEnabled(ctx)`, which requires the GrowthBook `ai-beta` flag and reads the current `User.aiFeaturesEnabled` entitlement instead of trusting a JWT claim. Apply the same gate to Manage chatbot reads and mutations, but not participant `courseChatbots` queries or worker-only KB settlement. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
+Every lecturer KB service query and mutation must start with `assertManageAiEnabled(ctx)`, which requires the GrowthBook `ai-beta` flag and reads the current `User.aiFeaturesEnabled` entitlement instead of trusting a JWT claim. Knowledge Base and generation operations retain this approval gate. Chatbot authoring instead requires the database beta preference, `ai-beta`, Catalyst, and an allowed login scope; publication and model usage additionally require `User.aiFeaturesEnabled`. Participant `courseChatbots` queries and worker-only KB settlement do not use the lecturer gate. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
 
 Knowledge-graph mutations add a distinct `KB_GRAPH_DISABLED` generation switch and require the persisted per-KB `knowledgeGraphEnabled` opt-in. Before dispatch, reserve the configured estimate in the owner-semester `KBGraphQuota`; recheck the complete reservation and linked quota identity at the worker effect boundary; claim `dispatchClaimedAt` before the provider call; and hold an accepted-but-uncorrelated run instead of retrying an ambiguous external effect. Keep its reservation and active KB build slot fenced until recovery, cancellation, settlement, or manual resolution, and refuse a rebuild mutation that would start a second external run. Expose cost and quota state without credentials. Provider status is not a GraphQL success proof: wire a versioned terminal result through `settleKbKnowledgeGraphResult`, validate build/KB/owner/run/digest/artifact/currency/bounded-counter/metering identity, settle valid metered non-success results without publication, and let `KBGraphBuild.costStatus` make settlement idempotent. The production backend and general worker explicitly pass `getKBGraphTerminalResult` and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; both adapters are required for the supported runtime composition. A timed-out success requires locked no-newer-build and current-digest reconciliation before publication; stale or superseded late results settle without publication. The config query selects the newest graph attempt for lifecycle and cost fields, while it resolves `isStale` only from a verified successful published build, so a held or charged rebuild remains visible without changing the served pointer. Report persisted quota currency/limit drift as unavailable and keep historical build-cost currency separate from quota display.
 

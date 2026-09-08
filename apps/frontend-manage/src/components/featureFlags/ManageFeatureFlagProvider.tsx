@@ -9,6 +9,7 @@ import {
   ManageAiCapabilityDocument,
   ManageFeatureFlagProfileDocument,
   type ManageFeatureFlagProfileQuery,
+  ManageFeaturePreferencesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import {
@@ -35,13 +36,17 @@ export type ManageAiCapability =
 
 interface ManageAiCapabilityContextValue {
   state: ManageAiCapability
+  betaEnabled: boolean
   retry: () => Promise<void>
+  confirmBetaPreference: (enabled: boolean) => void
 }
 
 const ManageAiCapabilityContext = createContext<ManageAiCapabilityContextValue>(
   {
     state: 'unresolved',
+    betaEnabled: false,
     retry: async () => undefined,
+    confirmBetaPreference: () => undefined,
   }
 )
 
@@ -84,6 +89,24 @@ function ManageFeatureFlagProvider({
     !skipUserProfile && !loading && (Boolean(userProfileError) || !userId)
   const profileReady = !loading && !userProfileError && Boolean(userId)
   const userCatalyst = user?.catalyst
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument, {
+    fetchPolicy: 'cache-and-network',
+    skip: skipUserProfile || !profileReady,
+  })
+  const [confirmedOptOut, setConfirmedOptOut] = useState<string>()
+  const confirmBetaPreference = useCallback(
+    (enabled: boolean) => {
+      if (!userId) return
+      setConfirmedOptOut(enabled ? undefined : userId)
+    },
+    [userId]
+  )
+  const preferenceUser =
+    userId && preferences?.userProfile?.id === userId
+      ? preferences.userProfile
+      : undefined
+  const betaEnabled =
+    confirmedOptOut !== userId && preferenceUser?.betaEnabled === true
   const attributes = useMemo<FeatureFlagAttributes>(
     () =>
       userId
@@ -92,9 +115,10 @@ function ManageFeatureFlagProvider({
             actorType: 'user',
             role: userRole,
             catalyst: Boolean(userCatalyst),
+            betaEnabled: betaEnabled === true,
           }
         : { actorType: 'anonymous' },
-    [userCatalyst, userId, userRole]
+    [userCatalyst, userId, userRole, betaEnabled]
   )
 
   return (
@@ -111,6 +135,8 @@ function ManageFeatureFlagProvider({
         loadingProfile={loading}
         skipUserProfile={skipUserProfile}
         user={user}
+        betaEnabled={betaEnabled}
+        confirmBetaPreference={confirmBetaPreference}
       >
         {children}
       </ManageAiCapabilityProvider>
@@ -123,6 +149,8 @@ type ManageAiCapabilityProviderProps = {
   loadingProfile: boolean
   skipUserProfile: boolean
   user: ManageFeatureFlagProfileQuery['userProfile'] | undefined
+  betaEnabled: boolean
+  confirmBetaPreference: (enabled: boolean) => void
 }
 
 const RETRY_BASE_DELAY_MS = 1000
@@ -133,8 +161,10 @@ function ManageAiCapabilityProvider({
   loadingProfile,
   skipUserProfile,
   user,
+  betaEnabled,
+  confirmBetaPreference,
 }: ManageAiCapabilityProviderProps) {
-  const hasEntitlement = user?.aiFeaturesEnabled === true
+  const hasEntitlement = user?.aiFeaturesEnabled === true && betaEnabled
   const shouldQuery = !skipUserProfile && Boolean(user?.id) && hasEntitlement
   const {
     data: capabilityData,
@@ -182,10 +212,14 @@ function ManageAiCapabilityProvider({
   ])
 
   useEffect(() => {
+    if (!hasEntitlement) {
+      setLastAuthoritativeState(undefined)
+      return
+    }
     if (!capabilityLoading && !capabilityError && state !== 'unresolved') {
       setLastAuthoritativeState(state)
     }
-  }, [capabilityError, capabilityLoading, state])
+  }, [capabilityError, capabilityLoading, hasEntitlement, state])
 
   const retryAttemptRef = useRef(0)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -271,7 +305,10 @@ function ManageAiCapabilityProvider({
     }
   }, [refetchSafely, shouldQuery])
 
-  const contextValue = useMemo(() => ({ state, retry }), [retry, state])
+  const contextValue = useMemo(
+    () => ({ state, retry, confirmBetaPreference, betaEnabled }),
+    [retry, state, confirmBetaPreference, betaEnabled]
+  )
 
   return (
     <ManageAiCapabilityContext.Provider value={contextValue}>

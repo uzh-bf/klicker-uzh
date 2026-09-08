@@ -46,10 +46,13 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
-  const { state: aiCapability } = useManageAiCapability()
-  const betaSignupEnabled = useFeatureFlag('beta-signup')
-  const canDiscoverBetaFeatures =
-    betaSignupEnabled &&
+  const { state: aiCapability, betaEnabled } = useManageAiCapability()
+  const showBroaderAi =
+    aiCapability === 'enabled' || aiCapability === 'temporarilyUnavailable'
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const canAuthorChatbots =
+    aiBetaEnabled &&
+    betaEnabled &&
     user?.catalyst === true &&
     (userScope === UserLoginScope.FullAccess ||
       userScope === UserLoginScope.AccountOwner)
@@ -175,51 +178,61 @@ function Header({
     key: 'ai-menubar-item',
     label: t('manage.general.ai'),
     icon: faWandMagicSparkles,
-    disabled: aiCapability !== 'enabled',
+    disabled: aiCapability !== 'enabled' && !canAuthorChatbots,
     active:
       router.pathname.startsWith('/resources/knowledgeBases') ||
       router.pathname === '/resources/chatbots' ||
       router.pathname === '/elements/generate',
     elements: [
-      {
-        key: 'element-generation-item',
-        type: 'link' as const,
-        label: t('manage.elementGeneration.title'),
-        onClick: () => router.push('/elements/generate'),
-        badge: t('manage.general.betaFeatures'),
-        data: { cy: 'element-generation' },
-        className: {
-          label: 'bg-opacity-100',
-          text: 'mr-8',
-          badge: 'bg-green-700 hover:bg-green-800',
-        },
-      },
-      {
-        key: 'knowledge-bases-item',
-        type: 'link' as const,
-        label: t('kb.title'),
-        onClick: () => router.push('/resources/knowledgeBases'),
-        badge: t('manage.general.betaFeatures'),
-        data: { cy: 'knowledge-bases' },
-        className: {
-          label: 'bg-opacity-100',
-          text: 'mr-8',
-          badge: 'bg-green-700 hover:bg-green-800',
-        },
-      },
-      {
-        key: 'chatbots-item',
-        type: 'link' as const,
-        label: t('manage.resources.chatbots'),
-        onClick: () => router.push('/resources/chatbots'),
-        badge: t('manage.general.betaFeatures'),
-        data: { cy: 'chatbots' },
-        className: {
-          label: 'bg-opacity-100',
-          text: 'mr-8',
-          badge: 'bg-green-700 hover:bg-green-800',
-        },
-      },
+      ...(showBroaderAi
+        ? [
+            {
+              key: 'element-generation-item',
+              disabled: aiCapability !== 'enabled',
+              type: 'link' as const,
+              label: t('manage.elementGeneration.title'),
+              onClick: () => router.push('/elements/generate'),
+              badge: t('manage.general.betaFeatures'),
+              data: { cy: 'element-generation' },
+              className: {
+                label: 'bg-opacity-100',
+                text: 'mr-8',
+                badge: 'bg-green-700 hover:bg-green-800',
+              },
+            },
+            {
+              key: 'knowledge-bases-item',
+              disabled: aiCapability !== 'enabled',
+              type: 'link' as const,
+              label: t('kb.title'),
+              onClick: () => router.push('/resources/knowledgeBases'),
+              badge: t('manage.general.betaFeatures'),
+              data: { cy: 'knowledge-bases' },
+              className: {
+                label: 'bg-opacity-100',
+                text: 'mr-8',
+                badge: 'bg-green-700 hover:bg-green-800',
+              },
+            },
+          ]
+        : []),
+      ...(canAuthorChatbots
+        ? [
+            {
+              key: 'chatbots-item',
+              type: 'link' as const,
+              label: t('manage.resources.chatbots'),
+              onClick: () => router.push('/resources/chatbots'),
+              badge: t('manage.general.betaFeatures'),
+              data: { cy: 'chatbots' },
+              className: {
+                label: 'bg-opacity-100',
+                text: 'mr-8',
+                badge: 'bg-green-700 hover:bg-green-800',
+              },
+            },
+          ]
+        : []),
     ],
     data: { cy: 'ai' },
     className: {
@@ -330,17 +343,6 @@ function Header({
       icon: faUser,
       data: { cy: 'user-menu' },
       elements: [
-        ...(canDiscoverBetaFeatures
-          ? [
-              {
-                key: 'beta-features',
-                type: 'link' as const,
-                label: t('manage.settings.betaFeaturesTitle'),
-                onClick: () => router.push('/user/settings#beta-features'),
-                data: { cy: 'menu-beta-features' },
-              },
-            ]
-          : []),
         {
           key: 'settings',
           type: 'link',
@@ -373,6 +375,7 @@ function Header({
         },
       ],
       className: {
+        label: 'hidden lg:block',
         content: 'mr-1',
       },
     },
@@ -398,7 +401,7 @@ function Header({
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
-          {aiCapability === 'temporarilyUnavailable' ? (
+          {aiCapability === 'temporarilyUnavailable' && !canAuthorChatbots ? (
             <Tooltip
               tooltip={t('manage.ai.temporarilyUnavailableDescription')}
               delay={0}
@@ -407,7 +410,7 @@ function Header({
             >
               {aiMenu}
             </Tooltip>
-          ) : aiCapability === 'enabled' ? (
+          ) : showBroaderAi || canAuthorChatbots ? (
             aiMenu
           ) : null}
           {learningAnalyticsEnabled ? (

@@ -51,14 +51,20 @@ describe('isManageAiEnabled', () => {
   })
 
   test('opens only when the flag and the account entitlement both hold', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(true)
   })
 
   test('stays closed for an entitled account outside the beta', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate()
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
@@ -67,7 +73,10 @@ describe('isManageAiEnabled', () => {
   // The expensive half of the gate: an account inside the beta that has not
   // supplied a cost center must not be able to spend model budget.
   test('stays closed inside the beta without the account entitlement', async () => {
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: false })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: false,
+      betaEnabled: true,
+    })
     const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
@@ -92,7 +101,10 @@ describe('isManageAiEnabled', () => {
       'fetch',
       vi.fn().mockResolvedValue(new Response('unavailable', { status: 503 }))
     )
-    mocks.findUniqueUser.mockResolvedValue({ aiFeaturesEnabled: true })
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    })
     const getCapability = await loadCapability({
       apiHost: 'https://growthbook.test',
       clientKey: 'sdk-test',
@@ -102,5 +114,16 @@ describe('isManageAiEnabled', () => {
       'temporarilyUnavailable'
     )
     vi.unstubAllGlobals()
+  })
+  test.each([
+    false,
+    null,
+  ])('denies an opted-out or unknown preference (%s) despite forced rollout', async (betaEnabled) => {
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled,
+    })
+    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
+    await expect(getCapability(lecturer)).resolves.toBe('disabled')
   })
 })

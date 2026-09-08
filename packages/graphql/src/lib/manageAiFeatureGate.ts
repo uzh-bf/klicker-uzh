@@ -28,22 +28,23 @@ export async function getManageAiCapability(
   ctx: ContextWithUser
 ): Promise<ManageAiCapabilityState> {
   const account = await ctx.prisma.user.findUnique({
-    select: { aiFeaturesEnabled: true },
+    select: { aiFeaturesEnabled: true, betaEnabled: true },
     where: { id: ctx.user.sub },
   })
 
   // The database entitlement is the immediate per-account stop. Do not ask
   // GrowthBook for an answer when the account is not entitled, so an outage
   // cannot make a denied account appear temporarily unavailable.
-  if (account?.aiFeaturesEnabled !== true) {
+  if (account?.aiFeaturesEnabled !== true || account.betaEnabled !== true) {
     return 'disabled'
   }
 
   try {
     return (
-      ctx.featureFlags?.getAiBetaDecision(
-        manageAiFeatureFlagAttributes(ctx.user)
-      ) ?? 'temporarilyUnavailable'
+      ctx.featureFlags?.getAiBetaDecision({
+        ...manageAiFeatureFlagAttributes(ctx.user),
+        betaEnabled: account.betaEnabled,
+      }) ?? 'temporarilyUnavailable'
     )
   } catch {
     console.warn(

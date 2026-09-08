@@ -83,7 +83,7 @@ export async function mockManageAiCapability(
 
   await page.route('**/api/graphql*', async (route) => {
     if (getGraphqlOperationName(route.request()) !== 'ManageAiCapability') {
-      await route.continue()
+      await route.fallback()
       return
     }
 
@@ -130,12 +130,10 @@ export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
-    betaSignup = false,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
-    betaSignup?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
@@ -153,7 +151,6 @@ export async function mockGrowthBookFeatureFlags(
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: aiBeta },
-          'beta-signup': { defaultValue: betaSignup },
           'learning-analytics': { defaultValue: learningAnalytics },
         },
       }),
@@ -175,12 +172,14 @@ export async function mockBetaEnrollmentGraphQL(
   page: Page,
   {
     beforeSetResponse,
+    failPreferenceRefresh = false,
     membership: initialMembership,
     mayChange: initialMayChange,
     onSet,
     signupAvailable,
   }: {
     beforeSetResponse?: () => Promise<void>
+    failPreferenceRefresh?: boolean
     membership: boolean | null
     mayChange: boolean
     onSet?: (enabled: boolean) => void
@@ -201,6 +200,7 @@ export async function mockBetaEnrollmentGraphQL(
   )
   let membership = initialMembership
   let mayChange = initialMayChange
+  let preferenceWritten = false
 
   await page.route('**/api/graphql*', async (route) => {
     const request = route.request()
@@ -222,6 +222,15 @@ export async function mockBetaEnrollmentGraphQL(
     const hash = extensions?.persistedQuery?.sha256Hash
     const operationName =
       body?.operationName ?? (hash ? persistedNames[hash] : undefined)
+
+    if (
+      operationName === 'ManageFeaturePreferences' &&
+      preferenceWritten &&
+      failPreferenceRefresh
+    ) {
+      await route.abort('failed')
+      return
+    }
 
     if (operationName === 'BetaEnrollment') {
       await route.fulfill({
@@ -251,6 +260,7 @@ export async function mockBetaEnrollmentGraphQL(
       onSet?.(enabled)
       await beforeSetResponse?.()
       membership = enabled
+      preferenceWritten = true
       mayChange = enabled || signupAvailable
       await route.fulfill({
         json: {

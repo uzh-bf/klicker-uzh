@@ -399,6 +399,113 @@ Blob Storage. The user explicitly approved this bounded continuation.
 
 ## Progress
 
+### Current alignment with database beta preferences — 2026-09-07
+
+The user subsequently approved diagnosing and repairing the task-local MCP
+fixture, then finishing verification, reviews and draft delivery. A read-only
+probe found one expected server and two synthetic bindings, but ownership was
+rejected because the current seed uses `scope_token` without chatbot-ID
+forwarding. The bootstrap expects its authenticated local format. All other
+fixture ownership and binding invariants matched. A one-shot transaction,
+guarded by `createDisposableTestPrismaClient` and exact locked fixture checks,
+reconciled only that server and its two bindings to the authenticated format.
+Readback accepts ownership; canonical startup rotates credentials and starts
+the local MCP process successfully. No credentials were logged, no runtime
+source change was added to this PR, and the temporary scripts were removed.
+The first browser run passed five of six cases. The preference-refresh case
+used `uncheck()` on a server-confirmed switch and failed its immediate state
+check; it now clicks and awaits the existing checked-state assertion. The held
+capability response now releases its completion latch in `finally` and gives
+the browser a render boundary before the final denial assertion.
+
+Browser global setup deletes course data needed by the unrelated MCP fixture,
+so its next full-profile startup fails again. A temporary compatibility patch
+did not restore startup and was fully reverted. The focused rerun uses a
+temporary host-launcher selection of the existing `manage,email` profiles,
+preserving managed startup, host browser execution and disposable database
+guards. Restore that one-line launcher change before any commit. No permanent
+runtime correction belongs in this GrowthBook-only package.
+
+The user approved aligning this package with the merged beta-preference and
+approval contract. Integrate `v3-ai` at
+`df1ea25580136bf1dc70b05dc8e18a633374b371` into the existing task branch. This
+amendment supersedes the historical saved-group settings and combined chatbot
+authoring assumptions below; it does not authorize deployment or live writes.
+
+Preserve upstream database-owned `User.betaEnabled`, separate preapproval
+chatbot authoring, and `User.aiFeaturesEnabled` approval for publication and
+model usage. Broader AI resilience requires both live database values to be
+true before evaluation. Pass the trusted preference into the sanitized actor
+key. Keep the approved 15-minute prior-fresh-actor grace exclusive to the
+broader AI decision; generic evaluation and chatbot authoring retain the
+120-second bound. Unknown database state never authorizes access.
+
+Confirmed opt-out must immediately disable both authoring and broader AI,
+clear retained capability presentation, and refresh preferences. Failed
+refresh or an older in-flight enabled response must not undo that denial.
+Retain isolated identity resolution and upstream Beta Features discovery.
+
+| Workstream | Owner | Acceptance |
+| --- | --- | --- |
+| Bounded decision adaptation | Main | Preference changes cannot reuse stale actor allowances |
+| Backend integration | Main | Live opt-out and approval revocation deny before evaluation; denial/outage tests |
+| Frontend preference and authoring reconciliation | Executor | Separate authoring, immediate confirmed opt-out, isolated identity, stable outage UI |
+| Integrated verification, documentation, draft delivery | Main | Generation, affected builds/checks, focused tests, browser race evidence, reviews and draft readback |
+
+The planner approved this amendment after adding explicit preference-race
+coverage and ownership. Existing test seams are extended rather than adding
+a new test framework. Integration and authorization remain with the main
+session because they share security-sensitive contracts. No new migration,
+dependency, flag, infrastructure change, or production action is included.
+Terminal delivery is the updated existing draft PR after required checks and
+reviews; target merge and deployment remain separate approvals.
+
+Current state: merge in progress; all seven textual conflicts are resolved.
+Three pre-existing transactional HTML deletions remain outside this package.
+The interrupted sandbox merge's 45 byte-identical upstream additions were
+preserved outside the repository before retrying the same target successfully.
+Feature-flags tests pass 71/71. Focused GraphQL tests pass 113/113, including
+upstream authoring authorization. Chat boundary tests pass 29/29. Prisma and
+GraphQL generation/build complete; GraphQL Rollup emits existing type warnings,
+while the separate GraphQL type check and Chat check pass. Two upstream
+evaluator test doubles were adapted to the new decision method.
+
+The frontend executor did not deliver after its narrowing checkpoint; the main
+session completed the four-file reconciliation. Confirmed opt-out is held in
+actor-scoped React memory, updates cached preferences, and overrides older
+capability responses without remounting settings. Chatbot authoring remains
+independent of approval. Six browser cases include the two opt-out races.
+
+Browser verification is blocked before tests start. The canonical host launcher
+selects the full profile; its local MCP fixture reports `Authenticated fixture
+startup failed; no credentials logged`, then rolls back. Subsequent container
+commands fail with `Lifecycle transition is blocked.` The exact runtime stop
+was requested, preserving data. No unrelated runtime fix was introduced.
+
+Manage type checking initially found one possibly-undefined preference access;
+the guard is corrected and the rerun passes. After the exact runtime recovered,
+the full build passed all 26 tasks, repository type checks passed all 40 tasks,
+and lint passed all seven tasks. Focused Manage formatting and Playwright type
+checking pass. The aggregate container check stops at its host-only Devrouter
+contract; the two host runtime/launcher suites pass all 28 tests when run on the
+host. This split is not a passing aggregate `check:all` receipt. Git whitespace
+checks pass for staged and unstaged changes.
+
+Browser proof, remaining formatting, committed-range reviews and publication
+remain pending. The merge is uncommitted; do not start another integration.
+Resume by restoring the exact task runtime through an authorized bounded
+runtime correction, then complete verification and the existing draft delivery.
+The advisor produced no usable output and is not counted as approval.
+No live GrowthBook change occurred.
+
+Runtime closeout: the exact checkout
+`/Users/rschlae/Git/klicker/klicker-uzh/trees/growthbook-feature-availability`
+was stopped through Devrouter. Provider readback through Devsy reports
+`fix-growthbook-feature-availabil` as `Stopped`; route readback reports zero
+exact checkout routes. Runtime data remains intact. The full build regenerated
+the three previously deleted transactional HTML files; those outputs were moved
+to recoverable temporary storage, preserving the pre-existing deletions.
+
 ### GrowthBook-only branch correction — 2026-09-07
 
 The user required a GrowthBook-only PR, then explicitly approved merging `v3`

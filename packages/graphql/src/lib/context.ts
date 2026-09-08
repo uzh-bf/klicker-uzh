@@ -49,6 +49,10 @@ export interface Context extends BaseContext {
   featureFlags?: FeatureFlagEvaluator
   // Catalyst adapter for generated Klicker elements and immutable artifacts.
   elementGenerationRuntime?: QuestionGenerationRuntime
+  betaPreference?: {
+    userId: string
+    value: Promise<boolean | null>
+  }
 }
 
 export interface ContextWithUser extends Context {

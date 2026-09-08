@@ -3,9 +3,98 @@ import { URL_MANAGE } from '../util/constants.js'
 import {
   mockManageAiCapability,
   mockManageUserProfileUnavailable,
+  mockGrowthBookFeatureFlags,
+  mockBetaEnrollmentGraphQL,
 } from '../util/fixtures/manage.js'
 
 test.describe('AI beta availability recovery', () => {
+  test.beforeEach(async ({ page }) => {
+    // Isolate the approval-gated surfaces from independent chatbot authoring.
+    await mockGrowthBookFeatureFlags(page, { aiBeta: false })
+  })
+
+  for (const failure of ['preference-refresh', 'older-capability'] as const) {
+    test(`confirmed opt-out wins over ${failure}`, async ({
+      loginLecturer,
+      page,
+    }) => {
+      await mockGrowthBookFeatureFlags(page, { aiBeta: true })
+      await mockManageAiCapability(page, 'ENABLED')
+      await mockBetaEnrollmentGraphQL(page, {
+        membership: true,
+        mayChange: true,
+        signupAvailable: true,
+        failPreferenceRefresh: failure === 'preference-refresh',
+      })
+      await loginLecturer()
+      await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+      await expect(page.getByTestId('ai')).toBeVisible()
+      const toggle = page.getByTestId('beta-enrollment-switch')
+      await expect(toggle).toBeChecked()
+
+      let release: (() => void) | undefined
+      let fulfilled: Promise<void> | undefined
+      if (failure === 'older-capability') {
+        let requested!: () => void
+        const requestStarted = new Promise<void>((resolve) => {
+          requested = resolve
+        })
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        let completed!: () => void
+        fulfilled = new Promise<void>((resolve) => {
+          completed = resolve
+        })
+        await page.route('**/api/graphql*', async (route) => {
+          const request = route.request()
+          const operation =
+            new URL(request.url()).searchParams.get('operationName') ??
+            request.postDataJSON()?.operationName
+          if (operation !== 'ManageAiCapability') {
+            await route.fallback()
+            return
+          }
+          requested()
+          try {
+            await held
+            await route.fulfill({
+              json: { data: { manageAiCapability: 'ENABLED' } },
+            })
+          } finally {
+            completed()
+          }
+        })
+        await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+        await requestStarted
+      }
+
+      try {
+        await toggle.click()
+        await expect(toggle).not.toBeChecked()
+        await expect(page.getByTestId('ai')).not.toBeAttached()
+        release?.()
+        await fulfilled
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve())
+              )
+            )
+        )
+        if (failure === 'preference-refresh') {
+          await expect(
+            page.getByTestId('beta-enrollment-refresh-failure')
+          ).toBeVisible()
+        }
+        await expect(page.getByTestId('ai')).not.toBeAttached()
+      } finally {
+        release?.()
+      }
+    })
+  }
+
   test('keeps the AI entry visible while unavailable and recovers without a reload', async ({
     loginLecturer,
     page,

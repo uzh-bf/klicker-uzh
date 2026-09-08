@@ -56,18 +56,21 @@ export async function getManageAiCapability(
   user: AuthenticatedManageUser
 ): Promise<AiBetaDecision> {
   const account = await prisma.user.findUnique({
-    select: { aiFeaturesEnabled: true },
+    select: { aiFeaturesEnabled: true, betaEnabled: true },
     where: { id: user.sub },
   })
 
-  if (account?.aiFeaturesEnabled !== true) {
+  if (account?.aiFeaturesEnabled !== true || account.betaEnabled !== true) {
     return 'disabled'
   }
 
   const featureFlags = getFeatureFlagClient()
   try {
     await featureFlags.initialize()
-    return featureFlags.getAiBetaDecision(manageFeatureFlagAttributes(user))
+    return featureFlags.getAiBetaDecision({
+      ...manageFeatureFlagAttributes(user),
+      betaEnabled: account.betaEnabled,
+    })
   } catch {
     console.warn(
       '[feature-flags] AI beta evaluation failed; temporarily unavailable'

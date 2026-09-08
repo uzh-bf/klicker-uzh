@@ -154,6 +154,9 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.getAiBetaDecision(disabledAttributes)).toBe(
       'temporarilyUnavailable'
     )
+    expect(
+      client.getAiBetaDecision({ ...enabledAttributes, betaEnabled: false })
+    ).toBe('temporarilyUnavailable')
     expect(client.isEnabled('learning-analytics', enabledAttributes)).toBe(
       false
     )

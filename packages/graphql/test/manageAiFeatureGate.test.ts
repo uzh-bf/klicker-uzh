@@ -6,7 +6,10 @@ import {
   isManageAiEnabled,
   manageAiFeatureFlagAttributes,
 } from '../src/lib/manageAiFeatureGate.js'
-import { getManageChatModelRegistry } from '../src/services/chatbots.js'
+import {
+  getManageChatModelRegistry,
+  updateChatbotModelSettings,
+} from '../src/services/chatbots.js'
 
 function createContext(
   aiFeaturesEnabled: boolean | null,
@@ -14,16 +17,17 @@ function createContext(
     | 'enabled'
     | 'disabled'
     | 'temporarilyUnavailable'
-    | Error = 'disabled'
+    | Error = 'disabled',
+  betaEnabled: boolean | null = true
 ) {
   const findUnique = vi
     .fn()
     .mockResolvedValue(
-      aiFeaturesEnabled === null ? null : { aiFeaturesEnabled }
+      aiFeaturesEnabled === null ? null : { aiFeaturesEnabled, betaEnabled }
     )
   const ctx = {
     featureFlags: {
-      isEnabled: vi.fn(),
+      isEnabled: vi.fn(() => featureFlagDecision === 'enabled'),
       getAiBetaDecision: vi.fn(() => {
         if (featureFlagDecision instanceof Error) throw featureFlagDecision
         return featureFlagDecision
@@ -112,12 +116,41 @@ describe('Manage AI feature gate', () => {
     })
   })
 
-  test('keeps the Manage chatbot model registry behind the gate', async () => {
-    const { ctx, findUnique } = createContext(true, 'disabled')
+  test.each([
+    false,
+    null,
+  ])('denies beta opt-out or unknown preference (%s) before evaluation', async (betaEnabled) => {
+    const { ctx } = createContext(true, 'enabled', betaEnabled)
+    await expect(getManageAiCapability(ctx)).resolves.toBe('disabled')
+    expect(ctx.featureFlags?.getAiBetaDecision).not.toHaveBeenCalled()
+  })
 
-    await expect(getManageChatModelRegistry(ctx)).rejects.toMatchObject({
-      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
-    })
-    expect(findUnique).toHaveBeenCalledTimes(1)
+  test('passes the trusted beta preference to the decision', async () => {
+    const { ctx } = createContext(true, 'enabled')
+    await expect(getManageAiCapability(ctx)).resolves.toBe('enabled')
+    expect(ctx.featureFlags?.getAiBetaDecision).toHaveBeenCalledWith(
+      expect.objectContaining({ betaEnabled: true })
+    )
+  })
+
+  test('allows chatbot model access without Manage AI approval', async () => {
+    const { ctx } = createContext(false, 'enabled')
+    await expect(getManageChatModelRegistry(ctx)).resolves.toEqual(
+      expect.any(Array)
+    )
+  })
+
+  test('denies chatbot authoring before reading chatbot data', async () => {
+    const { ctx } = createContext(true, 'disabled')
+    await expect(
+      updateChatbotModelSettings(
+        {
+          allowedModelIds: [],
+          chatbotId: 'chatbot-1',
+          modelSelection: true,
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
   })
 })
