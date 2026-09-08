@@ -142,6 +142,7 @@ function createChatbot(
       },
     ],
     modelSelection: false,
+    owner: { aiFeaturesEnabled: true },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
     systemPrompts: { tutor: 'Tutor instructions' },
@@ -215,6 +216,22 @@ describe('POST owner preview chat', () => {
     expect(response.status).toBe(403)
     expect(mocks.readBoundedJson).not.toHaveBeenCalled()
     expect(mocks.findChatbot).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unapproved owner before model resolution or provider work', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({ owner: { aiFeaturesEnabled: false } })
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(mocks.getModelsForChatbot).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getChatModel).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   it('rate limits before reading or validating the request body', async () => {

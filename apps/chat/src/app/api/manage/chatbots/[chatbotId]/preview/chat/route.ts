@@ -137,6 +137,7 @@ export async function POST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
+      owner: { select: { aiFeaturesEnabled: true } },
       course: {
         select: { displayName: true },
       },
@@ -153,6 +154,12 @@ export async function POST(
   })
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    return NextResponse.json(
+      { error: 'Account AI approval is required for preview' },
+      { status: 403 }
+    )
   }
 
   const modeOptions = resolveEffectiveChatModeOptions(

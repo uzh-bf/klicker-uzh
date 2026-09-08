@@ -75,8 +75,18 @@ after scrolling to the end. Playwright TypeScript also passes. The complete
 Playwright suite and repository-wide check/build are not claimed; focused
 container checks replaced host hooks for this integration commit.
 
-Remaining: integrated final review, draft PR publication and the separate KB
-planning artifact. STG and production remain unvalidated.
+Final review identified a missing account AI approval check before preview
+model usage. ADRs 0020 and 0041 require `owner.aiFeaturesEnabled` independently
+of beta authoring. The correction reads that flag in the owner-scoped query and
+returns 403 before model resolution, MCP discovery or streaming when unapproved.
+The narrow regression fixture explicitly distinguishes approved and unapproved
+owners. This preserves the accepted authorization contract; it does not gate
+draft configuration on AI approval. Main owns this small security-sensitive
+correction; delegation overhead exceeds its implementation size.
+
+Remaining: verify and commit the correction, same-reviewer correction pass,
+draft PR publication. The separate multi-KB planning artifact is ready for user
+rulings but uncommitted. STG and production remain unvalidated.
 
 ## Primitive impact
 
