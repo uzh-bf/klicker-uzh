@@ -1,91 +1,138 @@
-# Staging and production scaling proposal
+# Three-day capacity increase and resource sizing
 
-Status: **draft; not ready to merge or deploy**. This change proposes deployment
-values for review. Resource sizes are provisional engineering estimates and
-must be reconciled with representative Goldilocks recommendations before release.
-Detailed operational evidence is retained locally and is not part of this public PR.
+Status: **draft; capacity and release validation required before deployment**.
+The temporary replica plan targets roughly twice normal demand for a 72-hour
+usage window. Replica counts are a capacity precaution, not a demonstrated
+throughput guarantee. Resource-request corrections are intended to remain after
+the temporary window. Operational measurements are retained locally.
 
-## Replica plan
+## Temporary production replicas
 
-| Environment / values key     | Before → proposed | Reason                                                                                                                                      |
-| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production `chat`            | 1 → 2             | Add serving redundancy; validate multi-pod streaming and persistence in staging first. A failed pod can still interrupt its active streams. |
-| Production `frontendControl` | 1 → 2             | Add a second serving process for lecturer controls.                                                                                         |
-| Production `olatApi`         | 1 → 2             | Add a second serving process for LMS integration.                                                                                           |
-| Staging `chat`               | 1 → 2             | Establish the multi-pod validation topology for the production change.                                                                      |
+| Values key                          | Normal → temporary | Restore after window | Reason                                                                                     |
+| ----------------------------------- | ------------------ | -------------------- | ------------------------------------------------------------------------------------------ |
+| `auth`                              | 3 → 6              | 3                    | More concurrent student logins at class starts.                                            |
+| `frontendPWA`                       | 4 → 8              | 4                    | Double the student-facing serving pool.                                                    |
+| `backendGraphql`                    | 4 → 8              | 4                    | Double the main API serving pool.                                                          |
+| `responseApi`                       | 4 → 8              | 4                    | Double response-ingestion processes for synchronized submissions.                          |
+| `hatchet.workers.responseProcessor` | 4 → 8              | 4                    | Increase aggregate response-processing capacity; per-instance serialization still applies. |
+| `hatchet.workers.general`           | 2 → 4              | 2                    | Increase background-task capacity accompanying activity use.                               |
+| `frontendManage`                    | 3 → 4              | 3                    | Modest lecturer-facing headroom; student growth does not imply twice as many lecturers.    |
+| `frontendControl`                   | 1 → 2              | 1                    | Add lecturer-control redundancy.                                                           |
+| `olatApi`                           | 1 → 2              | 1                    | Add LMS-integration concurrency and redundancy.                                            |
+| `chat`                              | 1 → 2              | 1                    | Add chat-serving capacity; upstream limits remain independent.                             |
 
-Existing anti-affinity is preferred, not required. Verify actual placement;
-two replicas do not guarantee node or zone redundancy. Other replica counts
-remain unchanged pending throughput, queue-delay and availability evidence.
+**All staging replica settings remain unchanged, including chat at one. All
+assessment replica settings remain unchanged**, including the assessment
+response worker. LTI replica/autoscaling settings are outside this change.
 
-## Production memory-request plan
+Preferred anti-affinity does not guarantee node or zone separation. Check actual
+placement. More pods do not multiply database, Redis, Hatchet or model-provider
+capacity; verify those dependencies, connection counts and queue behavior.
 
-All values are per container. Raising reservations lets the scheduler account
-for more of the expected workload footprint. These proposed sizes need validation
-under representative traffic; they are not claimed to be VPA recommendations.
-Existing CPU requests and all resource limits remain unchanged. Staging memory
-requests also remain unchanged pending environment-specific measurements.
+## Production memory requests retained after the window
 
-| Values key                                    | Request before → proposed | Purpose                                                                         |
-| --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
-| `auth`                                        | 50Mi → 192Mi              | Increase the serving-process reservation.                                       |
-| `frontendManage`                              | 50Mi → 256Mi              | Provide a larger reservation for the lecturer frontend.                         |
-| `frontendControl`                             | 50Mi → 96Mi               | Reserve memory for both proposed serving replicas.                              |
-| `olatApi`                                     | 50Mi → 128Mi              | Reserve memory for both proposed integration replicas.                          |
-| `backendGraphql`                              | 200Mi → 384Mi             | Increase reservation for the main API.                                          |
-| `hatchet.workers.general`                     | 64Mi → 512Mi              | Give general background tasks a larger baseline; retain the existing 2Gi limit. |
-| `hatchet.workers.responseProcessor`           | 64Mi → 192Mi              | Increase the response-processing baseline.                                      |
-| `hatchet.workers.responseProcessorAssessment` | 64Mi → 192Mi              | Apply the same processing reservation to assessment workers.                    |
-| `responseApi`                                 | 50Mi → 96Mi               | Increase the response-ingestion reservation.                                    |
-| `assessment.responseApi`                      | 50Mi → 96Mi               | Apply the same ingestion reservation to assessment.                             |
+All values are per container. These reservations remain provisional pending
+representative environment-specific sizing validation. CPU requests and resource
+limits are unchanged.
 
-The rendered change adds **production +3 pods, +150m CPU requests and +4620Mi
-memory requests (~4.51Gi)**. Of that memory increase, 650Mi is for assessment
-workloads. Staging adds **+1 pod, +50m CPU and +250Mi memory requests**.
-These are differences calculated from this public chart, not observations of
-cluster capacity, predictions of utilization or monetary estimates.
+| Values key                                    | Request before → proposed |
+| --------------------------------------------- | ------------------------- |
+| `auth`                                        | 50Mi → 192Mi              |
+| `frontendManage`                              | 50Mi → 256Mi              |
+| `frontendControl`                             | 50Mi → 96Mi               |
+| `olatApi`                                     | 50Mi → 128Mi              |
+| `backendGraphql`                              | 200Mi → 384Mi             |
+| `hatchet.workers.general`                     | 64Mi → 512Mi              |
+| `hatchet.workers.responseProcessor`           | 64Mi → 192Mi              |
+| `hatchet.workers.responseProcessorAssessment` | 64Mi → 192Mi              |
+| `responseApi`                                 | 50Mi → 96Mi               |
+| `assessment.responseApi`                      | 50Mi → 96Mi               |
 
-## Evidence and release gates
+## Staging resources
 
-1. Obtain representative Goldilocks recommendations for each environment and
-   reconcile the proposed values. Inspect recommendation age, conditions,
-   bounds and policy caps, alongside peak teaching/assessment traffic, latency,
-   throttling, OOM events and queue delay. Do not downsize based on idle samples.
-2. Verify staging capacity and authorize its release through the normal GitOps
-   process. Check two chat pods, actual placement, login, streaming, tool calls,
-   persisted history across pods, DB connections and controlled-restart behavior.
-   Use synthetic content and explicitly authorized upstream calls.
-3. Confirm production steady-state, rollout-surge and node-failure capacity,
-   admission rules, scheduling constraints and autoscaler ownership. Changing
-   resource requests rolls existing pods too. Three additional simultaneous
-   singleton surges would require another 150m CPU beyond the steady-state
-   delta, plus the surge requests of other affected workloads. Account for all
-   namespaces and reconcile live-versus-Git drift before release.
-4. After approval, coordinate rollout waves in the owning release process and
-   monitor Ready/desired counts, Pending pods, OOMs, restarts, latency, error
-   rate, chat interruptions, DB connections and queue delay. Exercise lecturer
-   controls, OLAT and assessment flows. Halt on regressions or unavailable pods.
-5. Roll back only these values through GitOps if needed, preserving current
-   image tags and release annotations. A rollback also rolls pods and needs
-   scheduling headroom.
+Use rounded memory requests at or above the staging VPA target where the existing
+request is too small. This is a conservative sizing policy, not a literal copy
+of Goldilocks' Burstable view. Retain larger existing requests, existing CPU
+requests, and existing memory limits except for the normal response worker:
+its new request needs additional limit headroom. Assessment resource corrections
+are independent of the excluded assessment replica increases.
 
-Goldilocks supplies container resource recommendations; replica count decisions
-also need availability and throughput requirements. Its Burstable view uses VPA
-`lowerBound` for requests and `upperBound` for limits; Guaranteed uses `target`
+| Values key                                    | Request before → proposed | Limit change                    |
+| --------------------------------------------- | ------------------------- | ------------------------------- |
+| `auth`                                        | 50Mi → 192Mi              | None (200Mi)                    |
+| `frontendManage`                              | 50Mi → 192Mi              | None (200Mi)                    |
+| `frontendControl`                             | 50Mi → 128Mi              | None (200Mi)                    |
+| `olatApi`                                     | 50Mi → 128Mi              | None (200Mi)                    |
+| `backendGraphql`                              | 200Mi → 384Mi             | None (600Mi)                    |
+| `chat`                                        | 250Mi → 320Mi             | None (768Mi); still one replica |
+| `hatchet.workers.general`                     | 64Mi inherited → 384Mi    | None (2Gi)                      |
+| `hatchet.workers.responseProcessor`           | 64Mi inherited → 256Mi    | 256Mi inherited → 512Mi         |
+| `hatchet.workers.responseProcessorAssessment` | 64Mi inherited → 192Mi    | None (256Mi)                    |
+| `responseApi`                                 | 50Mi → 128Mi              | None (200Mi)                    |
+| `assessment.responseApi`                      | 50Mi → 128Mi              | None (200Mi)                    |
+
+Leave both PWA requests, assessment GraphQL and LTI unchanged. Environment-specific
+recommendations should not be transferred blindly between staging and production.
+No MCP service changes are included in this chart revision.
+
+## Reservation deltas and capacity prerequisite
+
+Compared with the base chart, the production proposal adds **25 pods, 1650m CPU
+requests and 9964Mi memory requests (~9.73Gi)**. Of the memory increase, 650Mi
+belongs to assessment resource corrections, with no extra assessment pods.
+Staging adds **1490Mi memory requests**, with **zero additional pods or CPU
+requests**. These are computed manifest deltas, not private cluster observations.
+
+**Provision or verify sufficient eligible application-node capacity before
+release.** Do not assume the existing pool can place the extra pods or that its
+autoscaler is enabled, within bounds, or fast enough. Have the infrastructure
+owner check steady-state placement, rollout surge and a node failure. Account
+for all namespaces, taints, architecture, affinity, overhead and other rollouts.
+Do not use assessment-reserved nodes to meet normal application capacity needs.
+No node-pool changes or direct scaling commands are part of this PR.
+
+Rolling updates need capacity beyond the stated delta. Resource-request changes
+also roll existing workloads. Coordinate release waves and stop on persistent
+Pending pods; do not try to compensate by lowering justified requests.
+
+## Activation and explicit scale-back
+
+1. Record the actual activation timestamp, owner and **activation +72 hours**
+   scale-back timestamp in the private release record. Confirm the window with
+   the event owner; merging this PR does not schedule automatic scale-back.
+2. Validate the staging resource change at its unchanged replica topology.
+   Exercise login, chat and activity flows. Multi-pod production chat needs a
+   separately authorized validation; a one-pod staging test cannot prove it.
+3. Verify dependency limits and eligible production capacity, then authorize
+   the normal GitOps release. Check Ready/desired counts and actual placement
+   before the student peak begins. Image tags and release annotations are
+   preserved by this change; reconcile unrelated live-versus-Git drift first.
+4. Monitor latency, errors, OOMs, restarts, CPU throttling, connection counts,
+   response-processing queue delay and chat interruptions throughout the event.
+   Investigate dependency bottlenecks before increasing replicas further.
+5. At the recorded end, confirm traffic and queues have subsided and restore
+   **only the ten replica settings in the table** to their normal values in a
+   follow-up GitOps change. Keep both environments' resource corrections.
+   Drain workers and allow in-flight requests/streams to finish; monitor the
+   scale-down and pause it if demand remains elevated. No automatic rollback
+   or scheduled cluster mutation is created by this PR.
+6. For an earlier regression, revert the affected settings through GitOps while
+   preserving current release versions. Resource rollback also rolls pods and
+   needs surge capacity.
+
+Goldilocks sizes containers, not replica counts. Its Burstable view maps VPA
+`lowerBound` to requests and `upperBound` to limits; Guaranteed uses `target`
 for both. See the official [FAQ](https://github.com/FairwindsOps/goldilocks/blob/master/docs/faq.md).
 
 ## Verification
 
-- Both environments pass `helm lint` and `helm template`.
-- A structural before/after comparison confirms that only the listed Deployment
-  replica and memory-request fields change. Images and release annotations are
-  preserved.
-- Repository-version Prettier and `git diff --check` pass.
-- Independent review confirmed the rendered scope and arithmetic.
-- `pnpm run check:all` and `pnpm run build` could not start in the fresh worktree
-  without installed dependencies (`ERR_PNPM_VERIFY_DEPS_BEFORE_RUN`).
-- Application, browser, load and failover checks remain unrun. Review CI
-  separately; deployment-only fallback build checks are not application builds.
+Both values files pass Helm lint and rendering. A structural comparison permits
+only the intended replica and resource changes and asserts that all staging and
+assessment replica fields are unchanged. CPU requests/limits and image versions
+are preserved. Formatting, secret scanning and independent review are checked
+before publishing the revision.
 
-No deployment or cluster mutation was performed. Keep the PR in draft until the
-required evidence and release gates are satisfied.
+Full pnpm checks/build could not start in this fresh worktree without installed
+dependencies (`ERR_PNPM_VERIFY_DEPS_BEFORE_RUN`). Runtime, load and failover tests
+remain unrun; CI is not a substitute for the capacity/release gates above. No
+cluster mutation or deployment was performed.
