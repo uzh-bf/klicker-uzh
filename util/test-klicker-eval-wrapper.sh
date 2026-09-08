@@ -83,6 +83,17 @@ if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
   exec "$4"
 fi'
 
+write_file "$FAKE_BIN/git" '#!/usr/bin/env bash
+if [ "${1:-}" = "init" ] && [ "${2:-}" = "--bare" ] && [ -n "${3:-}" ]; then
+  mkdir -p "$3"
+  exit 0
+fi
+if [ "${1:-}" = "-C" ] && [ "${3:-}" = "rev-parse" ] && [ "${4:-}" = "HEAD" ]; then
+  printf "%s\\n" "synthetic-framework-revision"
+  exit 0
+fi
+exit 2'
+
 write_file "$FAKE_BIN/infisical" '#!/usr/bin/env bash
 if [ -n "${KLICKER_TEST_INFISICAL_LOG:-}" ]; then
   printf "%s\n" "$*" >>"$KLICKER_TEST_INFISICAL_LOG"
@@ -97,7 +108,7 @@ fi
 printf "%s" "synthetic-test-key"
 exit 0'
 
-chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv" "$FAKE_BIN/infisical"
+chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv" "$FAKE_BIN/git" "$FAKE_BIN/infisical"
 TEST_PATH="$FAKE_BIN:$(dirname "$(command -v bash)"):/usr/bin:/bin"
 # Minimal path for the missing-CLI case: it must contain no infisical, so it
 # cannot reuse TEST_PATH (the bash directory may itself ship a real CLI).
@@ -105,6 +116,14 @@ MIN_BIN="$TEST_ROOT/min-bin"
 mkdir -p "$MIN_BIN"
 ln -s "$(command -v bash)" "$MIN_BIN/bash"
 ln -s "$(command -v dirname)" "$MIN_BIN/dirname"
+NO_INFISICAL_BIN="$TEST_ROOT/no-infisical-bin"
+mkdir -p "$NO_INFISICAL_BIN"
+ln -s "$FAKE_BIN/node" "$NO_INFISICAL_BIN/node"
+ln -s "$FAKE_BIN/uv" "$NO_INFISICAL_BIN/uv"
+ln -s "$FAKE_BIN/git" "$NO_INFISICAL_BIN/git"
+ln -s "$(command -v bash)" "$NO_INFISICAL_BIN/bash"
+ln -s "$(command -v dirname)" "$NO_INFISICAL_BIN/dirname"
+NO_INFISICAL_PATH="$NO_INFISICAL_BIN:/usr/bin:/bin"
 if PATH="$TEST_PATH" command -v rs-infisical-operator >/dev/null 2>&1; then
   fail 'portable wrapper test path must not contain rs-infisical-operator'
 fi
@@ -117,11 +136,171 @@ write_file "$FAKE_REPO/evaluation/framework/data/input/metrics/metrics.yaml" 'me
 write_file "$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" 'metrics: []'
 write_file "$FAKE_REPO/evaluation/data/tools/klicker_fineco.yaml" 'tools: []'
 write_file "$FAKE_REPO/evaluation/data/canaries/klicker_local_mcp.json" '{}'
+write_file "$FAKE_REPO/synthetic-qa.json" '{"synthetic":true}'
 mkdir -p "$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco"
 mkdir -p "$FAKE_REPO/util" "$FAKE_REPO/apps/chat/scripts"
 cp "$SOURCE_WRAPPER" "$FAKE_REPO/util/_run_klicker_eval.sh"
 chmod +x "$FAKE_REPO/util/_run_klicker_eval.sh"
 WRAPPER="$FAKE_REPO/util/_run_klicker_eval.sh"
+
+HELP_REPO="$TEST_ROOT/help-repo"
+mkdir -p "$HELP_REPO/util"
+cp "$SOURCE_WRAPPER" "$HELP_REPO/util/_run_klicker_eval.sh"
+chmod +x "$HELP_REPO/util/_run_klicker_eval.sh"
+EMPTY_BIN="$TEST_ROOT/empty-bin"
+mkdir -p "$EMPTY_BIN"
+BASH_BIN="$(command -v bash)"
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+env -i \
+  PATH="$EMPTY_BIN" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$BASH_BIN" "$HELP_REPO/util/_run_klicker_eval.sh" --help \
+  >"$TEST_ROOT/help.out" 2>&1
+
+[ -s "$TEST_ROOT/help.out" ] || fail 'help must produce usage output'
+[ ! -s "$CHILD_LOG" ] || fail 'help must not invoke the evaluator'
+[ ! -s "$INFISICAL_LOG" ] || fail 'help must not invoke Infisical'
+
+assert_parser_rejection() {
+  local name="$1"
+  shift
+  local status=0
+
+  : >"$CHILD_LOG"
+  : >"$INFISICAL_LOG"
+  env -i \
+    PATH="$NO_INFISICAL_PATH" \
+    KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+    KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+    KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+    "$WRAPPER" "$@" >"$TEST_ROOT/$name.out" 2>&1 || status=$?
+
+  [ "$status" -eq 1 ] || fail "$name must fail before execution"
+  [ ! -s "$CHILD_LOG" ] || fail "$name must not invoke the evaluator"
+  [ ! -s "$INFISICAL_LOG" ] || fail "$name must not invoke Infisical"
+}
+
+assert_parser_rejection invalid-mode --mode unsupported
+assert_parser_rejection missing-mode --mode
+assert_parser_rejection local-target-eval --local-target --mode eval
+assert_parser_rejection unknown-option --unknown-option
+assert_parser_rejection missing-qa-file --mode eval --qa-file
+assert_parser_rejection missing-gt-dir --mode query --gt-dir
+assert_parser_rejection missing-metrics --mode eval --metrics
+assert_parser_rejection missing-safety-file --mode safety --safety-file
+
+assert_explicit_path_rejection() {
+  local name="$1"
+  shift
+  local status=0
+
+  : >"$CHILD_LOG"
+  : >"$INFISICAL_LOG"
+  env -i \
+    PATH="$NO_INFISICAL_PATH" \
+    KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+    KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+    KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+    "$WRAPPER" "$@" >"$TEST_ROOT/$name.out" 2>&1 || status=$?
+
+  [ "$status" -eq 1 ] || fail "$name must fail for an unreadable input"
+  [ ! -s "$CHILD_LOG" ] || fail "$name must not invoke the evaluator"
+  [ ! -s "$INFISICAL_LOG" ] || fail "$name must not invoke Infisical"
+}
+
+assert_explicit_path_rejection unreadable-qa-file \
+  --mode eval --qa-file "$TEST_ROOT/missing-qa.json"
+assert_explicit_path_rejection unreadable-gt-dir \
+  --mode query --gt-dir "$TEST_ROOT/missing-gt-dir"
+assert_explicit_path_rejection unreadable-metrics \
+  --mode eval --metrics "$TEST_ROOT/missing-metrics.yaml"
+assert_explicit_path_rejection unreadable-safety-file \
+  --mode safety --safety-file "$TEST_ROOT/missing-safety.json"
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  EVAL_METRICS_PATH="$TEST_ROOT/missing-target-metrics.yaml" \
+  EVAL_ENDPOINT_URL='https://target.example.test/v1/chat/completions' \
+  EVAL_API_KEY='synthetic-target-key' \
+  PATH="$NO_INFISICAL_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode query \
+  >"$TEST_ROOT/query-without-metrics.out" 2>&1 || status=$?
+
+[ "$status" -eq 0 ] || fail "target-only query with missing metrics returned $status"
+assert_line "EVAL_METRICS_PATH=$TEST_ROOT/missing-target-metrics.yaml" "$CHILD_LOG"
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+status=0
+env -i \
+  EVAL_ENDPOINT_URL='https://target.example.test/v1/chat/completions' \
+  EVAL_API_KEY='synthetic-target-key' \
+  PATH="$NO_INFISICAL_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" \
+  >"$TEST_ROOT/default-query.out" 2>&1 || status=$?
+
+[ "$status" -eq 0 ] || fail "default query returned $status"
+assert_line 'ARG=--no-dotenv' "$CHILD_LOG"
+[ ! -s "$INFISICAL_LOG" ] || fail 'default query must not invoke Infisical'
+
+: >"$CHILD_LOG"
+status=0
+env -i \
+  EVAL_ENDPOINT_URL='https://target.example.test/v1/chat/completions' \
+  EVAL_API_KEY='synthetic-target-key' \
+  PATH="$NO_INFISICAL_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode=query \
+  >"$TEST_ROOT/equals-mode.out" 2>&1 || status=$?
+
+[ "$status" -eq 0 ] || fail "normalized mode returned $status"
+assert_line 'ARG=--mode' "$CHILD_LOG"
+assert_line 'ARG=query' "$CHILD_LOG"
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+status=0
+env -i \
+  EVAL_ENDPOINT_URL='https://target.example.test/v1/chat/completions' \
+  EVAL_API_KEY='synthetic-target-key' \
+  PATH="$NO_INFISICAL_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" --check --mode query \
+  >"$TEST_ROOT/check-query.out" 2>&1 || status=$?
+
+[ "$status" -eq 0 ] || fail "offline query check returned $status"
+[ -s "$TEST_ROOT/check-query.out" ] || fail 'offline check must produce diagnostics'
+[ ! -s "$CHILD_LOG" ] || fail 'offline check must not invoke the evaluator'
+[ ! -s "$INFISICAL_LOG" ] || fail 'offline check must not invoke Infisical'
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+status=0
+env -i \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$NO_INFISICAL_PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" --check --mode eval \
+  >"$TEST_ROOT/check-eval.out" 2>&1 || status=$?
+
+[ "$status" -eq 1 ] || fail "offline judge check returned $status"
+[ -s "$TEST_ROOT/check-eval.out" ] || fail 'offline judge check must produce diagnostics'
+[ ! -s "$CHILD_LOG" ] || fail 'offline judge check must not invoke the evaluator'
+[ ! -s "$INFISICAL_LOG" ] || fail 'offline judge check must not invoke Infisical'
 
 env -i \
   LITELLM_API_BASE='https://litellm.example.test' \
@@ -173,10 +352,10 @@ env -i \
   EVAL_TOOLS_PATH='evaluation/data/tools/klicker_fineco.yaml' \
   GT_ROOT_DIR='evaluation/data/ground_truth/klicker_fineco' \
   DEFAULT_GT_DIR='evaluation/data/ground_truth/klicker_fineco' \
-  LITELLM_API_BASE='https://caller.example.test' \
-  LITELLM_API_KEY='synthetic-test-key' \
+  EVAL_ENDPOINT_URL='https://target.example.test/v1/chat/completions' \
+  EVAL_API_KEY='synthetic-target-key' \
   TOOL_PROFILE='caller-profile' \
-  PATH="$TEST_PATH" \
+  PATH="$NO_INFISICAL_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   "$WRAPPER" --mode query --tool-profile explicit-profile
@@ -188,7 +367,10 @@ assert_line 'EVAL_METRICS_PATH=evaluation/framework/data/input/metrics/metrics.y
 assert_line 'EVAL_TOOLS_PATH=evaluation/data/tools/klicker_fineco.yaml' "$CHILD_LOG"
 assert_line 'GT_ROOT_DIR=evaluation/data/ground_truth/klicker_fineco' "$CHILD_LOG"
 assert_line 'DEFAULT_GT_DIR=evaluation/data/ground_truth/klicker_fineco' "$CHILD_LOG"
-assert_line 'LITELLM_API_BASE=https://caller.example.test' "$CHILD_LOG"
+assert_line 'LITELLM_API_BASE=' "$CHILD_LOG"
+assert_line 'EVAL_ENDPOINT_URL=https://target.example.test/v1/chat/completions' "$CHILD_LOG"
+assert_line 'EVAL_API_KEY_PRESENT=yes' "$CHILD_LOG"
+assert_line 'LITELLM_API_KEY_PRESENT=' "$CHILD_LOG"
 assert_line 'TOOL_PROFILE=caller-profile' "$CHILD_LOG"
 assert_line 'ARG=--tool-profile' "$CHILD_LOG"
 assert_line 'ARG=explicit-profile' "$CHILD_LOG"
@@ -340,7 +522,7 @@ env -i \
 assert_line 'Error: LITELLM_API_BASE must point to the approved LiteLLM proxy' "$TEST_ROOT/base-url.out"
 
 LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
-git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
+PATH="$TEST_PATH" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
 : >"$CHILD_LOG"
 env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \
