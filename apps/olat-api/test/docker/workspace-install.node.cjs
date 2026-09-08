@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+// Run explicitly with node --test; do not include in Vitest's *.test.* discovery.
 const { spawnSync } = require('node:child_process')
 const {
   mkdtempSync,

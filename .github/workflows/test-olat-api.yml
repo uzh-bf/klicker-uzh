@@ -54,7 +54,7 @@ jobs:
           run_install: true
 
       - name: Verify container workspace installation
-        run: node --test apps/olat-api/test/docker/workspace-install.test.cjs
+        run: node --test apps/olat-api/test/docker/workspace-install.node.cjs
 
       - name: Run tests using Docker
         run: |
