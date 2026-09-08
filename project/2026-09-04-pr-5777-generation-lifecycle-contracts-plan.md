@@ -220,6 +220,10 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Test-only route separation — 2026-09-08
+
+The user requires fixture controllers and proxies to stay out of production application code, including the inherited feature-read proxy. Main owns removing both routes and their type imports from app.ts, integration and verification. The bounded executor owns registration in the existing test-only preload and focused HTTP contract tests. Preserve existing fixture URLs, strict control validation, scoped evaluator state, no-store responses and normal application routing. No new production hook, permission bypass or dependency is permitted. Acceptance requires preload isolation, real HTTP fixture behavior, backend checks and the existing browser allow/deny assertions. The global rule is recorded separately in the user-requested memory update.
+
 ### Hosted CI correction — 2026-09-08
 
 Published merge candidate d2668ba6bb is mergeable and all seven reviewed threads are resolved. Hosted codebase, lightweight unit, lecturer MCP, CodeQL and SonarCloud checks pass. GraphQL exposed four failures because the real persistence suite still supplied the old feature-flag interface. Commit 667782aa58 adds the new explicit enabled decision to that existing synthetic fixture. All five real persistence cases and 14 adjacent gate cases pass in /tmp/generation-ci-fixture-check.log; production authorization and test assertions are unchanged. Main inspected the exact diff and staged Gitleaks passed.

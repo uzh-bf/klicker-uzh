@@ -279,3 +279,60 @@ test('Playwright flags preserve the configured analytics fixture', () => {
   )
   assert.equal(result.status, 0, result.stderr)
 })
+
+for (const preload of [false, true]) {
+  test(`Fixture HTTP routes require explicit preload (${preload})`, () => {
+    const env = { ...process.env, NODE_ENV: 'test' }
+    delete env.GROWTHBOOK_API_HOST
+    const result = spawnSync(
+      process.execPath,
+      [
+        ...(preload ? ['--import', fixture] : []),
+        '--input-type=module',
+        '-e',
+        `
+        import assert from 'node:assert/strict'
+        import { once } from 'node:events'
+        import express from 'express'
+        const app = express()
+        app.get('/ordinary', (_req, res) => res.json({ ordinary: true }))
+        const server = app.listen(0, '127.0.0.1')
+        await once(server, 'listening')
+        const base = 'http://127.0.0.1:' + server.address().port
+        const controller = base + '/__growthbook__/__test/learning-analytics'
+        const features = base + '/__growthbook__/api/features/sdk-test'
+        try {
+          assert.deepEqual(await (await fetch(base + '/ordinary')).json(), { ordinary: true })
+          if (!${preload}) {
+            assert.equal((await fetch(features)).status, 404)
+            assert.equal((await fetch(controller)).status, 404)
+            assert.equal((await fetch(controller + '?enabled=true', { method: 'POST' })).status, 404)
+          } else {
+            assert.equal((await fetch(features)).status, 200)
+            const initial = await fetch(controller)
+            assert.equal(initial.headers.get('cache-control'), 'no-store')
+            assert.deepEqual(await initial.json(), { enabled: true })
+            const changed = await fetch(controller + '?enabled=false', { method: 'POST' })
+            assert.deepEqual(await changed.json(), { enabled: false })
+            const payload = await (await fetch(features)).json()
+            assert.equal(payload.features['learning-analytics'].rules[0].force, false)
+            for (const query of ['', '?enabled=invalid', '?enabled=true&enabled=false', '?enabled=true&other=false']) {
+              assert.equal((await fetch(controller + query, { method: 'POST' })).status, 400)
+            }
+            assert.equal((await fetch(controller + '?enabled=true')).status, 400)
+            assert.equal((await fetch(controller, { method: 'DELETE' })).status, 405)
+            assert.deepEqual(await (await fetch(controller)).json(), { enabled: false })
+            await fetch(controller + '?enabled=true', { method: 'POST' })
+            assert.deepEqual(await (await fetch(controller)).json(), { enabled: true })
+          }
+        } finally {
+          server.closeAllConnections()
+          await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+        }
+        `,
+      ],
+      { env, encoding: 'utf8', timeout: 15000 }
+    )
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+  })
+}

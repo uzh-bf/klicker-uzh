@@ -9,11 +9,7 @@ import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from 'express'
+import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { registerKBHttpRoutes } from './kbHttpRoutes.js'
 
@@ -43,85 +39,6 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
-
-  // Expose the preload's test-fixture controller to the local test browser.
-  // Production never mounts these test-only routes.
-  if (
-    process.env.NODE_ENV === 'test' &&
-    process.env.GROWTHBOOK_API_HOST === 'https://growthbook.test' &&
-    process.env.GROWTHBOOK_CLIENT_KEY === 'sdk-test'
-  ) {
-    const learningAnalyticsControllerPath =
-      '/__growthbook__/__test/learning-analytics'
-    const learningAnalyticsControllerUpstream =
-      'https://growthbook.test/__test/learning-analytics'
-
-    app.get(
-      '/__growthbook__/api/features/sdk-test',
-      async (_req, res, next) => {
-        try {
-          const response = await fetch(
-            'https://growthbook.test/api/features/sdk-test'
-          )
-          res
-            .set('Cache-Control', 'no-store')
-            .status(response.status)
-            .json(await response.json())
-        } catch (error) {
-          next(error)
-        }
-      }
-    )
-
-    app.all(
-      learningAnalyticsControllerPath,
-      async (req: Request, res: Response, next: NextFunction) => {
-        res.set('Cache-Control', 'no-store')
-        if (req.method !== 'GET' && req.method !== 'POST') {
-          res.status(405).json({ error: 'Method not allowed' })
-          return
-        }
-
-        const queryKeys = Object.keys(req.query)
-        let enabled: string | undefined
-
-        if (req.method === 'GET') {
-          if (queryKeys.length !== 0) {
-            res.status(400).json({
-              error:
-                'The test fixture controller does not accept query parameters',
-            })
-            return
-          }
-        } else {
-          const rawEnabled = req.query.enabled
-          enabled = typeof rawEnabled === 'string' ? rawEnabled : undefined
-          if (
-            queryKeys.length !== 1 ||
-            queryKeys[0] !== 'enabled' ||
-            (enabled !== 'true' && enabled !== 'false')
-          ) {
-            res.status(400).json({
-              error:
-                'The test fixture controller requires enabled=true or enabled=false',
-            })
-            return
-          }
-        }
-
-        try {
-          const upstreamUrl = new URL(learningAnalyticsControllerUpstream)
-          if (enabled !== undefined) {
-            upstreamUrl.searchParams.set('enabled', enabled)
-          }
-          const response = await fetch(upstreamUrl, { method: req.method })
-          res.status(response.status).json(await response.json())
-        } catch (error) {
-          next(error)
-        }
-      }
-    )
-  }
 
   app.use(
     cors({

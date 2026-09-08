@@ -151,3 +151,39 @@ globalThis.fetch = async (input, init) => {
 
   return originalFetch(input, init)
 }
+
+// Install fixture HTTP routes only in processes that explicitly load this
+// test preload. Ordinary application startup never registers these handlers.
+const { default: express } = await import('express')
+const initializeApp = express.application.init
+express.application.init = function () {
+  initializeApp.call(this)
+  this.use(async (req, res, next) => {
+    const url = new URL(req.url, 'https://growthbook.test')
+    const featurePath = '/__growthbook__/api/features/sdk-test'
+    const controllerPath = '/__growthbook__/__test/learning-analytics'
+    if (
+      (url.pathname !== featurePath || req.method !== 'GET') &&
+      url.pathname !== controllerPath
+    ) {
+      next()
+      return
+    }
+
+    try {
+      const upstream = new URL(
+        url.pathname === featurePath
+          ? '/api/features/sdk-test'
+          : `/__test/learning-analytics${url.search}`,
+        'https://growthbook.test'
+      )
+      const response = await fetch(upstream, { method: req.method })
+      res
+        .set('Cache-Control', 'no-store')
+        .status(response.status)
+        .json(await response.json())
+    } catch (error) {
+      next(error)
+    }
+  })
+}
