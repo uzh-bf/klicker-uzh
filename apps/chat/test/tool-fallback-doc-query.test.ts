@@ -5,17 +5,13 @@ import {
   parseDocQueryArgsQuery,
 } from '../src/components/tool-fallback'
 
-const TOOL_NAME = 'KB_doc_query'
-
 function baseParams(
   overrides: Partial<Parameters<typeof getDocQueryChipState>[0]> = {}
 ) {
   return {
-    toolName: TOOL_NAME,
     isRunning: false,
     isFailed: false,
     result: undefined,
-    isError: false,
     ...overrides,
   }
 }

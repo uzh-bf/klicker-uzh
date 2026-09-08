@@ -100,11 +100,9 @@ export function getDocQueryChipState({
   isFailed,
   result,
 }: {
-  toolName: string
   isRunning: boolean
   isFailed: boolean
   result: unknown
-  isError?: boolean
 }): DocQueryChipState {
   if (isFailed) return 'failed'
   if (isRunning) return 'running'
@@ -243,7 +241,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isDocQuery = isDocQueryToolName(toolName)
 
   const docQueryState = isDocQuery
-    ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
+    ? getDocQueryChipState({ isRunning, isFailed, result })
     : undefined
 
   const docQueryPanelContent = getDocQueryPanelContent({
