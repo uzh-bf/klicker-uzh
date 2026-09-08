@@ -44,7 +44,7 @@ function Chunk({ chunk }: { chunk: DocQueryChunk }) {
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed [overflow-wrap:anywhere]">
         {content
           ? long && !expanded
-            ? `${content.slice(0, 480)}…`
+            ? `${content.slice(0, 480).replace(/[\uD800-\uDBFF]$/, '')}…`
             : content
           : t('chat.toolFallback.chunkUnavailable')}
       </p>

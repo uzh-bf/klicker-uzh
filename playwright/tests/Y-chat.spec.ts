@@ -2279,9 +2279,10 @@ test.describe('Chatbot Source Citations', () => {
   }, testInfo) => {
     const messageId = '5a1b2c3d-0013-4a91-8f6c-2b7d1e5a9c40'
     const origin = 'https://example.org/course.pdf?edition=2#page=4'
-    const passage = 'Synthetic evidence with a long readable excerpt. '.repeat(
-      30
-    )
+    const passage =
+      'a'.repeat(479) +
+      '😀 ' +
+      'Synthetic evidence with a long readable excerpt. '.repeat(30)
     await seedThread(participantId, {
       title: 'Chunk display regression',
       messages: [
@@ -2360,6 +2361,9 @@ test.describe('Chatbot Source Citations', () => {
         'href',
         origin
       )
+      await expect(
+        page.getByTestId('chat-doc-query-chunk').first().locator('p')
+      ).toHaveText('a'.repeat(479) + '…')
       await page.getByTestId('chat-doc-query-content-toggle').first().click()
       await expect(
         page.getByTestId('chat-doc-query-chunk').first()
