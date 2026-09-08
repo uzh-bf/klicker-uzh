@@ -74,6 +74,15 @@ Use new worktree's manage profile for Manage/auth/API visual inspection and the 
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
 
+### Verified runtime release, 2026-09-08 21:31 CEST
+
+Canonical stop succeeded after temporarily selecting the exact recorded source
+revision 4be4408f1 in this same checkout. The latest task branch was immediately
+restored at 6a131a645. Fresh Devsy status reports Stopped, and exact source-path
+routeCount is zero. No data or runtime deletion occurred. This supersedes the
+blocked-shutdown state below. Latest-mount startup and full build remain blocked
+by configuration reconciliation; final integrated review is still active.
+
 ### Current verified outcome, 2026-09-08 21:22 CEST
 
 Guarded recovery completed without repeating replacement or deleting retained
