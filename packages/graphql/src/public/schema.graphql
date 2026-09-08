@@ -3186,6 +3186,8 @@ type Title {
 }
 
 type User {
+  aiFeaturesEnabled: Boolean!
+  betaEnabled: Boolean!
   catalyst: Boolean!
   catalystTier: String
   email: String!

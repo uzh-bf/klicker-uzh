@@ -71,6 +71,9 @@ jobs:
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
 
+      - name: Check workspace dependency mount generation
+        run: node --test ./util/generate-dependency-mounts.test.mjs
+
       - name: Check file formatting
         shell: bash
         run: pnpm run format:check
