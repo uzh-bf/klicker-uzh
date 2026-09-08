@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   type AnswerCollection,
   type CatalogCollection,
@@ -37,11 +37,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -59,8 +59,8 @@ import {
   handleEndExpiredMicroLearning,
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
-import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
 import { handleCleanupImportExportPackages } from '@/services/packageStorage.js'
+import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -95,6 +95,7 @@ export async function testInitialization(
   hatchet: Hatchet,
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
+  await requireDisposableDatabase(prisma)
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -425,6 +426,7 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  await requireDisposableDatabase(prisma)
   // audit logs do not carry foreign keys, so they need explicit cleanup between
   // tests that reuse deterministic object ids.
   await prisma.auditLogEntry.deleteMany()
@@ -462,20 +464,17 @@ export async function testCleanup(prisma: PrismaClient) {
 }
 
 // setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
+// Tests require an explicit disposable database; there is no retained-data fallback.
 export function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  process.env.DATABASE_URL =
-    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  if (!process.env.DATABASE_URL)
+    throw new Error('DATABASE_URL is required for tests')
+  return process.env.DATABASE_URL
 }
 
 export async function initializePrisma() {
   // configure database
   getDatabaseUrl()
+  await requireDisposableDatabase(prisma)
 
   try {
     // create EventEmitter for test context

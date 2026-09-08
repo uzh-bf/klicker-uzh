@@ -1,6 +1,5 @@
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
-import type { Redis } from 'ioredis'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   getBetaEnrollment,
@@ -8,119 +7,122 @@ import {
 } from '../src/services/betaEnrollment.js'
 
 const USER_ID = '00000000-0000-4000-8000-000000000001'
+const OTHER_USER_ID = '00000000-0000-4000-8000-000000000002'
 
-class FakeRedis {
-  lockValue: string | null = null
-  remainingLeaseMs = 8_000
-
-  set = vi.fn(async (_key: string, value: string) => {
-    if (this.lockValue !== null) return null
-    this.lockValue = value
-    return 'OK'
-  })
-
-  eval = vi.fn(async (script: string, _keyCount: number, ...args: string[]) => {
-    const token = args[1]!
-    if (script.includes('pttl')) {
-      return this.lockValue === token ? this.remainingLeaseMs : -1
-    }
-    if (script.includes('del') && this.lockValue === token) {
-      this.lockValue = null
-      return 1
-    }
-    return 0
-  })
+function createPrisma() {
+  return {
+    user: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+  }
 }
 
-function configure() {
-  process.env.GROWTHBOOK_MANAGEMENT_API_URL = 'https://growthbook.test'
-  process.env.GROWTHBOOK_MANAGEMENT_API_KEY = 'secret_test'
-  process.env.GROWTHBOOK_BETA_SAVED_GROUP_ID = 'group_test'
-}
-
-function unconfigure() {
-  delete process.env.GROWTHBOOK_MANAGEMENT_API_URL
-  delete process.env.GROWTHBOOK_MANAGEMENT_API_KEY
-  delete process.env.GROWTHBOOK_BETA_SAVED_GROUP_ID
-}
-
-function savedGroupResponse(values: string[], type = 'list') {
-  return new Response(JSON.stringify({ savedGroup: { type, values } }), {
-    status: 200,
-  })
-}
+type TestPrisma = ReturnType<typeof createPrisma>
 
 function createContext({
-  catalyst = true,
-  featureEnabled = true,
-  redis = new FakeRedis(),
+  userId = USER_ID,
   scope = UserLoginScope.FULL_ACCESS,
+  catalystInstitutional = true,
+  catalystIndividual = false,
+  prisma = createPrisma(),
 }: {
-  catalyst?: boolean
-  featureEnabled?: boolean
-  redis?: FakeRedis
+  userId?: string
   scope?: UserLoginScope
+  catalystInstitutional?: boolean
+  catalystIndividual?: boolean
+  prisma?: TestPrisma
 } = {}) {
-  const refresh = vi.fn(async () => undefined)
   const ctx = {
-    featureFlags: {
-      isEnabled: vi.fn(() => featureEnabled),
-      refresh,
-    },
-    redisExec: redis as unknown as Redis,
+    prisma,
     user: {
-      sub: USER_ID,
+      sub: userId,
       role: UserRole.USER,
       scope,
-      catalystInstitutional: catalyst,
-      catalystIndividual: false,
+      catalystInstitutional,
+      catalystIndividual,
     },
   } as unknown as ContextWithUser
 
-  return { ctx, redis, refresh }
+  return { ctx, prisma }
 }
 
-describe('beta enrollment', () => {
-  const fetchMock = vi.fn()
-
-  beforeEach(() => {
-    configure()
-    fetchMock.mockReset()
-    vi.stubGlobal('fetch', fetchMock)
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
-  })
-
+describe('beta enrollment service', () => {
   afterEach(() => {
-    unconfigure()
-    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
-  it('returns membership and opt-in capability for an eligible user', async () => {
-    fetchMock.mockResolvedValue(savedGroupResponse([]))
-    const { ctx } = createContext()
+  it.each([
+    UserLoginScope.FULL_ACCESS,
+    UserLoginScope.ACCOUNT_OWNER,
+  ])('reads the persisted preference for %s users', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: false })
 
     await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
       mayChange: true,
       membership: false,
       signupAvailable: true,
     })
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      select: { betaEnabled: true },
+    })
   })
 
-  it('does not read the management API for a weaker login scope', async () => {
-    const { ctx } = createContext({ scope: UserLoginScope.READ_ONLY })
+  it.each([
+    UserLoginScope.READ_ONLY,
+    UserLoginScope.SESSION_EXEC,
+  ])('hides the persisted preference from %s users', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
 
     await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
       mayChange: false,
       membership: null,
       signupAvailable: true,
     })
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
   })
 
-  it('keeps opt-out available after signup closes or Catalyst is removed', async () => {
-    fetchMock.mockResolvedValue(savedGroupResponse([USER_ID]))
-    const { ctx } = createContext({ catalyst: false, featureEnabled: false })
+  it('returns an unknown, non-changeable capability for a missing user', async () => {
+    const { ctx, prisma } = createContext()
+    prisma.user.findUnique.mockResolvedValue(null)
+
+    await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
+      mayChange: false,
+      membership: null,
+      signupAvailable: true,
+    })
+  })
+
+  it('returns an unknown, non-changeable capability when the read fails', async () => {
+    const { ctx, prisma } = createContext()
+    prisma.user.findUnique.mockRejectedValue(
+      Object.assign(new Error('synthetic-private-connection'), {
+        name: 'PrismaClientKnownRequestError',
+        code: 'P2022',
+        meta: { privateValue: 'synthetic-private-metadata' },
+      })
+    )
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
+      mayChange: false,
+      membership: null,
+      signupAvailable: true,
+    })
+    expect(log).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'PrismaClientKnownRequestError',
+      prismaCode: 'P2022',
+    })
+  })
+
+  it('keeps opt-out changeable without Catalyst when persisted membership is true', async () => {
+    const { ctx, prisma } = createContext({
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    })
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: true })
 
     await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
       mayChange: true,
@@ -129,73 +131,51 @@ describe('beta enrollment', () => {
     })
   })
 
-  it('returns unknown membership when the integration is unavailable', async () => {
-    fetchMock.mockRejectedValue(new Error('unreachable'))
-    const { ctx } = createContext()
+  it('uses the authenticated actor id for reads and writes', async () => {
+    const prisma = createPrisma()
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: true })
+    prisma.user.update.mockResolvedValue({ betaEnabled: false })
+    const { ctx } = createContext({ userId: OTHER_USER_ID, prisma })
 
-    await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
+    await getBetaEnrollment({}, ctx)
+    await setBetaEnrollment({ enabled: false }, ctx)
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: OTHER_USER_ID },
+      select: { betaEnabled: true },
+    })
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: OTHER_USER_ID },
+      data: { betaEnabled: false },
+      select: { betaEnabled: true },
+    })
+  })
+
+  it.each([
+    UserLoginScope.FULL_ACCESS,
+    UserLoginScope.ACCOUNT_OWNER,
+  ])('returns the persisted result and updates for %s users', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+    prisma.user.update.mockResolvedValue({ betaEnabled: false })
+
+    await expect(setBetaEnrollment({ enabled: true }, ctx)).resolves.toEqual({
       mayChange: true,
-      membership: null,
+      membership: false,
       signupAvailable: true,
     })
-  })
-
-  it('returns unknown membership for a non-list saved group', async () => {
-    fetchMock.mockResolvedValue(savedGroupResponse([], 'condition'))
-    const { ctx } = createContext()
-
-    await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
-      mayChange: true,
-      membership: null,
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      data: { betaEnabled: true },
+      select: { betaEnabled: true },
     })
   })
 
-  it('rejects an insecure management API URL without a request', async () => {
-    process.env.GROWTHBOOK_MANAGEMENT_API_URL = 'http://growthbook.test'
-    const { ctx } = createContext()
-
-    await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
-      membership: null,
+  it('allows opt-out without Catalyst for full-access users', async () => {
+    const { ctx, prisma } = createContext({
+      catalystInstitutional: false,
+      catalystIndividual: false,
     })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('adds the user while preserving other saved-group members', async () => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse(['another-user']))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
-    const { ctx, refresh } = createContext()
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).resolves.toMatchObject({ membership: true })
-
-    const write = fetchMock.mock.calls[1]!
-    expect(write[0]).toBe(
-      'https://growthbook.test/api/v1/saved-groups/group_test'
-    )
-    expect(JSON.parse(write[1].body)).toEqual({
-      bypassApproval: true,
-      values: ['another-user', USER_ID],
-    })
-    expect(refresh).toHaveBeenCalledOnce()
-  })
-
-  it('does not replace the group when membership already matches', async () => {
-    fetchMock.mockResolvedValueOnce(savedGroupResponse([USER_ID]))
-    const { ctx } = createContext()
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).resolves.toMatchObject({ membership: true })
-    expect(fetchMock).toHaveBeenCalledOnce()
-  })
-
-  it('allows opt-out when signup is closed', async () => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse(['another-user', USER_ID]))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
-    const { ctx } = createContext({ catalyst: false, featureEnabled: false })
+    prisma.user.update.mockResolvedValue({ betaEnabled: false })
 
     await expect(setBetaEnrollment({ enabled: false }, ctx)).resolves.toEqual({
       mayChange: false,
@@ -204,108 +184,106 @@ describe('beta enrollment', () => {
     })
   })
 
-  it('denies opt-in when Catalyst or signup eligibility is absent', async () => {
-    const { ctx } = createContext({ catalyst: false })
+  it('rejects opt-in without Catalyst before writing', async () => {
+    const { ctx, prisma } = createContext({
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    })
 
     await expect(
       setBetaEnrollment({ enabled: true }, ctx)
     ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it('fails explicitly when enrollment configuration is absent', async () => {
-    unconfigure()
-    const { ctx } = createContext()
+  it.each([
+    UserLoginScope.READ_ONLY,
+    UserLoginScope.SESSION_EXEC,
+  ])('rejects writes from %s users before touching the database', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
 
     await expect(
       setBetaEnrollment({ enabled: true }, ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'BETA_ENROLLMENT_UNAVAILABLE' },
-    })
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it('reports a rejected saved-group write', async () => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse([]))
-      .mockResolvedValueOnce(new Response(null, { status: 503 }))
-    const { ctx } = createContext()
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
+  it('coalesces concurrent reads within one request', async () => {
+    const { ctx, prisma } = createContext()
+    let resolveRead: (value: { betaEnabled: boolean }) => void = () => undefined
+    const read = new Promise<{ betaEnabled: boolean }>((resolve) => {
+      resolveRead = resolve
     })
+    prisma.user.findUnique.mockReturnValue(read)
+
+    const first = getBetaEnrollment({}, ctx)
+    const second = getBetaEnrollment({}, ctx)
+
+    expect(prisma.user.findUnique).toHaveBeenCalledOnce()
+    resolveRead({ betaEnabled: true })
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { mayChange: true, membership: true, signupAvailable: true },
+      { mayChange: true, membership: true, signupAvailable: true },
+    ])
   })
 
-  it('keeps successful membership when the backend refresh fails', async () => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse([]))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
-    const { ctx, refresh } = createContext()
-    refresh.mockRejectedValueOnce(new Error('refresh unavailable'))
+  it('reads fresh state in a new request context', async () => {
+    const prisma = createPrisma()
+    prisma.user.findUnique
+      .mockResolvedValueOnce({ betaEnabled: false })
+      .mockResolvedValueOnce({ betaEnabled: true })
+    const firstContext = createContext({ prisma }).ctx
+    const secondContext = createContext({ prisma }).ctx
 
+    await expect(getBetaEnrollment({}, firstContext)).resolves.toMatchObject({
+      membership: false,
+    })
+    await expect(getBetaEnrollment({}, secondContext)).resolves.toMatchObject({
+      membership: true,
+    })
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(2)
+  })
+
+  it('updates the request cache after a successful write', async () => {
+    const { ctx, prisma } = createContext()
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: false })
+    prisma.user.update.mockResolvedValue({ betaEnabled: true })
+
+    await getBetaEnrollment({}, ctx)
     await expect(
       setBetaEnrollment({ enabled: true }, ctx)
     ).resolves.toMatchObject({ membership: true })
+    await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
+      membership: true,
+    })
+    expect(prisma.user.findUnique).toHaveBeenCalledOnce()
   })
 
-  it('fails closed when another update holds the saved-group lock', async () => {
-    const redis = new FakeRedis()
-    redis.lockValue = 'another-owner'
-    const { ctx } = createContext({ redis })
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('does not write after losing the lock lease', async () => {
-    const redis = new FakeRedis()
-    fetchMock.mockImplementationOnce(async () => {
-      redis.lockValue = 'replacement-owner'
-      return savedGroupResponse([])
-    })
-    const { ctx } = createContext({ redis })
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
-    })
-    expect(fetchMock).toHaveBeenCalledOnce()
-    expect(redis.lockValue).toBe('replacement-owner')
-  })
-
-  it('does not write without enough lease for the bounded request', async () => {
-    const redis = new FakeRedis()
-    redis.remainingLeaseMs = 3_500
-    fetchMock.mockResolvedValue(savedGroupResponse([]))
-    const { ctx } = createContext({ redis })
-
-    await expect(
-      setBetaEnrollment({ enabled: true }, ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
-    })
-    expect(fetchMock).toHaveBeenCalledOnce()
-  })
-
-  it('uses token-safe release when lock ownership changes before cleanup', async () => {
-    const redis = new FakeRedis()
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse([]))
-      .mockImplementationOnce(async () => {
-        redis.lockValue = 'replacement-owner'
-        return new Response(null, { status: 200 })
+  it('leaves the request cache unchanged after a failed write', async () => {
+    const { ctx, prisma } = createContext()
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: false })
+    prisma.user.update.mockRejectedValue(
+      Object.assign(new Error('synthetic-private-connection'), {
+        name: 'synthetic-private-error-name',
+        code: 'synthetic-private-error-code',
+        meta: { privateValue: 'synthetic-private-metadata' },
       })
-    const { ctx } = createContext({ redis })
+    )
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
+    await getBetaEnrollment({}, ctx)
     await expect(
       setBetaEnrollment({ enabled: true }, ctx)
-    ).resolves.toMatchObject({ membership: true })
-    expect(redis.lockValue).toBe('replacement-owner')
+    ).rejects.toMatchObject({
+      extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
+    })
+    expect(log).toHaveBeenCalledWith(expect.any(String), {
+      errorType: 'UnknownError',
+      prismaCode: undefined,
+    })
+    await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
+      membership: false,
+    })
+    expect(prisma.user.findUnique).toHaveBeenCalledOnce()
   })
 })

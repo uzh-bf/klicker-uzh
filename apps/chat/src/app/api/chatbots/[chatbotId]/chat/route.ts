@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
@@ -12,7 +13,6 @@ import {
   streamText,
   type ToolSet,
 } from 'ai'
-import { createHash, randomUUID } from 'crypto'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
@@ -729,6 +729,7 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        owner: { select: { aiFeaturesEnabled: true } },
         course: {
           select: { displayName: true },
         },
@@ -749,6 +750,18 @@ export async function POST(
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    console.warn('Chat admission denied', {
+      requestId,
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    return NextResponse.json(
+      { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
+      { status: 403 }
+    )
   }
 
   const modeOptions = resolveEffectiveChatModeOptions(
@@ -882,9 +895,9 @@ export async function POST(
     selectedMode
   )
 
-  let scopedKbId: string | undefined
+  let scopedKbIds: string[] | undefined
   try {
-    scopedKbId = resolveMcpScope(
+    scopedKbIds = resolveMcpScope(
       enabledMCPConfigurations,
       selectedMode,
       selectedMCPConfigurations
@@ -1060,9 +1073,9 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = scopedKbId
+      mcpTools = scopedKbIds
         ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
-            kbId: scopedKbId,
+            kbIds: scopedKbIds,
             sessionId: owningThread.id,
           })
         : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
