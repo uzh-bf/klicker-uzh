@@ -42,7 +42,9 @@ test.describe('AI beta management navigation gate', () => {
 
     await page.getByTestId('resources').click()
     await page.getByTestId('chatbots').click()
-    await expect(page).toHaveURL(/\/resources\/chatbots$/)
+    await expect(page).toHaveURL(
+      (url) => url.pathname === '/resources/chatbots'
+    )
     await expect(page.getByTestId('chatbot-list')).toBeVisible()
   })
 
