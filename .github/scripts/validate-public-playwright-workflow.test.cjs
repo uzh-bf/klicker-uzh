@@ -40,6 +40,15 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   assert.match(sources[1], /playwright-shard@refs\/heads\/v3/)
   assert.match(sources[2], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
+  const buildAction = YAML.parse(sources[2])
+  const buildUpload = buildAction.runs.steps.find(
+    (step) => step.with?.name === 'playwright-build-artifact'
+  )
+  assert.ok(buildUpload, 'the shared build artifact upload must exist')
+  assert.ok(
+    buildUpload.with.path.split(/\s+/).includes('packages/audit/dist'),
+    'trusted build artifacts must include the audit runtime for candidate workers'
+  )
   assert.match(sources[2], /packages\/feature-flags\/dist/)
   assert.match(sources[2], /packages\/knowledge-graph\/dist/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
