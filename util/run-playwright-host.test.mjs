@@ -37,20 +37,30 @@ const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
 
-test('database preservation requires explicit local launcher selection and excludes CI', () => {
+test('database preservation is explicit, host-only, and excluded from CI', () => {
   const selected = {
     [HOST_RUNNER_ENV]: '1',
     KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
   }
+  assert.equal(preserveLocalDatabase({}), false)
   assert.equal(preserveLocalDatabase(selected), true)
-  for (const env of [
-    {},
-    { ...selected, [HOST_RUNNER_ENV]: '0' },
-    { ...selected, CI: 'true' },
-    { ...selected, CI: '1' },
-    { ...selected, GITHUB_ACTIONS: 'true' },
-  ]) {
-    assert.equal(preserveLocalDatabase(env), false)
+
+  assert.throws(
+    () =>
+      preserveLocalDatabase({
+        KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+      }),
+    /host launcher marker/
+  )
+
+  for (const variable of ['CI', 'GITHUB_ACTIONS']) {
+    for (const value of ['true', 'false', '0']) {
+      assert.equal(preserveLocalDatabase({ [variable]: value }), false)
+      assert.throws(
+        () => preserveLocalDatabase({ ...selected, [variable]: value }),
+        /incompatible with CI or GitHub Actions/
+      )
+    }
   }
 })
 
@@ -75,6 +85,23 @@ test('local runner options preserve defaults and forward test selectors', () => 
   )
   assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
   assert.throws(() => parseLocalOptions(['--runtime-profile']))
+  assert.throws(
+    () => parseLocalOptions(['--runtime-profile=chat']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['--preserve-database=1']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['tests/example.spec.ts', '--preserve-database']),
+    /before Playwright arguments/
+  )
+  assert.throws(
+    () =>
+      parseLocalOptions(['--project=chromium', '--runtime-profile', 'chat']),
+    /before Playwright arguments/
+  )
 })
 
 function createLauncherHarness({
@@ -82,6 +109,7 @@ function createLauncherHarness({
   prismaDist = true,
   typesDist = true,
   failWhen,
+  environment = { PATH: '/synthetic/bin' },
 } = {}) {
   const calls = []
   const logs = []
@@ -139,7 +167,7 @@ function createLauncherHarness({
       resolveDevrouterFn: () => '/synthetic/bin/devrouter',
       commandExistsFn: () => false,
       commandRunner,
-      environment: { PATH: '/synthetic/bin' },
+      environment,
       log: (message) => logs.push(message),
       pathExists,
       readFile,
@@ -147,6 +175,36 @@ function createLauncherHarness({
     },
   }
 }
+
+test('invalid preservation and local options fail before launcher effects', () => {
+  for (const { args, environment, error } of [
+    {
+      args: ['--preserve-database', '--list'],
+      environment: { PATH: '/synthetic/bin', CI: 'false' },
+      error: /incompatible with CI or GitHub Actions/,
+    },
+    {
+      args: ['--runtime-profile=chat', '--list'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /space syntax/,
+    },
+    {
+      args: ['--runtime-profile'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /separate profile name/,
+    },
+    {
+      args: ['--list', '--preserve-database'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /before Playwright arguments/,
+    },
+  ]) {
+    const harness = createLauncherHarness({ environment })
+
+    assert.throws(() => runPlaywrightHost(args, harness.dependencies), error)
+    assert.deepEqual(harness.calls, [])
+  }
+})
 
 function commandIndex(calls, command, firstArg) {
   return calls.findIndex(
@@ -613,6 +671,11 @@ test('host preparation preserves explicit runtime profile and database selection
   ])
   const testRun = pnpmCalls(harness.calls).find(({ args }) =>
     args.includes('test')
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') <
+      harness.calls.indexOf(testRun),
+    'runtime must be reconciled before Playwright test execution'
   )
   assert.equal(testRun.options.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '1')
   assert.equal(testRun.options.env[PNPM_VERIFY_DEPS_ENV], 'error')

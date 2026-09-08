@@ -8,6 +8,7 @@ import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
+  preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -115,6 +116,31 @@ export function parsePublishedPort(output) {
   fail('the workspace Postgres container has no loopback host port')
 }
 
+function isReservedLocalOption(option) {
+  return (
+    option === '--runtime-profile' ||
+    option === '--preserve-database' ||
+    option.startsWith('--runtime-profile=') ||
+    option.startsWith('--preserve-database=')
+  )
+}
+
+function rejectMisplacedLocalOption(option) {
+  if (option.startsWith('--runtime-profile=')) {
+    fail(
+      '--runtime-profile requires a separate profile name; use space syntax before Playwright arguments'
+    )
+  }
+
+  if (option.startsWith('--preserve-database=')) {
+    fail(
+      '--preserve-database does not accept a value; use space syntax before Playwright arguments'
+    )
+  }
+
+  fail(`${option} must appear before Playwright arguments`)
+}
+
 export function parseLocalOptions(argv) {
   const args = [...argv]
   let profile
@@ -123,10 +149,12 @@ export function parseLocalOptions(argv) {
     if (args[0] === '--runtime-profile') {
       args.shift()
       profile = args.shift()
-      if (
-        !profile ||
-        !/^[a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*$/.test(profile)
-      ) {
+      if (!profile || profile.startsWith('-')) {
+        fail(
+          '--runtime-profile requires a separate profile name before Playwright arguments'
+        )
+      }
+      if (!/^[a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*$/.test(profile)) {
         fail(
           '--runtime-profile requires a profile name or comma-separated names'
         )
@@ -136,6 +164,11 @@ export function parseLocalOptions(argv) {
       preserveDatabase = true
     } else break
   }
+
+  for (const option of args) {
+    if (isReservedLocalOption(option)) rejectMisplacedLocalOption(option)
+  }
+
   return { args, profile, preserveDatabase }
 }
 
@@ -298,20 +331,22 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 }
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
+  const localArgs = argv[0] === '--' ? argv.slice(1) : argv
+  const { args, profile, preserveDatabase } = parseLocalOptions(localArgs)
   const runtime = createRuntime(dependencies)
   const hostEnvironment = {
     ...runtime.environment,
     [HOST_RUNNER_ENV]: '1',
   }
+  preserveLocalDatabase({
+    ...hostEnvironment,
+    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+  })
   assertPlaywrightHostBoundary({
     cwd: dependencies.cwd,
     env: hostEnvironment,
     pathExists: runtime.pathExists,
   })
-
-  const { args, profile, preserveDatabase } = parseLocalOptions(
-    argv[0] === '--' ? argv.slice(1) : argv
-  )
   const showReport = args[0] === '--show-report'
   if (showReport) args.shift()
 

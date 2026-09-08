@@ -4,6 +4,32 @@ Draft delivery: [RAG chunk display and stable citations](https://github.com/uzh-
 
 ## Approval summary
 
+### Progress — acceptance and finalization, 2026-09-08
+
+The user inspected and accepted the expanded synthetic example in Browser.
+Head `e3e4357dfa3aa29fd3c7c693f40fa37230639ac3` passes hosted CI, including
+all eight browser-test shards. Local acceptance covers origin preservation,
+page labels, disclosure, Unicode boundaries, desktop, mobile German and reload.
+Chat build, all 35 package checks and seven lint tasks pass; the host-only
+CI contract passes separately on the host. This is persisted-display proof,
+not live model retrieval or staging acceptance.
+
+Finalization folds one discovered launcher defect into this same package:
+an explicit preservation request must fail before setup if CI markers or a
+missing launcher marker make preservation unavailable. Malformed reserved
+local options must likewise fail before runtime effects. The executor owns
+the launcher and its synthetic host tests; main owns integration and review.
+This restores the approved preservation intent without changing ordinary setup.
+
+The fresh acceptance workspace `trees/rs/rag-clean-acceptance`, provider
+`rs-rag-clean-acceptance`, is verified Stopped with zero routes after the user's
+inspection. Data is retained; no deletion is authorized. The task source branch
+remains `rs/rag-chunk-display`, targeting `v3`. Remaining gates are the bounded
+launcher correction review, fresh hosted checks, ready status and final AI
+review. Marking ready after verification and CI pass is approved; merge and
+deployment remain outside this finalization scope. Earlier progress below is
+historical where it conflicts with this entry.
+
 ### Progress — PR readiness, 2026-09-08
 
 The user approved continuing source readiness and merging the separate

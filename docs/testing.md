@@ -162,8 +162,9 @@ allowed and retains the direct official-container workflow.
 For focused local checks against an existing synthetic baseline, pass
 `--runtime-profile chat --preserve-database` before the Playwright arguments.
 The explicit profile is validated by Devrouter. Database preservation skips
-global cleanup and seed only for a local host-launcher run; it is disabled in
-CI. Individual specs still own their fixture writes and cleanup. Use this only
+global cleanup and seed only for a local host-launcher run. An explicit request
+in CI or without the launcher marker fails before setup instead of resetting
+the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
 Without these options, runtime selection and database setup remain unchanged.
 
