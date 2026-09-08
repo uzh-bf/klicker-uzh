@@ -1167,9 +1167,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
       }
     }
 
-    acc[participationId]!.collectedPoints += entry.participation?.isActive
-      ? entry.collectedPoints
-      : 0
+    acc[participationId]!.collectedPoints += entry.collectedPoints
     acc[participationId]!.collectedXp += entry.collectedXp
 
     return acc
