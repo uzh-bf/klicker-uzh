@@ -4,8 +4,17 @@ import { selectOption } from '../util/fixtures/activities.js'
 import { createQuestionSC } from '../util/fixtures/elements.js'
 import { createLiveQuiz, deleteLiveQuiz } from '../util/fixtures/manage.js'
 
+async function expectSummariesEqual(page: import('@playwright/test').Page) {
+  const top = page.getByTestId('result-range-summary-top')
+  const bottom = page.getByTestId('result-range-summary')
+  await expect(top).toBeVisible()
+  await expect(bottom).toBeVisible()
+  const bottomText = await bottom.innerText()
+  await expect(top).toHaveText(bottomText)
+}
+
 async function expectAllResultsLoaded(page: import('@playwright/test').Page) {
-  const summary = page.getByText(/Showing 1 to \d+ of \d+ results/)
+  const summary = page.getByTestId('result-range-summary')
   await expect(summary).toBeVisible()
 
   const summaryText = await summary.textContent()
@@ -48,13 +57,16 @@ test.describe('Show all pagination option', () => {
       await page.reload()
 
       await expect(page.getByTestId('pagination-page-size')).toBeVisible()
+      await expectSummariesEqual(page)
 
       await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
       await expect(page.getByTestId('pagination-page-size')).toContainText(
         'All'
       )
+      await expectSummariesEqual(page)
       await expect(page.getByTestId('pagination-next')).toHaveCount(0)
       const totalElements = await expectAllResultsLoaded(page)
+      await expectSummariesEqual(page)
       await expect(page.locator('[data-cy^="element-item-"]')).toHaveCount(
         totalElements
       )
@@ -65,6 +77,7 @@ test.describe('Show all pagination option', () => {
 
       await selectOption(page, '[data-cy="pagination-page-size"]', '50')
       await expect(page.getByTestId('pagination-page-size')).toContainText('50')
+      await expectSummariesEqual(page)
 
       await page.getByTestId('activities').click()
       await expect(page).toHaveURL(/\/activities/)

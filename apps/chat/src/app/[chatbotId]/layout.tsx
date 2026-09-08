@@ -1,11 +1,11 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
-import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 import {
   getChatbotOr404,
   withChatbotTokenAuth,
 } from '../../lib/server/apiGuards'
+import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -30,6 +30,7 @@ export default async function ChatLayout({
     name: true,
     avatar: true,
     systemPrompts: true,
+    standardModeConfig: true,
     mcpConfigurations: {
       select: {
         allowedTools: true,
@@ -46,7 +47,8 @@ export default async function ChatLayout({
 
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
 
   return (

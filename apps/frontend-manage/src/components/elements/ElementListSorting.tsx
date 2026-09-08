@@ -3,6 +3,7 @@ import { SortByType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { LibrarySortType } from '../../lib/hooks/useSortingAndFiltering'
+import IconActionTooltip from './IconActionTooltip'
 
 function ElementListSorting({
   sort,
@@ -14,6 +15,11 @@ function ElementListSorting({
   handleSortOrderToggle: () => void
 }) {
   const t = useTranslations()
+  // The sort button describes the action it triggers: with the list sorted
+  // ascending, activating it sorts descending and vice versa.
+  const sortOrderLabel = sort.asc
+    ? t('manage.general.sortOrderDescending')
+    : t('manage.general.sortOrderAscending')
 
   return (
     <div className="flex flex-row gap-1 pr-3">
@@ -52,16 +58,19 @@ function ElementListSorting({
         className={{ root: 'w-46', trigger: 'h-9' }}
         data={{ cy: 'sort-by-question-pool' }}
       />
-      <Button
-        disabled={!sort.by}
-        onClick={() => {
-          handleSortOrderToggle()
-        }}
-        className={{ root: 'h-9 w-9 rounded-md' }}
-        data={{ cy: 'sort-order-question-pool-toggle' }}
-      >
-        <Button.Icon icon={sort.asc ? faSortAsc : faSortDesc} withoutLabel />
-      </Button>
+      <IconActionTooltip label={sortOrderLabel}>
+        <Button
+          disabled={!sort.by}
+          onClick={() => {
+            handleSortOrderToggle()
+          }}
+          aria-label={sortOrderLabel}
+          className={{ root: 'h-9 w-9 rounded-md' }}
+          data={{ cy: 'sort-order-question-pool-toggle' }}
+        >
+          <Button.Icon icon={sort.asc ? faSortAsc : faSortDesc} withoutLabel />
+        </Button>
+      </IconActionTooltip>
     </div>
   )
 }

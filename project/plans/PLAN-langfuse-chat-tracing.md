@@ -45,7 +45,8 @@ conversation session.
   streamed chat trace context/lifecycle, exec-form container startup, and unit
   tests.
 - `deploy/charts/klicker-uzh-v3` plus environment values: non-secret tracing
-  environment/release configuration; existing enablement remains unchanged.
+  environment/release configuration; telemetry requires explicit opt-in and
+  defaults to disabled.
 - `turbo.json`: allow new runtime environment variables through strict env.
 - `docs/chat-platform.md`: replace the obsolete broken-exporter warning with
   the durable tracing/privacy/rollout contract.
@@ -85,9 +86,10 @@ conversation session.
   any of those raw IDs.
 - Batch export in the long-running Next/Kubernetes process. Register a Next.js
   `after()` callback for each traced route to flush after the streamed response
-  closes. Enforce a server-owned 55-second deadline across MCP discovery and model calls;
-  exec-form container startup forwards the signal and a 90-second pod grace
-  period leaves 35 seconds for persistence, stream closure, and trace draining.
+  closes. Exec-form container startup forwards termination signals and a
+  90-second pod grace period allows active requests and trace draining to
+  finish where possible. Existing request cancellation remains unchanged;
+  the grace period does not guarantee completion of unbounded requests.
   Live rollout must still verify delivery against the deployed server.
 
 ### Other feature-design questions
@@ -162,3 +164,51 @@ conversation session.
   coverage, and the scope of the stable-name contract. The complete Chat
   suite, Chat typecheck/lint, root build, root `check:all`, Helm lint, staging
   and production render checks, and whitespace checks pass.
+
+- 2026-09-08: Review corrections restore the accurate parent-span comment,
+  replace the UI-copy assertion with a redaction assertion, share the sanitized
+  error constant, and handle null telemetry values in the Helm ConfigMap.
+  Remove the newly imposed 55-second deadline and its MCP cancellation rewrite;
+  preserve the target branch's scope-token discovery and request cancellation.
+  Update the lifecycle description to avoid promising bounded drain completion.
+- 2026-09-08: Integrated target `v3` at
+  `3f6917ecc52d606d212db5b156be502cd5c99973` because GitHub reported conflicts.
+  All four conflicts are resolved locally. The merge remains uncommitted, with
+  review corrections also present in the working tree. Helm lint, the null
+  telemetry render, and whitespace checks pass.
+- 2026-09-08: Delivery is blocked before commit, publication, and final review.
+  The managed runtime fails with an unexpected Compose model after startup;
+  `devrouter exec` reports `Reliability operation-request blocked`. The supported
+  repair command reports no persisted degraded runtime. The exact task runtime
+  was stopped without deleting its data. Restore supported runtime readiness,
+  run Chat tests and repository checks, complete the merge commit and independent
+  final review, then update the existing PR and its exact-head checks.
+
+- 2026-09-08 resume: The supported startup replaced the incompatible app
+  container, then failed guarded database bootstrap because the retained
+  PostgreSQL volume has no `klicker_test` role. Database logs confirm the missing
+  role. Managed exec remains reliability-blocked, so no Chat test ran. Stopped
+  the exact runtime again; deleting retained runtime data requires explicit
+  approval. Default, null, enabled, staging, and production Helm renders pass.
+
+- 2026-09-08 final verification: Approved runtime recreation resolved the retained
+  database blocker. Chat tests pass (615 passed, 21 environment-gated skips),
+  all 35 repository typecheck tasks pass, and all 23 build tasks pass. The
+  equivalent repository lint, formatting, dependency, agent-document, identity,
+  retired-artifact, and Prisma-sync checks pass. The 89 host-only Playwright
+  tooling tests pass on the host. The aggregate container command cannot run
+  those host-only tests, so its checks were completed separately.
+- 2026-09-08 verification caveats: Prisma generation raced with its build during
+  the aggregate check and produced stale declarations. A fresh sequential run
+  passed. Local Prisma builds used Rollup's `--forceExit` option to close a
+  process that remained alive after reporting completion; that temporary
+  package-script change was restored and is not part of this PR.
+- 2026-09-08 review disposition: The chart rejects non-HTTPS configured Langfuse
+  endpoints. Default, null, enabled, staging, and production chart cases pass,
+  and HTTP is rejected. Gitleaks reports no staged leaks. A bounded Opengrep
+  scan reports only two unchanged development-logging findings. Retain the
+  first-party NodeSDK integration and test-state reset helper; replacing them
+  is unnecessary for this review correction. Live trace export remains a
+  separate rollout gate, and telemetry remains disabled in deployed values.
+- 2026-09-08 delivery: Source corrections and target integration are complete.
+  Final independent review and publication of the reviewed head remain next.

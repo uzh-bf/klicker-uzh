@@ -43,6 +43,8 @@ export type FeatureFlagAttributes = Record<
 > & {
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
+  catalyst?: boolean
+  betaEnabled?: boolean
   role?: string
 }
 
@@ -70,6 +72,12 @@ export function sanitizeFeatureFlagAttributes(
   }
 
   if (typeof source.id === 'string') sanitized.id = source.id
+  if (typeof source.catalyst === 'boolean') {
+    sanitized.catalyst = source.catalyst
+  }
+  if (typeof source.betaEnabled === 'boolean') {
+    sanitized.betaEnabled = source.betaEnabled
+  }
   if (typeof source.role === 'string') sanitized.role = source.role
   return sanitized
 }

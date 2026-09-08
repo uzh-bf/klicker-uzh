@@ -36,9 +36,13 @@ Infisical example in `evaluation/README.md` when applicable; the repository
 does not require a personal operator.
 
 Set namespaced API and Chat origins plus seeded participant credentials in the
-invoking shell only. Provide the approved judge proxy and key as
-`LITELLM_API_BASE` and `LITELLM_API_KEY`; the developer Foundry values are for
-the local Chat target and must not enter the evaluator child. Run
+invoking shell only. For the developer Foundry path, start Dockerized local
+LiteLLM with the upstream values injected into that container, then provide
+only its URL and local access value to the evaluator as `LITELLM_API_BASE`
+and `LITELLM_API_KEY`. The wrapper also supports the staging judge proxy: when
+the key is unset, it fetches `PIPELINES_LITELLM_API_KEY` with the Infisical
+CLI from PR `#5747`. Developer Foundry and participant values must not enter
+the evaluator child. Run
 `bash util/test-klicker-eval-wrapper.sh` before any credentialed traffic. Stop
 the exact worktree with `devrouter stop` after the run and verify that its
 provider is stopped and no route remains.
@@ -51,10 +55,10 @@ provider is stopped and no route remains.
 | Evaluation wrapper and FineCo assets | reviewed and committed | `evaluation/README.md`, `evaluation/data/tools/klicker_fineco.yaml`, 20 synthetic ground-truth cases, and the semantic-similarity metric are present. The tool config's expected name `EXPERT_df_fineco_expert` matches the verified runtime tool contract, and all 20 ground-truth cases key on that exact name (10 tutor, 10 explainer) with no `KB_doc_query` canary leakage. |
 | Developer Foundry through local LiteLLM | transport canary passed | The values-free canary receipt records direct `gpt-5.6-luna`, HTTP 200, a non-empty answer, and the synthetic `KB_doc_query` marker. |
 | FineCo expert binding | runtime registration proven (server + DB wiring); session probe optional | Live STG (v0.7.2) and PRD (v0.3.0) doc-query both serve `df_fineco_expert` in `tools/list`; the klicker STG database routes the FineCo chatbot's tutor and explainer configs through the active `EXPERT` server with allowed tool `df_fineco_expert`, yielding `EXPERT_df_fineco_expert` via the verified namespacing. The per-result output ceiling is source-verified as finite (20 × 65,535 characters; tool inputs are harness-controlled). A paid session probe remains optional confirmation. |
-| FineCo 20-case quality run | parked | No 20-case query, structural result set, semantic judge run, or finite expert response bound exists. The canary is transport evidence only. |
+| FineCo 20-case quality run | live proven (target capture + semantic judge) | The 20-case query capture ran live on 2026-09-03 after a runtime restart: 20/20 OK, every case with tool `EXPERT_df_fineco_expert`, 20/20 tool-match, non-empty answers, concurrency 1, direct `gpt-5.6-luna` via local LiteLLM. An earlier same-day capture failed the tool-policy gate 20/20 and was superseded by the green rerun. Receipts stay under `/private/tmp` outside Git. The authoritative semantic judge rerun used the dedicated semantic-similarity profile through the Dockerized local LiteLLM and the developer Foundry: 20/20 metric records, zero judge errors or skips, retries disabled, 73.6 s wall time, and 18/20 cases at or above the 0.5 threshold. Mean semantic similarity was 0.875 (12x1.0, 5x0.9, 1x0.7, 1x0.3, 1x0.0). The two tutor failures remain quality findings: the weighted-alpha formula case scored 0.3 and the FS26 exam-aids case scored 0.0. The proxy stayed healthy for the probe plus all 20 judge calls and logged no connection or timeout errors. Exact cost telemetry was unavailable through the local proxy; a superseded direct-Foundry diagnostic run measured USD 0.0486 but is not attributed to this Docker run. The staging judge proxy (`PIPELINES_LITELLM_API_KEY`) was not used. |
 | Repository verification | scoped checks passed; hook issue recorded | The documentation slice passes Prettier, diff checks, staged Gitleaks, and standalone `check:playwright-ci` (57/57). The pre-commit selector fixture inherits Git's hook environment and is unsafe in that invocation; no source files were changed. |
-| Runtime cleanup | completed | The exact worktree was stopped; provider, LiteLLM, databases, managed processes, and the adapter were stopped, with zero exact routes in the cleanup proof. |
-| Package Git baseline | documentation committed; integration pending | Branch `rs/klicker-live-target-evaluation` is at the verified local documentation head, nine commits ahead and two behind current `origin/v3` `f94e59d2fb`. The two roadmap documents are committed; no base integration was performed. |
+| Runtime cleanup | completed | After the authoritative judge rerun, `devrouter stop` reported `stopped: true` for both touched worktrees. Devrouter readback showed zero exact routes for each, and Docker showed no running containers for either workspace. No worktree, runtime data, or branch was deleted. The two earlier partial judge artifacts were deleted; verified results remain outside Git. |
+| Package Git baseline | merged to `v3` | The adapter, wrapper, and roadmap documents merged via PR #5734 (merge `328d9cf051`) and PR #5747 (merge `fa41086f`). The superseded local branch `rs/klicker-live-target-evaluation` is retained locally pending a cleanup ruling. |
 | Lena branch | reconciled locally and user state restored | The isolated reconciliation ref `rs/chatbot-hitl-config-roadmap-upstream-reconciled` remains at `62cebcda7b`, whose tree exactly matches `origin/v3` `72096fafe5`. The primary `docs/chatbot-hitl-config-roadmap` checkout was restored to `ea673f8470` and the former dirty state was reapplied there; the safety stash `b8fb2568bef5e0d3bc53bbbd96464d3a86822fff` (`stash@{0}`) remains intact. |
 
 ## Non-negotiables
@@ -69,9 +73,11 @@ provider is stopped and no route remains.
   response ceiling; tool inputs are harness-controlled because the service
   imposes no input cap. Observed or average retrieval size is not a
   pre-call bound.
-- Keep target and judge boundaries separate. The local Chat target uses the
-  developer Azure Foundry through local LiteLLM; the semantic judge uses the
-  separately approved judge proxy and restricted judge credential.
+- Keep target and judge execution boundaries separate. The local Chat target
+  and semantic judge may use the same Dockerized local LiteLLM against the
+  developer Azure Foundry, but they run as separate phases. The evaluator child
+  receives only the local proxy URL and access value, never participant or
+  developer Foundry credentials.
 - Keep concurrency at one, target retries disabled through the pinned local
   LiteLLM deployment, and judge retries disabled. Do not weaken metrics,
   thresholds, or goldens to make a run pass.
@@ -165,8 +171,9 @@ shared evaluator.
    truth still contains exactly 20 FineCo cases.
 2. Activate the VPN and start the exact worktree with the restricted
    `klicker-dev` mapping in [How to work on this](#how-to-work-on-this). Verify
-   the local LiteLLM model path is direct developer Foundry and that the
-   approved judge proxy is separate.
+   that Dockerized local LiteLLM is healthy, its model path reaches the
+   developer Foundry, and the evaluator process receives no upstream or
+   participant credentials.
 3. Run the synthetic transport canary once. Label it `source=canary` and keep
    it outside the FineCo query and evaluation artifacts.
 4. After W1 — FineCo expert-binding readiness and its A1 evidence pass, run
@@ -210,7 +217,8 @@ shared evaluator.
 **Working context.** Reuse the current adapter worktree and the unchanged
    evaluator submodule. The target is local loopback to the adapter; the
    adapter reaches only the exact namespaced Klicker routes; local LiteLLM
-   reaches developer Foundry; the judge uses its separately approved proxy.
+   reaches developer Foundry; and the judge is a separate evaluator phase that
+   may use the same local proxy without receiving its upstream credentials.
 
 **Authority and terminal.** A bounded synthetic local run and sanitized local
    receipts are granted after W1 — FineCo expert-binding readiness. A missing
@@ -294,9 +302,10 @@ proof.
   `origin/main@748b5a2`) behaves identically.
 - VPN and developer Azure Foundry: required for the local target's direct
   LiteLLM path; values remain secret-manager-injected and never enter Git.
-- Secret-manager scopes: the developer scope feeds only the local Chat runtime,
-  while the separately approved judge scope feeds only `LITELLM_API_KEY` to the
-  evaluator.
+- Secret-manager scopes: the developer scope feeds only Dockerized local
+  LiteLLM. The evaluator receives the local proxy URL and access value but no
+  developer Foundry or participant credentials. The wrapper's separate staging
+  judge-key fallback remains supported but was not used for this run.
 - Evaluation framework submodule: remains at merged commit `2a75632`; any
   framework change is a separate package and review.
 - Lena's original `docs/chatbot-hitl-config-roadmap` ref: not a dependency for
@@ -337,6 +346,21 @@ auth flow, cookies, or other browser-only behavior.
   safety stash, or deleting either Lena worktree.
 
 ## Progress
+
+- 2026-09-03 — Close-out reconciliation. W1 — FineCo expert-binding readiness
+  is complete on the recorded values-free runtime evidence. The paid W2 —
+  twenty-case FineCo capture and semantic judge — is `live_proven`. After one
+  failed login attempt and one superseded tool-policy failure, the query
+  capture passed 20/20 with every case calling
+  `EXPERT_df_fineco_expert`, 20/20 tool-match, and non-empty answers at
+  concurrency 1 on direct `gpt-5.6-luna`. The authoritative judge rerun used
+  the dedicated semantic-similarity profile through Dockerized local LiteLLM
+  and the developer Foundry: 20/20 metric records, zero judge errors or skips,
+  and 18/20 cases meeting the 0.5 threshold in 73.6 seconds. Two tutor cases
+  remain quality findings at 0.3 and 0.0. Exact cost telemetry was unavailable
+  through the local proxy; the run stayed within the approved USD 1 reserve.
+  PR #5747 (merge `fa41086f`) separately preserves the staging judge-key
+  fallback.
 
 - 2026-09-03 — The portability follow-up removes the evaluator's executable
   dependency on `rs-infisical-operator`. Judge credentials are now explicit

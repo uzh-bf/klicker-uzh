@@ -39,6 +39,7 @@ import {
   getLangfuseAiSdkIntegration,
   getLangfuseTelemetryConfiguration,
   maskLangfuseData,
+  SANITIZED_ERROR_MESSAGE,
   registerLangfuseTelemetry,
   resetLangfuseTelemetryForTests,
 } from '../src/lib/server/langfuseTracing'
@@ -202,7 +203,7 @@ describe('Langfuse export masking', () => {
     processor.onEnd(span)
 
     expect(exportedSpans).toEqual([span])
-    expect(span.status.message).toBe('AI operation failed')
+    expect(span.status.message).toBe(SANITIZED_ERROR_MESSAGE)
     expect(span.events).toEqual([{ name: 'exception', attributes: {} }])
   })
 

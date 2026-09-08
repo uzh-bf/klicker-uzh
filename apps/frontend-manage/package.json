@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.4.0-alpha.73",
+  "version": "3.4.0-alpha.74",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -42,7 +42,7 @@
     "localforage": "1.10.0",
     "lodash": "4.17.21",
     "nanoid": "5.0.8",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "next-intl": "4.13.0",
     "react": "19.2.7",
     "react-csv-downloader": "3.3.0",

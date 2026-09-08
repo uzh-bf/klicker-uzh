@@ -41,6 +41,39 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 `ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
 
+## Course chatbots
+
+`Chatbot` belongs to one owning `User` and one `Course`. Its lifecycle is
+`DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
+can access only a published chatbot when a `Participation` exists for the
+owning course. Publication approval is separate from account-level AI usage
+authorization.
+
+The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
+Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+course name, subject domain, language of instruction, and an optional scope
+note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
+replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
+Explainer to remain enabled, and uses a status compare-and-set so a concurrent
+lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+a knowledge base; Quizzer remains independently configurable but is filtered by
+the safe course-material capability gate. Missing or malformed persisted values
+derive all three flags from legacy mode opt-outs/defaults, while valid legacy
+two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
+Manage projection exposes the combined effective settings, never raw
+`systemPrompts`. Participant GraphQL projections expose only the resolved mode
+options, never this owner configuration or raw system prompts. The chat compiler
+keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
+model policy with no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants; the previous model
+settings mutation remains available for rolling clients. Legacy fixed rows
+resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
+retired-only lists use Luna without a migration. Manage exposes one optional
+Chatbot framing field with a 200-character UI limit. The persisted parser
+accepts up to 1000 characters so an existing longer framing note survives a
+mode-only save, while Quizzer compilation receives only that scope note.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.
@@ -54,6 +87,14 @@ Lifecycle enums:
 | `ReviewStatus`       | INCOMPLETE, REVIEWED, MODIFIED_AFTER_REVIEW          | activity review flow |
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
+
+`ElementStatus` is manually controlled advisory metadata on an Element. `DRAFT`
+means unfinished, `REVIEW` means review requested, and `READY` means considered
+reusable. New Elements default to `READY`. The value does not gate activity use,
+auto-transition, reset after an edit, or imply reviewer assignment or approval;
+users with at least read access retain the deliberate permission to change it.
+This is separate from activity `PublicationStatus` and the activity
+`ReviewStatus` flow.
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 

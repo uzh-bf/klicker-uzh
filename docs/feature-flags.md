@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-09-03'
+timestamp: '2026-09-06'
 tags:
   - architecture
   - frontend
@@ -23,10 +23,21 @@ initialize GrowthBook only when they adopt their first flag.
 
 ## Active flags
 
-| Key                  | Consumer                                             | Fallback | Disabled behavior                                                                       |
-| -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
-| `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
+| Key                  | Consumer                                                | Fallback | Disabled behavior                                                                              |
+| -------------------- | ------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                           |
+| `ai-beta`            | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data |
+
+Beta Features is discoverable in account settings and the first-login dialog
+regardless of Catalyst, login scope, or rollout availability. The information
+names chatbot creation as a beta feature. Discovery never grants access.
+
+See [Beta preference and rollout ownership](#beta-preference-and-rollout-ownership)
+for preference permissions, rollout attributes and the independent AI approval.
+
+Chatbot authoring requires `ai-beta`, Catalyst, and `FULL_ACCESS` or
+account-owner scope in both Manage and GraphQL. A denied direct route displays
+an explanation and a link to beta settings without mounting authoring queries.
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -74,6 +85,10 @@ supplies the actor contract from
 
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
 - `actorType`: `user`, `participant`, or `anonymous`;
+- `catalyst`: whether the authenticated lecturer currently has Catalyst
+  eligibility;
+- `betaEnabled`: the trusted database-backed beta preference when evaluating
+  the server-side `ai-beta` rollout;
 - `role`: the Klicker role when applicable;
 - `environment`: added by each adapter after normalizing its deployment config;
 
@@ -121,9 +136,10 @@ attributes when they become available:
 `packages/feature-flags/src/react.tsx:FeatureFlagProvider` creates one client
 per provider mount, applies new attributes through the browser adapter's
 sanitizer without recreating it, and dedupes initialization under React Strict
-Mode. It loads the feature payload once; a flag change is picked up on the next
-provider mount or page reload. Missing configuration initializes an empty
-payload without a network request and emits a credential-free browser warning.
+Mode. `useRefreshFeatureFlags()` bypasses the browser cache after an enrollment
+change; otherwise a flag change is picked up on the next provider mount or page
+reload. Missing configuration initializes an empty payload without a network
+request and emits a credential-free browser warning.
 Failed SDK initialization emits the same class of safe warning while retaining
 false fallbacks. The browser adapter disables GrowthBook auto-experiments,
 visual changes, JavaScript injection, and URL redirects; this foundation
@@ -152,6 +168,23 @@ response so feature states remain deterministic while the real Klicker
 authentication, API, and database are exercised.
 
 ## Node.js adoption
+
+### Local beta-preference verification
+
+Use a disposable test database for browser or integration verification. The
+local fixture supplies only an SDK payload for `ai-beta`; it does not emulate
+enrollment membership, a GrowthBook management API, or a Redis lock. Exercise
+the real `User.betaEnabled` read and write through GraphQL and confirm that the
+preference persists across a new request or process. Do not run the fixture
+against a retained manual database and do not infer database persistence from
+an SDK payload alone.
+
+The fixture is test-only and uses synthetic actors and payloads. It must not
+provision or validate v3-ai tokens, access a real GrowthBook management
+endpoint, or carry approval data. Token provisioning and validation belong to
+the v3-ai workflow.
+
+### Server configuration
 
 The adopting service maps server-only variables into one process-level client:
 
@@ -218,33 +251,88 @@ Auth and Chat receive the public browser configuration only. If either hybrid
 Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
 to that Deployment in the same change that initializes the Node adapter.
 
-## Management API readiness
+## Beta preference and rollout ownership
 
-SDK evaluation and GrowthBook administration use separate trust boundaries. A
-future Klicker administration surface may use GrowthBook's REST API to create a
-draft feature revision, change a rule, or publish an approved revision. The v3
-chart reserves these server-only variables for that integration:
+### Separate backend management connection
 
-- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API base URL, including the
-  `/api` path where applicable;
-- `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Personal Access
-  Token or Secret Access Token sent as a bearer credential.
+The primary GraphQL backend retains the optional external
+`<rendered-chart-fullname>-secret-growthbook-management` reference for other
+backend flag-control use cases. It supplies `GROWTHBOOK_MANAGEMENT_API_URL`
+and `GROWTHBOOK_MANAGEMENT_API_KEY`; both remain in `turbo.json` for server
+task environment forwarding. This configuration is separate from SDK evaluation.
+Never pass the management key to `NodeFeatureFlagClient`, frontend builds, or
+`NEXT_PUBLIC_*` variables. Other workloads do not receive this management Secret.
+No management API call is introduced here; future writers need their own
+authorization and target contracts. Beta preference requires neither variable.
 
-The primary backend GraphQL Deployment optionally imports those exact keys from
-`<rendered-chart-fullname>-secret-growthbook-management`. It is the only
-workload with the management Secret because a future Manage UI should terminate
-at an authenticated GraphQL mutation. Evaluator-only APIs and workers continue
-to receive only the read-only SDK connection. The management variables are
-registered with Turborepo but have no consumer yet; the Secret may remain absent
-until an administration feature is implemented.
+### Database-owned preference
 
-Never pass the management key to `NodeFeatureFlagClient`, a frontend image
-build, or a `NEXT_PUBLIC_*` variable. A future consumer must use GrowthBook's
-draft/revision and publish workflow, enforce an explicit Klicker administrative
-authorization scope, record an audit trail, and handle retries without making a
-student-facing domain mutation depend on GrowthBook availability. If another
-workload becomes the control-plane owner, mount the management Secret there in
-the same reviewed change rather than broadening it preemptively.
+The database owns the personal beta preference. `User.betaEnabled` defaults to
+`true`, and the GraphQL enrollment service reads and writes the authenticated
+actor's own row. Request-local reuse prevents duplicate reads without turning
+the preference into a process-wide cache. See
+`packages/prisma/src/prisma/schema/user.prisma:User`,
+`packages/graphql/src/services/betaEnrollment.ts:getBetaEnrollment`, and
+`packages/graphql/src/lib/featureFlags.ts:getBetaPreference`.
+
+`FULL_ACCESS` and `ACCOUNT_OWNER` sessions may read and edit the preference
+through the enrollment capability. That capability returns unknown membership
+for weaker scopes without a database read. Catalyst is
+required to opt in; full-access opt-out remains possible without Catalyst.
+The API's `signupAvailable` field is a Catalyst-eligibility compatibility
+signal, not a GrowthBook enrollment switch.
+
+The backend passes the trusted preference to the read-only GrowthBook `ai-beta`
+evaluation with the existing stable actor id, `actorType: user`, role, and
+Catalyst attributes. The rollout rule must require `betaEnabled: true`,
+`catalyst: true`, and `actorType: user`; preserve the environment boundary and
+any deliberately narrower role or rollout restrictions. A missing, false, or
+unreadable preference fails closed, and a remote force-true result cannot
+override a false database value.
+
+This flow does not use a saved group, GrowthBook Management API, management Secret,
+`beta-signup` flag, or Redis membership lock. GrowthBook supplies rollout
+evaluation only; it does not persist or mutate beta membership. Token
+provisioning and validation belong to v3-ai and are outside this contract.
+
+`User.aiFeaturesEnabled` defaults to `false` and is the sole account approval
+gate for chatbot publication and model usage, even when budget enforcement is
+disabled. Beta preference and `ai-beta` never grant that approval. Per-chatbot
+publication review and published participant access remain separate and
+unchanged.
+
+### Transition from saved-group targeting
+
+This is an operator checklist, not authorization to deploy or edit live flags.
+No live rule or saved-group contents were verified for this change.
+
+1. Before deployment, record the current rule configuration and check which
+   other flags reference the old beta saved group. Keep any targeting identifiers
+   in the restricted operator system, not Git or PR comments. Confirm the
+   [release approval prerequisites](../project/2026-09-06-v3-release-readiness.md#release-activation-prerequisites),
+   including account AI approval; changing `ai-beta` cannot grant it.
+2. Deploy the complete migration and application candidate first. Old images
+   do not send `betaEnabled`, so switching the rule first can exclude everyone.
+   During the interim window, the old rule still selects the rollout cohort,
+   but the new backend additionally denies a false or unreadable database
+   preference. Default-on preference alone does not broaden the old rule.
+3. Verify the new attribute in both Manage and backend evaluation for a synthetic
+   eligible lecturer. If the old rule has an eligible canary, prove `ai-beta`
+   remains true there; otherwise record the expected false result and require
+   a controlled rule-change canary. Then replace only the saved-group membership
+   condition with `betaEnabled: true`, retaining `catalyst: true`,
+   `actorType: user`, and the intended environment/role/rollout restrictions.
+   Prove enabled authoring, opt-out denial, and unchanged participant access
+   independently of the owner's beta preference.
+4. If verification fails, restore the prior rule configuration while retaining
+   the new application and its database opt-out guard. Do not force-enable the
+   flag or roll back to a binary that selects the removed approval column.
+   Rolling the rule back narrows the cohort but does not undo saved preferences.
+5. Once the rollback window closes, the GrowthBook operator checks again for
+   other consumers and obtains explicit approval to delete the obsolete group.
+   Do not export its personal membership list by default. Any required retention
+   needs a separately approved purpose, restricted destination and deletion date.
+   Keep the general backend management API configuration for future flag writers.
 
 ## Failure and rollout behavior
 
@@ -258,9 +346,9 @@ the same reviewed change rather than broadening it preemptively.
   unusable cache stays on the false fallback.
 - `initialize()` reports whether the SDK loaded successfully; application
   startup must not depend on a true result.
-- Feature definitions and targeting rules are managed in GrowthBook. Ordinary
-  SDK evaluation never uses the optional management API key; only a future,
-  explicitly authorized control-plane integration may do so.
+- Feature definitions and targeting rules are managed in GrowthBook. The beta
+  preference path uses only the read-only SDK payload; it has no management
+  credential or enrollment control plane.
 - Remote evaluation is the upgrade path when a future flag's rules or
   attributes are too sensitive for browser evaluation.
 
@@ -292,10 +380,9 @@ the same reviewed change rather than broadening it preemptively.
 3. Provision the shared external Kubernetes Secret in staging and production
    with the two exact Node keys documented above. Resolve its final name by
    rendering the chart for that environment; do not guess the Helm fullname.
-4. If a GrowthBook administration feature is introduced, provision the separate
-   management Secret with the exact URL/key names documented above. Prefer a
-   narrowly scoped Personal Access Token and do not add these keys to the shared
-   evaluator Secret.
+4. Do not provision a GrowthBook management Secret for beta preference or
+   `ai-beta` rollout. Token provisioning and validation are v3-ai-only concerns
+   and are not defined by this feature-flag contract.
 5. Confirm the public GrowthBook endpoint allows the real Klicker browser
    origins and the internal endpoint is reachable from the target namespace.
 6. Build/deploy with no active flag first. Inspect a frontend bundle/runtime

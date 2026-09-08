@@ -82,13 +82,15 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.STORE_PATH }}
-        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
-        restore-keys: |
-          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
 
     - name: Install dependencies
       shell: bash
       run: pnpm install
+
+    - name: Install Devrouter profile planner
+      shell: bash
+      run: bash .ci-control/.github/scripts/install-devrouter.sh
 
     - name: Download canonical Playwright execution plan
       uses: actions/download-artifact@v4
@@ -135,11 +137,21 @@ runs:
       shell: bash
       run: tar -xf playwright-next-builds.tar
 
+    - name: Provision disposable test database
+      shell: bash
+      env:
+        PROVISIONER_ROOT: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        node --test "$PROVISIONER_ROOT/prepare-test-database.test.cjs"
+        sha256sum "$PROVISIONER_ROOT/prepare-test-database.cjs"
+        node "$PROVISIONER_ROOT/prepare-test-database.cjs"
+
     - name: Generate Prisma Client
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma generate
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Prepare .env files
       shell: bash
@@ -154,13 +166,13 @@ runs:
         cd packages/prisma
         pnpm run prisma:reset:raw -f
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Seed test participants for Playwright
       shell: bash
       run: pnpm --filter @klicker-uzh/prisma-data seed:test
       env:
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
 
     - name: Start services, wait for readiness, and run Playwright tests
       shell: bash
@@ -193,6 +205,7 @@ runs:
         if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
           RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${SHARD_INDEX}.json"
           node util/playwright-profile-runtime.mjs resolve \
+            --devrouter-bin "$KLICKER_DEVROUTER_BIN" \
             --profile "$PROFILE" \
             --output "$RUNTIME_PLAN"
           export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
@@ -220,7 +233,7 @@ runs:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
         APP_SECRET: abcd
-        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
         PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
         URL_AUTH: http://127.0.0.1:3010
@@ -234,8 +247,8 @@ runs:
         CHECK_INTERVAL: '5'
         POSTGRES_CHECK_HOST: postgres
         POSTGRES_CHECK_PORT: 5432
-        POSTGRES_CHECK_USER: klicker-prod
-        POSTGRES_CHECK_DATABASE: klicker-prod
+        POSTGRES_CHECK_USER: klicker_test
+        POSTGRES_CHECK_DATABASE: klicker_test
         REDIS_HOST: redis_exec
         REDIS_PASS: ''
         REDIS_PORT: 6379
@@ -310,4 +323,4 @@ runs:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
         path: playwright-telemetry-${{ inputs.shard-index }}.json
         if-no-files-found: ignore
-        retention-days: 1
+        retention-days: 7

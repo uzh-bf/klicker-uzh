@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.4.0-alpha.73",
+  "version": "3.4.0-alpha.74",
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.11.2",
@@ -17,8 +17,8 @@
     "js-cookie": "3.0.7",
     "localforage": "1.10.0",
     "lucide-react": "0.522.0",
-    "next": "16.2.10",
-    "next-auth": "4.24.14",
+    "next": "16.2.11",
+    "next-auth": "4.24.15",
     "next-intl": "4.13.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",

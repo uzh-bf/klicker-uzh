@@ -71,6 +71,7 @@ output/
 .devcontainer/.runtime/
 # Devrouter-generated selective Dev Container config (runtime state, not source)
 .devcontainer/devcontainer.devrouter.json
+.devcontainer/docker-compose.dependencies.yml
 playwright/playwright-report/
 playwright/test-results/
 
@@ -84,3 +85,7 @@ packages/prisma-data/src/data/summerschool_*
 # Internal PM/business artifacts — public repo, keep local only (roadmap,
 # backlog/ClickUp dumps, triage records, product strategy/vision briefs)
 project/_local/
+
+# Local agent-tool state (session plans, tool permissions) — machine-specific
+.commandcode/
+.zcode/

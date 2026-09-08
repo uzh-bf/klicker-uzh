@@ -1584,6 +1584,87 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toBeVisible()
   }
 
+  async function setChatLocale(page: Page, locale: 'en' | 'de') {
+    const url = new URL(chatUrl())
+    await page.context().addCookies([
+      {
+        name: 'NEXT_LOCALE',
+        value: locale,
+        url: url.origin,
+        sameSite: 'Lax',
+        secure: url.protocol === 'https:',
+      },
+    ])
+  }
+
+  async function setAllowedModelIds(modelIds: string[]) {
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { allowedModelIds: modelIds },
+    })
+  }
+
+  async function assertAutomaticAndFixedModelCopy(
+    page: Page,
+    participantId: string,
+    locale: 'en' | 'de',
+    copy: {
+      automatic: string
+      primary: string
+      fixed: string
+      fallback: string
+    }
+  ) {
+    await setChatLocale(page, locale)
+    await setModelSelection(participantId, false)
+
+    try {
+      // Restricting the list to Auto makes the server's effective fixed model
+      // deterministic, independent of the deployment's primary-model env.
+      await setAllowedModelIds(['auto'])
+      await setCredits(participantId, 50, 100)
+      await visitChat(page)
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+
+      const modelSection = page.getByTestId('chat-model-selection')
+      await expect(modelSection).toContainText('Auto Mode')
+      await expect(modelSection).toContainText(copy.automatic)
+      await expect(modelSection).toContainText(copy.primary)
+      await expect(modelSection).not.toContainText(copy.fixed)
+
+      // A concrete allow-list makes the same lecturer-fixed path display a
+      // concrete model rather than Auto, so the copy must change with it.
+      await setAllowedModelIds(['gpt-4.1'])
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '50 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText('GPT-4.1')
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).not.toContainText(copy.automatic)
+      await expect(modelSection).not.toContainText(copy.primary)
+
+      // The fixed model can still use Luna only in the exceptional
+      // participant-credit fallback path.
+      await setCredits(participantId, 0, 100)
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('chat-credits-display')).toContainText(
+        '0 / 100'
+      )
+      await openSettings(page)
+      await expect(modelSection).toContainText(copy.fixed)
+      await expect(modelSection).toContainText(copy.fallback)
+      await expect(modelSection).not.toContainText(copy.automatic)
+    } finally {
+      await setAllowedModelIds([])
+    }
+  }
+
   test('Settings toggle is visible and opens the panel', async ({ page }) => {
     await visitChat(page)
 
@@ -1703,6 +1784,33 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(modelSection).toContainText('AI Model')
     await expect(page.getByTestId('chat-model-display')).toBeVisible()
+  })
+
+  test('Participant settings distinguish Auto and fixed models in English', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
+      automatic: 'KlickerUZH chooses a suitable model for each message.',
+      primary: 'The automatic choice is used while credits are available.',
+      fixed: 'Your lecturer fixed this model for all participants.',
+      fallback:
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
+    })
+  })
+
+  test('Participant settings distinguish Auto and fixed models in German', async ({
+    page,
+  }) => {
+    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
+      automatic:
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      primary:
+        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
+      fixed:
+        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
+      fallback:
+        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
+    })
   })
 
   test('Credits display shows current/total and percentage', async ({
@@ -2114,11 +2222,14 @@ test.describe('Chatbot Source Citations', () => {
     reference: string
     reference_type: string
     source_type: string
-    title: string
+    title?: string
+    source_url?: string
     chunks: Array<{
       content: string
       page_number?: number
       labeled_page_number?: string
+      start_sec?: number
+      end_sec?: number
     }>
   }
 
@@ -2162,6 +2273,256 @@ test.describe('Chatbot Source Citations', () => {
       ],
     }
   }
+
+  test('Retrieved chunk details preserve origins and citation identity after reload', async ({
+    page,
+  }, testInfo) => {
+    const messageId = '5a1b2c3d-0013-4a91-8f6c-2b7d1e5a9c40'
+    const origin = 'https://example.org/course.pdf?edition=2#page=4'
+    const passage =
+      'a'.repeat(479) +
+      '😀 ' +
+      'Synthetic evidence with a long readable excerpt. '.repeat(30)
+    await seedThread(participantId, {
+      title: 'Chunk display regression',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Inspect retrieved evidence' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'chunk-proof',
+              sources: [
+                {
+                  reference:
+                    'http://backend.stg.svc.cluster.local/api/ingestion/resources/fixture/3',
+                  reference_type: 'url',
+                  source_type: 'document',
+                  chunks: [
+                    { content: passage, page_number: 4 },
+                    { content: 'Second synthetic chunk', page_number: 8 },
+                  ],
+                },
+                {
+                  reference: 'https://example.org/original.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'Synthetic reference',
+                  source_url: origin,
+                  chunks: [
+                    { content: 'Named supporting passage', page_number: 12 },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Evidence [1].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    for (const variant of ['desktop', 'reloaded', 'mobile-de']) {
+      const reload = variant !== 'desktop'
+      if (variant === 'mobile-de') {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.emulateMedia({ reducedMotion: 'reduce' })
+        await page.context().addCookies([
+          {
+            name: 'NEXT_LOCALE',
+            value: 'de',
+            url: new URL(chatUrl()).origin,
+          },
+        ])
+      }
+      if (reload) await page.reload()
+      const toggle = page.getByTestId('chat-tool-call-toggle')
+      await toggle.focus()
+      await page.keyboard.press('Enter')
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      await expect(page.getByTestId('chat-doc-query-group')).toHaveCount(2)
+      await expect(page.getByTestId('chat-doc-query-chunk')).toHaveCount(3)
+      await expect(
+        page
+          .getByTestId('chat-doc-query-group')
+          .first()
+          .getByTestId('chat-doc-query-citation')
+      ).toHaveCount(0)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveText('1')
+      await expect(page.getByTestId('chat-doc-query-origin')).toHaveAttribute(
+        'href',
+        origin
+      )
+      await expect(page.locator(`#src-${messageId}-1`)).toHaveAttribute(
+        'href',
+        origin
+      )
+      await expect(
+        page.getByTestId('chat-doc-query-chunk').first().locator('p')
+      ).toHaveText('a'.repeat(479) + '…')
+      await page.getByTestId('chat-doc-query-content-toggle').first().click()
+      await expect(
+        page.getByTestId('chat-doc-query-chunk').first()
+      ).toContainText(passage.trim())
+      await page.getByTestId('chat-doc-query-content-toggle').first().click()
+      await page.screenshot({
+        path: testInfo.outputPath(`chunks-${variant}.png`),
+        animations: 'disabled',
+      })
+    }
+  })
+
+  test('Documents-mode groups keep message-wide citations and reveal capped results after reload', async ({
+    page,
+  }) => {
+    const messageId = '5a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
+    const disclosureChunks = Array.from({ length: 7 }, (_, index) => ({
+      content: `synthetic-disclosure-chunk-${index + 1}`,
+      page_number: index + 1,
+    }))
+    const firstSourceUrl =
+      'https://example.test/rag-chunk-display/disclosure-source.pdf'
+    const overflowSources = Array.from({ length: 13 }, (_, index) => {
+      const sourceNumber = index + 2
+      return {
+        reference: `synthetic-overflow-source-${sourceNumber}.pdf`,
+        reference_type: 'pdf',
+        source_type: 'document',
+        title: `synthetic-overflow-source-${sourceNumber}`,
+        source_url: `https://example.test/rag-chunk-display/source-${sourceNumber}.pdf`,
+        chunks: [
+          {
+            content: `synthetic-overflow-chunk-${sourceNumber}`,
+            page_number: sourceNumber,
+          },
+        ],
+      }
+    })
+
+    await seedThread(participantId, {
+      title: 'Documents mode citation bounds',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Inspect all retrieved groups' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'documents-disclosure-call',
+              sources: [
+                {
+                  reference: 'synthetic-disclosure-source.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'synthetic-disclosure-source',
+                  source_url: firstSourceUrl,
+                  chunks: disclosureChunks,
+                },
+              ],
+            }),
+            documentsQueryPart({
+              toolCallId: 'documents-overflow-call',
+              sources: overflowSources,
+            }),
+            {
+              type: 'text',
+              text: 'Synthetic citations [1], [2], [12], and [13].',
+            },
+          ],
+        },
+      ],
+    })
+
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    for (const reload of [false, true]) {
+      if (reload) await page.reload()
+
+      const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
+      await expect(toolGroupToggle).toHaveCount(1)
+      await toolGroupToggle.focus()
+      await page.keyboard.press('Enter')
+      await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'true')
+
+      const toggles = page.getByTestId('chat-tool-call-toggle')
+      await expect(toggles).toHaveCount(2)
+      for (const index of [0, 1]) {
+        const toggle = toggles.nth(index)
+        await toggle.focus()
+        await page.keyboard.press('Enter')
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      }
+
+      const groups = page.getByTestId('chat-doc-query-group')
+      await expect(groups).toHaveCount(6)
+      const moreSources = page.getByTestId('chat-doc-query-more-sources')
+      await moreSources.focus()
+      await page.keyboard.press('Enter')
+      await expect(groups).toHaveCount(11)
+      await moreSources.focus()
+      await page.keyboard.press('Enter')
+      await expect(groups).toHaveCount(14)
+      await expect(moreSources).toHaveCount(0)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveCount(12)
+      await expect(page.getByTestId('chat-doc-query-citation')).toHaveText(
+        Array.from({ length: 12 }, (_, index) => String(index + 1))
+      )
+      await expect(
+        groups.nth(0).getByTestId('chat-doc-query-citation')
+      ).toHaveText('1')
+      await expect(
+        groups.nth(1).getByTestId('chat-doc-query-citation')
+      ).toHaveText('2')
+      await expect(
+        groups.nth(11).getByTestId('chat-doc-query-citation')
+      ).toHaveText('12')
+
+      const citations = page.getByTestId('chat-citation')
+      await expect(citations).toHaveCount(3)
+      await expect(citations).toHaveText(['1', '2', '12'])
+      await expect(
+        page.getByTestId('chat-assistant-message-content')
+      ).toContainText('[13]')
+
+      const disclosureGroup = groups.nth(0)
+      await expect(
+        disclosureGroup.getByTestId('chat-doc-query-origin')
+      ).toHaveAttribute('href', firstSourceUrl)
+      await expect(
+        disclosureGroup.getByTestId('chat-doc-query-chunk')
+      ).toHaveCount(5)
+      await expect(
+        disclosureGroup.getByTestId('chat-doc-query-more-chunks')
+      ).toHaveCount(1)
+      await disclosureGroup.getByTestId('chat-doc-query-more-chunks').click()
+      await expect(
+        disclosureGroup.getByTestId('chat-doc-query-chunk')
+      ).toHaveCount(7)
+      await expect(disclosureGroup).toContainText(disclosureChunks[6].content)
+
+      for (const groupIndex of [12, 13]) {
+        const source = overflowSources[groupIndex - 1]
+        const group = groups.nth(groupIndex)
+        await expect(group.getByTestId('chat-doc-query-citation')).toHaveCount(
+          0
+        )
+        await expect(
+          group.getByTestId('chat-doc-query-origin')
+        ).toHaveAttribute('href', source.source_url)
+        await expect(group.getByTestId('chat-doc-query-chunk')).toHaveCount(1)
+        await expect(group).toContainText(source.title)
+        await expect(group).toContainText(source.chunks[0].content)
+      }
+    }
+  })
 
   function failedDocQueryPart(toolCallId: string) {
     return {
@@ -2787,11 +3148,13 @@ test.describe('Chatbot Source Citations', () => {
       timeout: 15_000,
     })
     await expect(section).toHaveCount(0)
-    expect(
-      await viewport.evaluate(
-        (element) => element.scrollHeight > element.clientHeight
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
       )
-    ).toBe(true)
+      .toBe(true)
     await expect
       .poll(() => viewport.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(scrollTopBeforeText)

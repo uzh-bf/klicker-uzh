@@ -204,6 +204,7 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    owner: { aiFeaturesEnabled: true },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -399,7 +400,7 @@ describe('account usage chat route', () => {
     })
     expect(response.status).toBe(200)
     expect(mocks.streamConfig?.abortSignal).toBeInstanceOf(AbortSignal)
-    expect(mocks.streamConfig?.abortSignal).not.toBe(request.signal)
+    expect(mocks.streamConfig?.abortSignal).toBe(request.signal)
 
     await streamCallbacks().onEnd({
       usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
@@ -415,39 +416,6 @@ describe('account usage chat route', () => {
       },
     })
     expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
-  })
-
-  test('interrupts stalled MCP discovery at the chat turn deadline', async () => {
-    const deadlineController = new AbortController()
-    const timeoutSpy = vi
-      .spyOn(AbortSignal, 'timeout')
-      .mockReturnValueOnce(deadlineController.signal)
-    mocks.getAggregatedMCPTools.mockImplementationOnce(
-      (
-        _servers: unknown,
-        _chatbotId: string,
-        options: { abortSignal: AbortSignal }
-      ) =>
-        new Promise((_resolve, reject) => {
-          options.abortSignal.addEventListener(
-            'abort',
-            () => reject(options.abortSignal.reason),
-            { once: true }
-          )
-        })
-    )
-
-    const response = POST(createRequest(), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
-    })
-    await vi.waitFor(() => {
-      expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
-    })
-    deadlineController.abort(new Error('chat turn deadline exceeded'))
-
-    await expect(response).rejects.toThrow('chat turn deadline exceeded')
-    expect(mocks.streamText).not.toHaveBeenCalled()
-    timeoutSpy.mockRestore()
   })
 
   test('keeps provider errors fail-open when Langfuse trace closure throws', async () => {
@@ -475,12 +443,50 @@ describe('account usage chat route', () => {
     await expect(
       streamCallbacks().onError(new Error('late provider failure'))
     ).resolves.toBeUndefined()
-    expect(
-      responseOptions().onError(new Error('synthetic UI stream failure'))
-    ).toBe('An error occurred while processing the request.')
+    const errorMessage = responseOptions().onError(
+      new Error('synthetic UI stream failure')
+    )
+    expect(errorMessage).toEqual(expect.any(String))
+    expect(errorMessage).not.toContain('synthetic UI stream failure')
 
     expect(mocks.langfuseObservationUpdate).toHaveBeenCalledTimes(2)
     expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    false,
+    true,
+  ])('requires AI approval with budget enforcement %s', async (enforced) => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(enforced)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: false } })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
+      requestId: expect.any(String),
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
+  })
+
+  test('allows participant model use when an approved owner opts out of beta', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {

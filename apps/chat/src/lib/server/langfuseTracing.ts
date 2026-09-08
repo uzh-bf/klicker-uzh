@@ -33,7 +33,7 @@ const getRuntimeState = () => {
 
 export const LANGFUSE_CHAT_TRACE_NAME = 'generate-chat-response'
 
-const SANITIZED_ERROR_MESSAGE = 'AI operation failed'
+export const SANITIZED_ERROR_MESSAGE = 'AI operation failed'
 
 export function getLangfuseTelemetryConfiguration(
   environment: Readonly<Record<string, string | undefined>> = process.env
@@ -77,6 +77,11 @@ export async function getChatTraceContext({
   }
 }
 
+/**
+ * A span context needs a parent span id alongside the trace id. Nothing points
+ * back at this id — it only anchors the stream's spans into the derived trace —
+ * so it just has to be stable and a valid 16-hex-digit value.
+ */
 export function getParentSpanContext(traceId: string) {
   return { traceId, spanId: traceId.slice(0, 16), traceFlags: 1 }
 }

@@ -190,6 +190,26 @@ describe('default chat model registry parity', () => {
       )
     }
   })
+
+  test('both consumers reject invalid Auto registry policy', () => {
+    const withoutAuto = chatModels.filter((model) => model.id !== 'auto')
+    const autoFallback = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, fallback: true } : model
+    )
+    const autoReasoning = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, supportsReasoning: true } : model
+    )
+    const autoBase = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, usageClass: 'BASE' as const } : model
+    )
+
+    for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
+      expect(() => parseRegistry(withoutAuto)).toThrow(/auto.*exactly once/i)
+      expect(() => parseRegistry(autoFallback)).toThrow(/auto.*fallback/i)
+      expect(() => parseRegistry(autoReasoning)).toThrow(/auto.*reasoning/i)
+      expect(() => parseRegistry(autoBase)).toThrow(/auto.*ADVANCED/i)
+    }
+  })
 })
 
 function loadDeployedRegistries() {

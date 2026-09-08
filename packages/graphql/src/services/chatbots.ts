@@ -1,8 +1,12 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import type { ChatbotStandardModeConfigInput } from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
+  getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  normalizeChatbotStandardModeConfig,
+  parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -11,6 +15,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 const chatModelSchema = z
   .object({
@@ -60,17 +65,15 @@ const chatModelRegistrySchema = z
         })
       }
       seenIds.add(model.id)
-
-      if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [index, 'usageClass'],
-          message: 'Model "auto" must be classified as ADVANCED.',
-        })
-      }
     }
 
     for (const issue of getChatModelBasePolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
+    }
+    for (const issue of getChatModelAutoPolicyIssues(models)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         ...issue,
@@ -396,6 +399,8 @@ const chatbotOwnerSelect = {
   name: true,
   description: true,
   avatar: true,
+  systemPrompts: true,
+  standardModeConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
@@ -413,12 +418,46 @@ const chatbotOwnerSelect = {
 } satisfies Prisma.ChatbotSelect
 
 type ChatbotWithOwnerCourse = {
+  systemPrompts: unknown
+  standardModeConfig: unknown
+  modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   course: { id: string; name: string } | null
 }
 
-function normalizeAllowedModelIds(allowedModelIds: string[]) {
+function resolveLegacyFixedModelId(allowedModelIds: readonly string[]) {
+  const registry = getChatModelRegistry()
+  const activeModelIds = new Set(registry.map((model) => model.id))
+  const normalized = dedupeStrings(allowedModelIds).filter((modelId) =>
+    activeModelIds.has(modelId)
+  )
+  const candidates =
+    normalized.length > 0
+      ? registry.filter((model) => normalized.includes(model.id))
+      : allowedModelIds.length === 0
+        ? registry
+        : registry.filter((model) => model.id === CHAT_BASE_MODEL_ID)
+
+  const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
+  const defaultPrimary = candidates.find((model) => !model.fallback)
+  return (
+    candidates.find((model) => model.id === configuredPrimary)?.id ??
+    defaultPrimary?.id ??
+    candidates[0]?.id ??
+    CHAT_BASE_MODEL_ID
+  )
+}
+
+function normalizeAllowedModelIds(
+  allowedModelIds: string[],
+  modelSelection: boolean,
+  resolveLegacyFixedPolicy: boolean
+) {
+  if (!modelSelection && resolveLegacyFixedPolicy) {
+    return [resolveLegacyFixedModelId(allowedModelIds)]
+  }
+
   const activeModelIds = new Set(
     getChatModelRegistry().map((model) => model.id)
   )
@@ -436,10 +475,24 @@ function normalizeAllowedModelIds(allowedModelIds: string[]) {
   return [CHAT_BASE_MODEL_ID]
 }
 
-function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
+function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
+  chatbot: T,
+  options: { resolveLegacyFixedPolicy?: boolean } = {}
+) {
+  const { systemPrompts, ...chatbotWithoutSystemPrompts } = chatbot
+  const resolveLegacyFixedPolicy = options.resolveLegacyFixedPolicy ?? true
+
   return {
-    ...chatbot,
-    allowedModelIds: normalizeAllowedModelIds(chatbot.allowedModelIds),
+    ...chatbotWithoutSystemPrompts,
+    standardModeConfig: normalizeChatbotStandardModeConfig(
+      chatbot.standardModeConfig,
+      systemPrompts
+    ),
+    allowedModelIds: normalizeAllowedModelIds(
+      chatbot.allowedModelIds,
+      chatbot.modelSelection,
+      resolveLegacyFixedPolicy
+    ),
     allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
       chatbot.allowedReasoningEffortsByModel
     ),
@@ -450,13 +503,15 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
 export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
 
-  return user.aiChatbotPublishingEnabled
+  return user.aiFeaturesEnabled
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
+
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
@@ -754,6 +809,195 @@ export async function updateChatbotModelSettings(
     })
   })
 
+  return shapeChatbotResponse(updated, { resolveLegacyFixedPolicy: false })
+}
+
+type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
+
+function normalizeStrictReasoningConfig(
+  args: UpdateChatbotModelPolicyArgs,
+  selectedModels: ChatModelCapability[],
+  modelById: Map<string, ChatModelCapability>
+) {
+  const selectedModelIds = new Set(selectedModels.map((model) => model.id))
+  const entries = args.allowedReasoningEffortsByModel ?? []
+  const seenModelIds = new Set<string>()
+  const normalizedEntries = new Map<string, string[]>()
+
+  for (const entry of entries) {
+    const model = modelById.get(entry.modelId)
+    if (!model) {
+      throw chatbotError(
+        `Unknown model id in reasoning config: ${entry.modelId}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    if (seenModelIds.has(entry.modelId)) {
+      throw chatbotError(
+        `Duplicate reasoning configuration for model: ${entry.modelId}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    seenModelIds.add(entry.modelId)
+
+    if (!selectedModelIds.has(model.id)) {
+      throw chatbotError(
+        `Reasoning configuration is only allowed for selected model: ${model.id}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    if (!model.supportsReasoning) {
+      throw chatbotError(
+        `Model ${model.id} does not support configurable reasoning efforts`,
+        'BAD_USER_INPUT'
+      )
+    }
+
+    const supportedEfforts = new Set(model.supportedReasoningEfforts)
+    const requestedEfforts = dedupeStrings(entry.efforts)
+    const unsupportedEfforts = requestedEfforts.filter(
+      (effort) => !supportedEfforts.has(effort)
+    )
+    if (unsupportedEfforts.length > 0) {
+      throw chatbotError(
+        `Unsupported reasoning effort(s) for ${model.id}: ${unsupportedEfforts.join(', ')}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    if (requestedEfforts.length === 0) {
+      throw chatbotError(
+        `At least one reasoning effort must be configured for model: ${model.id}`,
+        'BAD_USER_INPUT'
+      )
+    }
+
+    normalizedEntries.set(
+      model.id,
+      model.supportedReasoningEfforts.filter((effort) =>
+        requestedEfforts.includes(effort)
+      )
+    )
+  }
+
+  for (const model of selectedModels) {
+    if (model.supportsReasoning && !normalizedEntries.has(model.id)) {
+      throw chatbotError(
+        `At least one reasoning effort must be configured for model: ${model.id}`,
+        'BAD_USER_INPUT'
+      )
+    }
+  }
+
+  return Array.from(normalizedEntries.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([modelId, efforts]) => ({ modelId, efforts }))
+}
+
+export async function updateChatbotModelPolicy(
+  args: UpdateChatbotModelPolicyArgs,
+  ctx: ContextWithUser
+) {
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: {
+      id: args.chatbotId,
+      ownerId: ctx.user.sub,
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  if (!chatbot) return null
+
+  assertMetadataAndModelEditable(chatbot.status)
+
+  const modelRegistry = getChatModelRegistry()
+  const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
+  const normalizedAllowedModelIds = dedupeStrings(args.allowedModelIds)
+  const unknownAllowedModelIds = normalizedAllowedModelIds.filter(
+    (modelId) => !modelById.has(modelId)
+  )
+  if (unknownAllowedModelIds.length > 0) {
+    throw chatbotError(
+      `Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`,
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const selectedModels = normalizedAllowedModelIds
+    .map((modelId) => modelById.get(modelId))
+    .filter((model): model is ChatModelCapability => model !== undefined)
+
+  if (args.modelSelection) {
+    if (selectedModels.length === 0) {
+      throw chatbotError(
+        'Participant model selection requires at least one active model',
+        'BAD_USER_INPUT'
+      )
+    }
+  } else if (selectedModels.length !== 1) {
+    throw chatbotError(
+      'Fixed model policy requires exactly one active model',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const normalizedReasoningConfig = normalizeStrictReasoningConfig(
+    args,
+    selectedModels,
+    modelById
+  )
+
+  if (
+    !args.modelSelection &&
+    selectedModels[0]?.supportsReasoning &&
+    normalizedReasoningConfig[0]?.efforts.length !== 1
+  ) {
+    throw chatbotError(
+      `Fixed model policy requires exactly one reasoning effort for model: ${selectedModels[0].id}`,
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: chatbot.id,
+        ownerId: ctx.user.sub,
+        status: { in: metadataAndModelEditableStatuses },
+      },
+      data: {
+        modelSelection: args.modelSelection,
+        allowedModelIds: normalizedAllowedModelIds,
+        allowedReasoningEffortsByModel:
+          normalizedReasoningConfig.length > 0
+            ? (Object.fromEntries(
+                normalizedReasoningConfig.map(({ modelId, efforts }) => [
+                  modelId,
+                  efforts,
+                ])
+              ) as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+      },
+    })
+
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot model policy could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
+
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
+  })
+
   return shapeChatbotResponse(updated)
 }
 
@@ -782,17 +1026,12 @@ export async function createChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
-  const luna = getChatModelRegistry().find(
-    (model) => model.id === CHAT_BASE_MODEL_ID && model.usageClass === 'BASE'
-  )
-  if (
-    !luna ||
-    !luna.supportsReasoning ||
-    !luna.supportedReasoningEfforts.includes('low') ||
-    !luna.supportedReasoningEfforts.includes('medium')
-  ) {
+  const modelRegistry = getChatModelRegistry()
+  const autoPolicyIssues = getChatModelAutoPolicyIssues(modelRegistry)
+  const auto = modelRegistry.find((model) => model.id === 'auto')
+  if (autoPolicyIssues.length > 0 || !auto) {
     throw new GraphQLError(
-      `Chatbot defaults require the ${CHAT_BASE_MODEL_ID} BASE model with low and medium reasoning support`
+      'Chatbot defaults require exactly one valid non-reasoning ADVANCED Auto model'
     )
   }
 
@@ -803,10 +1042,8 @@ export async function createChatbot(
       avatar: args.avatar ?? null,
       status: DB.ChatbotStatus.DRAFT,
       modelSelection: false,
-      allowedModelIds: [CHAT_BASE_MODEL_ID],
-      allowedReasoningEffortsByModel: {
-        [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
-      },
+      allowedModelIds: [auto.id],
+      allowedReasoningEffortsByModel: Prisma.DbNull,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
       // systemPrompts intentionally left unset (null): the chat runtime
@@ -878,6 +1115,70 @@ export async function updateChatbot(
 
     return await tx.chatbot.findUniqueOrThrow({
       where: { id: existing.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
+type UpdateChatbotStandardModeConfigArgs = {
+  chatbotId: string
+  config: ChatbotStandardModeConfigInput
+}
+
+export async function updateChatbotStandardModeConfig(
+  args: UpdateChatbotStandardModeConfigArgs,
+  ctx: ContextWithUser
+) {
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.chatbotId, ownerId: ctx.user.sub },
+    select: { id: true, status: true },
+  })
+
+  if (!chatbot) {
+    return null
+  }
+
+  assertMetadataAndModelEditable(chatbot.status)
+
+  let standardModeConfig: ReturnType<typeof parseChatbotStandardModeConfigInput>
+  try {
+    standardModeConfig = parseChatbotStandardModeConfigInput(args.config)
+  } catch (error) {
+    throw chatbotError(
+      error instanceof Error
+        ? error.message
+        : 'Invalid standard mode configuration',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: chatbot.id,
+        ownerId: ctx.user.sub,
+        status: { in: metadataAndModelEditableStatuses },
+      },
+      data: {
+        standardModeConfig:
+          standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig,
+      },
+    })
+
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot standard mode settings could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
+
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
       select: {
         ...chatbotOwnerSelect,
         course: { select: { id: true, name: true } },
@@ -1049,9 +1350,9 @@ export async function requestChatbotPublication(
   // a JWT claim — ops flips this flag out of band after the token was issued.
   const owner = await ctx.prisma.user.findUniqueOrThrow({
     where: { id: ctx.user.sub },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
-  if (!owner.aiChatbotPublishingEnabled) {
+  if (!owner.aiFeaturesEnabled) {
     throw new GraphQLError('Account is not approved for chatbot publishing')
   }
 
@@ -1094,7 +1395,7 @@ export async function requestChatbotPublication(
       status: {
         in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
       },
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PENDING_APPROVAL,
@@ -1146,10 +1447,10 @@ export async function approveChatbotPublication(
       publishedAt: true,
       // Re-check the owner's account-level publishing capability at approval
       // time (S3 review): the manual queue can sit for days, and ops may revoke
-      // aiChatbotPublishingEnabled while a request is pending. Checking only at
+      // aiFeaturesEnabled while a request is pending. Checking only at
       // request time would let an unaware admin publish a bot under an account
       // that no longer holds the capability. See ADR 0020 (two-tier approval).
-      owner: { select: { aiChatbotPublishingEnabled: true } },
+      owner: { select: { aiFeaturesEnabled: true } },
     },
   })
   if (!chatbot) {
@@ -1158,7 +1459,7 @@ export async function approveChatbotPublication(
   if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
     throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
   }
-  if (!chatbot.owner.aiChatbotPublishingEnabled) {
+  if (!chatbot.owner.aiFeaturesEnabled) {
     throw new GraphQLError(
       'Account is no longer approved for chatbot publishing'
     )
@@ -1168,7 +1469,7 @@ export async function approveChatbotPublication(
     where: {
       id: chatbot.id,
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      owner: { aiChatbotPublishingEnabled: true },
+      owner: { aiFeaturesEnabled: true },
     },
     data: {
       status: DB.ChatbotStatus.PUBLISHED,

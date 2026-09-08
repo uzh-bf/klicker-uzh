@@ -10,6 +10,28 @@ function decodeHtmlEntities(text: string): string {
   return textarea.value
 }
 
+function renderPlainTextPreview(
+  content: string,
+  maxLines: 1 | 2 | 3,
+  decodeEntities: boolean
+): React.ReactNode[] {
+  let normalizedContent = content
+  if (decodeEntities) {
+    normalizedContent = decodeHtmlEntities(content)
+  }
+
+  return normalizedContent
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .slice(0, maxLines)
+    .map((line, i, arr) => (
+      <React.Fragment key={i}>
+        {line}
+        {i < arr.length - 1 && <br />}
+      </React.Fragment>
+    ))
+}
+
 export interface EllipsisBaseProps {
   children: string
   maxLength?: number
@@ -28,10 +50,12 @@ export interface EllipsisBaseProps {
 export interface EllipsisPropsMaxLength extends EllipsisBaseProps {
   maxLength: number
   maxLines?: never
+  previewContent?: never
 }
 export interface EllipsisPropsMaxLines extends EllipsisBaseProps {
   maxLength?: never
   maxLines: 1 | 2 | 3
+  previewContent?: string
 }
 
 export type EllipsisProps = EllipsisPropsMaxLength | EllipsisPropsMaxLines
@@ -43,9 +67,12 @@ function Ellipsis({
   withoutPopup = false,
   withMarkdown = true,
   withMarkdownTooltip = true,
+  previewContent,
   className,
 }: EllipsisProps): React.ReactElement {
   if (maxLines) {
+    const visibleContent = previewContent ?? children
+
     return (
       <Tooltip
         delay={1000}
@@ -103,18 +130,11 @@ function Ellipsis({
               className?.content
             )}
           >
-            {typeof children === 'string'
-              ? decodeHtmlEntities(children)
-                  .split('\n')
-                  .filter((line) => line.trim() !== '')
-                  .slice(0, maxLines) // only include the first maxLines lines
-                  .map((line, i, arr) => (
-                    <React.Fragment key={i}>
-                      {line}
-                      {i < arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))
-              : children}
+            {renderPlainTextPreview(
+              visibleContent,
+              maxLines,
+              previewContent === undefined
+            )}
           </div>
         )}
       </Tooltip>

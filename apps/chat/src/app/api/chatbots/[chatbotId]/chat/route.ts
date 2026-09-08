@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
@@ -16,7 +17,6 @@ import {
   streamText,
   type ToolSet,
 } from 'ai'
-import { createHash, randomUUID } from 'crypto'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
@@ -70,12 +70,12 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { resolveMcpScope } from '@/src/services/mcpScope'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
 
 export const maxDuration = 60
-const CHAT_TURN_DEADLINE_MS = 55_000
 
 type IncomingImageAttachment = {
   imageBase64: string
@@ -611,10 +611,6 @@ export async function POST(
   const { chatbotId } = await params
   const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
-  const chatTurnAbortSignal = AbortSignal.any([
-    req.signal,
-    AbortSignal.timeout(CHAT_TURN_DEADLINE_MS),
-  ])
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
     return authResult.response
@@ -739,6 +735,7 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        owner: { select: { aiFeaturesEnabled: true } },
         course: {
           select: { displayName: true },
         },
@@ -761,9 +758,22 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    console.warn('Chat admission denied', {
+      requestId,
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    return NextResponse.json(
+      { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
+      { status: 403 }
+    )
+  }
+
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -883,10 +893,33 @@ export async function POST(
     }
   }
 
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
+    (config) => config.isEnabled !== false
+  )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
   )
+
+  let scopedKbIds: string[] | undefined
+  try {
+    scopedKbIds = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      selectedMCPConfigurations
+    )
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -1082,9 +1115,12 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
-        abortSignal: chatTurnAbortSignal,
-      })
+      mcpTools = scopedKbIds
+        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
+            kbIds: scopedKbIds,
+            sessionId: owningThread.id,
+          })
+        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1127,6 +1163,7 @@ export async function POST(
       {
         courseDisplayName: chatbot.course.displayName,
         toolNames,
+        standardModeConfig: chatbot.standardModeConfig,
       }
     )
 
@@ -1206,7 +1243,6 @@ export async function POST(
               },
             ],
             maxOutputTokens: 1000,
-            abortSignal: chatTurnAbortSignal,
             telemetry: { isEnabled: false },
           })
           return { image, descriptionResult }
@@ -1624,7 +1660,7 @@ export async function POST(
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 
-        abortSignal: chatTurnAbortSignal,
+        abortSignal: req.signal,
 
         onChunk: ({ chunk }) => {
           if (!hasLoggedFirstChunk) {

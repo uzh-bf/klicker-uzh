@@ -9,6 +9,7 @@ import { z } from 'zod'
 import {
   createPrivacyPreservingLangfuseSpanProcessor,
   maskLangfuseData,
+  SANITIZED_ERROR_MESSAGE,
 } from '../src/lib/server/langfuseTracing'
 
 type ProcessorOptions = NonNullable<
@@ -259,7 +260,7 @@ describe('Langfuse SDK and OpenTelemetry compatibility', () => {
       expect(exportedPayload).toContain('compatible-model')
       expect(exportedPayload).toContain('pseudonymous-session')
       expect(exportedPayload).toContain('metadata-only')
-      expect(exportedPayload).toContain('AI operation failed')
+      expect(exportedPayload).toContain(SANITIZED_ERROR_MESSAGE)
       expect(exportedPayload).not.toContain(forbiddenInput)
       expect(exportedPayload).not.toContain(forbiddenOutput)
       expect(exportedPayload).not.toContain(forbiddenToolInput)
