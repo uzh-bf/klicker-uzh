@@ -350,7 +350,7 @@ async function resumePreparingBuild(
   try {
     await dispatchPreparingBuild(build, runtime, leaseOwner, ctx)
   } catch (error) {
-    return recordStartFailure(
+    return await recordStartFailure(
       build.id,
       build.providerDispatchAttemptId,
       error,
