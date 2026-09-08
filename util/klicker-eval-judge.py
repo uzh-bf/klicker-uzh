@@ -97,12 +97,12 @@ except OSError:
 """.strip()
 
 
-def container_name(repo_root: Path = REPO_ROOT, pid: int | None = None) -> str:
+def container_name() -> str:
     """Return a per-invocation name derived from this repository path."""
 
-    identity = str(repo_root.resolve()).encode("utf-8")
+    identity = str(REPO_ROOT.resolve()).encode("utf-8")
     suffix = hashlib.sha256(identity).hexdigest()[:12]
-    invocation = os.getpid() if pid is None else pid
+    invocation = os.getpid()
     return f"klicker-eval-judge-{suffix}-{invocation}"
 
 

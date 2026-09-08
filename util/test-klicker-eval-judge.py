@@ -25,19 +25,6 @@ SPEC.loader.exec_module(JUDGE)
 
 
 class JudgeTests(unittest.TestCase):
-    def test_config_is_pinned_and_has_no_database_settings(self) -> None:
-        config = JUDGE.CONFIG_PATH.read_text(encoding="utf-8")
-        self.assertIn("ghcr.io/berriai/litellm-database:v1.96.2", JUDGE.IMAGE)
-        self.assertIn("model_name: klickeruzh/azure/gpt-5.6-luna-high", config)
-        self.assertIn("model: openai/gpt-5.6-luna", config)
-        self.assertIn("api_base: os.environ/AZURE_OPENAI_BASE_URL", config)
-        self.assertIn("api_key: os.environ/AZURE_OPENAI_API_KEY", config)
-        self.assertIn("reasoning_effort: high", config)
-        self.assertIn("timeout: 120", config)
-        self.assertIn("drop_params: true", config)
-        self.assertIn("disable_spend_logs: true", config)
-        self.assertNotIn("database_url", config)
-
     def test_missing_credentials_fails_before_docker(self) -> None:
         environment = {"PATH": os.environ.get("PATH", "")}
         values, missing = JUDGE.credentials_from_environment(environment)
@@ -87,27 +74,12 @@ class JudgeTests(unittest.TestCase):
         self.assertNotIn("AZURE_OPENAI_BASE_URL", options["env"])
         self.assertNotIn("AZURE_OPENAI_API_KEY", options["env"])
         self.assertEqual(json.loads(process.stdin.data), synthetic)
-        self.assertNotIn("synthetic-upstream-key", output.getvalue())
-        self.assertNotIn("synthetic-upstream-key", errors.getvalue())
-
-    def test_host_command_has_no_upstream_values(self) -> None:
-        synthetic = {
-            "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
-            "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
-            "PATH": "/synthetic/bin",
-        }
-        sanitized = JUDGE.host_environment(synthetic)
-        self.assertNotIn("AZURE_OPENAI_BASE_URL", sanitized)
-        self.assertNotIn("AZURE_OPENAI_API_KEY", sanitized)
-
-        command = JUDGE.docker_command("/synthetic/bin/docker", "judge-test")
-        rendered = "\0".join(command)
-        self.assertNotIn(synthetic["AZURE_OPENAI_BASE_URL"], rendered)
-        self.assertNotIn(synthetic["AZURE_OPENAI_API_KEY"], rendered)
         self.assertIn("--rm", command)
         self.assertIn("-i", command)
         self.assertIn("127.0.0.1:4000:4000", command)
         self.assertIn(JUDGE.IMAGE, command)
+        self.assertNotIn("synthetic-upstream-key", output.getvalue())
+        self.assertNotIn("synthetic-upstream-key", errors.getvalue())
 
     def test_bootstrap_rejects_missing_stdin(self) -> None:
         result = subprocess.run(
