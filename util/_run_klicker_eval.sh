@@ -65,9 +65,24 @@ read_judge_config() {
   fi
 }
 
+run_infisical() (
+  # Keep CLI authentication, but do not expose model or participant credentials.
+  for name in EVAL_API_KEY LITELLM_API_BASE LITELLM_API_KEY \
+    AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY \
+    UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY PIPELINES_LITELLM_API_KEY \
+    KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD \
+    KLICKER_EVAL_TARGET_KEY ${JUDGE_SOURCE_NAMES[@]+"${JUDGE_SOURCE_NAMES[@]}"}; do
+    case "$name" in
+      INFISICAL_TOKEN|INFISICAL_CLIENT_SECRET|INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET) ;;
+      *) unset "$name" ;;
+    esac
+  done
+  infisical "$@"
+)
+
 fetch_judge_setting() {
   local source="$1" destination="$2" fetched
-  if ! fetched="$(infisical secrets get "$source" \
+  if ! fetched="$(run_infisical secrets get "$source" \
     --plain --silent --expand=false --include-imports=false \
     --recursive=false --secret-overriding=false --telemetry=false --log-level=error \
     --domain "${JUDGE_CONFIG_FIELDS[0]}" --projectId "${JUDGE_CONFIG_FIELDS[1]}" \
@@ -89,7 +104,7 @@ resolve_judge_settings() {
     return 0
   fi
   local version
-  version="$(infisical --version 2>/dev/null)" || {
+  version="$(run_infisical --version 2>/dev/null)" || {
     echo 'Error: could not determine the Infisical CLI version' >&2
     return 1
   }
@@ -292,6 +307,7 @@ validate_framework_args() {
 
   HAS_GT_DIR_ARGUMENT=false
   HAS_SAFETY_FILE_ARGUMENT=false
+  HAS_AGENT_ID_ARGUMENT=false
 
   while [ "$index" -lt "$argument_count" ]; do
     arg="${EVAL_ARGS[$index]}"
@@ -307,6 +323,24 @@ validate_framework_args() {
           exit 1
         fi
         case "$arg" in
+          --concurrency|-c|--query-timeout)
+            if ! [[ "$value" =~ ^[0-9]+$ ]] || ! [[ "$value" =~ [1-9] ]]; then
+              echo "Error: $arg requires a positive integer" >&2
+              exit 1
+            fi
+            ;;
+          --limit)
+            if ! [[ "$value" =~ ^-?[0-9]+$ ]]; then
+              echo 'Error: --limit requires an integer' >&2
+              exit 1
+            fi
+            ;;
+          --eval-mode)
+            case "$value" in
+              self-assessment|ground-truth|both) ;;
+              *) echo 'Error: unsupported --eval-mode' >&2; exit 1 ;;
+            esac
+            ;;
           --gt-dir)
             path="$(resolve_input_path "$value")"
             EVAL_ARGS[$((index + 1))]="$path"
@@ -339,6 +373,9 @@ validate_framework_args() {
           if [ -z "${EVAL_ARGS[$index]}" ]; then
             echo 'Error: --agent-id requires a nonempty value' >&2
             exit 1
+          fi
+          if [[ "${EVAL_ARGS[$index]}" =~ [^,[:space:]] ]]; then
+            HAS_AGENT_ID_ARGUMENT=true
           fi
           index=$((index + 1))
         done
@@ -468,6 +505,10 @@ run_offline_check() {
       printf '%s\n' 'Required target variables: EVAL_ENDPOINT_URL EVAL_API_KEY'
       check_environment_variable EVAL_ENDPOINT_URL
       check_environment_variable EVAL_API_KEY
+      if [ "$HAS_AGENT_ID_ARGUMENT" != true ] && [ -z "${AGENT_ID:-}" ]; then
+        printf '%s\n' 'Target model: supply --agent-id or AGENT_ID'
+        CHECK_STATUS=1
+      fi
     fi
   fi
 

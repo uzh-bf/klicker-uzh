@@ -102,6 +102,12 @@ fi
 exit 2'
 
 write_file "$FAKE_BIN/infisical" '#!/usr/bin/env bash
+for name in EVAL_API_KEY LITELLM_API_BASE LITELLM_API_KEY JUDGE_KEY JUDGE_URL \
+  AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY \
+  UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY PIPELINES_LITELLM_API_KEY \
+  KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY; do
+  [ -z "${!name:+present}" ] || exit 87
+done
 if [ "${1:-}" = "--version" ]; then
   printf "%s\n" "infisical version ${KLICKER_TEST_INFISICAL_VERSION:-0.43.129}"
   exit 0
@@ -275,13 +281,32 @@ env -i \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
   KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
-  "$WRAPPER" --check --mode query \
+  "$WRAPPER" --check --mode query --agent-id synthetic-model \
   >"$TEST_ROOT/check-query.out" 2>&1 || status=$?
 
 [ "$status" -eq 0 ] || fail "offline query check returned $status"
 [ -s "$TEST_ROOT/check-query.out" ] || fail 'offline check must produce diagnostics'
 [ ! -s "$CHILD_LOG" ] || fail 'offline check must not invoke the evaluator'
 [ ! -s "$INFISICAL_LOG" ] || fail 'offline check must not invoke Infisical'
+
+status=0
+env -i PATH="$NO_INFISICAL_PATH" \
+  EVAL_ENDPOINT_URL=https://target.example.test EVAL_API_KEY=synthetic-target-key \
+  "$WRAPPER" --check --mode query >"$TEST_ROOT/missing-model.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'offline query check must reject a missing model'
+env -i PATH="$NO_INFISICAL_PATH" \
+  EVAL_ENDPOINT_URL=https://target.example.test EVAL_API_KEY=synthetic-target-key \
+  AGENT_ID=synthetic-model "$WRAPPER" --check --mode query >/dev/null
+
+for invalid_args in '--limit nope' '--concurrency 0' '--query-timeout 0' '--eval-mode invalid'; do
+  : >"$INFISICAL_LOG"
+  status=0
+  # Each fixture contains exactly one flag and one deliberately invalid value.
+  env -i PATH="$TEST_PATH" KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+    "$WRAPPER" --mode eval $invalid_args >"$TEST_ROOT/invalid-semantic.out" 2>&1 || status=$?
+  [ "$status" -ne 0 ] || fail 'invalid semantic argument must fail'
+  [ ! -s "$INFISICAL_LOG" ] || fail 'invalid semantic argument must not fetch secrets'
+done
 
 : >"$CHILD_LOG"
 : >"$INFISICAL_LOG"
@@ -528,7 +553,9 @@ run_judge_case() {
     "$@" "$WRAPPER" --mode eval --qa-file synthetic-qa.json
 }
 run_judge_case JUDGE_KEY=synthetic-source-key JUDGE_URL=synthetic-source-url \
-  PIPELINES_LITELLM_API_KEY=synthetic-legacy-key INFISICAL_TOKEN=synthetic-cli-token
+  PIPELINES_LITELLM_API_KEY=synthetic-legacy-key INFISICAL_TOKEN=synthetic-cli-token \
+  EVAL_API_KEY=synthetic-target-key OPENAI_API_KEY=synthetic-provider-key \
+  KLICKER_EVAL_PARTICIPANT_PASSWORD=synthetic-password
 assert_line 'LITELLM_API_BASE=https://judge.example.test' "$CHILD_LOG"
 assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 assert_line 'JUDGE_KEY_PRESENT=' "$CHILD_LOG"

@@ -67,7 +67,7 @@ pnpm run eval:klicker -- --help
 Check prerequisites offline. Select the mode whose inputs you intend to run:
 
 ```bash
-pnpm run eval:klicker -- --check --mode query
+pnpm run eval:klicker -- --check --mode query --agent-id <target-model>
 pnpm run eval:klicker -- --check --mode eval
 ```
 
