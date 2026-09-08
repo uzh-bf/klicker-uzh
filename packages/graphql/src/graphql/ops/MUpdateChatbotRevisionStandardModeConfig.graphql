@@ -1,0 +1,19 @@
+mutation MUpdateChatbotRevisionStandardModeConfig(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+  $config: ChatbotStandardModeConfigInput!
+) {
+  updateChatbotRevisionStandardModeConfig(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+    config: $config
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

@@ -61,15 +61,20 @@ are created only by local and test setup, not by a production caller.
 `DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
 can access only a published chatbot when a `Participation` exists for the
 owning course. Publication approval is separate from account-level AI usage
-authorization.
+authorization. Published setup edits are saved in `draftConfig` with a separate
+`revisionStatus` and monotonic `revisionVersion`. Students use the live fields
+until the exact pending revision is approved; approval preserves identity,
+history, balances, and the original publication date. See
+[ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md).
 
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
 Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
 course name, subject domain, language of instruction, and an optional scope
 note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
-replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
-Explainer to remain enabled, and uses a status compare-and-set so a concurrent
-lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+replacements in editable first-publication or revision states, requires Tutor
+or Explainer to remain enabled, and fences every save with the authoring
+version so a concurrent submission cannot be overwritten. Published changes
+remain staged until approval. Tutor and Explainer do not require
 a knowledge base; Quizzer remains independently configurable but is filtered by
 the safe course-material capability gate. Missing or malformed persisted values
 derive all three flags from legacy mode opt-outs/defaults, while valid legacy

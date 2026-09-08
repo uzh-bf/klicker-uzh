@@ -4584,11 +4584,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotMobileSelector: 'Current chatbot',
       chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceKnowledge: 'Knowledge',
+      chatbotWorkspaceBehavior: 'Behavior',
+      chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Setup',
       chatbotWorkspaceAdvanced: 'Advanced',
-      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceUsage: 'Usage',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotWorkspaceBehaviorDescription:
+        'Choose learning modes, framing, and the model policy used by this chatbot.',
+      chatbotWorkspaceDisclaimerDescription:
+        'Edit the participant-facing introduction and review the fixed institutional sections.',
+      chatbotWorkspaceKnowledgeDescription:
+        'Review the active knowledge base and open its management page. Multiple knowledge-base attachments are not available in this editor yet.',
+      chatbotKnowledgeSingleActive:
+        'One active knowledge base is currently supported here.',
+      chatbotKnowledgeEmptyDescription:
+        'The chatbot can still be used without course-material retrieval.',
+      chatbotKnowledgeManagementLink:
+        'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
+      chatbotTechnicalDetails: 'Technical details',
+      chatbotTechnicalId: 'ID',
+      chatbotTechnicalAvatar: 'Avatar',
+      chatbotUsageTechnicalIntegrations: 'Technical integrations',
+      chatbotUsageTechnicalIntegrationsDescription:
+        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -4645,7 +4666,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
       chatbotSetupCreditsTitle: 'Participant credits',
       chatbotSetupCreditsDescriptionLong:
-        'Configure the credit allowance each participant receives when the chatbot is published. Credit settings are locked while a publication request is pending and after publication.',
+        'Configure the credit allowance each participant receives. Credit settings are locked while a revision is pending review.',
       chatbotCreditPolicyDescription:
         'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
       chatbotCreditAmountRequired: 'Enter a credit amount.',
@@ -4673,6 +4694,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
         'Please wait until the current chatbot change has finished saving.',
+      chatbotPreviewUnsavedConfirmation:
+        'This preview opens the last saved live chatbot configuration. Continue without saving your unsaved changes?',
+      chatbotRevisionLiveOnly:
+        'Live configuration is active for participants. Save a revision to prepare changes for review.',
+      chatbotRevisionSaved: 'Saved revision {version} is ready for review.',
+      chatbotRevisionPending:
+        'Revision {version} is pending review. Its fields are locked until the review is complete.',
+      chatbotRevisionRejected:
+        'Revision {version} was rejected. Update the saved revision and resubmit it.',
+      chatbotRevisionReviewComment: 'Review comment:',
+      chatbotRevisionReload: 'Reload revision',
+      chatbotRevisionReloading: 'Reloading revision…',
+      chatbotRevisionConflict:
+        'This revision changed elsewhere. Reload the saved revision, then reapply your unsaved changes.',
+      chatbotRevisionRequiresSaved:
+        'Save the revision before submitting it for approval.',
+      chatbotRevisionWithdraw: 'Withdraw revision',
+      chatbotRevisionWithdrawn:
+        'Revision withdrawn. You can continue editing it.',
+      chatbotRevisionWithdrawError:
+        'Could not withdraw the revision. Please reload and try again.',
       chatbotCreatedAt: 'Created',
       chatbotUpdatedAt: 'Last updated',
       chatbotName: 'Name',
@@ -4741,7 +4783,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Metadata cannot be edited while the chatbot is awaiting review or paused.',
       chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
       chatbotDisclaimerReadonly:
-        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
+        'The disclaimer cannot be edited while the chatbot is awaiting review or paused.',
       chatbotDisclaimerTitle: 'Disclaimer title',
       chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
       chatbotDisclaimerTitleTooLong:
@@ -4752,6 +4794,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The disclaimer introduction must be 10,000 characters or fewer.',
       chatbotDisclaimerIntroEditorPlaceholder:
         'Explain what participants should know before using this chatbot.',
+      chatbotDisclaimerSuggestedTitle: 'About this chatbot',
+      chatbotDisclaimerSuggestedIntro:
+        'This chatbot is provided as a learning aid for the linked course. Use its responses to support your learning and check important information against your course materials.',
+      chatbotDisclaimerSuggestedDescription:
+        'The current field is empty. You can add a suggested generic introduction and edit it before saving.',
+      chatbotDisclaimerUseSuggestedText: 'Use suggested text',
+      chatbotDisclaimerSuggestedUnsaved:
+        'This suggested text is not saved yet. Save your changes to use it for participants.',
       saveChatbotDisclaimer: 'Save disclaimer',
       chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
       chatbotDisclaimerSaveError:
@@ -4842,6 +4892,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
       openOwnerPreview: 'Open owner preview',
+      chatbotOwnerPreviewLive: 'Live configuration',
+      chatbotOwnerPreviewLiveDescription:
+        'The owner preview uses the current live configuration. Saved revisions are not applied until approval.',
       responseExamples: 'Response examples',
       responseExamplesDescription:
         'Review response examples before making them live.',

@@ -1,0 +1,23 @@
+mutation MSaveChatbotRevisionDisclaimer(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+  $expectedDisclaimerId: String
+  $title: String!
+  $introText: String!
+) {
+  saveChatbotRevisionDisclaimer(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+    expectedDisclaimerId: $expectedDisclaimerId
+    title: $title
+    introText: $introText
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

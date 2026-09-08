@@ -4,6 +4,10 @@
 
 Accepted
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
 ## Context
 
 A participant accepts a chatbot disclaimer by storing its disclaimer ID in

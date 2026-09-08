@@ -1503,6 +1503,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           chatbotId: t.arg.string({ required: true }),
           modelSelection: t.arg.boolean({ required: true }),
           allowedModelIds: t.arg.stringList({ required: true }),
@@ -1520,6 +1521,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           chatbotId: t.arg.string({ required: true }),
           creditInitialCredits: t.arg.int({ required: true }),
           creditResetPeriod: t.arg({
@@ -1537,6 +1539,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           chatbotId: t.arg.string({ required: true }),
           modelSelection: t.arg.boolean({ required: true }),
           allowedModelIds: t.arg.stringList({ required: true }),
@@ -1554,6 +1557,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           chatbotId: t.arg.string({ required: true }),
           config: t.arg({
             type: ChatbotStandardModeConfigInput,
@@ -1566,6 +1570,189 @@ export const Mutation = builder.mutationType({
             ctx
           )
         },
+      }),
+
+      updateChatbotRevisionMetadata: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          name: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.updateChatbotRevisionMetadata(args, ctx),
+      }),
+
+      updateChatbotRevisionModelSettings: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.updateChatbotRevisionModelSettings(args, ctx),
+      }),
+
+      updateChatbotRevisionModelPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.updateChatbotRevisionModelPolicy(args, ctx),
+      }),
+
+      updateChatbotRevisionStandardModeConfig: t
+        .withAuth(asChatbotAuthor)
+        .field({
+          nullable: true,
+          type: Chatbot,
+          args: {
+            chatbotId: t.arg.string({ required: true }),
+            expectedRevisionVersion: t.arg.int({
+              required: true,
+              validate: { min: 0 },
+            }),
+            config: t.arg({
+              type: ChatbotStandardModeConfigInput,
+              required: true,
+            }),
+          },
+          resolve: async (_, args, ctx) =>
+            ChatbotsService.updateChatbotRevisionStandardModeConfig(args, ctx),
+        }),
+
+      updateChatbotRevisionCreditPolicy: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          creditInitialCredits: t.arg.int({ required: true }),
+          creditResetPeriod: t.arg({
+            type: CreditResetPeriod,
+            required: true,
+          }),
+          creditResetAmount: t.arg.int({ required: true }),
+          creditMaxCredits: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.updateChatbotRevisionCreditPolicy(args, ctx),
+      }),
+
+      saveChatbotRevisionDisclaimer: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          expectedDisclaimerId: t.arg.string({ required: false }),
+          title: t.arg.string({ required: true }),
+          introText: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.saveChatbotRevisionDisclaimer(args, ctx),
+      }),
+
+      submitChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.submitChatbotRevision(args, ctx),
+      }),
+
+      withdrawChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.withdrawChatbotRevision(args, ctx),
+      }),
+
+      approveChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.approveChatbotRevision(args, ctx),
+      }),
+
+      rejectChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.rejectChatbotRevision(args, ctx),
       }),
 
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
@@ -1604,6 +1791,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           id: t.arg.string({ required: true }),
           name: t.arg.string({
             required: false,
@@ -1621,6 +1809,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           chatbotId: t.arg.string({ required: true }),
           expectedDisclaimerId: t.arg.string({ required: false }),
           title: t.arg.string({ required: true }),
@@ -1635,6 +1824,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           id: t.arg.string({ required: true }),
           useCase: t.arg.string({
             required: true,
@@ -1653,6 +1843,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           id: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
@@ -1664,6 +1855,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Chatbot,
         args: {
+          expectedRevisionVersion: t.arg.int({ required: false }),
           id: t.arg.string({ required: true }),
           comment: t.arg.string({
             required: true,

@@ -9,6 +9,10 @@ This ADR supersedes the budget-control and pilot-cutover portions of
 for account AI authorization, per-chatbot publication, and usage-class
 semantics where this record does not change them.
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
 ## Context
 
 The chatbot usage foundation can observe account-level usage for base and

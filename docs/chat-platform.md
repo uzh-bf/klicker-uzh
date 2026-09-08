@@ -708,92 +708,82 @@ v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 The owner-facing GraphQL contract lives in
 `packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
 can create a course-bound `DRAFT` chatbot before their account is authorized to
-publish. The course is fixed after creation. Metadata and model policy are
-editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
-`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
-`DRAFT` and `REJECTED`.
+publish. The course remains fixed after creation. Account publication capability
+and administrator approval remain separate requirements.
 
-`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
-plus the disclaimer ID the client loaded. It normalizes line endings and outer
-whitespace, validates both fields, and rejects introduction Markdown outside
-paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
-uses transactional copy-on-write. The replacement retains the internal name,
-description, and media fields. A stale expected ID fails with
-`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
-This preserves the participant acceptance contract: acceptance and Manage's
-accepted count apply only when
-`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md) governs
+published setup revisions. The existing live chatbot fields remain canonical
+for participants. Owner edits save an allowlisted `draftConfig`, with separate
+`revisionStatus` and a monotonic `revisionVersion`. The revision includes
+metadata, standard modes and framing, model policy, participant credits,
+disclaimer title and introduction, and publication-request details. Account
+funding, provider settings, custom prompts, response examples, knowledge-base
+and MCP bindings retain their existing permissions and lifecycle.
+
+All setup writes compare the expected authoring version and advance it. Pending
+submissions are immutable; withdrawal and rejection keep their content for
+editing. Resubmission creates a new version token. Approval requires the exact
+pending token, administrator authorization, and the live account capability.
+It atomically activates only allowlisted fields while preserving identity,
+history, original publication date, and the live `PUBLISHED` status. Paused
+chatbots cannot be edited or approved. Version-zero pre-migration pending
+requests retain the limited compatibility path described in ADR 0043.
+
+Disclaimer saves normalize line endings and surrounding whitespace and accept
+only the supported basic Markdown. A normalized no-op retains its identity.
+Changed content gets a replacement disclaimer identity; published revisions
+leave this replacement unlinked until approval. Live acceptance statistics
+continue to refer to the live disclaimer. Linking an approved replacement
+requires participants to accept again through the existing ID comparison,
+without modifying historical disclaimer content or acceptance records.
+
+Participant credits remain distinct from the account's monthly base/advanced
+usage budget. Amounts are non-negative signed 32-bit integers; initial credits
+and reset amount cannot exceed the maximum. `NONE` normalizes reset amount to
+zero, while recurring periods require a positive reset amount. Approval does
+not grant, clamp, or reset existing participant balances or stored totals.
+Initial credits apply to new participant credit rows; existing rows use the
+new reset amount and maximum at their next ordinary reset.
+
+Changing the reset period records an activation timestamp. Reset eligibility
+uses the later of that timestamp and the participant's existing period
+baseline, so a schedule change does not immediately refill credits. Credit
+writers acquire a shared chatbot row lock before reading policy and before
+participant locks; approval acquires an exclusive chatbot row lock. This
+serializes policy activation with initialization, debits, and resets. Preview
+reads observe a consistent transaction and never write credit state.
+
+Manage exposes creation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`, limited to owned,
+non-archived courses, and immediately selects a newly created chatbot. The
+workspace retains a persistent desktop rail and compact mobile selector.
+Invalid deep links fall back to a valid view. Each accordion section keeps its
+form mounted while collapsed so unsaved Formik and Slate input remains intact.
+Review edit actions open the relevant section through the navigation guard.
+
+`ContentInput` retains its full toolbar by default and uses the `basic` preset
+for disclaimer introductions, with simple formatting but no media, video,
+math, code, or quote controls. The lecturer preview renders the fixed
+`chat.disclaimer.*` sections without participant actions. A chatbot or saved
+disclaimer identity change remounts the Slate editor to prevent stale content.
+Replacement disclaimers retain internal name, description, and media fields.
+The acceptance condition remains `acceptedDisclaimerId` equal to the live
+chatbot disclaimer ID. See
 [ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
 
-`requestChatbotPublication` still requires the live account capability from
-[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
-linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
-`PENDING_APPROVAL` and preserves the separately saved four-field participant
-credit policy. A dedicated Boolean query exposes only the live publication
-capability to Catalyst and full-access lecturers; it does not expose account
-budget data. Submission never publishes automatically; the existing
-administrator approval remains a separate transition.
+Manage uses the existing chatbot workspace and forms. It distinguishes live
+configuration from the saved revision, disables pending forms, and protects
+unsaved changes during navigation and chatbot switching. Revision conflicts
+require refreshed version information without silently discarding input.
+Review and submit summarizes the saved configuration; submission also requires
+clean, settled sibling forms and live account authorization. Owner preview
+uses live approved configuration, including while a revision is being edited.
+The fixed disclaimer preview keeps its basic Slate toolbar and participant
+content without participant actions.
 
-Manage exposes draft preparation through
-`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
-limited to the lecturer's owned, non-archived courses, and the newly created
-chatbot is selected immediately. The workspace keeps chatbot selection in a
-persistent desktop rail and a compact mobile selector. Its URL identifies the
-selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
-setup view optionally uses `step=basics`, `step=disclaimer`, `step=credits`, or
-`step=review` as the initial accordion section hint. Invalid deep links fall
-back to the first valid lifecycle view or section. Published chatbots preserve
-any valid setup-section hint while keeping their read-only Disclaimer, Credits,
-and Review contracts.
-Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
-model-policy changes, and block while an affected mutation is pending.
-
-Draft and rejected chatbots use the setup view as one page with a multiple-open
-accordion containing Basics, Disclaimer, Credits, and Review and submit. Each
-section keeps its form mounted when collapsed, so unsaved Formik and Slate input
-remains available while lecturers inspect another section. Basics saves the
-name and description, Disclaimer saves the lecturer-written introduction while
-showing the fixed participant preview, and Credits saves the initial credits,
-reset period, reset amount, and maximum credits granted independently to each
-participant. Review and submit summarizes the saved configuration before
-showing the publication request form.
-The course remains read-only after creation. Publication inputs are preparation
-fields in the Review and submit section and persist only when the lecturer
-submits the publication mutation. A successful Basics, Disclaimer, or Credits
-save opens the next accordion section after the refetched chatbot is complete.
-Edit actions in the review section open the relevant accordion section, while
-the workspace navigation guard still prevents dirty or pending changes from
-being discarded silently.
-
-Participant credit amounts accept non-negative signed 32-bit integers. Initial
-credits and reset amount cannot exceed maximum credits. `NONE` normalizes reset
-amount to zero; every recurring period requires a positive reset amount. The
-owner can edit this policy only in `DRAFT` and `REJECTED`; it is frozen while
-pending, published, or paused. These credits are a per-participant product
-allowance and remain separate from the owner's monthly base/advanced chat
-account usage budget.
-
-The selected course is read-only. Name, description, and model settings follow
-the metadata lifecycle matrix above; the disclaimer title and introduction are
-editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
-toolbar by default and uses the `basic` preset for disclaimer introductions,
-retaining simple formatting while omitting media, video, math, code, and quote
-controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
-without participant actions, and its Slate editor remounts when either the
-chatbot or current disclaimer ID changes so a selection change cannot retain
-stale text.
-
-The publication section keeps `DRAFT` and `REJECTED` request details editable
-for preparation, but enables submission only when a complete disclaimer, the
-live account publication capability, and clean, settled Basics and Disclaimer
-forms are present. While publication is pending, those sibling forms are
-locked so late edits cannot be lost during the lifecycle transition.
-`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
-publication details, while a rejected request retains its review comment for
-correction and resubmission. The account-usage cards fetch from the network when
-settings opens and refetch on window focus. A failed background refresh retains
-the last known values, marks them as potentially stale, and offers an explicit
-retry.
+Account-usage cards fetch from the network when settings opens and refetch on
+window focus. A failed background refresh retains last-known values, marks them
+as potentially stale, and offers Retry.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,

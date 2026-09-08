@@ -101,6 +101,10 @@ function getGraphQLErrorMessage(error: unknown): string | undefined {
   return undefined
 }
 
+export function isChatbotRevisionConflict(error: unknown) {
+  return getGraphQLErrorCode(error) === 'CHATBOT_EDIT_CONFLICT'
+}
+
 export function getChatbotMutationErrorKey(
   error: unknown,
   mutation: ChatbotMutation

@@ -88,6 +88,10 @@ describe('Integration tests for the chatbot publication workflow', () => {
         courseId: course.id,
         ownerId: userOneCtx.user.sub,
         status,
+        publicationUseCase:
+          status === ChatbotStatus.PENDING_APPROVAL ? 'Course Q&A' : null,
+        expectedStudentCount:
+          status === ChatbotStatus.PENDING_APPROVAL ? 120 : null,
         disclaimerId: disclaimer?.id ?? null,
         ...extra,
       },
@@ -273,8 +277,10 @@ describe('Integration tests for the chatbot publication workflow', () => {
         results.filter((result) => result.status === 'fulfilled')
       ).toHaveLength(1)
       expect(
-        results.find((result) => result.status === 'rejected')?.reason.message
-      ).toContain('status or account capability changed concurrently')
+        results.find((result) => result.status === 'rejected')?.reason
+      ).toMatchObject({
+        extensions: { code: 'CHATBOT_NOT_EDITABLE' },
+      })
       await expect(
         prisma.chatbot.findUniqueOrThrow({
           where: { id: bot.id },
@@ -283,7 +289,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
       ).resolves.toMatchObject({ status: ChatbotStatus.PENDING_APPROVAL })
     })
 
-    it('rejects a request from a non-requestable status (PUBLISHED)', async () => {
+    it('requires a revision version when requesting changes from PUBLISHED', async () => {
       await enablePublishing()
       const bot = await seedChatbot(ChatbotStatus.PUBLISHED)
 
@@ -296,7 +302,9 @@ describe('Integration tests for the chatbot publication workflow', () => {
           },
           userOneCtx
         )
-      ).rejects.toThrow('Cannot request publication from status PUBLISHED')
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_EDIT_CONFLICT' },
+      })
     })
 
     it.each([
@@ -449,8 +457,10 @@ describe('Integration tests for the chatbot publication workflow', () => {
         results.filter((result) => result.status === 'fulfilled')
       ).toHaveLength(1)
       expect(
-        results.find((result) => result.status === 'rejected')?.reason.message
-      ).toContain('approval could not be completed')
+        results.find((result) => result.status === 'rejected')?.reason
+      ).toMatchObject({
+        extensions: { code: 'CHATBOT_REVISION_NOT_PENDING' },
+      })
       await expect(
         prisma.chatbot.findUniqueOrThrow({
           where: { id: bot.id },
@@ -482,7 +492,9 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
       await expect(
         approveChatbotPublication({ id: bot.id }, adminCtx)
-      ).rejects.toThrow('Cannot approve from status DRAFT')
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_REVISION_NOT_PENDING' },
+      })
     })
 
     it('rejects a non-admin caller and makes no change', async () => {

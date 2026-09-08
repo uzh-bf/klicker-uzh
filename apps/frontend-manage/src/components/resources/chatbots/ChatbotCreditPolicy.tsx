@@ -1,10 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
-  type Chatbot,
   ChatbotStatus,
   CreditResetPeriod,
-  QGetChatbotsInfoWithStandardModesDocument,
-  UpdateChatbotCreditPolicyDocument,
+  MUpdateChatbotRevisionCreditPolicyDocument,
+  QGetChatbotsInfoWithAuthoringRevisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -16,13 +15,25 @@ import { Form, Formik, useFormikContext } from 'formik'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import {
+  getChatbotMutationErrorKey,
+  isChatbotRevisionConflict,
+} from './chatbotErrorMessages'
+import {
+  FormikInitialValuesSynchronizer,
+  getChatbotRevisionValues,
+  getChatbotRevisionVersion,
+  isChatbotRevisionEditable,
+  isChatbotRevisionPending,
+  type RevisionChatbot,
+} from './chatbotRevision'
 import type { ChatbotNavigationState } from './chatbotWorkspace'
 
 const MAX_SIGNED_INT32 = 2_147_483_647
 const creditPolicyEditableStatuses = [
   ChatbotStatus.Draft,
   ChatbotStatus.Rejected,
+  ChatbotStatus.Published,
 ]
 
 type CreditPolicyFormValues = {
@@ -59,9 +70,10 @@ function resetPeriodMessageKey(period: CreditResetPeriod) {
   }
 }
 
-function ChatbotCreditPolicySummary({ chatbot }: { chatbot: Chatbot }) {
+function ChatbotCreditPolicySummary({ chatbot }: { chatbot: RevisionChatbot }) {
   const t = useTranslations()
   const format = useFormatter()
+  const revisionValues = getChatbotRevisionValues(chatbot)
   const formatCredits = (value: number) =>
     format.number(value, { maximumFractionDigits: 0 })
 
@@ -75,7 +87,7 @@ function ChatbotCreditPolicySummary({ chatbot }: { chatbot: Chatbot }) {
           {t('manage.resources.creditInitialCredits')}
         </dt>
         <dd className="mt-1 text-gray-900">
-          {formatCredits(chatbot.creditInitialCredits)}
+          {formatCredits(revisionValues.creditInitialCredits)}
         </dd>
       </div>
       <div>
@@ -83,7 +95,7 @@ function ChatbotCreditPolicySummary({ chatbot }: { chatbot: Chatbot }) {
           {t('manage.resources.creditResetPeriod')}
         </dt>
         <dd className="mt-1 text-gray-900">
-          {t(resetPeriodMessageKey(chatbot.creditResetPeriod))}
+          {t(resetPeriodMessageKey(revisionValues.creditResetPeriod))}
         </dd>
       </div>
       <div>
@@ -91,7 +103,7 @@ function ChatbotCreditPolicySummary({ chatbot }: { chatbot: Chatbot }) {
           {t('manage.resources.creditResetAmount')}
         </dt>
         <dd className="mt-1 text-gray-900">
-          {formatCredits(chatbot.creditResetAmount)}
+          {formatCredits(revisionValues.creditResetAmount)}
         </dd>
       </div>
       <div>
@@ -99,7 +111,7 @@ function ChatbotCreditPolicySummary({ chatbot }: { chatbot: Chatbot }) {
           {t('manage.resources.creditMaxCredits')}
         </dt>
         <dd className="mt-1 text-gray-900">
-          {formatCredits(chatbot.creditMaxCredits)}
+          {formatCredits(revisionValues.creditMaxCredits)}
         </dd>
       </div>
     </dl>
@@ -141,19 +153,31 @@ function ChatbotCreditPolicy({
   chatbot,
   publicationPending,
   onNavigationStateChange,
+  onRevisionConflict,
   onSaved,
 }: {
-  chatbot: Chatbot
+  chatbot: RevisionChatbot
   publicationPending: boolean
   onNavigationStateChange: (state: ChatbotNavigationState) => void
-  onSaved: () => void
+  onRevisionConflict?: () => void
+  onSaved?: () => void
 }) {
   const t = useTranslations()
-  const [updateCreditPolicy] = useMutation(UpdateChatbotCreditPolicyDocument)
+  const [updateCreditPolicy] = useMutation(
+    MUpdateChatbotRevisionCreditPolicyDocument
+  )
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
-  const editable = creditPolicyEditableStatuses.includes(chatbot.status)
+  const editable = isChatbotRevisionEditable(chatbot)
+  const revisionPending = isChatbotRevisionPending(chatbot)
+  const formVisible =
+    editable || revisionPending || chatbot.status === ChatbotStatus.Paused
+  const formDisabled =
+    !editable ||
+    publicationPending ||
+    revisionPending ||
+    chatbot.status === ChatbotStatus.Paused
 
   useEffect(() => {
     if (!editable) {
@@ -161,7 +185,7 @@ function ChatbotCreditPolicy({
     }
   }, [editable, onNavigationStateChange])
 
-  if (!editable) {
+  if (!formVisible) {
     return (
       <div className="space-y-4">
         <UserNotification>
@@ -172,16 +196,16 @@ function ChatbotCreditPolicy({
     )
   }
 
+  const revisionValues = getChatbotRevisionValues(chatbot)
   const initialValues: CreditPolicyFormValues = {
-    creditInitialCredits: chatbot.creditInitialCredits.toString(),
-    creditResetPeriod: chatbot.creditResetPeriod,
-    creditResetAmount: chatbot.creditResetAmount.toString(),
-    creditMaxCredits: chatbot.creditMaxCredits.toString(),
+    creditInitialCredits: revisionValues.creditInitialCredits.toString(),
+    creditResetPeriod: revisionValues.creditResetPeriod,
+    creditResetAmount: revisionValues.creditResetAmount.toString(),
+    creditMaxCredits: revisionValues.creditMaxCredits.toString(),
   }
 
   return (
     <Formik
-      enableReinitialize
       validateOnMount
       initialValues={initialValues}
       validationSchema={Yup.object({
@@ -234,44 +258,49 @@ function ChatbotCreditPolicy({
           return true
         })}
       onSubmit={async (values, { resetForm }) => {
+        if (formDisabled) return
+
         setSaveError(null)
         setSaveSuccess(false)
         try {
           const result = await updateCreditPolicy({
             variables: {
               chatbotId: chatbot.id,
+              expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
               creditInitialCredits: Number(values.creditInitialCredits),
               creditResetPeriod: values.creditResetPeriod,
               creditResetAmount: Number(values.creditResetAmount),
               creditMaxCredits: Number(values.creditMaxCredits),
             },
             refetchQueries: [
-              { query: QGetChatbotsInfoWithStandardModesDocument },
+              { query: QGetChatbotsInfoWithAuthoringRevisionsDocument },
             ],
             awaitRefetchQueries: true,
           })
-          const saved = result.data?.updateChatbotCreditPolicy
+          const saved = result.data?.updateChatbotRevisionCreditPolicy
           if (!saved) {
             throw new Error('Credit policy update returned no chatbot')
           }
 
           resetForm({
             values: {
-              creditInitialCredits: saved.creditInitialCredits.toString(),
-              creditResetPeriod: saved.creditResetPeriod,
-              creditResetAmount: saved.creditResetAmount.toString(),
-              creditMaxCredits: saved.creditMaxCredits.toString(),
+              creditInitialCredits: values.creditInitialCredits,
+              creditResetPeriod: values.creditResetPeriod,
+              creditResetAmount: values.creditResetAmount,
+              creditMaxCredits: values.creditMaxCredits,
             },
           })
           setSaveSuccess(true)
-          onSaved()
+          onSaved?.()
         } catch (error) {
+          if (isChatbotRevisionConflict(error)) onRevisionConflict?.()
           setSaveError(t(getChatbotMutationErrorKey(error, 'credits')))
         }
       }}
     >
       {({ isSubmitting, isValid, values }) => (
         <Form className="space-y-4" data-cy="chatbot-credit-policy-form">
+          <FormikInitialValuesSynchronizer initialValues={initialValues} />
           <CreditPolicyFormEffects
             onChange={onNavigationStateChange}
             onDirty={clearSaveSuccess}
@@ -285,14 +314,14 @@ function ChatbotCreditPolicy({
               min={0}
               max={MAX_SIGNED_INT32}
               precision={0}
-              disabled={isSubmitting || publicationPending}
+              disabled={isSubmitting || formDisabled}
               name="creditInitialCredits"
               label={t('manage.resources.creditInitialCredits')}
               data={{ cy: 'chatbot-credit-initial' }}
             />
             <FormikSelectField
               required
-              disabled={isSubmitting || publicationPending}
+              disabled={isSubmitting || formDisabled}
               name="creditResetPeriod"
               label={t('manage.resources.creditResetPeriod')}
               items={Object.values(CreditResetPeriod).map((period) => ({
@@ -309,7 +338,7 @@ function ChatbotCreditPolicy({
               precision={0}
               disabled={
                 isSubmitting ||
-                publicationPending ||
+                formDisabled ||
                 values.creditResetPeriod === CreditResetPeriod.None
               }
               name="creditResetAmount"
@@ -321,7 +350,7 @@ function ChatbotCreditPolicy({
               min={0}
               max={MAX_SIGNED_INT32}
               precision={0}
-              disabled={isSubmitting || publicationPending}
+              disabled={isSubmitting || formDisabled}
               name="creditMaxCredits"
               label={t('manage.resources.creditMaxCredits')}
               data={{ cy: 'chatbot-credit-maximum' }}
@@ -337,7 +366,7 @@ function ChatbotCreditPolicy({
               primary
               type="submit"
               loading={isSubmitting}
-              disabled={!isValid || isSubmitting || publicationPending}
+              disabled={!isValid || isSubmitting || formDisabled}
               data={{ cy: 'save-chatbot-credit-policy' }}
             >
               <Button.Label>

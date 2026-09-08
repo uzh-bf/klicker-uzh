@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ChatbotAuthoringRevisionProjection,
   ChatbotStandardModeConfigInput as ChatbotStandardModeConfigInputShape,
   ChatbotStandardModeConfig as ChatbotStandardModeConfigShape,
   SharingType as SharingTypeEnum,
@@ -209,6 +210,51 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
   }
 )
 
+export const ChatbotAuthoringRevisionRef =
+  builder.objectRef<ChatbotAuthoringRevisionProjection>(
+    'ChatbotAuthoringRevision'
+  )
+export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
+  fields: (t) => ({
+    version: t.exposeInt('version'),
+    status: t.expose('status', { type: ChatbotStatus }),
+    reviewComment: t.exposeString('reviewComment', { nullable: true }),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigRef,
+      nullable: true,
+      resolve: (revision) => revision.standardModeConfig ?? null,
+    }),
+    modelSelection: t.exposeBoolean('modelSelection'),
+    allowedModelIds: t.exposeStringList('allowedModelIds'),
+    allowedReasoningEffortsByModel: t.field({
+      type: [ChatbotReasoningConfigRef],
+      resolve: (revision) =>
+        Object.entries(revision.allowedReasoningEffortsByModel ?? {}).map(
+          ([modelId, efforts]) => ({ modelId, efforts })
+        ),
+    }),
+    creditInitialCredits: t.exposeInt('creditInitialCredits'),
+    creditResetPeriod: t.expose('creditResetPeriod', {
+      type: CreditResetPeriod,
+    }),
+    creditResetAmount: t.exposeInt('creditResetAmount'),
+    creditMaxCredits: t.exposeInt('creditMaxCredits'),
+    disclaimerTitle: t.exposeString('disclaimerTitle', { nullable: true }),
+    disclaimerIntroText: t.exposeString('disclaimerIntroText', {
+      nullable: true,
+    }),
+    publicationUseCase: t.exposeString('publicationUseCase', {
+      nullable: true,
+    }),
+    expectedStudentCount: t.exposeInt('expectedStudentCount', {
+      nullable: true,
+    }),
+  }),
+})
+
 export interface IChatModelCapability {
   id: string
   name: string
@@ -257,6 +303,9 @@ export interface IChatbot {
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
   enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
+  authoringRevision?: ChatbotAuthoringRevisionProjection | null
+  revisionStatus?: DB.ChatbotStatus | null
+  revisionVersion?: number
 }
 
 export interface IChatbotKnowledgeBaseSummary {
@@ -431,6 +480,18 @@ export const Chatbot = ChatbotRef.implement({
       type: ChatbotKnowledgeBaseSummaryRef,
       nullable: true,
       resolve: (chatbot) => chatbot.enabledKnowledgeBase ?? null,
+    }),
+    authoringRevision: t.field({
+      type: ChatbotAuthoringRevisionRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.authoringRevision ?? null,
+    }),
+    revisionStatus: t.expose('revisionStatus', {
+      type: ChatbotStatus,
+      nullable: true,
+    }),
+    revisionVersion: t.int({
+      resolve: (chatbot) => chatbot.revisionVersion ?? 0,
     }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),

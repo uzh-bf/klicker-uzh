@@ -744,6 +744,7 @@ enum ChatUsageClass {
 type Chatbot {
   allowedModelIds: [String!]!
   allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  authoringRevision: ChatbotAuthoringRevision
   avatar: String
   courses: [CourseListEntry!]!
   createdAt: Date
@@ -762,10 +763,33 @@ type Chatbot {
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
+  revisionStatus: ChatbotStatus
+  revisionVersion: Int!
   standardModeConfig: ChatbotStandardModeConfig
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
+}
+
+type ChatbotAuthoringRevision {
+  allowedModelIds: [String!]!
+  allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  avatar: String
+  creditInitialCredits: Int!
+  creditMaxCredits: Int!
+  creditResetAmount: Int!
+  creditResetPeriod: CreditResetPeriod!
+  description: String
+  disclaimerIntroText: String
+  disclaimerTitle: String
+  expectedStudentCount: Int
+  modelSelection: Boolean!
+  name: String!
+  publicationUseCase: String
+  reviewComment: String
+  standardModeConfig: ChatbotStandardModeConfig
+  status: ChatbotStatus!
+  version: Int!
 }
 
 type ChatbotDisclaimerSummary {
@@ -2564,7 +2588,8 @@ type Mutation {
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
-  approveChatbotPublication(id: String!): Chatbot
+  approveChatbotPublication(expectedRevisionVersion: Int, id: String!): Chatbot
+  approveChatbotRevision(expectedRevisionVersion: Int!, id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   approveResponseExample(id: String!): ResponseExampleSet
   attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
@@ -2694,7 +2719,8 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
-  rejectChatbotPublication(comment: String!, id: String!): Chatbot
+  rejectChatbotPublication(comment: String!, expectedRevisionVersion: Int, id: String!): Chatbot
+  rejectChatbotRevision(comment: String!, expectedRevisionVersion: Int!, id: String!): Chatbot
   rejectResponseExample(id: String!): ResponseExampleSet
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
@@ -2703,7 +2729,7 @@ type Mutation {
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
-  requestChatbotPublication(expectedStudentCount: Int!, id: String!, useCase: String!): Chatbot
+  requestChatbotPublication(expectedRevisionVersion: Int, expectedStudentCount: Int!, id: String!, useCase: String!): Chatbot
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
   requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
@@ -2716,7 +2742,8 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
-  saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, introText: String!, title: String!): Chatbot
+  saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, expectedRevisionVersion: Int, introText: String!, title: String!): Chatbot
+  saveChatbotRevisionDisclaimer(chatbotId: String!, expectedDisclaimerId: String, expectedRevisionVersion: Int!, introText: String!, title: String!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -2733,6 +2760,7 @@ type Mutation {
   startElementGeneration(input: StartElementGenerationInput!): ElementGenerationBuild!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  submitChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, expectedStudentCount: Int!, useCase: String!): Chatbot
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2743,11 +2771,16 @@ type Mutation {
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
-  updateChatbot(avatar: String, description: String, id: String!, name: String): Chatbot
-  updateChatbotCreditPolicy(chatbotId: String!, creditInitialCredits: Int!, creditMaxCredits: Int!, creditResetAmount: Int!, creditResetPeriod: CreditResetPeriod!): Chatbot
-  updateChatbotModelPolicy(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
-  updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
-  updateChatbotStandardModeConfig(chatbotId: String!, config: ChatbotStandardModeConfigInput!): Chatbot
+  updateChatbot(avatar: String, description: String, expectedRevisionVersion: Int, id: String!, name: String): Chatbot
+  updateChatbotCreditPolicy(chatbotId: String!, creditInitialCredits: Int!, creditMaxCredits: Int!, creditResetAmount: Int!, creditResetPeriod: CreditResetPeriod!, expectedRevisionVersion: Int): Chatbot
+  updateChatbotModelPolicy(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, expectedRevisionVersion: Int, modelSelection: Boolean!): Chatbot
+  updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, expectedRevisionVersion: Int, modelSelection: Boolean!): Chatbot
+  updateChatbotRevisionCreditPolicy(chatbotId: String!, creditInitialCredits: Int!, creditMaxCredits: Int!, creditResetAmount: Int!, creditResetPeriod: CreditResetPeriod!, expectedRevisionVersion: Int!): Chatbot
+  updateChatbotRevisionMetadata(avatar: String, chatbotId: String!, description: String, expectedRevisionVersion: Int!, name: String): Chatbot
+  updateChatbotRevisionModelPolicy(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, expectedRevisionVersion: Int!, modelSelection: Boolean!): Chatbot
+  updateChatbotRevisionModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, expectedRevisionVersion: Int!, modelSelection: Boolean!): Chatbot
+  updateChatbotRevisionStandardModeConfig(chatbotId: String!, config: ChatbotStandardModeConfigInput!, expectedRevisionVersion: Int!): Chatbot
+  updateChatbotStandardModeConfig(chatbotId: String!, config: ChatbotStandardModeConfigInput!, expectedRevisionVersion: Int): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
@@ -2759,6 +2792,7 @@ type Mutation {
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
+  withdrawChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!): Chatbot
 }
 
 type NumericalActivityEvaluationData {
@@ -3243,6 +3277,7 @@ type Query {
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getChatAccountUsage(ownerId: String): ChatAccountUsageOverview
   getChatModelRegistry: [ChatModelCapability!]!
+  getChatbotPendingRevision(expectedRevisionVersion: Int, id: String!): ChatbotAuthoringRevision
   getChatbotPublishingCapability: Boolean!
   getChatbotResponseExamples(chatbotId: String!): ResponseExampleSet
   getChatbotsInfo: [Chatbot!]

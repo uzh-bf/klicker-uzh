@@ -1,0 +1,23 @@
+mutation MUpdateChatbotRevisionModelSettings(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+  $modelSelection: Boolean!
+  $allowedModelIds: [String!]!
+  $allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+) {
+  updateChatbotRevisionModelSettings(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+    modelSelection: $modelSelection
+    allowedModelIds: $allowedModelIds
+    allowedReasoningEffortsByModel: $allowedReasoningEffortsByModel
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

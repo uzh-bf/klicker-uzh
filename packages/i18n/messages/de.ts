@@ -4679,11 +4679,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotMobileSelector: 'Aktueller Chatbot',
       chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
+      chatbotWorkspaceKnowledge: 'Wissensbasis',
+      chatbotWorkspaceBehavior: 'Verhalten',
+      chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Einrichtung',
       chatbotWorkspaceAdvanced: 'Erweitert',
-      chatbotWorkspaceUsage: 'Nutzung & Integrationen',
+      chatbotWorkspaceUsage: 'Nutzung',
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotWorkspaceBehaviorDescription:
+        'Wählen Sie Lernmodi, Rahmung und die Modellrichtlinie für diesen Chatbot.',
+      chatbotWorkspaceDisclaimerDescription:
+        'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
+      chatbotWorkspaceKnowledgeDescription:
+        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung. Mehrere Wissensbasen werden in diesem Editor derzeit noch nicht unterstützt.',
+      chatbotKnowledgeSingleActive:
+        'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
+      chatbotKnowledgeEmptyDescription:
+        'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
+      chatbotKnowledgeManagementLink:
+        'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
+      chatbotTechnicalDetails: 'Technische Details',
+      chatbotTechnicalId: 'ID',
+      chatbotTechnicalAvatar: 'Avatar',
+      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
+      chatbotUsageTechnicalIntegrationsDescription:
+        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -4741,7 +4762,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
       chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
       chatbotSetupCreditsDescriptionLong:
-        'Konfigurieren Sie die Credits, die jede teilnehmende Person bei der Veröffentlichung des Chatbots erhält. Die Einstellungen sind während eines Veröffentlichungsantrags und nach der Veröffentlichung gesperrt.',
+        'Konfigurieren Sie die Credits, die jede teilnehmende Person erhält. Die Einstellungen sind gesperrt, solange eine Revision geprüft wird.',
       chatbotCreditPolicyDescription:
         'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
       chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
@@ -4771,6 +4792,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:
         'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
+      chatbotPreviewUnsavedConfirmation:
+        'Diese Vorschau öffnet die zuletzt gespeicherte Live-Konfiguration des Chatbots. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
+      chatbotRevisionLiveOnly:
+        'Die Live-Konfiguration ist für Teilnehmende aktiv. Speichern Sie eine Revision, um Änderungen zur Prüfung vorzubereiten.',
+      chatbotRevisionSaved:
+        'Die gespeicherte Revision {version} ist zur Prüfung bereit.',
+      chatbotRevisionPending:
+        'Die Revision {version} wird geprüft. Ihre Felder sind bis zum Abschluss gesperrt.',
+      chatbotRevisionRejected:
+        'Die Revision {version} wurde abgelehnt. Aktualisieren Sie die gespeicherte Revision und reichen Sie sie erneut ein.',
+      chatbotRevisionReviewComment: 'Rückmeldung zur Prüfung:',
+      chatbotRevisionReload: 'Revision neu laden',
+      chatbotRevisionReloading: 'Revision wird neu geladen…',
+      chatbotRevisionConflict:
+        'Diese Revision wurde inzwischen geändert. Laden Sie die gespeicherte Revision neu und wenden Sie Ihre ungespeicherten Änderungen erneut an.',
+      chatbotRevisionRequiresSaved:
+        'Speichern Sie die Revision, bevor Sie sie zur Prüfung einreichen.',
+      chatbotRevisionWithdraw: 'Revision zurückziehen',
+      chatbotRevisionWithdrawn:
+        'Die Revision wurde zurückgezogen. Sie können sie weiter bearbeiten.',
+      chatbotRevisionWithdrawError:
+        'Die Revision konnte nicht zurückgezogen werden. Laden Sie sie neu und versuchen Sie es erneut.',
       chatbotCreatedAt: 'Erstellt',
       chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
@@ -4845,7 +4888,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Metadaten können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
       chatbotDisclaimerReadonly:
-        'Der Disclaimer kann nach der Veröffentlichung, während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+        'Der Disclaimer kann während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       chatbotDisclaimerTitle: 'Disclaimer-Titel',
       chatbotDisclaimerTitleRequired:
         'Bitte geben Sie einen Disclaimer-Titel ein.',
@@ -4858,6 +4901,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
       chatbotDisclaimerIntroEditorPlaceholder:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+      chatbotDisclaimerSuggestedTitle: 'Über diesen Chatbot',
+      chatbotDisclaimerSuggestedIntro:
+        'Dieser Chatbot dient als Lernhilfe für den verknüpften Kurs. Nutzen Sie seine Antworten zur Unterstützung Ihres Lernens und prüfen Sie wichtige Informationen anhand Ihrer Kursmaterialien.',
+      chatbotDisclaimerSuggestedDescription:
+        'Das aktuelle Feld ist leer. Sie können eine allgemeine vorgeschlagene Einleitung einfügen und vor dem Speichern bearbeiten.',
+      chatbotDisclaimerUseSuggestedText: 'Vorgeschlagenen Text verwenden',
+      chatbotDisclaimerSuggestedUnsaved:
+        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie Ihre Änderungen, damit Teilnehmende ihn verwenden können.',
       saveChatbotDisclaimer: 'Disclaimer speichern',
       chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
       chatbotDisclaimerSaveError:
@@ -4949,6 +5000,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
+      chatbotOwnerPreviewLive: 'Live-Konfiguration',
+      chatbotOwnerPreviewLiveDescription:
+        'Die Eigentümer-Vorschau verwendet die aktuelle Live-Konfiguration. Gespeicherte Revisionen werden erst nach der Freigabe angewendet.',
       responseExamples: 'Antwortbeispiele',
       responseExamplesDescription:
         'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',
