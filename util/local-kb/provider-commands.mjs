@@ -23,26 +23,35 @@ export function providerCommands(config) {
     env: { PYTHON_DOTENV_DISABLED: '1', ...env },
   })
   return {
-    // The provider initializes stores during API import. Do not run it as
-    // migration-free startup until that preparation contract is reconciled.
+    // Explicit preparation is supported, but startup still requires proof
+    // that its storage belongs to this stack and setup completed successfully.
     blockedProviders: [
       {
         name: 'docProcessing',
-        reason: 'provider-startup-initializes-state',
+        reason: 'isolated-storage-preparation-unverified',
         requires: ['isolated-prepared-storage', 'local-api-key'],
-        command: uv(root('docProcessing'), [
-          'uvicorn',
-          'doc_processing.main:app',
-          '--host',
-          '127.0.0.1',
-          '--port',
-          port('docProcessing'),
-          '--workers',
-          '1',
-        ]),
+        command: uv(
+          root('docProcessing'),
+          [
+            'uvicorn',
+            'doc_processing.main:app',
+            '--host',
+            '127.0.0.1',
+            '--port',
+            port('docProcessing'),
+            '--workers',
+            '1',
+          ],
+          { DOC_PROCESSING_AUTO_INITIALIZE: '0' }
+        ),
       },
     ],
     setup: {
+      docProcessing: uv(
+        root('docProcessing'),
+        ['python', '-m', 'doc_processing.setup'],
+        { DOC_PROCESSING_AUTO_INITIALIZE: '0' }
+      ),
       migrations: uv(ingestionRoot, [
         '--project',
         ingestionApi,

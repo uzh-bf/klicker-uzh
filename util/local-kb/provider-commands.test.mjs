@@ -32,8 +32,26 @@ test('separates migrations from startup and preserves argv boundaries', () => {
   const document = commands.blockedProviders.find(
     ({ name }) => name === 'docProcessing'
   )
-  assert.equal(document.reason, 'provider-startup-initializes-state')
+  assert.equal(document.reason, 'isolated-storage-preparation-unverified')
   assert.ok(document.command.args.includes('doc_processing.main:app'))
   assert.ok(document.command.args.includes('18084'))
-  assert.deepEqual(document.command.env, { PYTHON_DOTENV_DISABLED: '1' })
+  assert.deepEqual(document.command.env, {
+    PYTHON_DOTENV_DISABLED: '1',
+    DOC_PROCESSING_AUTO_INITIALIZE: '0',
+  })
+  assert.deepEqual(commands.setup.docProcessing.args, [
+    'run',
+    '--frozen',
+    '--no-sync',
+    'python',
+    '-m',
+    'doc_processing.setup',
+  ])
+  assert.deepEqual(commands.setup.docProcessing.env, document.command.env)
+  assert.equal(
+    commands.start.some((command) =>
+      command.args.includes('doc_processing.setup')
+    ),
+    false
+  )
 })
