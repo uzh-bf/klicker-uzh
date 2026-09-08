@@ -1,10 +1,16 @@
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
-import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
+import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import {
+  isParticipantDataUseComplete,
+  type JWTPayload,
+  participantAccountDataUseSelect,
+  verifyJWT,
+} from '@klicker-uzh/util'
+import { randomUUID } from 'crypto'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { Redis } from 'ioredis'
 
 const redis = new Redis({
   family: 4,
@@ -37,7 +43,10 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, Authorization'
+  )
 }
 
 function sendJson(
@@ -113,6 +122,17 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
+  let participantToken: string | undefined
+  if (req.headers.authorization !== undefined) {
+    const bearer =
+      /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/i.exec(
+        req.headers.authorization
+      )
+    if (!bearer) {
+      return sendJson(req, res, 401, { error: 'invalid_participant_token' })
+    }
+    participantToken = bearer[1]
+  }
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
@@ -128,6 +148,35 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (forwarded.length > 0) {
       cookie = forwarded.join('; ')
     }
+    if (!participantToken && participantPair) {
+      participantToken = participantPair.slice('participant_token='.length)
+    }
+  }
+  if (participantToken !== undefined) {
+    let participant: JWTPayload
+    try {
+      participant = await verifyJWT(
+        participantToken,
+        process.env.APP_SECRET as string
+      )
+    } catch {
+      return sendJson(req, res, 401, { error: 'invalid_participant_cookie' })
+    }
+    if (participant.role !== 'PARTICIPANT' || !participant.sub) {
+      return sendJson(req, res, 401, { error: 'invalid_participant_cookie' })
+    }
+    const state = await prisma.participant.findUnique({
+      where: { id: participant.sub },
+      select: participantAccountDataUseSelect,
+    })
+    if (!isParticipantDataUseComplete(state)) {
+      return sendJson(req, res, 403, {
+        error: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED',
+      })
+    }
+    // The response worker consumes cookies; preserve that internal contract
+    // after validating the explicitly selected registered identity.
+    cookie = `participant_token=${participantToken}`
   }
 
   const responseTimestamp = Date.now()
@@ -150,7 +199,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
+  console.log(`Pushing event ${eventName}`, { messageId: message.messageId })
 
   await hatchetClient.events.push(eventName, message)
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
@@ -268,6 +317,16 @@ async function handleAddAssessmentResponse(
     })
   }
 
+  const accountState = await prisma.participant.findUnique({
+    where: { id: user.sub },
+    select: participantAccountDataUseSelect,
+  })
+  if (!isParticipantDataUseComplete(accountState)) {
+    return sendJson(req, res, 403, {
+      error: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED',
+    })
+  }
+
   // set up correlation id as an MD5 hash of correlationKey and participantId to obtain tracking id
   const combinedCorrelationKey = `${correlationKey}:${user.sub}`
   const MD5 = createHash('md5')
@@ -367,7 +426,7 @@ const server = createServer(async (req, res) => {
         return await handleAddAssessmentResponse(req, res)
       } else {
         // call the standard processing function, which will distinguish between authenticated and anonymous modes
-        // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
+        // Registered credentials must pass the account gate before queuing.
         return await handleAddResponse(req, res)
       }
     }

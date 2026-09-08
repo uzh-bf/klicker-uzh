@@ -56,6 +56,7 @@ import {
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { handleParticipantAnalyticsWithdrawals } from '../src/services/participantAnalyticsWithdrawal.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
 import {
@@ -307,6 +308,16 @@ export async function testInitialization(
         )
         return { success }
       }),
+    }),
+    participantAnalyticsWithdrawals: hatchet.task({
+      name: 'participant-analytics-withdrawals',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => ({
+        success: await handleParticipantAnalyticsWithdrawals(
+          {},
+          hatchetCtx,
+          executionCtx
+        ),
+      })),
     }),
     processCourseDeletion: hatchet.task({
       name: 'process-course-deletion',

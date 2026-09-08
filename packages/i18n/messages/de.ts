@@ -921,6 +921,56 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
+      signup: {
+        accountTitle: 'Dein Konto',
+        usernameHint:
+          'Dein Benutzername wird angezeigt, wenn Du einer Kursrangliste beitrittst.',
+        assessmentTitle: 'Zugang zum Assessment freischalten',
+        assessmentSubmit: 'Zugang freischalten',
+        assessmentDataCollectionNotice:
+          'Wir speichern Deine Kontodaten, die von SWITCH edu-ID übermittelten Identitätsangaben sowie Daten aus Deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, Bewertungen, Punkte und Rückmeldungen. Im Assessment speichern wir zusätzlich Deine E-Mail-Adresse und Matrikelnummer sowie detaillierte Protokolle Deiner Antwortversuche und Interaktionen (Audit Logs). Punkte bleiben unabhängig von einem Ranglistenbeitritt gespeichert.',
+        assessmentDataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für Durchführung und Auswertung des Kurses benötigen. Im Assessment haben berechtigte Dozierende und Assessment-Mitarbeitende Zugriff auf Deine Identität, Antwortdetails, Ergebnisse und detaillierte Audit Logs, soweit dies für Bewertung, Nachbearbeitung oder Einsprache erforderlich ist. Andere Teilnehmende sehen diese Assessment-Daten nicht. Learning Analytics zeigt nur geschützte Gruppenwerte.',
+        assessmentDataUsageNotice:
+          'Wir verwenden Deine Daten, um Dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Im Assessment dienen Identitätsangaben, Antworten, Ergebnisse und Audit Logs zusätzlich der Bewertung und Nachvollziehbarkeit. Forschung und Learning Analytics sind freiwillig und haben keinen Einfluss auf Punkte, Noten oder den Assessment-Zugang.',
+        assessmentDataStorageNotice:
+          'Kontodaten und Antworten werden gespeichert, solange Dein Konto besteht. Dein Assessment-Konto und Deine Assessment-Daten kannst Du nicht selbst löschen; sie bleiben für die Nachvollziehbarkeit sowie während der geltenden Einsprache- und Aufbewahrungsfristen erhalten. Danach werden sie gelöscht oder anonymisiert. [Details in den Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'Ich habe die [KlickerUZH Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Die zusätzlichen Hinweise zu Assessment-Daten, Identitätsangaben, Zugriff, Audit Logs, Einsprache und Aufbewahrung habe ich zur Kenntnis genommen.',
+        dataUseTitle: 'Datennutzung und Einstellungen',
+        dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
+        dataCollectionNotice:
+          'Wir speichern Deine Kontodaten sowie Daten aus Deinen Kursen und Aktivitäten, etwa Gruppen, Antworten, deren Bewertung, Punkte und Rückmeldungen. Deine Punkte und persönlichen Statistiken bleiben unabhängig von einem Ranglistenbeitritt erhalten. Erst wenn Du beitrittst, erscheinen Deine Ranglistenangaben für andere Teilnehmende. Bei einer Anmeldung mit Switch edu-ID speichern wir auch die übermittelten Identitätsangaben.',
+        dataSharingTitle: 'Wer sieht meine Daten?',
+        dataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende Deinen Benutzernamen und Deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        dataUsageTitle: 'Wofür werden meine Daten genutzt?',
+        dataUsageNotice:
+          'Wir verwenden Deine Daten, um Dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt Deine Auswahl auf dieser Seite. Diese Auswahl hat keinen Einfluss auf Punkte, Noten oder den Kurszugang.',
+        dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
+        dataStorageNotice:
+          'Deine Kontodaten und Antworten werden gespeichert, solange Dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden die Daten gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung Deines Kontos und Deiner Daten beantragen.',
+        acknowledgement:
+          'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+        researchConsentTitle: 'Daten für Forschung',
+        researchConsentDescription:
+          'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentYes: 'Zulassen',
+        researchConsentNo: 'Widersprechen',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+        learningAnalyticsConsentYes: 'Ja, teilnehmen',
+        learningAnalyticsConsentYesDescription:
+          'Private Einblicke und geschützte Gruppenberichte.',
+        learningAnalyticsConsentNo: 'Nein, nicht teilnehmen',
+        learningAnalyticsConsentNoDescription:
+          'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+        learningAnalyticsGuide: 'Was Du und Deine Dozierenden sehen',
+        submit: 'Konto erstellen',
+        acknowledgementRequired: 'Bitte bestätige Deine Auswahl.',
+        dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1274,17 +1324,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
       researchConsentTitle: 'Forschung',
       researchConsentDescription:
-        'Ja erlaubt, dass künftige Forschungsexporte alle für Dein Konto gespeicherten Daten enthalten. Nein schliesst Deine Daten von künftigen Forschungsexporten aus. Wenn Du diese Einstellung wieder aktivierst, können bereits gespeicherte Daten wieder einbezogen werden. Bereits erstellte Forschungsexporte werden nicht zurückgerufen.',
+        'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen.',
       researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
       researchConsentFailed:
         'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseConflict:
+        'Diese Seite ist nicht mehr aktuell. Lade sie neu, bevor Du es erneut versuchst.',
       learningAnalyticsConsentTitle: 'Learning Analytics',
       learningAnalyticsConsentDescription:
-        'Ja erlaubt KlickerUZH, nach einer Neuberechnung des Kurses nach Deiner aktuellen Entscheidung alle berechtigten in Deinem Konto gespeicherten Aktivitätsdaten für individuelle Learning Analytics zu verwenden. Nein bedeutet, dass keine individuellen Learning-Analytics-Daten verwendet werden; bereits erstellte individuelle Learning-Analytics-Daten werden beim nächsten erfolgreichen nächtlichen Verarbeitungslauf gelöscht. Aggregierte Ergebnisse werden bei ihrer nächsten regulären Neuberechnung aktualisiert. Wenn Du diese Einstellung wieder aktivierst, können alle berechtigten gespeicherten Aktivitätsdaten wieder einbezogen werden.',
+        'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+      learningAnalyticsGuide: 'Mehr erfahren',
       learningAnalyticsConsentSaved:
         'Deine Learning-Analytics-Einstellung wurde gespeichert.',
       learningAnalyticsConsentFailed:
         'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsWithdrawalTitle:
+        'Teilnahme an Learning Analytics beenden?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
+      learningAnalyticsWithdrawalUnavailable:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden, weil der Widerruf derzeit nicht verfügbar ist. Deine gespeicherte Einstellung bleibt unverändert.',
       dataUseCanonicalDataNotice:
         'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
       dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',

@@ -108,6 +108,1045 @@ Commit the approved plan before implementation. Commit coherent substantive slic
 
 ## Progress
 
+### Profile withdrawal browser proof — 2026-09-09, 00:26
+
+The real PWA profile on the disposable verification runtime now passes withdrawal
+confirmation, cancellation, and reload persistence using the seeded local account.
+Cancel leaves analytics enabled. Confirm followed by reload leaves analytics false
+and research true. At 390px, document width is 390px with no horizontal overflow.
+The confirmation screenshot is `/private/tmp/dpo-withdrawal-confirm-before.png`.
+The subsequent viewport screenshots capture the profile header rather than the
+below-fold settings; use the browser state results as the persistence evidence,
+not those screenshots as visual proof of the switches. Worker scheduler delivery
+and final integrated review remain unverified.
+
+Root type checking completed 33 of 35 tasks before Prisma and util failed from
+inconsistent generated AccessRequest types. Serialized Prisma generation/check,
+Prisma build, then util check all pass. Root lint passed the six non-analytics
+tasks; analytics found formatting in the new publication-fencing test. Ruff
+formatted that test, then all analytics lint/format checks pass. The formatted
+file was copied back to the core task tree. Producing logs are
+`/private/tmp/dpo-account-withdrawal-types.log`,
+`/private/tmp/dpo-prisma-serialized-check.log`,
+`/private/tmp/dpo-prisma-serialized-build.log`, and
+`/private/tmp/dpo-util-serialized-check.log`.
+
+`check:all` cannot run unchanged in the container: its host Devrouter policy test
+requires the host executable. That exact test passes all eleven cases on the host.
+This split evidence does not replace pending staged format and remaining policy
+checks. Native executor Darwin owns the bounded commit/check and migration
+provenance assessment; main retains integration and reviews. Both published PRs
+remain open drafts on the expected separate bases. No commit or push occurred.
+
+The browser session was closed. Canonical stop completed for
+`trees/codex/dpo-verification`, provider `volumes-home-git-klicker-klicker`, and
+Devsy reports Stopped and the filtered route query returns zero exact source or
+provider matches. Darwin's active child ID is
+`01a08316-6a60-7281-a25d-ddd5c2f1609f`; preserve that owner across continuation.
+
+### Withdrawal enabled after combined checks — 2026-09-09, 00:12
+
+The new mutation-to-cleanup regression first failed at the exact
+WITHDRAWAL_UNAVAILABLE guard. All nine actual Python save wrappers then passed
+four test groups (45 writer/scenario combinations) for stale generation, denied
+course, changed choice, pending withdrawal and absent eligibility, with writes
+forbidden by the test doubles. This complements the real Python/PostgreSQL
+publication proof and seven-family cleanup tests; no coordinator import is needed.
+
+Main removed the temporary unavailable guard. Thirty account/consent/withdrawal
+regressions now pass, including real revisioned withdrawal, atomic event/request,
+generation invalidation, cleanup, retained responses/membership, locking and
+rollback. GraphQL TypeScript check passes. Focused Biome check passes with six
+pre-existing explicit-any fixture warnings. Auth documentation now distinguishes
+saved withdrawal from asynchronous cleanup completion. This is uncommitted source;
+profile browser proof, worker scheduler proof and applicable reviews remain open.
+
+Aristotle returned the integration test and is closed. Hypatia returned the
+all-writer tests; parent inspected and ran them in the Node24/Python verification
+container. Runtime stop was requested after final checks; verify exact provider
+and route state before ending the lifecycle. Neither PR was updated or pushed.
+
+
+### Combined withdrawal proof preparation — 2026-09-09, 00:06
+
+The six real PostgreSQL cleanup regressions and fifteen account transaction
+regressions pass in the existing disposable verification container. The expanded
+synthetic Python/Prisma publication harness additionally rejects changed choice,
+stale disclosure, withdrawn consent, pending cleanup after re-enable, and a
+ disabled course. It checks the restricted marked database before fixture creation
+and removes its own fixture. This exercises the actual save_participant_analytics
+writer and shared publication transaction, not every computational pipeline.
+
+Native executor Aristotle owns only the existing withdrawal integration test,
+adding the real revisioned mutation-to-cleanup path. Native executor Hypatia owns
+only test_publication_fencing.py, testing all nine actual writer wrappers against
+stale and missing eligibility. Neither may alter the guard or start runtimes.
+Main retains production changes and combined proof. Both workers remain active.
+
+Seven copied KB UI/translation files pass Node 24.16 syntax and Biome checks
+with the AI branch configuration. The isolated harness corrected its initial
+nested-config setup; no repository configuration was changed. This does not
+prove full AI types or browser behavior. The audience question remains pending.
+Runtime stop is underway after the completed checks. No commit or push occurred.
+
+
+### Withdrawal dependency verdict — 2026-09-09
+
+Planck completed the bounded dependency comparison. The existing withdrawal
+consumer, scheduled handler, receipt creation and eligibility fencing do not
+require importing the analytics coordinator. The earlier blanket prerequisite
+claim is superseded. Main must complete combined all-family writer/consumer proof
+before removing WITHDRAWAL_UNAVAILABLE. Stored LA export still needs a defined
+artifact projection and provenance/release checks. Fresh recomputation validity
+needs a completion boundary; do not falsely stamp one-family computation as a
+complete course or import the entire unrelated coordinator stack.
+
+Core verification runtime resumed successfully without recreation. Node 24.16
+syntax checks passed for seven copied KB UI/translation files. A corrected
+isolated Biome harness found one upload-button formatting error, now corrected
+in the AI source. Existing unused React import warning was preserved. This is
+static proof only, not KB typecheck or browser proof. Canonical runtime stop completed; fresh Devsy status confirms Stopped and
+filtered devrouter routes contain zero exact source/provider matches. No commit or push occurred.
+
+
+### KB target-change reset and check attribution — 2026-09-08, 23:58
+
+Main added keys to the add-resource and replacement form mounts so changing KB
+or replacement target discards selected material and both confirmations. Exact
+diff inspection and git diff --check pass. This remains uncommitted UI work.
+
+Erdos completed the component and paired-language copy. Its Biome and KB/i18n
+TypeScript checks passed on host Node 22, contrary to the repository's container
+Node 24 requirement. Treat them as supplemental static evidence only; required
+container checks and browser proof remain pending. The component executor and
+previous completed account/UI mapper workers are closed. Analytics dependency
+explorer Planck remains non-terminal on its existing handle. No runtime was
+started in this continuation; the last verified exact AI stop remains valid.
+
+
+### AI bootstrap cause confirmed — 2026-09-08, 23:52
+
+Read-only inspection confirms the completion marker is written only after the
+post-create script installs/builds packages, resets and pushes the database, and
+seeds fixtures. Rerunning that script would cross the retained-data reset boundary;
+no repair or marker fabrication was attempted. Latest target changes do not
+remove this bootstrap requirement. The exact AI runtime remains stopped from
+the previous verified stop. Component and dependency workers still return
+non-terminal wait timeouts; retain their existing handles. Server scope awaits
+the existing asynchronous user question. No new checks or delivery claims.
+
+
+### AI runtime verification attempt — 2026-09-08, 23:48
+
+Previous goal turn made source progress; this continuation completed the shared
+material wording correction for URL compatibility and inspected both form diffs.
+The AI runtime was resumed with the managed ai profile. Sandbox process identity
+failure was resolved by the authorized host call. Managed startup then failed:
+`Bootstrap completion marker is missing`; rollback reported degraded processes.
+No marker was fabricated, retained database reset, or lifecycle bypass attempted.
+Canonical stop succeeded. `devsy workspace status rs-dpo-ai-integration` reports
+Stopped, and filtered `devrouter ls --json` reports zero exact source/provider
+routes. Typechecking and browser proof remain unavailable for this attempted run.
+
+The two KB forms and new controlled component remain uncommitted. The native
+component executor and analytics dependency explorer have live non-terminal wait
+handles. Continue those same owners; do not respawn from elapsed waits. The
+pending user question concerns real course/chatbot scope versus new group/staff
+access controls. Server attestation binding waits for that ruling.
+
+
+### KB confirmation UI continuation — 2026-09-08, 23:45
+
+Recovered the active goal and existing dirty core work without overwriting it.
+Remote fetch passed. Core is 28 ahead/5 behind origin/v3 and 22 ahead of its
+own upstream. AI is 19 ahead/26 behind origin/v3-ai and matches its upstream;
+relative to remote default v3 it is 166 ahead/15 behind. Both targets remain
+separate. No target integration, commit or push occurred in this continuation.
+
+AI worktree now has an uncommitted controlled material confirmation component,
+DE/EN copy, explicit selection before file transfer, and file/URL submit gates.
+Confirmations reset on changed file, rejected file, title, URL, category and
+successful completion. This is presentation only: server-side attestation
+persistence, scope binding, direct-call enforcement and browser proof remain
+incomplete. Native executor Erdos owns the new component and translations;
+main owns the two form integrations. Diff whitespace check passes.
+
+Read-only KB mapper Copernicus completed: existing routes cover initial and
+additional file uploads, replacements and URL resources. Catalog import only
+supports answer collections; there is no existing KB course-material import.
+The prototype group/staff audience controls have no matching access model.
+An asynchronous question asks whether to bind confirmations to actual
+course/chatbot access or add those new controls. Do not invent access semantics
+or implement dependent schema before the answer. Main recommends actual scope.
+
+Native explore Planck owns a bounded source comparison of the analytics
+contract/coordinator prerequisites against the current withdrawal implementation.
+It must establish necessary contracts rather than assume an entire stack import.
+No runtime started. The existing disposable verification provider was confirmed
+Stopped. KB checks still require an AI-compatible runtime; the core verification
+checkout does not contain kb-management. Full draft delivery remains incomplete.
+
+
+### Assessment disclosure and retention proof — 2026-09-08
+
+Previous goal turn made progress through contract documentation and dependency
+inspection. This continuation ran the exact disposable verification checkout in
+assessment mode with a temporary startup-only flag override. Both flags were
+verified in the running app processes. The override was removed after the check;
+no production config or application test branch was introduced.
+
+Actual DE and EN account completion pages display the assessment title, four
+initially collapsed named disclosure controls, independent saved choices, and
+disabled submission until acknowledgement. German collection and retention
+sections render the additional assessment information. Mobile width 390 has no
+horizontal overflow. Evidence: /private/tmp/dpo-assessment-collection-de.png,
+/private/tmp/dpo-assessment-retention-de-mobile.png and
+/private/tmp/dpo-assessment-en-mobile.png. This used a real synthetic local login
+cookie as bearer storage, not an external Edu-ID provider login. The initial
+harness incorrectly treated the login mutation's ID result as a JWT; corrected
+to the response cookie without exposing or storing token values in artifacts.
+
+The live assessment HTTP deletion mutation rejects a new synthetic participant's
+self-deletion, preserves its database row, and sends no cookie-clearing response.
+The harness removes only its own fixture. Producing log:
+/private/tmp/dpo-assessment-deletion-http.log. Browser closed; Devsy reports Stopped and the route snapshot
+/private/tmp/dpo-assessment-final-routes.json has no exact checkout/provider match. Full withdrawal/coordinator integration and review/PR delivery
+remain open. No commit or push occurred in this continuation.
+
+
+### Completion contract audit — 2026-09-08
+
+Previous turn classification: progress, through source edits and producing-run
+verification. Refreshed remote refs with host permission; the core task branch
+remains 22 commits ahead of its published branch. Reviewed the current completion
+gate, LTI identity helper and assessment deletion service. Updated auth-model.md
+with the persisted completion boundary, revisioned choices, safe return handling,
+and assessment-mode self-deletion restriction. Diff whitespace validation passes.
+This documentation records implemented contracts, not full-package readiness.
+
+The separately owned coordinator checkout currently reports branch
+rs/learning-analytics-product-controls at 3227da8fe8; its directory name alone
+does not identify the intended prerequisite layer. Resolve that layer and its
+live PR base before proposing incorporation. Core research export still supports
+only live-quiz and asynchronous responses; LA/chat export classes remain explicit
+unavailable errors. No dependency was imported and no runtime was started here.
+
+
+### Approved account wording and disclosure layout — 2026-09-08
+
+Final runtime state: exact disposable verification checkout stopped through
+devrouter; Devsy reports Stopped for volumes-home-git-klicker-klicker. The route
+snapshot /private/tmp/dpo-ui-final-routes.json contains no exact provider or
+checkout match. Both task browser sessions closed. No runtime data was deleted.
+
+Main completed the partial executor result: shared accessible four-section
+collapsible disclosure, normal/edu-ID account information, assessment variants,
+short DE/EN research and LA wording, and corrected guide links. Signup keeps both
+purpose choices visible; research starts allowed and LA starts unanswered.
+Completion preserves saved choices. Profile withdrawal cancellation preserves
+saved state. PWA and GraphQL native types pass; focused assessment self-deletion
+guard test passes. Assessment-mode service now rejects self-deletion before any
+record access or cookie clearing; cross-mode assessment-record retention still
+needs integrated review. No schema change was introduced by this UI continuation.
+
+Browser verified DE/EN normal signup and completion, accessible disclosure
+triggers, mobile no-overflow, guide and all three XLSX assets, and profile cancel.
+Evidence: /private/tmp/dpo-signup-de-final.png,
+/private/tmp/dpo-signup-en-final.png, /private/tmp/dpo-completion-mobile.png,
+/private/tmp/dpo-completion-en-mobile.png, /private/tmp/dpo-settings-after.png.
+Type logs: /private/tmp/dpo-visible-choices-types.log and
+/private/tmp/dpo-ui-graphql-types.log. Retention guard test log:
+/private/tmp/dpo-assessment-delete-check.log. Assessment-mode rendering remains
+unverified. Local Turbopack initially failed to discover the newly added component;
+a managed stop/resume corrected it. No production workaround was added.
+
+The executor was interrupted after one narrowing checkpoint and returned its
+partial component/wiring. Main retained and completed that work. No duplicate
+executor or reviewer was launched. These changes remain uncommitted alongside
+the prior account/analytics work; no push or PR readiness claim is made. The
+separate coordinator prerequisite decision and full withdrawal proof remain open.
+
+
+Runtime-only recovery: the local Next development page inventory was empty,
+although static pages compiled on demand. Touching the existing dynamic guide
+route in the disposable verification checkout triggered discovery of all pages.
+No source content changed for this recovery. Guide and three example XLSX assets
+return 200 with their expected media types. The synthetic LTI harness then
+needed the normal x-graphql-yoga-csrf header. With that harness correction,
+valid cookie-less launch, authenticated identity, real completion mutation and
+retained course access pass. Log: /private/tmp/dpo-lti-positive-restored.log.
+The fixture cleans its own participant, course and owner. This is HTTP/SSR proof;
+the browser LTI continuation remains a separate check.
+
+
+User approved implementing the portable prototype revisions in the real UI.
+Account creation and completion use the same four collapsed disclosure sections.
+Assessment retains ordinary account/activity data explanations and adds identity,
+answer details, audit logs, assessment staff access, and the restriction on
+self-deletion during applicable appeal and retention periods. Research and LA
+remain independent choices; explanations are concise with policy and guide links.
+The supplied privacy-policy revision controls LA wording: activation requires
+both account and course; deactivation automatically deletes the relevant LA data.
+The earlier blanket promise that published LA reports remain is superseded.
+These wording corrections do not waive the pending withdrawal integration proof.
+
+Main owns guide alignment, runtime verification and integration. Native executor
+Franklin owns signup/completion/settings composition and DE/EN translations.
+The existing core and AI draft targets remain unchanged. No separately owned
+analytics coordinator stack is imported by this UI slice.
+
+
+### Valid LTI verification dependency — 2026-09-08, 18:02
+
+Refreshed origin. Core remains 22 commits ahead of its published task branch,
+and 28 ahead / 5 behind origin/v3. AI matches its published task branch and
+is 19 ahead / 19 behind origin/v3-ai. Both existing PRs remain draft. No target
+integration or publication occurred in this continuation; current remote CI
+does not cover the local account and Python edits. Core diff whitespace check
+passes.
+
+The new ignored synthetic harness at the detached verification checkout's
+`project/_local/verification/lti-positive.mjs` creates and cleans only its own
+participant, course and owner. It cannot yet verify valid LTI: both localized
+and default-locale course requests return 404 before authentication. Static
+signup and account completion routes return 200, while course overview,
+course signup and session dynamic routes all return 404. The source files
+exist in the mounted checkout; the actual process is Next development mode.
+Do not count these failures as an authentication regression or passing proof.
+Producing logs: `/private/tmp/dpo-lti-positive.log` and
+`/private/tmp/dpo-lti-positive-local-route.log`. Next development request logs
+contain short-lived synthetic launch tokens; do not copy or publish them.
+
+The user was asked whether to expand the dependency scope to integrate the
+minimum separately owned coordinator prerequisites. No answer is recorded yet;
+the earlier prohibition on silently importing that stack remains effective.
+The existing accepted withdrawal advisor consultation is reused. A fresh model
+catalog lookup confirms the configured Gemini Flash High route is listed; this
+was not a new consultation or review.
+
+Exact runtime `trees/codex/dpo-verification`, provider
+`volumes-home-git-klicker-klicker`, stopped successfully. Fresh provider status
+is Stopped and the route query returns no exact source/provider matches.
+No database reset, deletion of runtime data, commit or push occurred.
+
+### Python publication compatibility verified — 2026-09-08, 17:50
+
+Helmholtz completed the single correction pass and returned ownership to main.
+Removed unsupported Prisma Python query select arguments and cast both advisory
+lock arguments to PostgreSQL integer. The Python driver otherwise selects the
+nonexistent bigint/bigint function. The helper tests now reject unsupported
+query keywords. Parent verified generated Prisma0.15 signatures; integer timeout
+arguments are supported, and the final timedelta form preserves the same limits.
+
+Actual save_participant_analytics passes against new synthetic PostgreSQL rows.
+The same producing run rejects stale generation and a disabled course before
+publication; all six helper tests pass. Log:
+`/private/tmp/dpo-python-publication-db-clock.log`. The test takes its choice
+timestamp from the persisted fixture, matching database precision, and removes
+only its three fixture identities and their descendants. No production data or
+historical backfill script ran. Python client generation and frozen dependency
+sync occurred only in the existing verification container. No dependency files
+changed. The broader eight-script computational pipeline is not runtime-proven.
+
+The remaining all-family completion owner exists on the separate analytics
+stack, not these DPO targets: learning-analytics-coordinator tree at
+3227da8fe8651dbfde7f412dce48db290c3b2ce3 has
+services/learningAnalyticsCoordinator.ts completeLearningAnalyticsCourse and
+depends on analytics-engine-contract and coordinator workflow types. Its live
+top draft is https://github.com/uzh-bf/klicker-uzh/pull/5629, based on
+rs/learning-analytics-coordinator. No unrelated coordinator stack was imported.
+Do not mark a single derivative family as full course completion or remove the
+withdrawal guard before the full approved integration proof.
+
+### WebSocket identity and failed LTI admission — 2026-09-08, 17:41
+
+Main wired PWA connectionParams to the existing participant token and reused
+backend cookie/JWT admission for each WebSocket operation. Explicit malformed
+credentials fail before GraphQL; the authenticated request reaches the existing
+persisted account gate. Live synthetic WebSocket checks verify rejected malformed
+bearer, authenticated self identity, incomplete subscription denial, actual
+completion mutation and subsequent protected participant-course access.
+Producing log: `/private/tmp/dpo-ws-complete-live.log`. Backend and PWA native
+types pass. No dependency changed.
+
+Failed LTI attempts now throw a fixed error after discarding stale identity,
+including explicitly empty launch credentials; callers use their existing error
+flow instead of rendering a guest view. Synthetic failed course launch returns
+307 to the existing token-free serverError destination. Browser snapshot and
+`/private/tmp/dpo-lti-error-browser.png` confirm the error page. Browser dpo-ws
+closed. Valid LTI launch and ordinary cookie-less response interaction remain
+open verification items. No commit or publication for this auth slice yet.
+
+Helmholtz returned the Python draft across scripts0through7 and 32 existing files,
+plus the eligibility helper and four focused tests. Main independently ran the
+four tests in the locked container environment and generated Prisma Python0.15.
+The generated client confirms query `select` arguments are unsupported; the
+same worker owns one bounded correction with signature-aware tests. Integer
+transaction timeouts are supported, so that suspected finding was rejected.
+Real Python publication verification is underway using only new synthetic
+fixtures. The first two attempts exposed missing test-course dates and the
+existing PIN-auth constraint; fixture now supplies dates and SSO.
+No writer acceptance or full withdrawal completion is claimed.
+
+### Cookie-less response admission and consent checks — 2026-09-08, 16:57
+
+Final lifecycle: browser `dpo-bearer` closed; exact detached verification provider
+`volumes-home-git-klicker-klicker` reports Stopped. Route snapshot
+`/private/tmp/dpo-bearer-final-routes.json` contains no exact source or provider
+reference. No runtime deletion occurred; resume this same checkout for further
+checks. These facts supersede the earlier active-runtime checkpoint below.
+
+Main added explicit bearer-token forwarding in the ordinary PWA response call
+and validation in response-api before queuing. Malformed, empty and incomplete
+registered credentials cannot fall back to temporary or anonymous admission.
+CORS accepts Authorization. The standard response queue log now records only
+the message identifier, avoiding token and response-content logging. Existing
+assessment handling retains its separate credential path.
+
+Response API and PWA native type checks pass. Response API Biome passes with
+existing warnings. Restored unrelated formatter changes to PWA imports.
+Synthetic HTTP checks pass for incomplete bearer and cookie identities,
+malformed bearer, empty registered cookie, temporary fallback rejection,
+assessment account gating and preflight. Producing log:
+`/private/tmp/dpo-bearer-http-runtime-env.log`. The harness uses the existing
+runtime environment, cleans its synthetic participant and stops its child
+processes. Browser fetch from the PWA origin returned 401 for malformed bearer
+after successful CORS preflight. Valid cookie-less submission and its actual
+PWA interaction remain unverified; this is not complete auth delivery.
+
+The account/consent suite now passes 20 of 21 tests. The sole remaining failure
+is the deliberately retained WITHDRAWAL_UNAVAILABLE guard. Updated read tests
+to distinguish a valid synthetic published course from invalidated aggregates;
+changing a timestamp alone cannot restore validity. No direct consent fixture
+write replaces withdrawal. Native GraphQL check:ts passes; generic tsc used the
+wrong emit configuration and reported Pothos portability errors. Use the native
+script. Helmholtz remains the existing active Python owner; do not duplicate it.
+No commit, push or full-draft completion has occurred.
+
+### Withdrawal consumer verification — 2026-09-08, 16:38
+
+Main corrected synthetic fixture teardown to delete its point corrections before
+participants. Participant deletion otherwise sets the correction foreign key to
+NULL and violates the existing SINGLE-correction constraint. No production
+deletion behavior or schema was changed for this fix. All six PostgreSQL
+withdrawal consumer regressions now pass in the existing detached verification
+runtime; producing log `/private/tmp/dpo-withdrawal-cleanup-retry.log`.
+The test verifies retained responses, points and membership, lock serialization,
+duplicate completion, rollback, re-enable and the scheduled cutoff. The final
+container Biome check passes with existing explicit-any warnings; log
+`/private/tmp/dpo-withdrawal-cleanup-format-retry.log`.
+
+Kant returned the integration test to main. Helmholtz remains the existing
+Python input/publication enforcement owner; a wait timeout is non-terminal.
+Withdrawal remains unavailable until writer enforcement and combined evidence
+pass. No commit, push, or full-package readiness is claimed. Both live PRs remain
+open drafts at their previous published heads. The verification runtime remains
+active for the continuing checks; stop it before session end.
+
+### Withdrawal persistence and read invalidation — 2026-09-08
+
+Resumed the exact disposable verification runtime with the email profile.
+Generated additive migration `20260908140800_participant_analytics_withdrawal`
+contains only the two planned tables, pending-request index, and immutable-event
+foreign key. Guarded migrate-create still refuses the known amended account
+migration checksum. The existing guarded deploy procedure verified the marked
+restricted database, exact SQL digest, sole pending migration, and the single
+known historical mismatch before deploying the additive migration. No reset or
+checksum rewrite occurred. Prisma schema diff reports no difference.
+
+Added generation invalidation on initial grants and changed analytics choices,
+plus stale-course and pending-withdrawal read denial. Withdrawal still rejects
+true-to-false changes until writer fencing and consumer verification pass.
+Prisma generation/build and GraphQL typecheck pass after registering the cleanup
+task in the test harness. All 15 account PostgreSQL regressions pass.
+Native executor Kant owns the new cleanup integration test; Helmholtz owns only
+Python input/publication enforcement. Main owns schema, services, and integration.
+No source commit or PR publication has occurred for this incomplete slice.
+
+
+### Devrouter history-limit blocker repaired — 2026-09-08, 14:00
+
+The approved local devrouter repair is implemented and independently reviewed in
+`/Volumes/HOME/Git/personal/devrouter/trees/codex/lifecycle-history-limit`.
+Source head `09eaf280639fc764befccd460b2bf5dd1c327220` preserves bounded active
+history through durable completed-operation receipts and old-request suppression.
+Existing 1196 tests and 30 focused store/lifecycle regressions pass; installed
+synthetic qualification proves admission beyond 128 entries. Final review passed.
+The installed CLI and worker hashes match the reviewed build.
+
+The exact retained verification checkout `trees/codex/dpo-verification` resumed
+with the email profile, reached ready without recreation, and successfully ran a
+Node 24 container command. It is stopped again: provider
+`volumes-home-git-klicker-klicker` reports Stopped, canonical stop succeeded, and
+`/private/tmp/devrouter-history-routes-final.json` contains zero matching routes.
+Journal metadata is version 2 with 128 active entries and four receipt files;
+both stop proofs are true. No journal bypass, manual state erasure, database
+reset, data deletion, or shared-target merge occurred.
+
+The runtime capability blocker is resolved. Withdrawal implementation and the
+remaining separate core/AI draft-PR delivery work below remain incomplete.
+
+
+### Withdrawal draft and exact runtime capability block — 2026-09-08, 10:52
+
+Core HEAD is 9e0b0ca00ab9e1aec74fd69129e39a6e5b0790d3; AI unchanged.
+Assessment reviews are complete for their bounded slice. No new push.
+Native planner confirms adding a dedicated withdrawal consumer to the existing
+general worker is within the approved contract; see
+`project/_local/reviews/2026-09-08-withdrawal-plan.md`. This corrects the
+disproved assumption that a complete existing cleanup owner could be called.
+
+Uncommitted draft adds ParticipantAnalyticsWithdrawal linked to the immutable
+choice event, AnalyticsEligibilityGeneration, synchronized analytics models,
+participantAnalyticsWithdrawal.ts deletion consumer, and a five-minute retrying
+worker task plus handler interfaces. The consumer handles seven individual
+families and cascade-owned competency rows, completing requests transactionally.
+The withdrawal setter still rejects true-to-false changes. Queue creation,
+generation invalidation, input/read gates, publication fencing, generated final
+migration, consumer tests and worker runtime proof are NOT implemented/verified.
+Do not publish or count this draft as usable withdrawal.
+
+Schema format/validation and Prisma client generation passed. Guarded migrate
+dev refused the known amended account-migration checksum; no reset occurred.
+Schema-to-schema diff produced an additive base at verification checkout
+`project/_local/withdrawal-generated-base.sql`. It contains only two tables,
+one pending index and one compound event foreign key. It is not installed as
+a migration or applied. Native sync generated the analytics mirror. Unrelated
+Prisma formatting was restored in the verification tree. Logs:
+`/private/tmp/dpo-withdrawal-schema-format.log`,
+`/private/tmp/dpo-withdrawal-prisma-generate.log`,
+`/private/tmp/dpo-withdrawal-schema-diff.log`.
+
+Further formatter/build/test commands hit `Lifecycle transition is blocked`.
+Exact cause verified from installed devrouter's reliability model and values-
+free state: operationHistory has 128 entries, its hard maximum; new manual
+operations are rejected before runtime execution. Neither ordinary ensure nor
+explicit --repair can pass this gate. No history/configuration was erased or
+edited. This needs a devrouter capability repair before container checks resume.
+
+Exact provider volumes-home-git-klicker-klicker is Stopped. Reliability state is
+stopped-by-user/idle, operation COMPLETED/drained, and both stop proofs true.
+`/private/tmp/dpo-withdrawal-final-routes.json` has zero exact routes. No running
+browser, command watcher or specialist remains. The blocker is new this turn;
+the full goal remains active and incomplete, not falsely complete or blocked
+under the three-turn rule.
+
+Auth and Python input inventories are completed/dispositioned in
+`project/_local/reviews/2026-09-08-auth-gap-disposition.md` and
+`project/_local/reviews/2026-09-08-analytics-input-coverage.md`. The reported
+Edu-ID parameter mismatch is a false positive: the PWA login route bridges
+both names. Cookie-less WebSocket/response authentication and failed-LTI caller
+handling remain actual work. No additional auth edits were made here.
+
+### Assessment review accepted and withdrawal design — 2026-09-08, 10:35
+
+Assessment risk reviewer Avicenna completed with no qualifying findings on
+7e037f51..db016c05 and is closed. Report:
+`project/_local/reviews/2026-09-08-assessment-risk-review.md`. Accepted UUID
+filename reduction is committed as 9e0b0ca00. Focused container Biome check and
+staged Gitleaks scan pass. Existing unchanged assessment behavior checks are
+reused. This correction is behavior-preserving; no repeated risk pass is armed.
+Commit used HUSKY=0 with the focused container check and retained prior checks.
+
+Latest fetch confirms both draft PRs remain open at their previously published
+heads. Core is 28 ahead/2 behind v3 and 22 ahead/0 behind its own upstream;
+AI is 19 ahead/11 behind v3-ai and matches its own upstream. No push or target
+integration occurred. Primary checkout is clean.
+
+The configured advisor completed a sanitized withdrawal design consultation.
+Parent rejected its insufficient conditional-write and clock assumptions;
+accepted durable asynchronous cleanup, retry and choice-epoch fencing. See
+`project/_local/reviews/2026-09-08-withdrawal-advisor.md`. The native planner
+Turing owns the bounded missing-owner implementation recommendation. Native
+explore Laplace owns remaining auth/LTI gap mapping. Neither owns source edits.
+Main retains schema, authorization and integration. Withdrawal guard remains
+unchanged until a real consumer and writer protocol are verified.
+
+Exact disposable verification provider volumes-home-git-klicker-klicker was
+resumed for the focused formatter check and stopped. Fresh Devsy status is
+Stopped; `/private/tmp/dpo-withdrawal-check-final-routes.json` contains no exact
+provider/source routes. No browser or command watcher remains active.
+Full account, AI/KB, export adapters and both final draft deliveries remain open.
+
+### Assessment commit and analytics writer evidence — 2026-09-08, 10:20
+
+Assessment slice committed locally as
+`db016c056f7af8b89a46899ba8c516657d148942` on core. Eighteen paths, one
+schema-generated receipt migration; account changes remain unstaged. Added
+permission-revocation regression passes: nine assessment service tests, plus
+five request/artifact tests and twelve existing research regressions. All35
+serialized type/schema tasks pass after aligning the verification index with
+the exact already-matching generated SDL. Logs:
+`/private/tmp/dpo-assessment-revocation-and-precommit.log`,
+`/private/tmp/dpo-assessment-precommit-indexed.log`.
+
+Host pnpm wrapper unexpectedly began dependency reconciliation on Node22;
+parent interrupted it. Container frozen-lockfile installation restored the
+verification toolchain without tracked lockfile changes. Direct installed
+Node24 ran all75 host workflow tests successfully. Lint, syncpack, agent docs,
+identity, removed-artifact and Prisma sync checks pass in
+`/private/tmp/dpo-assessment-other-precommit-restored.log`; host log is
+`/private/tmp/dpo-assessment-host-direct-checks.log`. Fifteen assessment code
+paths pass Biome with pre-existing warnings; intentional CSV control-character
+matching has a narrow documented suppression. Gitleaks staged scan passes.
+Commit used HUSKY=0 because equivalent checks ran in container/host separately.
+
+Native simplifier completed and closed: accepted removal of redundant UUID
+filename sanitization, correction pending combined risk-review disposition.
+Report `project/_local/reviews/2026-09-08-assessment-simplifier.md`. Native risk
+reviewer Avicenna remains active on the exact assessment commit. No final
+package review or push occurred. Verification provider is Stopped and
+`/private/tmp/dpo-assessment-review-final-routes.json` has zero exact routes.
+No browser or command watcher remains.
+
+Native analytics explorer completed and closed. Parent verified Python writers
+lack consent/choice-time/advisory fences; cleanup alone could recreate revoked
+rows. Existing general Hatchet worker supplies an execution mechanism but no
+participant withdrawal owner/outbox. See
+`project/_local/reviews/2026-09-08-dpo-withdrawal-writer-seams.md`. Resolve durable
+handoff, idempotent recovery, writer coordination and re-enable race before
+removing WITHDRAWAL_UNAVAILABLE. The accepted ADR0023 governs prospective
+participant choice and derived-data cleanup. No new analytics model or workflow
+implemented from this discovery. Core now26ahead2behind v3 before this local
+assessment commit; the two target advances are development-tooling only.
+
+
+### Assessment browser verification — 2026-09-08, 09:59
+
+One exact managed restart restored auth providers to200. No auth source or
+configuration changed. Delegated seeded lecturer login passed. UI formatting
+and Manage typecheck passed in `/private/tmp/dpo-assessment-ui-check.log`.
+Both real result pages expose the attestation modal and no raw CSV shortcut.
+English course export returned200 CSV with attachment headers, 1521 bytes and
+30 synthetic records; a guarded read verified its durable RELEASED receipt
+matches the exact browser-response SHA256 and counts. Receipt log:
+`/private/tmp/dpo-assessment-browser-receipt.log`. Cancelling/reopening resets
+acknowledgement and disables submit; successful initiation closes the modal.
+German live-quiz export returned200 CSV, 1565 bytes, with LIVE_QUIZ scope and
+the actual seeded quiz ID. The initial quiz URL used the legacy seed ID and
+correctly failed; current ID works. No real data processed.
+
+Screenshots: `/private/tmp/dpo-assessment-course-before.png`,
+`/private/tmp/dpo-assessment-modal-en-desktop.png`,
+`/private/tmp/dpo-assessment-modal-de-mobile.png`, and
+`/private/tmp/dpo-assessment-quiz-de-mobile-actions.png`. At390px viewport the
+modal measures358px outside/356px inside with356px scrollWidth; its actions are
+reachable by vertical scroll. The underlying pre-existing two-column results
+layout has712px document width; do not claim whole-page mobile overflow fixed.
+Browser closed. Exact verification stop completed. Devsy reports Stopped and
+`/private/tmp/dpo-assessment-final-routes.json` contains zero exact source routes. Full precommit checks, slice reviews, account
+withdrawal owner, remaining AI/KB work and both draft deliveries remain open.
+No commit or push in this continuation.
+
+### Assessment service and UI integration — 2026-09-08, 09:47
+
+All eight new assessment PostgreSQL tests pass in
+`/private/tmp/dpo-assessment-service-tests-fixed.log`: artifact/receipt integrity,
+permissions, invalid attestation, duplicate request, pre-cancellation, release
+failure/cancellation rollback and cross-course scope. Initial fixture failed the
+existing assessment PIN constraint; parent added a synthetic UUID PIN. Tests
+parse structured CSV cells and hash actual bytes without pinning header prose.
+The prior 17 helper/research regressions pass in
+`/private/tmp/dpo-assessment-export-regression.log`.
+
+Both native executors completed and are closed. Main accepted the corrected
+UI source after requiring successful initiation to close the modal so every
+new request starts unchecked. Both existing result table callers now open the
+attestation modal; raw csvFilename is removed. Formatting/typecheck and browser
+proof for those UI changes remain pending.
+
+Manage startup reported ready. Browser delegated login failed: auth providers,
+session and signin endpoints return 404 despite the catch-all source existing
+inside the container. Direct local port3010 reproduces the 404, excluding route
+proxy alone as the cause. Managed exact stop succeeded; a single Manage restart
+is running to exclude stale discovery. Browser session dpo-assessment remains
+open on local auth. Unpinned browser CLI initially hit npm ENOTEMPTY; pinned
+repository documented agent-browser0.32.2 runs and replaced its old daemon.
+No database reset, auth bypass or configuration change. No commits/pushes.
+
+### Reset-free assessment receipt recovery — 2026-09-08, 09:34
+
+Prisma schema-to-schema diff generated migration
+`20260908092700_assessment_export_receipt` without database writes. Main
+verified the restricted marked `klicker_test` identity, no pending or failed
+migrations, and schema equivalence to the pre-receipt source. The only historical
+checksum mismatch is the already recorded account audit-trigger amendment.
+After checking the exact generated receipt SQL and sole pending migration,
+Prisma migrate deploy applied the new table and two indexes without a reset or
+checksum edit. Postflight reports no pending/failed migrations and an empty
+schema diff. Historical checksum remains unchanged. Producing logs:
+`/private/tmp/dpo-assessment-receipt-apply.log` and
+`/private/tmp/dpo-assessment-receipt-postflight.log`. Client generation/build
+passed in `/private/tmp/dpo-assessment-receipt-prisma-build.log`.
+
+Main added the authenticated assessment service and HTTP adapter. Existing
+course/quiz result readers now accept a transaction client. Course ADMIN
+permission is locked through receipt release; quiz scope is bound and locked
+to its course. CSV hashes/counts are durable before return, with cancellation,
+duplicate request, size and failure handling. GraphQL typecheck/build and backend
+typecheck pass. Logs: `/private/tmp/dpo-assessment-service-fixed-check.log`,
+`/private/tmp/dpo-assessment-graphql-build.log`, and
+`/private/tmp/dpo-assessment-backend-check.log`. Functional tests, UI and reviews
+remain pending; this is uncommitted implementation, not package completion.
+
+Native executor Raman owns only synthetic assessment integration tests; native
+executor Bernoulli owns the assessment modal, two table callers and translation
+block. Main owns service/security/integration and runtime. Exact verification
+runtime remains active with email profile for ongoing tests. Reuse their owners;
+do not duplicate them. Core remote refs refreshed: 26 ahead/1 behind origin/v3,
+and 20 ahead/0 behind its own upstream. No new target integration or push.
+
+
+### Weekly private points and receipt migration — 2026-09-08, 09:16
+
+Ohm's read-only inventory completed: existing group averages include all members,
+but weekly timeline aggregation still discarded inactive participants' points.
+Parent removed that isActive condition in participants.ts. Hume added the
+regression and disposable guards in leaderboardRetention.test.ts; parent fixed
+an existing DAILY lookup to exclude the newly created weekly fixture. The
+retention test now proves stored weekly points, idempotent aggregation and the
+private timeline reader after aging. It passes with GraphQL check:ts in
+`/private/tmp/dpo-weekly-retention-fixed.log`. Both children are closed.
+
+Added proposed AssessmentExportReceipt schema and generated analytics mirror.
+The conceptual Gemini 3.8 Flash High consultation and parent dispositions are
+in `project/_local/reviews/2026-09-08-assessment-receipt-advisor.md`. Course ADMIN
+checks require a real DerivedPermission row; retain permission locking and
+recheck at release. Server release does not prove a browser file save.
+
+Guarded prisma:migrate:raw refused generation because the previously applied
+20260907220626_participant_account_data_use migration was amended with immutable
+triggers. It requests a destructive reset; none was performed. Receipt table,
+generated migration and client are not yet available in the database. Evidence:
+`/private/tmp/dpo-assessment-receipt-migration.log`. Do not overwrite checksums,
+run manual receipt SQL or claim migration success. The schema remains a draft.
+Independent timeline validation used existing tables and does not resolve this
+migration blocker. No commit, push, target merge or production operation.
+
+### Assessment request validation — 2026-09-08, 09:02
+
+Added assessmentExportRequestSchema for explicit COURSE/LIVE_QUIZ scopes,
+course/request UUIDs, DE/EN locale, v1 disclosure and required acknowledgement.
+Strict validation rejects stale/missing attestations and unexpected scope or
+participant filters. All five request/artifact tests and GraphQL check:ts pass
+in `/private/tmp/dpo-assessment-request-check.log` (exit zero). The established
+email profile provided the container toolchain without application servers.
+No service, receipt schema, route or UI was added; those remain the next coupled
+implementation step. The same Ohm points-inventory worker remains non-terminal.
+Runtime provider is freshly Stopped, with zero exact routes in
+`/private/tmp/dpo-assessment-request-final-routes.json`. No deletion or publication.
+
+### Assessment CSV artifact — 2026-09-08, 08:58
+
+Added the internal assessmentExportArtifact builder and three focused synthetic
+tests. It preserves the existing eight exported identity/score columns, leading
+zero identifiers, multiline/quoted text, and numeric score meaning; it excludes
+internal participant IDs and neutralizes spreadsheet formulas in text cells.
+The artifact exposes exact bytes, SHA-256 and row count for the future receipt.
+GraphQL check:ts and all three tests pass in
+`/private/tmp/dpo-assessment-artifact-fixed-check.log`. The initial test parser
+typing failure was corrected without changing the passing behavior assertions.
+
+This is not yet a download workflow: authenticated service, durable attestation,
+route and Manage composition remain required. Both assessment result pages use
+AssessmentStudentResultsTable, which still exposes csvFilename. The current
+result services are getAssessmentResultsCourse and getAssessmentResultsLiveQuiz
+in services/courses.ts. No schema, external route, commit or push was added.
+Ohm remains the existing non-terminal read-only retained-points inventory owner.
+Exact runtime provider reports Stopped and
+`/private/tmp/dpo-assessment-artifact-final-routes.json` has zero exact routes.
+No browser was started in this artifact pass; no data deletion was performed.
+
+### Final helper verification — 2026-09-08, 08:53
+
+The final colocated Node test passes both return-path cases inside the existing
+verification container. GraphQL check:ts and PWA check both pass after removal
+of the misplaced TypeScript test. Evidence:
+`/private/tmp/dpo-node-test-final-check.log` (exit zero). This supersedes the
+pending test/typecheck entries below; the actual withdrawal workflow remains
+incomplete and was not concealed or retested as passing.
+
+The exact runtime stopped successfully (session49180); Devsy reports Stopped,
+and `/private/tmp/dpo-node-test-final-routes.json` has zero exact source/provider
+routes. Browser remains closed. Core diff remains uncommitted. Ohm's existing
+read-only points inventory remains non-terminal after a supported wait; preserve
+its ID from the preceding progress record. No new worker, commit, or push.
+
+
+### Completion notice verification — 2026-09-08, 08:44
+
+Usage capacity is available again. Fresh fetch leaves core 26 ahead/1 behind
+origin/v3; the new target commit only updates Devrouter CI/configuration.
+AI remains 19 ahead/11 behind origin/v3-ai. Both existing PRs are open drafts
+with their correct separate bases; no publication occurred in this continuation.
+
+The completion page now includes the same four existing data-use notices as
+signup before the independent choices and acknowledgement. English desktop and
+German 390px browser checks show the notices; German has no horizontal overflow.
+Screenshots: `/private/tmp/dpo-renewal-notices-en.png` and
+`/private/tmp/dpo-renewal-notices-mobile-de.png`. Browser dpo-renewal is closed.
+
+Fifteen account PostgreSQL tests pass, including revision/audit transactions.
+The two return helper cases passed under Vitest, but placing their TypeScript
+test in PWA failed because PWA has no Vitest dependency; moving it into GraphQL
+crossed that package's rootDir. The final dependency-free Node test now resides
+beside the helper as participantDataUseReturn.test.mjs and still needs execution
+with Node 24. PWA check passed after notice-key typing was corrected. Final
+GraphQL typecheck must be repeated after this test relocation. Logs:
+`/private/tmp/dpo-resumed-account-checks.log`,
+`/private/tmp/dpo-resumed-corrected-checks.log`, and
+`/private/tmp/dpo-resumed-final-types.log` distinguish passing tests from the
+compiler failures. The withdrawal test now asserts its returned false choice,
+fixing its unused variable without concealing the missing deletion owner.
+
+Native explorer Ohm (01a07fba-14ab-7311-bccd-92c32ee8fffd) owns the read-only
+retained-points/all-member-average inventory; preserve the same child until its
+terminal result. The canonical analytics owner heads remain unchanged, so the
+durable withdrawal dependency remains incomplete. No replacement owner was added.
+
+Exact verification checkout trees/codex/dpo-verification was resumed with
+live-quiz and stopped after these checks. Devsy provider
+volumes-home-git-klicker-klicker reports Stopped; fresh
+`/private/tmp/dpo-resumed-final-routes.json` has zero exact source/provider routes.
+No runtime or database deletion. All implementation remains uncommitted.
+
+### Revisioned profile and proactive gate continuation — 2026-09-08
+
+Core remains uncommitted at HEAD `7e037f5152`; both existing PRs remain draft at
+previous published heads. Fetch confirms core includes current v3 (26 ahead,
+zero behind); AI remains 19 ahead and 11 behind v3-ai. Reuse those branches.
+
+Revisioned independent setters now share the account transaction and reject
+legacy Boolean-only writes. Restored the existing lock-timeout error mapping.
+The 15 account PostgreSQL tests pass, including immutable audit update/delete
+denial and permitted account deletion. GraphQL typecheck passes after removal
+of an unused import and restoration of an unrelated Biome comment rewrite.
+Logs: `/private/tmp/dpo-profile-refactor-tests.log` and
+`/private/tmp/dpo-profile-refactor-types-fixed.log`. Existing unrelated Biome
+non-null assertion errors remain in participants.ts; they were not changed.
+
+Native executor Mill completed profile composition in DataUseSettings and DE/EN
+messages. Native executor Epicurus owns adaptation of the two existing
+participantDataUse test files; retain that worker until completion. Parent owns
+integration and checks. The PWA now checks self/account state before mounting
+protected pages and stores a local return path stripped of known token fields.
+The gate initializes the existing cookie-less sessionStorage token before its
+queries. The new return helper is shared by the gate, Apollo error redirect,
+and completion page. Auth callback and full cookie-less continuation still need
+qualification. GraphQL build and PWA typecheck pass in
+`/private/tmp/dpo-proactive-gate-check.log`.
+
+The approved detached verification checkout is running the live-quiz profile.
+Browser session dpo-profile confirms seeded student login reaches completion;
+research starts allowed, analytics unanswered, acknowledgement unchecked.
+Both refusals complete successfully. Profile research toggling persists after
+reload while analytics remains false. Analytics enable succeeds independently.
+Withdrawal cancellation preserves both saved true choices. German mobile at 390px has no horizontal overflow. Browser dpo-profile is closed. Screenshots: `/private/tmp/dpo-profile-before.png`, `/private/tmp/dpo-profile-withdrawal-dialog.png`, and `/private/tmp/dpo-profile-mobile-de.png`.
+Runtime and browser must be stopped after checks. No new source publication.
+
+LA withdrawal remains unavailable pending the actual durable deletion owner;
+this is unfinished required scope. Assessment exports and AI/KB integration,
+remaining auth/gate checks, substantive reviews and draft delivery remain.
+
+### Signup and persisted GraphQL gate draft — 2026-09-08
+
+Final check of this browser pass: German mobile completion fits390px without
+horizontal overflow (`/private/tmp/dpo-account-renewal-mobile-de.png`). Browser
+session `dpo-signup` is closed. Exact devrouter stop succeeded, Devsy provider
+reports Stopped, and `/private/tmp/dpo-signup-final-routes.json` contains no
+verification source/provider routes. Stop log:
+`/private/tmp/dpo-signup-runtime-stop.log`. Synthetic signup fixture remains in
+the approved disposable verification database for further profile tests; no
+real account or retained original runtime was changed. No child remains active.
+
+Browser continuation: ordinary signup now persists research false and analytics
+false with acknowledgement v1 and exactly one revision1 audit. Login reaches
+the ordinary PWA home. Changing only this synthetic account's acknowledgement
+version forces its existing session to `/account/data-use`; both saved refusals
+remain selected and acknowledgement starts unchecked. Browser renewal returns
+to the original home and persists revision2 with unchanged refusals and two
+audit events. Producing persistence evidence:
+`/private/tmp/dpo-signup-renewal-persistence.log`. Screenshots:
+`/private/tmp/dpo-signup-before.png`,
+`/private/tmp/dpo-signup-after-desktop.png`,
+`/private/tmp/dpo-account-renewal-desktop.png`.
+PWA typecheck passes in `/private/tmp/dpo-signup-final-ui-types.log`.
+The ordinary route and Apollo error redirect are implemented locally; they
+preserve a same-origin sessionStorage return path and strip token query fields.
+Auth callback routing and proactive gate before all protected page effects
+remain pending. The native signup executor completed and closed. Parent removed
+unused alternative draft translations and retained scoped prototype-derived
+notices; protected analytics-report and personal-insight claims still require
+dependency evidence before acceptance. No AI branch changes or publication.
+
+Continuation: moved the canonical version and completion predicate to util so
+the response API shares them without importing GraphQL. Both ordinary and
+assessment ingress now check persisted registered-account completion before
+response queuing. Invalid registered cookies reject without temporary fallback.
+Shared util build, response API typecheck and all11 account/gate tests pass in
+`/private/tmp/dpo-account-shared-gate-check.log`. Actual loopback HTTP checks pass
+for ordinary/assessment403 and invalid registered-cookie401 in
+`/private/tmp/dpo-account-ingress-http-live-profile.log`; the synthetic fixture
+was removed and its two child servers stopped. Earlier attempts failed because
+the service-only profile lacked Hatchet injection and Redis services; no gate
+behavior was inferred from those failures. The same verification runtime now
+successfully runs the live-quiz profile for browser checks. Auth callback and
+PWA completion routing, profile updates, immutable audit and withdrawal remain
+pending. No source commit, push or full completion claim follows.
+
+Ordinary and signed-LTI credential creation now require validated initial
+data-use input and persist both choices, acknowledgement, revision and nested
+audit atomically. New named signup operation preserves the original persisted
+document; its optional schema input fails closed in the service when absent.
+Existing linked identities retain their saved choices. The PWA executor is
+integrating the real signup form. Binding defaults remain research allowed,
+LA unanswered and acknowledgement unchecked; an earlier executor prompt that
+made both choices unanswered was corrected before acceptance.
+
+The schema now wraps root query, mutation and subscription resolvers with the
+persisted completion predicate for registered participants. Explicit self-state,
+authentication, completion, logout, deletion and locale support remain available.
+Temporary participants and unauthenticated requests retain their endpoint rules.
+Subscriptions check admission and each delivered event. No JWT-only completion
+cache is used. This is uncommitted source and does not prove response-API, auth
+callback or Chat enforcement, which remain pending.
+
+All23 signup/completion/gate PostgreSQL tests and GraphQL typechecking pass in
+`/private/tmp/dpo-account-gate-final-check.log`. Tests cover ordinary and LTI
+creation, consent refusal, stale sessions, acknowledgement renewal, guest and
+lecturer compatibility, and subscription denial/delivery. Test fixture errors
+(invalid UUID and mock return types) were corrected before this passing run.
+Focused Biome formatting passed with existing warnings. Runtime remains the
+approved isolated verification checkout using the email profile; no browser
+proof or final review is claimed. Core target is current after fetch:26 ahead
+and0 behind v3,20 ahead of its task upstream; AI is19 ahead/11 behind v3-ai.
+Both PRs remain open drafts with their prior published heads.
+
+### Account GraphQL draft — 2026-09-08
+
+Added authenticated `selfAccountDataUse` query and `completeParticipantDataUse`
+mutation with a dedicated ParticipantAccountDataUse object. New named operations
+preserve the original persisted data-use documents. The object exposes current
+choices, recorded-choice flags, revision, acknowledgement metadata, current
+disclosure and completion status; no account identifiers or credentials.
+Generation passes and the public SDL adds14 lines. All8 account database tests
+pass, including actual GraphQL completion/reload and wrong-role denial.
+The first GraphQL execution test exposed an ESM/CommonJS module-instance mismatch;
+using the schema's Node GraphQL module resolved it. Source types and formatting
+pass. Logs: `/private/tmp/dpo-account-api-tests-fixed.log`,
+`/private/tmp/dpo-account-api-types.log`, `/private/tmp/dpo-account-api-format.log`.
+
+This source is still uncommitted. It supersedes the earlier statement that the
+backend draft is unexposed, but does not establish account usability enforcement,
+registration atomicity, UI integration, versioned independent profile updates,
+audit immutability or durable analytics withdrawal. Current ordinary registration
+still takes username/password/email/profile visibility and has a separate signed
+LTI branch in services/accounts.ts; both require integration before W1 completes.
+
+### Account backend draft — 2026-09-08
+
+Latest verification: all seven synthetic PostgreSQL completion tests pass in
+`/private/tmp/dpo-account-integration-tests.log`, covering explicit false choices,
+completion predicate, idempotency, stale revision/disclosure, audit rollback,
+acknowledgement renewal preserving choice timestamps and role rejection.
+Feynman completed and was closed; no child remains active. This remains an
+uncommitted backend draft, not an exposed or enforced account workflow.
+Final isolated-runtime stop succeeded; Devsy reports Stopped and
+`/private/tmp/dpo-account-final-routes.json` has zero verification routes.
+This supersedes the running-runtime checkpoint below.
+
+Added uncommitted acknowledgement version/time, revision and
+ParticipantDataUseEvent schema, one Prisma-generated additive migration
+`20260907220626_participant_account_data_use`, generated analytics mirror, an
+unexposed completion transaction and shared completion predicate. Prisma create
+and apply succeeded against the approved isolated database; no reset was
+accepted. Evidence: `/private/tmp/dpo-account-migration.log`,
+`/private/tmp/dpo-account-apply.log`, `/private/tmp/dpo-account-sync-formatted.log`.
+The regenerated client builds, and GraphQL service types pass after excluding
+the new fields from the existing temporary-participant public projection.
+
+The transaction draft validates both choices, current disclosure and explicit
+acknowledgement, serializes against analytics and participant changes, preserves
+unchanged choice timestamps, rejects stale revisions, permits identical immediate
+retries and writes a revision audit snapshot atomically. It is not wired into
+GraphQL, signup, completion UI or ingress. Existing consent setters have not yet
+been adapted. LA withdrawal deliberately remains unavailable in this unexposed
+draft until its durable owner is integrated; it cannot satisfy W1 as-is.
+The audit table has participant-deletion cascade; audit immutability and account
+deletion behavior still require integrated review, not a completion claim.
+
+Test executor Feynman `01a07de9-60a6-7c12-ae95-63be14764cb9` owns only
+`packages/graphql/test/participantAccountDataUse.integration.test.ts`. Await and
+verify its synthetic transaction tests. No other active child remains. The
+existing isolated verification runtime is running with the service-only email
+profile for these pending tests; stop it after the final check. No browser or
+application process is active.
+
+Correction reviewer Locke completed and closed. It confirms the research grant
+and cancellation fixes. Its remaining bind-parameter ceiling concern is fixed
+locally with a single uuid array; all11 prior database tests pass. Added a
+single-class participant fixture and all12 export database tests pass, including
+the mixed selected-class union. Evidence:
+`/private/tmp/dpo-array-export-tests.log`,
+`/private/tmp/dpo-union-export-tests.log`. These two export files remain
+uncommitted. Preserve their changes separately from the account draft.
+
+### Fresh isolated verification — 2026-09-08
+
+User explicitly approved the fresh disposable verification environment. Created
+detached checkout `trees/codex/dpo-verification` from the core source snapshot;
+implementation branches remain the original core and AI worktrees. Core target
+integration is committed as `d2dfe78bb31477356fd33bfed20222089a949d7a`, incorporating
+`7f81442ad98138f99a88277d59ba06eada2abe9a`. Consent-grant and release-write
+cancellation corrections are committed as
+`7e037f51523d8324b33b7606e73065727cce30a6`.
+
+The fresh PWA profile reached post-start but retained a sleeping Rollup process
+after successful output. Stopped that exact runtime through devrouter and used
+the existing `email` service-only profile for verification. No retained core/AI
+volume was adopted, changed or deleted. Fresh database export checks pass all
+32 tests, including grants and withdrawals after selection and cancellation
+after the provisional receipt write. Log: `/private/tmp/dpo-fresh-export-tests.log`.
+All 35 serialized type/schema tasks pass in
+`/private/tmp/dpo-fresh-check-indexed.log`. The first schema check compared with
+the old detached index; staging the intended merged snapshot corrected that
+verification setup without changing generated schema.
+
+Repository staged formatting, lint, syncpack, agent checks, Git identity,
+removed-artifact and Prisma sync checks pass. The container cannot execute the
+host-only Devrouter contract test; the complete host runtime/CI test command
+passes all 75 tests in `/private/tmp/dpo-host-runtime-checks.log`. Remaining
+check log: `/private/tmp/dpo-fresh-other-checks-fixed.log`. Both commits used
+HUSKY=0 with these equivalent checks and redacted staged Gitleaks scans. The
+single documentation formatting correction removes a blank line introduced by
+conflict resolution. No push or whole-package readiness claim follows.
+
+Fresh runtime source is
+`/Volumes/HOME/Git/klicker/klicker-uzh/trees/codex/dpo-verification`, provider ID
+`volumes-home-git-klicker-klicker`, Compose project `default-vo-5f46e`. Final
+devrouter stop succeeded and Devsy reports Stopped. Route snapshot:
+`/private/tmp/dpo-fresh-final-routes.json`. No browser was started. Preserve the
+approved verification environment for subsequent reuse; deletion is not approved.
+
+Correction risk reviewer Locke `01a07de3-035f-7850-964d-afc1298fe130` owns the
+two-file immutable correction range; collect its result without duplicate review.
+Account discovery Socrates completed and closed. Its verified next seam is the
+persisted acknowledgement/revision/immutable audit and completion transaction;
+registration currently submits no such metadata, consent mutations accept only
+a Boolean, and persisted completion enforcement is absent. Main owns those
+coupled account/security contracts before delegating PWA composition. The full
+account, assessment export, AI adapters and KB scope remains unfinished.
+
+### Latest target-integration checkpoint — 2026-09-07
+
+Research source committed at `ea86da39143592b5c273fea2f9eae71667a382ff`; production guide assets and a behavior-preserving HTTP error-map simplification committed at `6a644f9f475218ffa3d62f23ce586bc971f64c5a`. Both commits remain local. Required research simplification completed; its report is `project/_local/reviews/2026-09-07-dpo-research-simplifier.md`. Risk reviewer Bernoulli is still active on the original research range. Asset slice reviews and integrated-final review remain outstanding.
+
+Production HTTP verification served all four assets from the standalone PWA, checked workbook byte equality, HEAD, missing names and methods, and stopped its temporary loopback server. Evidence: `/private/tmp/dpo-assets-production-http.log`. Browser and source checks from the research checkpoint remain valid for their original source and environment.
+
+The user-requested target incorporation is in progress: MERGE_HEAD is `7f81442ad98138f99a88277d59ba06eada2abe9a` (fetched v3). Documentation conflicts in the data-model skill and migration guide are resolved and staged; preserve both the target's disposable-database protections and the canonical participant-field guidance. New export integration-test setup and cleanup now call requireDisposableDatabase, matching the integrated target. No unresolved Git conflict remains. Do not abort, restart, or claim the merge is committed: merged-state checks have not passed.
+
+Managed startup on the integrated source failed in post-create with `prisma reset/push never succeeded`; subsequent source-check execution was refused as `Lifecycle transition is blocked`. New target documentation requires a fresh explicitly approved disposable environment when retained volumes lack the restricted marked database. Do not mark retained data or bypass the guard. The exact core runtime was stopped successfully, provider state is Stopped, and `/private/tmp/dpo-merged-stopped-routes.json` has no core or AI routes. No browser or application process is retained. AI source/runtime remains unchanged. Resolve the disposable runtime boundary, complete merge checks/commit, collect the same risk reviewer, and continue the full package. No full draft delivery or goal completion is claimed.
+
 ### Research export continuation — 2026-09-07
 
 Core now implements the direct attested ADMIN research download for live and asynchronous responses, with request validation, export-local identifiers, bounded JSON, permission and consent release checks, durable pending/released/failed receipts, and disconnect cancellation. The course menu exposes the DE/EN modal. LA and transcript classes remain explicitly unavailable; assessment export, account usability/history, analytics deletion handoff, and KB confirmations remain incomplete. No full-package or draft-readiness claim follows from this slice.

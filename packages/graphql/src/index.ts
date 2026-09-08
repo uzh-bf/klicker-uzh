@@ -6,6 +6,7 @@ export { getChatModelRegistry } from './services/chatbots.js'
 export { downloadResearchExport } from './services/dataExports.js'
 
 import builder from './builder.js'
+import { applyParticipantAccountGate } from './lib/participantAccountGate.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
@@ -43,6 +44,7 @@ import './schema/subscription.js'
 // }
 
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
+import { handleParticipantAnalyticsWithdrawals } from './services/participantAnalyticsWithdrawal.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
@@ -76,7 +78,10 @@ export const schema = builder.toSchema({
   },
 })
 
+applyParticipantAccountGate(schema)
+
 export const handlers: HatchetHandlers = {
+  handleParticipantAnalyticsWithdrawals,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

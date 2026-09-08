@@ -1,10 +1,6 @@
 import type * as DB from '@klicker-uzh/prisma/client'
 
-/**
- * The version identifies the disclosure shown with the current participant
- * choice. It is owned by the server; clients only submit the Boolean choice.
- */
-export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = 'v1'
+export { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 
 /**
  * This gate serializes global learning-analytics choice changes with course
@@ -33,3 +29,18 @@ export const participantDataUseSelect = {
   learningAnalyticsChoiceAt: true,
   learningAnalyticsDisclosureVersion: true,
 } satisfies DB.Prisma.ParticipantSelect
+
+/** Invalidate in-flight calculations while holding the shared eligibility gate. */
+export async function invalidateAnalyticsEligibility(
+  prisma: DB.Prisma.TransactionClient
+) {
+  await prisma.analyticsEligibilityGeneration.upsert({
+    where: { id: 0 },
+    create: { id: 0, generation: 1 },
+    update: { generation: { increment: 1 } },
+  })
+  await prisma.course.updateMany({
+    where: { areAnalyticsValid: true },
+    data: { areAnalyticsValid: false, analyticsLastComputedAt: null },
+  })
+}

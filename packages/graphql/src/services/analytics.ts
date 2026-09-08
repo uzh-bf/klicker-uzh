@@ -24,6 +24,11 @@ async function getEligibleParticipantIdsForCourseAnalytics(
     WHERE pca."courseId" = CAST(${courseId} AS uuid)
       AND p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM "ParticipantAnalyticsWithdrawal" AS withdrawal
+        WHERE withdrawal."participantId" = p."id"
+          AND withdrawal."completedAt" IS NULL
+      )
       AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
       AND c."analyticsLastComputedAt" IS NOT NULL
       AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
@@ -62,6 +67,11 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
     JOIN "Course" AS c ON c."id" = CAST(${courseId} AS uuid)
     WHERE p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM "ParticipantAnalyticsWithdrawal" AS withdrawal
+        WHERE withdrawal."participantId" = p."id"
+          AND withdrawal."completedAt" IS NULL
+      )
       AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
       AND c."analyticsLastComputedAt" IS NOT NULL
       AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
@@ -79,7 +89,11 @@ export async function getCourseActivityAnalytics(
       const eligibleParticipantIds =
         await getEligibleParticipantIdsForCourseAnalytics(prisma, courseId)
       const course = await prisma.course.findUnique({
-        where: { id: courseId },
+        where: {
+          id: courseId,
+          isLearningAnalyticsEnabled: true,
+          areAnalyticsValid: true,
+        },
         include: {
           participations: true,
           aggregatedAnalytics: {
@@ -150,7 +164,11 @@ export async function getCourseWeeklyActivity(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
+    },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -554,7 +572,11 @@ export async function getCoursePerformanceAnalytics(
         participantId: { in: eligibleParticipantIds },
       }
       const course = await prisma.course.findUnique({
-        where: { id: courseId },
+        where: {
+          id: courseId,
+          isLearningAnalyticsEnabled: true,
+          areAnalyticsValid: true,
+        },
         include: {
           _count: { select: { participations: true } },
           practiceQuizzes: {
@@ -692,7 +714,11 @@ export async function getActivityAnalytics(
     ? ActivityType.PRACTICE_QUIZ
     : ActivityType.MICRO_LEARNING
 
-  if (!activity) {
+  if (
+    !activity ||
+    !activity.course?.isLearningAnalyticsEnabled ||
+    !activity.course.areAnalyticsValid
+  ) {
     return null
   }
 

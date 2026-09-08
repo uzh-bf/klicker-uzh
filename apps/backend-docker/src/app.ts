@@ -134,7 +134,7 @@ function prepareApp({
       }
     }
 
-    req.locals = { user }
+    req.locals = { user, authenticationFailed: token !== null && !user }
     next()
   }
 
@@ -295,7 +295,18 @@ function prepareApp({
 
   app.use('/api/graphql', yogaApp as any)
 
-  return { app, yogaApp }
+  async function authenticateSubscriptionRequest(req: any) {
+    await new Promise<void>((resolve, reject) => {
+      cookieParser()(req, {} as express.Response, (error?: unknown) => {
+        if (error) reject(error)
+        else resolve()
+      })
+    })
+    await jwtMiddleware(req, null, () => {})
+    return req.locals
+  }
+
+  return { app, yogaApp, authenticateSubscriptionRequest }
 }
 
 export default prepareApp

@@ -20,16 +20,21 @@ from src.modules.participant_performance.compute_performance_levels import (
 from src.modules.participant_performance.save_participant_performance import (
     save_participant_performance,
 )
+from src.modules.analytics_eligibility import (
+    capture_analytics_eligibility,
+    load_course_question_responses,
+)
 
 db = Prisma()
 db.connect()
+eligibility = capture_analytics_eligibility(db)
 
 # Script settings
 verbose = False
 
 
 # Fetch all courses from the database
-df_courses = get_running_past_courses(db)
+df_courses = get_running_past_courses(db, eligibility)
 
 # Iterate over the course and fetch all question responses linked to it
 for idx, course in df_courses.iterrows():
@@ -37,8 +42,8 @@ for idx, course in df_courses.iterrows():
     print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
     # fetch all question responses linked to this course
-    question_responses = db.questionresponse.find_many(where={"courseId": course_id})
-    df_responses = pd.DataFrame(list(map(lambda x: x.dict(), question_responses)))
+    question_responses = load_course_question_responses(db, course_id, eligibility)
+    df_responses = pd.DataFrame(question_responses)
 
     # if no responses are linked to the course, skip the iteration
     if df_responses.empty:
@@ -49,7 +54,12 @@ for idx, course in df_courses.iterrows():
     df_performance = compute_performance_levels(df_performance)
 
     # store computed performance analytics in the corresponding database table
-    save_participant_performance(db, df_performance, course_id)
+    save_participant_performance(
+        db,
+        df_performance,
+        course_id,
+        eligibility,
+    )
 
 
 # Disconnect from the database

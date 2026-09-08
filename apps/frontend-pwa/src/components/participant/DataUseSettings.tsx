@@ -1,72 +1,124 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  GetParticipantDataUseDocument,
-  SetLearningAnalyticsConsentDocument,
-  SetResearchConsentDocument,
+  GetParticipantAccountDataUseDocument,
+  SetLearningAnalyticsConsentWithRevisionDocument,
+  SetResearchConsentWithRevisionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   H3,
+  Modal,
   Prose,
   Switch,
   UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+
+function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+
+  const candidate = error as {
+    extensions?: { code?: unknown }
+    graphQLErrors?: unknown
+    errors?: unknown
+    cause?: unknown
+  }
+  if (typeof candidate.extensions?.code === 'string') {
+    return candidate.extensions.code
+  }
+
+  for (const nestedErrors of [candidate.graphQLErrors, candidate.errors]) {
+    if (!Array.isArray(nestedErrors)) continue
+    for (const nestedError of nestedErrors) {
+      const code = getGraphQLErrorCode(nestedError)
+      if (code) return code
+    }
+  }
+
+  return candidate.cause ? getGraphQLErrorCode(candidate.cause) : undefined
+}
+
+function isDataUseConflict(error: unknown) {
+  const code = getGraphQLErrorCode(error)
+  return (
+    code === 'PARTICIPANT_DATA_USE_STALE_REVISION' ||
+    code === 'PARTICIPANT_DATA_USE_STALE_DISCLOSURE' ||
+    code === 'PARTICIPANT_DATA_USE_INVALID_INPUT'
+  )
+}
 
 function DataUseSettings() {
   const t = useTranslations()
+  const [withdrawalConfirmationOpen, setWithdrawalConfirmationOpen] =
+    useState(false)
+  const [conflict, setConflict] = useState(false)
+  const [reloading, setReloading] = useState(false)
   const { data, loading, error, refetch } = useQuery(
-    GetParticipantDataUseDocument,
+    GetParticipantAccountDataUseDocument,
     { fetchPolicy: 'network-only' }
   )
   const [setResearchConsent, { loading: savingResearchConsent }] = useMutation(
-    SetResearchConsentDocument
+    SetResearchConsentWithRevisionDocument
   )
   const [
     setLearningAnalyticsConsent,
     { loading: savingLearningAnalyticsConsent },
-  ] = useMutation(SetLearningAnalyticsConsentDocument)
+  ] = useMutation(SetLearningAnalyticsConsentWithRevisionDocument)
 
-  const dataUse = data?.selfDataUse
+  const dataUse = data?.selfAccountDataUse
+  const saving = savingResearchConsent || savingLearningAnalyticsConsent
+
+  async function reloadDataUse() {
+    setReloading(true)
+    try {
+      await refetch()
+      setConflict(false)
+    } catch {
+      toast({
+        type: 'error',
+        message: t('pwa.profile.dataUseLoadFailed'),
+        options: { duration: 6000 },
+      })
+    } finally {
+      setReloading(false)
+    }
+  }
 
   async function updateResearchConsent(consent: boolean) {
+    if (!dataUse || saving || conflict) return
+
     try {
       const result = await setResearchConsent({
-        variables: { consent },
-        update(cache, { data: mutationData }) {
-          const savedDataUse = mutationData?.setResearchConsent
-          if (!savedDataUse) return
-
-          cache.updateQuery(
-            { query: GetParticipantDataUseDocument },
-            (currentData) => {
-              if (!currentData?.selfDataUse) return currentData
-
-              return {
-                ...currentData,
-                selfDataUse: {
-                  ...currentData.selfDataUse,
-                  researchConsent: savedDataUse.researchConsent,
-                  researchConsentChoiceAt: savedDataUse.researchConsentChoiceAt,
-                  researchConsentDisclosureVersion:
-                    savedDataUse.researchConsentDisclosureVersion,
-                },
-              }
-            }
-          )
+        variables: {
+          consent,
+          expectedRevision: dataUse.dataUseRevision,
+          disclosureVersion: dataUse.currentDisclosureVersion,
         },
       })
 
       if (!result.data?.setResearchConsent) throw new Error('Save failed')
+      await refetch()
+      setConflict(false)
 
       toast({
         type: 'success',
         message: t('pwa.profile.researchConsentSaved'),
         options: { duration: 3500 },
       })
-    } catch {
+    } catch (error) {
+      if (isDataUseConflict(error)) {
+        setConflict(true)
+        toast({
+          type: 'error',
+          message: t('pwa.profile.dataUseConflict'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
       toast({
         type: 'error',
         message: t('pwa.profile.researchConsentFailed'),
@@ -76,50 +128,71 @@ function DataUseSettings() {
   }
 
   async function updateLearningAnalyticsConsent(consent: boolean) {
+    if (!dataUse || saving || conflict) return
+
     try {
       const result = await setLearningAnalyticsConsent({
-        variables: { consent },
-        update(cache, { data: mutationData }) {
-          const savedDataUse = mutationData?.setLearningAnalyticsConsent
-          if (!savedDataUse) return
-
-          cache.updateQuery(
-            { query: GetParticipantDataUseDocument },
-            (currentData) => {
-              if (!currentData?.selfDataUse) return currentData
-
-              return {
-                ...currentData,
-                selfDataUse: {
-                  ...currentData.selfDataUse,
-                  learningAnalyticsConsent:
-                    savedDataUse.learningAnalyticsConsent,
-                  learningAnalyticsChoiceAt:
-                    savedDataUse.learningAnalyticsChoiceAt,
-                  learningAnalyticsDisclosureVersion:
-                    savedDataUse.learningAnalyticsDisclosureVersion,
-                },
-              }
-            }
-          )
+        variables: {
+          consent,
+          expectedRevision: dataUse.dataUseRevision,
+          disclosureVersion: dataUse.currentDisclosureVersion,
         },
       })
 
       if (!result.data?.setLearningAnalyticsConsent)
         throw new Error('Save failed')
+      await refetch()
+      setConflict(false)
 
       toast({
         type: 'success',
         message: t('pwa.profile.learningAnalyticsConsentSaved'),
         options: { duration: 3500 },
       })
-    } catch {
+    } catch (error) {
+      if (isDataUseConflict(error)) {
+        setConflict(true)
+        toast({
+          type: 'error',
+          message: t('pwa.profile.dataUseConflict'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
+      if (
+        getGraphQLErrorCode(error) ===
+        'PARTICIPANT_DATA_USE_WITHDRAWAL_UNAVAILABLE'
+      ) {
+        toast({
+          type: 'error',
+          message: t('pwa.profile.learningAnalyticsWithdrawalUnavailable'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
       toast({
         type: 'error',
         message: t('pwa.profile.learningAnalyticsConsentFailed'),
         options: { duration: 6000 },
       })
     }
+  }
+
+  async function confirmLearningAnalyticsWithdrawal() {
+    if (saving) return
+    await updateLearningAnalyticsConsent(false)
+    setWithdrawalConfirmationOpen(false)
+  }
+
+  function handleLearningAnalyticsChange(consent: boolean) {
+    if (dataUse?.learningAnalyticsConsent && !consent) {
+      setWithdrawalConfirmationOpen(true)
+      return
+    }
+
+    void updateLearningAnalyticsConsent(consent)
   }
 
   if (loading) {
@@ -137,7 +210,8 @@ function DataUseSettings() {
           <span>{t('pwa.profile.dataUseLoadFailed')}</span>
           <Button
             basic
-            onClick={() => void refetch()}
+            onClick={() => void reloadDataUse()}
+            disabled={reloading}
             data={{ cy: 'participant-data-use-retry' }}
           >
             <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
@@ -164,11 +238,27 @@ function DataUseSettings() {
         </Prose>
       </div>
 
+      {conflict && (
+        <UserNotification type="error">
+          <div className="flex flex-col items-start gap-2">
+            <span>{t('pwa.profile.dataUseConflict')}</span>
+            <Button
+              basic
+              onClick={() => void reloadDataUse()}
+              disabled={reloading}
+              data={{ cy: 'participant-data-use-conflict-reload' }}
+            >
+              <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+            </Button>
+          </div>
+        </UserNotification>
+      )}
+
       <div className="flex flex-col gap-2 rounded border bg-white p-3">
         <Switch
           checked={dataUse.researchConsent}
-          disabled={savingResearchConsent}
-          onCheckedChange={updateResearchConsent}
+          disabled={saving || conflict}
+          onCheckedChange={(consent) => void updateResearchConsent(consent)}
           label={`${t('pwa.profile.researchConsentTitle')}: ${
             dataUse.researchConsent
               ? t('shared.generic.yes')
@@ -181,15 +271,23 @@ function DataUseSettings() {
           data={{ cy: 'participant-research-consent' }}
         />
         <Prose className={{ root: 'prose-sm' }}>
-          {t('pwa.profile.researchConsentDescription')}
+          {t('pwa.profile.researchConsentDescription')}{' '}
+          <a
+            href={t('auth.privacyUrl')}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cy="participant-research-privacy-policy"
+          >
+            {t('pwa.profile.dataUsePrivacyPolicy')}
+          </a>
         </Prose>
       </div>
 
       <div className="flex flex-col gap-2 rounded border bg-white p-3">
         <Switch
           checked={dataUse.learningAnalyticsConsent}
-          disabled={savingLearningAnalyticsConsent}
-          onCheckedChange={updateLearningAnalyticsConsent}
+          disabled={saving || conflict}
+          onCheckedChange={handleLearningAnalyticsChange}
           label={`${t('pwa.profile.learningAnalyticsConsentTitle')}: ${
             dataUse.learningAnalyticsConsent
               ? t('shared.generic.yes')
@@ -202,9 +300,40 @@ function DataUseSettings() {
           data={{ cy: 'participant-learning-analytics-consent' }}
         />
         <Prose className={{ root: 'prose-sm' }}>
-          {t('pwa.profile.learningAnalyticsConsentDescription')}
+          {t('pwa.profile.learningAnalyticsConsentDescription')}{' '}
+          <a
+            href="/api/data-use-assets/guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cy="participant-learning-analytics-guide"
+          >
+            {t('pwa.profile.learningAnalyticsGuide')}
+          </a>
         </Prose>
       </div>
+
+      <Modal
+        open={withdrawalConfirmationOpen}
+        hideCloseButton
+        escapeDisabled={saving}
+        title={t('pwa.profile.learningAnalyticsWithdrawalTitle')}
+        primaryLabel={t('shared.generic.confirm')}
+        primaryButtonStyle="destructive"
+        primaryLoading={saving}
+        onPrimaryAction={() => void confirmLearningAnalyticsWithdrawal()}
+        dataPrimaryAction={{ cy: 'confirm-learning-analytics-withdrawal' }}
+        secondaryLabel={t('shared.generic.cancel')}
+        onSecondaryAction={() => {
+          if (!saving) setWithdrawalConfirmationOpen(false)
+        }}
+        dataSecondaryAction={{ cy: 'cancel-learning-analytics-withdrawal' }}
+        onClose={() => {
+          if (!saving) setWithdrawalConfirmationOpen(false)
+        }}
+        className={{ content: 'max-w-md' }}
+      >
+        <div>{t('pwa.profile.learningAnalyticsWithdrawalConfirmation')}</div>
+      </Modal>
 
       <Prose className={{ root: 'prose-sm' }}>
         {t('pwa.profile.dataUseCanonicalDataNotice')}{' '}

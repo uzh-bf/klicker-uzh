@@ -9,7 +9,7 @@ import nookies from 'nookies'
 import { useMutation } from '@apollo/client'
 import Layout from '@components/Layout'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
-import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -33,7 +33,7 @@ function CreateAccount({
   const t = useTranslations()
   const router = useRouter()
   const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument
+    CreateParticipantAccountWithDataUseDocument
   )
 
   useParticipantToken({
@@ -43,7 +43,7 @@ function CreateAccount({
   })
 
   return (
-    <Layout displayName={t('pwa.profile.createProfile')}>
+    <Layout displayName={t('pwa.createAccount.signup.submit')}>
       <CreateAccountForm
         initialUsername={username}
         initialEmail={email}
@@ -55,8 +55,14 @@ function CreateAccount({
               email: values.email.trim().toLowerCase(),
               username: values.username.trim(),
               password: values.password.trim(),
-              isProfilePublic: values.isProfilePublic,
+              isProfilePublic: true,
               signedLtiData,
+              dataUse: {
+                disclosureVersion: 'v1',
+                researchConsent: values.researchConsent,
+                learningAnalyticsConsent: values.learningAnalyticsConsent,
+                acknowledged: values.acknowledged,
+              },
             },
           })
 
