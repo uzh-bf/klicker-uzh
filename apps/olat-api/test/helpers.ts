@@ -89,7 +89,7 @@ export async function createCourse(
       name: course.name,
       displayName: course.name,
       description: '',
-      pinCode: Math.floor(Math.random() * 9000 + 1000),
+      pinCode: course.pinCode,
       startDate: defaultStartDate,
       endDate: defaultEndDate,
       groupDeadlineDate: defaultEndDate,
