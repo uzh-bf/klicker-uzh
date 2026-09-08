@@ -220,6 +220,13 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Corrective reviews accepted; draft publication — 2026-09-08
+
+Independent corrective slice review completed with no actionable source defects. Integrated final review passes on df1ea25580136bf1dc70b05dc8e18a633374b371..6ced243cd21d653ea899a544acfe030ba2ffe4e2 across all 33 paths, with no exclusions or reportable findings. Main accepted both results; all children are closed. Reports: project/_local/reviews/2026-09-08-corrective-slice-review.md and project/_local/reviews/2026-09-08-corrective-integrated-final.md. This final receipt changes documentation only; the reviewed source and passing checks remain unchanged.
+
+The exact runtime is Stopped with zero source-matched routes. The task-owned test marker and invocation wrapper are removed; retained data is preserved. The improved readiness report and corrective source are ready for the authorized ordinary push to the existing draft. Hosted execution, inherited scanner alerts, final hosted review eligibility, check-policy ownership and production qualification remain separate unresolved gates. No merge, deployment, force push or repository policy change occurred.
+
+
 ### Corrective source qualification — 2026-09-08
 
 Corrective source is committed at 36424d360006b0df9a105cd7772e7e6508cf2ea3, with the simplifier's unused-constant removal at 7dee23d7f. All nine focused browser cases pass. Serial root type/lint passes all 47 tasks; remaining policy checks pass and the host CI contract passes 68 tests. Full production build passes 26 tasks (17 cached) in 3m17.709s. The two preload tests pass again after cleanup from their package directory; earlier root-directory and Vitest invocations were invalid test commands, not product failures. Logs: /tmp/generation-serial-check-lint.log, /tmp/generation-policy-checks3.log, /tmp/generation-final-build.log and /tmp/generation-final-preload-package.log. Container checks replace host toolchain hooks. Staged Gitleaks and exact diff checks pass.

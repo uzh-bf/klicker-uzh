@@ -10,7 +10,7 @@ Audit performed under `$rs-production-readiness`: one frontier orchestrator plus
 
 Static analysis supports that `completeElementGeneration` and `elementGenerationLease` are behaviour-preserving extractions of the two deleted inline blocks — identical predicates and write sequences, the same 15-second constant, and the same acquire predicate at all five call sites — with no migration, schema, SDL, or new configuration change. This is code-refactor acceptance evidence only. It does not establish hosted deployment readiness, CI gating, live runtime health, or deployment rollback completeness. A source revert is an ordinary code rollback path; deployment rollback still depends on the release system, image selection, migrations, and runtime health.
 
-The audit findings below describe the original head. Subsequent owner verification now passes all nine focused browser cases, including generation editing, analytics allow/deny, the loading status before profile failure, and closed AI routes. The dynamic-route 404s cleared after the existing guarded Manage cache repair and canonical restart; no product-route or authorization change was needed. Fixed-label synchronization logs and the analytics loading status are implemented. Two preload tests, 31 lifecycle tests, all 47 type/lint tasks, and the repository policy checks pass. Hosted execution and independent review of the corrective extension remain pending.
+The audit findings below describe the original head. Subsequent owner verification now passes all nine focused browser cases, including generation editing, analytics allow/deny, the loading status before profile failure, and closed AI routes. The dynamic-route 404s cleared after the existing guarded Manage cache repair and canonical restart; no product-route or authorization change was needed. Fixed-label synchronization logs and the analytics loading status are implemented. Two preload tests, 31 lifecycle tests, all 47 type/lint tasks, and the repository policy checks pass. Independent corrective slice and integrated final reviews now pass with no actionable source findings. Hosted execution remains pending.
 
 ### Remaining readiness items
 
@@ -154,3 +154,7 @@ The corrective source remains uncommitted. Two preload tests, 31 lifecycle tests
 ### Subsequent verified recovery — 2026-09-08
 
 The owner used the existing guarded Manage cache repair and canonical restart. Both source-present dynamic routes now return 200 without route or authorization changes. All nine focused browser cases pass in 39 seconds, superseding the local five-failure checkpoint above. This includes loading status before profile failure, analytics allow/deny, absent and closed feature gates, unauthenticated no-query behavior, and generation editing. Hosted CI and independent delivery reviews remain separate gates. Evidence and runtime disposition are maintained in the execution plan.
+
+### Independent corrective review acceptance
+
+The corrective slice review found no actionable source defects. Integrated final review passes across all 33 paths in df1ea25580136bf1dc70b05dc8e18a633374b371..6ced243cd21d653ea899a544acfe030ba2ffe4e2. The exact task runtime is Stopped with zero routes and owned fixture-mode controls removed. These reviews accept source correctness within the approved refactor; hosted and production gates remain open.
