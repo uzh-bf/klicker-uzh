@@ -152,6 +152,17 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
+For Manage-only tests, pass `--profile manage` to select that exact runtime:
+
+```bash
+node util/run-playwright-host.mjs --profile manage W5-block-list-scrollbar --project chromium
+```
+
+To install or repair Chromium without reconciling containers or installing
+workspace dependencies, use `node util/run-playwright-host.mjs --install-browser`
+(add `--force` to reinstall, or `--dry-run` to preview). This requires an
+existing host Playwright CLI and cannot be combined with `--profile`.
+
 The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
 reports stale dependency links instead of installing before the host launcher
 can control the lifecycle. On a cold host run, when the Playwright CLI is

@@ -273,6 +273,28 @@ function ensureHostDependencies(runtime, playwrightArgs) {
   ])
 }
 
+export function parseHostArguments(argv) {
+  const input = argv[0] === '--' ? argv.slice(1) : argv
+  const args = []
+  let profile
+  for (let index = 0; index < input.length; index += 1) {
+    const arg = input[index]
+    if (arg === '--profile' || arg.startsWith('--profile=')) {
+      if (profile !== undefined) fail('Specify --profile only once')
+      profile = arg === '--profile' ? input[++index] : arg.slice(10)
+      if (
+        !profile ||
+        !/^[a-z0-9][a-z0-9-]*(?:,[a-z0-9][a-z0-9-]*)*$/.test(profile)
+      ) {
+        fail('--profile requires a comma-separated profile selection')
+      }
+    } else {
+      args.push(arg)
+    }
+  }
+  return { profile, args }
+}
+
 export function main(argv = process.argv.slice(2), dependencies = {}) {
   const runtime = createRuntime(dependencies)
   const hostEnvironment = {
@@ -285,7 +307,30 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     pathExists: runtime.pathExists,
   })
 
-  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
+  const { profile, args } = parseHostArguments(argv)
+  if (args[0] === '--install-browser') {
+    if (profile) fail('--profile cannot be combined with --install-browser')
+    const installArgs = args.slice(1)
+    if (installArgs.some((arg) => !['--force', '--dry-run'].includes(arg))) {
+      fail('--install-browser accepts only --force and --dry-run')
+    }
+    const cli = join(
+      runtime.repoRoot,
+      'playwright/node_modules/@playwright/test/cli.js'
+    )
+    if (!runtime.pathExists(cli)) {
+      fail(
+        'Playwright CLI is missing; prepare host test dependencies separately. No workspace dependencies were changed.'
+      )
+    }
+    runtime.commandRunner(process.execPath, [
+      cli,
+      'install',
+      'chromium',
+      ...installArgs,
+    ])
+    return
+  }
   const showReport = args[0] === '--show-report'
   if (showReport) args.shift()
 
@@ -311,7 +356,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   if (!printEnvironment) ensureHostDependencies(runtime, args)
 
   runtime.log('[playwright:host] Reconciling the devcontainer runtime')
-  runtime.commandRunner(runtime.devrouter(), ['ensure', runtime.repoRoot])
+  runtime.commandRunner(runtime.devrouter(), [
+    'ensure',
+    runtime.repoRoot,
+    ...(profile ? ['--profile', profile] : []),
+  ])
 
   const workspace = resolveWorkspace(runtime)
   const databasePort = resolveDatabasePort(runtime)
