@@ -37,6 +37,12 @@ node util/local-kb-stack.mjs plan --config /absolute/path/local-kb-input.json
 This command is verified with synthetic inputs and returns exit code 2. It
 describes owned storage, provider source revisions, endpoints and dependencies.
 Its supplied source observations are not a live Git or filesystem audit.
+Use `status --config /absolute/path/local-kb-input.json` on the host to verify
+provider checkouts against those revisions. It checks canonical repository roots,
+HEAD and tracked/untracked changes without printing source paths or Git errors.
+Missing, dirty or mismatched sources return exit code 1. Matching sources return
+2 because this check does not inspect processes, backing stores or AI capability.
+It neither probes endpoints nor starts services.
 Preparation helpers retain an exclusive claim after failure; their existence
 alone does not prove a provider was initialized or is serving.
 

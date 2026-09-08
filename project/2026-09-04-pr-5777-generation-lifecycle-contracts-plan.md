@@ -285,7 +285,27 @@ verified. Invalid input produces a generic diagnostic without echoing its
 contents. All 29 focused launcher tests, scoped Biome, diff and redacted
 gitleaks checks pass. The executor handle became unavailable after interruption;
 main inspected and verified the preserved two-file result rather than replacing
-it. Slice simplification and trusted read-only correctness review are in progress.
+it. Slice simplification and trusted read-only correctness review are complete.
+The sole correctness concern was potential output of URL query/fragment values
+on otherwise valid local endpoints. Commit `a7d4c57f1e` rejects those suffixes;
+15 focused tests, Biome and redacted changed-line gitleaks passed.
+
+The next source check adds host-side `status --config`: canonical provider roots,
+actual HEAD and tracked/untracked cleanliness are read from Git instead of trusted
+from the supplied observations. It disables optional Git locks and filesystem
+monitor hooks and emits only boolean source qualification results. It does not
+probe endpoints or infer runtime readiness. Eight focused tests pass on host
+Node 24.16.0, including a disposable synthetic repository and the CLI rejection
+of invented source observations. An initial test invocation ran Git against that
+synthetic fixture inside the container; it was rerun on the host to follow the
+host-Git boundary. No real repository was mutated by those tests.
+
+Citation verification also passes: 101 tests, Chat type checking and focused
+Biome. Three existing explicit-any warnings outside changed hunks remain. These
+checks use mocks, not provider calls, and do not replace retained-browser proof.
+The tracking branch has advanced four commits; publication still requires
+reconciliation without overwriting either workstream. No branch integration,
+runtime lifecycle action or paid call occurred in this continuation.
 
 Provisioning evidence: refreshed data-ingestion `origin/main` is
 `d46282848100beec5a1f571e0cc9b091dcdd4179`. Its primary checkout is on

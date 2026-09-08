@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { inspectLocalKbStack, resolveLocalKbConfig } from './local-kb-stack.mjs'
+import {
+  inspectIsolatedProviderSources,
+  inspectLocalKbStack,
+  resolveLocalKbConfig,
+} from './local-kb-stack.mjs'
 
 const env = {
   DATA_INGESTION_REPO: '/synthetic/ingestion',
@@ -62,7 +66,7 @@ function isolatedConfigInput(endpointOverrides = {}) {
   }
 }
 
-function runConfigPlan(input) {
+function runConfigPlan(input, command = 'plan') {
   const directory = mkdtempSync(join(tmpdir(), 'local-kb-stack-test-'))
   const path = join(directory, 'config.json')
   writeFileSync(path, JSON.stringify(input))
@@ -71,7 +75,7 @@ function runConfigPlan(input) {
       process.execPath,
       [
         fileURLToPath(new URL('./local-kb-stack.mjs', import.meta.url)),
-        'plan',
+        command,
         '--config',
         path,
       ],
@@ -124,6 +128,15 @@ test('plan CLI stays non-executable until runtime qualification', () => {
   assert.ok(plan.blockers.length > 0)
 })
 
+test('config status does not trust supplied clean-source observations', () => {
+  const result = runConfigPlan(isolatedConfigInput(), 'status')
+  assert.equal(result.status, 1)
+  const status = JSON.parse(result.stdout)
+  assert.equal(status.ready, false)
+  assert.equal(status.runtimeObserved, false)
+  assert.ok(status.providers.every(({ qualified }) => qualified === false))
+})
+
 test('requires all explicit provider paths', () => {
   for (const key of Object.keys(env)) {
     assert.throws(() => resolveLocalKbConfig({ ...env, [key]: undefined }))
@@ -164,4 +177,50 @@ test('never promotes reachability into full readiness', async () => {
   )
   assert.equal(result.ready, false)
   assert.ok(result.endpoints.every(({ reachable }) => reachable))
+})
+
+test('source observation rejects dirty, mismatched and missing provider checkouts', () => {
+  const path = realpathSync(mkdtempSync(join(tmpdir(), 'kb-source-test-')))
+  const git = (args) =>
+    execFileSync('git', ['-C', path, ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
+  try {
+    git(['init'])
+    git([
+      '-c',
+      'user.name=Synthetic',
+      '-c',
+      'user.email=synthetic@example.invalid',
+      '-c',
+      'commit.gpgsign=false',
+      '-c',
+      'core.hooksPath=/dev/null',
+      'commit',
+      '--allow-empty',
+      '-m',
+      'test fixture',
+    ])
+    const revision = git(['rev-parse', 'HEAD'])
+    const config = { roots: [{ name: 'ingestion', path, revision }] }
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    config.roots[0].revision = '0'.repeat(40)
+    assert.equal(
+      inspectIsolatedProviderSources(config)[0].revisionMatches,
+      false
+    )
+    config.roots[0].revision = revision
+    writeFileSync(join(path, 'uncommitted.txt'), 'synthetic')
+    const dirty = inspectIsolatedProviderSources(config)[0]
+    assert.equal(dirty.clean, false)
+    assert.equal(dirty.qualified, false)
+    config.roots[0].path = join(path, 'absent')
+    assert.equal(
+      inspectIsolatedProviderSources(config)[0].sourceAvailable,
+      false
+    )
+  } finally {
+    rmSync(path, { recursive: true, force: true })
+  }
 })

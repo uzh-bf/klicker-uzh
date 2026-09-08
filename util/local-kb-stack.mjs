@@ -64,6 +64,44 @@ function inspectProvider({ name, path, entrypoint }) {
   }
 }
 
+export function inspectIsolatedProviderSources(config) {
+  return config.roots.map(({ name, path, revision }) => {
+    try {
+      if (realpathSync(path) !== path) throw new Error()
+      const git = (args) =>
+        execFileSync(
+          'git',
+          ['-c', 'core.fsmonitor=false', '-C', path, ...args],
+          {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+            timeout: 5000,
+            env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+          }
+        ).trim()
+      const root = git(['rev-parse', '--show-toplevel'])
+      const head = git(['rev-parse', 'HEAD'])
+      const clean =
+        git([
+          'status',
+          '--porcelain',
+          '--untracked-files=all',
+          '--ignore-submodules=none',
+        ]).length === 0
+      return {
+        name,
+        sourceAvailable: true,
+        revisionMatches: head === revision,
+        pathMatches: root === path,
+        clean,
+        qualified: head === revision && root === path && clean,
+      }
+    } catch {
+      return { name, sourceAvailable: false, qualified: false }
+    }
+  })
+}
+
 async function probe({ name, url }) {
   try {
     const response = await fetch(url, {
@@ -145,8 +183,12 @@ function parseArguments(args) {
   if (args.length === 1 && ['status', 'plan'].includes(args[0])) {
     return { command: args[0] }
   }
-  if (args.length === 3 && args[0] === 'plan' && args[1] === '--config') {
-    return { command: 'plan', configPath: args[2] }
+  if (
+    args.length === 3 &&
+    ['plan', 'status'].includes(args[0]) &&
+    args[1] === '--config'
+  ) {
+    return { command: args[0], configPath: args[2] }
   }
   throw new Error(
     'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>]'
@@ -156,10 +198,22 @@ function parseArguments(args) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const { command, configPath } = parseArguments(process.argv.slice(2))
-    if (command === 'plan' && configPath !== undefined) {
+    if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      console.log(JSON.stringify(configPlan(config), null, 2))
-      process.exitCode = 2
+      if (command === 'plan') {
+        console.log(JSON.stringify(configPlan(config), null, 2))
+        process.exitCode = 2
+      } else {
+        const providers = inspectIsolatedProviderSources(config)
+        console.log(
+          JSON.stringify(
+            { providers, ready: false, runtimeObserved: false },
+            null,
+            2
+          )
+        )
+        process.exitCode = providers.every(({ qualified }) => qualified) ? 2 : 1
+      }
     } else {
       const config = resolveLocalKbConfig(process.env)
       if (command === 'plan') {
