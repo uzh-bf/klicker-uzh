@@ -7,12 +7,12 @@ Detailed operational evidence is retained locally and is not part of this public
 
 ## Replica plan
 
-| Environment / values key | Before → proposed | Reason |
-| --- | --- | --- |
-| Production `chat` | 1 → 2 | Add serving redundancy; validate multi-pod streaming and persistence in staging first. A failed pod can still interrupt its active streams. |
-| Production `frontendControl` | 1 → 2 | Add a second serving process for lecturer controls. |
-| Production `olatApi` | 1 → 2 | Add a second serving process for LMS integration. |
-| Staging `chat` | 1 → 2 | Establish the multi-pod validation topology for the production change. |
+| Environment / values key     | Before → proposed | Reason                                                                                                                                      |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production `chat`            | 1 → 2             | Add serving redundancy; validate multi-pod streaming and persistence in staging first. A failed pod can still interrupt its active streams. |
+| Production `frontendControl` | 1 → 2             | Add a second serving process for lecturer controls.                                                                                         |
+| Production `olatApi`         | 1 → 2             | Add a second serving process for LMS integration.                                                                                           |
+| Staging `chat`               | 1 → 2             | Establish the multi-pod validation topology for the production change.                                                                      |
 
 Existing anti-affinity is preferred, not required. Verify actual placement;
 two replicas do not guarantee node or zone redundancy. Other replica counts
@@ -26,18 +26,18 @@ under representative traffic; they are not claimed to be VPA recommendations.
 Existing CPU requests and all resource limits remain unchanged. Staging memory
 requests also remain unchanged pending environment-specific measurements.
 
-| Values key | Request before → proposed | Purpose |
-| --- | --- | --- |
-| `auth` | 50Mi → 192Mi | Increase the serving-process reservation. |
-| `frontendManage` | 50Mi → 256Mi | Provide a larger reservation for the lecturer frontend. |
-| `frontendControl` | 50Mi → 96Mi | Reserve memory for both proposed serving replicas. |
-| `olatApi` | 50Mi → 128Mi | Reserve memory for both proposed integration replicas. |
-| `backendGraphql` | 200Mi → 384Mi | Increase reservation for the main API. |
-| `hatchet.workers.general` | 64Mi → 512Mi | Give general background tasks a larger baseline; retain the existing 2Gi limit. |
-| `hatchet.workers.responseProcessor` | 64Mi → 192Mi | Increase the response-processing baseline. |
-| `hatchet.workers.responseProcessorAssessment` | 64Mi → 192Mi | Apply the same processing reservation to assessment workers. |
-| `responseApi` | 50Mi → 96Mi | Increase the response-ingestion reservation. |
-| `assessment.responseApi` | 50Mi → 96Mi | Apply the same ingestion reservation to assessment. |
+| Values key                                    | Request before → proposed | Purpose                                                                         |
+| --------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `auth`                                        | 50Mi → 192Mi              | Increase the serving-process reservation.                                       |
+| `frontendManage`                              | 50Mi → 256Mi              | Provide a larger reservation for the lecturer frontend.                         |
+| `frontendControl`                             | 50Mi → 96Mi               | Reserve memory for both proposed serving replicas.                              |
+| `olatApi`                                     | 50Mi → 128Mi              | Reserve memory for both proposed integration replicas.                          |
+| `backendGraphql`                              | 200Mi → 384Mi             | Increase reservation for the main API.                                          |
+| `hatchet.workers.general`                     | 64Mi → 512Mi              | Give general background tasks a larger baseline; retain the existing 2Gi limit. |
+| `hatchet.workers.responseProcessor`           | 64Mi → 192Mi              | Increase the response-processing baseline.                                      |
+| `hatchet.workers.responseProcessorAssessment` | 64Mi → 192Mi              | Apply the same processing reservation to assessment workers.                    |
+| `responseApi`                                 | 50Mi → 96Mi               | Increase the response-ingestion reservation.                                    |
+| `assessment.responseApi`                      | 50Mi → 96Mi               | Apply the same ingestion reservation to assessment.                             |
 
 The rendered change adds **production +3 pods, +150m CPU requests and +4620Mi
 memory requests (~4.51Gi)**. Of that memory increase, 650Mi is for assessment
