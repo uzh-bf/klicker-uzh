@@ -11,8 +11,8 @@ interactions wait for rendered state instead of fixed sleeps. The launcher gains
 an explicit profile option; ordinary invocations retain their full-stack default.
 It never silently inherits a previously selected smaller stack.
 
-The user approved this package and continuation, including one upstream merge.
-That merge is complete. Approval covers scoped source changes, checks, review,
+The user approved this package and continuation. Necessary target integration
+remains standing-authorized. Approval covers scoped source changes, checks, review,
 commits and ordinary draft-PR delivery. No merge, runner change, canary activation,
 cache reset, shared infrastructure repair or package release is included.
 
@@ -34,8 +34,8 @@ is added.
 
 Worktree: `trees/rs/playwright-activity-retry-safety`.
 Branch: `rs/playwright-activity-retry-safety`; target: `v3`.
-Current target baseline: `e3fb9873c98a664987cc48f0ec9bbf51c9337e8a`, integrated
-with the host/container dependency-isolation correction. Boundary owner: self.
+Current target baseline: `3f6917ecc52d606d212db5b156be502cd5c99973`, integrated
+to resolve the launcher conflict described in Progress. Boundary owner: self.
 Artifacts root: `project/`.
 This is a full-path package because the launcher changes a lifecycle contract.
 General lifecycle hardening stays with the existing Devrouter task; this package
@@ -46,8 +46,10 @@ irreversible architectural choice is introduced; no ADR is required.
 
 After removing the existing optional leading `--`, consume a launcher-option
 prefix containing `--runtime-profile VALUE`, `--runtime-profile=VALUE`,
-`--print-env`, or `--show-report`. Stop at the first other argument. An explicit
-`--` ends the prefix and is consumed; preserve all remaining arguments verbatim.
+`--print-env`, `--show-report`, or the target's `--preserve-database` option.
+Stop at the first other argument. An explicit `--` ends the prefix and is consumed;
+preserve remaining arguments verbatim, except that misplaced or value-form
+database-preservation flags remain errors before any effects.
 Profile-looking arguments after that boundary belong to Playwright.
 
 Accept one profile flag with comma-separated names matching
@@ -85,6 +87,28 @@ Pause on a repeated runtime failure, missing required review capability or a
 material contract change. Do not weaken assertions or increase retry counts.
 
 ## Progress
+
+### Post-review target integration
+
+The first publication at `dfb99114c7` exposed a new merge conflict because
+`v3` advanced during review. Exact target `3f6917ecc52d606d212db5b156be502cd5c99973`
+includes the chat retrieval package and deployment-only changes. Those target
+changes are preserved, not reimplemented or activated by this task.
+
+The launcher conflict combines the target's explicit `--preserve-database`
+feature with the approved profile/mode prefix in one parser. Preservation
+remains host-only, unavailable in CI, opt-in and rejected before effects when
+misplaced or given a value. It skips only global setup; spec cleanup remains
+unchanged. This package retains profile equals syntax, duplicate validation,
+the explicit delimiter and forwarding of profile-looking test arguments.
+The target's obsolete rejection tests are updated for that approved contract.
+
+The merged launcher/configuration suite passes all 32 tests, including default
+database setup, opt-in preservation and both argument syntaxes. The Next
+configuration, readiness helper and activity fixtures are unchanged, so their
+existing browser and deadline evidence remains applicable. No runtime is
+started for this source integration. One continuation of the same final
+reviewer covers the changed integration seam before the next ordinary push.
 
 ### Approved configuration-only continuation
 

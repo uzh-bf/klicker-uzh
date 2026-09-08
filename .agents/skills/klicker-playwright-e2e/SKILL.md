@@ -72,6 +72,12 @@ options before Playwright arguments; an explicit `--` ends their prefix.
 Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
 
+For a focused test against an existing synthetic database, the explicit local
+options `--runtime-profile chat --preserve-database` may precede Playwright
+arguments. This skips global reset/seed only; selected specs still perform
+their own fixture writes and cleanup. Inspect those fixtures before opting in.
+CI and ordinary invocations retain their existing setup behavior.
+
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
 well-formed missing chatbot should assert the branded 404 and its response
