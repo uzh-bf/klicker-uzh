@@ -12,12 +12,12 @@ import {
 import {
   createOperationsPrisma,
   getOperationsDatabaseIdentity,
-  withAdvisoryLock,
   type OperationsPrisma,
+  withAdvisoryLock,
 } from './database.js'
 import {
-  ImportExportOperationError,
   createOperationOutput,
+  ImportExportOperationError,
   parseBoundedInteger,
   parseDatabaseTarget,
   parseOperationEnvironment,
@@ -117,16 +117,14 @@ function progressPath(env: NodeJS.ProcessEnv) {
   return path
 }
 
-export async function runMediaHashBackfill({
-  prisma,
-  env = process.env,
-}: {
-  prisma: OperationsPrisma
-  env?: NodeJS.ProcessEnv
-}) {
+async function prepareBackfill(
+  operation: BackfillProgressManifest['operation'],
+  prisma: OperationsPrisma,
+  env: NodeJS.ProcessEnv
+) {
   requireMasterGateOff(env)
   const context = operationContext(
-    'import-export-media-hash-backfill',
+    operation,
     env,
     await getOperationsDatabaseIdentity(prisma)
   )
@@ -142,6 +140,19 @@ export async function runMediaHashBackfill({
     maximum: 1000,
     env,
   })
+
+  return { context, outputPath, existing, maximumBatches }
+}
+
+export async function runMediaHashBackfill({
+  prisma,
+  env = process.env,
+}: {
+  prisma: OperationsPrisma
+  env?: NodeJS.ProcessEnv
+}) {
+  const { context, outputPath, existing, maximumBatches } =
+    await prepareBackfill('import-export-media-hash-backfill', prisma, env)
 
   return await withAdvisoryLock({
     prisma,
@@ -208,24 +219,8 @@ export async function runFingerprintBackfill({
   prisma: OperationsPrisma
   env?: NodeJS.ProcessEnv
 }) {
-  requireMasterGateOff(env)
-  const context = operationContext(
-    'import-export-fingerprint-backfill',
-    env,
-    await getOperationsDatabaseIdentity(prisma)
-  )
-  const outputPath = progressPath(env)
-  const existing = await readProgressManifest(
-    env.IMPORT_EXPORT_RESUME_MANIFEST_PATH,
-    context
-  )
-  const maximumBatches = parseBoundedInteger({
-    name: 'IMPORT_EXPORT_BACKFILL_MAX_BATCHES',
-    defaultValue: 100,
-    minimum: 1,
-    maximum: 1000,
-    env,
-  })
+  const { context, outputPath, existing, maximumBatches } =
+    await prepareBackfill('import-export-fingerprint-backfill', prisma, env)
 
   return await withAdvisoryLock({
     prisma,
