@@ -84,9 +84,12 @@ owners. This preserves the accepted authorization contract; it does not gate
 draft configuration on AI approval. Main owns this small security-sensitive
 correction; delegation overhead exceeds its implementation size.
 
-Remaining: verify and commit the correction, same-reviewer correction pass,
-draft PR publication. The separate multi-KB planning artifact is ready for user
-rulings but uncommitted. STG and production remain unvalidated.
+Correction committed as `3de437dc1a`; all 16 route tests, Chat TypeScript and
+scoped formatting pass. The same independent final reviewer completed its
+correction pass with no remaining findings. The exact runtime is stopped with
+no drift and zero routes. Remaining: draft PR publication. The separate multi-KB
+planning artifact is ready for user rulings but uncommitted. Full CI, STG and
+production remain unvalidated.
 
 ## Primitive impact
 
