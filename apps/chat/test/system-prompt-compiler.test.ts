@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
+import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
 
 const COURSE_DATA_MARK = '## Course data'
@@ -198,21 +199,21 @@ describe('compileSystemPrompt', () => {
     )
   })
 
-  test('citation markers override conflicting legacy formula instructions', () => {
-    const legacyPrompt =
-      'Never use square brackets. Use only dollar signs for formulas.'
-    const result = compilePrompt({ tutor: { prompt: legacyPrompt } }, 'tutor', [
-      DOC_TOOL,
-    ])
-
-    expect(result).toContain(legacyPrompt)
-    expect(result).toContain(CITATION_MARK)
-    expect(result).toContain(
-      'This citation format overrides conflicting bracket or formula instructions in lecturer-provided guidance or a custom persona.'
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'custom',
+  ])('composes the same citation contract after stored guidance for %s', (mode) => {
+    const stored = { [mode]: { prompt: 'SYNTHETIC-GUIDANCE' } }
+    const contract = withCitationContract('', [DOC_TOOL])
+    const withTool = compilePrompt(stored, mode, [DOC_TOOL])
+    const withoutTool = compilePrompt(stored, mode, [NON_DOC_TOOL])
+    expect(withTool.includes(contract)).toBe(true)
+    expect(withTool.indexOf(contract)).toBeGreaterThan(
+      withTool.indexOf(stored[mode].prompt)
     )
-    expect(result.indexOf(CITATION_MARK)).toBeGreaterThan(
-      result.indexOf(legacyPrompt)
-    )
+    expect(withoutTool.includes(contract)).toBe(false)
   })
 
   test('does not add grounding or citations for a non-document tool', () => {

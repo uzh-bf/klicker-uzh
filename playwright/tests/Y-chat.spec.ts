@@ -2718,6 +2718,69 @@ test.describe('Chatbot Source Citations', () => {
     }
   })
 
+  test('Every inline citation targets its own message before and after reload', async ({
+    page,
+  }) => {
+    const messageIds = [
+      '4a1b2c3d-0016-4a91-8f6c-2b7d1e5a9c40',
+      '4a1b2c3d-0017-4a91-8f6c-2b7d1e5a9c40',
+    ]
+    const thread = await seedThread(participantId, {
+      title: 'Message-local citation destinations',
+      messages: messageIds.flatMap((id, turn) => [
+        {
+          role: 'user' as const,
+          content: [{ type: 'text' as const, text: `Question ${turn}` }],
+        },
+        {
+          id,
+          role: 'assistant' as const,
+          content: [
+            docQueryPart({
+              toolCallId: `message-local-${turn}`,
+              sources: [1, 2].map((index) => ({
+                file_name: `Turn ${turn} source ${index}.pdf`,
+                source_url: `https://example.com/turn-${turn}-source-${index}.pdf`,
+                source_type: 'document',
+              })),
+            }),
+            {
+              type: 'text' as const,
+              text: 'A claim [1]. Another claim [2] and repeated [1].',
+            },
+          ],
+        },
+      ]),
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.reload()
+      const messages = page.getByTestId('chat-assistant-message')
+      await expect(messages).toHaveCount(2)
+      for (const [turn, id] of messageIds.entries()) {
+        const message = messages.nth(turn)
+        const citations = message.getByTestId('chat-citation')
+        await expect(citations).toHaveText(['1', '2', '1'])
+        for (const [position, index] of [1, 2, 1].entries()) {
+          const citation = citations.nth(position)
+          const targetId = `src-${id}-${index}`
+          await expect(citation).toHaveAttribute('href', `#${targetId}`)
+          const target = page.locator(`[id="${targetId}"]`)
+          await expect(target).toHaveCount(1)
+          await expect(message.locator(`[id="${targetId}"]`)).toBeVisible()
+          await citation.click()
+          await expect(target).toBeFocused()
+          await citation.focus()
+          await page.keyboard.press('Enter')
+          await expect(target).toBeFocused()
+        }
+      }
+    }
+  })
+
   test('Source grouping resets when switching answer branches', async ({
     page,
   }) => {
@@ -3226,6 +3289,69 @@ test.describe('Chatbot Source Citations', () => {
   // arrives as stored JSON. This one goes through the streaming path instead
   // (`tool-output-available` -> `normalizeLiveToolOutput`), which is what a
   // student actually sees first.
+  test('Streaming Markdown registers completed citations and cleans up reinterpreted links', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'A supported statement [',
+        '1]. Another [1]',
+        '(https://example.com/ordinary). A temporary [2]',
+        '(https://example.com/second).',
+      ],
+      chunkDelayMs: 20,
+      pauseAfterTextChunk: [1, 2, 3],
+      toolCalls: [
+        {
+          toolCallId: 'citation-transitions',
+          toolName: 'KB_doc_query',
+          output: docQueryToolOutput(
+            [1, 2].map((index) => ({
+              file_name: `Transition ${index}.pdf`,
+              source_url: `https://example.com/transition-${index}.pdf`,
+              source_type: 'document',
+            }))
+          ),
+        },
+      ],
+    })
+    await visitChat(page)
+    await sendMessage(page, 'Use the supplied material')
+    const citations = page.getByTestId('chat-citation')
+    const section = page.getByTestId('chat-sources-section')
+    const release = () =>
+      page.evaluate(() => {
+        ;(
+          window as typeof window & { __releaseMockChatStream?: () => void }
+        ).__releaseMockChatStream?.()
+      })
+
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('A supported statement')
+    await expect(citations).toHaveCount(0)
+    await release()
+    await expect(citations).toHaveText(['1', '1'])
+    await expect(section).toHaveCount(0)
+    await release()
+    await expect(citations).toHaveText(['1', '2'])
+    await expect(section).toHaveCount(0)
+    await release()
+    await expect(citations).toHaveText(['1'])
+    await expect(section).toBeVisible()
+    await expect(
+      section.getByTestId('chat-cited-sources').getByTestId('chat-source-card')
+    ).toHaveCount(1)
+    await expect(
+      section.getByTestId('chat-other-sources').getByTestId('chat-source-card')
+    ).not.toBeVisible()
+    const target = await citations.getAttribute('href')
+    expect(target).toBeTruthy()
+    await citations.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.locator(target!)).toBeFocused()
+  })
+
   test('Citations and source cards render on a live streamed answer', async ({
     page,
   }) => {

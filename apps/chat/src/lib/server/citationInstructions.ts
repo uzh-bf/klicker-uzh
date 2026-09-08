@@ -1,4 +1,7 @@
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import {
+  isDocQueryToolName,
+  MAX_SOURCES,
+} from '@/src/lib/sources/normalizeSources'
 
 /**
  * Appended to a chatbot's system prompt only when a doc_query-style RAG tool
@@ -24,21 +27,36 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * instructions from suppressing citation markers.
  */
 const CITATION_CONTRACT =
-  'Citation format: when a statement is grounded in retrieved course material, ' +
-  'mark it with a bracketed source number such as [1] or [2]. Citation ' +
-  'numbering is local to this assistant message: start at [1] in every new ' +
-  'assistant message and never continue numbering from an earlier message. ' +
-  'Within this message, number unique sources in first-appearance order ' +
-  'across all doc_query calls. If a later search returns a source you have ' +
-  'already cited in this message, reuse the ' +
-  'number you gave it the first time instead of assigning a new one. Only ' +
-  'use numbers returned for this message - never invent or carry over a ' +
-  'citation. For multiple consecutive sources, a compact range such as ' +
-  '[2–4] is allowed only when every number in the range was returned. ' +
-  'Do not add a citation when you are not drawing on retrieved ' +
-  'material. These bracketed numbers are citation markers, not formula ' +
-  'delimiters. This citation format overrides conflicting bracket or formula ' +
-  'instructions in lecturer-provided guidance or a custom persona.'
+  'Citation format: place a bracketed source number immediately after each ' +
+  'statement drawing on retrieved course material, for example: A supported ' +
+  'statement [1]. Use plain-text markers [1] or adjacent markers [1][2], ' +
+  'including within list-item prose. Do not format citations as Markdown ' +
+  'links, footnotes, list labels, code, or math; do not replace inline markers ' +
+  'with a bibliography at the end. ' +
+  'Numbering is local to this assistant message: start at [1] for every new ' +
+  'assistant message, never continuing numbers from earlier messages. ' +
+  'Number all eligible unique sources in first-appearance order across all ' +
+  'successful doc_query results in this message, including sources you do ' +
+  'not cite. Do not renumber only the sources selected for the answer. ' +
+  'A repeated source with the same origin (URL/reference, or title when no ' +
+  'origin is available) and the same page, page label and video time range ' +
+  'keeps its first number, even if you have not cited it yet. Different ' +
+  'locations in one document can have different numbers. In documents mode, ' +
+  'use the first chunk location for each source entry; do not number every ' +
+  'chunk separately. Skip entries without a usable source name or reference. ' +
+  `Only the first ${MAX_SOURCES} unique eligible sources receive numbers. ` +
+  'Never invent an index or cite an overflow, failed, empty, or earlier-turn ' +
+  'result. For example, if the first search returns sources A then B and a ' +
+  'later search returns B then C, their numbers remain A=[1], B=[2], C=[3]; ' +
+  'an answer using only B still cites [2]. For consecutive sources, [2–4] ' +
+  'is also supported, but only when every index in the range is available. ' +
+  'Do not add a citation when you are not drawing on retrieved material. ' +
+  'Before sending the answer, check that retrieved-material statements have ' +
+  'inline markers, that each marker uses this format, and that each number ' +
+  'matches the current message source order. These bracketed numbers are ' +
+  'citation markers, not formula delimiters. This citation format overrides ' +
+  'conflicting bracket or formula instructions in lecturer-provided guidance ' +
+  'or a custom persona.'
 
 /**
  * Appends the citation contract to `systemPrompt` when `toolNames` includes
