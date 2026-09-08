@@ -22,7 +22,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/mcp-lecturer/|packages/prisma/|packages/prisma-data/|packages/types/|packages/grading/|packages/util/|util/mcpSmokeClient\.mts|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-mcp-lecturer\.yml|\.github/actions/changed-paths/|\.github/scripts/provision-disposable-postgres\.sh)'
+          pattern: '^(apps/mcp-lecturer/|packages/prisma/|packages/prisma-data/|packages/types/|packages/grading/|packages/util/|util/mcpSmokeClient\.mts|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-mcp-lecturer\.yml|\.github/actions/changed-paths/|\.github/scripts/provision-disposable-postgres\.sh)'
 
   test-mcp-lecturer:
     needs: filter
@@ -86,7 +86,6 @@ jobs:
 
       - name: Setup database
         id: setup_db
-        if: ${{ !cancelled() && success() && steps.provision_db.outcome == 'success' }}
         run: |
           cd packages/prisma
           pnpm run prisma:reset:raw -f
@@ -95,7 +94,7 @@ jobs:
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
       - name: Seed test data
-        if: ${{ !cancelled() && success() && steps.setup_db.outcome == 'success' }}
+        id: seed_db
         run: pnpm --filter @klicker-uzh/prisma-data run seed:test
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
@@ -104,6 +103,7 @@ jobs:
         run: pnpm --filter @klicker-uzh/mcp-lecturer run build
 
       - name: Boot server and run smoke tests
+        id: smoke
         run: |
           set -euo pipefail
 

@@ -523,7 +523,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     }
   })
 
-  test('Shows analytics unavailable when the user profile cannot load', async ({
+  test('Shows analytics unavailable when the feature flag profile cannot load', async ({
     page,
     loginLecturer,
   }) => {
