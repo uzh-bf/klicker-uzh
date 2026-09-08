@@ -57,6 +57,9 @@ the repository's schema/migration workflow before integration.
 
 ## Progress
 
+Entries before 2026-09-08 describe historical verification of the original scope.
+Kahoot behavior in those entries is no longer supported.
+
 - 2026-09-05: v3 merged locally as 53a43877f; not pushed. Product scope accepted.
 - Read-only explorer mapped the durable execution seam and confirmed ZIP
   fingerprints cannot alone enforce the accepted media identity contract.
@@ -92,6 +95,7 @@ the repository's schema/migration workflow before integration.
   The running isolated container retains that setting. Shared Git config and
   unrelated runtimes were not changed. No implementation commit or push made.
 
-- 2026-09-08: User removed Kahoot import-template support from scope. Remove the
-  fallback parser and template UI; accept only the versioned Klicker workbook.
+- 2026-09-08: User removed Kahoot import-template support from scope. Commit
+  `52240d5a0` removed the fallback parser and template UI and was pushed; imports
+  now accept only the versioned Klicker workbook.
   Earlier Kahoot verification above is historical and no longer supported.
