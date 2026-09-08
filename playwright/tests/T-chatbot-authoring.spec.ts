@@ -70,7 +70,11 @@ async function createChatbot(
   await page.getByTestId('submit-create-chatbot').click()
   await expect(page.getByTestId(`chatbot-${name}`)).toBeVisible()
   await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
-  await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
+  await expect(page.getByTestId('chatbot-disclaimer-title')).not.toHaveValue('')
+  await expect(
+    page.getByTestId('chatbot-disclaimer-suggested-unsaved')
+  ).toBeVisible()
+  await expect(page.getByTestId('save-chatbot-disclaimer')).toBeEnabled()
 
   const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
   expect(chatbotId).toBeTruthy()
@@ -82,18 +86,30 @@ async function navigateToSetupStep(
   step: 'basics' | 'modes' | 'disclaimer' | 'review'
 ) {
   const url = new URL(page.url())
-  url.searchParams.set('view', 'setup')
-  url.searchParams.set('step', step)
+  if (step === 'modes') {
+    url.searchParams.set('view', 'behavior')
+    url.searchParams.delete('step')
+  } else if (step === 'disclaimer') {
+    url.searchParams.set('view', 'disclaimer')
+    url.searchParams.delete('step')
+  } else {
+    url.searchParams.set('view', 'overview')
+    url.searchParams.set('step', step)
+  }
   await page.goto(url.toString())
   await expect(page.getByTestId(`chatbot-setup-trigger-${step}`)).toBeVisible()
   await expect(page.getByTestId(`chatbot-setup-${step}`)).toBeVisible()
 }
 
 async function expectSetupTriggers(page: Page) {
-  for (const section of ['basics', 'modes', 'disclaimer', 'review']) {
-    await expect(
-      page.getByTestId(`chatbot-setup-trigger-${section}`)
-    ).toBeVisible()
+  for (const view of [
+    'overview',
+    'knowledge',
+    'behavior',
+    'disclaimer',
+    'usage',
+  ]) {
+    await expect(page.getByTestId(`chatbot-view-${view}`)).toBeVisible()
   }
 }
 
@@ -222,8 +238,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   }) => {
     const chatbotId = await createChatbot(page, FIRST_CHATBOT)
     const previewPagePromise = page.context().waitForEvent('page')
+    const previewDialogPromise = page.waitForEvent('dialog')
+    const previewClickPromise = page
+      .getByTestId('chatbot-owner-preview-link')
+      .click()
+    const previewDialog = await previewDialogPromise
+    expect(previewDialog.type()).toBe('confirm')
+    await previewDialog.accept()
 
-    await page.getByTestId('chatbot-owner-preview-link').click()
+    await previewClickPromise
     const previewPage = await previewPagePromise
 
     await expect(previewPage).toHaveURL(
@@ -233,6 +256,43 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(previewPage.getByTestId('chat-welcome-message')).toBeVisible()
     await expect(previewPage.getByTestId('chat-welcome-mode')).toContainText(
       'Tutor'
+    )
+  })
+
+  test('guards the owner preview while authoring changes are unsaved', async ({
+    page,
+  }) => {
+    const chatbotId = await createChatbot(page, FIRST_CHATBOT)
+    await page.getByTestId('chatbot-disclaimer-title').fill('Unsaved title')
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue(
+      'Unsaved title'
+    )
+
+    const pagesBeforePreview = page.context().pages().length
+    const dialogPromise = page.waitForEvent('dialog')
+    const clickPromise = page.getByTestId('chatbot-owner-preview-link').click()
+    const dialog = await dialogPromise
+
+    expect(dialog.type()).toBe('confirm')
+    await dialog.dismiss()
+    await clickPromise
+    await expect
+      .poll(() => page.context().pages().length)
+      .toBe(pagesBeforePreview)
+
+    const previewPagePromise = page.context().waitForEvent('page')
+    const secondDialogPromise = page.waitForEvent('dialog')
+    const secondClickPromise = page
+      .getByTestId('chatbot-owner-preview-link')
+      .click()
+    const secondDialog = await secondDialogPromise
+    expect(secondDialog.type()).toBe('confirm')
+    await secondDialog.accept()
+    await secondClickPromise
+
+    const previewPage = await previewPagePromise
+    await expect(previewPage).toHaveURL(
+      `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
     )
   })
 
@@ -276,21 +336,28 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect.poll(() => createOperationCount).toBe(1)
     await expect
       .poll(() => new URL(page.url()).searchParams.get('view'))
-      .toBe('setup')
+      .toBe('disclaimer')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
-      .toBe('disclaimer')
+      .toBeNull()
+    await expect(
+      page.getByTestId('chatbot-disclaimer-suggested-unsaved')
+    ).toBeVisible()
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
+    page.once('dialog', (dialog) => {
+      expect(dialog.type()).toBe('beforeunload')
+      void dialog.accept()
+    })
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=invalid&step=invalid`
     )
     await expect
       .poll(() => new URL(page.url()).searchParams.get('view'))
-      .toBe('setup')
+      .toBe('disclaimer')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
-      .toBe('disclaimer')
+      .toBeNull()
   })
 
   test('creates, edits, previews, switches, and reloads draft chatbots', async ({
@@ -353,6 +420,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-name')).toBeDisabled()
     await expect(page.getByTestId('chatbot-description')).toBeDisabled()
     metadataRequestGate.release()
+    await expect(page.getByTestId('chatbot-name')).toBeEnabled()
+    await page.getByTestId('chatbot-view-disclaimer').click()
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await expect(page.getByTestId('content-input-bold')).toBeVisible()
@@ -430,13 +499,18 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'false'
     )
     const pendingDisclaimerUrl = page.url()
-    await page.getByTestId('chatbot-setup-trigger-review').click()
-    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
-    await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
-    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeDisabled()
+    const pendingNavigationAlertPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.type()).toBe('alert')
+        return dialog.dismiss()
+      })
+    await page.getByTestId('chatbot-view-behavior').click()
+    await pendingNavigationAlertPromise
     await expect.poll(() => page.url()).toBe(pendingDisclaimerUrl)
     disclaimerRequestGate.release()
-    await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeEnabled()
+    await navigateToSetupStep(page, 'review')
     await expect(page.getByTestId('chatbot-review-name')).toHaveText(
       FIRST_CHATBOT
     )
@@ -500,14 +574,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.getByTestId('chatbot-setup-edit-modes').click()
     await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
 
+    await page.getByTestId('chatbot-view-overview').click()
+    await page.getByTestId('chatbot-setup-trigger-review').click()
     await page.getByTestId('chatbot-setup-edit-basics').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await page.getByTestId('chatbot-setup-edit-disclaimer').click()
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
-    await page.getByTestId('chatbot-view-advanced').click()
-    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+    await page.getByTestId('chatbot-view-behavior').click()
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveAttribute(
       'aria-current',
       'page'
     )
@@ -542,12 +618,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.evaluate(() => window.history.back())
     await historyDiscardDialogPromise
     await expect.poll(() => page.url()).toBe(advancedUrl)
-    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveAttribute(
       'aria-current',
       'page'
     )
 
-    await page.getByTestId('chatbot-view-advanced').click()
+    await page.getByTestId('chatbot-view-behavior').click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     const createDiscardDialogPromise = page
       .waitForEvent('dialog')
@@ -558,7 +634,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.getByTestId('create-chatbot').click()
     await createDiscardDialogPromise
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveAttribute(
       'aria-current',
       'page'
     )
@@ -578,7 +654,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     await page.getByTestId('chatbot-view-usage').click()
     await discardDialogPromise
-    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveAttribute(
       'aria-current',
       'page'
     )
@@ -614,15 +690,24 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByText('Usage Summary', { exact: true })).toBeVisible()
 
     await createChatbot(page, SECOND_CHATBOT)
-    await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
+    await expect(page.getByTestId('chatbot-disclaimer-title')).not.toHaveValue(
+      ''
+    )
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
 
     await page.setViewportSize({ width: 800, height: 900 })
+    const secondChatbotDiscardDialogPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.type()).toBe('confirm')
+        return dialog.accept()
+      })
     await selectOption(
       page,
       '[data-cy="chatbot-mobile-selector"]',
       `${FIRST_CHATBOT} · Draft`
     )
+    await secondChatbotDiscardDialogPromise
     await expect(page.getByTestId('chatbot-mobile-selector')).toContainText(
       FIRST_CHATBOT
     )
@@ -732,6 +817,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Synthetic disclaimer content for publication.'
     )
     await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeEnabled()
+    await page.getByTestId('chatbot-view-overview').click()
+    await page.getByTestId('chatbot-setup-trigger-review').click()
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
 
     await fillPublicationRequest(
@@ -808,7 +896,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('awaiting publication review')
-    await expect(page.getByTestId('chatbot-view-setup')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveCount(1)
     await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
       'aria-current',
       'page'
@@ -873,9 +961,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       .poll(() => new URL(page.url()).searchParams.get('step'))
       .toBe('review')
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
-    await page.getByTestId('chatbot-view-overview').click()
-    await expect(page.getByTestId('chatbot-overview')).toBeVisible()
-    await page.getByTestId('chatbot-view-setup').click()
+    await page.getByTestId('chatbot-setup-edit-basics').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
     await page
       .getByTestId('chatbot-description')
@@ -914,7 +1000,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-readonly')
     ).toContainText('Initial synthetic use case')
-    await expect(page.getByTestId('chatbot-view-setup')).toHaveCount(0)
+    await expect(page.getByTestId('chatbot-view-behavior')).toHaveCount(1)
     await expect(page.getByTestId('chatbot-view-overview')).toHaveAttribute(
       'aria-current',
       'page'
@@ -987,6 +1073,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     // the publication request remains unavailable until the section is fixed.
     await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
     await expect(page.getByTestId('save-chatbot-disclaimer')).toBeEnabled()
+    await page.getByTestId('chatbot-view-overview').click()
     await page.getByTestId('chatbot-setup-trigger-basics').click()
     await page.getByTestId('chatbot-name').fill('')
     await page.getByTestId('chatbot-setup-trigger-basics').click()
