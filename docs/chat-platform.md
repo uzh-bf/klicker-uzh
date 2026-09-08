@@ -718,6 +718,16 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
+Platform and image-description prompt prose lives in `apps/chat/src/prompts/*.hbs`.
+`src/lib/server/promptTemplates.ts` loads and caches repository-owned Handlebars
+templates with strict variables and plaintext interpolation. Edit the template for
+wording and its typed context for new values; keep policy order and conditional
+inclusion in the TypeScript compiler. Stored lecturer text and course metadata are
+interpolation data, never template source. One final file newline is omitted from
+the rendered prompt. The renderer is Node-only and templates stay outside `public`.
+Chat's Next configuration explicitly traces these assets into the standalone build;
+its server starts from the app directory, which is also the template loading root.
+
 `src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text and the typed
 standard-mode context as configurable lecturer influence, not as the complete system policy. On
 every chat request, after the available MCP tool names are known, it composes the final prompt in

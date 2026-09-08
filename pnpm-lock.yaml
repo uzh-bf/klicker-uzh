@@ -443,6 +443,9 @@ importers:
       clsx:
         specifier: 2.1.1
         version: 2.1.1
+      handlebars:
+        specifier: 4.7.9
+        version: 4.7.9
       heic2any:
         specifier: 0.0.4
         version: 0.0.4
