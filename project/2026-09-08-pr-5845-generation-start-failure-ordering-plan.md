@@ -1,4 +1,4 @@
-# Record generation start failures before releasing their lease
+# PR #5845 — Record generation start failures before releasing their lease
 
 ## Approval summary
 
@@ -329,3 +329,23 @@ and verification remain unchanged. The target advanced by two worker/scaling
 commits with no overlap in this package; no integration is needed for freshness
 alone. Continue scoped commits with HUSKY=0, required reviews, ordinary task
 branch push and draft PR; merge and ready conversion remain unauthorized.
+
+### Committed implementation and slice reviews — 2026-09-08
+
+Implementation commit f50362c305 contains the two await corrections and
+regression tests. Simplifier and data-integrity slice-reviewer both returned
+DONE with no actionable findings on 4ca6b515f..f50362c305. Main verified their
+source citations and accepted the no-change dispositions. Reports are retained
+under project/_local/reviews/. Passing source-equivalent verification remains
+applicable; the runtime stays stopped. Fresh remote refs confirm two target
+worker/scaling commits with no overlapping files, so no integration is needed.
+
+### Draft publication — 2026-09-08
+
+Integrated final review passed with no findings on the full committed package
+9f805e9e55..f50362c305. Main accepted its no-change disposition. The ordinary
+branch push and [PR #5845 — generation start-failure ordering](https://github.com/uzh-bf/klicker-uzh/pull/5845)
+draft creation succeeded against v3-ai. This final metadata update names the
+PR and records review completion; implementation and verification are unchanged.
+Hosted CI remains a separate merge gate. Runtime remains Stopped with zero
+source-matched routes. No merge, ready conversion or deployment occurred.
