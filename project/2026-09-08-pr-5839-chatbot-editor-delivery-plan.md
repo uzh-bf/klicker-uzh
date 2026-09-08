@@ -1,5 +1,8 @@
 # Deliver the chatbot editor and owner preview
 
+Delivery: [draft PR #5839](https://github.com/uzh-bf/klicker-uzh/pull/5839),
+targeting `v3-ai`.
+
 ## Approval summary
 
 Deliver the four completed editor and preview commits against current `v3-ai`.
@@ -87,7 +90,7 @@ correction; delegation overhead exceeds its implementation size.
 Correction committed as `3de437dc1a`; all 16 route tests, Chat TypeScript and
 scoped formatting pass. The same independent final reviewer completed its
 correction pass with no remaining findings. The exact runtime is stopped with
-no drift and zero routes. Remaining: draft PR publication. The separate multi-KB
+no drift and zero routes. Draft PR publication is complete. The separate multi-KB
 planning artifact is ready for user rulings but uncommitted. Full CI, STG and
 production remain unvalidated.
 
