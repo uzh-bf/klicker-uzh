@@ -44,3 +44,23 @@ model ResearchExportReceipt {
   @@index([requesterId, attestedAt])
   @@index([courseId, attestedAt])
 }
+
+model AssessmentExportReceipt {
+  id                String   @id @db.Uuid
+  requesterId       String   @db.Uuid
+  courseId          String   @db.Uuid
+  liveQuizId        String?  @db.Uuid
+  locale            String
+  disclosureVersion String
+  attestedAt        DateTime @default(now())
+
+  status      DataExportStatus @default(PENDING)
+  sha256      String?
+  byteCount   Int?
+  recordCount Int?
+  failureCode String?
+  releasedAt  DateTime?
+
+  @@index([requesterId, attestedAt])
+  @@index([courseId, attestedAt])
+}

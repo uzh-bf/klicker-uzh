@@ -668,7 +668,7 @@ export async function getAssessmentResultsLiveQuiz(
     liveQuizId,
     preferredAffiliation = 'uzh',
   }: { liveQuizId: string; preferredAffiliation?: string },
-  ctx: ContextWithUser
+  ctx: Pick<ContextWithUser, 'user'> & { prisma: PrismaTransactionClient }
 ): Promise<AssessmentResultsLiveQuiz | null> {
   // fetch the live quiz and verify that the requesting user is an admin of the associated assessment course
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
@@ -844,7 +844,7 @@ export async function getAssessmentResultsCourse(
     courseId,
     preferredAffiliation = 'uzh',
   }: { courseId: string; preferredAffiliation?: string },
-  ctx: ContextWithUser
+  ctx: Pick<ContextWithUser, 'user'> & { prisma: PrismaTransactionClient }
 ): Promise<AssessmentResultsCourse | null> {
   const scores = await calculateAssessmentCourseScores({ courseId }, ctx)
   if (!scores) return null
