@@ -67,6 +67,22 @@ real KB retrieval. Browser-only GrowthBook test routing enables AI beta for
 local editor verification; no remote feature flag was changed. The unmocked
 route correctly blocked authoring when the flag was unavailable.
 
-Remaining: finish integrated browser acceptance, commit the package, obtain
-integrated final review, publish the draft PR and finish the separate KB plan.
-STG and production remain unvalidated.
+Integrated browser acceptance passed with synthetic local data: five tabs,
+Tutor-only preview, fixed Auto without override controls, two temporary
+conversations resetting to one after reload, and a new disclaimer title saved
+and reloaded on the Disclaimer tab. At 390x844 the footer bottom is 843.97px
+after scrolling to the end. Playwright TypeScript also passes. The complete
+Playwright suite and repository-wide check/build are not claimed; focused
+container checks replaced host hooks for this integration commit.
+
+Remaining: integrated final review, draft PR publication and the separate KB
+planning artifact. STG and production remain unvalidated.
+
+## Primitive impact
+
+| Product primitive | Disposition | Contract |
+| --- | --- | --- |
+| Chatbot configuration | Reuse | Existing owner-edited fields, modes, models, framing and publication locks remain authoritative |
+| Owner preview | Extend | Expose saved model/effort and mode policy with temporary React-state conversations; never write participant history |
+| Participant disclaimer | Reuse | Editable introduction starts with generic content; mandatory sections and saved content remain intact |
+| KB attachment | Reuse | Existing single-active-KB management contract remains unchanged in this package; active plural attachment is separately planned |
