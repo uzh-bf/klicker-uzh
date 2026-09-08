@@ -1,5 +1,7 @@
 # Reliable activity retries and explicit local test profiles
 
+Draft delivery: [PR #5835 — repeatable focused activity runs](https://github.com/uzh-bf/klicker-uzh/pull/5835), targeting `v3`.
+
 ## Approval summary
 
 Prevent partially created activities from contaminating subsequent test retries,
@@ -90,10 +92,11 @@ Two fresh process startups both resolve the patched package and expose 34 routes
 including cockpit. The unchanged activity group passes 12/12 with zero retries
 in 2.1 and 1.9 minutes. Between cycles, exact status is stopped, zero routes,
 zero active resources and no drift. Final shutdown has the same verified state.
-Slice simplification and correctness review pass with no requested changes;
-integrated final review and draft publication remain. Launcher/Hatchet
+Slice simplification, correctness review and integrated final review pass with
+no requested changes. The draft is published; exact-head GitHub checks and human
+review remain before any separately authorized merge. Launcher/Hatchet
 corrections are committed at `0c749d6034`.
-No global runner or GitHub setting was changed. No PR exists yet.
+No global runner or GitHub setting was changed.
 
 ### Approved pinned Next.js patch extension
 
