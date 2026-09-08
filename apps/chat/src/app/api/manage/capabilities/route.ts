@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { isManageAiEnabled } from '@/src/lib/server/featureFlags'
+import { getManageAiCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import type { ManageAssistantCapabilityState } from '@/src/services/manageAssistantCapabilities'
@@ -34,8 +34,12 @@ export async function GET(req: NextRequest) {
   if (!manageUser) return capabilityResponse('unavailable', 401)
 
   try {
-    if (!(await isManageAiEnabled(manageUser))) {
+    const aiCapability = await getManageAiCapability(manageUser)
+    if (aiCapability === 'disabled') {
       return capabilityResponse('unavailable', 403)
+    }
+    if (aiCapability === 'temporarilyUnavailable') {
+      return capabilityResponse('unavailable', 503, { 'Retry-After': '30' })
     }
 
     const rateLimit = capabilityRateLimiter.check(manageUser.sub)

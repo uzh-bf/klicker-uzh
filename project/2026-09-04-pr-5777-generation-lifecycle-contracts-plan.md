@@ -220,6 +220,25 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Review-feedback disposition — 2026-09-08
+
+The current reviewer enum-typo claim is false: ElementGenerationBuildStatus.QUEUED is present in both schema and completion source. Flashcards deliberately count all drafts and questions count original drafts; the retained duplicate-cardinality regression covers this difference, so applying the proposed filter would violate the frozen contract. Empty-result and element-type validation remain with the validated caller contracts and existing guards. The shared completion transaction is the approved extraction; splitting it reverses the package decision. The fixed 15-second lease and renewal concern remain inherited roadmap work, not a new regression. Raw error/build logging is rejected because the approved diagnostic contract excludes dynamic identifiers and provider content.
+
+The controller returns JSON for every supported and rejected request in its exact test-only preload; a generic arbitrary-upstream text proxy is unnecessary. The real analytics tests capture and restore state in finally and observe the restored backend decision; a default reset would overwrite actual prior state and does not solve process crashes. Parenthesizing the existing conditional adds no semantic value. Accepted the small runtime typeof guard for query.enabled to represent Express's parsed shape accurately. No permission, status, cardinality or external-data boundary is widened.
+
+GitGuardian incidents 37051630 and 1509424 identify the inherited CI private-service password fixtures in prepare-test-database.test.cjs and prepare-test-database.cjs from merge 7563dc45b0. Both files remain byte-identical to current v3-ai; the literals are the disposable shard service configuration, not deployed credentials. The scanner status remains failed until its owner dispositions those incidents. No scanner dismissal or history rewrite is performed.
+
+### Merge verification checkpoint — 2026-09-08
+
+Both conflicts are resolved. The merged preload preserves configured non-lecturer analytics behavior while its synthetic lecturer uses the scoped controller; its combined test proves neither overrides the other. Three preload tests and 75 feature-flag tests pass. Merged GraphQL generation and all 47 type/lint tasks pass; schema/SDL match the new target. An initial type run hit the executor's unfinished conflict markers and was superseded by the passing run. Main accepted the executor's test intent, removed an accidental duplicate during takeover, and verified three distinct gate cases with finally restoration.
+
+Two browser attempts hit source-present dynamic-route 404s. The supported in-process cache repair did not restore route registration. A canonical cold stop/start with the guarded repair request restores the exact analytics route to HTTP 200. No product route or authorization code changed. The repaired runtime passes 16 of 17 browser cases in /tmp/generation-merge-browser3.log, including generation editing, analytics allow/deny, all upstream outage recovery cases, and three gate states. The remaining profile-failure test intercepted ManageFeaturePreferences, but upstream now owns identity availability through ManageFeatureFlagProfile. Updated only that interception; its focused rerun is active in /tmp/generation-merge-profile-browser.log. Earlier failures remain diagnostic, not accepted evidence. Full build, merged review and publication follow; scanner incident disposition remains external.
+
+### Target conflict resolution — 2026-09-08
+
+The user requested resolving conflicts and preparing the current package for merge. Refreshed target v3-ai is 6e2d03c5b0, which adds stable feature availability during GrowthBook outages. Integration is necessary because GitHub reports CONFLICTING; use a normal merge, no rebase or force push. Main owns the preload conflict, integration and verification. Executor Fermat owns the AI management test conflict with acceptance that upstream chatbot eligibility and prior-state restoration both survive. Preserve target feature availability, our scoped analytics controller, and the unchanged generation contracts. Verify the merged preload, feature-flags package, affected browser cases, types and build, then review the committed integration and publish. Existing ready-for-review PR state is preserved; this does not authorize merging into v3-ai.
+
+
 ### Corrective reviews accepted; draft publication — 2026-09-08
 
 Independent corrective slice review completed with no actionable source defects. Integrated final review passes on df1ea25580136bf1dc70b05dc8e18a633374b371..6ced243cd21d653ea899a544acfe030ba2ffe4e2 across all 33 paths, with no exclusions or reportable findings. Main accepted both results; all children are closed. Reports: project/_local/reviews/2026-09-08-corrective-slice-review.md and project/_local/reviews/2026-09-08-corrective-integrated-final.md. This final receipt changes documentation only; the reviewed source and passing checks remain unchanged.

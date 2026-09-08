@@ -94,7 +94,8 @@ function prepareApp({
             return
           }
         } else {
-          enabled = req.query.enabled as string | undefined
+          const rawEnabled = req.query.enabled
+          enabled = typeof rawEnabled === 'string' ? rawEnabled : undefined
           if (
             queryKeys.length !== 1 ||
             queryKeys[0] !== 'enabled' ||

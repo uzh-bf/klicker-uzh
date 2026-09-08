@@ -543,7 +543,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
         activityAnalyticsRequests += 1
       }
 
-      if (operationName === 'ManageFeaturePreferences') {
+      if (operationName === 'ManageFeatureFlagProfile') {
         profileFailureIntercepted += 1
         await profileFailureReady
         await route.fulfill({

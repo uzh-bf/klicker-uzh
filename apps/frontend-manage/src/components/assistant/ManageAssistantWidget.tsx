@@ -32,7 +32,7 @@ import {
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
-import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
+import { useManageAiCapability } from '../featureFlags/ManageFeatureFlagProvider'
 import {
   buildManageAssistantElementEditRoute,
   buildManageAssistantUrl,
@@ -160,8 +160,11 @@ export function ManageAssistantWidget() {
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
   // excluded explicitly: every other Manage route requires a signed-in user.
-  const assistantEnabled = useAiFeaturesEnabled()
-  const enabled = assistantEnabled && router.pathname !== '/login'
+  const { state: aiCapability, retry } = useManageAiCapability()
+  const assistantEnabled = aiCapability === 'enabled'
+  const temporarilyUnavailable = aiCapability === 'temporarilyUnavailable'
+  const enabled =
+    (assistantEnabled || temporarilyUnavailable) && router.pathname !== '/login'
   const assistantUrl = useMemo(
     () =>
       buildManageAssistantUrl({
@@ -672,13 +675,27 @@ export function ManageAssistantWidget() {
           type="button"
           aria-controls={MANAGE_ASSISTANT_PANEL_ID}
           aria-expanded={open}
+          aria-disabled={temporarilyUnavailable}
           aria-haspopup={!isDesktop ? 'dialog' : undefined}
           aria-label={t('manage.assistant.open')}
+          title={
+            temporarilyUnavailable
+              ? t('manage.ai.temporarilyUnavailableDescription')
+              : undefined
+          }
           onClick={() => {
+            if (temporarilyUnavailable) {
+              void retry()
+              return
+            }
+
             setHasOpened(true)
             setOpen(true)
           }}
-          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-12 items-center justify-center rounded-full p-1 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6"
+          className={twMerge(
+            'bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-12 items-center justify-center rounded-full p-1 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6',
+            temporarilyUnavailable && 'cursor-not-allowed opacity-60'
+          )}
           data-cy="manage-assistant-open"
         >
           <AssistantAvatar className="text-uzh-blue size-10 border border-white/40 bg-white" />

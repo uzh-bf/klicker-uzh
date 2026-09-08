@@ -8,6 +8,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import Layout from '~/components/Layout'
+import { useManageFeatureProfileLoading } from './ManageFeatureFlagProvider'
 
 export default function LearningAnalyticsRouteGuard({
   children,
@@ -16,11 +17,12 @@ export default function LearningAnalyticsRouteGuard({
 }) {
   const t = useTranslations()
   const flagsReady = useFeatureFlagsReady()
+  const profileLoading = useManageFeatureProfileLoading()
   const flagEvaluationAvailable = useFeatureFlagEvaluationAvailable()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const title = t('shared.generic.learningAnalytics')
 
-  if (!flagsReady) {
+  if (profileLoading || !flagsReady) {
     // Resolve profile availability before mounting Layout's login redirect.
     return (
       <div
