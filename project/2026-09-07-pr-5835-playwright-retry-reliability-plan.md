@@ -180,7 +180,11 @@ all 28 host checks still pass. The prose-pinning suggestion is rejected because
 validation already proves zero external calls, and the call-order suggestion
 is obsolete after target integration. Whole-branch Gitleaks finds no leaks.
 The final dependency definitions and lockfile match current `v3` exactly.
-Integrated final review and ordinary draft update remain; no merge is included.
+Integrated final review passes on all 20 paths through `6d03be2777`, with no
+findings. Report: `_local/reviews/2026-09-08-next-no-patch-final-review.md`.
+The local implementation and verification package is complete for the ordinary
+draft update. Exact-head GitHub CI and human review remain before any separately
+authorized merge. No runner, shared infrastructure or release change is included.
 
 ### September 8 causal observation and configuration-only comparison
 
