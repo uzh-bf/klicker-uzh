@@ -803,3 +803,21 @@ test('browser-only rejects unsupported flags before touching runtime', () => {
     assert.deepEqual(calls, [])
   }
 })
+
+for (const playwrightCli of [false, true]) {
+  for (const prefix of [
+    '--force',
+    '--dry-run',
+    '--show-report',
+    '--print-env',
+  ]) {
+    test(`rejects ${prefix} before --install-browser without side effects (CLI present: ${playwrightCli})`, () => {
+      const { calls, dependencies } = createLauncherHarness({ playwrightCli })
+      assert.throws(
+        () => runPlaywrightHost([prefix, '--install-browser'], dependencies),
+        /--install-browser must be the first argument/
+      )
+      assert.deepEqual(calls, [])
+    })
+  }
+}

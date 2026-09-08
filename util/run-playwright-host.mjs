@@ -308,7 +308,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   })
 
   const { profile, args } = parseHostArguments(argv)
-  if (args[0] === '--install-browser') {
+  const installBrowserIndex = args.indexOf('--install-browser')
+  if (installBrowserIndex >= 0) {
+    if (installBrowserIndex !== 0) {
+      fail('--install-browser must be the first argument')
+    }
     if (profile) fail('--profile cannot be combined with --install-browser')
     const installArgs = args.slice(1)
     if (installArgs.some((arg) => !['--force', '--dry-run'].includes(arg))) {
