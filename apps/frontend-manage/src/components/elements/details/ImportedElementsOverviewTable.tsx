@@ -266,7 +266,7 @@ function ImportedElementsOverviewTable({
                 className="flex flex-col gap-2 rounded-md border border-[#E9E9E9] bg-[#FAFAFA] p-3 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 tabIndex={-1}
                 aria-label={t('manage.elements.reviewElementsBeforeImport')}
-                aria-describedby="element-import-copyright-disclosure element-import-psychometric-disclosure"
+                aria-describedby="element-import-copyright-disclosure element-import-review-guidance"
                 data-cy="element-import-review-disclosures"
               >
                 <p
@@ -278,7 +278,7 @@ function ImportedElementsOverviewTable({
                   )}
                 </p>
                 <p
-                  id="element-import-psychometric-disclosure"
+                  id="element-import-review-guidance"
                   className="m-0 text-sm text-[#4C4C4C]"
                 >
                   {t('manage.elements.elementImportReviewGuidance')}
