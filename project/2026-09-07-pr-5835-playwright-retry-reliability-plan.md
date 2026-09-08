@@ -16,9 +16,11 @@ That merge is complete. Approval covers scoped source changes, checks, review,
 commits and ordinary draft-PR delivery. No merge, runner change, canary activation,
 cache reset, shared infrastructure repair or package release is included.
 
-The approved continuation also patches the pinned Next.js development route
-watcher and fixes the local Hatchet HTTP endpoint. No dependency version changes.
-Repeated startup and browser qualification must pass before draft delivery.
+The current approved continuation replaces the proposed Next.js patch with a
+development-only configuration for the four Pages Router apps, if repeated
+startup and browser qualification pass. Chat, production and CI serving retain
+their existing configuration. The local Hatchet HTTP correction remains.
+No dependency version changes are included.
 
 The main risk is under-provisioning a focused test: the caller must request all
 needed profiles. Argument validation must finish before any external command.
@@ -81,6 +83,182 @@ Pause on a repeated runtime failure, missing required review capability or a
 material contract change. Do not weaken assertions or increase retry counts.
 
 ## Progress
+
+### Approved configuration-only continuation
+
+The September 8 approval supersedes the historical patch implementation below.
+Main owns the scoped configuration, real runtime proof and existing draft
+delivery. A bounded executor owns false-ready protection in
+`util/dev-runtime.sh`, `util/dev-runtime-readiness.test.mjs`, and
+`util/test-dev-runtime.sh`, with a dependency-free helper only if needed.
+
+Explicit `pagesRouterOnly` opt-in defaults to false in the shared config.
+Only Auth, Control, Manage and PWA opt in. Disable `clientRouterFilter` only
+when the caller also passes `NODE_ENV=development`. App Router consumers,
+production and test configuration retain the upstream default. A future
+App Router migration must remove the opt-in.
+
+Qualify three fresh application-process starts in the existing disposable
+unpatched checkout. Each compares the live HTTP development manifest with
+source routes and exercises synthetic nested HTTP paths. At least two starts
+must pass the unchanged 12-test activity group with zero retries, including
+normal client navigation. Recheck manifests after browser execution. Keep
+cache preservation enabled, do not inject observation hooks, and verify the
+resolved package and effective configuration. Stop and prove zero exact routes
+between cycles. Preserve the retained task runtime and both databases outside
+the existing synthetic test cleanup contract.
+
+Readiness compares dynamic routes discovered from each selected Pages Router
+app's `src/pages` with the running server's HTTP development manifest.
+Normalize source extensions and terminal `index`; include dynamic API routes.
+Missing or unreadable source, malformed or unavailable manifests, and missing
+routes cannot pass an empty comparison. Inventory failures take precedence
+over shell stale-cache classification and never return repair status 20.
+Both HTTP requests share the remaining readiness budget; the existing
+90-second deadline stays unchanged. No new repair loop or cache reset is added.
+
+The test portfolio extends the existing readiness suites for a healthy shell
+with incomplete inventory, eventual completeness, malformed/unavailable
+inventory, a hanging manifest, selected-profile isolation and no cache repair.
+A configuration matrix proves opt-in/development-only behavior. Main explicitly
+wires these checks into the existing workflow in place of the aggregation test.
+After qualification, remove the patch, registration and patch-specific harness,
+then regenerate the lockfile natively without version changes. Update the
+existing solution, complete committed-slice and final reviews, and push the
+existing draft. Merge, release, shared infrastructure and runner changes remain
+outside this approval.
+
+Planner Confucius approved revision 2 after requiring source-driven membership,
+repair-isolated failures within the existing deadline and explicit CI coverage.
+The first disposable start uses the scoped candidate; browser proof is running.
+
+### September 8 causal observation and configuration-only comparison
+
+This investigation leaves implementation and publication unchanged. Ref refresh
+finds task head `95a6825b2ae8d976712a50c2cef45d3e6c8059f6`, 11 ahead and zero
+behind `origin/v3`; the live PR still publishes `1129332039`. Main owns consumer
+runtime observation and the causal decision. A read-only researcher covers
+public upstream source only. The separate external advisor request was denied
+because it included unpublished diagnostic reasoning; no such payload was sent.
+
+The existing synthetic propagation-barrier test proves a possible stale-write
+ordering, but does not identify the actual first-startup suspension. A temporary
+observer in the disposable unpatched checkout therefore recorded Watchpack
+inventory, scan identity, project-update timing, and actual dynamic-route
+publication. It did not serialize callbacks, inject delays, change route values,
+or retry. Observation can affect timing; the uninstrumented comparison below
+therefore remains a separate evidence requirement. Automatic cache repair was
+disabled with the existing preserve marker. No dependencies were installed,
+source pages changed, database reset, or bundler/version switched.
+
+The first observed startup reproduced an older empty publication overwriting a
+complete newer publication in Auth and Control. A second, more narrowly timed
+startup reproduced it in Auth, Manage, and PWA. In the PWA process, elapsed time
+from first aggregation was:
+
+| Time | Scan | Observed state |
+| --- | --- | --- |
+| 0 ms | First scan | Begins with zero page files; enters Turbopack project update |
+| 42 ms | Second scan | Publishes 16 routes |
+| 252 ms | Third scan | Publishes all 43 routes |
+| 270 ms | First scan | Resumes and publishes zero routes, while shared pageFiles still contains 43 |
+
+The HTTP development manifests subsequently reported PWA 0, Manage 0, Auth 0,
+Control 8. Top-level readiness still passed. A synthetic nested-route 404 from
+the preceding browser failure was `PageNotFoundError` for `/session/<id>`; it
+was not an application selector or proxy failure.
+
+The first scan's delay is `hotReloader.turbopackProject.update`, not ordinary
+await-of-undefined propagation. All four apps report `appDir: false` and default
+`experimental.clientRouterFilter: true`. The handler initializes its client
+router filter even with no App Router paths, sets `envChange = true`, records
+the filter as current, then awaits project update. Subsequent scans see the same
+filter and skip that expensive update; they can overtake the first scan. When
+the first scan resumes, it publishes its old snapshot. Progressive initial file
+discovery plus out-of-order publication explains both top-level-only and empty
+route lists. Bind-mount timing exposes this; OS watch exhaustion was not observed.
+
+One configuration-only comparison set `experimental.clientRouterFilter: false`
+in the disposable shared config, affecting only the selected Pages Router apps
+in this run. It eliminated the initial project updates. PWA publications advanced
+0, 16, 26, 37, 43 with no stale overwrite; Manage advanced 28, 34. Final HTTP
+route counts were PWA 43, Manage 34, Control 8, Auth 9. A fresh application-process
+startup after removing the observer produced the same four counts. Actual Next
+process environments proved no observer injection, and package inspection proved
+Next 16.2.11, the original async handler, and no serialization queue. Synthetic
+PWA and Control session routes and the Manage cockpit returned HTTP 200.
+
+This qualifies a targeted candidate, not a complete patch retirement. No full
+browser group was rerun with this candidate. The filter is an experimental
+cross-router navigation facility; a durable change must be scoped explicitly to
+Pages Router-only development apps, preserve App Router/mixed-router behavior and
+production configuration, and test normal client navigation. It removes this
+startup trigger, not all possible asynchronous watcher races (e.g. later env,
+tsconfig or middleware changes). Do not replace the dependency patch with a
+global filter disable or infer that one green run proves all reload behavior.
+
+Readiness should separately verify expected nested routes and report an
+incomplete development inventory without interpreting every such failure as
+corrupt disk cache. That is detection, not serialization. CI already runs built
+Next apps through `start:playwright:ci`, the profile runtime, and `start:test`;
+this reproduced failure belongs to local `next dev` qualification. Production
+serving remains the recommended E2E boundary, but is not a fix for local HMR.
+
+Evidence stays local: `/tmp/klicker-next-watch-observation.jsonl`,
+`/tmp/klicker-next-watch-detail.jsonl`,
+`/tmp/klicker-next-watch-filter-disabled.jsonl`, and the
+`/tmp/next-filter-uninstrumented-*` lifecycle logs. No raw runtime evidence was
+published. The disposable config and startup instrumentation are restored after
+the final exact stop; synthetic database and prior test artifacts are preserved.
+
+Primary source anchors:
+
+- [Next 16.2.11 route watcher](https://github.com/vercel/next.js/blob/v16.2.11/packages/next/src/server/lib/router-utils/setup-dev-bundler.ts): first filter initialization around lines 774-815; latest route publication later in the same callback.
+- [Next 16.3.4 route watcher](https://github.com/vercel/next.js/blob/v16.3.4/packages/next/src/server/lib/router-utils/setup-dev-bundler.ts): same structure; Webpack and Turbopack share the discovery handler.
+- [Next client route filter](https://github.com/vercel/next.js/blob/v16.3.4/packages/next/src/lib/create-client-router-filter.ts): App Router path and optional redirect inputs.
+- [Watchpack event aggregation](https://github.com/webpack/watchpack/blob/v2.4.4/lib/watchpack.js): snapshot inventory and non-awaiting aggregated event emission.
+- [Next Playwright guidance](https://nextjs.org/docs/app/guides/testing/playwright): recommends testing built production code.
+
+### September 8 fresh unpatched consumer comparison
+
+The user approved a fresh disposable runtime, preserving the retained runtime
+and its database. Proof checkout: `trees/rs/unpatched-next-proof`, branch
+`rs/unpatched-next-proof`, based on exact v3 `e3fb9873c98a664987cc48f0ec9bbf51c9337e8a`.
+Only the existing launcher profile option, retry/calendar fixes, and local
+Hatchet HTTP endpoint correction were overlaid for test parity. Next remains
+16.2.11 with no patch registration, unchanged lockfile, ordinary Turbopack dev
+mode, and no polling override. Actual loaded-handler inspection confirms the
+unpatched asynchronous callback and absence of the serialization queue.
+
+Fresh container mount inspection proves per-package dependency volumes, including
+all frontend apps. Initial runtime readiness passed with Devrouter 0.0.59,
+34 Manage routes, and HTTP 200 from the synthetic cockpit route. The installed
+Devrouter changed externally to 0.0.60 before browser qualification; both browser
+cycles use that version. Its upgrade guidance was inspected without changing the
+proof checkout's version pin. Host dependency installation ran only after stop.
+The disposable app was recreated during first browser preparation; both browser
+cycles then used container `29d2e9bb26e8eb9a18a701956e211e0f73142a6574963db9ae3afcaf852be8aa`.
+
+Cycle one passed 12/12 in 2.2 minutes with zero retries. Exact stop then proved
+empty active membership, zero routes and no drift. Cycle two started a separate
+application process without installing host dependencies and failed: 7 passed,
+1 failed, 4 serial successors did not run, in 2.1 minutes. The student live-quiz
+step displayed the application's 404 page. At failure, the PWA development
+manifest had zero routes and Manage had 28, down from 34. No assertions were
+weakened. Logs are `/tmp/klicker-unpatched-proof-cycle-1.log` and
+`/tmp/klicker-unpatched-proof-cycle-2.log`; screenshot, video and error context
+remain under the proof checkout's `playwright/test-results/`.
+
+Conclusion: the merged dependency-isolation correction alone does not prevent
+this development-route failure. The first green run is not sufficient to remove
+the patch. No patch removal, bundler switch, production-serving implementation,
+runner change, or publication was performed. This is a real unpatched consumer
+reproduction, but does not by itself prove the exact overlapping event sequence.
+
+Final cleanup verification reports the disposable runtime stopped, with empty
+active apps/services/processes, no drift, and zero exact-checkout routes. Its
+database and diagnostic artifacts remain preserved; the retained task runtime
+was not recreated or reset.
 
 ### September 8 upstream upgrade experiment and conflict resolution
 
