@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../src/lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '../src/lib/participantAccountDataUse.js'
+import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import {
   completeParticipantDataUse,
   updateParticipantDataUseChoice,

@@ -4,7 +4,7 @@ import type { Context } from './context.js'
 import {
   isParticipantDataUseComplete,
   participantAccountDataUseSelect,
-} from './participantAccountDataUse.js'
+} from '@klicker-uzh/util'
 
 const supportFields = new Set([
   'Query.self',

@@ -9,7 +9,7 @@ import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '../lib/participantAccountDataUse.js'
+import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
 import {
   AchievementRef,

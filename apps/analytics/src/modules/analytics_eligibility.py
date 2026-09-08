@@ -155,17 +155,15 @@ def ensure_analytics_eligibility(
 def filter_records_by_eligibility(
     records: Iterable[Mapping[str, Any]],
     eligibility: AnalyticsEligibilityContext,
-    participant_key: str = "participantId",
-    created_at_key: str = "createdAt",
 ) -> list[Mapping[str, Any]]:
     """Keep only opted-in, disclosed, non-pending, prospective response records."""
 
     choice_at_by_participant = eligibility.choice_at_by_participant
     filtered: list[Mapping[str, Any]] = []
     for record in records:
-        participant_id = record.get(participant_key)
+        participant_id = record.get("participantId")
         choice_at = choice_at_by_participant.get(str(participant_id))
-        created_at = _as_utc_datetime(record.get(created_at_key))
+        created_at = _as_utc_datetime(record.get("createdAt"))
         if choice_at is not None and created_at is not None and created_at >= choice_at:
             filtered.append(record)
     return filtered
@@ -206,14 +204,12 @@ def filter_activity_by_eligibility(
 def filter_dataframe_by_eligibility(
     dataframe: Any,
     eligibility: AnalyticsEligibilityContext,
-    participant_key: str = "participantId",
-    created_at_key: str = "createdAt",
 ) -> Any:
     """Apply the same prospective filter to a dataframe before aggregation."""
 
     if dataframe.empty:
         return dataframe
-    if participant_key not in dataframe or created_at_key not in dataframe:
+    if "participantId" not in dataframe or "createdAt" not in dataframe:
         return dataframe.iloc[0:0]
 
     return dataframe.loc[
@@ -222,8 +218,6 @@ def filter_dataframe_by_eligibility(
                 filter_records_by_eligibility(
                     [row.to_dict()],
                     eligibility,
-                    participant_key=participant_key,
-                    created_at_key=created_at_key,
                 )
             ),
             axis=1,
@@ -234,15 +228,14 @@ def filter_dataframe_by_eligibility(
 def filter_dataframe_by_participants(
     dataframe: Any,
     eligibility: AnalyticsEligibilityContext,
-    participant_key: str = "participantId",
 ) -> Any:
     """Keep derived rows for the captured participant cohort."""
 
-    if dataframe.empty or participant_key not in dataframe:
+    if dataframe.empty or "participantId" not in dataframe:
         return dataframe.iloc[0:0]
 
     participant_ids = set(eligibility.participant_ids)
-    return dataframe.loc[dataframe[participant_key].astype(str).isin(participant_ids)].copy()
+    return dataframe.loc[dataframe["participantId"].astype(str).isin(participant_ids)].copy()
 
 
 def is_course_learning_analytics_enabled(db: Any, course_id: str) -> bool:
@@ -253,14 +246,13 @@ def is_course_learning_analytics_enabled(db: Any, course_id: str) -> bool:
 def filter_dataframe_by_enabled_courses(
     db: Any,
     dataframe: Any,
-    course_key: str = "courseId",
 ) -> Any:
     """Keep derived rows whose course still permits learning analytics."""
 
-    if dataframe.empty or course_key not in dataframe:
+    if dataframe.empty or "courseId" not in dataframe:
         return dataframe.iloc[0:0]
 
-    course_ids = tuple(dict.fromkeys(str(course_id) for course_id in dataframe[course_key].dropna()))
+    course_ids = tuple(dict.fromkeys(str(course_id) for course_id in dataframe["courseId"].dropna()))
     if not course_ids:
         return dataframe.iloc[0:0]
 
@@ -271,7 +263,7 @@ def filter_dataframe_by_enabled_courses(
         }
     )
     enabled_course_ids = {str(_value(course, "id")) for course in courses}
-    return dataframe.loc[dataframe[course_key].astype(str).isin(enabled_course_ids)].copy()
+    return dataframe.loc[dataframe["courseId"].astype(str).isin(enabled_course_ids)].copy()
 
 
 def load_course_question_responses(

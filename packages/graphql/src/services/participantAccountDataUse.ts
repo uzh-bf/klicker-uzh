@@ -8,7 +8,7 @@ import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '../lib/participantAccountDataUse.js'
+import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 
 const accountDataUseSelect = {
   ...participantDataUseSelect,
