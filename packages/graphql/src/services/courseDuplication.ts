@@ -374,7 +374,8 @@ async function updateCourseDuplicationJob(
       CourseDuplicationJob,
       'createdCourseId' | 'errorMessage' | 'errorType' | 'status'
     >
-  >
+  >,
+  { bestEffortTaskSync = false }: { bestEffortTaskSync?: boolean } = {}
 ) {
   const updatedJob = {
     ...job,
@@ -397,7 +398,12 @@ async function updateCourseDuplicationJob(
     // A terminal result must reach the durable task center before the worker
     // reports success. Throwing here lets Hatchet retry even if the ephemeral
     // Redis status expires before a later sweep can restore the task.
-    if (isTerminalCourseDuplicationStatus(updatedJob.status)) throw error
+    if (
+      !bestEffortTaskSync &&
+      isTerminalCourseDuplicationStatus(updatedJob.status)
+    ) {
+      throw error
+    }
   }
 
   return updatedJob
@@ -447,20 +453,31 @@ async function normalizeStaleCourseDuplicationJob(
     console.warn(
       `Course duplication job ${job.id} went stale but its course is committed; marking COMPLETED.`
     )
-    return await updateCourseDuplicationJob(redis, prisma, job, {
-      status: 'COMPLETED',
-      createdCourseId: committedCourse.id,
-    })
+    return await updateCourseDuplicationJob(
+      redis,
+      prisma,
+      job,
+      { status: 'COMPLETED', createdCourseId: committedCourse.id },
+      { bestEffortTaskSync: true }
+    )
   }
 
   console.warn(
     `Course duplication job ${job.id} went stale without a heartbeat; marking FAILED.`
   )
-  return await updateCourseDuplicationJob(redis, prisma, job, {
-    status: 'FAILED',
-    errorType: 'generic',
-    errorMessage: 'Course duplication did not finish in time.',
-  })
+  // Reads and sweeps must continue past a task-center outage. The terminal
+  // Redis snapshot remains available for the next reconciliation attempt.
+  return await updateCourseDuplicationJob(
+    redis,
+    prisma,
+    job,
+    {
+      status: 'FAILED',
+      errorType: 'generic',
+      errorMessage: 'Course duplication did not finish in time.',
+    },
+    { bestEffortTaskSync: true }
+  )
 }
 
 export async function startCourseDuplication(

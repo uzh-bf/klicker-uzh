@@ -7,8 +7,86 @@ import {
   handleSweepStaleCourseDuplications,
   startCourseDuplication,
 } from '../src/services/courseDuplication.js'
+import { getCourseDuplicationStatusKey } from '../src/services/courseDuplicationShared.js'
 
 describe('course duplication task durability', () => {
+  it.each([
+    'status query',
+    'sweep',
+  ] as const)('continues the %s when one stale job cannot sync its durable task', async (operation) => {
+    const userId = randomUUID()
+    const jobs = [randomUUID(), randomUUID()].map((id) => ({
+      id,
+      userId,
+      status: 'RUNNING',
+      sourceCourseId: randomUUID(),
+      sourceCourseName: 'Synthetic source',
+      targetCourseName: 'Synthetic copy',
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(0).toISOString(),
+    }))
+    const storedJobs = new Map(
+      jobs.map((job) => [
+        getCourseDuplicationStatusKey(job.id),
+        JSON.stringify(job),
+      ])
+    )
+    const redis = {
+      get: vi.fn(async (key: string) => storedJobs.get(key) ?? null),
+      set: vi.fn(async (key: string, value: string) => {
+        storedJobs.set(key, value)
+        return 'OK'
+      }),
+      eval: vi.fn(async () => 1),
+      scan: vi.fn(async () => ['0', [...storedJobs.keys()]]),
+    }
+    const prisma = {
+      course: {
+        findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({
+          id: where.id,
+        })),
+      },
+      asyncTask: {
+        updateMany: vi
+          .fn(async () => ({ count: 1 }))
+          .mockRejectedValueOnce(new Error('synthetic task sync outage')),
+        findUnique: vi.fn(async () => ({ id: jobs[1]!.id })),
+      },
+    }
+    const logger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    const ctx = { prisma, redisExec: redis, user: { sub: userId } }
+
+    if (operation === 'status query') {
+      const statuses = await getCourseDuplicationStatuses(
+        { ids: jobs.map((job) => job.id) },
+        ctx as never
+      )
+      expect(statuses.map((job) => job.status)).toEqual([
+        'COMPLETED',
+        'COMPLETED',
+      ])
+    } else {
+      await expect(
+        handleSweepStaleCourseDuplications(
+          {},
+          ctx as never,
+          { logger } as never
+        )
+      ).resolves.toBe(true)
+    }
+    expect(prisma.asyncTask.updateMany).toHaveBeenCalledTimes(2)
+    expect(redis.eval).toHaveBeenCalledTimes(2)
+    for (const job of jobs) {
+      expect(
+        JSON.parse(storedJobs.get(getCourseDuplicationStatusKey(job.id))!)
+      ).toMatchObject({
+        id: job.id,
+        status: 'COMPLETED',
+        createdCourseId: job.id,
+      })
+    }
+  })
+
   it('retries a terminal job when the durable task cannot be synchronized', async () => {
     const jobId = randomUUID()
     const now = new Date().toISOString()
