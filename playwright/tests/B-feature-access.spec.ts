@@ -436,11 +436,15 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
     const authUrl = process.env.URL_AUTH ?? URL_AUTH
     const expectedAuthUrl = new URL(authUrl)
-    await expect(page).toHaveURL(
-      (url) =>
-        url.origin === expectedAuthUrl.origin &&
-        url.pathname === expectedAuthUrl.pathname
-    )
+    await expect
+      .poll(() => {
+        const url = new URL(page.url())
+        return (
+          url.origin === expectedAuthUrl.origin &&
+          url.pathname === expectedAuthUrl.pathname
+        )
+      })
+      .toBe(true)
     expect(activityAnalyticsRequests).toBe(0)
   })
 
