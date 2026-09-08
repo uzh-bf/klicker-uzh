@@ -141,6 +141,17 @@ test('local document extraction selects a CPU-compatible profile without picture
   assert.equal(environment.ingestion.DOC_PROCESSING_PICTURE_DESCRIPTION, 'off')
 })
 
+test('local reader configuration targets only local Milvus and mounted tools', () => {
+  const { environment } = renderLocalConfiguration(fixture())
+  assert.deepEqual(environment['doc-query'], {
+    MILVUS_URI: 'http://milvus:19530',
+    MILVUS_DATABASE_NAME: 'default',
+    MILVUS_COLLECTION_NAME: 'klicker_course_materials_v1',
+    DOC_QUERY_TOOL_CONFIG_DIR: '/etc/doc-query/tools',
+    DOC_QUERY_TOOL_CONFIG_REQUIRED: 'true',
+  })
+})
+
 test('the producer project writes real vectors and durable artifacts to the local stack', () => {
   const { project, producer, environment } = renderLocalConfiguration(fixture())
   assert.deepEqual(producer.producer.allowed_projects, [project.project_name])

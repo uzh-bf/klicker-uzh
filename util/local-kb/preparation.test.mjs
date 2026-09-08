@@ -274,9 +274,12 @@ test('configuration setup writes private local material once without completing 
   assert.ok(providers.services['ingestion-api'])
   assert.ok(providers.services['doc-query'])
   assert.ok(providers.volumes.milvus)
-  for (const service of Object.values(bootstrap.services)) {
+  // Hatchet publishes this file in the separate storage-initialization phase.
+  await deliverHatchetToken(config, revision, 'synthetic.header.signature')
+  for (const service of Object.values(providers.services)) {
     for (const entry of service.env_file ?? []) {
       assert.equal((await stat(entry.path)).isFile(), true)
+      assert.equal((await stat(entry.path)).mode & 0o777, 0o600)
     }
   }
   const before = await readFile(environment, 'utf8')

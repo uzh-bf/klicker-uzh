@@ -106,6 +106,13 @@ export function renderLocalConfiguration(credentials) {
       MINIO_ACCESS_KEY_ID: 'local-kb',
       MINIO_SECRET_ACCESS_KEY: credentials.objectStorage,
     },
+    'doc-query': {
+      MILVUS_URI: 'http://milvus:19530',
+      MILVUS_DATABASE_NAME: 'default',
+      MILVUS_COLLECTION_NAME: 'klicker_course_materials_v1',
+      DOC_QUERY_TOOL_CONFIG_DIR: '/etc/doc-query/tools',
+      DOC_QUERY_TOOL_CONFIG_REQUIRED: 'true',
+    },
     scraping: {
       WEB_SCRAPING_API_KEY: credentials.scraping,
       WEB_SCRAPING_CRAWL4AI_API_TOKEN: credentials.crawl4ai,
@@ -139,6 +146,14 @@ export function renderLocalConfiguration(credentials) {
       AZURE_STORAGE_CONNECTION_STRING: `DefaultEndpointsProtocol=http;AccountName=klickerdev;AccountKey=${blobKey};BlobEndpoint=http://blob:10000/klickerdev;`,
     },
     klicker: {
+      DATABASE_URL: database('klicker'),
+      SHADOW_DATABASE_URL: database('klicker_shadow'),
+      REDIS_HOST: 'redis_exec',
+      REDIS_PORT: '6379',
+      REDIS_CACHE_HOST: 'redis_cache',
+      REDIS_CACHE_PORT: '6379',
+      REDIS_ASSESSMENT_HOST: 'redis_assessment',
+      REDIS_ASSESSMENT_PORT: '6379',
       KB_INGESTION_API_URL: 'http://ingestion-api:8000',
       KB_INGESTION_API_KEY: credentials.ingestion,
       KB_INGESTION_PROJECT_ID: project,
@@ -170,7 +185,7 @@ export function renderLocalConfiguration(credentials) {
     // Runs only on the fresh Postgres volume. The official entrypoint creates
     // Klicker's database; these separate databases belong to its dependencies.
     databaseInitialization:
-      ['hatchet', 'ingestion', 'document_processing']
+      ['hatchet', 'ingestion', 'document_processing', 'klicker_shadow']
         .map((name) => `CREATE DATABASE ${name} OWNER local_kb;`)
         .join('\n') + '\n',
     producer: {

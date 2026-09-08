@@ -4,12 +4,10 @@ import { lstat, mkdir, open, realpath } from 'node:fs/promises'
 import { join } from 'node:path'
 import { renderBackingCompose } from './backing-compose.mjs'
 import { renderProviderCompose } from './compose.mjs'
-import { renderDocProcessingCompose } from './doc-processing-compose.mjs'
 import {
   inspectUnusedComposeProject,
   runLocalDocker,
 } from './docker-preflight.mjs'
-import { renderIngestionCompose } from './ingestion-compose.mjs'
 import { validateIsolatedConfig } from './isolated-config.mjs'
 import {
   localCredentialNames,
@@ -74,12 +72,11 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
     name: config.project.identity,
     ...renderBackingCompose(config),
   }
-  const ingestion = renderIngestionCompose(config)
-  const documents = renderDocProcessingCompose(config)
-  bootstrap.services['ingestion-setup'] = ingestion.services['ingestion-setup']
+  bootstrap.services['ingestion-setup'] = providers.services['ingestion-setup']
   bootstrap.services['doc-processing-setup'] =
-    documents.services['doc-processing-setup']
-  Object.assign(bootstrap.volumes, documents.volumes)
+    providers.services['doc-processing-setup']
+  bootstrap.volumes['document-processing'] =
+    providers.volumes['document-processing']
   const configurationClaim = join(directory, 'configuration-claimed')
   await mkdir(configurationClaim, { mode: 0o700 })
   const credentials = Object.fromEntries(
