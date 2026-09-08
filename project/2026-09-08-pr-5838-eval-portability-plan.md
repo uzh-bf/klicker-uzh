@@ -1,5 +1,7 @@
 # Portable Klicker evaluation setup
 
+Draft delivery: [PR #5838 — portable, mode-aware evaluation launcher](https://github.com/uzh-bf/klicker-uzh/pull/5838), targeting enhance-ground-truth.
+
 ## Approval summary
 
 Make evaluation runs reproducible for collaborators without manual LiteLLM exports. The launcher will load only the configuration required by the selected mode, obtain the judge URL and key together from an explicit Infisical scope, and explain missing prerequisites before starting work.
@@ -111,4 +113,4 @@ Native planner review: round 1 REVISE; all four findings accepted; round 2 APPRO
 
 Passing evidence on 2026-09-08: wrapper tests under macOS Bash 3.2 and Linux Node 24.16.0 in a disposable container with external networking disabled; Node configuration tests in the same Linux image; shell syntax and ShellCheck warning checks; Biome, Prettier, Ruff and Git whitespace checks; ordinary-clone help and missing-submodule behavior with spaces in the checkout path; and the real pinned framework integration producing exactly one loopback QA artifact. The integration uses Python 3.12.13 and uv 0.12.10, an empty temporary user environment, relative input paths, and a test-only network guard. Its final run used a writable temporary uv cache and offline frozen dependencies.
 
-Live acceptance remains pending: the existing approved operator profile has no judge URL/key mapping, so no real secret lookup or paid judge call was performed. A collaborator must confirm the approved scope metadata and follow the guide on another machine. No secret permissions were changed. No application stack was started. Broad monorepo build/typecheck and container-owned application hooks were not run; the worktree has no installed Husky hook directory. Focused checks and staged secret/identity checks were run directly. Draft delivery remains the next action after required reviews pass; merging and live operations are outside this approval.
+Live acceptance remains pending: the existing approved operator profile has no judge URL/key mapping, so no real secret lookup or paid judge call was performed. A collaborator must confirm the approved scope metadata and follow the guide on another machine. No secret permissions were changed. No application stack was started. Broad monorepo build/typecheck and container-owned application hooks were not run; the worktree has no installed Husky hook directory. Focused checks and staged secret/identity checks were run directly. Draft delivery is complete at the linked PR; hosted checks remain pending. Merging and live operations are outside this approval.
