@@ -33,8 +33,8 @@ infrastructure health, provider process readiness and external AI capability.
 
 Continue implementation in `trees/rs/generation-lifecycle-contracts`, branch
 `rs/generation-lifecycle-contracts`, targeting the existing draft PR's `v3-ai`
-base. The refreshed branch is five commits ahead of its tracking branch and
-178 ahead/five behind default `origin/v3`; no integration is required for this
+base. The refreshed branch is ten commits ahead of its tracking branch and
+183 ahead/five behind default `origin/v3`; no integration is required for this
 plan update. Preserve the recovery stash and all existing uncommitted work.
 
 The proposed runtime-only checkout is `trees/rs/local-kb-isolated-e2e` under
@@ -92,9 +92,10 @@ it; otherwise leave it stopped. Never invent disabled modes or inject dummy
 credentials to obtain a green result. No producer submission or worker/scheduler
 activation occurs in the source stage.
 
-The future credential-free runtime check must block public application egress
-while allowing declared local dependencies. Verify effective network wiring
-before requests; intercepted browser requests alone do not prove this. Any
+The user approved normal Devrouter networking for the future credential-free
+runtime check. Public egress is not blocked or claimed to be isolated. Preserve
+fresh owned storage, explicit local provider endpoints and an environment
+allowlist that excludes ambient upstream secrets. Any
 image/dependency provisioning happens before acceptance under the later runtime
 approval. Do not describe credential-free startup as full pipeline readiness.
 
@@ -158,15 +159,107 @@ or runtime acceptance is claimed. Progress: plan approved; isolated configuratio
 is the active slice. This extension supersedes the queue-preflight approach below,
 which remains as historical evidence.
 
+Configuration checkpoint: committed `2ca3e1ac98eb4d9e9a53e9facdf8507dd6de53e2`
+contains the eight launcher/configuration/helper files. Node 24 passes 23 tests;
+Biome checks eight files, redacted staged gitleaks and diff checks pass. Main
+replaced duplicate output validation with the existing canonical derivation,
+fixed nested repo-local worktree support, retained-origin comparison and shared
+dependency-array mutation. Simplifier `01a08111-7c06-7453-a502-8abdd96765c0`
+completed with two verified reductions: remove duplicate Doc Processing
+requirement metadata and redundant observation shape checks before strict
+identity comparison. Both corrections are applied; Node 24 still passes all
+23 tests and focused Biome passes. Risk review completed on the immutable
+slice. The reported default-port origin bypass did not reproduce: Node 24
+normalizes explicit HTTPS port 443 to an empty port, rejected by the existing
+explicit-port check before origin comparison. Added coverage for both forms.
+Accepted the missing CLI safety coverage: a real child-process plan invocation
+must return exit code 2, executable false and nonempty blockers. All 24 focused
+tests and Biome pass; redacted diff gitleaks reports no leaks. No publication
+occurred.
+The commit remains a non-executable configuration model. Concrete service
+rendering and lifecycle integration are unfinished, and no readiness claim
+extends to runtime. Existing retained runtime and source edits stay preserved.
+
 Execution finding, 2026-09-08: the plan's service inventory omitted Doc Processing.
+The user subsequently approved adding its local integration to the source-only
+scope. Runtime and paid-call boundaries remain unchanged. Source inspection of
+Doc Processing `origin/main@bfb4e0ebce48756c9e871a62ccfffd2a624da1ba`
+shows that API import initializes its PostgreSQL job schema and calls a custom
+dotenv loader that does not honor `PYTHON_DOTENV_DISABLED`. Therefore its command
+is represented as blocked, not placed in the executable startup list. A clean
+image without dotenv files and an explicit setup-only schema contract must be
+resolved before activation; no in-memory store fallback is acceptable. The
+primary provider checkout is one commit ahead and 17 behind its remote default,
+with unrelated untracked artifacts; it has not been changed or used as current
+runtime source. Read-only `git show origin/main` supplied the contract evidence.
+
+The user approved the bounded provider compatibility change on 2026-09-08:
+explicit setup and environment-only startup, preserving existing defaults and
+API behavior. This is the only exception to the read-only provider scope above.
+Fresh provider worktree: `rs/local-kb-explicit-startup`, under Doc Processing's
+`trees/rs/local-kb-explicit-startup`, based on and tracking `origin/main` at
+`bfb4e0ebce48756c9e871a62ccfffd2a624da1ba` with no base drift. Main owns the
+startup/setup seam and launcher integration. Planner revision B approved the
+backward-compatible control. Provider implementation is committed as
+`8db4f6bfd26cd96d59e284e857467a6cc82780d6`: literal dotenv opt-out,
+automatic-initialization opt-out at existing call positions, and explicit
+persistent setup. All 150 focused offline tests and seven-module Pyrefly checks
+pass. Simplifier, trusted risk review and integrated Sol final review pass.
+Provider [MR !73 — explicit local preparation](https://gitlab.uzh.ch/ai-infrastructure/services/doc-processing/-/merge_requests/73)
+was merged by the user. Fresh forge and Git readback confirms squash commit
+`7979ac6b95e4e407e439d49ba1bee4e6708bedb0` on `origin/main`; the final
+pipeline succeeded at `cc8f598d6dfeb6e8ff6c9d54db7e4650829f4438`.
+The merged executable source, tests and README match the reviewed head.
+The forge deleted the remote task branch automatically; the local worktree
+and branch remain untouched. No service startup, live database setup or
+deployment occurred. The user authorized continuing launcher integration.
+Concrete Klicker service rendering remains pending; provider preparation must
+stay blocked until its supported integration and prepared-state proof exist.
+
+Launcher checkpoint: `12fbef11d5` adds the explicit `doc_processing.setup`
+command and `DOC_PROCESSING_AUTO_INITIALIZE=0` to the blocked API command.
+The blocker now describes missing isolated preparation evidence rather than
+unsupported provider startup. This is command inventory only; plan still
+exits nonzero with executable false, and nothing executes the commands.
+All 24 focused tests pass with Node 24.16.0 in the exact retained task container;
+focused Biome, diff checks and redacted changed-line gitleaks pass. The commit
+contains only the two launcher command files, preserving other staged work.
+The host hook was skipped in favor of the scoped container checks; no full
+repository check or build is claimed for this checkpoint. Required package
+reviews and source publication remain pending. The retained runtime's explicit
+manual-testing lease remains in effect; no service lifecycle action occurred.
+
+Preparation slice `faab1c8514a1bc04f2cdfabbd04daa2affdaea1f` adds the two
+missing Doc Processing workers to the blocked command inventory, exclusive
+preparation claims/completion receipts, and an opt-in Hatchet setup/start
+adapter. All 28 focused Node 24 tests pass; Biome, shell syntax, diff and
+redacted staged secret checks pass. These helpers are not yet connected to
+an executable launcher. The Hatchet image's stock entrypoint migrates and
+prints its token, so the adapter separates those operations and suppresses
+preparation output. Only synthetic stand-ins exercised the adapter.
+The simplifier found no justified reduction; report is
+`project/_local/reviews/2026-09-08-local-kb-preparation-simplifier.md`.
+Risk reviewer `01a08166-5090-7d43-95de-0b365e281915` completed that exact
+six-file range with concerns: add a token-file permission assertion and retain
+the obligation for launcher ownership preflight before either Hatchet mode.
+The assertion now checks mode 0600. The adapter alone is not ownership proof.
+The executor completed and is closed. Renderer, source-image
+provisioning, canonical setup/start/status/stop integration and full-package
+reviews remain pending. No runtime was created, started, stopped or reset.
+
+Renderer decision resolved by the user's approval: retain normal Devrouter
+networking, fresh owned state, explicit local provider destinations and no
+upstream keys or submissions during initial qualification. Drop the network-level
+no-egress requirement; isolated storage does not imply network isolation.
+Runtime startup and paid proof remain separately gated.
+
 The current ingestion parser routes document inputs to that separate service;
 `steps/parsing/doc_processing.py` requires both `DOC_PROCESSING_BASE_URL` and
 `DOC_PROCESSING_API_KEY`. A cold PDF cannot rely on the retained parsed cache.
 Do not label the planned graph complete for PDFs or inherit a remote endpoint.
-Main has requested a ruling to include local Doc Processing in the source-only
-scope, or explicitly limit initial support to HTML/text. The independent
-configuration slice continues, with document processing marked unqualified.
-No provider file, runtime, queue or database was changed. The existing three
+Local Doc Processing is included in the approved source-only scope, with
+runtime document processing still unqualified. The earlier baseline preceded
+the provider compatibility change recorded above. The existing three
 launcher/helper suites pass 14 tests using the retained container's Node 24;
 this is an offline baseline, not isolated-runtime proof. The exact container
 source mount matches this task worktree and its keep-running lease is preserved.

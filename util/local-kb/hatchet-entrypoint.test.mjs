@@ -6,6 +6,7 @@ import {
   mkdtemp,
   readFile,
   realpath,
+  stat,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -43,6 +44,10 @@ test('Hatchet setup is explicit, one-shot and keeps token output out of logs', a
     )
   assert.throws(() => run('start'))
   assert.equal(run('setup'), '')
+  assert.equal(
+    (await stat(join(state, 'authdisabled-token'))).mode & 0o777,
+    0o600
+  )
   assert.equal(
     await readFile(join(root, 'calls'), 'utf8'),
     'migrate\nquickstart\nauthdisabled\ntoken\n'
