@@ -156,6 +156,55 @@ def credentials_from_environment(
     return {name: values[name] for name in REQUIRED_CREDENTIALS}, ()
 
 
+def resolve_credentials() -> dict[str, str]:
+    """Use caller values, then the repository's native Infisical project."""
+    values = {name: os.environ.get(name, "") for name in REQUIRED_CREDENTIALS}
+    missing = [name for name, value in values.items() if not value.strip()]
+    if not missing:
+        return values
+    cli = shutil.which("infisical")
+    if cli is None:
+        raise ValueError(
+            "Install and log in to Infisical, or supply the Azure settings"
+        )
+    for name in missing:
+        result = subprocess.run(
+            [
+                cli,
+                "secrets",
+                "get",
+                name,
+                "--plain",
+                "--silent",
+                "--expand=false",
+                "--include-imports=false",
+                "--recursive=false",
+                "--secret-overriding=false",
+                "--telemetry=false",
+                "--log-level=error",
+                "--env",
+                "dev",
+                "--path",
+                "/",
+            ],
+            cwd=REPO_ROOT,
+            env=host_environment(),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        value = result.stdout.rstrip("\r\n")
+        if result.returncode or not value.strip() or any(c in value for c in "\r\n\0"):
+            raise ValueError(
+                f"Infisical could not read {name} from the repository project (dev, /); "
+                "check login, INFISICAL_DOMAIN and project access"
+            )
+        values[name] = value
+    return values
+
+
 def docker_command(docker: str, name: str) -> list[str]:
     """Build the Docker invocation without embedding any credential values."""
 
@@ -207,12 +256,6 @@ def parse_args(arguments: Sequence[str] | None) -> argparse.Namespace:
 def run(arguments: Sequence[str] | None = None) -> int:
     parse_args(arguments)
 
-    credentials, missing = credentials_from_environment()
-    if missing:
-        for name in missing:
-            print(f"missing required upstream setting: {name}", file=sys.stderr)
-        return 2
-
     if not CONFIG_PATH.is_file():
         print("evaluation judge configuration is missing", file=sys.stderr)
         return 2
@@ -231,6 +274,14 @@ def run(arguments: Sequence[str] | None = None) -> int:
             "select a local Docker socket context before starting the judge",
             file=sys.stderr,
         )
+        return 2
+    try:
+        credentials = resolve_credentials()
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
+        message = (
+            str(error) if isinstance(error, ValueError) else "Infisical lookup failed"
+        )
+        print(message, file=sys.stderr)
         return 2
     command = docker_command(docker, name)
     payload = (json.dumps(credentials, separators=(",", ":")) + "\n").encode("utf-8")

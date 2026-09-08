@@ -30,14 +30,18 @@ uv sync --frozen --project evaluation/framework
 
 Start only the evaluation judge in a separate terminal. It uses Azure's
 OpenAI-compatible `/openai/v1` endpoint and the `gpt-5.6-luna` deployment.
-Supply `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL` from the approved
-Infisical scope. Human developers can use their authenticated native CLI:
+Start it from the repository root after logging in to the team's Infisical instance:
 
 ```bash
-infisical run --domain "https://<approved-infisical-host>" \
-  --projectId "<approved-project-id>" --env "<environment>" \
-  --path "<approved-secret-path>" -- python3 util/klicker-eval-judge.py
+python3 util/klicker-eval-judge.py
 ```
+
+The helper reads missing `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL` from
+Infisical using the existing repository `.infisical.json`, environment `dev`, and
+secret path `/`. Existing nonempty environment values take precedence. The native
+CLI uses its normal domain configuration (`INFISICAL_DOMAIN` or the repository's
+Infisical configuration for a self-hosted instance). No operator installation,
+`LITELLM_*` exports, or evaluation JSON configuration is needed.
 
 Agent runs use the restricted operator's existing allowlist:
 
@@ -90,7 +94,9 @@ used by the launcher. Log in once on the host with:
 infisical login --domain "https://<approved-infisical-host>"
 ```
 
-Judge scope metadata belongs in the ignored evaluation/config.local.json.
+Only custom remote judges need the ignored evaluation/config.local.json.
+Do not copy the example for the local Docker workflow; its placeholders are not
+usable configuration. Judge scope metadata belongs in that optional file.
 Start from the committed values-free [configuration example](config.example.json), then fill
 the approved scope and secret names through the team's private channel.
 
