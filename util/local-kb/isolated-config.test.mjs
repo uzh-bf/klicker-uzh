@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import { renderProviderCompose } from './compose.mjs'
 import {
@@ -14,6 +16,7 @@ import {
   resolveIsolatedConfig,
   validateIsolatedConfig,
 } from './isolated-config.mjs'
+import { renderManagedConfiguration } from './managed-configuration.mjs'
 import { providerCommands } from './provider-commands.mjs'
 import {
   renderRetrievalCompose,
@@ -79,6 +82,72 @@ function makeInput(name) {
     },
   }
 }
+
+test('managed application configuration shares only the isolated provider network', () => {
+  const read = (path) =>
+    readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
+  const source = {
+    compose: parse(read('.devcontainer/docker-compose.yml')),
+    devcontainer: JSON.parse(read('.devcontainer/devcontainer.json')),
+    devrouter: parse(read('.devrouter.yml')),
+  }
+  const original = structuredClone(source)
+  const config = resolveIsolatedConfig(makeInput('a'))
+  const result = renderManagedConfiguration(config, source, 'isolated-proof')
+  assert.deepEqual(source, original)
+  assert.deepEqual(
+    result.devrouter.managedRuntime.devcontainer.baseServices,
+    []
+  )
+  assert.deepEqual(result.devrouter.managedRuntime.processes, ['klicker-dev'])
+  assert.equal(result.devrouter.profiles.full, undefined)
+  assert.equal(result.devrouter.profiles.mcp, undefined)
+  assert.equal(result.devrouter.profiles.manage.default, true)
+  assert.equal(
+    result.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY,
+    undefined
+  )
+  assert.deepEqual(result.compose.services.app.depends_on, {})
+  for (const name of ['postgres', 'azurite', 'hatchet', 'local-mcp']) {
+    assert.equal(result.compose.services[name], undefined)
+  }
+  for (const service of Object.values(result.compose.services)) {
+    assert.equal(service.ports, undefined)
+  }
+  assert.deepEqual(result.compose.networks.default, {
+    external: true,
+    name: `${config.project.identity}_default`,
+  })
+  assert.deepEqual(result.compose.services.app.networks.default.aliases, [
+    'klicker',
+  ])
+  assert.deepEqual(
+    result.providerRouting.services.blob.networks.devnet.aliases,
+    ['isolated-proof-azurite']
+  )
+  assert.equal(
+    result.compose.services.app.environment.KLICKER_LOCAL_KB_RUNTIME_ONLY,
+    '1'
+  )
+  assert.equal(
+    result.compose.services.app.environment.BLOB_STORAGE_ACCESS_KEY,
+    undefined
+  )
+  assert.equal(result.compose.volumes.pgdata, undefined)
+  assert.equal(result.compose.volumes.hatchet_lite_config, undefined)
+  assert.equal(result.compose.volumes.azurite_data, undefined)
+  assert.deepEqual(
+    result.devcontainer.runServices,
+    Object.keys(result.compose.services)
+  )
+  assert.deepEqual(result.devcontainer.forwardPorts, [])
+  for (const identity of [undefined, '', '../retained', `\${WORKSPACE}`]) {
+    assert.throws(
+      () => renderManagedConfiguration(config, source, identity),
+      /identity/
+    )
+  }
+})
 
 test('resolves two independent stacks with complete provider and state ownership', () => {
   const first = resolveIsolatedConfig(makeInput('a'))
