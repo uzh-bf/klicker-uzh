@@ -408,7 +408,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
     }
   })
 
-  test('Shows analytics unavailable when the user profile cannot load', async ({
+  test('Shows analytics unavailable when the feature flag profile cannot load', async ({
     page,
     loginLecturer,
   }) => {
@@ -417,10 +417,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
     await page.route('**/api/graphql*', async (route) => {
       const operationName = getGraphqlOperationName(route.request())
-      if (
-        operationName === 'UserProfile' ||
-        operationName === 'ManageUserProfile'
-      ) {
+      if (operationName === 'ManageFeatureFlagProfile') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

@@ -56,6 +56,33 @@ must not replace container dependencies. Stop the exact runtime after checks.
 
 ## Progress
 
+September 8 CI correction: Playwright run `34227884428` reached all eight
+public ARM64 shards; four passed and four failed with seven tests. The editor
+tests still assumed the former tab layout. Commit `0fc9c4938f` corrects Basics
+visibility, guarded Disclaimer navigation, and the Knowledge response-example
+accordion without changing application behavior. Focused container Playwright
+TypeScript and Prettier checks, diff inspection and Gitleaks pass.
+
+Integrated `v3-ai` commit `6e2d03c5b0` by merge `7f27567497` because it fixes
+the backend test preload dropping learning-analytics, restores seeded AI
+approval after authoring tests, and updates the AI-menu authorization test.
+This is a concrete CI prerequisite, not a freshness-only merge. The remaining
+analytics profile-failure test now faults `ManageFeatureFlagProfile`, leaving
+the separate login profile healthy. Post-integration formatting, Playwright
+TypeScript, all three backend flag-preload tests, all 16 owner-preview route
+tests and the native Manage check pass. An initial raw Manage `tsc` invocation
+failed because it omitted `tsconfig.check.json`; the native check uses that
+configuration and passes. New full CI and the manual final AI review remain
+pending. Existing source review remains applicable: corrections change test
+navigation and fixtures, not the reviewed preview or authoring contracts.
+
+Local host Playwright could not start: its mandatory full profile fails the
+optional authenticated MCP fixture and rolls back. No browser pass is claimed.
+The selective `manage,chat,ai` profile supports container verification through
+the host Infisical operator. Explicitly disable pnpm's implicit dependency
+install during checks. Unrelated `CONTEXT.md` and the multiple-KB follow-up plan
+remain excluded. Merge into the target and deployment remain unauthorized.
+
 The four source changes are staged on the current target. The only manual
 integration conflict retained the newer lecturer beta-access gate and applied
 the footer layout fix. The target's plural retrieval projection is retained.
