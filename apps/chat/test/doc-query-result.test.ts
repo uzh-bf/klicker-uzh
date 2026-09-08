@@ -1,9 +1,11 @@
 import { expect, test } from 'vitest'
 import { sanitizeDocQueryResult } from '../src/services/docQueryResult'
 
-test('removes gateway destinations from both MCP representations without losing chunks', () => {
-  const reference =
-    'https://api.example.test/api/ingestion/resources/fixture?sig=test'
+test.each([
+  'https://api.example.test/api/ingestion/resources/fixture?sig=test',
+  'http://synthetic.namespace.svc/source.pdf',
+  'http://synthetic.namespace.svc.cluster.local/source.pdf',
+])('removes gateway destinations from both MCP representations without losing chunks: %s', (reference) => {
   const payload = {
     sources: [
       { reference, chunks: [{ content: 'Synthetic excerpt', page_number: 2 }] },

@@ -307,6 +307,30 @@ The tracking branch has advanced four commits; publication still requires
 reconciliation without overwriting either workstream. No branch integration,
 runtime lifecycle action or paid call occurred in this continuation.
 
+Citation source is committed at `83f698e97b`. The simplifier identified two
+unused retrieval-status inputs; main verified and removed them in `7ba5f8133a`.
+All 33 affected helper tests and Chat type checking pass after that reduction.
+The bounded correctness reviewer found no current implementation defect. Its
+advisory coverage gap was accepted: the existing envelope sanitizer test now
+also checks synthetic `.svc` and `.svc.cluster.local` URLs with non-ingestion
+paths. All 103 focused citation tests pass. The source-status simplifier found no justified
+reduction in `f2ec42696f`.
+
+Retained-browser inspection failed with `Resource temporarily unavailable
+(os error 35)` from the existing `kb-citation-verification` session, both inside
+and outside the sandbox. No browser restart or submission occurred. The real
+application runtime remains under its manual-testing lease. Sixteen host
+runtime-profile tests and the isolated runtime shell suite pass; shell-test
+cache removals occurred only under their temporary synthetic repository.
+The pending runtime patch's duplicate unused declaration was removed.
+
+Publication now needs a user decision: the existing PR was externally marked
+ready and advanced to `667782aa582b269b8f83b47481294903ba4bc612`. Preserve that
+state rather than append the unfinished launcher or silently return it to draft.
+The user has been asked whether this package remains on that PR or becomes a
+separate draft follow-up. Local source work may continue; no publication or
+branch integration is performed while that decision is pending.
+
 Provisioning evidence: refreshed data-ingestion `origin/main` is
 `d46282848100beec5a1f571e0cc9b091dcdd4179`. Its primary checkout is on
 `rs/kb-pgvector-graph-e2e` with a gone upstream, 34 ahead/12 behind main and
