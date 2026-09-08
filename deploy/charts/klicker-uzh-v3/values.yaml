@@ -196,7 +196,7 @@ chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false
-  # Leaves 35 seconds after the enforced 55-second turn deadline for draining.
+  # Allows active requests and pending trace exports time to drain on shutdown.
   terminationGracePeriodSeconds: 90
 
   replicaCount: 1

@@ -212,3 +212,9 @@ conversation session.
   separate rollout gate, and telemetry remains disabled in deployed values.
 - 2026-09-08 delivery: Source corrections and target integration are complete.
   Final independent review and publication of the reviewed head remain next.
+
+- 2026-09-08 final review: Independent review of the integrated committed range
+  found only a stale chart comment claiming the removed deadline. Corrected
+  that comment and verified Helm rendering. No source publication blocker
+  remains. The runtime is stopped, its app container is exited, and all four
+  task routes are removed.
