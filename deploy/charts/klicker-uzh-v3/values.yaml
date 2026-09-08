@@ -118,12 +118,6 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
@@ -140,12 +134,6 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
@@ -162,12 +150,6 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
@@ -198,12 +180,6 @@ auth:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -254,12 +230,6 @@ chat:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -405,7 +375,6 @@ frontendPWA:
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -441,10 +410,9 @@ frontendManage:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -477,13 +445,6 @@ frontendControl:
       memory: 200Mi
     limits:
       memory: 1000Mi
-
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -559,10 +520,9 @@ backendGraphql:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -621,12 +581,6 @@ lti:
     limits:
       memory: 500Mi
 
-  autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -661,12 +615,6 @@ olatApi:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -702,12 +650,6 @@ responseApi:
     limits:
       memory: 256Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -745,12 +687,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 3
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -784,12 +720,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -825,12 +755,6 @@ assessment:
       limits:
         memory: 256Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 

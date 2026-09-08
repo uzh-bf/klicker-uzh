@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.hatchet.workers.general.autoscaling.enabled }}
+  {{- if hasKey .Values.hatchet.workers.general "replicaCount" }}
   replicas: {{ .Values.hatchet.workers.general.replicaCount }}
   {{- end }}
   selector:
@@ -101,7 +101,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.hatchet.workers.responseProcessor.autoscaling.enabled }}
+  {{- if hasKey .Values.hatchet.workers.responseProcessor "replicaCount" }}
   replicas: {{ .Values.hatchet.workers.responseProcessor.replicaCount }}
   {{- end }}
   selector:
@@ -182,7 +182,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.hatchet.workers.responseProcessorAssessment.autoscaling.enabled }}
+  {{- if hasKey .Values.hatchet.workers.responseProcessorAssessment "replicaCount" }}
   replicas: {{ .Values.hatchet.workers.responseProcessorAssessment.replicaCount }}
   {{- end }}
   selector:
