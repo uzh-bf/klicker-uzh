@@ -3,28 +3,36 @@ import { describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   assertManageAiEnabled,
+  getManageAiCapability,
   isManageAiEnabled,
   manageAiFeatureFlagAttributes,
 } from '../src/lib/manageAiFeatureGate.js'
 import {
   getManageChatModelRegistry,
   updateChatbotCreditPolicy,
+  updateChatbotModelSettings,
 } from '../src/services/chatbots.js'
 
 function createContext(
   aiFeaturesEnabled: boolean | null,
-  featureFlagEnabled: boolean | Error = false
+  featureFlagDecision:
+    | 'enabled'
+    | 'disabled'
+    | 'temporarilyUnavailable'
+    | Error = 'disabled',
+  betaEnabled: boolean | null = true
 ) {
   const findUnique = vi
     .fn()
     .mockResolvedValue(
-      aiFeaturesEnabled === null ? null : { aiFeaturesEnabled }
+      aiFeaturesEnabled === null ? null : { aiFeaturesEnabled, betaEnabled }
     )
   const ctx = {
     featureFlags: {
-      isEnabled: vi.fn(() => {
-        if (featureFlagEnabled instanceof Error) throw featureFlagEnabled
-        return featureFlagEnabled
+      isEnabled: vi.fn(() => featureFlagDecision === 'enabled'),
+      getAiBetaDecision: vi.fn(() => {
+        if (featureFlagDecision instanceof Error) throw featureFlagDecision
+        return featureFlagDecision
       }),
     },
     prisma: { user: { findUnique } },
@@ -42,31 +50,40 @@ function createContext(
 
 describe('Manage AI feature gate', () => {
   test('opens only when the flag and account entitlement both hold', async () => {
-    const { ctx } = createContext(true, true)
+    const { ctx } = createContext(true, 'enabled')
 
     await expect(isManageAiEnabled(ctx)).resolves.toBe(true)
   })
 
-  test('does not read the account when the flag is closed', async () => {
-    const { ctx, findUnique } = createContext(true)
+  test('returns the explicit enabled capability when both gates hold', async () => {
+    const { ctx } = createContext(true, 'enabled')
 
-    await expect(isManageAiEnabled(ctx)).resolves.toBe(false)
-    expect(findUnique).not.toHaveBeenCalled()
+    await expect(getManageAiCapability(ctx)).resolves.toBe('enabled')
+  })
+
+  test('returns disabled before evaluating GrowthBook without account entitlement', async () => {
+    const { ctx, findUnique } = createContext(false, 'enabled')
+
+    await expect(getManageAiCapability(ctx)).resolves.toBe('disabled')
+    expect(findUnique).toHaveBeenCalledTimes(1)
+    expect(ctx.featureFlags?.getAiBetaDecision).not.toHaveBeenCalled()
   })
 
   test.each([
     ['a missing evaluator', undefined],
     ['an evaluation failure', new Error('SDK unavailable')],
-  ])('fails closed for %s', async (_, evaluatorFailure) => {
+  ])('reports temporary unavailability for %s', async (_, evaluatorFailure) => {
     const { ctx, findUnique } = createContext(
       true,
-      evaluatorFailure instanceof Error ? evaluatorFailure : false
+      evaluatorFailure instanceof Error ? evaluatorFailure : 'disabled'
     )
     if (evaluatorFailure === undefined) ctx.featureFlags = undefined
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
-    await expect(isManageAiEnabled(ctx)).resolves.toBe(false)
-    expect(findUnique).not.toHaveBeenCalled()
+    await expect(getManageAiCapability(ctx)).resolves.toBe(
+      'temporarilyUnavailable'
+    )
+    expect(findUnique).toHaveBeenCalledTimes(1)
 
     warn.mockRestore()
   })
@@ -75,10 +92,18 @@ describe('Manage AI feature gate', () => {
     false,
     null,
   ])('stays closed without a live account entitlement (%s)', async (aiFeaturesEnabled) => {
-    const { ctx } = createContext(aiFeaturesEnabled, true)
+    const { ctx } = createContext(aiFeaturesEnabled, 'enabled')
 
     await expect(assertManageAiEnabled(ctx)).rejects.toMatchObject({
       extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
+    })
+  })
+
+  test('uses a separate error code for a temporary GrowthBook outage', async () => {
+    const { ctx } = createContext(true, 'temporarilyUnavailable')
+
+    await expect(assertManageAiEnabled(ctx)).rejects.toMatchObject({
+      extensions: { code: 'AI_FEATURE_TEMPORARILY_UNAVAILABLE' },
     })
   })
 
@@ -93,13 +118,42 @@ describe('Manage AI feature gate', () => {
     })
   })
 
-  test('keeps the Manage chatbot model registry behind the gate', async () => {
-    const { ctx, findUnique } = createContext(true)
+  test.each([
+    false,
+    null,
+  ])('denies beta opt-out or unknown preference (%s) before evaluation', async (betaEnabled) => {
+    const { ctx } = createContext(true, 'enabled', betaEnabled)
+    await expect(getManageAiCapability(ctx)).resolves.toBe('disabled')
+    expect(ctx.featureFlags?.getAiBetaDecision).not.toHaveBeenCalled()
+  })
 
-    await expect(getManageChatModelRegistry(ctx)).rejects.toMatchObject({
-      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
-    })
-    expect(findUnique).not.toHaveBeenCalled()
+  test('passes the trusted beta preference to the decision', async () => {
+    const { ctx } = createContext(true, 'enabled')
+    await expect(getManageAiCapability(ctx)).resolves.toBe('enabled')
+    expect(ctx.featureFlags?.getAiBetaDecision).toHaveBeenCalledWith(
+      expect.objectContaining({ betaEnabled: true })
+    )
+  })
+
+  test('allows chatbot model access without Manage AI approval', async () => {
+    const { ctx } = createContext(false, 'enabled')
+    await expect(getManageChatModelRegistry(ctx)).resolves.toEqual(
+      expect.any(Array)
+    )
+  })
+
+  test('denies chatbot authoring before reading chatbot data', async () => {
+    const { ctx } = createContext(true, 'disabled')
+    await expect(
+      updateChatbotModelSettings(
+        {
+          allowedModelIds: [],
+          chatbotId: 'chatbot-1',
+          modelSelection: true,
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
   })
 
   test('keeps chatbot credit-policy mutations behind the gate', async () => {
@@ -119,6 +173,6 @@ describe('Manage AI feature gate', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
     })
-    expect(findUnique).not.toHaveBeenCalled()
+    expect(findUnique).toHaveBeenCalledTimes(1)
   })
 })

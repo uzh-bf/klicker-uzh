@@ -1,5 +1,6 @@
 import {
   FEATURE_FLAG_DEFAULTS,
+  type FeatureFlagAttributes,
   forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
   sanitizeFeatureFlagAttributes,
@@ -9,9 +10,39 @@ describe('feature flag contracts', () => {
   it('registers product flags with fail-closed defaults', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
       'ai-beta': false,
-      'beta-signup': false,
       'learning-analytics': false,
     })
+  })
+
+  it('sanitizes betaEnabled as an optional boolean attribute', () => {
+    const enabledAttributes: FeatureFlagAttributes = {
+      actorType: 'user',
+      betaEnabled: true,
+    }
+    const disabledAttributes: FeatureFlagAttributes = {
+      actorType: 'user',
+      betaEnabled: false,
+    }
+
+    expect(
+      sanitizeFeatureFlagAttributes(enabledAttributes, 'test')
+    ).toMatchObject({
+      actorType: 'user',
+      betaEnabled: true,
+      environment: 'test',
+    })
+    expect(
+      sanitizeFeatureFlagAttributes(disabledAttributes, 'test')
+    ).toMatchObject({ betaEnabled: false })
+    expect(
+      sanitizeFeatureFlagAttributes(
+        { actorType: 'user', betaEnabled: 'true' },
+        'test'
+      )
+    ).not.toHaveProperty('betaEnabled')
+    expect(
+      sanitizeFeatureFlagAttributes({ actorType: 'user' }, 'test')
+    ).not.toHaveProperty('betaEnabled')
   })
 
   it.each([

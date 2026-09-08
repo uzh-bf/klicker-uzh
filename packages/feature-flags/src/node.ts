@@ -17,13 +17,18 @@ import {
 const DEFAULT_TIMEOUT_MS = 2000
 const DEFAULT_REFRESH_INTERVAL_MS = 30_000
 const DEFAULT_MAX_STALE_MS = 120_000
+const AI_BETA_MAX_STALE_MS = 15 * 60_000
 const MIN_REFRESH_INTERVAL_MS = 100
+
+type PayloadAvailability = 'unavailable' | 'fresh' | 'bounded-stale' | 'expired'
+
+export type AiBetaDecision = 'enabled' | 'disabled' | 'temporarilyUnavailable'
 
 function normalizeApiHost(
   value: string | undefined,
   environment: FeatureFlagEnvironment
 ): string | undefined {
-  if (!value) return undefined
+  if (!value || value !== value.trim() || /[?#]/.test(value)) return undefined
 
   try {
     const url = new URL(value)
@@ -87,6 +92,12 @@ export class NodeFeatureFlagClient<
   private initializationPromise: Promise<boolean> | undefined
   private initialized = false
   private lastSuccessfulRefreshAt: number | undefined
+  private payloadAvailability: PayloadAvailability | undefined
+  // Bounded stale access is limited to sanitized actors whose decision was
+  // true while the current payload was fresh. This is process-local state: it
+  // is cleared on every successful payload replacement and is never persisted
+  // or logged.
+  private readonly aiBetaStaleAllowances = new Map<string, number>()
   private refreshPromise: Promise<boolean> | undefined
   private refreshTimer: ReturnType<typeof setInterval> | undefined
 
@@ -130,12 +141,10 @@ export class NodeFeatureFlagClient<
     }
 
     if (!this.initializationPromise) {
-      this.initializationPromise = this.loadPayload('initialization').finally(
-        () => {
-          this.initialized = true
-          this.startRefreshLoop()
-        }
-      )
+      this.initializationPromise = this.loadPayload().finally(() => {
+        this.initialized = true
+        this.startRefreshLoop()
+      })
     }
 
     return this.initializationPromise
@@ -145,6 +154,8 @@ export class NodeFeatureFlagClient<
     key: BooleanFeatureFlagKey<Features>,
     attributes: FeatureFlagAttributes
   ): boolean {
+    if (this.configured) this.recordPayloadAvailability()
+
     if (this.destroyed || (this.configured && !this.hasUsablePayload())) {
       return false
     }
@@ -155,8 +166,76 @@ export class NodeFeatureFlagClient<
     return result.value === true
   }
 
+  getAiBetaDecision(attributes: FeatureFlagAttributes): AiBetaDecision {
+    // Development and test can use the explicit local forced payload when no
+    // SDK connection exists. A staging or production process never receives
+    // that payload, so an unconfigured deployment remains unavailable.
+    if (!this.configured) {
+      if (this.destroyed) return 'temporarilyUnavailable'
+
+      const result = this.client.evalFeature(
+        'ai-beta' as BooleanFeatureFlagKey<Features>,
+        {
+          attributes: sanitizeFeatureFlagAttributes(
+            attributes,
+            this.environment
+          ),
+        }
+      )
+      return result.value === true ? 'enabled' : 'temporarilyUnavailable'
+    }
+
+    const evaluationAttributes = sanitizeFeatureFlagAttributes(
+      attributes,
+      this.environment
+    )
+    this.pruneAiBetaStaleAllowances()
+    const availability = this.recordPayloadAvailability()
+    if (availability === 'unavailable' || availability === 'expired') {
+      return 'temporarilyUnavailable'
+    }
+
+    const result = this.client.evalFeature(
+      'ai-beta' as BooleanFeatureFlagKey<Features>,
+      { attributes: evaluationAttributes }
+    )
+
+    const actorKey =
+      evaluationAttributes.id === undefined
+        ? undefined
+        : JSON.stringify(evaluationAttributes)
+
+    if (result.value === true) {
+      if (availability === 'bounded-stale') {
+        if (
+          actorKey === undefined ||
+          this.aiBetaStaleAllowances.get(actorKey) !==
+            this.lastSuccessfulRefreshAt
+        ) {
+          return 'temporarilyUnavailable'
+        }
+      } else if (
+        availability === 'fresh' &&
+        actorKey !== undefined &&
+        this.lastSuccessfulRefreshAt !== undefined
+      ) {
+        this.aiBetaStaleAllowances.set(actorKey, this.lastSuccessfulRefreshAt)
+      }
+
+      return 'enabled'
+    }
+
+    if (result.value === false) {
+      if (actorKey !== undefined) this.aiBetaStaleAllowances.delete(actorKey)
+      return 'disabled'
+    }
+
+    return 'temporarilyUnavailable'
+  }
+
   getStatus() {
     const usablePayload = this.hasUsablePayload()
+    this.recordPayloadAvailability()
 
     return {
       configured: this.configured,
@@ -176,7 +255,7 @@ export class NodeFeatureFlagClient<
       return
     }
 
-    await this.loadPayload('refresh')
+    await this.loadPayload()
   }
 
   destroy(): void {
@@ -189,6 +268,7 @@ export class NodeFeatureFlagClient<
       this.refreshTimer = undefined
     }
 
+    this.aiBetaStaleAllowances.clear()
     this.client.destroy({ destroyAllStreams: true })
   }
 
@@ -201,7 +281,7 @@ export class NodeFeatureFlagClient<
     )
   }
 
-  private loadPayload(reason: 'initialization' | 'refresh'): Promise<boolean> {
+  private loadPayload(): Promise<boolean> {
     if (this.refreshPromise) {
       return this.refreshPromise
     }
@@ -213,21 +293,17 @@ export class NodeFeatureFlagClient<
         }
 
         await this.client.setPayload(payload)
+        this.aiBetaStaleAllowances.clear()
         this.lastSuccessfulRefreshAt = Date.now()
         this.healthy = true
+        this.recordPayloadAvailability()
         return true
       })
       .catch(() => false)
       .then((success) => {
         if (!success) {
           this.healthy = false
-          if (!this.destroyed) {
-            console.warn(
-              reason === 'initialization'
-                ? '[feature-flags] Node initialization failed; using false fallbacks'
-                : '[feature-flags] Node refresh failed; retaining the bounded cached payload'
-            )
-          }
+          this.recordPayloadAvailability()
         }
 
         return success
@@ -237,6 +313,50 @@ export class NodeFeatureFlagClient<
       })
 
     return this.refreshPromise
+  }
+
+  private recordPayloadAvailability(): PayloadAvailability {
+    const next = this.getPayloadAvailability()
+    if (next === this.payloadAvailability) return next
+
+    const previous = this.payloadAvailability
+    this.payloadAvailability = next
+    const transition =
+      next === 'fresh' && previous !== undefined && previous !== 'fresh'
+        ? 'recovered'
+        : next
+    console.warn(`[feature-flags] payload availability: ${transition}`)
+    return next
+  }
+
+  private getPayloadAvailability(): PayloadAvailability {
+    if (
+      !this.configured ||
+      this.destroyed ||
+      this.lastSuccessfulRefreshAt === undefined
+    ) {
+      return 'unavailable'
+    }
+
+    const age = Date.now() - this.lastSuccessfulRefreshAt
+    if (age <= DEFAULT_MAX_STALE_MS) return 'fresh'
+    if (age <= AI_BETA_MAX_STALE_MS) return 'bounded-stale'
+    return 'expired'
+  }
+
+  private pruneAiBetaStaleAllowances(): void {
+    const refreshAt = this.lastSuccessfulRefreshAt
+    const now = Date.now()
+
+    for (const [actorKey, allowanceRefreshAt] of this.aiBetaStaleAllowances) {
+      if (
+        refreshAt === undefined ||
+        allowanceRefreshAt !== refreshAt ||
+        now - allowanceRefreshAt > AI_BETA_MAX_STALE_MS
+      ) {
+        this.aiBetaStaleAllowances.delete(actorKey)
+      }
+    }
   }
 
   private async fetchPayload(): Promise<GrowthBookPayload | undefined> {

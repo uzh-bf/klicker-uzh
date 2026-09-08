@@ -50,7 +50,15 @@ pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
 
-The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
+The commands above are legacy host/Infisical wrappers, not permission to mutate
+retained development, staging or production databases. Guarded reset, push,
+development migration and test seeds require the restricted `klicker_test`
+login and marked databases. Inside the provisioned self-contained container,
+use `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` for development
+migration (also requires marked `klicker_test_shadow`). For a full destructive
+reset and reseed, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`.
 
 ### GraphQL codegen
 
@@ -128,7 +136,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file, run `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` inside the provisioned disposable container (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit raw seed command for local fixtures. See [Data & Migrations](docs/data-and-migrations.md) for the guarded shadow requirement and schema-drift checks.
 
 ## Auth Model
 
@@ -217,7 +225,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.46 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -350,6 +358,7 @@ Quick validation sequence:
 - `devrouter app ls --repo .`
 - Primary or linked devcontainer checkout: `devrouter ensure . --json`
 - Managed selective profile: `devrouter ensure . --profile <name> --json`
+- Side-effect-free automation: `devrouter profile resolve --repo . --profile <name> --json`; add `profile plan --contract <repo-relative-yaml>` when the repository needs literal bindings.
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 - Managed devcontainer source configs with `postCreateCommand` and a managed post-start adapter must set `waitFor` exactly to `postCreateCommand` or `postStartCommand`; generated managed configs preserve lifecycle fields and change only `runServices`.

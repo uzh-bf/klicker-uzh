@@ -1945,6 +1945,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       unavailableTitle: 'AI features unavailable',
       unavailableDescription:
         'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+      temporarilyUnavailableTitle: 'AI features temporarily unavailable',
+      temporarilyUnavailableDescription:
+        'AI features are temporarily unavailable. Please try again in a moment.',
+      retry: 'Try again',
     },
     general: {
       qrCode: 'QR Code',
@@ -2371,10 +2375,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
-      betaFeaturesDataUse:
-        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
-        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
       betaFeaturesConvergedOff: 'Beta access is no longer active.',
       betaFeaturesConvergedOn: 'Beta access is now active.',
       betaFeaturesEnrollment: 'Beta enrollment',
@@ -2383,16 +2389,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesError:
         'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
       betaFeaturesRefreshFailure:
-        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
       betaFeaturesRefreshing:
-        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Refreshing the displayed settings.',
       betaFeaturesSaved:
-        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
       betaFeaturesPending:
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
+      chatbotBetaAccessRequired:
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
-        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:

@@ -361,13 +361,17 @@ test('accepts equivalent runtime plans with different JSON property order', () =
   const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-order-'))
   const output = join(outputDir, 'profile.json')
   const devrouterBin = join(outputDir, 'devrouter')
-  const plan = profilePlan()
+  const plan = profilePlan({ repoPath: outputDir })
 
   writeFileSync(
     devrouterBin,
     `#!/usr/bin/env node
 const { writeFileSync } = require('node:fs')
 const args = process.argv.slice(2)
+if (args[0] === '-V') {
+  process.stdout.write('Installed CLI version: 0.0.46\\nLocal repo version (test fixture): 0.0.46\\n')
+  process.exit(0)
+}
 const output = args[args.indexOf('--output') + 1]
 const plan = ${JSON.stringify(plan)}
 const reorderedPlan = {

@@ -62,7 +62,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
   async function enablePublishing() {
     await prisma.user.update({
       where: { id: userOneCtx.user.sub },
-      data: { aiChatbotPublishingEnabled: true },
+      data: { aiFeaturesEnabled: true },
     })
   }
 
@@ -343,7 +343,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
     })
 
     it('rejects when the account is not approved for publishing', async () => {
-      // aiChatbotPublishingEnabled defaults to false — do not enable it.
+      // aiFeaturesEnabled defaults to false — do not enable it.
       const bot = await seedChatbot(ChatbotStatus.DRAFT)
 
       await expect(
@@ -461,7 +461,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
     it('refuses to publish when the owner lost publishing capability while pending', async () => {
       // The bot reached PENDING via a request that required the capability, but
-      // ops revoked aiChatbotPublishingEnabled before the admin acted. The
+      // ops revoked aiFeaturesEnabled before the admin acted. The
       // account-level gate must still hold at the moment the bot goes live, so
       // enablePublishing() is deliberately NOT called here.
       const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)

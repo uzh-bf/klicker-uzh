@@ -42,6 +42,13 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
+Fresh volumes provision the restricted `klicker_test` login, the application
+test database of the same name and `klicker_test_shadow`. Both databases carry
+the disposable marker required by reset, seed and development migration.
+Existing volumes are not adopted or marked automatically. If bootstrap refuses
+an old database, preserve it and use an explicitly approved fresh disposable
+environment; do not bypass the guard. See [Testing](./testing.md#disposable-database-boundary).
+
 Clone-and-run via a self-contained devcontainer — no Infisical, no external
 EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
 routed app plus the two Hatchet workers. Dependency-aware profiles select only
@@ -57,7 +64,7 @@ The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP ser
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.46 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery.
+     1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -128,7 +135,7 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.46`.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -218,7 +225,15 @@ Two paths, depending on whether you have Infisical access:
 1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
 
-Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
+Compose infra needs no secrets; the app dev servers are the secret consumers.
+The legacy Compose database is not a supported target for guarded reset, push,
+development migration or test seeds. Use the provisioned self-contained
+container and the [raw migration and seed sequence](./data-and-migrations.md)
+instead (config-derived). Retained volumes are not adopted automatically; see
+[retained PostgreSQL volumes](../.devcontainer/README.md#retained-postgresql-volumes)
+before rebuilding an old checkout. Seeded test credentials are documented in
+the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values
+into other documents.
 
 ## Agent addendum
 

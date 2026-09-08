@@ -1049,11 +1049,13 @@ export async function attachKbToChatbot(
           mcpServerId: mcpServer.id,
           chatMode,
           allowedTools: ['doc_query'],
+          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
           priority: 0,
           isEnabled: true,
         },
         update: {
           allowedTools: ['doc_query'],
+          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
           priority: 0,
           isEnabled: true,
         },

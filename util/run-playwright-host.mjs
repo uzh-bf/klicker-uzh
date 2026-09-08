@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
@@ -236,8 +237,9 @@ export function main(argv = process.argv.slice(2)) {
   const printEnvironment = args[0] === '--print-env'
   if (printEnvironment) args.shift()
 
+  const devrouter = resolveDevrouter({ repo: repoRoot })
   console.log('[playwright:host] Reconciling the devcontainer runtime')
-  run('devrouter', ['ensure', repoRoot])
+  run(devrouter, ['ensure', repoRoot])
 
   const workspace = resolveWorkspace()
   const databasePort = resolveDatabasePort()

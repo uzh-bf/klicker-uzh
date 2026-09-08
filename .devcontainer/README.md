@@ -19,8 +19,10 @@ because the primary app container declares them as startup dependencies.
 > servers have no port/route (`mcp-lecturer` listens on `localhost:7081` and
 > `mcp-student` on `localhost:7080`, both reached in-container by `chat`). Still
 > skipped: `analytics` (Python), `office-addin`, and `docs`
-> (no `dev` task / extra toolchain). The legacy host-based stack (`docker-compose.yml`,
-> `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
+> (no `dev` task / extra toolchain). Legacy host-based infrastructure definitions
+> (`docker-compose.yml`, `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`)
+> remain available, but retained databases cannot use the guarded development
+> mutation/test-seed commands. See [Data & Migrations](../docs/data-and-migrations.md).
 
 ## How to Run
 
@@ -48,7 +50,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.46 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -75,9 +77,30 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
 
+### Retained PostgreSQL volumes
+
+The Compose-scoped `<compose-project>_pgdata` volume retains PostgreSQL data.
+Initialization SQL runs only for a fresh volume. A retained volume without the
+marked `klicker_test` and `klicker_test_shadow` databases cannot run the guarded
+reset, push, development migration or test seed. Repeated resets do not provision
+those objects, and restarting the app does not make the volume disposable.
+
+Prefer a separately approved fresh worktree/runtime, leaving retained data
+untouched. If replacing an obsolete local volume is necessary, first resolve
+the exact checkout's Compose project and PostgreSQL container through devrouter.
+Inspect only its mount metadata with
+`docker inspect <exact-postgres-container-id> --format '{{json .Mounts}}'`
+(config-derived), and record the named volume mounted at
+`/var/lib/postgresql/data`. Stop the exact runtime and obtain explicit approval
+for that volume and its data loss before any removal. The narrowly scoped command
+is `docker volume rm <verified-exact-pgdata-volume>`; it cannot run while a
+container still references the volume, so container teardown also needs its
+own approved scope. Never use `docker compose down -v`, broad pruning, or manual
+marker creation to work around a refusal.
+
 ## Profiles
 
-This repository pins devrouter 0.0.46. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -87,6 +110,9 @@ Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
 generated configuration when a cold or warm transition fails. Version 0.0.46
 also queues parallel provider transitions fairly, reports wait progress, and
 keeps detached-state recovery fail-closed while prior containers still exist.
+Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
+and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
+retained-runtime configuration and mount comparison.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -191,8 +217,8 @@ compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
 `hatchet:7077`). Connect to the DB from the host with direct-SSL:
 
 ```bash
-psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker-prod password=klicker \
-      dbname=klicker-prod sslmode=require sslnegotiation=direct"
+psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
+      dbname=klicker_test sslmode=require sslnegotiation=direct"
 ```
 
 ## Auth model in dev
@@ -218,15 +244,15 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 
-| Service                             | Image                                            | Purpose                                                                 |
-| ----------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers |
-| `postgres`                          | `postgres:15`                                    | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)                  |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                           |
-| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                           |
-| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                                  |
-| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                      | workflow engine (gRPC :7077, no UI auth)                                |
-| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2`       | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)    |
+| Service                             | Image                                            | Purpose                                                                              |
+| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers              |
+| `postgres`                          | `postgres:15`                                    | Marked `klicker_test` + `klicker_test_shadow`; separate legacy/LTI/Hatchet databases |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                                        |
+| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                                        |
+| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                                               |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                      | workflow engine (gRPC :7077, no UI auth)                                             |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2`       | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)                 |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
@@ -244,6 +270,13 @@ structure, configuration, and the checked-out commit. A true process start
 preserves each worktree's `.next/dev` output; a changed dependency fingerprint
 runs one frozen install against the persistent `node_modules` volume and shared
 pnpm content store.
+
+For recovery that must preserve Next.js caches, create the ignored marker
+`.devcontainer/.runtime/preserve-next-cache` in the worktree before `ensure`.
+Its presence refuses new cache-repair requests and applying pending requests,
+leaving caches, pending requests, and the runtime generation unchanged. The
+marker remains effective across retries until explicitly removed. With a
+custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
 
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
@@ -357,6 +390,10 @@ disabled and the rest of the DevPod still starts normally.
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
+- Reset, push and test seeds require the restricted `klicker_test` login and
+  marked database. Development migration also requires marked
+  `klicker_test_shadow`. Fresh volumes provision these; retained volumes are
+  never marked or adopted automatically. See [the database safety boundary](../docs/testing.md#disposable-database-boundary).
 - `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
   with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
   `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the

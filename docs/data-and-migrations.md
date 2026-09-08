@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-25'
+timestamp: '2026-09-04'
 tags:
   - backend
   - prisma
@@ -13,13 +13,35 @@ tags:
 **The ritual: every schema edit is four steps, not one.**
 
 ```bash
+# Inside the provisioned self-contained container (config-derived):
 # 1. edit packages/prisma/src/prisma/schema/<area>.prisma
-pnpm run prisma:migrate   # 2. create + apply migration (Infisical env dev)
+pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw   # 2. create/apply + generate
 pnpm run prisma:sync      # 3. mirror model files into apps/analytics
 pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate:raw` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+
+Development migration requires the restricted `klicker_test` login and marked
+`klicker_test` and `klicker_test_shadow` databases. Run the sequence through
+`devrouter exec <checkout-path> -- <command>` from the host, or inside that
+already-provisioned container. Do not use the legacy Infisical wrappers to reset,
+push, migrate-dev or test-seed staging, production, or retained development data.
+The legacy Compose initialization does not provision this disposable identity.
+See [the test database boundary](./testing.md#disposable-database-boundary).
+
+### Schema drift without an unsafe shadow
+
+`pnpm --filter @klicker-uzh/prisma run prisma:diff:raw` is config-derived:
+it compares `DATABASE_URL` read-only against the migrations, but replays those
+migrations into `SHADOW_DATABASE_URL`. Supply a separately provisioned, marked
+`klicker_test_shadow` owned by the restricted `klicker_test` login. The
+`prisma:diff` Infisical wrapper does not provision or supply a safe shadow.
+An operator must arrange both connections through an approved secret-injection
+path before a production comparison; otherwise stop and record the preflight
+as unavailable. Never point the shadow at retained data, remove its guard, or
+restore an inline credential. A local disposable diff is not production drift
+evidence.
 
 ## Prisma 7 client and datasource ownership
 
@@ -53,12 +75,13 @@ The KB resource material category is an additive enum column with a database def
 
 `prisma migrate deploy` runs **automatically** on every stg and prd rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook is **enabled** because the pinned tags have reached a migrator-bearing release (see Bootstrap and rollback below), so normal prd migrations run through ArgoCD. Mechanics:
 
-- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds `backend-docker-migrator-arm` in lockstep with `backend-docker-arm` (`v3_backend-docker-{stg,prd}.yml`); the retained AMD migrator job is disabled. Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
+- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds `backend-docker-migrator-arm` in lockstep with `backend-docker-arm` (`v3_backend-docker-{stg,prd}.yml`); the retained AMD migrator job is disabled. Without a release-wide override, the chart resolves the tag from `migrator.image.tag`, then `backendGraphql.image.tag`, then the chart app version. Optional `global.imageTag` takes precedence over those fallbacks, so staging can bind the migrator and all application images to one resolved revision without editing environment values.
 - The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
 - A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
 - **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
 - **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
-- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. Production now uses migrator-bearing release tags with `migrator.enabled: true`; rolling prd back to a pre-hook tag means setting it back to `false`. The alpha.70 and alpha.71 release workflows both built matching migrator images. Stg is unaffected: its selected floating source tag is rebuilt on every merge.
+- **Staging revision and provenance:** at Phase 1 activation, the ArgoCD Application will track `stg-release`, resolve it to a commit, and pass `$ARGOCD_APP_REVISION` to Helm as the forced-string `global.imageTag`. The trusted controller's canonical registry receipt binds that SHA tag to the migrator digest before moving the ref. After sync, compare the migration pod's deployed `imageID` digest with the receipt; the ArgoCD revision, receipt, hook result, workload health, and acceptance are separate evidence.
+- **Bootstrap and rollback:** a selected tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. Production keeps migrator-bearing release tags with `migrator.enabled: true`, receives no `global.imageTag`, and still requires `migrator.enabled: false` when rolling back to a pre-hook tag. The alpha.70 and alpha.71 release workflows both built matching migrator images. Staging rollback selects only an ancestor revision with a complete exact-build digest receipt and schema-compatible migrations; uncertainty requires roll-forward.
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
@@ -97,10 +120,17 @@ Fresh-install caveat: the Job references a PriorityClass that the chart creates 
 
 Two independent seed paths — changing one does NOT update the other:
 
-1. **Dev seed**: `pnpm run prisma:setup` → seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
+1. **Dev seed**: the raw sequence below performs seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
 2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
-Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+Prisma 7 does not seed after migrate/reset automatically. In the provisioned
+self-contained container, use the config-derived sequence from
+`.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`. These commands are
+destructive and require the disposable identity and marker, not merely seeded
+data. The retained `*:qa` reset/push/test-seed wrappers intentionally fail the
+same guard against staging; their names do not authorize staging mutations.
 
 ### First-login demo content
 

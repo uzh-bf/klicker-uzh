@@ -213,20 +213,20 @@ function ChatbotCreditPolicy({
             nonNegativeInteger
           ),
       })
-        .test('credit-policy-relations', function (values) {
+        .test('credit-policy-relations', (values, context) => {
           if (!values) return true
 
           const initial = Number(values.creditInitialCredits)
           const reset = Number(values.creditResetAmount)
           const maximum = Number(values.creditMaxCredits)
           if (initial > maximum) {
-            return this.createError({
+            return context.createError({
               path: 'creditInitialCredits',
               message: t('manage.resources.chatbotCreditInitialAboveMaximum'),
             })
           }
           if (reset > maximum) {
-            return this.createError({
+            return context.createError({
               path: 'creditResetAmount',
               message: t('manage.resources.chatbotCreditResetAboveMaximum'),
             })
