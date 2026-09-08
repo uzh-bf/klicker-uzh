@@ -88,6 +88,7 @@ async function doParticipantLogin(
 
   const jwt = await createParticipantToken(participantId)
   ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+  ctx.res.cookie('lti-token', '', { ...COOKIE_SETTINGS, maxAge: 0 })
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt

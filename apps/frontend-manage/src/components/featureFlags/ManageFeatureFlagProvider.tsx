@@ -4,7 +4,7 @@ import {
   type BrowserFeatureFlagConfig,
   FeatureFlagProvider,
 } from '@klicker-uzh/feature-flags/react'
-import { ManageUserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ManageFeaturePreferencesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { type ReactNode, useMemo } from 'react'
 
@@ -25,7 +25,7 @@ function ManageFeatureFlagProvider({
   const skipUserProfile =
     router.pathname === '/quizzes/[id]/evaluation' &&
     (!router.isReady || router.query.hmac !== undefined)
-  const { data } = useQuery(ManageUserProfileDocument, {
+  const { data } = useQuery(ManageFeaturePreferencesDocument, {
     fetchPolicy: 'cache-and-network',
     // HMAC evaluation links are public. An identity query on those links would
     // trigger Apollo's global Unauthorized redirect before the page can load.
@@ -35,6 +35,7 @@ function ManageFeatureFlagProvider({
   const userId = user?.id
   const userRole = user?.role
   const userCatalyst = user?.catalyst
+  const betaEnabled = user?.betaEnabled
   const attributes = useMemo<FeatureFlagAttributes>(
     () =>
       userId
@@ -43,9 +44,10 @@ function ManageFeatureFlagProvider({
             actorType: 'user',
             role: userRole,
             catalyst: userCatalyst,
+            betaEnabled: betaEnabled === true,
           }
         : { actorType: 'anonymous' },
-    [userId, userRole, userCatalyst]
+    [userId, userRole, userCatalyst, betaEnabled]
   )
 
   return (

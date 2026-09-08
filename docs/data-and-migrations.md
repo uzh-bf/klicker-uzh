@@ -13,13 +13,35 @@ tags:
 **The ritual: every schema edit is four steps, not one.**
 
 ```bash
+# Inside the provisioned self-contained container (config-derived):
 # 1. edit packages/prisma/src/prisma/schema/<area>.prisma
-pnpm run prisma:migrate   # 2. create + apply migration (Infisical env dev)
+pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw   # 2. create/apply + generate
 pnpm run prisma:sync      # 3. mirror model files into apps/analytics
 pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate:raw` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+
+Development migration requires the restricted `klicker_test` login and marked
+`klicker_test` and `klicker_test_shadow` databases. Run the sequence through
+`devrouter exec <checkout-path> -- <command>` from the host, or inside that
+already-provisioned container. Do not use the legacy Infisical wrappers to reset,
+push, migrate-dev or test-seed staging, production, or retained development data.
+The legacy Compose initialization does not provision this disposable identity.
+See [the test database boundary](./testing.md#disposable-database-boundary).
+
+### Schema drift without an unsafe shadow
+
+`pnpm --filter @klicker-uzh/prisma run prisma:diff:raw` is config-derived:
+it compares `DATABASE_URL` read-only against the migrations, but replays those
+migrations into `SHADOW_DATABASE_URL`. Supply a separately provisioned, marked
+`klicker_test_shadow` owned by the restricted `klicker_test` login. The
+`prisma:diff` Infisical wrapper does not provision or supply a safe shadow.
+An operator must arrange both connections through an approved secret-injection
+path before a production comparison; otherwise stop and record the preflight
+as unavailable. Never point the shadow at retained data, remove its guard, or
+restore an inline credential. A local disposable diff is not production drift
+evidence.
 
 ## Prisma 7 client and datasource ownership
 
@@ -348,10 +370,17 @@ Fresh-install caveat: the Job references a PriorityClass that the chart creates 
 
 Two independent seed paths — changing one does NOT update the other:
 
-1. **Dev seed**: `pnpm run prisma:setup` → seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
+1. **Dev seed**: the raw sequence below performs seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
 2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
-Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+Prisma 7 does not seed after migrate/reset automatically. In the provisioned
+self-contained container, use the config-derived sequence from
+`.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`. These commands are
+destructive and require the disposable identity and marker, not merely seeded
+data. The retained `*:qa` reset/push/test-seed wrappers intentionally fail the
+same guard against staging; their names do not authorize staging mutations.
 
 ### First-login demo content
 
