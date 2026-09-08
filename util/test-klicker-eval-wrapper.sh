@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_WRAPPER="$REPO_ROOT/util/_run_klicker_eval.sh"
+BASH_BIN="$BASH"
 TEST_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
@@ -32,6 +33,7 @@ FAKE_REPO="$TEST_ROOT/repo"
 CHILD_LOG="$TEST_ROOT/child.log"
 INFISICAL_LOG="$TEST_ROOT/infisical.log"
 mkdir -p "$FAKE_BIN"
+ln -s "$BASH_BIN" "$FAKE_BIN/bash"
 
 REAL_NODE="$(command -v node)"
 write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
@@ -71,7 +73,7 @@ done
 printf "EVAL_API_KEY_PRESENT=%s\n" "${EVAL_API_KEY:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 printf "PARTICIPANT_USERNAME_PRESENT=%s\n" "${KLICKER_EVAL_PARTICIPANT_USERNAME:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 printf "PARTICIPANT_PASSWORD_PRESENT=%s\n" "${KLICKER_EVAL_PARTICIPANT_PASSWORD:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
-if [[ -v EVAL_MODEL_CAPABILITY_MODEL ]]; then
+if [ "${EVAL_MODEL_CAPABILITY_MODEL+x}" = x ]; then
   printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=set\n" >>"$KLICKER_TEST_CHILD_LOG"
 else
   printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=unset\n" >>"$KLICKER_TEST_CHILD_LOG"
@@ -127,14 +129,14 @@ TEST_PATH="$FAKE_BIN:$(dirname "$(command -v bash)"):/usr/bin:/bin"
 # cannot reuse TEST_PATH (the bash directory may itself ship a real CLI).
 MIN_BIN="$TEST_ROOT/min-bin"
 mkdir -p "$MIN_BIN"
-ln -s "$(command -v bash)" "$MIN_BIN/bash"
+ln -s "$BASH_BIN" "$MIN_BIN/bash"
 ln -s "$(command -v dirname)" "$MIN_BIN/dirname"
 NO_INFISICAL_BIN="$TEST_ROOT/no-infisical-bin"
 mkdir -p "$NO_INFISICAL_BIN"
 ln -s "$FAKE_BIN/node" "$NO_INFISICAL_BIN/node"
 ln -s "$FAKE_BIN/uv" "$NO_INFISICAL_BIN/uv"
 ln -s "$FAKE_BIN/git" "$NO_INFISICAL_BIN/git"
-ln -s "$(command -v bash)" "$NO_INFISICAL_BIN/bash"
+ln -s "$BASH_BIN" "$NO_INFISICAL_BIN/bash"
 ln -s "$(command -v dirname)" "$NO_INFISICAL_BIN/dirname"
 NO_INFISICAL_PATH="$NO_INFISICAL_BIN:/usr/bin:/bin"
 if PATH="$TEST_PATH" command -v rs-infisical-operator >/dev/null 2>&1; then
@@ -164,7 +166,6 @@ cp "$SOURCE_WRAPPER" "$HELP_REPO/util/_run_klicker_eval.sh"
 chmod +x "$HELP_REPO/util/_run_klicker_eval.sh"
 EMPTY_BIN="$TEST_ROOT/empty-bin"
 mkdir -p "$EMPTY_BIN"
-BASH_BIN="$(command -v bash)"
 
 : >"$CHILD_LOG"
 : >"$INFISICAL_LOG"

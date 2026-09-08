@@ -191,7 +191,7 @@ if [ "$LOCAL_TARGET" = true ] && [ "$MODE" = 'eval' ]; then
   exit 1
 fi
 
-set -- "${EVAL_ARGS[@]}"
+set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
 DEFAULT_EVAL_MODEL='klickeruzh/azure/gpt-5.6-luna-high'
 EFFECTIVE_EVAL_MODEL="${EVAL_MODEL:-$DEFAULT_EVAL_MODEL}"
@@ -212,7 +212,7 @@ EFFECTIVE_TOOLS_PATH="${EVAL_TOOLS_PATH:-$REPO_ROOT/evaluation/data/tools/klicke
 EFFECTIVE_GT_ROOT_DIR="${GT_ROOT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_DEFAULT_GT_DIR="${DEFAULT_GT_DIR:-$REPO_ROOT/evaluation/data/ground_truth/klicker_fineco}"
 EFFECTIVE_LOCAL_GT_DIR="${KLICKER_EVAL_GT_DIR:-$EFFECTIVE_DEFAULT_GT_DIR}"
-set -- "${EVAL_ARGS[@]}"
+set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
 require_readable_file() {
   local variable="$1"
@@ -375,7 +375,7 @@ EFFECTIVE_DEFAULT_GT_DIR="$(resolve_input_path "$EFFECTIVE_DEFAULT_GT_DIR")"
 EFFECTIVE_LOCAL_GT_DIR="$(resolve_input_path "$EFFECTIVE_LOCAL_GT_DIR")"
 
 validate_framework_args
-set -- "${EVAL_ARGS[@]}"
+set -- ${EVAL_ARGS[@]+"${EVAL_ARGS[@]}"}
 
 CHECK_STATUS=0
 
@@ -555,7 +555,7 @@ fi
 
 # Source aliases never reach model or target children. Canonical variables
 # remain available only until each child's existing environment filter applies.
-for source_name in "${JUDGE_SOURCE_NAMES[@]}" PIPELINES_LITELLM_API_KEY; do
+for source_name in ${JUDGE_SOURCE_NAMES[@]+"${JUDGE_SOURCE_NAMES[@]}"} PIPELINES_LITELLM_API_KEY; do
   case "$source_name" in
     LITELLM_API_BASE|LITELLM_API_KEY) ;;
     *) unset "$source_name" ;;
