@@ -85,6 +85,9 @@ packages/prisma-data/src/data/summerschool_*
 # backlog/ClickUp dumps, triage records, product strategy/vision briefs)
 project/_local/
 
+# Evaluation scope metadata is supplied privately on each developer machine.
+evaluation/config.local.json
+
 # Local agent-tool state (session plans, tool permissions) — machine-specific
 .commandcode/
 .zcode/

@@ -33,7 +33,11 @@ CHILD_LOG="$TEST_ROOT/child.log"
 INFISICAL_LOG="$TEST_ROOT/infisical.log"
 mkdir -p "$FAKE_BIN"
 
+REAL_NODE="$(command -v node)"
 write_file "$FAKE_BIN/node" '#!/usr/bin/env bash
+if [[ "${1:-}" = */read-klicker-eval-config.mjs ]]; then
+  exec "'"$REAL_NODE"'" "$@"
+fi
 if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
   if [ "${1:-}" = "-e" ]; then
     helper="KEYGEN"
@@ -61,7 +65,7 @@ write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
 for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
-for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY; do
+for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY JUDGE_KEY JUDGE_URL PIPELINES_LITELLM_API_KEY INFISICAL_TOKEN; do
   printf "%s_PRESENT=%s\n" "$name" "${!name:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 printf "EVAL_API_KEY_PRESENT=%s\n" "${EVAL_API_KEY:+yes}" >>"$KLICKER_TEST_CHILD_LOG"
@@ -76,11 +80,12 @@ printf "ARG=%s\n" "$@" >>"$KLICKER_TEST_CHILD_LOG"
 if [ "${KLICKER_TEST_EXEC_RUNNER:-false}" = "true" ]; then
   expected_framework="$KLICKER_TEST_REPO_ROOT/evaluation/framework"
   [ "${1:-}" = "run" ] || exit 2
-  [ "${2:-}" = "--project" ] || exit 2
-  [ "${3:-}" = "$expected_framework" ] || exit 2
-  [ "${4:-}" = "$expected_framework/scripts/_run_eval.sh" ] || exit 2
-  [ "${5:-}" = "--no-dotenv" ] || exit 2
-  exec "$4"
+  [ "${2:-}" = "--frozen" ] || exit 2
+  [ "${3:-}" = "--project" ] || exit 2
+  [ "${4:-}" = "$expected_framework" ] || exit 2
+  [ "${5:-}" = "$expected_framework/scripts/_run_eval.sh" ] || exit 2
+  [ "${6:-}" = "--no-dotenv" ] || exit 2
+  exec "$5"
 fi'
 
 write_file "$FAKE_BIN/git" '#!/usr/bin/env bash
@@ -95,6 +100,10 @@ fi
 exit 2'
 
 write_file "$FAKE_BIN/infisical" '#!/usr/bin/env bash
+if [ "${1:-}" = "--version" ]; then
+  printf "%s\n" "infisical version ${KLICKER_TEST_INFISICAL_VERSION:-0.43.129}"
+  exit 0
+fi
 if [ -n "${KLICKER_TEST_INFISICAL_LOG:-}" ]; then
   printf "%s\n" "$*" >>"$KLICKER_TEST_INFISICAL_LOG"
 fi
@@ -105,7 +114,11 @@ fi
 if [ -n "${KLICKER_TEST_EMPTY_SECRET:-}" ]; then
   exit 0
 fi
-printf "%s" "synthetic-test-key"
+if [ "${3:-}" = "JUDGE_URL" ]; then
+  printf "%s" "https://judge.example.test"
+else
+  printf "%s" "synthetic-test-key"
+fi
 exit 0'
 
 chmod +x "$FAKE_BIN/node" "$FAKE_BIN/uv" "$FAKE_BIN/git" "$FAKE_BIN/infisical"
@@ -140,6 +153,8 @@ write_file "$FAKE_REPO/synthetic-qa.json" '{"synthetic":true}'
 mkdir -p "$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco"
 mkdir -p "$FAKE_REPO/util" "$FAKE_REPO/apps/chat/scripts"
 cp "$SOURCE_WRAPPER" "$FAKE_REPO/util/_run_klicker_eval.sh"
+cp "$REPO_ROOT/util/read-klicker-eval-config.mjs" "$FAKE_REPO/util/"
+write_file "$FAKE_REPO/evaluation/config.local.json" '{"schemaVersion":1,"infisical":{"domain":"https://secrets.example.test","projectId":"test-project","environment":"test","path":"/judge"},"judge":{"baseUrlSecret":"JUDGE_URL","apiKeySecret":"JUDGE_KEY"}}'
 chmod +x "$FAKE_REPO/util/_run_klicker_eval.sh"
 WRAPPER="$FAKE_REPO/util/_run_klicker_eval.sh"
 
@@ -192,32 +207,14 @@ assert_parser_rejection missing-gt-dir --mode query --gt-dir
 assert_parser_rejection missing-metrics --mode eval --metrics
 assert_parser_rejection missing-safety-file --mode safety --safety-file
 
-assert_explicit_path_rejection() {
-  local name="$1"
-  shift
-  local status=0
 
-  : >"$CHILD_LOG"
-  : >"$INFISICAL_LOG"
-  env -i \
-    PATH="$NO_INFISICAL_PATH" \
-    KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
-    KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
-    KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
-    "$WRAPPER" "$@" >"$TEST_ROOT/$name.out" 2>&1 || status=$?
-
-  [ "$status" -eq 1 ] || fail "$name must fail for an unreadable input"
-  [ ! -s "$CHILD_LOG" ] || fail "$name must not invoke the evaluator"
-  [ ! -s "$INFISICAL_LOG" ] || fail "$name must not invoke Infisical"
-}
-
-assert_explicit_path_rejection unreadable-qa-file \
+assert_parser_rejection unreadable-qa-file \
   --mode eval --qa-file "$TEST_ROOT/missing-qa.json"
-assert_explicit_path_rejection unreadable-gt-dir \
+assert_parser_rejection unreadable-gt-dir \
   --mode query --gt-dir "$TEST_ROOT/missing-gt-dir"
-assert_explicit_path_rejection unreadable-metrics \
+assert_parser_rejection unreadable-metrics \
   --mode eval --metrics "$TEST_ROOT/missing-metrics.yaml"
-assert_explicit_path_rejection unreadable-safety-file \
+assert_parser_rejection unreadable-safety-file \
   --mode safety --safety-file "$TEST_ROOT/missing-safety.json"
 
 : >"$CHILD_LOG"
@@ -326,7 +323,7 @@ assert_line 'ARG=--no-dotenv' "$CHILD_LOG"
 assert_line 'ARG=--mode' "$CHILD_LOG"
 assert_line 'ARG=eval' "$CHILD_LOG"
 assert_line 'ARG=--qa-file' "$CHILD_LOG"
-assert_line 'ARG=synthetic-qa.json' "$CHILD_LOG"
+assert_line "ARG=$FAKE_REPO/synthetic-qa.json" "$CHILD_LOG"
 
 [ ! -s "$INFISICAL_LOG" ] || fail 'caller-provided judge key must not invoke the infisical CLI'
 
@@ -340,7 +337,7 @@ env -i \
   KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
   "$WRAPPER" -- --mode eval --qa-file synthetic-qa.json
 
-assert_line 'secrets get PIPELINES_LITELLM_API_KEY --plain --silent --expand=false --projectId d071be96-5136-4f23-a6cb-e0c7f9b9a6c8 --env stg' "$INFISICAL_LOG"
+assert_line 'secrets get JUDGE_KEY --plain --silent --expand=false --include-imports=false --recursive=false --secret-overriding=false --telemetry=false --log-level=error --domain https://secrets.example.test --projectId test-project --env test --path /judge' "$INFISICAL_LOG"
 assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 
 : >"$CHILD_LOG"
@@ -400,7 +397,6 @@ env -i \
   "$WRAPPER" --mode eval >"$TEST_ROOT/missing-cli.out" 2>&1 || status=$?
 
 [ "$status" -eq 1 ] || fail "missing infisical CLI returned $status instead of 1"
-assert_line 'Error: LITELLM_API_KEY is not set and the infisical CLI is required to fetch PIPELINES_LITELLM_API_KEY' "$TEST_ROOT/missing-cli.out"
 [ ! -s "$CHILD_LOG" ] || fail 'missing infisical CLI must not invoke uv'
 
 : >"$CHILD_LOG"
@@ -415,8 +411,7 @@ env -i \
   "$WRAPPER" --mode eval >"$TEST_ROOT/infisical-failure.out" 2>&1 || status=$?
 
 [ "$status" -eq 1 ] || fail "infisical CLI failure returned $status instead of 1"
-assert_line 'Error: could not fetch PIPELINES_LITELLM_API_KEY from the Infisical project d071be96-5136-4f23-a6cb-e0c7f9b9a6c8 (environment stg); check infisical login and project access' "$TEST_ROOT/infisical-failure.out"
-grep -Fq -- 'synthetic infisical failure' "$TEST_ROOT/infisical-failure.out" || fail 'infisical CLI stderr must pass through'
+! grep -Fq -- 'synthetic infisical failure' "$TEST_ROOT/infisical-failure.out" || fail 'CLI diagnostics must not leak'
 [ ! -s "$CHILD_LOG" ] || fail 'infisical CLI failure must not invoke uv'
 
 : >"$CHILD_LOG"
@@ -431,7 +426,6 @@ env -i \
   "$WRAPPER" --mode eval >"$TEST_ROOT/empty-secret.out" 2>&1 || status=$?
 
 [ "$status" -eq 1 ] || fail "empty fetched judge key returned $status instead of 1"
-assert_line 'Error: fetched PIPELINES_LITELLM_API_KEY is empty' "$TEST_ROOT/empty-secret.out"
 [ ! -s "$CHILD_LOG" ] || fail 'empty fetched judge key must not invoke uv'
 
 status=0
@@ -513,13 +507,61 @@ assert_line 'Run: git submodule update --init --checkout evaluation/framework' "
 
 status=0
 env -i \
+  KLICKER_EVAL_CONFIG=missing-config.json \
   LITELLM_API_KEY='synthetic-test-key' \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   "$WRAPPER" --mode eval >"$TEST_ROOT/base-url.out" 2>&1 || status=$?
 
 [ "$status" -eq 1 ] || fail "missing base URL returned $status instead of 1"
-assert_line 'Error: LITELLM_API_BASE must point to the approved LiteLLM proxy' "$TEST_ROOT/base-url.out"
+[ ! -s "$CHILD_LOG" ] || fail 'missing scope must not invoke the evaluator'
+
+# Configuration resolution uses the real JSON loader and a synthetic CLI.
+run_judge_case() {
+  : >"$CHILD_LOG"
+  : >"$INFISICAL_LOG"
+  env -i PATH="$TEST_PATH" \
+    KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+    KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+    KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+    "$@" "$WRAPPER" --mode eval --qa-file synthetic-qa.json
+}
+run_judge_case JUDGE_KEY=synthetic-source-key JUDGE_URL=synthetic-source-url \
+  PIPELINES_LITELLM_API_KEY=synthetic-legacy-key INFISICAL_TOKEN=synthetic-cli-token
+assert_line 'LITELLM_API_BASE=https://judge.example.test' "$CHILD_LOG"
+assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
+assert_line 'JUDGE_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'JUDGE_URL_PRESENT=' "$CHILD_LOG"
+assert_line 'PIPELINES_LITELLM_API_KEY_PRESENT=' "$CHILD_LOG"
+assert_line 'INFISICAL_TOKEN_PRESENT=' "$CHILD_LOG"
+[ "$(wc -l <"$INFISICAL_LOG" | tr -d ' ')" -eq 2 ] || fail 'both missing settings require two scoped reads'
+
+run_judge_case LITELLM_API_KEY=synthetic-override
+[ "$(wc -l <"$INFISICAL_LOG" | tr -d ' ')" -eq 1 ] || fail 'key override must skip key lookup'
+grep -Fq 'secrets get JUDGE_URL ' "$INFISICAL_LOG" || fail 'only URL must be fetched'
+
+write_file "$FAKE_REPO/broken.json" '{synthetic-private-sentinel'
+run_judge_case KLICKER_EVAL_CONFIG=broken.json \
+  LITELLM_API_BASE=https://override.example.test LITELLM_API_KEY=synthetic-override
+[ ! -s "$INFISICAL_LOG" ] || fail 'complete overrides must bypass even invalid configuration'
+
+: >"$CHILD_LOG"
+: >"$INFISICAL_LOG"
+env -i PATH="$TEST_PATH" KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" KLICKER_TEST_INFISICAL_LOG="$INFISICAL_LOG" \
+  "$WRAPPER" --check --mode eval >"$TEST_ROOT/config-check.out"
+[ ! -s "$CHILD_LOG" ] || fail 'configured offline check must not invoke uv'
+[ ! -s "$INFISICAL_LOG" ] || fail 'configured offline check must not invoke Infisical'
+
+status=0
+run_judge_case KLICKER_TEST_INFISICAL_VERSION=0.42.0 >"$TEST_ROOT/version.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'unsupported CLI version must fail'
+[ ! -s "$INFISICAL_LOG" ] || fail 'unsupported CLI must not fetch values'
+
+# A source name can be the canonical destination; mapping must preserve it.
+write_file "$FAKE_REPO/canonical.json" '{"schemaVersion":1,"infisical":{"domain":"https://secrets.example.test","projectId":"test-project","environment":"test","path":"/judge"},"judge":{"baseUrlSecret":"JUDGE_URL","apiKeySecret":"LITELLM_API_KEY"}}'
+run_judge_case KLICKER_EVAL_CONFIG=canonical.json
+assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 
 LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
 PATH="$TEST_PATH" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1

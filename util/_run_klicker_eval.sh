@@ -29,35 +29,85 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FRAMEWORK_ROOT="$REPO_ROOT/evaluation/framework"
 FRAMEWORK_RUNNER="$FRAMEWORK_ROOT/scripts/_run_eval.sh"
 
-# Judge credential contract: a caller-provided LITELLM_API_KEY wins as-is;
-# otherwise the key is fetched with the standard Infisical CLI from the
-# klicker-uzh project (stg environment). The value is only exported to the
-# evaluator child and is stripped from the target-adapter environment.
-LITELLM_KEY_SECRET_NAME='PIPELINES_LITELLM_API_KEY'
-INFISICAL_PROJECT_ID='d071be96-5136-4f23-a6cb-e0c7f9b9a6c8'
-INFISICAL_ENV_SLUG='stg'
+# Explicit caller values win; missing judge settings come from one configured
+# Infisical scope. No credentials are stored in the setup file or command argv.
+JUDGE_SOURCE_NAMES=()
+JUDGE_CONFIG_FIELDS=()
 
-resolve_litellm_api_key() {
-  if [ -n "${LITELLM_API_KEY:-}" ]; then
+read_judge_config() {
+  if [ -n "${LITELLM_API_BASE:-}" ] && [ -n "${LITELLM_API_KEY:-}" ]; then
     return 0
   fi
+  if ! command -v node >/dev/null 2>&1; then
+    echo 'Error: node is required to read evaluation configuration' >&2
+    return 1
+  fi
+  local config_path="${KLICKER_EVAL_CONFIG:-$REPO_ROOT/evaluation/config.local.json}"
+  if [[ "$config_path" != /* ]]; then
+    config_path="$REPO_ROOT/$config_path"
+  fi
+  local metadata field
+  if ! metadata="$(node "$SCRIPT_DIR/read-klicker-eval-config.mjs" "$config_path")"; then
+    return 1
+  fi
+  JUDGE_CONFIG_FIELDS=()
+  while IFS= read -r field; do
+    JUDGE_CONFIG_FIELDS+=("$field")
+  done <<< "$metadata"
+  if [ "${#JUDGE_CONFIG_FIELDS[@]}" -ne 6 ]; then
+    echo 'Error: invalid evaluation scope metadata' >&2
+    return 1
+  fi
+  JUDGE_SOURCE_NAMES=("${JUDGE_CONFIG_FIELDS[4]}" "${JUDGE_CONFIG_FIELDS[5]}")
   if ! command -v infisical >/dev/null 2>&1; then
-    echo "Error: LITELLM_API_KEY is not set and the infisical CLI is required to fetch ${LITELLM_KEY_SECRET_NAME}" >&2
-    exit 1
+    echo 'Error: install the Infisical CLI to resolve the missing judge settings' >&2
+    return 1
   fi
-  local fetched
-  if ! fetched="$(infisical secrets get "$LITELLM_KEY_SECRET_NAME" \
-    --plain --silent --expand=false \
-    --projectId "$INFISICAL_PROJECT_ID" --env "$INFISICAL_ENV_SLUG" </dev/null)"; then
-    echo "Error: could not fetch ${LITELLM_KEY_SECRET_NAME} from the Infisical project ${INFISICAL_PROJECT_ID} (environment ${INFISICAL_ENV_SLUG}); check infisical login and project access" >&2
-    exit 1
-  fi
-  if [ -z "$fetched" ]; then
-    echo "Error: fetched ${LITELLM_KEY_SECRET_NAME} is empty" >&2
-    exit 1
-  fi
-  export LITELLM_API_KEY="$fetched"
 }
+
+fetch_judge_setting() {
+  local source="$1" destination="$2" fetched
+  if ! fetched="$(infisical secrets get "$source" \
+    --plain --silent --expand=false --include-imports=false \
+    --recursive=false --secret-overriding=false --telemetry=false --log-level=error \
+    --domain "${JUDGE_CONFIG_FIELDS[0]}" --projectId "${JUDGE_CONFIG_FIELDS[1]}" \
+    --env "${JUDGE_CONFIG_FIELDS[2]}" --path "${JUDGE_CONFIG_FIELDS[3]}" \
+    </dev/null 2>/dev/null)"; then
+    echo "Error: Infisical lookup failed for $destination; check login, configured scope and access. CLI output was suppressed." >&2
+    return 1
+  fi
+  if [ -z "$fetched" ] || [[ "$fetched" = *$'\n'* ]] || [[ "$fetched" = *$'\r'* ]]; then
+    echo "Error: Infisical returned an empty or multiline value for $destination" >&2
+    return 1
+  fi
+  export "$destination=$fetched"
+}
+
+resolve_judge_settings() {
+  read_judge_config || return 1
+  if [ "${#JUDGE_CONFIG_FIELDS[@]}" -eq 0 ]; then
+    return 0
+  fi
+  local version
+  version="$(infisical --version 2>/dev/null)" || {
+    echo 'Error: could not determine the Infisical CLI version' >&2
+    return 1
+  }
+  case "$version" in
+    "infisical version 0.43."*) ;;
+    *)
+      echo 'Error: this launcher supports Infisical CLI 0.43.x; use that version or inject both judge variables' >&2
+      return 1
+      ;;
+  esac
+  if [ -z "${LITELLM_API_BASE:-}" ]; then
+    fetch_judge_setting "${JUDGE_SOURCE_NAMES[0]}" LITELLM_API_BASE || return 1
+  fi
+  if [ -z "${LITELLM_API_KEY:-}" ]; then
+    fetch_judge_setting "${JUDGE_SOURCE_NAMES[1]}" LITELLM_API_KEY || return 1
+  fi
+}
+
 
 if [ "${1:-}" = "--" ]; then
   shift
@@ -203,34 +253,13 @@ resolve_input_path() {
   fi
 }
 
-require_explicit_file() {
-  local option="$1"
-  local path
-  path="$(resolve_input_path "$2")"
-
-  if [ ! -f "$path" ] || [ ! -r "$path" ]; then
-    echo "Error: $option must point to a readable file: $2" >&2
-    exit 1
-  fi
-}
-
-require_explicit_directory() {
-  local option="$1"
-  local path
-  path="$(resolve_input_path "$2")"
-
-  if [ ! -d "$path" ] || [ ! -r "$path" ] || [ ! -x "$path" ]; then
-    echo "Error: $option must point to a readable directory: $2" >&2
-    exit 1
-  fi
-}
-
 require_qa_files() {
   local value="$1"
   local path
   local part
   local rest="$value"
   local last_part=false
+  local resolved=""
 
   while [ "$last_part" = false ]; do
     case "$rest" in
@@ -247,8 +276,11 @@ require_qa_files() {
       echo 'Error: --qa-file contains an empty path' >&2
       exit 1
     fi
-    require_explicit_file '--qa-file' "$part"
+    require_readable_file '--qa-file' "$part"
+    path="$(resolve_input_path "$part")"
+    resolved="${resolved:+$resolved,}$path"
   done
+  printf '%s' "$resolved"
 }
 
 validate_framework_args() {
@@ -280,17 +312,18 @@ validate_framework_args() {
             EVAL_ARGS[$((index + 1))]="$path"
             EFFECTIVE_LOCAL_GT_DIR="$path"
             HAS_GT_DIR_ARGUMENT=true
-            require_explicit_directory '--gt-dir' "$value"
+            require_readable_directory '--gt-dir' "$value"
             ;;
           --qa-file)
-            require_qa_files "$value"
+            EVAL_ARGS[$((index + 1))]="$(require_qa_files "$value")"
             ;;
           --metrics)
-            require_explicit_file '--metrics' "$value"
+            require_readable_file '--metrics' "$value"
             ;;
           --safety-file)
             HAS_SAFETY_FILE_ARGUMENT=true
-            require_explicit_file '--safety-file' "$value"
+            require_readable_file '--safety-file' "$value"
+            EVAL_ARGS[$((index + 1))]="$(resolve_input_path "$value")"
             ;;
         esac
         index=$((index + 2))
@@ -432,17 +465,11 @@ run_offline_check() {
 
   if [ "$NEEDS_JUDGE" = true ]; then
     printf '%s\n' 'Required judge variables: LITELLM_API_BASE and LITELLM_API_KEY'
-    check_environment_variable LITELLM_API_BASE
-    if [ -n "${LITELLM_API_KEY:-}" ]; then
-      printf '%s\n' 'Variable LITELLM_API_KEY: set'
-    elif command -v infisical >/dev/null 2>&1; then
-      printf '%s\n' 'Variable LITELLM_API_KEY: supplied by Infisical CLI (authentication untested)'
+    if read_judge_config; then
+      printf '%s\n' 'Judge configuration: supplied explicitly or scope metadata is valid'
     else
-      printf '%s\n' 'Variable LITELLM_API_KEY: missing and Infisical CLI unavailable'
       CHECK_STATUS=1
     fi
-    printf 'Infisical scope: project=%s environment=%s (lookup not attempted)\n' \
-      "$INFISICAL_PROJECT_ID" "$INFISICAL_ENV_SLUG"
     printf '%s\n' 'Authentication and judge access: untested (offline check)'
   else
     printf '%s\n' 'Judge variables: not required for this mode'
@@ -481,10 +508,7 @@ if [ ! -x "$FRAMEWORK_RUNNER" ]; then
   exit 1
 fi
 
-if [ "$NEEDS_JUDGE" = true ] && [ -z "${LITELLM_API_BASE:-}" ]; then
-  echo "Error: LITELLM_API_BASE must point to the approved LiteLLM proxy" >&2
-  exit 1
-fi
+
 
 if [ "$NEEDS_JUDGE" = true ]; then
   require_readable_file EVAL_METRICS_PATH "$EFFECTIVE_METRICS_PATH"
@@ -510,11 +534,25 @@ if [ "$NEEDS_TARGET" = true ]; then
   fi
 fi
 
+if ! command -v uv >/dev/null 2>&1; then
+  echo 'Error: uv is required; install uv and prepare the pinned evaluation dependencies' >&2
+  exit 1
+fi
+
 # Secret retrieval happens after all preflights so input failures never
 # trigger a credential fetch.
 if [ "$NEEDS_JUDGE" = true ]; then
-  resolve_litellm_api_key
+  resolve_judge_settings
 fi
+
+# Source aliases never reach model or target children. Canonical variables
+# remain available only until each child's existing environment filter applies.
+for source_name in "${JUDGE_SOURCE_NAMES[@]}" PIPELINES_LITELLM_API_KEY; do
+  case "$source_name" in
+    LITELLM_API_BASE|LITELLM_API_KEY) ;;
+    *) unset "$source_name" ;;
+  esac
+done
 
 ADAPTER_PID=""
 ADAPTER_TMP_DIR=""
@@ -529,6 +567,9 @@ TARGET_HELPER_PREFIX=(
   -u LITELLM_API_BASE
   -u LITELLM_API_KEY
   -u EVAL_API_KEY
+  -u INFISICAL_TOKEN
+  -u INFISICAL_CLIENT_SECRET
+  -u INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET
 )
 
 KEYGEN_PREFIX=(
@@ -664,7 +705,7 @@ EVAL_ENV+=(
   "TOOL_PROFILE=${TOOL_PROFILE:-catalog_expert_v1}"
 )
 if [ "$NEEDS_JUDGE" = true ]; then
-  EVAL_ENV+=("LITELLM_API_BASE=$LITELLM_API_BASE")
+  export LITELLM_API_BASE LITELLM_API_KEY
 fi
 if [ -n "$EFFECTIVE_CAPABILITY_MODEL" ]; then
   EVAL_ENV+=("EVAL_MODEL_CAPABILITY_MODEL=$EFFECTIVE_CAPABILITY_MODEL")
@@ -687,11 +728,17 @@ EVALUATOR_PREFIX=(
   -u UPSTREAM_OPENAI_API_KEY
   -u UPSTREAM_OPENAI_BASE_URL
   -u OPENAI_API_KEY
+  -u INFISICAL_TOKEN
+  -u INFISICAL_CLIENT_SECRET
+  -u INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET
 )
+if [ "$NEEDS_TARGET" != true ]; then
+  EVALUATOR_PREFIX+=(-u EVAL_API_KEY -u EVAL_ENDPOINT_URL -u EVAL_MODELS_URL)
+fi
 if [ "$NEEDS_JUDGE" != true ]; then
   EVALUATOR_PREFIX+=(-u LITELLM_API_BASE -u LITELLM_API_KEY)
 fi
-if [ "$LOCAL_TARGET" = true ]; then
+if [ "$NEEDS_JUDGE" = true ] || [ "$NEEDS_TARGET" = true ]; then
   EVALUATOR_PREFIX+=(
     -u KLICKER_EVAL_API_ORIGIN
     -u KLICKER_EVAL_CHAT_ORIGIN
@@ -708,6 +755,7 @@ EVALUATOR_COMMAND=(
   "${EVAL_ENV[@]}"
   uv
   run
+  --frozen
   --project
   "$FRAMEWORK_ROOT"
   "$FRAMEWORK_RUNNER"
