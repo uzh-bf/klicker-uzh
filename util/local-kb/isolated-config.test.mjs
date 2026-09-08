@@ -225,6 +225,8 @@ test('rejects remote endpoint fallback and unknown settings', () => {
   for (const url of [
     'https://doc-processing/health',
     'https://doc-processing:443/health',
+    `${input.endpoints.docProcessing}?token=synthetic-test-value`,
+    `${input.endpoints.docProcessing}#synthetic-test-value`,
   ]) {
     assert.throws(() =>
       resolveIsolatedConfig({

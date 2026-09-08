@@ -341,6 +341,10 @@ function localEndpoint(value, field, name, reservedOrigins) {
     !parsed.username && !parsed.password,
     `${field} must not contain credentials.`
   )
+  ensure(
+    !parsed.search && !parsed.hash,
+    `${field} must not contain query parameters or fragments.`
+  )
   const host = parsed.hostname.toLowerCase()
   ensure(
     LOCAL_HOSTS.has(host) || ENDPOINT_HOSTS[name].includes(host),
