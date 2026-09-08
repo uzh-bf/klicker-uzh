@@ -161,6 +161,8 @@ function ManageAiCapabilityProvider({
 }: ManageAiCapabilityProviderProps) {
   const identity = JSON.stringify([
     props.user?.id,
+    props.user?.role,
+    props.user?.catalyst,
     props.skipUserProfile,
     props.user?.aiFeaturesEnabled,
     props.betaEnabled,
