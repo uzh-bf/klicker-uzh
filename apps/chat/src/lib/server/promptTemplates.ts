@@ -37,7 +37,7 @@ export function renderPromptTemplate<Name extends keyof PromptContext>(
       join(process.cwd(), 'src', 'prompts', `${name}.hbs`),
       'utf8'
     ).replace(/\r?\n$/, '')
-    template = Handlebars.compile(source, { strict: true, noEscape: true })
+    template = Handlebars.compile(source, { strict: true })
     templates.set(name, template)
   }
   return template(context)

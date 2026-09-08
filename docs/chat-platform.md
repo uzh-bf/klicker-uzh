@@ -720,7 +720,9 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 Platform and image-description prompt prose lives in `apps/chat/src/prompts/*.hbs`.
 `src/lib/server/promptTemplates.ts` loads and caches repository-owned Handlebars
-templates with strict variables and plaintext interpolation. Edit the template for
+templates with strict variables. Plaintext values use explicit triple-brace
+interpolation (`{{{value}}}`); ordinary double braces retain HTML escaping.
+These server assets produce model prompts, never HTML. Edit the template for
 wording and its typed context for new values; keep policy order and conditional
 inclusion in the TypeScript compiler. Stored lecturer text and course metadata are
 interpolation data, never template source. One final file newline is omitted from
