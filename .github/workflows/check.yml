@@ -63,6 +63,7 @@ jobs:
         run: |
           node --test util/read-klicker-eval-config.test.mjs
           bash util/test-klicker-eval-wrapper.sh
+          uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
 
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
