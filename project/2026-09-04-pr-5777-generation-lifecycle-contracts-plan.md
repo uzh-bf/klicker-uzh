@@ -220,6 +220,15 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Merge and feedback acceptance — 2026-09-08
+
+Normal target merge is 1b23be5cf78ecca43b0c51ee259144a1dad4ae73, with second parent 6e2d03c5b0b8261715f1c203160270302a109572. Three preload tests, 75 feature-flag tests, all 47 type/lint tasks and 26 full build tasks pass. Browser qualification passes 16 cases before the profile fix and all 12 affected analytics/recovery cases afterward. The profile test now intercepts ManageFeatureFlagProfile; a provider-owned loading context lets the analytics guard retain its loading status without altering upstream evaluation availability or AI capability semantics. Logs: /tmp/generation-merge-loading-browser.log and /tmp/generation-merge-final-build.log.
+
+New review feedback is accepted for the local MCP writer: bootstrap validates the restricted disposable URL and forbids PostgreSQL environment overrides; the repair verifies live database/login/role/marker/privilege identity on its actual pg connection before BEGIN or writes. The existing temporary-table suite verifies five mismatched identities stop at the identity read, then exercises real marked-database repair and rollback. It passes, as does Chat typecheck, in /tmp/generation-mcp-guard-check.log. This uses the existing shared Prisma guard implementation; no database state is relabeled or migrated. Escaped inline-code pipes in the review table. These corrections require a bounded independent delta review.
+
+Target v3-ai advanced concurrently to 35fec95491. A merge-tree check proves clean mergeability with our candidate; no second integration is justified by that movement alone. Preserve the verified source. Hosted qualification and scanner incident disposition remain pending, and no merge into the target is authorized.
+
+
 ### Review-feedback disposition — 2026-09-08
 
 The current reviewer enum-typo claim is false: ElementGenerationBuildStatus.QUEUED is present in both schema and completion source. Flashcards deliberately count all drafts and questions count original drafts; the retained duplicate-cardinality regression covers this difference, so applying the proposed filter would violate the frozen contract. Empty-result and element-type validation remain with the validated caller contracts and existing guards. The shared completion transaction is the approved extraction; splitting it reverses the package decision. The fixed 15-second lease and renewal concern remain inherited roadmap work, not a new regression. Raw error/build logging is rejected because the approved diagnostic contract excludes dynamic identifiers and provider content.

@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { encrypt } from '@klicker-uzh/util'
 import {
+  assertDisposableDatabaseIdentity,
+  disposableDatabaseIdentityQuery,
+} from '../../../packages/prisma/src/disposableDatabase.ts'
+import {
   assertLocalSeedOwnership,
   LOCAL_CHATBOT_ID,
   LOCAL_FIXTURE_MARKER,
@@ -9,6 +13,9 @@ import {
 
 // The caller owns the local-runtime boundary and the database connection.
 export async function repairLocalMcpSeed(db, token, isInterrupted) {
+  assertDisposableDatabaseIdentity(
+    (await db.query(disposableDatabaseIdentityQuery)).rows
+  )
   try {
     await db.query('BEGIN ISOLATION LEVEL SERIALIZABLE')
     await db.query("SET LOCAL lock_timeout = '5s'")
