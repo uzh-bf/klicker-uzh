@@ -1035,17 +1035,23 @@ from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
-"No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
+"No results" is claimed only for an explicitly empty source collection, never from the number
+of displayable citations. A cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
 its result, and labelling that as an empty search would be a lie.
 
-Expanding the chip no longer dumps raw JSON for a successful doc_query: `getDocQueryPanelContent`
-(same file, pure, tested in `test/tool-fallback-doc-query.test.ts`) yields a friendly panel — the
-model's search query (parsed defensively from the possibly-streaming args JSON by
-`parseDocQueryArgsQuery`) plus a "results appear as sources below" hint keyed on the parsed-`done`
-state. The raw tool-name/args/result path is preserved wherever the friendly panel would lie or be
-empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
-unreadable-args combination (which would otherwise render a blank panel).
+The expanded RAG panel displays readable chunks grouped by source, with full-text disclosure,
+original source links when supplied, and each chunk's own locator. `docQueryResult.ts` interprets
+retrieval independently of citation eligibility. Previously excluded unnamed sources remain
+unnumbered, preserving historical citation associations. Group citation badges use the shared
+message source context rather than restarting numbering for each tool call.
+
+Documents-mode `source_url` takes precedence over a safe public `reference` for navigation only;
+it does not change legacy identity or deduplication. Internal ingestion endpoints and unsafe URLs
+never become source links. Missing provenance stays unavailable; document text is not an origin
+metadata channel. Unknown locator semantics preserve the original link without inventing a jump
+target. RAG error and unknown states use friendly disclosure without raw provider payloads;
+unrelated tools retain their existing fallback.
 
 ## Streamed Markdown math
 
