@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createPrivateKey, createPublicKey } from 'node:crypto'
 import {
   chmod,
+  mkdir,
   mkdtemp,
   readFile,
   realpath,
@@ -16,10 +17,12 @@ import { docProcessingImageRevision } from './doc-processing-compose.mjs'
 import { ingestionImageRevision } from './ingestion-compose.mjs'
 import { resolveIsolatedConfig } from './isolated-config.mjs'
 import {
-  claimPreparation,
+  claimPreparation as claimObservedPreparation,
   completePreparation,
   deliverHatchetToken,
   initializeProviderStorage,
+  inspectRuntimeCheckout,
+  installManagedConfiguration,
   prepareLocalConfiguration,
   requirePreparation,
 } from './preparation.mjs'
@@ -27,7 +30,112 @@ import { retrievalImageRevision } from './retrieval-compose.mjs'
 import { scrapingImageRevision } from './scraping-compose.mjs'
 
 const revision = 'a'.repeat(40)
+const claimPreparation = (config, candidate) =>
+  claimObservedPreparation(config, candidate, () => true)
 const unusedProject = () => ({ unused: true, context: 'synthetic-local' })
+
+async function installationFixture() {
+  const config = await fixture()
+  const checkout = config.project.runtimeCheckoutPath
+  await mkdir(join(checkout, '.devcontainer'))
+  const paths = [
+    '.devcontainer/devcontainer.json',
+    '.devcontainer/docker-compose.yml',
+    '.devcontainer/docker-compose.devrouter.yml',
+    '.devrouter.yml',
+  ]
+  const inputs = new Map()
+  for (const path of paths) {
+    const content = await readFile(
+      new URL(`../../${path}`, import.meta.url),
+      'utf8'
+    )
+    inputs.set(path, content)
+    await writeFile(join(checkout, path), content)
+  }
+  await claimPreparation(config, revision)
+  return {
+    config,
+    checkout,
+    inputs,
+    read: (_root, _revision, path) => inputs.get(path),
+  }
+}
+
+test('managed installation replaces only candidate config and neutralizes the linked overlay', async () => {
+  const { config, checkout, read } = await installationFixture()
+  assert.deepEqual(
+    await installManagedConfiguration(
+      config,
+      revision,
+      'synthetic-runtime',
+      read
+    ),
+    { installed: true }
+  )
+  const json = async (path) =>
+    JSON.parse(await readFile(join(checkout, path), 'utf8'))
+  assert.deepEqual(
+    (await json('.devcontainer/devcontainer.json')).dockerComposeFile,
+    ['docker-compose.yml']
+  )
+  assert.deepEqual(await json('.devcontainer/docker-compose.devrouter.yml'), {
+    services: {},
+  })
+  assert.equal(
+    (await json('.devcontainer/docker-compose.yml')).services.postgres,
+    undefined
+  )
+  assert.equal(
+    (await json('.local-kb/provider-routing.compose.json')).services.blob
+      .networks.devnet.aliases[0],
+    'synthetic-runtime-azurite'
+  )
+  await assert.rejects(
+    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    /differs from the candidate/
+  )
+})
+
+test('changed managed input prevents all installation writes', async () => {
+  const { config, checkout, inputs, read } = await installationFixture()
+  await writeFile(join(checkout, '.devrouter.yml'), 'changed')
+  await assert.rejects(
+    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    /differs from the candidate/
+  )
+  assert.equal(
+    await readFile(join(checkout, '.devcontainer/devcontainer.json'), 'utf8'),
+    inputs.get('.devcontainer/devcontainer.json')
+  )
+  await assert.rejects(stat(join(checkout, '.local-kb/managed-installation')), {
+    code: 'ENOENT',
+  })
+})
+
+test('interrupted installation remains claimed and cannot be replayed', async () => {
+  const { config, checkout, inputs, read } = await installationFixture()
+  await writeFile(
+    join(checkout, '.local-kb/provider-routing.compose.json'),
+    '{}'
+  )
+  await assert.rejects(
+    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    { code: 'EEXIST' }
+  )
+  await assert.rejects(
+    installManagedConfiguration(config, revision, 'synthetic-runtime', read),
+    { code: 'EEXIST' }
+  )
+  assert.equal(
+    await readFile(join(checkout, '.devcontainer/devcontainer.json'), 'utf8'),
+    inputs.get('.devcontainer/devcontainer.json')
+  )
+  await assert.rejects(
+    stat(join(checkout, '.local-kb/managed-installation/complete.json')),
+    { code: 'ENOENT' }
+  )
+})
 async function fixture() {
   const checkout = await realpath(
     await mkdtemp(join(tmpdir(), 'kb-preparation-'))
@@ -81,6 +189,51 @@ async function fixture() {
     ),
   })
 }
+
+test('runtime observation requires the exact detached candidate without ignored or tracked state', () => {
+  const observations = ['/synthetic/runtime', revision, 'HEAD', '']
+  const inspect = (values) => {
+    let index = 0
+    return inspectRuntimeCheckout(
+      '/synthetic/runtime',
+      revision,
+      () => values[index++]
+    )
+  }
+  assert.equal(inspect(observations), true)
+  for (const [index, value] of [
+    [0, '/synthetic/other'],
+    [1, 'b'.repeat(40)],
+    [2, 'rs/implementation'],
+    [3, ' M tracked'],
+    [3, '?? untracked'],
+    [3, '!! ignored-state'],
+  ]) {
+    const altered = [...observations]
+    altered[index] = value
+    assert.equal(inspect(altered), false)
+  }
+  assert.equal(
+    inspectRuntimeCheckout('/synthetic/runtime', revision, () => {
+      throw new Error('unavailable')
+    }),
+    false
+  )
+})
+
+test('failed runtime observation leaves no preparation claim', async () => {
+  const config = await fixture()
+  await assert.rejects(
+    claimObservedPreparation(config, revision, () => false),
+    /clean detached checkout/
+  )
+  await assert.rejects(
+    stat(join(config.project.runtimeCheckoutPath, '.local-kb')),
+    {
+      code: 'ENOENT',
+    }
+  )
+})
 
 test('exclusive preparation retains partial failure and never implicitly retries setup', async () => {
   const config = await fixture()

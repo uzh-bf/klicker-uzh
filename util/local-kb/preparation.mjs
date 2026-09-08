@@ -1,7 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
 import { lstat, mkdir, open, realpath } from 'node:fs/promises'
 import { join } from 'node:path'
+import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import { renderProviderCompose } from './compose.mjs'
 import {
@@ -15,10 +17,15 @@ import {
   renderLocalConfiguration,
   renderLocalRetrievalConfiguration,
 } from './local-configuration.mjs'
+import { renderManagedConfiguration } from './managed-configuration.mjs'
 
 // A failed setup deliberately retains its claim. It must not be mistaken for
 // an unused runtime on the next invocation.
-export async function claimPreparation(config, candidateRevision) {
+export async function claimPreparation(
+  config,
+  candidateRevision,
+  inspect = inspectRuntimeCheckout
+) {
   validateIsolatedConfig(config)
   if (!/^[a-f0-9]{40}$/.test(candidateRevision)) {
     throw new Error('An immutable candidate revision is required.')
@@ -26,6 +33,9 @@ export async function claimPreparation(config, candidateRevision) {
   const checkout = config.project.runtimeCheckoutPath
   if ((await realpath(checkout)) !== checkout) {
     throw new Error('Runtime checkout must be canonical.')
+  }
+  if (!inspect(checkout, candidateRevision)) {
+    throw new Error('A clean detached checkout at the candidate is required.')
   }
   const directory = join(checkout, '.local-kb')
   await mkdir(directory, { mode: 0o700 })
@@ -39,6 +49,142 @@ export async function claimPreparation(config, candidateRevision) {
   }
   await writeExclusive(join(directory, 'preparation.json'), identity)
   return identity
+}
+
+// Run on the host before claiming a fresh runtime. Ignored files count as
+// existing state too: a clean tracked diff alone does not prove freshness.
+export function inspectRuntimeCheckout(checkout, candidateRevision, read) {
+  const git =
+    read ??
+    ((args) =>
+      execFileSync(
+        'git',
+        ['-c', 'core.fsmonitor=false', '-C', checkout, ...args],
+        {
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['ignore', 'pipe', 'ignore'],
+          env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+        }
+      ))
+  try {
+    return (
+      git(['rev-parse', '--show-toplevel']).trim() === checkout &&
+      git(['rev-parse', 'HEAD']).trim() === candidateRevision &&
+      git(['rev-parse', '--abbrev-ref', 'HEAD']).trim() === 'HEAD' &&
+      git([
+        'status',
+        '--porcelain',
+        '--untracked-files=all',
+        '--ignored',
+        '--ignore-submodules=none',
+      ]).trim() === ''
+    )
+  } catch {
+    return false
+  }
+}
+
+// Install only into the claimed runtime checkout. Compare every tracked input
+// with the immutable candidate before the first write, and retain a failed
+// attempt so configuration replacement cannot be silently replayed.
+export async function installManagedConfiguration(
+  config,
+  candidateRevision,
+  workspace,
+  readCandidate = readCandidateFile
+) {
+  const { directory } = await verifyClaim(config, candidateRevision)
+  const checkout = config.project.runtimeCheckoutPath
+  if (
+    (await realpath(join(checkout, '.devcontainer'))) !==
+    join(checkout, '.devcontainer')
+  ) {
+    throw new Error('Managed configuration directory must be canonical.')
+  }
+  const inputPaths = [
+    '.devcontainer/devcontainer.json',
+    '.devcontainer/docker-compose.yml',
+    '.devcontainer/docker-compose.devrouter.yml',
+    '.devrouter.yml',
+  ]
+  const handles = []
+  try {
+    const inputs = []
+    for (const path of inputPaths) {
+      const candidate = readCandidate(checkout, candidateRevision, path)
+      const file = await open(
+        join(checkout, path),
+        constants.O_RDWR | constants.O_NOFOLLOW
+      )
+      handles.push(file)
+      const metadata = await file.stat()
+      if (
+        !metadata.isFile() ||
+        metadata.uid !== process.getuid() ||
+        metadata.nlink !== 1 ||
+        (await file.readFile('utf8')) !== candidate
+      ) {
+        throw new Error('Managed configuration differs from the candidate.')
+      }
+      inputs.push(candidate)
+    }
+    const rendered = renderManagedConfiguration(
+      config,
+      {
+        devcontainer: JSON.parse(inputs[0]),
+        compose: parse(inputs[1]),
+        devrouter: parse(inputs[3]),
+      },
+      workspace
+    )
+    await mkdir(join(directory, 'managed-installation'), { mode: 0o700 })
+    // Devrouter appends this standard overlay for linked worktrees. It must
+    // not reintroduce the ordinary backing services or host port bindings.
+    const replacements = [
+      rendered.devcontainer,
+      rendered.compose,
+      { services: {} },
+      rendered.devrouter,
+    ]
+    rendered.devcontainer.dockerComposeFile = ['docker-compose.yml']
+    await writeExclusive(
+      join(directory, 'provider-routing.compose.json'),
+      rendered.providerRouting
+    )
+    for (const [index, file] of handles.entries()) {
+      const bytes = Buffer.from(
+        `${JSON.stringify(replacements[index], null, 2)}\n`
+      )
+      const { bytesWritten } = await file.write(bytes, 0, bytes.length, 0)
+      if (bytesWritten !== bytes.length) {
+        throw new Error(
+          'Incomplete configuration write; partial state is retained.'
+        )
+      }
+      await file.truncate(bytes.length)
+      await file.sync()
+    }
+    await writeExclusive(
+      join(directory, 'managed-installation/complete.json'),
+      {
+        workspace,
+        candidateRevision,
+      }
+    )
+    return { installed: true }
+  } finally {
+    await Promise.all(handles.map((file) => file.close()))
+  }
+}
+
+function readCandidateFile(checkout, revision, path) {
+  return execFileSync('git', ['-C', checkout, 'show', `${revision}:${path}`], {
+    encoding: 'utf8',
+    timeout: 5000,
+    stdio: ['ignore', 'pipe', 'ignore'],
+    env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+  })
 }
 
 async function writeExclusive(
