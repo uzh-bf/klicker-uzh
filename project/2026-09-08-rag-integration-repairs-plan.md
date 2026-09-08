@@ -43,8 +43,14 @@ No product primitive or ADR change is planned: this restores established contrac
 
 Planner Newton reviewed the frozen scope in two rounds. Round one requested stronger OLAT exit/cleanup proof, complete MCP wiring protection, explicit local proof despite draft CI skips, and the full ordered browser regression sequence. All four findings were accepted and incorporated. Round two returned `DONE — VERDICT APPROVED`.
 
-Optional cross-provider challenge has not run in this resumed turn; availability remains unverified. Required native gates remain intact.
+Optional cross-provider challenge returned no usable report: the first invocation rejected the model/effort spelling; the exact high-effort catalog variant then completed without output and could not read the isolated review directory. It is not a passed review. Required native gates remain intact.
 
 ## Progress
 
-Planning complete; no implementation edits or new runtime checks yet. Existing explorer owns bounded browser diagnosis. Next: executor repairs MCP wiring while main prepares synthetic browser reproduction. Required delivery: reviewed draft PR. Achieved: clean task branch and approved plan. Live staging deployment and post-merge staging acceptance remain unverified and separate.
+Plan committed at `b307431472`. MCP workflow and contract patch implemented; independent workflow suite passes 4 tests, provisioning contracts pass 19 and in-container disposable guard tests pass 16. Local MCP positive smoke passes 9 checks and negative smoke passes 15 with the namespaced issuer and known synthetic Playwright course. Exact guarded CI reset and `seed:test` now pass; smokes against that reseeded state remain pending. Workflow/plan Prettier check, diff check and Git identity check pass.
+
+Fresh host Chromium verification passes the full ordered Single Choice file (6 tests) and focused Chat streaming-citation case (1 test), with unchanged assertions. No browser defect reproduced; no UI edit justified. Explorer completed source diagnosis without a proven root cause.
+
+Runtime: exact repair checkout, Devsy workspace `rs-rag-integration-repairs`, Compose project `default-rs-0eb7e`, profile `chat,manage`, installed Devrouter 0.0.60. The default Blob port 10003 collided; supported `KB_GRAPH_BLOB_HOST_PORT=19003` succeeded. The host launcher reconciled its own dependencies. After seed, a subsequent unit-test command was refused because an earlier lifecycle worker could still be active. Exact non-destructive stop is reconciling this condition; verify terminal state before further runtime work.
+
+Executor Parfit (`01a08216-a9bb-7863-8524-ccb4686b32f0`) now owns the OLAT source slice. Main owns MCP setup proof, integration, reviews and delivery. Required delivery: reviewed draft PR; current delivery pending OLAT proof, CI setup proof and reviews. Live staging deployment and post-merge staging acceptance remain unverified and separate.
