@@ -1,7 +1,7 @@
 # GrowthBook-backed AI availability resilience plan — draft PR delivery
 
 - **Date:** 2026-08-31
-- **Status:** Beta-preference alignment committed; required reviews and draft update pending
+- **Status:** Beta-preference alignment reviewed; draft publication in progress
 - **Pull request:** [Stable AI availability during GrowthBook outages](https://github.com/uzh-bf/klicker-uzh/pull/5806)
 - **Repository:** `uzh-bf/klicker-uzh`
 - **Worktree:** `trees/growthbook-feature-availability`
@@ -400,6 +400,18 @@ Blob Storage. The user explicitly approved this bounded continuation.
 ## Progress
 
 ### Current alignment with database beta preferences — 2026-09-07
+
+Review completion on 2026-09-08: the risk review reports no findings. The
+simplifier's optional timestamp-map reduction is deferred to retain the tested
+adapter. The advisor returned a usable assessment when the explicitly approved
+values-free brief was supplied inline without tools; its conditional gate and
+coverage concerns were checked against source and existing tests. The native
+integrated-final review passes for source-only draft publication at
+`e9efd77b4b3fbefe6120187111f0cc83554332c8`. Reports are in the ignored local
+reviews directory. No implementation change followed that review. Continue
+with an ordinary task-branch push and existing draft PR readback. Hosted CI,
+explicit merge approval and separately authorized deployed acceptance remain
+outside the local review result.
 
 Latest checkpoint: all six focused Chromium cases pass in 12.8 seconds with
 the existing `manage,email` profile selected temporarily through the host
