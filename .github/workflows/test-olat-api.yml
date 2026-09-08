@@ -53,6 +53,9 @@ jobs:
           version: 11.5.0
           run_install: true
 
+      - name: Verify container workspace installation
+        run: node --test apps/olat-api/test/docker/workspace-install.test.cjs
+
       - name: Run tests using Docker
         run: |
           cd packages/prisma

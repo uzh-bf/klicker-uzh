@@ -1,7 +1,7 @@
 FROM node:24.16.0
 
 # Install dependencies
-RUN npm install -g pnpm
+RUN npm install -g pnpm@11.5.0
 
 WORKDIR /app
 
@@ -14,12 +14,9 @@ RUN echo '#!/bin/bash\n\
   cd /usr/src/app\n\
   \n\
   # Install dependencies in-container (linux)\n\
-  if [ "$CI" = "true" ]; then\n\
-  echo "Using dependencies installed on the CI host..."\n\
-  else\n\
+  # Refresh workspace state at the container path, including in CI.\n\
   echo "Installing dependencies..."\n\
   pnpm install --frozen-lockfile\n\
-  fi\n\
   \n\
   # Ensure PostgreSQL is ready\n\
   echo "Waiting for PostgreSQL to be ready..."\n\

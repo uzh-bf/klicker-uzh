@@ -9,6 +9,37 @@ import {
 } from '../src/services/courseDuplication.js'
 import { getCourseDuplicationStatusKey } from '../src/services/courseDuplicationShared.js'
 
+function terminalSyncFailureFixture() {
+  const jobId = randomUUID()
+  const now = new Date().toISOString()
+  const redis = {
+    eval: vi.fn(async () => 1),
+    get: vi.fn(async () =>
+      JSON.stringify({
+        id: jobId,
+        status: 'COMPLETED',
+        sourceCourseId: randomUUID(),
+        sourceCourseName: 'Source course',
+        targetCourseName: 'Copied course',
+        createdCourseId: jobId,
+        createdAt: now,
+        updatedAt: now,
+        userId: randomUUID(),
+      })
+    ),
+  }
+  const syncError = new Error('task database unavailable')
+  const prisma = {
+    asyncTask: {
+      updateMany: vi.fn(async () => {
+        throw syncError
+      }),
+    },
+  }
+  const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() }
+  return { jobId, redis, syncError, prisma, logger }
+}
+
 describe('course duplication task durability', () => {
   it.each([
     'status query',
@@ -88,37 +119,8 @@ describe('course duplication task durability', () => {
   })
 
   it('retries a terminal job when the durable task cannot be synchronized', async () => {
-    const jobId = randomUUID()
-    const now = new Date().toISOString()
-    const redis = {
-      eval: vi.fn(async () => 1),
-      get: vi.fn(async () =>
-        JSON.stringify({
-          id: jobId,
-          status: 'COMPLETED',
-          sourceCourseId: randomUUID(),
-          sourceCourseName: 'Source course',
-          targetCourseName: 'Copied course',
-          createdCourseId: jobId,
-          createdAt: now,
-          updatedAt: now,
-          userId: randomUUID(),
-        })
-      ),
-    }
-    const syncError = new Error('task database unavailable')
-    const prisma = {
-      asyncTask: {
-        updateMany: vi.fn(async () => {
-          throw syncError
-        }),
-      },
-    }
-    const logger = {
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-    }
+    const { jobId, redis, syncError, prisma, logger } =
+      terminalSyncFailureFixture()
 
     await expect(
       handleProcessCourseDuplication(
@@ -135,40 +137,10 @@ describe('course duplication task durability', () => {
   })
 
   it('preserves the synchronization failure when releasing the source lock also fails', async () => {
-    const jobId = randomUUID()
-    const now = new Date().toISOString()
+    const { jobId, redis, syncError, prisma, logger } =
+      terminalSyncFailureFixture()
     const releaseError = new Error('redis unavailable')
-    const redis = {
-      eval: vi.fn(async () => {
-        throw releaseError
-      }),
-      get: vi.fn(async () =>
-        JSON.stringify({
-          id: jobId,
-          status: 'COMPLETED',
-          sourceCourseId: randomUUID(),
-          sourceCourseName: 'Source course',
-          targetCourseName: 'Copied course',
-          createdCourseId: jobId,
-          createdAt: now,
-          updatedAt: now,
-          userId: randomUUID(),
-        })
-      ),
-    }
-    const syncError = new Error('task database unavailable')
-    const prisma = {
-      asyncTask: {
-        updateMany: vi.fn(async () => {
-          throw syncError
-        }),
-      },
-    }
-    const logger = {
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-    }
+    redis.eval.mockRejectedValue(releaseError)
 
     await expect(
       handleProcessCourseDuplication(
