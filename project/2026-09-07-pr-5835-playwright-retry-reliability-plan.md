@@ -125,6 +125,16 @@ The temporary probe is archived outside the active suite. Scoped Prettier
 passes, as does the focused Playwright TypeScript check after archiving the
 temporary diagnostic. Fresh CI on the corrected head remains required.
 
+The incremental integrated review covers all 24 branch paths, reusing the
+unchanged source review. It finds no executable-code issue. Its single low
+documentation finding is corrected: current images are markdown text, while
+the void-node selector is defensive for non-text embeds. The shared helper
+also affects content, flashcard and numerical specs; full current-head CI must
+cover those callers beyond the locally repeated SC, MC and Kprim workflows.
+The calendar attribute-wait suggestion is rejected after inspecting pinned
+Playwright 1.58.2: getAttribute waits for a selector match, and [data-day]
+requires the attribute in the same evaluation. The remote thread is resolved.
+
 ### Post-review target integration
 
 The first publication at `dfb99114c7` exposed a new merge conflict because

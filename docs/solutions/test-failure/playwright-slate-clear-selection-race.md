@@ -51,7 +51,8 @@ fields, including the clear-before-fill path for answers and feedback. It
 retries only select-all and Backspace, for up to five seconds, until the
 attached field has neither `data-slate-string` nor `data-slate-void` nodes.
 Checking the attached field prevents a missing editor from passing as empty.
-The void check prevents image-only content from passing as empty.
+Images currently use markdown text, which the text-node check covers. The
+void-node check also rejects any non-text Slate embeds if an editor gains them.
 
 The operation is idempotent, so a delayed selection update can settle before
 the next attempt without adding fixed sleeps or replaying a save. Persistent
