@@ -149,3 +149,23 @@ test('pre-push mode checks the exact outgoing range', (t) => {
   )
   assertRejected(fixtureResult)
 })
+
+test('pre-push ignores published fixture history but rejects new fixture commits', (t) => {
+  const root = createRepository(t)
+  const base = commit(root, 'Developer', 'developer@example.com', 'base')
+  const published = commit(root, fixtureName, fixtureEmail, 'published fixture')
+  git(root, 'update-ref', 'refs/remotes/origin/main', published)
+  const normal = commit(root, 'Developer', 'developer@example.com', 'normal')
+  const push = (head) =>
+    childProcess.spawnSync('bash', [guardPath, 'pre-push'], {
+      cwd: root,
+      encoding: 'utf8',
+      env: gitEnvironment,
+      input: `refs/heads/test ${head} refs/heads/test ${base}\n`,
+    })
+
+  assert.equal(push(normal).status, 0)
+  assertRejected(runGuard(root, 'range', `${base}..${normal}`))
+  const fixture = commit(root, fixtureName, fixtureEmail, 'unpublished fixture')
+  assertRejected(push(fixture))
+})
