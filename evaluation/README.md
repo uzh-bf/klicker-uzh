@@ -53,6 +53,8 @@ The helper runs Docker in the foreground. Stop it with Ctrl-C. It binds only
 through stdin into process memory. It does not put them in Docker environment
 metadata or configuration files. This local gateway has a fixed development-only
 key; do not expose it to a network or use this configuration for a shared service.
+The image is pinned by digest. The helper accepts local Unix sockets or Windows
+named pipes and rejects SSH/TCP Docker contexts before sending credentials.
 
 Without judge overrides or an `evaluation/config.local.json`, judge modes select
 this local gateway automatically. They fail before evaluation if it is not running.

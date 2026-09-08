@@ -54,11 +54,12 @@ class JudgeTests(unittest.TestCase):
         synthetic = {
             "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
             "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
+            "DOCKER_HOST": "unix:///synthetic/docker.sock",
         }
         output = io.StringIO()
         errors = io.StringIO()
         with (
-            patch.dict(os.environ, synthetic, clear=False),
+            patch.dict(os.environ, synthetic, clear=True),
             patch.object(JUDGE.shutil, "which", return_value="/synthetic/docker"),
             patch.object(JUDGE.subprocess, "Popen", return_value=process) as popen,
             contextlib.redirect_stdout(output),
@@ -73,13 +74,54 @@ class JudgeTests(unittest.TestCase):
         self.assertNotIn(synthetic["AZURE_OPENAI_API_KEY"], rendered_command)
         self.assertNotIn("AZURE_OPENAI_BASE_URL", options["env"])
         self.assertNotIn("AZURE_OPENAI_API_KEY", options["env"])
-        self.assertEqual(json.loads(process.stdin.data), synthetic)
+        self.assertEqual(
+            json.loads(process.stdin.data),
+            {name: synthetic[name] for name in JUDGE.REQUIRED_CREDENTIALS},
+        )
         self.assertIn("--rm", command)
         self.assertIn("-i", command)
         self.assertIn("127.0.0.1:4000:4000", command)
         self.assertIn(JUDGE.IMAGE, command)
         self.assertNotIn("synthetic-upstream-key", output.getvalue())
         self.assertNotIn("synthetic-upstream-key", errors.getvalue())
+
+    def test_remote_docker_fails_before_credentials_are_sent(self) -> None:
+        for endpoint in ("ssh://remote", "tcp://127.0.0.1:2375"):
+            with (
+                patch.dict(
+                    os.environ,
+                    {
+                        "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
+                        "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
+                        "DOCKER_HOST": endpoint,
+                    },
+                    clear=True,
+                ),
+                patch.object(JUDGE.shutil, "which", return_value="/synthetic/docker"),
+                patch.object(JUDGE.subprocess, "Popen") as popen,
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                self.assertEqual(JUDGE.run(()), 2)
+                popen.assert_not_called()
+
+    def test_context_takes_precedence_and_endpoint_is_frozen(self) -> None:
+        for endpoint, accepted in (
+            ("ssh://remote", False),
+            ("unix:///local.sock", True),
+        ):
+            env = {"DOCKER_CONTEXT": "selected", "DOCKER_HOST": "unix:///ignored.sock"}
+            with patch.object(
+                JUDGE.subprocess,
+                "run",
+                return_value=subprocess.CompletedProcess([], 0, endpoint),
+            ):
+                if accepted:
+                    JUDGE.select_local_docker("docker", env)
+                    self.assertNotIn("DOCKER_CONTEXT", env)
+                    self.assertEqual(env["DOCKER_HOST"], endpoint)
+                else:
+                    with self.assertRaises(ValueError):
+                        JUDGE.select_local_docker("docker", env)
 
     def test_bootstrap_rejects_missing_stdin(self) -> None:
         result = subprocess.run(

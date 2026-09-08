@@ -22,7 +22,10 @@ from types import FrameType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "evaluation" / "litellm.yaml"
-IMAGE = "ghcr.io/berriai/litellm-database:v1.96.2"
+IMAGE = (
+    "ghcr.io/berriai/litellm-database:v1.96.2"
+    "@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836"
+)
 CONTAINER_CONFIG_PATH = "/app/config.yaml"
 CONTAINER_PORT = "4000"
 REQUIRED_CREDENTIALS = ("AZURE_OPENAI_BASE_URL", "AZURE_OPENAI_API_KEY")
@@ -115,6 +118,30 @@ def host_environment(environment: Mapping[str, str] | None = None) -> dict[str, 
     return result
 
 
+def select_local_docker(docker: str, environment: dict[str, str]) -> None:
+    """Resolve and freeze the daemon endpoint before sending any credentials."""
+    context = environment.get("DOCKER_CONTEXT")
+    endpoint = environment.get("DOCKER_HOST") if not context else None
+    if not endpoint:
+        command = [docker, "context", "inspect"]
+        if context:
+            command.append(context)
+        command += ["--format", "{{.Endpoints.docker.Host}}"]
+        result = subprocess.run(
+            command,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+        endpoint = result.stdout.strip()
+    if not endpoint.startswith(("unix:///", "npipe:////./pipe/")):
+        raise ValueError("Docker must use a local Unix socket or Windows named pipe")
+    environment.pop("DOCKER_CONTEXT", None)
+    environment["DOCKER_HOST"] = endpoint
+
+
 def credentials_from_environment(
     environment: Mapping[str, str] | None = None,
 ) -> tuple[dict[str, str] | None, tuple[str, ...]]:
@@ -197,6 +224,14 @@ def run(arguments: Sequence[str] | None = None) -> int:
 
     name = container_name()
     environment = host_environment()
+    try:
+        select_local_docker(docker, environment)
+    except (ValueError, OSError, subprocess.SubprocessError):
+        print(
+            "select a local Docker socket context before starting the judge",
+            file=sys.stderr,
+        )
+        return 2
     command = docker_command(docker, name)
     payload = (json.dumps(credentials, separators=(",", ":")) + "\n").encode("utf-8")
 
