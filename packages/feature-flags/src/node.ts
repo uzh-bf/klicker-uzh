@@ -28,7 +28,7 @@ function normalizeApiHost(
   value: string | undefined,
   environment: FeatureFlagEnvironment
 ): string | undefined {
-  if (!value) return undefined
+  if (!value || value !== value.trim() || /[?#]/.test(value)) return undefined
 
   try {
     const url = new URL(value)

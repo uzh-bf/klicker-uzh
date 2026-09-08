@@ -1,5 +1,5 @@
 import { expect, test } from '../util/fixtures.js'
-import { URL_MANAGE } from '../util/constants.js'
+import { URL_AUTH, URL_MANAGE } from '../util/constants.js'
 import {
   mockManageAiCapability,
   mockManageUserProfileUnavailable,
@@ -166,6 +166,46 @@ test.describe('AI beta availability recovery', () => {
     await page.goto(`${manageUrl}/elements/generate`)
     await expect(page.getByTestId('ai-beta-unavailable')).toBeVisible()
     expect(capability.requestCount).toBeGreaterThan(0)
+  })
+
+  test('stops capability recovery after the session expires', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await mockManageAiCapability(page, 'ENABLED')
+    await loginLecturer()
+    await expect(page.getByTestId('ai')).toBeEnabled()
+    await page.clock.install()
+    let requests = 0
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operation =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operation !== 'ManageAiCapability') {
+        await route.fallback()
+        return
+      }
+      requests += 1
+      await route.fulfill({
+        json: { errors: [{ message: 'Unauthorized' }] },
+      })
+    })
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+    const authOrigin = new URL(process.env.URL_AUTH ?? URL_AUTH).origin
+    await expect(page).toHaveURL((url) => url.origin === authOrigin)
+    const loginUrl = page.url()
+    expect(new URL(loginUrl).searchParams.get('redirectTo')).toBe(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/`
+    )
+    await page.clock.fastForward(120_000)
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('focus'))
+      window.dispatchEvent(new Event('online'))
+    })
+    await page.clock.fastForward(120_000)
+    expect(requests).toBe(1)
+    await expect(page).toHaveURL(loginUrl)
   })
 
   test('hides AI navigation when the user profile cannot be resolved', async ({

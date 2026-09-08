@@ -151,7 +151,8 @@ refresh lifecycle.
 
 - It queries only after the profile safely indicates a true live database
   entitlement, or an equivalent fail-closed condition.
-- Its initial policy is cache-and-network.
+- Capability requests use no-cache and disable request deduplication so a new
+  identity lifetime cannot reuse an old account's result.
 - It retries only while the result is `temporarilyUnavailable`, using jittered
   backoff capped at 60 seconds.
 - It refetches when the browser comes online and when the window regains focus.
@@ -346,7 +347,7 @@ entitlement live.
 | Another feature accidentally receives the longer grace | Use an AI-specific named policy and prove `learning-analytics` retains 120 seconds |
 | Backend services disagree during an outage | Give each process the same typed contract and exact response mappings; verify GraphQL and Chat independently |
 | UI presents stale authorization as active | Keep degraded entries disabled; only backend `enabled` authorizes operations |
-| Retry creates load or synchronized bursts | Retry only unavailable state, add jitter, cap at 60 seconds, and stop while healthy |
+| Retry creates load or synchronized bursts | Timer retries run only while unavailable, with jitter capped at 60 seconds. Focus and online events intentionally revalidate healthy state too; each can issue one capability request and live account read, with in-flight coalescing |
 | Diagnostics leak targeting or personal data | Log process-wide payload availability transitions only |
 
 ## Rollback
@@ -398,6 +399,123 @@ Blob Storage. The user explicitly approved this bounded continuation.
 - **Commit:** `fix(devrouter): classify azurite managed service`.
 
 ## Progress
+
+### Focused browser verification — 2026-09-08
+
+The corrected expired-session regression now passes on Chromium (one test,
+6.7 seconds total). Together with the preceding seven passing cases, this
+covers the notification regression, existing availability cases and session
+expiry. The focused `chat,email,manage` runtime reports ready with no drift.
+The temporary launcher profile selection is restored; no launcher diff remains.
+
+Read-only local database inspection identified the full-profile fixture blocker:
+one MCP server exists but zero linked configurations remain, so its ownership
+check rejects the seed. Playwright global setup deletes courses and users and
+does not restore the full development MCP fixture. No ownership check was
+weakened and no full database reseed was performed. A shared seed-lifecycle
+repair is separate from the GrowthBook source correction. Correction reviews,
+commit/publication and current CI remain pending.
+
+### CI regression repair — 2026-09-08
+
+The user approved the bounded Gemini disclosure. The advisor completed using
+the catalog's `gemini-3.8-flash-high` selection; see the local
+`2026-09-08-growthbook-remount-advisor.md` report. Main owns the coupled
+identity-isolation correction and browser verification. The source correction
+keeps children stable, resets only the capability controller by generation,
+and suppresses capability cache reuse across authentication lifetimes.
+It also treats capability Unauthorized responses as terminal and stops
+capability requests on the login page. Browser verification is partial.
+
+Current verification: feature-flags 75/75 pass (four malformed-host cases were
+red before the fix), package check/build pass, backend tests 12/12 pass,
+Manage and Playwright type checks pass, and touched formatting/whitespace
+checks pass. Full Biome lint additionally reports two existing conditional-hook
+diagnostics in Apollo persisted-query setup; unrelated import rewrites were
+restored. The producing Chromium run passed seven of eight cases, including
+the original restored-notification regression and all existing availability
+cases. The new expired-session case expected the intermediate Manage login URL,
+but observed the intended redirect to Auth instead. Its assertion now checks
+the Auth origin and original return target; the focused rerun is pending.
+The temporary host-launcher profile edit was restored, leaving no launcher diff.
+
+The approved task-local lifecycle repair restored the missing `mailhog` service
+in the ignored generated Devcontainer configuration. Its hash then matched the
+recorded configuration exactly; normal stop and restart succeeded, preserving
+data. The `chat,email,manage` profile built dependencies and passed readiness
+with Blob host port 19000 before the browser run above. A focused rerun then
+hit a sandbox process-identity error. An attempted Node PATH override omitted
+the installed Devsy; restoring the host PATH resolved that discovery error,
+but the resulting transition reports `Lifecycle transition is blocked.`
+The exact managed stop completed successfully and freed five routes; filtered
+readback confirmed zero task routes and Devsy confirmed `Stopped`. A bounded
+clean retry through the unmodified host launcher then reproduced the full-profile
+`Authenticated fixture startup failed` error and rolled back before Playwright
+ran. Final provider readback confirms `Stopped` and zero exact task routes;
+the managed stop command also completed successfully. No global tool installation,
+lifecycle-journal edit, raw provider stop or deletion occurred.
+
+The supplied review's malformed-host and unresolved-denial findings are fixed
+in source. Documentation now distinguishes visible unavailability from a dark
+deploy, names Chat and assessment secret consumers, and records process-local
+grace limitations and diagnostic boundaries. Focus/online revalidation remains
+intentional; only timer retries are outage-only. Review provenance exists in
+this worktree, so absence in the audit checkout does not invalidate it.
+Main completed the bounded review disposition after the read-only triage child
+repeated its inspection without converging; that child is now shut down.
+GraphQL and Chat documentation now states the live approval and beta-preference
+checks precede GrowthBook and distinguishes explicit denial from unavailability.
+All corrections remain uncommitted. Required browser proof, correction reviews,
+publication, current CI and merge remain pending.
+
+The user supplied an additional readiness review. A read-only explorer owns
+its documentation, grace-contract, deployment-claim and prior-review triage;
+main owns the overlapping frontend fixes. Proposed shared or broader grace,
+live configuration verification and deployment changes remain outside this
+repair's write scope. Current platform readback says the PR is non-draft;
+this session has not changed that state.
+
+The user authorized fixing the failing tests and conditional merge only after
+checks pass. The published head remains `9852dbcd5d`; no merge or deployment
+has occurred. Main owns fixture repairs and verification. A read-only explorer
+owns the separate course-notification source diagnosis.
+
+The chatbot suite left the shared lecturer's AI approval disabled. Its teardown
+now restores approval even when cleanup fails. The revised navigation test
+preserves approval-independent chatbot authoring while denying knowledge bases.
+Both navigation cases pass. With the exact `chat,email,manage` runtime, the
+chatbot preview followed by Assistant messaging passes both cases.
+
+The backend test preload also replaced the configured loopback GrowthBook
+fixture with an AI-only payload. It now retains the configured non-AI flags and
+overrides only AI targeting with the existing restricted synthetic rule. The
+regression reproduced a missing analytics flag before the fix; all 12 backend
+unit tests now pass, including real-evaluator analytics enable/disable and
+non-member AI denial. Hosted analytics browser confirmation remains pending.
+
+All 40 type-check tasks and seven lint tasks pass. Host CI-contract tests pass
+68/68 and launcher tests pass 13/13. The aggregate container check cannot run
+the host Devrouter contract, so these checks were split by their proper host.
+Course notification verification still fails and is under diagnosis. Existing
+GitGuardian findings and the Sonar retry-jitter hotspot remain unresolved.
+
+The course-notification cause is confirmed by a single-variable local probe:
+removing only the identity key on `ManageAiCapabilityProvider` makes the
+unchanged notification test pass (1/1, 4.2 seconds). The key remounts the entire
+application subtree when identity resolves. Identity isolation is mandatory,
+so that diagnostic change was restored rather than retained as a fix. The
+temporary host-launcher selection and notification instrumentation were also
+restored. Production source remains unchanged in this repair worktree.
+
+The required architecture advisor request was rejected by approval review:
+the proposed sanitized brief contains unpublished architecture details and
+lacks explicit permission to send them to Gemini. No prompt was sent. Approval
+for that bounded disclosure is required before the architecture correction.
+Candidate: keep an identity-keyed query controller separate from stable app
+children, and publish only matching identity/entitlement-tagged snapshots.
+Preserve opt-out, revocation, and stale-response guards. No new dependency or
+backend contract is proposed. All repairs remain uncommitted; publication,
+required correction reviews, fresh CI, and merge remain pending.
 
 ### Current alignment with database beta preferences — 2026-09-07
 

@@ -16,6 +16,8 @@ function AiBetaUnavailable() {
   const { state, retry } = useManageAiCapability()
   const temporarilyUnavailable = state === 'temporarilyUnavailable'
 
+  if (state === 'unresolved') return null
+
   return (
     <UserNotification
       type="error"

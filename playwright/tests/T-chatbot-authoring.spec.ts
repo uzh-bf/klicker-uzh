@@ -214,7 +214,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   })
 
   test.afterEach(async () => {
-    await cleanupAuthoringChatbots()
+    try {
+      await cleanupAuthoringChatbots()
+    } finally {
+      // Other specs share the seeded lecturer and require its original approval.
+      await setPublishingAuthorization(true)
+    }
   })
 
   test('opens a draft owner preview with its effective modes', async ({

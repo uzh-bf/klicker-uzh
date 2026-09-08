@@ -80,7 +80,7 @@ function ManageFeatureFlagProvider({
     skip: skipUserProfile,
   })
   // Never carry a cached profile into a new or failed authentication state.
-  // The capability provider is keyed by this identity, so it also starts with
+  // The capability controller is keyed by this identity, so it also starts with
   // no previous capability while Apollo resolves the next profile.
   const user = loading || userProfileError ? undefined : data?.userProfile
   const userId = user?.id
@@ -131,9 +131,8 @@ function ManageFeatureFlagProvider({
       evaluationAvailable={skipUserProfile || profileReady}
     >
       <ManageAiCapabilityProvider
-        key={`${userId ?? 'anonymous'}:${skipUserProfile ? 'public' : 'authenticated'}`}
         loadingProfile={loading}
-        skipUserProfile={skipUserProfile}
+        skipUserProfile={skipUserProfile || router.pathname === '/login'}
         user={user}
         betaEnabled={betaEnabled}
         confirmBetaPreference={confirmBetaPreference}
@@ -158,12 +157,69 @@ const RETRY_MAX_DELAY_MS = 60_000
 
 function ManageAiCapabilityProvider({
   children,
+  ...props
+}: ManageAiCapabilityProviderProps) {
+  const identity = JSON.stringify([
+    props.user?.id,
+    props.skipUserProfile,
+    props.user?.aiFeaturesEnabled,
+    props.betaEnabled,
+  ])
+  const [scope, setScope] = useState({ identity, generation: 0 })
+  const [snapshot, setSnapshot] = useState<{
+    generation: number
+    value: ManageAiCapabilityContextValue
+  }>()
+  if (scope.identity !== identity) {
+    // Reset before rendering consumers, including a return to the same actor.
+    setScope({ identity, generation: scope.generation + 1 })
+    setSnapshot(undefined)
+  }
+  const publish = useCallback(
+    (value: ManageAiCapabilityContextValue) => {
+      setSnapshot({ generation: scope.generation, value })
+    },
+    [scope.generation]
+  )
+  const current = snapshot?.generation === scope.generation
+  const value: ManageAiCapabilityContextValue = current
+    ? snapshot.value
+    : {
+        state:
+          props.loadingProfile ||
+          (!props.skipUserProfile &&
+            Boolean(props.user?.id) &&
+            props.user?.aiFeaturesEnabled === true &&
+            props.betaEnabled)
+            ? 'unresolved'
+            : 'disabled',
+        betaEnabled: props.betaEnabled,
+        retry: async () => undefined,
+        confirmBetaPreference: props.confirmBetaPreference,
+      }
+
+  return (
+    <ManageAiCapabilityContext.Provider value={value}>
+      <ManageAiCapabilityController
+        key={scope.generation}
+        {...props}
+        publish={publish}
+      />
+      {children}
+    </ManageAiCapabilityContext.Provider>
+  )
+}
+
+function ManageAiCapabilityController({
   loadingProfile,
   skipUserProfile,
   user,
   betaEnabled,
   confirmBetaPreference,
-}: ManageAiCapabilityProviderProps) {
+  publish,
+}: Omit<ManageAiCapabilityProviderProps, 'children'> & {
+  publish: (value: ManageAiCapabilityContextValue) => void
+}) {
   const hasEntitlement = user?.aiFeaturesEnabled === true && betaEnabled
   const shouldQuery = !skipUserProfile && Boolean(user?.id) && hasEntitlement
   const {
@@ -173,13 +229,20 @@ function ManageAiCapabilityProvider({
     refetch: refetchCapability,
   } = useQuery(ManageAiCapabilityDocument, {
     errorPolicy: 'all',
-    fetchPolicy: 'cache-and-network',
+    // This field has no actor variable. Neither cache reuse nor request
+    // deduplication may transfer a decision across authentication lifetimes.
+    fetchPolicy: 'no-cache',
+    context: { queryDeduplication: false },
     notifyOnNetworkStatusChange: true,
     skip: !shouldQuery,
   })
   const [lastAuthoritativeState, setLastAuthoritativeState] = useState<
     Exclude<ManageAiCapability, 'unresolved'> | undefined
   >(undefined)
+  const authenticationExpired = capabilityError?.graphQLErrors.some(
+    ({ message }) => message === 'Unauthorized'
+  )
+  const canRefetch = shouldQuery && !authenticationExpired
 
   const state = useMemo<ManageAiCapability>(() => {
     if (skipUserProfile || !user?.id) {
@@ -187,6 +250,7 @@ function ManageAiCapabilityProvider({
     }
 
     if (!hasEntitlement) return 'disabled'
+    if (authenticationExpired) return 'disabled'
     if (capabilityError) return 'temporarilyUnavailable'
     if (capabilityLoading) return lastAuthoritativeState ?? 'unresolved'
 
@@ -204,6 +268,7 @@ function ManageAiCapabilityProvider({
     capabilityData?.manageAiCapability,
     capabilityError,
     capabilityLoading,
+    authenticationExpired,
     hasEntitlement,
     lastAuthoritativeState,
     loadingProfile,
@@ -228,7 +293,7 @@ function ManageAiCapabilityProvider({
   const retryingRef = useRef(false)
 
   const refetchSafely = useCallback(async () => {
-    if (!shouldQuery || retryingRef.current) return
+    if (!canRefetch || retryingRef.current) return
 
     retryingRef.current = true
     try {
@@ -240,17 +305,17 @@ function ManageAiCapabilityProvider({
     } finally {
       retryingRef.current = false
     }
-  }, [refetchCapability, shouldQuery])
+  }, [refetchCapability, canRefetch])
 
   const retry = useCallback(async () => {
-    if (state !== 'temporarilyUnavailable' || !shouldQuery) return
+    if (state !== 'temporarilyUnavailable' || !canRefetch) return
 
     retryAttemptRef.current = 0
     await refetchSafely()
-  }, [refetchSafely, shouldQuery, state])
+  }, [refetchSafely, canRefetch, state])
 
   useEffect(() => {
-    if (state !== 'temporarilyUnavailable' || !shouldQuery) {
+    if (state !== 'temporarilyUnavailable' || !canRefetch) {
       retryAttemptRef.current = 0
       if (retryTimerRef.current !== undefined) {
         clearTimeout(retryTimerRef.current)
@@ -289,10 +354,10 @@ function ManageAiCapabilityProvider({
         retryTimerRef.current = undefined
       }
     }
-  }, [capabilityLoading, refetchSafely, shouldQuery, state])
+  }, [capabilityLoading, refetchSafely, canRefetch, state])
 
   useEffect(() => {
-    if (!shouldQuery) return
+    if (!canRefetch) return
 
     const recover = () => {
       void refetchSafely()
@@ -303,18 +368,18 @@ function ManageAiCapabilityProvider({
       window.removeEventListener('focus', recover)
       window.removeEventListener('online', recover)
     }
-  }, [refetchSafely, shouldQuery])
+  }, [refetchSafely, canRefetch])
 
   const contextValue = useMemo(
     () => ({ state, retry, confirmBetaPreference, betaEnabled }),
     [retry, state, confirmBetaPreference, betaEnabled]
   )
 
-  return (
-    <ManageAiCapabilityContext.Provider value={contextValue}>
-      {children}
-    </ManageAiCapabilityContext.Provider>
-  )
+  useEffect(() => {
+    publish(contextValue)
+  }, [contextValue, publish])
+
+  return null
 }
 
 export default ManageFeatureFlagProvider
