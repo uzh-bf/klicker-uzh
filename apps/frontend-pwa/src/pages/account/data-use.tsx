@@ -116,7 +116,12 @@ function AccountDataUse() {
                 className="space-y-2 rounded bg-slate-50 p-4"
               >
                 <legend className="font-bold">{choice.title}</legend>
-                <p>{choice.description}</p>
+                <DynamicMarkdown
+                  withProse
+                  withLinkButtons={false}
+                  className={{ root: 'prose-sm' }}
+                  content={choice.description}
+                />
                 {[true, false].map((value) => (
                   <label
                     key={String(value)}
