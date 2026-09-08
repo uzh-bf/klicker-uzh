@@ -103,7 +103,7 @@ export default async function OwnerPreviewPage({
       modelOptions={modelOptions}
       selectedModelId={selectedModelId}
       selectedReasoningEffort={selectedReasoningEffort}
-      manageUrl={`${manageBaseUrl}/resources/chatbots/${encodeURIComponent(chatbot.id)}`}
+      manageUrl={`${manageBaseUrl}/resources/chatbots?chatbotId=${encodeURIComponent(chatbot.id)}&view=overview`}
     />
   )
 }
@@ -113,7 +113,7 @@ async function PreviewLoginRequired({ chatbotId }: { chatbotId: string }) {
   const manageBaseUrl = (
     process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
   ).replace(/\/$/, '')
-  const chatbotSettingsUrl = `${manageBaseUrl}/resources/chatbots/${encodeURIComponent(chatbotId)}`
+  const chatbotSettingsUrl = `${manageBaseUrl}/resources/chatbots?chatbotId=${encodeURIComponent(chatbotId)}&view=overview`
   const loginUrl = `${manageBaseUrl}/login?redirect_to=${encodeURIComponent(chatbotSettingsUrl)}`
 
   return (
