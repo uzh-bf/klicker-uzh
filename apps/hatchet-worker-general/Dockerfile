@@ -62,4 +62,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD node /app/apps/hatchet-worker-general/dist/index.js
+CMD ["node", "/app/apps/hatchet-worker-general/dist/index.js"]

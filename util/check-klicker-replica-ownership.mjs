@@ -234,6 +234,130 @@ function assertStaticLti(resources, source, expectedReplicas) {
   )
 }
 
+function assertWorkerDisruptionBudgets(resources, source, expectedBudgets) {
+  const disruptionBudgets = resources.filter(
+    ({ kind }) => kind === 'PodDisruptionBudget'
+  )
+
+  for (const [component, expectedMinAvailable] of Object.entries(
+    expectedBudgets
+  )) {
+    const matchingBudgets = disruptionBudgets.filter(
+      (resource) =>
+        resource.metadata?.labels?.['app.kubernetes.io/component'] === component
+    )
+
+    assert.equal(
+      matchingBudgets.length,
+      1,
+      `${source}: expected one PodDisruptionBudget for ${component}`
+    )
+    assert.equal(
+      matchingBudgets[0].spec?.minAvailable,
+      expectedMinAvailable,
+      `${source}: ${component} PodDisruptionBudget must set minAvailable to ${expectedMinAvailable}`
+    )
+  }
+}
+
+function assertWorkerRuntimeContracts(resources, source) {
+  const workerContracts = [
+    {
+      component: 'hatchet-worker-general',
+      healthPort: 8001,
+    },
+    {
+      component: 'hatchet-worker-response-processor',
+      healthPort: 8002,
+    },
+    {
+      component: 'hatchet-worker-response-processor-assessment',
+      healthPort: 8003,
+    },
+  ]
+
+  for (const { component, healthPort } of workerContracts) {
+    const deployments = resources.filter(
+      (resource) =>
+        resource.kind === 'Deployment' &&
+        resource.metadata?.labels?.['app.kubernetes.io/component'] === component
+    )
+    assert.equal(
+      deployments.length,
+      1,
+      `${source}: expected one Deployment for ${component}`
+    )
+
+    const podSpec = deployments[0].spec?.template?.spec
+    assert.equal(
+      podSpec?.terminationGracePeriodSeconds,
+      90,
+      `${source}: ${component} must have a 90-second termination grace period`
+    )
+
+    const containers = (podSpec?.containers ?? []).filter(
+      (container) => container.name === component
+    )
+    assert.equal(
+      containers.length,
+      1,
+      `${source}: expected one ${component} container`
+    )
+
+    const container = containers[0]
+    assert.deepEqual(
+      container.ports,
+      [{ name: 'http', containerPort: healthPort, protocol: 'TCP' }],
+      `${source}: ${component} must expose health port ${healthPort} as http`
+    )
+    assert.deepEqual(
+      container.livenessProbe?.httpGet,
+      { path: '/healthz', port: 'http' },
+      `${source}: ${component} must use /healthz for liveness`
+    )
+    assert.deepEqual(
+      container.readinessProbe?.httpGet,
+      { path: '/readyz', port: 'http' },
+      `${source}: ${component} must use /readyz for readiness`
+    )
+
+    const configMaps = resources.filter(
+      (resource) =>
+        resource.kind === 'ConfigMap' &&
+        resource.data?.HATCHET_WORKER_NAME === component
+    )
+    assert.equal(
+      configMaps.length,
+      1,
+      `${source}: expected one ConfigMap for ${component}`
+    )
+
+    const configMap = configMaps[0]
+    assert.equal(
+      configMap.data?.HATCHET_WORKER_SLOTS,
+      '100',
+      `${source}: ${component} must have 100 non-durable slots`
+    )
+    assert.equal(
+      configMap.data?.HATCHET_WORKER_DURABLE_SLOTS,
+      '1000',
+      `${source}: ${component} must have 1000 durable slots`
+    )
+    assert.equal(
+      configMap.data?.HATCHET_WORKER_HEALTH_PORT,
+      String(healthPort),
+      `${source}: ${component} ConfigMap must use health port ${healthPort}`
+    )
+    assert.ok(
+      (container.envFrom ?? []).some(
+        (sourceReference) =>
+          sourceReference.configMapRef?.name === configMap.metadata?.name
+      ),
+      `${source}: ${component} must load its worker ConfigMap`
+    )
+  }
+}
+
 function assertNoAutoscalingStanzas(values, source) {
   const allowedHpaWorkloads = new Set([
     'frontendPWA',
@@ -361,6 +485,31 @@ for (const environment of environments) {
     environment.name,
     { base: 2, stg: 1, prd: 2 }[environment.name]
   )
+  assertWorkerDisruptionBudgets(
+    resources,
+    environment.name,
+    {
+      base: {
+        'hatchet-worker-general': 1,
+        'hatchet-worker-response-processor': 1,
+        'hatchet-worker-response-processor-assessment': 1,
+        'backend-assessment': 2,
+      },
+      stg: {
+        'hatchet-worker-general': 0,
+        'hatchet-worker-response-processor': 0,
+        'hatchet-worker-response-processor-assessment': 0,
+        'backend-assessment': 2,
+      },
+      prd: {
+        'hatchet-worker-general': 1,
+        'hatchet-worker-response-processor': 2,
+        'hatchet-worker-response-processor-assessment': 2,
+        'backend-assessment': 2,
+      },
+    }[environment.name]
+  )
+  assertWorkerRuntimeContracts(resources, environment.name)
 }
 
 const hpaResources = parseManifest(
@@ -384,5 +533,5 @@ for (const valuesSource of [
 assertNegativeFixtures()
 
 console.log(
-  `Replica ownership checks passed for ${environments.length} default Helm renders, one all-three-HPA render, three values files, and seven negative fixtures`
+  `Replica ownership, worker runtime contract, and disruption budget checks passed for ${environments.length} default Helm renders, one all-three-HPA render, three values files, and seven negative fixtures`
 )
