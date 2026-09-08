@@ -253,6 +253,9 @@ export async function initializeManagedApplication(
       join(directory, 'provider-routing.compose.json'),
       'up',
       '--detach',
+      '--wait',
+      '--wait-timeout',
+      '120',
       '--no-deps',
       'blob',
     ])
@@ -467,7 +470,7 @@ export async function initializeProviderStorage(
     initialized: true,
     context: observation.context,
   })
-  return { storageInitialized: true, context: observation.context }
+  return { storageInitialized: true }
 }
 
 // The setup caller captures this token from the exact owned Hatchet instance.
@@ -539,14 +542,40 @@ async function verifyClaim(config, candidateRevision) {
 // proves preparation completion, not service health or upstream AI capability.
 export async function completePreparation(config, candidateRevision) {
   const { directory, claim } = await verifyClaim(config, candidateRevision)
-  await writeExclusive(join(directory, 'prepared.json'), claim)
+  const application = await readApplicationSetup(directory, candidateRevision)
+  await writeExclusive(join(directory, 'prepared.json'), {
+    ...claim,
+    application,
+  })
 }
 
 export async function requirePreparation(config, candidateRevision) {
   const { directory, claim } = await verifyClaim(config, candidateRevision)
+  const application = await readApplicationSetup(directory, candidateRevision)
   const prepared = await readOwned(join(directory, 'prepared.json'))
-  if (JSON.stringify(prepared) !== JSON.stringify(claim)) {
+  if (JSON.stringify(prepared) !== JSON.stringify({ ...claim, application })) {
     throw new Error('Completed preparation does not match the runtime claim.')
   }
-  return claim
+  return prepared
+}
+
+async function readApplicationSetup(directory, candidateRevision) {
+  const application = await readOwned(
+    join(directory, 'application-setup/complete.json')
+  )
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  if (
+    application.candidateRevision !== candidateRevision ||
+    !/^[a-z0-9][a-z0-9-]*$/.test(application.workspace ?? '') ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(application.context ?? '') ||
+    storage.initialized !== true ||
+    storage.context !== application.context
+  ) {
+    throw new Error(
+      'Application setup evidence does not match prepared storage.'
+    )
+  }
+  return application
 }

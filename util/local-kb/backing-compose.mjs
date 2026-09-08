@@ -97,6 +97,17 @@ export function renderBackingCompose(config) {
           '--disableTelemetry',
         ],
         volumes: ['blob:/data'],
+        healthcheck: {
+          test: [
+            'CMD',
+            'node',
+            '-e',
+            "const http = require('node:http'); const request = http.get('http://127.0.0.1:10000/klickerdev?comp=list', response => { response.resume(); process.exit(response.statusCode === 403 ? 0 : 1) }); request.on('error', () => process.exit(1)); request.setTimeout(2000, () => request.destroy())",
+          ],
+          interval: '5s',
+          timeout: '3s',
+          retries: 24,
+        },
       },
       'hatchet-setup': {
         ...hatchet,

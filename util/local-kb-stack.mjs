@@ -113,6 +113,7 @@ export function inspectIsolatedProviderSources(config) {
           'status',
           '--porcelain',
           '--untracked-files=all',
+          '--ignored=matching',
           '--ignore-submodules=none',
         ]).length === 0
       return {
@@ -127,6 +128,16 @@ export function inspectIsolatedProviderSources(config) {
       return { name, sourceAvailable: false, qualified: false }
     }
   })
+}
+
+function requireProviderSources(config) {
+  if (
+    !inspectIsolatedProviderSources(config).every(({ qualified }) => qualified)
+  ) {
+    throw new Error(
+      'Setup requires clean provider sources at the pinned revisions.'
+    )
+  }
 }
 
 async function probe({ name, url }) {
@@ -266,19 +277,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.
         renderProviderCompose(config)
-        if (
-          !inspectIsolatedProviderSources(config).every(
-            ({ qualified }) => qualified
-          )
-        ) {
-          throw new Error(
-            'Setup requires clean provider sources at the pinned revisions.'
-          )
-        }
+        requireProviderSources(config)
         await claimPreparation(config, candidateRevision)
         await prepareLocalConfiguration(config, candidateRevision)
         await installManagedConfiguration(config, candidateRevision)
+        requireProviderSources(config)
         await initializeProviderStorage(config, candidateRevision)
+        requireProviderSources(config)
         await initializeManagedApplication(config, candidateRevision)
         await completePreparation(config, candidateRevision)
         console.log(

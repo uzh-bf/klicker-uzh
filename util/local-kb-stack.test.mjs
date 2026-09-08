@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFile, execFileSync, spawnSync } from 'node:child_process'
+import { once } from 'node:events'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+import { renderBackingCompose } from './local-kb/backing-compose.mjs'
 import { ingestionImageRevision } from './local-kb/ingestion-compose.mjs'
+import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   inspectIsolatedProviderSources,
   inspectLocalKbStack,
@@ -18,6 +23,31 @@ const env = {
   DOC_QUERY_REPO: '/synthetic/retrieval',
   DOC_PROCESSING_REPO: '/synthetic/doc-processing',
 }
+
+test('Blob health requires the expected unauthenticated service response', async () => {
+  let status = 403
+  const server = createServer((_request, response) => {
+    response.writeHead(status).end()
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  try {
+    const { services } = renderBackingCompose(
+      resolveIsolatedConfig(isolatedConfigInput())
+    )
+    const script = services.blob.healthcheck.test
+      .at(-1)
+      .replace(':10000/', `:${server.address().port}/`)
+    const execute = () =>
+      promisify(execFile)(process.execPath, ['-e', script], { timeout: 5000 })
+    await execute()
+    status = 500
+    await assert.rejects(execute(), { code: 1 })
+  } finally {
+    server.close()
+    await once(server, 'close')
+  }
+})
 
 function isolatedConfigInput(endpointOverrides = {}) {
   const providerRevisions = {
@@ -238,6 +268,10 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     const revision = git(['rev-parse', 'HEAD'])
     const config = { roots: [{ name: 'ingestion', path, revision }] }
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    writeFileSync(join(path, '.git/info/exclude'), 'ignored.pyc\n')
+    writeFileSync(join(path, 'ignored.pyc'), 'synthetic bytecode')
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
+    rmSync(join(path, 'ignored.pyc'))
     config.roots[0].revision = '0'.repeat(40)
     assert.equal(
       inspectIsolatedProviderSources(config)[0].revisionMatches,

@@ -36,6 +36,28 @@ const claimPreparation = (config, candidate) =>
   claimObservedPreparation(config, candidate, () => true)
 const unusedProject = () => ({ unused: true, context: 'synthetic-local' })
 
+async function setupReceipts(config) {
+  const directory = join(config.project.runtimeCheckoutPath, '.local-kb')
+  for (const [name, receipt] of [
+    ['storage-setup', { initialized: true, context: 'synthetic-local' }],
+    [
+      'application-setup',
+      {
+        candidateRevision: revision,
+        workspace: 'synthetic-runtime',
+        context: 'synthetic-local',
+      },
+    ],
+  ]) {
+    await mkdir(join(directory, name), { mode: 0o700 })
+    await writeFile(
+      join(directory, name, 'complete.json'),
+      JSON.stringify(receipt),
+      { mode: 0o600 }
+    )
+  }
+}
+
 async function installationFixture() {
   const config = await fixture()
   const checkout = config.project.runtimeCheckoutPath
@@ -125,7 +147,7 @@ test('managed installation replaces only candidate config and neutralizes the li
 })
 
 test('application setup initializes once and retains failures without replay', async () => {
-  for (const failure of [false, true]) {
+  for (const failure of [false, 'application', 'blob']) {
     const { config, checkout, read } = await installationFixture()
     await prepareLocalConfiguration(config, revision)
     await installManagedConfiguration(config, revision, read)
@@ -146,11 +168,15 @@ test('application setup initializes once and retains failures without replay', a
           workspace: 'synthetic-runtime',
           profile: 'local-kb-setup',
         })
-      if (failure) throw new Error('synthetic private error must not escape')
+      if (failure === 'application')
+        throw new Error('synthetic private error must not escape')
       return ''
     }
     const docker = async (args) => {
       calls.push(args)
+      assert.ok(args.includes('--wait'))
+      assert.equal(args.at(-1), 'blob')
+      if (failure === 'blob') throw new Error('synthetic Blob unavailable')
       return ''
     }
     const run = () =>
@@ -160,7 +186,7 @@ test('application setup initializes once and retains failures without replay', a
         run(),
         /^Error: Managed application setup failed; partial state is retained and output withheld\.$/
       )
-      assert.equal(calls.length, 3)
+      assert.equal(calls.length, failure === 'blob' ? 2 : 3)
     } else {
       assert.deepEqual(await run(), { initialized: true })
       assert.equal(calls.length, 5)
@@ -326,6 +352,10 @@ test('exclusive preparation retains partial failure and never implicitly retries
   assert.equal(claims.filter(({ status }) => status === 'fulfilled').length, 1)
   await assert.rejects(requirePreparation(config, revision), { code: 'ENOENT' })
   await assert.rejects(claimPreparation(config, revision), { code: 'EEXIST' })
+  await assert.rejects(completePreparation(config, revision), {
+    code: 'ENOENT',
+  })
+  await setupReceipts(config)
   await completePreparation(config, revision)
   assert.equal(
     (await requirePreparation(config, revision)).candidateRevision,
@@ -339,6 +369,7 @@ test('exclusive preparation retains partial failure and never implicitly retries
 test('candidate or configuration changes invalidate prepared state without changing it', async () => {
   const config = await fixture()
   await claimPreparation(config, revision)
+  await setupReceipts(config)
   await completePreparation(config, revision)
   const path = join(
     config.project.runtimeCheckoutPath,
@@ -392,7 +423,6 @@ test('storage setup runs migrations once and does not qualify the full runtime',
     await initializeProviderStorage(config, revision, run, unusedProject),
     {
       storageInitialized: true,
-      context: 'synthetic-local',
     }
   )
   assert.deepEqual(
