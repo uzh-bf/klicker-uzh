@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -19,6 +19,10 @@ import {
   endLiveQuiz,
   getLiveQuizLeaderboard,
 } from '../src/services/liveQuizzes.js'
+import {
+  getCourseStudentTimelines,
+  updateWeeklyTimelineEntriesCourse,
+} from '../src/services/participants.js'
 import { respondToQuestion } from '../src/services/stacks.js'
 
 const ownerId = randomUUID()
@@ -39,6 +43,7 @@ const ctx = {
 
 describe('leaderboard publication retains private balances', () => {
   afterAll(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.course.deleteMany({ where: { id: courseId } })
     await prisma.participant.deleteMany({
       where: { id: { in: [participantId, groupPeerId] } },
@@ -47,6 +52,7 @@ describe('leaderboard publication retains private balances', () => {
   })
 
   it('preserves course, session and timeline points through leave and rejoin', async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.create({
       data: {
         id: ownerId,
@@ -109,6 +115,51 @@ describe('leaderboard publication retains private balances', () => {
         collectedXp: 30,
       },
     })
+    const getWeeklyTimelineEntries = () =>
+      prisma.timelineEntry.findMany({
+        where: {
+          courseId,
+          participationId: participation.id,
+          type: 'WEEKLY',
+        },
+        orderBy: { timestamp: 'asc' },
+      })
+    expect(await updateWeeklyTimelineEntriesCourse({ courseId }, prisma)).toBe(
+      true
+    )
+    const weeklyTimelineEntries = await getWeeklyTimelineEntries()
+    expect(weeklyTimelineEntries).toEqual([
+      expect.objectContaining({
+        courseId,
+        participationId: participation.id,
+        type: 'WEEKLY',
+        collectedPoints: 125,
+        collectedXp: 30,
+      }),
+    ])
+    await updateWeeklyTimelineEntriesCourse({ courseId }, prisma)
+    expect(await getWeeklyTimelineEntries()).toEqual(weeklyTimelineEntries)
+    vi.useFakeTimers({
+      now: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      toFake: ['Date'],
+    })
+    try {
+      expect(await getCourseStudentTimelines(ctx)).toEqual([
+        expect.objectContaining({
+          courseId,
+          timelineEntries: expect.arrayContaining([
+            expect.objectContaining({
+              collectedPoints: 125,
+              collectedXp: 30,
+              totalPoints: 125,
+              totalXp: 30,
+            }),
+          ]),
+        }),
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
 
     await prisma.participant.create({
       data: { id: groupPeerId, username: groupPeerId, password: 'unused' },
@@ -321,7 +372,11 @@ describe('leaderboard publication retains private balances', () => {
     expect(points).toBeGreaterThan(0)
     expect(
       await prisma.timelineEntry.findFirst({
-        where: { participationId: participation.id, id: { not: timeline.id } },
+        where: {
+          participationId: participation.id,
+          type: 'DAILY',
+          id: { not: timeline.id },
+        },
       })
     ).toMatchObject({ collectedPoints: points })
     expect(
