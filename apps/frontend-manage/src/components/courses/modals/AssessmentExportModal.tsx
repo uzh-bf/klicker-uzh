@@ -17,19 +17,13 @@ interface AssessmentExportModalProps {
   onClose: () => void
 }
 
-function getSafeFilename(requestId: string) {
-  const safeRequestId = requestId.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36)
-
-  return `assessment-export-${safeRequestId || 'export'}.csv`
-}
-
 function downloadAssessmentExport(blob: Blob, requestId: string) {
   const objectUrl = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
 
   try {
     anchor.href = objectUrl
-    anchor.download = getSafeFilename(requestId)
+    anchor.download = `assessment-export-${requestId}.csv`
     document.body.append(anchor)
     anchor.click()
     anchor.remove()
