@@ -45,6 +45,7 @@ export function renderLocalRetrievalConfiguration(publicKey) {
 
 export const localCredentialNames = [
   'database',
+  'klickerDatabase',
   'ingestion',
   'gateway',
   'webhook',
@@ -84,6 +85,7 @@ export function renderLocalConfiguration(credentials) {
       POSTGRES_USER: 'local_kb',
       POSTGRES_PASSWORD: credentials.database,
       POSTGRES_DB: 'klicker',
+      KLICKER_DATABASE_PASSWORD: credentials.klickerDatabase,
     },
     hatchet: {
       DATABASE_URL: `${database('hatchet')}?sslmode=disable`,
@@ -146,8 +148,8 @@ export function renderLocalConfiguration(credentials) {
       AZURE_STORAGE_CONNECTION_STRING: `DefaultEndpointsProtocol=http;AccountName=klickerdev;AccountKey=${blobKey};BlobEndpoint=http://blob:10000/klickerdev;`,
     },
     klicker: {
-      DATABASE_URL: database('klicker'),
-      SHADOW_DATABASE_URL: database('klicker_shadow'),
+      DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test`,
+      SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test_shadow`,
       REDIS_HOST: 'redis_exec',
       REDIS_PORT: '6379',
       REDIS_CACHE_HOST: 'redis_cache',
@@ -182,12 +184,22 @@ export function renderLocalConfiguration(credentials) {
         azure_blob: { container: 'ingestion-artifacts' },
       },
     },
-    // Runs only on the fresh Postgres volume. The official entrypoint creates
-    // Klicker's database; these separate databases belong to its dependencies.
-    databaseInitialization:
-      ['hatchet', 'ingestion', 'document_processing', 'klicker_shadow']
-        .map((name) => `CREATE DATABASE ${name} OWNER local_kb;`)
-        .join('\n') + '\n',
+    // The official entrypoint runs this only on a fresh volume. The guarded
+    // Prisma and seed commands require this non-privileged disposable identity.
+    // psql reads the password from its environment; the SQL file contains none.
+    databaseInitialization: [
+      '\\set ON_ERROR_STOP on',
+      ...['hatchet', 'ingestion', 'document_processing'].map(
+        (name) => `CREATE DATABASE ${name} OWNER local_kb;`
+      ),
+      '\\getenv klicker_database_password KLICKER_DATABASE_PASSWORD',
+      "CREATE ROLE klicker_test WITH LOGIN PASSWORD :'klicker_database_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;",
+      ...['klicker_test', 'klicker_test_shadow'].flatMap((name) => [
+        `CREATE DATABASE ${name} OWNER klicker_test;`,
+        `COMMENT ON DATABASE ${name} IS 'klicker-disposable-test-v1';`,
+      ]),
+      '',
+    ].join('\n'),
     producer: {
       version: 1,
       producer: {

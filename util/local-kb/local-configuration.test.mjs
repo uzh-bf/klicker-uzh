@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { generateKeyPairSync } from 'node:crypto'
 import test from 'node:test'
+import { validateDisposableDatabaseUrl } from '../../packages/prisma/src/disposableDatabase.ts'
 import {
   localCredentialNames,
   renderLocalConfiguration,
@@ -14,6 +15,40 @@ const fixture = () =>
       (index + 1).toString(16).padStart(64, '0'),
     ])
   )
+
+test('generated application connections satisfy the existing disposable database guard', () => {
+  const { environment, databaseInitialization } = renderLocalConfiguration(
+    fixture()
+  )
+  for (const [key, database] of [
+    ['DATABASE_URL', 'klicker_test'],
+    ['SHADOW_DATABASE_URL', 'klicker_test_shadow'],
+  ]) {
+    const connection = environment.klicker[key]
+    assert.equal(
+      validateDisposableDatabaseUrl(connection, database),
+      connection
+    )
+    assert.notEqual(
+      new URL(connection).password,
+      environment.postgres.POSTGRES_PASSWORD
+    )
+    assert.equal(
+      new URL(connection).password,
+      environment.postgres.KLICKER_DATABASE_PASSWORD
+    )
+  }
+  assert.equal(
+    databaseInitialization.includes(
+      environment.postgres.KLICKER_DATABASE_PASSWORD
+    ),
+    false
+  )
+  assert.match(
+    databaseInitialization,
+    /NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS/
+  )
+})
 
 test('retrieval requires signed KB scope and excludes inactive resources', () => {
   const { publicKey, privateKey } = generateKeyPairSync('ec', {
