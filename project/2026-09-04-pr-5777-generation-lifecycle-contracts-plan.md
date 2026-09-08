@@ -220,6 +220,14 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Hosted CI correction — 2026-09-08
+
+Published merge candidate d2668ba6bb is mergeable and all seven reviewed threads are resolved. Hosted codebase, lightweight unit, lecturer MCP, CodeQL and SonarCloud checks pass. GraphQL exposed four failures because the real persistence suite still supplied the old feature-flag interface. Commit 667782aa58 adds the new explicit enabled decision to that existing synthetic fixture. All five real persistence cases and 14 adjacent gate cases pass in /tmp/generation-ci-fixture-check.log; production authorization and test assertions are unchanged. Main inspected the exact diff and staged Gitleaks passed.
+
+The inherited OLAT container skips dependency installation and fails before tests under the target's new dependency verification policy. Commit 5b88c965b removes only that skip, retaining the existing frozen install and fail-fast execution. Extracted shell syntax passes; hosted execution remains required to prove installation and tests complete. A bounded explorer verified the inherited interaction and is closed. Independent final delta review passes on d2668ba6bb..5b88c965b, both changed paths, with no findings. The reviewer is closed. Prior application checks and integrated review remain applicable to unchanged source.
+
+The task runtime was resumed only for the focused tests and stopped again. Provider reports Stopped and the exact source-path route count is zero. The two previously recorded temporary controls remain untouched after automatic approval rejection. Scanner-owner incident disposition, final hosted review and explicit merge authority remain separate gates.
+
 ### Reviewed merge candidate — 2026-09-08
 
 Integrated final review passes on 6e2d03c5b0b8261715f1c203160270302a109572..adeb7b87a30e8dcc1204e74e11e460e7f0d2d76c, all 35 paths, no exclusions or findings. Earlier unchanged-code evidence was reused; merge resolutions, loading-state integration and MCP guard were reviewed directly. Simplifier found no further justified reduction. All children are closed. This receipt changes documentation only.
