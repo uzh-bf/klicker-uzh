@@ -770,6 +770,7 @@ async function synchronizeLeasedBuild(
               'ARTIFACT_INVALID',
               'Flashcard-generation output could not be validated'
             )
+    console.error('[element-generation] Flashcard synchronization failed')
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
       data: {

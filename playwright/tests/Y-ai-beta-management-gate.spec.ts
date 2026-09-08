@@ -1,14 +1,13 @@
-import { URL_MANAGE } from '../util/constants.js'
+import { getPrisma } from '../global-setup.js'
+import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 
 /**
  * Lecturer AI beta management gate (apps/frontend-manage).
  *
- * The gate is GrowthBook `ai-beta` AND the account's `aiFeaturesEnabled`.
- * The dev E2E environment forces the flag on and the seeded lecturer starts
- * with the entitlement, so the denied half of the gate is exercised by
- * flipping the entitlement off through the database and reloading.
+ * The menu serves generation and chatbot authoring. Close both generation
+ * entitlement and beta enrollment to exercise an unavailable menu and routes.
  */
 
 test('CLEANUP', cleanupTest)
@@ -68,13 +67,20 @@ test.describe('AI beta management navigation gate', () => {
   test('hides the AI menu and renders a stable unavailable state on direct AI routes when the gate is closed', async ({
     loginLecturer,
     page,
-    updateLecturerAiAccess,
   }) => {
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    await updateLecturerAiAccess(false)
     try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: false, betaEnabled: false },
+      })
       await page.reload()
       await expect(page.getByTestId('homepage')).toBeVisible()
 
@@ -83,10 +89,13 @@ test.describe('AI beta management navigation gate', () => {
 
       const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 
-      for (const path of [
-        '/resources/knowledgeBases',
-        '/resources/knowledgeBases/00000000-0000-4000-8000-000000000000',
-        '/resources/chatbots',
+      for (const [path, unavailableState] of [
+        ['/resources/knowledgeBases', 'ai-beta-unavailable'],
+        [
+          '/resources/knowledgeBases/00000000-0000-4000-8000-000000000000',
+          'ai-beta-unavailable',
+        ],
+        ['/resources/chatbots', 'chatbot-authoring-unavailable'],
       ]) {
         await page.goto(`${manageUrl}${path}`)
         // No redirect: the URL stays on the requested route and the denied
@@ -94,7 +103,10 @@ test.describe('AI beta management navigation gate', () => {
         await expect(page).toHaveURL(
           new RegExp(path.replaceAll('/', '\\/') + '$')
         )
-        await expect(page.getByTestId('ai-beta-unavailable')).toBeVisible()
+        await expect(
+          page.getByTestId(unavailableState),
+          `Unavailable state on ${path}`
+        ).toBeVisible()
       }
 
       await page.goto(`${manageUrl}/de/resources/knowledgeBases`)
@@ -103,7 +115,10 @@ test.describe('AI beta management navigation gate', () => {
         'KI-Funktionen nicht verfügbar'
       )
     } finally {
-      await updateLecturerAiAccess(true)
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: previousAccess,
+      })
     }
   })
 })
