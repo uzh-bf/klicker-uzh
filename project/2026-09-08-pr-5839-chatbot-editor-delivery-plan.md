@@ -56,6 +56,52 @@ must not replace container dependencies. Stop the exact runtime after checks.
 
 ## Progress
 
+Approved networking recovery: the retained task Azurite container had no
+network attachments. After exact managed shutdown, restored only its two
+source-declared networks and aliases, then ran `devrouter ensure --repair`
+through the approved Infisical operator. Blob initialization and managed
+readiness pass, with no recreation and no drift. Other workspaces and all
+volumes were preserved.
+
+Preview guard correction verification: native Manage check, Playwright
+TypeScript, focused Biome and test Prettier pass. In an isolated host browser
+with the existing synthetic draft and browser-only AI-beta fixture, an
+unsaved disclaimer edit still prompts before preview. Dismissing that prompt,
+switching to Knowledge and accepting discard then opens owner preview without
+a second prompt. No content was saved and no model request was sent. Screenshots
+were inspected locally at `/private/tmp/editor-guard-before.png` and
+`/private/tmp/editor-guard-after.png`. The full host Playwright regression is
+not claimed; fresh exact-head CI remains required after publication.
+
+Continuation after approval to temporarily stop `kb-managed-adoption`: fresh
+inspection found that workspace already stopped, so no stop or restart was
+performed there. Task startup passed the former port collision after waiting
+for the shared provider queue, but local blob initialization now fails with
+`ENOTFOUND rs-chatbot-editor-delivery-azurite`. Managed rollback reports degraded
+process drift. Both attempted container type checks are rejected with
+`Lifecycle transition is blocked.` No new verification pass or source
+publication is claimed. The correction remains uncommitted pending managed
+runtime recovery and browser verification; no raw Docker networking repair
+or container recreation was performed.
+
+September 8, 17:30 UTC checkpoint: exact-head Playwright run `34249321538`
+passes all eight shards on `4adc3c6a84`; other CI checks pass. Final AI review
+run `34254344247` completed with three low-priority style suggestions and one
+confirmed stale preview-navigation guard finding. The bounded correction and
+regression are uncommitted in `ChatbotDetails.tsx` and
+`T-chatbot-authoring.spec.ts`. They share the existing view-aware guard state
+between tab navigation and owner preview. Diff inspection passes; runtime
+verification and subsequent review/publication remain pending.
+
+Verification startup is blocked: retained task Azurite attempts to bind
+`127.0.0.1:10003`, already owned by the `kb-managed-adoption` workspace.
+That workspace was not changed or stopped. The exact task runtime was stopped
+after partial startup; provider state `Stopped` and zero routes were verified.
+Resolving the port conflict requires coordination or separately authorized
+tooling repair. Do not publish the unverified patch or claim merge readiness.
+The three style suggestions do not establish a business-logic defect; the
+claimed blanket bans were not found in the inspected repository rules.
+
 September 8 CI correction: Playwright run `34227884428` reached all eight
 public ARM64 shards; four passed and four failed with seven tests. The editor
 tests still assumed the former tab layout. Commit `0fc9c4938f` corrects Basics

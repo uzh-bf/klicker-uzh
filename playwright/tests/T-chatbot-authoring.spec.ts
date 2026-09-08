@@ -299,6 +299,34 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(previewPage).toHaveURL(
       `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
     )
+
+    const discardNavigationDialogPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.type()).toBe('confirm')
+        return dialog.accept()
+      })
+    await page.getByTestId('chatbot-view-knowledge').click()
+    await discardNavigationDialogPromise
+    await expect(page.getByTestId('chatbot-knowledge')).toBeVisible()
+
+    const previewDialogs: string[] = []
+    const previewDialogListener = (dialog: {
+      type: () => string
+      dismiss: () => Promise<void>
+    }) => {
+      previewDialogs.push(dialog.type())
+      void dialog.dismiss()
+    }
+    page.on('dialog', previewDialogListener)
+    const discardedPreviewPagePromise = page.context().waitForEvent('page')
+    await page.getByTestId('chatbot-owner-preview-link').click()
+    const discardedPreviewPage = await discardedPreviewPagePromise
+    page.off('dialog', previewDialogListener)
+    expect(previewDialogs).toEqual([])
+    await expect(discardedPreviewPage).toHaveURL(
+      `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
+    )
   })
 
   test('locks chatbot creation fields while the request is pending', async ({

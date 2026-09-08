@@ -283,24 +283,24 @@ function ChatbotDetails({
     fixedModelId,
   ])
 
+  const viewNavigationState = useMemo<ChatbotNavigationState>(() => {
+    if (view === 'behavior') {
+      return {
+        dirty: modelSettingsDirty || authoringNavigationState.dirty,
+        pending: isSaving || authoringNavigationState.pending,
+      }
+    }
+
+    if (view === 'overview' || view === 'disclaimer') {
+      return authoringNavigationState
+    }
+
+    return { dirty: false, pending: false }
+  }, [authoringNavigationState, isSaving, modelSettingsDirty, view])
+
   useEffect(() => {
-    onNavigationStateChange(
-      view === 'behavior'
-        ? {
-            dirty: modelSettingsDirty || authoringNavigationState.dirty,
-            pending: isSaving || authoringNavigationState.pending,
-          }
-        : view === 'overview' || view === 'disclaimer'
-          ? authoringNavigationState
-          : { dirty: false, pending: false }
-    )
-  }, [
-    authoringNavigationState,
-    isSaving,
-    modelSettingsDirty,
-    onNavigationStateChange,
-    view,
-  ])
+    onNavigationStateChange(viewNavigationState)
+  }, [onNavigationStateChange, viewNavigationState])
 
   useEffect(() => {
     if (view === 'behavior' || !chatbot) return
@@ -377,8 +377,8 @@ function ChatbotDetails({
     chatbotId: chatbot.id,
     chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
   })
-  const ownerPreviewPending = isSaving || authoringNavigationState.pending
-  const ownerPreviewDirty = modelSettingsDirty || authoringNavigationState.dirty
+  const ownerPreviewPending = viewNavigationState.pending
+  const ownerPreviewDirty = viewNavigationState.dirty
   const handleOwnerPreviewClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (ownerPreviewPending) {
       event.preventDefault()
