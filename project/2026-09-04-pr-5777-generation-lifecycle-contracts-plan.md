@@ -33,9 +33,10 @@ infrastructure health, provider process readiness and external AI capability.
 
 Continue implementation in `trees/rs/generation-lifecycle-contracts`, branch
 `rs/generation-lifecycle-contracts`, targeting the existing draft PR's `v3-ai`
-base. The refreshed branch is ten commits ahead of its tracking branch and
-183 ahead/five behind default `origin/v3`; no integration is required for this
-plan update. Preserve the recovery stash and all existing uncommitted work.
+base. After reconciling the parallel task-branch corrections, the branch is
+twelve commits ahead of its tracking branch and 189 ahead/eight behind default
+`origin/v3`. Default-branch drift alone does not require integration. Preserve
+the recovery stashes and all existing uncommitted work.
 
 The proposed runtime-only checkout is `trees/rs/local-kb-isolated-e2e` under
 this repository; it does not exist at planning time. Create it only in the
@@ -252,6 +253,61 @@ networking, fresh owned state, explicit local provider destinations and no
 upstream keys or submissions during initial qualification. Drop the network-level
 no-egress requirement; isolated storage does not imply network isolation.
 Runtime startup and paid proof remain separately gated.
+
+Parallel reconciliation, 2026-09-08: merge commit
+`fed495ccdb58071fe6ef18f2611707c60f22b658` includes remote task head
+`140e070f79f3f15c204b15e046f0613d98a502be`. The sole conflict was this plan's
+opening; preserve the local-stack extension and label the earlier UI
+qualification as historical. No source-code conflict required a behavior
+choice. All 28 focused launcher tests pass on the merged tree; this is not a
+fresh full-application qualification. The token permission assertion and approved
+networking decision are committed at `622d482299`.
+
+The staged and untracked work was preserved and restored with its index from
+stash `889e34708be467c6069a3a2a8a746dea3d40b34e`; retain that recovery copy.
+The original staged paths match their saved content. No runtime lifecycle
+command, data reset, provider submission or publication occurred. The existing
+manual-testing runtime lease remains unchanged.
+
+Main rejected adding another topology-only representation as a substitute for
+a concrete renderer. The next bounded CLI integration exposes the existing
+validated isolated plan through an explicit configuration input, with no
+runtime mutation and no claim that supplied source observations are live proof.
+Concrete images, provider environments, Compose wiring and lifecycle execution
+remain required before source-ready delivery.
+
+The CLI integration is committed as
+`37b7b4e108d80b174343d7717cb696dae8ef6abd`. `plan --config` accepts an
+explicit absolute JSON input, uses the existing isolated validator and exposes
+its graph, state, mounts and command inventory. It remains non-executable with
+exit code 2; source observations are explicitly supplied rather than freshly
+verified. Invalid input produces a generic diagnostic without echoing its
+contents. All 29 focused launcher tests, scoped Biome, diff and redacted
+gitleaks checks pass. The executor handle became unavailable after interruption;
+main inspected and verified the preserved two-file result rather than replacing
+it. Slice simplification and trusted read-only correctness review are in progress.
+
+Provisioning evidence: refreshed data-ingestion `origin/main` is
+`d46282848100beec5a1f571e0cc9b091dcdd4179`. Its primary checkout is on
+`rs/kb-pgvector-graph-e2e` with a gone upstream, 34 ahead/12 behind main and
+unrelated untracked files; it remains untouched and is not a clean runtime
+input. Read-only `git show` confirms `modules/ingestion/Dockerfile` requires
+BuildKit package-index credentials for two locked private client packages.
+The ingestion API Dockerfile does not have that credential requirement.
+No matching provider image appears in the local Docker image inventory.
+Credential-free service startup therefore does not imply a credential-free
+cold build. Source implementation must declare the image/provisioning boundary;
+actual image provisioning remains in the later approved runtime stage. No
+package credentials, registry login or image build were attempted.
+Registry metadata resolves a no-local-build alternative for that exact revision:
+`cr.gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/ingestion-worker`
+has digest `sha256:b6a162483014ca2bb0aa545218518686cbf2b0f199a9a71b7d4ffd1e3f880d82`,
+and `ingestion-api` in the same registry project has digest
+`sha256:0f4656044caf12a7ac4c01d06bd0f2adf4ca93864ec94fd5dafc130e58ecb934`.
+Both revision-tag records were read through host `glab`; neither image was
+pulled or started. Architecture, runtime configuration and local pull access
+remain unverified. Prefer these existing immutable artifacts when qualifying
+the later provisioning step rather than introducing local package credentials.
 
 The current ingestion parser routes document inputs to that separate service;
 `steps/parsing/doc_processing.py` requires both `DOC_PROCESSING_BASE_URL` and
