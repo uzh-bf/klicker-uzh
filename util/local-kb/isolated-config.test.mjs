@@ -1,11 +1,26 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-
+import { renderBackingCompose } from './backing-compose.mjs'
+import { renderProviderCompose } from './compose.mjs'
+import {
+  docProcessingImageRevision,
+  renderDocProcessingCompose,
+} from './doc-processing-compose.mjs'
+import {
+  ingestionImageRevision,
+  renderIngestionCompose,
+} from './ingestion-compose.mjs'
 import {
   resolveIsolatedConfig,
   validateIsolatedConfig,
 } from './isolated-config.mjs'
 import { providerCommands } from './provider-commands.mjs'
+import {
+  renderRetrievalCompose,
+  retrievalImageRevision,
+} from './retrieval-compose.mjs'
+import { renderRetrievalStoreCompose } from './retrieval-store-compose.mjs'
+import { scrapingImageRevision } from './scraping-compose.mjs'
 
 const providerRevisions = {
   ingestion: 'd'.repeat(40),
@@ -106,6 +121,203 @@ test('resolves two independent stacks with complete provider and state ownership
   assert.notEqual(first.endpoints.retrieval.url, second.endpoints.retrieval.url)
   assert.equal(validateIsolatedConfig(first), true)
   assert.equal(validateIsolatedConfig(second), true)
+})
+
+test('combined provider composition resolves every dependency and named volume', () => {
+  const input = makeInput('a')
+  for (const [name, revision] of Object.entries({
+    ingestion: ingestionImageRevision,
+    scraping: scrapingImageRevision,
+    retrieval: retrievalImageRevision,
+    docProcessing: docProcessingImageRevision,
+  })) {
+    input.providerRoots[name].revision = revision
+    input.providerObservations[name].revision = revision
+  }
+  const rendered = renderProviderCompose(resolveIsolatedConfig(input))
+  assert.equal(rendered.name, input.projectIdentity)
+  for (const service of Object.values(rendered.services)) {
+    for (const name of Object.keys(service.depends_on ?? {})) {
+      assert.ok(Object.hasOwn(rendered.services, name))
+    }
+    for (const mount of service.volumes ?? []) {
+      if (typeof mount === 'string')
+        assert.ok(Object.hasOwn(rendered.volumes, mount.split(':')[0]))
+    }
+    assert.equal(service.ports, undefined)
+  }
+})
+
+test('backing services use isolated volumes and keep Hatchet setup separate', () => {
+  const first = renderBackingCompose(resolveIsolatedConfig(makeInput('a')))
+  const second = renderBackingCompose(resolveIsolatedConfig(makeInput('b')))
+  const names = new Set(Object.values(first.volumes).map(({ name }) => name))
+  assert.ok(Object.values(second.volumes).every(({ name }) => !names.has(name)))
+  assert.deepEqual(first.services['hatchet-setup'].profiles, ['local-kb-setup'])
+  assert.deepEqual(first.services['hatchet-setup'].command, ['setup'])
+  assert.deepEqual(first.services.hatchet.command, ['start'])
+  assert.deepEqual(first.services.hatchet.entrypoint, [
+    'bash',
+    '/local-kb/hatchet-entrypoint.sh',
+  ])
+  for (const service of Object.values(first.services)) {
+    assert.equal(service.ports, undefined)
+    assert.equal(service.network_mode, undefined)
+    assert.deepEqual(service.networks, ['default'])
+    assert.equal(service.restart, 'no')
+    for (const mount of service.volumes) {
+      if (typeof mount === 'string') {
+        assert.ok(Object.hasOwn(first.volumes, mount.split(':')[0]))
+      } else {
+        assert.equal(mount.read_only, true)
+        assert.equal(mount.bind.create_host_path, false)
+        assert.ok(mount.source.startsWith(makeInput('a').runtimeCheckoutPath))
+      }
+    }
+  }
+})
+
+test('document processing shares extracts across workers and only explicitly initializes', () => {
+  const input = makeInput('a')
+  assert.throws(
+    () => renderDocProcessingCompose(resolveIsolatedConfig(input)),
+    /pinned runtime image/
+  )
+  input.providerRoots.docProcessing.revision = docProcessingImageRevision
+  input.providerObservations.docProcessing.revision = docProcessingImageRevision
+  const { services, volumes } = renderDocProcessingCompose(
+    resolveIsolatedConfig(input)
+  )
+  assert.equal(
+    volumes['document-processing'].name,
+    resolveIsolatedConfig(input).mutableState.documentProcessing.volumeName
+  )
+  assert.deepEqual(services['doc-processing-setup'].profiles, [
+    'local-kb-setup',
+  ])
+  for (const [name, service] of Object.entries(services)) {
+    assert.equal(service.environment.DOC_PROCESSING_AUTO_INITIALIZE, '0')
+    assert.equal(
+      service.environment.DOC_PROCESSING_DEFAULT_PICTURE_DESCRIPTION,
+      'off'
+    )
+    assert.ok(service.volumes.includes('document-processing:/app/data'))
+    assert.equal(service.ports, undefined)
+    assert.equal(
+      service.command.includes('doc_processing.setup'),
+      name === 'doc-processing-setup'
+    )
+  }
+})
+
+test('real retrieval requires its image revision, explicit AI profile and strict local tools', () => {
+  assert.throws(
+    () => renderRetrievalCompose(resolveIsolatedConfig(makeInput('a'))),
+    /pinned runtime image/
+  )
+  const input = makeInput('a')
+  input.providerRoots.retrieval.revision = retrievalImageRevision
+  input.providerObservations.retrieval.revision = retrievalImageRevision
+  const service = renderRetrievalCompose(resolveIsolatedConfig(input)).services[
+    'doc-query'
+  ]
+  assert.deepEqual(service.profiles, ['local-kb-ai'])
+  assert.equal(service.environment.DOC_QUERY_TOOL_CONFIG_REQUIRED, 'true')
+  assert.equal(service.environment.MILVUS_URI, 'http://milvus:19530')
+  assert.equal(service.environment.OPENAI_API_KEY, undefined)
+  assert.ok(service.command.includes('/app/local-src'))
+  assert.ok(
+    service.volumes.every(
+      (mount) => mount.read_only && !mount.bind.create_host_path
+    )
+  )
+  assert.equal(service.ports, undefined)
+})
+
+test('retrieval stores isolate vector data, metadata and object backing', () => {
+  const config = resolveIsolatedConfig(makeInput('a'))
+  const rendered = renderRetrievalStoreCompose(config)
+  const other = renderRetrievalStoreCompose(
+    resolveIsolatedConfig(makeInput('b'))
+  )
+  const names = new Set(Object.values(rendered.volumes).map(({ name }) => name))
+  assert.ok(Object.values(other.volumes).every(({ name }) => !names.has(name)))
+  assert.ok(
+    config.dependencyGraph.nodes.milvus.dependsOn.includes('milvusMetadata')
+  )
+  assert.deepEqual(rendered.services.milvus.command, [
+    'milvus',
+    'run',
+    'standalone',
+  ])
+  assert.equal(rendered.services.milvus.environment.MINIO_ADDRESS, 'minio:9000')
+  for (const service of Object.values(rendered.services)) {
+    assert.equal(service.ports, undefined)
+    assert.deepEqual(service.networks, ['default'])
+    assert.equal(service.restart, 'no')
+    assert.ok(
+      service.volumes.every((mount) =>
+        Object.hasOwn(rendered.volumes, mount.split(':')[0])
+      )
+    )
+  }
+})
+
+test('renders pinned ingestion commands with explicit setup and no writable provider mounts', () => {
+  const input = makeInput('a')
+  input.providerRoots.ingestion.revision = ingestionImageRevision
+  input.providerObservations.ingestion.revision = ingestionImageRevision
+  const config = resolveIsolatedConfig(input)
+  const { services } = renderIngestionCompose(config)
+  assert.deepEqual(services['ingestion-setup'].profiles, ['local-kb-setup'])
+  assert.deepEqual(services['ingestion-setup'].command, [
+    'python',
+    '-m',
+    'ingestion_api.migrations',
+  ])
+  assert.deepEqual(services['ingestion-resource-fetch-worker'].command, [
+    'python',
+    '-m',
+    'ingestion.workers.resource_fetch_worker',
+  ])
+  for (const [name, service] of Object.entries(services)) {
+    assert.match(service.image, /@sha256:[a-f0-9]{64}$/)
+    assert.equal(service.restart, 'no')
+    assert.equal(service.cpus, 1)
+    assert.ok(['1g', '512m'].includes(service.mem_limit))
+    assert.equal(service.pids_limit, 256)
+    assert.equal(service.environment.PYTHON_DOTENV_DISABLED, '1')
+    assert.equal(service.environment.INGESTION_STATE_ENSURE_SCHEMA, 'false')
+    assert.equal(service.command.includes('uv'), false)
+    assert.equal(service.ports, undefined)
+    assert.equal(service.network_mode, undefined)
+    for (const mount of service.volumes) {
+      assert.equal(mount.read_only, true)
+      assert.equal(mount.bind.create_host_path, false)
+      assert.ok(
+        mount.source.startsWith(input.runtimeCheckoutPath) ||
+          mount.source.startsWith(input.providerRoots.ingestion.path)
+      )
+    }
+    if (name !== 'ingestion-setup') {
+      assert.equal(service.command.includes('ingestion_api.migrations'), false)
+    }
+  }
+})
+
+test('ingestion rendering refuses dependency/source mismatch and Compose interpolation', () => {
+  assert.throws(
+    () => renderIngestionCompose(resolveIsolatedConfig(makeInput('a'))),
+    /pinned runtime images/
+  )
+  const input = makeInput('a')
+  input.providerRoots.ingestion.revision = ingestionImageRevision
+  input.providerObservations.ingestion.revision = ingestionImageRevision
+  input.runtimeCheckoutPath += '-$UNEXPECTED'
+  assert.throws(
+    () => renderIngestionCompose(resolveIsolatedConfig(input)),
+    /interpolation/
+  )
 })
 
 test('keeps roots and health compatible with supported provider commands', () => {
