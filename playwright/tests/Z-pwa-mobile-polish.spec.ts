@@ -549,9 +549,13 @@ for (const locale of ['en', 'de']) {
         expect(body).not.toBe(html)
         await route.fulfill({ response, body })
       })
-      await page.route('**/graphql', async (route) => {
-        const body = route.request().postDataJSON()
-        if (body?.operationName !== 'GetFeedbacks') return route.continue()
+      await page.route(/\/graphql(?:\?.*)?$/, async (route) => {
+        const request = route.request()
+        const url = new URL(request.url())
+        const body = request.postData() ? request.postDataJSON() : undefined
+        const operationName =
+          body?.operationName ?? url.searchParams.get('operationName')
+        if (operationName !== 'GetFeedbacks') return route.continue()
         if (failedInitialRequest)
           return route.fulfill({ json: { data: { feedbacks: [] } } })
         failedInitialRequest = true
