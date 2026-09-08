@@ -54,6 +54,12 @@ export function useManageAiCapability(): ManageAiCapabilityContextValue {
   return useContext(ManageAiCapabilityContext)
 }
 
+const ManageFeatureProfileLoadingContext = createContext(true)
+
+export function useManageFeatureProfileLoading(): boolean {
+  return useContext(ManageFeatureProfileLoadingContext)
+}
+
 const config = {
   apiHost: process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
   clientKey: process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,
@@ -130,15 +136,17 @@ function ManageFeatureFlagProvider({
       }
       evaluationAvailable={skipUserProfile || profileReady}
     >
-      <ManageAiCapabilityProvider
-        loadingProfile={loading}
-        skipUserProfile={skipUserProfile || router.pathname === '/login'}
-        user={user}
-        betaEnabled={betaEnabled}
-        confirmBetaPreference={confirmBetaPreference}
-      >
-        {children}
-      </ManageAiCapabilityProvider>
+      <ManageFeatureProfileLoadingContext.Provider value={loading}>
+        <ManageAiCapabilityProvider
+          loadingProfile={loading}
+          skipUserProfile={skipUserProfile || router.pathname === '/login'}
+          user={user}
+          betaEnabled={betaEnabled}
+          confirmBetaPreference={confirmBetaPreference}
+        >
+          {children}
+        </ManageAiCapabilityProvider>
+      </ManageFeatureProfileLoadingContext.Provider>
     </FeatureFlagProvider>
   )
 }

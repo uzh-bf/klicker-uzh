@@ -1,9 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedQuestionEditable,
-  GeneratedQuestionOriginal,
-  GeneratedQuestionWithProvenance,
-  QuestionGenerationArtifactRef,
   QuestionGenerationItemType,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -138,117 +135,6 @@ export function normalizeGeneratedQuestionEditable(
     ),
     choices,
   }
-}
-
-function editableFromOriginal(
-  original: GeneratedQuestionOriginal
-): GeneratedQuestionEditable {
-  return {
-    itemType: original.itemType ?? 'SC',
-    name: original.name,
-    stem: original.stem,
-    context: original.context,
-    explanation: original.explanation,
-    choices: original.choices.map((choice) => ({ ...choice })),
-  }
-}
-
-export async function persistInitialGeneratedQuestionDrafts(
-  input: {
-    buildId: string
-    leaseOwner: string
-    questions: GeneratedQuestionWithProvenance[]
-    resultManifestArtifact: QuestionGenerationArtifactRef
-    finalBankArtifact: QuestionGenerationArtifactRef
-    questionProvenanceIndexArtifact: QuestionGenerationArtifactRef | null
-  },
-  ctx: ContextWithUser
-) {
-  await ctx.prisma.$transaction(async (transaction) => {
-    const build = await transaction.elementGenerationBuild.findFirst({
-      where: {
-        id: input.buildId,
-        elementType: {
-          in: [DB.ElementType.SC, DB.ElementType.MC, DB.ElementType.KPRIM],
-        },
-        status: DB.ElementGenerationBuildStatus.FINALIZING,
-        syncLeaseOwner: input.leaseOwner,
-      },
-      select: { elementType: true },
-    })
-    if (!build) {
-      throw questionGenerationServiceError(
-        'CONCURRENT_MODIFICATION',
-        'Question-generation build completion lost its lease'
-      )
-    }
-    if (
-      input.questions.some(
-        (question) => question.itemType !== build.elementType
-      )
-    ) {
-      return draftError(
-        'Generated question types do not match the requested element type'
-      )
-    }
-
-    await transaction.generatedElementDraft.createMany({
-      data: input.questions.map((question, order) => {
-        const { provenance, ...original } = question
-        return {
-          buildId: input.buildId,
-          sourceElementId: original.sourceQuestionId,
-          order,
-          duplicationIndex: 0,
-          elementType: original.itemType,
-          original,
-          current: editableFromOriginal(original),
-          bloomLevel: original.bloomLevel,
-          targetDifficulty: original.targetDifficulty,
-          predictedDifficulty: original.predictedDifficulty,
-          qualityFlags: original.qualityFlags,
-          citations: original.citations,
-          provenance: provenance ?? DB.Prisma.DbNull,
-        }
-      }),
-      skipDuplicates: true,
-    })
-    const draftCount = await transaction.generatedElementDraft.count({
-      where: {
-        buildId: input.buildId,
-        duplicationIndex: 0,
-      },
-    })
-    if (draftCount !== input.questions.length) {
-      return draftError('Generated draft count does not match the final bank')
-    }
-
-    const completed = await transaction.elementGenerationBuild.updateMany({
-      where: {
-        id: input.buildId,
-        elementType: build.elementType,
-        status: DB.ElementGenerationBuildStatus.FINALIZING,
-        syncLeaseOwner: input.leaseOwner,
-      },
-      data: {
-        resultManifestArtifact: input.resultManifestArtifact,
-        finalBankArtifact: input.finalBankArtifact,
-        provenanceIndexArtifact:
-          input.questionProvenanceIndexArtifact ?? DB.Prisma.DbNull,
-        generatedElementCount: input.questions.length,
-        status: DB.ElementGenerationBuildStatus.COMPLETED,
-        stage: 'completed',
-        completedAt: new Date(),
-        lastSynchronizedAt: new Date(),
-      },
-    })
-    if (completed.count !== 1) {
-      throw questionGenerationServiceError(
-        'CONCURRENT_MODIFICATION',
-        'Question-generation build completion lost its lease'
-      )
-    }
-  })
 }
 
 async function findOwnedDraft(draftId: string, ctx: ContextWithUser) {
