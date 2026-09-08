@@ -361,6 +361,37 @@ describe('KB ingestion dispatch', () => {
     )
   })
 
+  it.each([
+    null,
+    4096,
+  ])('uses the KB storage allowance before dispatch (%s MiB)', async (storageLimitMiB) => {
+    const prisma = dispatchPrisma(
+      {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: null,
+        mimeType: null,
+        sizeBytes: 1000,
+        externalOperationId: null,
+        kb: { deletedAt: null, storageLimitMiB },
+      },
+      [1, 1],
+      { resourceBytes: 3 * 1024 * 1024 * 1024 }
+    )
+    const apiClient = client()
+    await dispatchKBIngestion(input, {
+      prisma: prisma as never,
+      client: apiClient,
+      prepareSource: vi.fn().mockResolvedValue({ ...source, sizeBytes: 1500 }),
+    })
+    if (storageLimitMiB === null) {
+      expect(apiClient.acceptResource).not.toHaveBeenCalled()
+    } else {
+      expect(apiClient.acceptResource).toHaveBeenCalledOnce()
+    }
+  })
+
   it('replaces the conservative reservation for a legacy unknown-size URL', async () => {
     const prisma = dispatchPrisma(
       {

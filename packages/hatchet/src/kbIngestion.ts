@@ -11,7 +11,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   MAX_KB_SOURCE_SIZE_BYTES,
-  MAX_KB_TOTAL_SIZE_BYTES,
+  resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
@@ -146,7 +146,7 @@ async function persistPreparedSource({
         deletedAt: null,
         kb: { deletedAt: null },
       },
-      select: { sizeBytes: true },
+      select: { sizeBytes: true, kb: { select: { storageLimitMiB: true } } },
     })
     if (!currentResource) {
       return false
@@ -172,7 +172,10 @@ async function persistPreparedSource({
       (uploadTickets._sum.sizeBytes ?? 0) -
       (currentResource.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES) +
       source.sizeBytes
-    if (projectedSizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+    if (
+      projectedSizeBytes >
+      resolveKBStorageLimitBytes(currentResource.kb.storageLimitMiB)
+    ) {
       const finishedAt = new Date()
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {

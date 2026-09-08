@@ -12,6 +12,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import {
   MAX_KB_RESOURCE_COUNT,
+  MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
@@ -21,6 +22,8 @@ import {
   buildSchema,
   GraphQLEnumType,
   GraphQLObjectType,
+  type GraphQLScalarType,
+  getNamedType,
   parse,
   validate,
 } from 'graphql'
@@ -40,6 +43,7 @@ const { resolveMcpScope } = await vi.importActual<{
     effectiveConfigurations: readonly unknown[]
   ) => string[] | undefined
 }>('../../../apps/chat/src/services/mcpScope.ts')
+
 import {
   attachKbToChatbot,
   confirmKbFileReplacement,
@@ -168,6 +172,28 @@ function withKbBindingSnapshotPause(
 }
 
 describe('Knowledge base GraphQL contract', () => {
+  it('serializes aggregate byte metrics above the signed 32-bit range', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const fields = (
+      schema.getType('KBMetrics') as GraphQLObjectType
+    ).getFields()
+    for (const name of [
+      'visibleSizeBytes',
+      'quotaSizeBytes',
+      'storageLimitBytes',
+      'pendingCleanupSizeBytes',
+      'reservedSizeBytes',
+    ]) {
+      const scalar = getNamedType(fields[name]!.type) as GraphQLScalarType
+      expect(scalar.serialize(4096 * 1024 * 1024)).toBe(4096 * 1024 * 1024)
+    }
+  })
+
   it('requires the resource id for ingestion', () => {
     const schema = buildSchema(
       readFileSync(
@@ -2695,6 +2721,57 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
     expect(filtered.items.map(({ id }) => id)).toEqual([ids[0]])
     expect(filtered.totalCount).toBe(1)
+  })
+
+  it('keeps a storage override scoped to one KB and accounts for reservations above 2 GiB', async () => {
+    const enlarged = await createKb({ name: 'Capacity fixture' }, userOneCtx)
+    const ordinary = await createKb(
+      { name: 'Default capacity fixture' },
+      userOneCtx
+    )
+    await prisma.kB.update({
+      where: { id: enlarged.id },
+      data: { storageLimitMiB: 4096 },
+    })
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 90 }, (_, index) => ({
+        kbId: enlarged.id,
+        type: KBResourceType.URL,
+        title: `Synthetic source ${index}`,
+      })),
+    })
+    const metrics = (await getKb({ id: enlarged.id }, userOneCtx)).metrics
+    expect(metrics.storageLimitBytes).toBe(4096 * 1024 * 1024)
+    expect(metrics.quotaSizeBytes).toBe(90 * MAX_KB_SOURCE_SIZE_BYTES)
+    expect(
+      (await getKb({ id: ordinary.id }, userOneCtx)).metrics.storageLimitBytes
+    ).toBe(MAX_KB_TOTAL_SIZE_BYTES)
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic URL',
+          url: 'https://example.com/capacity',
+        },
+        userOneCtx
+      )
+    ).resolves.toBeDefined()
+    await prisma.kB.update({
+      where: { id: enlarged.id },
+      data: { storageLimitMiB: null },
+    })
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic URL',
+          url: 'https://example.com/over-capacity',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
   })
 
   it('returns exact visible, retained, reserved, cleanup, and limit metrics', async () => {
