@@ -190,6 +190,24 @@ export default {
       description:
         'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
       backToManage: 'Zurück zu den Chatbot-Einstellungen',
+      sidebarLabel: 'Vorschaugespräche der Eigentümerin oder des Eigentümers',
+      sidebarTitle: 'Testgespräche',
+      conversationListLabel: 'Liste der Testgespräche',
+      newTestConversation: 'Neue Testkonversation',
+      testConversation: 'Testkonversation {number}',
+      savedSettings: 'Gespeicherte Einstellungen',
+      savedSettingsNotice:
+        'Diese Vorschau startet mit der gespeicherten Chatbot-Konfiguration.',
+      temporarySettings: 'Temporäre Einstellungen',
+      temporarySettingsNotice:
+        'Modell- und Reasoning-Änderungen gelten nur für diese temporäre Konversation.',
+      fixedPolicy: 'Festgelegte Modelleinstellung',
+      fixedPolicyNotice:
+        'Teilnehmende können diese gespeicherte Einstellung nicht ändern.',
+      modelUnavailable: 'Für diesen Chatbot ist kein Modell verfügbar.',
+      toolLimitsTitle: 'Vorschau-Limits',
+      toolLimitsNotice:
+        'Die Vorschau unterstützt nur Dokumentabfragen. Anhänge und andere Tools sind nicht verfügbar.',
       loginTitle: 'Anmeldung für Dozierende erforderlich',
       loginMessage:
         'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
@@ -381,6 +399,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
@@ -1985,6 +2011,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       unavailableTitle: 'KI-Funktionen nicht verfügbar',
       unavailableDescription:
         'Die KI-Funktionen befinden sich in der Beta-Phase und sind für Ihr Konto noch nicht verfügbar. Bitte wenden Sie sich für den Zugang an Ihre Administratorin oder Ihren Administrator.',
+      temporarilyUnavailableTitle:
+        'KI-Funktionen vorübergehend nicht verfügbar',
+      temporarilyUnavailableDescription:
+        'KI-Funktionen sind vorübergehend nicht verfügbar. Bitte versuchen Sie es gleich noch einmal.',
+      retry: 'Erneut versuchen',
     },
     general: {
       qrCode: 'QR Code',
@@ -2417,10 +2448,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
-      betaFeaturesDataUse:
-        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
       betaFeaturesDescription:
-        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+        'Zu den Beta-Features gehört die Erstellung von Chatbots. Ihre Beta-Einstellung ist standardmässig aktiviert und kann hier ausgeschaltet werden. Die Verfügbarkeit einzelner Features und die Freigabe der KI-Nutzung werden separat verwaltet. Beta-Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesSignupClosed:
+        'Neue Beta-Anmeldungen sind derzeit geschlossen. Informationen zu Beta-Features finden Sie weiterhin hier.',
+      betaFeaturesEnrollmentRestricted:
+        'Mit diesem Konto oder dieser Anmeldung kann die Beta-Anmeldung nicht geändert werden. Neue Anmeldungen erfordern Catalyst und vollen Kontozugriff.',
       betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
       betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
       betaFeaturesEnrollment: 'Beta-Anmeldung',
@@ -2429,16 +2462,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesError:
         'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
       betaFeaturesRefreshFailure:
-        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+        'Ihre Beta-Einstellung wurde gespeichert, aber die angezeigten Einstellungen konnten nicht aktualisiert werden. Laden Sie die Seite neu, um den aktuellen Stand zu sehen.',
       betaFeaturesRefreshing:
-        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Die angezeigten Einstellungen werden aktualisiert.',
       betaFeaturesSaved:
-        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Verfügbare Features hängen weiterhin von der Einführung und erforderlichen Freigaben ab.',
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
-        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
+        'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:
@@ -4679,11 +4714,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotMobileSelector: 'Aktueller Chatbot',
       chatbotWorkspaceNavigation: 'Chatbot-Arbeitsbereich',
       chatbotWorkspaceOverview: 'Übersicht',
+      chatbotWorkspaceKnowledge: 'Wissensbasis',
+      chatbotWorkspaceBehavior: 'Verhalten',
+      chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Einrichtung',
       chatbotWorkspaceAdvanced: 'Erweitert',
-      chatbotWorkspaceUsage: 'Nutzung & Integrationen',
+      chatbotWorkspaceUsage: 'Nutzung',
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
+      chatbotWorkspaceBehaviorDescription:
+        'Wählen Sie Lernmodi, Rahmung und die Modellrichtlinie für diesen Chatbot.',
+      chatbotWorkspaceDisclaimerDescription:
+        'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
+      chatbotWorkspaceKnowledgeDescription:
+        'Prüfen Sie die aktive Wissensbasis und öffnen Sie deren Verwaltung. Mehrere Wissensbasen werden in diesem Editor derzeit noch nicht unterstützt.',
+      chatbotKnowledgeSingleActive:
+        'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
+      chatbotKnowledgeEmptyDescription:
+        'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
+      chatbotKnowledgeManagementLink:
+        'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
+      chatbotTechnicalDetails: 'Technische Details',
+      chatbotTechnicalId: 'ID',
+      chatbotTechnicalAvatar: 'Avatar',
+      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
+      chatbotUsageTechnicalIntegrationsDescription:
+        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -4746,6 +4802,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:
         'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
+      chatbotPreviewUnsavedConfirmation:
+        'Diese Vorschau öffnet die zuletzt gespeicherte Chatbot-Konfiguration. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
       chatbotCreatedAt: 'Erstellt',
       chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
@@ -4838,6 +4896,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Disclaimer-Einleitung darf höchstens 10 000 Zeichen enthalten.',
       chatbotDisclaimerIntroEditorPlaceholder:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten.',
+      chatbotDisclaimerSuggestedTitle: 'Über diesen Chatbot',
+      chatbotDisclaimerSuggestedIntro:
+        'Dieser Chatbot dient als Lernhilfe für den verknüpften Kurs. Nutzen Sie seine Antworten zur Unterstützung Ihres Lernens und prüfen Sie wichtige Informationen anhand Ihrer Kursmaterialien.',
+      chatbotDisclaimerSuggestedDescription:
+        'Das aktuelle Feld ist leer. Sie können eine allgemeine vorgeschlagene Einleitung einfügen und vor dem Speichern bearbeiten.',
+      chatbotDisclaimerUseSuggestedText: 'Vorgeschlagenen Text verwenden',
+      chatbotDisclaimerSuggestedUnsaved:
+        'Dieser vorgeschlagene Text ist noch nicht gespeichert. Speichern Sie Ihre Änderungen, damit Teilnehmende ihn verwenden können.',
       saveChatbotDisclaimer: 'Disclaimer speichern',
       chatbotDisclaimerSaveSuccess: 'Chatbot-Disclaimer gespeichert.',
       chatbotDisclaimerSaveError:

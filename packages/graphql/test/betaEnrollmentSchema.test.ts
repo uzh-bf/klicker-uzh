@@ -1,43 +1,57 @@
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import { createYoga } from 'graphql-yoga'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context } from '../src/lib/context.js'
 
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 
-function context({
+function createPrisma() {
+  return {
+    course: {
+      findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+  }
+}
+
+type TestPrisma = ReturnType<typeof createPrisma>
+
+function createContext({
   authenticated = true,
-  catalyst = true,
-  flagEnabled = true,
+  catalystInstitutional = true,
+  catalystIndividual = false,
   scope = UserLoginScope.FULL_ACCESS,
+  prisma = createPrisma(),
 }: {
   authenticated?: boolean
-  catalyst?: boolean
-  flagEnabled?: boolean
+  catalystInstitutional?: boolean
+  catalystIndividual?: boolean
   scope?: UserLoginScope
-} = {}): Context {
-  return {
-    featureFlags: {
-      isEnabled: vi.fn(() => flagEnabled),
-      refresh: vi.fn(async () => undefined),
-    },
-    redisExec: {
-      set: vi.fn(async () => 'OK'),
-      eval: vi.fn(async (script: string) =>
-        script.includes('pttl') ? 8_000 : 1
-      ),
-    },
+  prisma?: TestPrisma
+} = {}) {
+  const ctx = {
+    prisma,
     user: authenticated
       ? {
           sub: USER_ID,
           role: UserRole.USER,
           scope,
-          catalystInstitutional: catalyst,
-          catalystIndividual: false,
+          catalystInstitutional,
+          catalystIndividual,
         }
       : undefined,
   } as unknown as Context
+
+  return { ctx, prisma }
+}
+
+type GraphQLResult = {
+  data?: Record<string, unknown> | null
+  errors?: { extensions?: { code?: string } }[]
 }
 
 async function execute(source: string, ctx: Context) {
@@ -51,65 +65,88 @@ async function execute(source: string, ctx: Context) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ query: source }),
   })
-  return (await response.json()) as {
-    data?: Record<string, unknown>
-    errors?: { message: string }[]
-  }
-}
-
-function savedGroupResponse(values: string[]) {
-  return new Response(
-    JSON.stringify({ savedGroup: { type: 'list', values } }),
-    {
-      status: 200,
-    }
-  )
+  return (await response.json()) as GraphQLResult
 }
 
 describe('beta enrollment schema authorization', () => {
-  const fetchMock = vi.fn()
-
-  beforeEach(() => {
-    process.env.GROWTHBOOK_MANAGEMENT_API_URL = 'https://growthbook.test'
-    process.env.GROWTHBOOK_MANAGEMENT_API_KEY = 'secret_test'
-    process.env.GROWTHBOOK_BETA_SAVED_GROUP_ID = 'group_test'
-    vi.stubGlobal('fetch', fetchMock)
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
-  })
-
   afterEach(() => {
-    delete process.env.GROWTHBOOK_MANAGEMENT_API_URL
-    delete process.env.GROWTHBOOK_MANAGEMENT_API_KEY
-    delete process.env.GROWTHBOOK_BETA_SAVED_GROUP_ID
-    fetchMock.mockReset()
-    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
+  describe.each(['betaEnabled', 'aiFeaturesEnabled'])('%s privacy', (field) => {
+    it.each([
+      'anonymous',
+      'other-user',
+      'participant',
+      'otp',
+      'self',
+    ])('allows only the authenticated owner through the course-owner field: %s', async (actor) => {
+      const { ctx, prisma } = createContext({
+        authenticated: actor !== 'anonymous',
+        scope:
+          actor === 'otp' ? UserLoginScope.OTP : UserLoginScope.FULL_ACCESS,
+      })
+      if (ctx.user && actor === 'other-user') {
+        ctx.user.sub = '00000000-0000-4000-8000-000000000002'
+      }
+      if (ctx.user && actor === 'participant') {
+        ctx.user.role = UserRole.PARTICIPANT
+      }
+      prisma.course.findUnique.mockResolvedValue({
+        owner: { id: USER_ID, betaEnabled: true, aiFeaturesEnabled: false },
+      })
+
+      const result = await execute(
+        `query {
+            basicCourseInformation(courseId: "synthetic-course") {
+              owner { ${field} }
+            }
+          }`,
+        ctx
+      )
+
+      if (actor === 'self') {
+        expect(result.errors).toBeUndefined()
+        expect(result.data).toEqual({
+          basicCourseInformation: {
+            owner: { [field]: field === 'betaEnabled' },
+          },
+        })
+      } else {
+        expect(result.errors).toHaveLength(1)
+        expect(result.data?.basicCourseInformation).toBeNull()
+      }
+    })
+  })
+
   it('rejects an anonymous capability query', async () => {
+    const { ctx } = createContext({ authenticated: false })
+
     const result = await execute(
       `query {
         betaEnrollment { membership }
       }`,
-      context({ authenticated: false })
+      ctx
     )
 
-    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    expect(result.errors).toHaveLength(1)
   })
 
   it.each([
     UserLoginScope.READ_ONLY,
     UserLoginScope.SESSION_EXEC,
-  ])('does not expose membership to %s sessions', async (scope) => {
+  ])('returns an unknown capability without reading for %s sessions', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+
     const result = await execute(
       `query {
-          betaEnrollment {
-            mayChange
-            membership
-            signupAvailable
-          }
-        }`,
-      context({ scope })
+        betaEnrollment {
+          mayChange
+          membership
+          signupAvailable
+        }
+      }`,
+      ctx
     )
 
     expect(result.errors).toBeUndefined()
@@ -120,74 +157,129 @@ describe('beta enrollment schema authorization', () => {
         signupAvailable: true,
       },
     })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    UserLoginScope.READ_ONLY,
-    UserLoginScope.SESSION_EXEC,
-  ])('rejects enrollment changes from %s sessions', async (scope) => {
-    const result = await execute(
-      `mutation {
-          setBetaEnrollment(enabled: true) { membership }
-        }`,
-      context({ scope })
-    )
-
-    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
   })
 
   it.each([
     UserLoginScope.FULL_ACCESS,
     UserLoginScope.ACCOUNT_OWNER,
-  ])('allows enrollment changes from %s sessions', async (scope) => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse([]))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+  ])('reads the persisted capability for %s sessions', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+    prisma.user.findUnique.mockResolvedValue({ betaEnabled: false })
 
     const result = await execute(
-      `mutation {
-          setBetaEnrollment(enabled: true) { membership }
-        }`,
-      context({ scope })
+      `query {
+        betaEnrollment {
+          mayChange
+          membership
+          signupAvailable
+        }
+      }`,
+      ctx
     )
 
     expect(result.errors).toBeUndefined()
     expect(result.data).toEqual({
-      setBetaEnrollment: { membership: true },
+      betaEnrollment: {
+        mayChange: true,
+        membership: false,
+        signupAvailable: true,
+      },
     })
   })
 
   it.each([
-    ['a non-Catalyst caller', { catalyst: false }],
-    ['closed signup', { flagEnabled: false }],
-  ] as const)('rejects opt-in for %s', async (_label, options) => {
-    const result = await execute(
-      `mutation {
-        setBetaEnrollment(enabled: true) { membership }
-      }`,
-      context(options)
-    )
-
-    expect(result.errors?.[0]?.message).toBe('Beta enrollment is not available')
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('keeps opt-out available after signup closes', async () => {
-    fetchMock
-      .mockResolvedValueOnce(savedGroupResponse([USER_ID]))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+    UserLoginScope.FULL_ACCESS,
+    UserLoginScope.ACCOUNT_OWNER,
+  ])('allows preference changes for %s sessions', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+    prisma.user.update.mockResolvedValue({ betaEnabled: true })
 
     const result = await execute(
       `mutation {
-        setBetaEnrollment(enabled: false) { membership }
+        setBetaEnrollment(enabled: true) {
+          mayChange
+          membership
+          signupAvailable
+        }
       }`,
-      context({ catalyst: false, flagEnabled: false })
+      ctx
     )
 
     expect(result.errors).toBeUndefined()
     expect(result.data).toEqual({
-      setBetaEnrollment: { membership: false },
+      setBetaEnrollment: {
+        mayChange: true,
+        membership: true,
+        signupAvailable: true,
+      },
+    })
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      data: { betaEnabled: true },
+      select: { betaEnabled: true },
+    })
+  })
+
+  it.each([
+    UserLoginScope.READ_ONLY,
+    UserLoginScope.SESSION_EXEC,
+  ])('rejects preference changes for %s sessions', async (scope) => {
+    const { ctx, prisma } = createContext({ scope })
+
+    const result = await execute(
+      `mutation {
+        setBetaEnrollment(enabled: true) { membership }
+      }`,
+      ctx
+    )
+
+    expect(result.errors).toHaveLength(1)
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects opt-in without Catalyst with a stable protocol code', async () => {
+    const { ctx, prisma } = createContext({
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    })
+
+    const result = await execute(
+      `mutation {
+        setBetaEnrollment(enabled: true) { membership }
+      }`,
+      ctx
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('FORBIDDEN')
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('allows opt-out without Catalyst for full-access users', async () => {
+    const { ctx, prisma } = createContext({
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    })
+    prisma.user.update.mockResolvedValue({ betaEnabled: false })
+
+    const result = await execute(
+      `mutation {
+        setBetaEnrollment(enabled: false) {
+          mayChange
+          membership
+          signupAvailable
+        }
+      }`,
+      ctx
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      setBetaEnrollment: {
+        mayChange: false,
+        membership: false,
+        signupAvailable: false,
+      },
     })
   })
 })

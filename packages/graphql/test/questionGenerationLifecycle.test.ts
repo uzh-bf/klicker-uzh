@@ -606,6 +606,10 @@ describe('terminal workflow artifact lifecycle', () => {
     await expect(
       getQuestionGenerationBuild(fixtures.buildId, ctx as never)
     ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: fixtures.buildId, syncLeaseOwner: expect.any(String) },
+      data: { syncLeaseOwner: null, syncLeaseUntil: null },
+    })
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -674,6 +678,10 @@ describe('terminal workflow artifact lifecycle', () => {
     await expect(
       getFlashcardGenerationBuild(fixtures.buildId, ctx as never)
     ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: fixtures.buildId, syncLeaseOwner: expect.any(String) },
+      data: { syncLeaseOwner: null, syncLeaseUntil: null },
+    })
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

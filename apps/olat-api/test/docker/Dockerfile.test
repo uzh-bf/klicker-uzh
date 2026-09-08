@@ -11,22 +11,16 @@ RUN echo '#!/bin/bash\n\
   \n\
   echo "Running tests from container..."\n\
   \n\
-  cd /usr/src/app\n\
+  cd "${OLAT_TEST_WORKSPACE:?}"\n\
   \n\
-  # CI already runs pnpm/action-setup on the Linux host before this container starts.\n\
-  # Reinstalling the full workspace here can hang for hours without improving isolation.\n\
-  if [ "${CI:-false}" = "true" ] && [ -d node_modules ]; then\n\
-  echo "Using CI host-installed dependencies from mounted workspace..."\n\
-  else\n\
   echo "Installing dependencies..."\n\
   pnpm install --frozen-lockfile --reporter=append-only\n\
-  fi\n\
   \n\
   # Ensure PostgreSQL is ready\n\
   echo "Waiting for PostgreSQL to be ready..."\n\
   for i in {1..10}; do\n\
   echo "Attempt $i to connect to PostgreSQL..."\n\
-  if pg_isready -h postgres -U postgres; then\n\
+  if pg_isready -h postgres -U klicker -d klicker-prod; then\n\
   echo "PostgreSQL is ready!"\n\
   break\n\
   fi\n\
@@ -40,17 +34,17 @@ RUN echo '#!/bin/bash\n\
   \n\
   # Build the types package\n\
   echo "Building types package..."\n\
-  cd /usr/src/app/packages/types\n\
+  cd "$OLAT_TEST_WORKSPACE/packages/types"\n\
   pnpm run build\n\
   \n\
   # Build the utils package\n\
   echo "Building util package..."\n\
-  cd /usr/src/app/packages/util\n\
+  cd "$OLAT_TEST_WORKSPACE/packages/util"\n\
   pnpm run build\n\
   \n\
   # Setup Prisma\n\
   echo "Setting up Prisma..."\n\
-  cd /usr/src/app/packages/prisma\n\
+  cd "$OLAT_TEST_WORKSPACE/packages/prisma"\n\
   echo "Current directory: $(pwd)"\n\
   \n\
   # Build the prisma package first\n\
@@ -63,7 +57,7 @@ RUN echo '#!/bin/bash\n\
   \n\
   # Run tests\n\
   echo "Running tests..."\n\
-  cd /usr/src/app/apps/olat-api\n\
+  cd "$OLAT_TEST_WORKSPACE/apps/olat-api"\n\
   pnpm run build\n\
   DATABASE_URL=$DATABASE_URL OLAT_API_KEY=$OLAT_API_KEY pnpm vitest run --reporter=verbose\n\
   \n\

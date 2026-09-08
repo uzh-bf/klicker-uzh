@@ -85,6 +85,12 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ## Progress
 
+### Target update authorized on 2026-09-08
+
+The user explicitly authorized another target integration after the baseline browser fixes landed. This supersedes the earlier no-further-integration checkpoint. The integrated target is `9f805e9e55dfc2b318ea2e0a27cab39b23abaa71` on `origin/v3-ai`, including the feature-access and header repair in PR #5808. Seven conflicts preserve saved preview model policy, capture receipts, source lineage, and the upstream Knowledge/Behavior layout. New capture links open Knowledge with the response-example accordion expanded and the candidate focused.
+
+Fresh verification passes: 81 focused Chat tests, Chat and Manage type checks, staged formatting, repository lints, and the 15 host Devrouter profile tests. The combined container check stops on a host-only Devrouter check; that check passes separately on the host. Local browser verification is pending host dependency reconciliation. The prior source review applies only to unchanged content; integration review and exact-head CI remain required. Merge, deployment, and live activation remain withheld.
+
 ### Compatibility follow-up authorized on 2026-09-06
 
 Source review is complete at `488fc4126da469e1558a2c3e40cedd676cc1afe7`: the same final reviewer returns `DONE` with no remaining findings across the complete package, reusing unchanged evidence and reviewing the bounded mode correction. Final managed shutdown succeeds; the exact container reports `exited` and the workspace has zero routes. All predecessor findings are resolved. The reviewed branch is published and the existing PR description is refreshed. Exact-head CI and final AI review remain pending before PR-ready. Merge, deployment, and live activation remain withheld.

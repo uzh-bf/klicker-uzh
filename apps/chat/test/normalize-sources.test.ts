@@ -9,6 +9,109 @@ function toolCallPart(toolName: string, result: unknown, isError = false) {
   return { type: 'tool-call', toolName, result, isError }
 }
 
+describe('resource citation provenance', () => {
+  test('keeps distinct answer-mode uploads while deduplicating repeated sources', () => {
+    const sources = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        sources: ['first', 'second', 'first'].map((resource) => ({
+          source_url: `https://api.example.org/api/ingestion/resources/${resource}/versions/1`,
+          file_name: 'Shared title',
+          page_number: 2,
+        })),
+      }),
+    ])
+    expect(sources).toHaveLength(2)
+    expect(new Set(sources.map((source) => source.id)).size).toBe(2)
+    expect(sources.map((source) => source.index)).toEqual([1, 2])
+    expect(sources.every((source) => source.url === undefined)).toBe(true)
+  })
+
+  test('keeps same-title non-link resources distinct', () => {
+    const sources = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: ['urn:source:first', 'urn:source:second'].map((reference) => ({
+          reference,
+          title: 'Shared title',
+          chunks: [],
+        })),
+      }),
+    ])
+    expect(sources).toHaveLength(2)
+    expect(new Set(sources.map((source) => source.id)).size).toBe(2)
+    expect(sources.every((source) => source.url === undefined)).toBe(true)
+  })
+
+  test.each([
+    'https://example.org/course?lang=en#overview',
+    'https://example.org/material.pdf?edition=2#page=4',
+  ])('preserves the original linked URL %s', (reference) => {
+    const sources = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [{ reference, display_name: 'Course material', chunks: [] }],
+      }),
+    ])
+    expect(sources).toHaveLength(1)
+    expect(sources[0]).toMatchObject({
+      title: 'Course material',
+      url: reference,
+    })
+  })
+
+  test.each([
+    'http://backend.stg.svc.cluster.local:3000/api/ingestion/resources/item/versions/3',
+    'http://backend.stg.svc:3000/document',
+    'https://api.example.org/api/ingestion/resources/item/versions/3',
+  ])('renders a named ingestion source without a link: %s', (reference) => {
+    const sources = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [{ reference, title: 'Uploaded material', chunks: [] }],
+      }),
+    ])
+    expect(sources).toHaveLength(1)
+    expect(sources[0]?.title).toBe('Uploaded material')
+    expect(sources[0]?.url).toBeUndefined()
+  })
+
+  test('does not turn an unnamed ingestion version into a source title', () => {
+    expect(
+      normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          mode: 'documents',
+          sources: [
+            {
+              reference:
+                'https://api.example.org/api/ingestion/resources/item/versions/3',
+              chunks: [],
+            },
+          ],
+        }),
+      ])
+    ).toEqual([])
+  })
+
+  test('also suppresses ingestion links in persisted answer-mode payloads', () => {
+    const sources = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        sources: [
+          {
+            source_url:
+              'https://api.example.org/api/ingestion/resources/item/versions/3',
+            file_name: 'Uploaded material.pdf',
+            display_name: 'Accepted source name',
+            source_type: 'pdf',
+          },
+        ],
+      }),
+    ])
+    expect(sources).toHaveLength(1)
+    expect(sources[0]?.title).toBe('Accepted source name')
+    expect(sources[0]?.url).toBeUndefined()
+  })
+})
+
 describe('isDocQueryToolName', () => {
   test('matches the MCP-namespaced tool name', () => {
     expect(isDocQueryToolName('KB_doc_query')).toBe(true)
@@ -172,7 +275,7 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toEqual([
       {
-        id: 'title:Lecture 02|5|5',
+        id: 'url:lecture-02.pdf|5|5',
         index: 1,
         type: 'document',
         title: 'Lecture 02',

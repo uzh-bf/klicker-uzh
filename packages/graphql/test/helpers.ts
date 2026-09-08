@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   type AnswerCollection,
   type CatalogCollection,
@@ -90,6 +90,7 @@ export async function testInitialization(
   hatchet: Hatchet,
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
+  await requireDisposableDatabase(prisma)
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -361,6 +362,7 @@ export async function testInitialization(
     prisma,
     featureFlags: {
       isEnabled: vi.fn((key) => key === 'ai-beta'),
+      getAiBetaDecision: vi.fn(() => 'enabled' as const),
       refresh: vi.fn(async () => undefined),
     },
     hatchet,
@@ -410,6 +412,7 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  await requireDisposableDatabase(prisma)
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
@@ -440,20 +443,17 @@ export async function testCleanup(prisma: PrismaClient) {
 }
 
 // setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
+// Tests require an explicit disposable database; there is no retained-data fallback.
 export function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  process.env.DATABASE_URL =
-    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  if (!process.env.DATABASE_URL)
+    throw new Error('DATABASE_URL is required for tests')
+  return process.env.DATABASE_URL
 }
 
 export async function initializePrisma() {
   // configure database
   getDatabaseUrl()
+  await requireDisposableDatabase(prisma)
 
   try {
     // create EventEmitter for test context

@@ -8,7 +8,10 @@ export const DOC_QUERY_TARGET_DESCRIPTION =
 export const DOC_QUERY_TARGET_URL =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker' as const
 export const DOC_QUERY_TARGET_SCOPE = 'prd-klicker' as const
+const DOC_QUERY_COMPATIBILITY_SERVER_NAME = 'Klicker-compat' as const
 export const COHORT_ACTIVATION_RECEIPT_VERSION = 1 as const
+export const COHORT_ACTIVATION_INACTIVE_SOURCE_ROLLBACK_MODE =
+  'preserve-inactive' as const
 /** Name of the explicit, values-free approval pin supplied to the runner. */
 export const COHORT_ACTIVATION_MANIFEST_FINGERPRINT_ENV =
   'DOC_QUERY_COHORT_ACTIVATION_MANIFEST_FINGERPRINT' as const
@@ -152,6 +155,19 @@ export type CohortActivationTargetContract = {
   url: string
 }
 
+export type CohortActivationInactiveSource = {
+  sourceServerId: string
+  chatbotId: string
+  configIds: string[]
+  snapshotDigest: string
+  rollbackMode: typeof COHORT_ACTIVATION_INACTIVE_SOURCE_ROLLBACK_MODE
+}
+
+export type CohortActivationActiveSource = Omit<
+  CohortActivationInactiveSource,
+  'rollbackMode'
+> & { rollbackMode: 'preserve-active' }
+
 export type CohortActivationManifestEntry = {
   configId: string
   chatbotId: string
@@ -174,6 +190,8 @@ export type CohortActivationManifest = {
   target: CohortActivationTargetContract
   entries: CohortActivationManifestEntry[]
   heldConfigIds: string[]
+  inactiveSource?: CohortActivationInactiveSource
+  activeSources?: CohortActivationActiveSource[]
   /** Canonical exclusion names are required; this alias eases handoff parsing. */
   excludedCorpora?: string[]
   exclusions?: string[]
@@ -211,17 +229,25 @@ export type CohortActivationReceiptState =
   | 'rolling_back'
   | 'rolled_back'
 
+export type CohortActivationReentryLineage = {
+  predecessorPayloadDigest: string
+  claimDigest: string
+}
+
 export type CohortActivationReceipt = {
   receiptVersion: typeof COHORT_ACTIVATION_RECEIPT_VERSION
   manifestFingerprint: string
   target: CohortActivationTargetContract
   targetServer: SafeServerSnapshot
   heldConfigIds: string[]
+  inactiveSource?: CohortActivationInactiveSource
+  activeSources?: CohortActivationActiveSource[]
   excludedCorpora: string[]
   excludedConfigIds: string[]
   entries: CohortActivationReceiptEntry[]
   switchedChatbotIds: string[]
   state: CohortActivationReceiptState
+  reentry?: CohortActivationReentryLineage
   payloadDigest: string
 }
 
@@ -233,9 +259,12 @@ export type CohortActivationReceiptIntent = {
   targetServerId: string | null
   targetConfigIds: Record<string, string>
   heldConfigIds: string[]
+  inactiveSource?: CohortActivationInactiveSource
+  activeSources?: CohortActivationActiveSource[]
   excludedCorpora: string[]
   excludedConfigIds: string[]
   state: 'preparing'
+  reentry?: CohortActivationReentryLineage
   payloadDigest: string
 }
 
@@ -247,6 +276,9 @@ export type CohortActivationReceiptExpectation = {
   manifestFingerprint: string
   payloadDigest: string
   state: CohortActivationReceiptFile['state']
+  inactiveSource?: CohortActivationInactiveSource
+  activeSources?: CohortActivationActiveSource[]
+  reentry?: CohortActivationReentryLineage
 } | null
 
 export type CohortActivationPrepareOptions = {
@@ -296,6 +328,12 @@ function compareStrings(left: string, right: string): number {
   return left.localeCompare(right)
 }
 
+function trimTrailingSlashes(pathname: string): string {
+  let end = pathname.length
+  while (end > 0 && pathname[end - 1] === '/') end -= 1
+  return pathname.slice(0, end)
+}
+
 function cloneJson(value: JsonValue): JsonValue {
   if (value === null || typeof value !== 'object') return value
   return structuredClone(value)
@@ -339,6 +377,189 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function isSha256(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{64}$/i.test(value)
+}
+
+function canonicalSourcePin<
+  Mode extends 'preserve-inactive' | 'preserve-active',
+>(
+  value: unknown,
+  rollbackMode: Mode,
+  field: string,
+  invalidCode: 'INVALID_MANIFEST' | 'RECEIPT_INVALID' = 'INVALID_MANIFEST'
+): Omit<CohortActivationInactiveSource, 'rollbackMode'> & {
+  rollbackMode: Mode
+} {
+  const fields = [
+    'sourceServerId',
+    'chatbotId',
+    'configIds',
+    'snapshotDigest',
+    'rollbackMode',
+  ] as const
+  if (
+    !isRecord(value) ||
+    Object.keys(value).length !== fields.length ||
+    fields.some((field) => !Object.hasOwn(value, field))
+  ) {
+    fail(invalidCode, 'source exception is malformed')
+  }
+  const sourceServerId = normalizeUuid(
+    value.sourceServerId as string,
+    `${field}.sourceServerId`
+  )
+  const chatbotId = normalizeUuid(
+    value.chatbotId as string,
+    `${field}.chatbotId`
+  )
+  if (!Array.isArray(value.configIds) || value.configIds.length !== 2) {
+    fail(invalidCode, 'source exception must contain exactly two config ids')
+  }
+  const configIds = value.configIds.map((configId) =>
+    normalizeUuid(configId as string, `${field}.configIds`)
+  )
+  if (new Set(configIds).size !== configIds.length) {
+    fail(invalidCode, 'source exception config ids must be distinct')
+  }
+  if (!isSha256(value.snapshotDigest)) {
+    fail(invalidCode, 'source exception snapshot digest is malformed')
+  }
+  if (value.rollbackMode !== rollbackMode) {
+    fail(invalidCode, 'source exception rollback mode is malformed')
+  }
+  configIds.sort(compareStrings)
+  return {
+    sourceServerId,
+    chatbotId,
+    configIds,
+    snapshotDigest: value.snapshotDigest.toLowerCase(),
+    rollbackMode: rollbackMode,
+  }
+}
+
+function canonicalInactiveSource(
+  value: unknown,
+  invalidCode: 'INVALID_MANIFEST' | 'RECEIPT_INVALID' = 'INVALID_MANIFEST'
+): CohortActivationInactiveSource | undefined {
+  return value === undefined
+    ? undefined
+    : canonicalSourcePin(
+        value,
+        COHORT_ACTIVATION_INACTIVE_SOURCE_ROLLBACK_MODE,
+        'inactiveSource',
+        invalidCode
+      )
+}
+
+function canonicalActiveSources(
+  value: unknown,
+  invalidCode: 'INVALID_MANIFEST' | 'RECEIPT_INVALID' = 'INVALID_MANIFEST'
+): CohortActivationActiveSource[] | undefined {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value) || value.length !== 2) {
+    fail(invalidCode, 'active sources must contain exactly two source pins')
+  }
+  const pins = value
+    .map((item) =>
+      canonicalSourcePin(item, 'preserve-active', 'activeSources', invalidCode)
+    )
+    .sort((left, right) =>
+      compareStrings(left.sourceServerId, right.sourceServerId)
+    )
+  assertSourcePinSeparation(undefined, pins)
+  return pins
+}
+
+function assertSourcePinSeparation(
+  inactive: CohortActivationInactiveSource | undefined,
+  active: CohortActivationActiveSource[] | undefined
+): void {
+  const pins = [...(inactive ? [inactive] : []), ...(active ?? [])]
+  const sourceIds = pins.map((pin) => pin.sourceServerId)
+  const configIds = pins.flatMap((pin) => pin.configIds)
+  if (
+    new Set(sourceIds).size !== sourceIds.length ||
+    new Set(configIds).size !== configIds.length
+  ) {
+    fail('INVALID_MANIFEST', 'source exceptions overlap')
+  }
+}
+
+function activeSourcesEqual(
+  left: CohortActivationActiveSource[] | undefined,
+  right: CohortActivationActiveSource[] | undefined
+): boolean {
+  return (
+    JSON.stringify(canonicalActiveSources(left)) ===
+    JSON.stringify(canonicalActiveSources(right))
+  )
+}
+
+function activeSourceFields(value: CohortActivationActiveSource[] | undefined) {
+  const activeSources = canonicalActiveSources(value)
+  return activeSources ? { activeSources } : {}
+}
+
+function inactiveSourceEqual(
+  left: CohortActivationInactiveSource | undefined,
+  right: CohortActivationInactiveSource | undefined
+): boolean {
+  return (
+    JSON.stringify(canonicalInactiveSource(left)) ===
+    JSON.stringify(canonicalInactiveSource(right))
+  )
+}
+
+function inactiveSourceFields(
+  value: CohortActivationInactiveSource | undefined
+) {
+  const inactiveSource = canonicalInactiveSource(value)
+  return inactiveSource ? { inactiveSource } : {}
+}
+
+function canonicalJson(value: JsonValue): string {
+  if (value === null || typeof value !== 'object') {
+    const encoded = JSON.stringify(value)
+    if (encoded === undefined) fail('INVALID_MANIFEST', 'value is not JSON')
+    return encoded
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJson(item)).join(',')}]`
+  }
+  const record = value as { [key: string]: JsonValue }
+  return `{${Object.keys(record)
+    .sort(compareStrings)
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key]!)}`)
+    .join(',')}}`
+}
+
+function validateReentryLineage(
+  lineage: unknown
+): asserts lineage is CohortActivationReentryLineage {
+  if (
+    !isRecord(lineage) ||
+    !isSha256(lineage.predecessorPayloadDigest) ||
+    !isSha256(lineage.claimDigest) ||
+    Object.keys(lineage).length !== 2
+  ) {
+    fail(
+      'REENTRY_LINEAGE_INVALID',
+      'cohortActivation re-entry lineage is malformed'
+    )
+  }
+}
+
+function reentryLineageEqual(
+  left: CohortActivationReentryLineage | undefined,
+  right: CohortActivationReentryLineage | undefined
+): boolean {
+  return (
+    left?.predecessorPayloadDigest === right?.predecessorPayloadDigest &&
+    left?.claimDigest === right?.claimDigest
+  )
+}
+
 function normalizeUuid(value: string, field: string): string {
   assertUuid(value, field)
   return value.toLowerCase()
@@ -366,6 +587,20 @@ function isEmptyJsonObject(value: JsonValue): boolean {
   )
 }
 
+function isSafeSourceParameters(value: JsonValue): boolean {
+  if (value === null || isEmptyJsonObject(value)) return true
+  if (typeof value !== 'object' || Array.isArray(value)) return false
+
+  const keys = Object.keys(value)
+  return (
+    keys.length === 2 &&
+    Object.hasOwn(value, 'required') &&
+    Object.hasOwn(value, 'toolAlias') &&
+    value.required === true &&
+    value.toolAlias === DOC_QUERY_TOOL_ALIAS
+  )
+}
+
 function isSafeSourceAllowedTools(value: JsonValue): boolean {
   if (value === null) return true
   if (!Array.isArray(value)) return false
@@ -381,7 +616,7 @@ function assertSafeSourceReceiptFields(
   allowedTools: JsonValue,
   parameters: JsonValue
 ): void {
-  if (parameters !== null && !isEmptyJsonObject(parameters)) {
+  if (!isSafeSourceParameters(parameters)) {
     fail(
       'SOURCE_SHAPE_UNSUPPORTED',
       'source parameters are not safe to persist in a receipt'
@@ -399,6 +634,46 @@ function assertSafeSourceReceiptShape(
   config: CohortActivationConfigRecord
 ): void {
   assertSafeSourceReceiptFields(config.allowedTools, config.parameters)
+}
+
+function isPinnedCompatibilitySource(
+  server: CohortActivationServerRecord,
+  target: CohortActivationTargetContract
+): boolean {
+  return (
+    server.name === DOC_QUERY_COMPATIBILITY_SERVER_NAME &&
+    typeof server.description === 'string' &&
+    server.description.trim().length > 0 &&
+    server.description.trim() !== DOC_QUERY_TARGET_DESCRIPTION &&
+    server.url === target.url &&
+    server.authType === 'bearer' &&
+    server.passChatbotId === true &&
+    server.chatbotIdHeader === 'Chatbot-ID' &&
+    isEmptyJsonObject(server.parameters) &&
+    server.hasAuthSecret === true &&
+    server.isActive === true
+  )
+}
+
+function assertEligibleSourceServer(
+  server: CohortActivationServerRecord | null,
+  target: CohortActivationTargetContract,
+  inactiveSource?: CohortActivationInactiveSource,
+  activeSources?: CohortActivationActiveSource[]
+): void {
+  if (!server) {
+    fail('SOURCE_SERVER_MISSING', 'source server is missing')
+  }
+  const isPinnedInactiveSource =
+    inactiveSource?.sourceServerId === server.id.toLowerCase()
+  if (!server.isActive && !isPinnedInactiveSource) {
+    fail('SOURCE_SERVER_INACTIVE', 'source server is inactive')
+  }
+  const activePin = activeSources?.find(
+    (pin) => pin.sourceServerId === server.id.toLowerCase()
+  )
+  if (activePin) assertActiveSourceSnapshot(server, target, activePin)
+  else assertSourceServerRoute(server, target)
 }
 
 function snapshotConfig(
@@ -433,6 +708,14 @@ function snapshotServer(
     isActive: server.isActive,
     updatedAt: server.updatedAt.toISOString(),
   }
+}
+
+export function fingerprintSourceServerSnapshot(
+  server: CohortActivationServerRecord
+): string {
+  return createHash('sha256')
+    .update(canonicalJson(snapshotServer(server)))
+    .digest('hex')
 }
 
 function configContentEqual(
@@ -569,6 +852,7 @@ function entryTargetTool(entry: CohortActivationManifestEntry): string {
 function canonicalManifest(
   manifest: Omit<CohortActivationManifest, 'fingerprint'>
 ) {
+  const inactiveSource = canonicalInactiveSource(manifest.inactiveSource)
   return {
     target: manifest.target,
     entries: [...manifest.entries]
@@ -589,6 +873,8 @@ function canonicalManifest(
     heldConfigIds: [...manifest.heldConfigIds].sort(compareStrings),
     excludedCorpora: canonicalExclusionValues(manifest),
     excludedConfigIds: canonicalExcludedConfigIds(manifest),
+    ...(inactiveSource ? { inactiveSource } : {}),
+    ...activeSourceFields(manifest.activeSources),
   }
 }
 
@@ -613,7 +899,7 @@ function canonicalExclusionValues(
 }
 
 function canonicalExcludedConfigIds(
-  manifest: CohortActivationManifest
+  manifest: Pick<CohortActivationManifest, 'excludedConfigIds'>
 ): string[] {
   return excludedConfigValues(manifest)
     .map((value) => normalizeUuid(value, 'excludedConfigIds'))
@@ -682,11 +968,14 @@ function makeReceiptFrom(
     target: receipt.target,
     targetServer: receipt.targetServer,
     heldConfigIds: receipt.heldConfigIds,
+    ...inactiveSourceFields(receipt.inactiveSource),
+    ...activeSourceFields(receipt.activeSources),
     excludedCorpora: receipt.excludedCorpora,
     excludedConfigIds: receipt.excludedConfigIds,
     entries: input.entries,
     switchedChatbotIds: input.switchedChatbotIds,
     state: input.state,
+    ...(receipt.reentry ? { reentry: receipt.reentry } : {}),
   })
 }
 
@@ -831,6 +1120,213 @@ function validateExcludedConfigIds(
   }
 }
 
+function assertPinnedSourceManifest(
+  manifest: CohortActivationManifest,
+  pin: CohortActivationInactiveSource | CohortActivationActiveSource,
+  held: Set<string>
+): void {
+  const excluded = new Set(canonicalExcludedConfigIds(manifest))
+  if (
+    pin.configIds.some(
+      (configId) => held.has(configId) || excluded.has(configId)
+    )
+  ) {
+    fail(
+      pin.rollbackMode === 'preserve-inactive'
+        ? 'INACTIVE_SOURCE_OVERLAP'
+        : 'ACTIVE_SOURCE_OVERLAP',
+      'pinned source configs overlap a held or excluded config'
+    )
+  }
+
+  const sourceEntries = manifest.entries.filter(
+    (entry) =>
+      normalizeUuid(entry.sourceServerId, 'entry.sourceServerId') ===
+      pin.sourceServerId
+  )
+  const matchingEntries = sourceEntries.filter(
+    (entry) =>
+      normalizeUuid(entry.chatbotId, 'entry.chatbotId') === pin.chatbotId
+  )
+  const manifestConfigIds = matchingEntries
+    .map((entry) => normalizeUuid(entry.configId, 'entry.configId'))
+    .sort(compareStrings)
+  if (
+    sourceEntries.length !== pin.configIds.length ||
+    matchingEntries.length !== pin.configIds.length ||
+    manifestConfigIds.some(
+      (configId, index) => configId !== pin.configIds[index]
+    )
+  ) {
+    fail(
+      pin.rollbackMode === 'preserve-inactive'
+        ? 'INACTIVE_SOURCE_INVENTORY_MISMATCH'
+        : 'ACTIVE_SOURCE_INVENTORY_MISMATCH',
+      'pinned source config ids do not exactly match the manifest'
+    )
+  }
+}
+
+function assertSourceServerRoute(
+  server: CohortActivationServerRecord,
+  target: CohortActivationTargetContract
+): void {
+  const requiresCompatibilityContract =
+    server.name === DOC_QUERY_COMPATIBILITY_SERVER_NAME ||
+    server.url === target.url ||
+    server.url.endsWith(DOC_QUERY_ROUTE_PATH)
+  if (
+    requiresCompatibilityContract &&
+    !isPinnedCompatibilitySource(server, target)
+  ) {
+    fail(
+      'SOURCE_IS_TARGET',
+      'source does not match the pinned compatibility server contract'
+    )
+  }
+}
+
+function assertInactiveSourceSnapshot(
+  server: CohortActivationServerRecord,
+  target: CohortActivationTargetContract,
+  inactiveSource: CohortActivationInactiveSource
+): void {
+  if (server.id.toLowerCase() !== inactiveSource.sourceServerId) {
+    fail(
+      'INACTIVE_SOURCE_ID_MISMATCH',
+      'inactive source server does not match the pinned identity'
+    )
+  }
+  if (server.isActive) {
+    fail('INACTIVE_SOURCE_ACTIVE', 'inactive source server is active')
+  }
+  if (
+    server.name === target.serverName ||
+    server.description?.trim() === DOC_QUERY_TARGET_DESCRIPTION ||
+    trimTrailingSlashes(new URL(server.url).pathname) === target.routePath
+  ) {
+    fail('SOURCE_IS_TARGET', 'inactive source is a managed or shared target')
+  }
+  assertSourceServerRoute(server, target)
+  if (
+    fingerprintSourceServerSnapshot(server) !== inactiveSource.snapshotDigest
+  ) {
+    fail(
+      'INACTIVE_SOURCE_SNAPSHOT_MISMATCH',
+      'inactive source server differs from the pinned safe snapshot'
+    )
+  }
+}
+
+function assertActiveSourceSnapshot(
+  server: CohortActivationServerRecord,
+  target: CohortActivationTargetContract,
+  pin: CohortActivationActiveSource
+): void {
+  if (!server.isActive)
+    fail('ACTIVE_SOURCE_INACTIVE', 'pinned active source is inactive')
+  if (
+    server.id.toLowerCase() !== pin.sourceServerId ||
+    server.url !== target.url ||
+    server.name === target.serverName ||
+    server.description?.trim() === DOC_QUERY_TARGET_DESCRIPTION ||
+    server.name === DOC_QUERY_COMPATIBILITY_SERVER_NAME ||
+    server.authType !== 'bearer' ||
+    !server.hasAuthSecret ||
+    server.passChatbotId !== false ||
+    (server.parameters !== null && !isEmptyJsonObject(server.parameters))
+  ) {
+    fail(
+      'ACTIVE_SOURCE_CONTRACT_MISMATCH',
+      'active source differs from the pinned alias contract'
+    )
+  }
+  if (fingerprintSourceServerSnapshot(server) !== pin.snapshotDigest) {
+    fail(
+      'ACTIVE_SOURCE_SNAPSHOT_MISMATCH',
+      'active source differs from the pinned safe snapshot'
+    )
+  }
+}
+
+type CohortActivationSourceValidationInput = Pick<
+  CohortActivationManifest,
+  | 'target'
+  | 'entries'
+  | 'heldConfigIds'
+  | 'excludedConfigIds'
+  | 'inactiveSource'
+  | 'activeSources'
+>
+
+async function assertSourceExceptionsState(
+  tx: CohortActivationTransactionStore,
+  manifest: CohortActivationSourceValidationInput
+): Promise<void> {
+  const inactive = canonicalInactiveSource(manifest.inactiveSource)
+  if (inactive) {
+    const server = await tx.findServerById(inactive.sourceServerId)
+    if (!server)
+      fail('SOURCE_SERVER_MISSING', 'inactive source server is missing')
+    assertInactiveSourceSnapshot(server, manifest.target, inactive)
+    await assertPinnedSourceInventory(tx, manifest, inactive)
+  }
+  for (const pin of canonicalActiveSources(manifest.activeSources) ?? []) {
+    const server = await tx.findServerById(pin.sourceServerId)
+    if (!server)
+      fail('SOURCE_SERVER_MISSING', 'active source server is missing')
+    assertActiveSourceSnapshot(server, manifest.target, pin)
+    await assertPinnedSourceInventory(tx, manifest, pin)
+  }
+}
+
+async function assertPinnedSourceInventory(
+  tx: CohortActivationTransactionStore,
+  manifest: CohortActivationSourceValidationInput,
+  pin: CohortActivationInactiveSource | CohortActivationActiveSource
+): Promise<void> {
+  const sourceConfigs = await tx.findConfigsByServerId(pin.sourceServerId)
+  const expectedConfigIds = new Set(pin.configIds)
+  const manifestEntries = new Map(
+    manifest.entries.map((entry) => [
+      normalizeUuid(entry.configId, 'entry.configId'),
+      entry,
+    ])
+  )
+  const actualConfigIds = sourceConfigs.map((config) =>
+    normalizeUuid(config.id, 'pin.configIds')
+  )
+  if (
+    actualConfigIds.length !== expectedConfigIds.size ||
+    new Set(actualConfigIds).size !== actualConfigIds.length ||
+    actualConfigIds.some((configId) => !expectedConfigIds.has(configId)) ||
+    sourceConfigs.some((config) => {
+      const configId = normalizeUuid(config.id, 'pin.configIds')
+      const entry = manifestEntries.get(configId)
+      return (
+        !entry ||
+        normalizeUuid(config.chatbotId, 'pin.chatbotId') !== pin.chatbotId ||
+        config.chatMode !== entry.chatMode ||
+        normalizeUuid(config.mcpServerId, 'pin.sourceServerId') !==
+          pin.sourceServerId ||
+        normalizeUuid(entry.sourceServerId, 'entry.sourceServerId') !==
+          pin.sourceServerId ||
+        normalizeUuid(entry.chatbotId, 'entry.chatbotId') !== pin.chatbotId
+      )
+    })
+  ) {
+    fail(
+      pin.rollbackMode === 'preserve-inactive'
+        ? 'INACTIVE_SOURCE_INVENTORY_MISMATCH'
+        : 'ACTIVE_SOURCE_INVENTORY_MISMATCH',
+      'pinned source inventory does not contain exactly the pinned configs'
+    )
+  }
+  for (const config of sourceConfigs) {
+    assertSafeSourceReceiptShape(config)
+  }
+}
+
 export function validateManifest(manifest: CohortActivationManifest): void {
   assertManifestShape(manifest)
   assertNamedExclusions(manifest)
@@ -838,6 +1334,15 @@ export function validateManifest(manifest: CohortActivationManifest): void {
   const held = validateHeldConfigIds(manifest, configIds)
   validateExcludedConfigIds(manifest, configIds, held)
   assertCorpusOwnership(manifest)
+  const inactiveSource = canonicalInactiveSource(manifest.inactiveSource)
+  if (inactiveSource) {
+    assertPinnedSourceManifest(manifest, inactiveSource, held)
+  }
+
+  const activeSources = canonicalActiveSources(manifest.activeSources)
+  assertSourcePinSeparation(inactiveSource, activeSources)
+  for (const pin of activeSources ?? [])
+    assertPinnedSourceManifest(manifest, pin, held)
 
   const expectedFingerprint = fingerprintManifest(manifest)
   if (manifest.fingerprint !== expectedFingerprint) {
@@ -865,6 +1370,15 @@ export function assertReceiptMatchesManifest(
   manifest: CohortActivationManifest
 ): void {
   validateReceipt(receipt)
+  if (
+    !inactiveSourceEqual(receipt.inactiveSource, manifest.inactiveSource) ||
+    !activeSourcesEqual(receipt.activeSources, manifest.activeSources)
+  ) {
+    fail(
+      'RECEIPT_MANIFEST_MISMATCH',
+      'receipt source exceptions differ from manifest'
+    )
+  }
   if (receipt.manifestFingerprint !== manifest.fingerprint) {
     fail('RECEIPT_MANIFEST_MISMATCH', 'receipt does not match the manifest')
   }
@@ -1002,7 +1516,10 @@ async function assertTargetConfigAvailable(
 
 async function assertCompleteModeCoverage(
   tx: CohortActivationTransactionStore,
-  manifest: CohortActivationManifest
+  manifest: Pick<
+    CohortActivationManifest,
+    'entries' | 'heldConfigIds' | 'excludedConfigIds'
+  >
 ): Promise<void> {
   const held = new Set(
     manifest.heldConfigIds.map((id) => normalizeUuid(id, 'heldConfigIds'))
@@ -1050,6 +1567,7 @@ async function readSourceEntries(
 ): Promise<
   Array<{ manifest: CohortActivationManifestEntry; prior: SafeConfigSnapshot }>
 > {
+  await assertSourceExceptionsState(tx, manifest)
   const entries: Array<{
     manifest: CohortActivationManifestEntry
     prior: SafeConfigSnapshot
@@ -1066,24 +1584,92 @@ async function readSourceEntries(
       fail('SOURCE_MISMATCH', 'source config no longer matches manifest')
     }
     const sourceServer = await tx.findServerById(entry.sourceServerId)
-    if (!sourceServer) fail('SOURCE_SERVER_MISSING', 'source server is missing')
-    if (!sourceServer.isActive) {
-      fail('SOURCE_SERVER_INACTIVE', 'source server is inactive')
-    }
+    assertEligibleSourceServer(
+      sourceServer,
+      manifest.target,
+      canonicalInactiveSource(manifest.inactiveSource),
+      canonicalActiveSources(manifest.activeSources)
+    )
     assertSafeSourceReceiptShape(source)
-    if (
-      sourceServer.url === manifest.target.url ||
-      sourceServer.url.endsWith(DOC_QUERY_ROUTE_PATH)
-    ) {
-      fail(
-        'SOURCE_IS_TARGET',
-        'test-route source cannot enter this cohortActivation'
-      )
-    }
     entries.push({ manifest: entry, prior: snapshotConfig(source) })
   }
   await assertCompleteModeCoverage(tx, manifest)
   return entries
+}
+
+type ReentryPreparedState = {
+  targetServer: SafeServerSnapshot
+  entries: CohortActivationReceiptEntry[]
+}
+
+async function readReentryPreparedState(
+  tx: CohortActivationTransactionStore,
+  manifest: CohortActivationManifest,
+  predecessor: CohortActivationReceipt
+): Promise<ReentryPreparedState> {
+  const sourceEntries = await readSourceEntries(tx, manifest)
+  const targetServer = await tx.findServerById(predecessor.targetServer.id)
+  const targetByName = await tx.findServerByName(manifest.target.serverName)
+  if (
+    !targetServer ||
+    !targetByName ||
+    targetByName.id.toLowerCase() !== targetServer.id.toLowerCase() ||
+    !serverSnapshotEqual(targetServer, predecessor.targetServer) ||
+    !serverSnapshotEqual(targetByName, predecessor.targetServer)
+  ) {
+    fail('TARGET_SERVER_DRIFT', 'target server changed before re-entry')
+  }
+  assertTargetServer(targetServer, manifest.target)
+
+  const predecessorEntries = new Map(
+    predecessor.entries.map((item) => [item.manifest.configId, item])
+  )
+  const entries: CohortActivationReceiptEntry[] = []
+  for (const { manifest: entry, prior: source } of sourceEntries) {
+    const predecessorEntry = predecessorEntries.get(entry.configId)
+    if (
+      !predecessorEntry ||
+      !configContentEqual(
+        {
+          ...source,
+          updatedAt: new Date(source.updatedAt),
+        },
+        predecessorEntry.prior
+      )
+    ) {
+      fail('SOURCE_DRIFT', 'source config changed before re-entry')
+    }
+    const target = await tx.findConfigById(predecessorEntry.target.id)
+    if (
+      !target ||
+      !configSnapshotEqual(target, predecessorEntry.target) ||
+      target.isEnabled
+    ) {
+      fail('TARGET_DRIFT', 'target config changed before re-entry')
+    }
+    entries.push({
+      manifest: entry,
+      prior: snapshotConfig({
+        ...source,
+        updatedAt: new Date(source.updatedAt),
+      }),
+      target: snapshotConfig(target),
+    })
+  }
+  return { targetServer: snapshotServer(targetServer), entries }
+}
+
+export async function assertCohortActivationReentryPreconditions(
+  store: CohortActivationStore,
+  manifest: CohortActivationManifest,
+  predecessor: CohortActivationReceipt
+): Promise<void> {
+  validateManifest(manifest)
+  assertReceiptMatchesManifest(predecessor, manifest)
+  assertCohortActivationReentryRoot(predecessor)
+  await store.transaction(async (tx) => {
+    await readReentryPreparedState(tx, manifest, predecessor)
+  })
 }
 
 function makeReceipt(
@@ -1116,6 +1702,8 @@ export function makeCohortActivationReceiptIntent(
     targetServerId,
     targetConfigIds,
     heldConfigIds: manifest.heldConfigIds,
+    ...inactiveSourceFields(manifest.inactiveSource),
+    ...activeSourceFields(manifest.activeSources),
     excludedCorpora: [...COHORT_ACTIVATION_EXCLUDED_CORPORA],
     excludedConfigIds: canonicalExcludedConfigIds(manifest),
     state: 'preparing' as const,
@@ -1238,6 +1826,7 @@ export function validateCohortActivationReceiptIntent(
   intent: CohortActivationReceiptIntent
 ): void {
   assertReceiptIntentHeader(intent)
+  if (intent.reentry !== undefined) validateReentryLineage(intent.reentry)
   validateReceiptIntentHeldIds(intent)
   if (intent.targetServerId !== null) {
     assertUuid(intent.targetServerId, 'targetServerId')
@@ -1255,6 +1844,35 @@ export function validateCohortActivationReceiptIntent(
     excludedIds.add(normalized)
   }
   validateReceiptIntentTargetConfigIds(intent)
+  const inactiveSource = canonicalInactiveSource(
+    intent.inactiveSource,
+    'RECEIPT_INVALID'
+  )
+  const activeSources = canonicalActiveSources(
+    intent.activeSources,
+    'RECEIPT_INVALID'
+  )
+  assertSourcePinSeparation(inactiveSource, activeSources)
+  const targetIds = new Set(
+    Object.keys(intent.targetConfigIds).map((id) =>
+      normalizeUuid(id, 'targetConfigIds')
+    )
+  )
+  const excludedOrHeld = new Set(
+    [...intent.heldConfigIds, ...intent.excludedConfigIds].map((id) =>
+      normalizeUuid(id, 'heldOrExcluded')
+    )
+  )
+  for (const pin of [
+    ...(inactiveSource ? [inactiveSource] : []),
+    ...(activeSources ?? []),
+  ]) {
+    if (
+      pin.configIds.some((id) => !targetIds.has(id) || excludedOrHeld.has(id))
+    ) {
+      fail('RECEIPT_INVALID', 'source exception intent inventory differs')
+    }
+  }
   assertReceiptIntentDigest(intent)
 }
 
@@ -1262,6 +1880,15 @@ function assertIntentMatchesManifest(
   manifest: CohortActivationManifest,
   intent: CohortActivationReceiptIntent
 ): void {
+  if (
+    !inactiveSourceEqual(intent.inactiveSource, manifest.inactiveSource) ||
+    !activeSourcesEqual(intent.activeSources, manifest.activeSources)
+  ) {
+    fail(
+      'RECEIPT_MANIFEST_MISMATCH',
+      'intent source exceptions differ from manifest'
+    )
+  }
   if (intent.manifestFingerprint !== manifest.fingerprint) {
     fail(
       'RECEIPT_MANIFEST_MISMATCH',
@@ -1298,6 +1925,132 @@ function assertIntentMatchesManifest(
       'cohortActivation intent does not cover the manifest'
     )
   }
+}
+
+function assertOrdinaryReceiptIntent(
+  intent: CohortActivationReceiptIntent
+): void {
+  if (intent.reentry !== undefined) {
+    fail(
+      'REENTRY_NOT_ALLOWED',
+      'ordinary cohort activation commands cannot use a re-entry intent'
+    )
+  }
+}
+
+export function assertCohortActivationReentryRoot(
+  receipt: CohortActivationReceipt
+): void {
+  validateReceipt(receipt)
+  if (receipt.state !== 'rolled_back') {
+    fail(
+      'REENTRY_PREDECESSOR_INVALID',
+      're-entry requires a rolled-back predecessor receipt'
+    )
+  }
+  if (receipt.reentry !== undefined) {
+    fail(
+      'REENTRY_PREDECESSOR_INVALID',
+      're-entry cannot use a lineage-bearing predecessor receipt'
+    )
+  }
+  if (
+    receipt.entries.length !== 2 ||
+    chatbotIds(receipt.entries.map(({ manifest }) => manifest)).length !== 1
+  ) {
+    fail(
+      'REENTRY_INVENTORY_MISMATCH',
+      're-entry requires exactly two entries for one chatbot'
+    )
+  }
+}
+
+export function makeCohortActivationReentryReceiptIntent(
+  manifest: CohortActivationManifest,
+  predecessor: CohortActivationReceipt,
+  lineage: CohortActivationReentryLineage
+): CohortActivationReceiptIntent {
+  assertReceiptMatchesManifest(predecessor, manifest)
+  assertCohortActivationReentryRoot(predecessor)
+  validateReentryLineage(lineage)
+  if (lineage.predecessorPayloadDigest !== predecessor.payloadDigest) {
+    fail(
+      'REENTRY_LINEAGE_MISMATCH',
+      're-entry lineage does not identify the predecessor receipt'
+    )
+  }
+  const targetConfigIds = Object.fromEntries(
+    predecessor.entries.map(({ manifest: entry, target }) => [
+      entry.configId,
+      target.id,
+    ])
+  )
+  const withoutDigest = {
+    receiptVersion: COHORT_ACTIVATION_RECEIPT_VERSION,
+    manifestFingerprint: manifest.fingerprint,
+    target: manifest.target,
+    targetServerId: predecessor.targetServer.id,
+    targetConfigIds,
+    heldConfigIds: manifest.heldConfigIds,
+    ...inactiveSourceFields(manifest.inactiveSource),
+    ...activeSourceFields(manifest.activeSources),
+    excludedCorpora: [...COHORT_ACTIVATION_EXCLUDED_CORPORA],
+    excludedConfigIds: canonicalExcludedConfigIds(manifest),
+    state: 'preparing' as const,
+    reentry: lineage,
+  }
+  const intent = {
+    ...withoutDigest,
+    payloadDigest: createHash('sha256')
+      .update(JSON.stringify(withoutDigest))
+      .digest('hex'),
+  }
+  validateCohortActivationReceiptIntent(intent)
+  assertIntentMatchesManifest(manifest, intent)
+  return intent
+}
+
+function assertReentryIntentMatchesPredecessor(
+  predecessor: CohortActivationReceipt,
+  intent: CohortActivationReceiptIntent
+): CohortActivationReentryLineage {
+  const lineage = intent.reentry
+  if (!lineage) {
+    fail('REENTRY_LINEAGE_INVALID', 're-entry intent lineage is missing')
+  }
+  validateReentryLineage(lineage)
+  if (lineage.predecessorPayloadDigest !== predecessor.payloadDigest) {
+    fail(
+      'REENTRY_LINEAGE_MISMATCH',
+      're-entry intent does not identify the predecessor receipt'
+    )
+  }
+  if (
+    intent.targetServerId?.toLowerCase() !==
+    predecessor.targetServer.id.toLowerCase()
+  ) {
+    fail('REENTRY_INVENTORY_MISMATCH', 're-entry target server id changed')
+  }
+  const expectedTargetIds = new Map(
+    predecessor.entries.map(({ manifest: entry, target }) => [
+      entry.configId,
+      target.id.toLowerCase(),
+    ])
+  )
+  const actualTargetIds = Object.entries(intent.targetConfigIds)
+  if (
+    actualTargetIds.length !== expectedTargetIds.size ||
+    actualTargetIds.some(
+      ([configId, targetId]) =>
+        expectedTargetIds.get(configId) !== targetId.toLowerCase()
+    )
+  ) {
+    fail(
+      'REENTRY_INVENTORY_MISMATCH',
+      're-entry target config ids do not match the predecessor'
+    )
+  }
+  return lineage
 }
 
 function assertReceiptShape(receipt: CohortActivationReceipt): void {
@@ -1430,8 +2183,7 @@ function validateReceiptEntry(
     fail('RECEIPT_INVALID', 'cohortActivation config snapshot is malformed')
   }
   if (
-    (item.prior.parameters !== null &&
-      !isEmptyJsonObject(item.prior.parameters)) ||
+    !isSafeSourceParameters(item.prior.parameters) ||
     !isSafeSourceAllowedTools(item.prior.allowedTools)
   ) {
     fail('RECEIPT_INVALID', 'receipt contains an unsafe source snapshot')
@@ -1495,11 +2247,14 @@ function assertReceiptDigest(receipt: CohortActivationReceipt): void {
 
 export function validateReceipt(receipt: CohortActivationReceipt): void {
   assertReceiptShape(receipt)
+  if (receipt.reentry !== undefined) validateReentryLineage(receipt.reentry)
   validateManifest({
     fingerprint: receipt.manifestFingerprint,
     target: receipt.target,
     entries: receipt.entries.map(({ manifest }) => manifest),
     heldConfigIds: receipt.heldConfigIds,
+    ...inactiveSourceFields(receipt.inactiveSource),
+    ...activeSourceFields(receipt.activeSources),
     excludedCorpora: receipt.excludedCorpora,
     excludedConfigIds: receipt.excludedConfigIds,
   })
@@ -1529,6 +2284,9 @@ export function receiptExpectation(
         manifestFingerprint: receipt.manifestFingerprint,
         payloadDigest: receipt.payloadDigest,
         state: receipt.state,
+        ...inactiveSourceFields(receipt.inactiveSource),
+        ...activeSourceFields(receipt.activeSources),
+        ...(receipt.reentry ? { reentry: receipt.reentry } : {}),
       }
     : null
 }
@@ -1555,6 +2313,24 @@ export function assertReceiptTransition(
   current: CohortActivationReceiptFile | null,
   next: CohortActivationReceiptFile
 ): void {
+  if (expected !== null && current === null) {
+    fail(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt disappeared before the expected transition'
+    )
+  }
+  if (
+    expected &&
+    (!inactiveSourceEqual(expected.inactiveSource, current?.inactiveSource) ||
+      !inactiveSourceEqual(current?.inactiveSource, next.inactiveSource) ||
+      !activeSourcesEqual(expected.activeSources, current?.activeSources) ||
+      !activeSourcesEqual(current?.activeSources, next.activeSources))
+  ) {
+    fail(
+      'RECEIPT_MANIFEST_MISMATCH',
+      'receipt transition changed source exceptions'
+    )
+  }
   validateReceiptFile(next)
   if (expected === null) {
     if (current !== null) {
@@ -1571,12 +2347,6 @@ export function assertReceiptTransition(
     }
     return
   }
-  if (current === null) {
-    fail(
-      'RECEIPT_CONCURRENT_WRITE',
-      'receipt disappeared before the expected transition'
-    )
-  }
   validateReceiptFile(current)
   if (
     current.manifestFingerprint !== expected.manifestFingerprint ||
@@ -1588,8 +2358,17 @@ export function assertReceiptTransition(
       'receipt changed before the expected transition'
     )
   }
+  if (!reentryLineageEqual(expected.reentry, current.reentry)) {
+    fail(
+      'REENTRY_LINEAGE_MISMATCH',
+      'receipt lineage changed before the expected transition'
+    )
+  }
   if (current.manifestFingerprint !== next.manifestFingerprint) {
     fail('RECEIPT_MANIFEST_MISMATCH', 'receipt transition changed the manifest')
+  }
+  if (!reentryLineageEqual(current.reentry, next.reentry)) {
+    fail('REENTRY_LINEAGE_MISMATCH', 'receipt transition changed the lineage')
   }
   if (current.payloadDigest === next.payloadDigest) return
   if (!RECEIPT_STATE_TRANSITIONS[current.state].includes(next.state)) {
@@ -1639,6 +2418,7 @@ export async function prepareCohortActivation(
   validateManifest(manifest)
   const intent = options.intent ?? makeCohortActivationReceiptIntent(manifest)
   validateCohortActivationReceiptIntent(intent)
+  assertOrdinaryReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
   const prepared = await store.transaction(async (tx) => {
     const sourceEntries = await readSourceEntries(tx, manifest)
@@ -1678,11 +2458,44 @@ export async function prepareCohortActivation(
     target: manifest.target,
     targetServer: prepared.targetServer,
     heldConfigIds: manifest.heldConfigIds,
+    ...inactiveSourceFields(manifest.inactiveSource),
+    ...activeSourceFields(manifest.activeSources),
     excludedCorpora: [...COHORT_ACTIVATION_EXCLUDED_CORPORA],
     excludedConfigIds: canonicalExcludedConfigIds(manifest),
     entries: prepared.entries,
     switchedChatbotIds: [],
     state: 'prepared',
+  })
+}
+
+export async function prepareCohortActivationReentry(
+  store: CohortActivationStore,
+  manifest: CohortActivationManifest,
+  predecessor: CohortActivationReceipt,
+  intent: CohortActivationReceiptIntent
+): Promise<CohortActivationReceipt> {
+  validateManifest(manifest)
+  assertReceiptMatchesManifest(predecessor, manifest)
+  assertCohortActivationReentryRoot(predecessor)
+  validateCohortActivationReceiptIntent(intent)
+  assertIntentMatchesManifest(manifest, intent)
+  const reentry = assertReentryIntentMatchesPredecessor(predecessor, intent)
+  const prepared = await store.transaction((tx) =>
+    readReentryPreparedState(tx, manifest, predecessor)
+  )
+  return makeReceipt({
+    manifestFingerprint: manifest.fingerprint,
+    target: manifest.target,
+    targetServer: prepared.targetServer,
+    heldConfigIds: manifest.heldConfigIds,
+    ...inactiveSourceFields(manifest.inactiveSource),
+    ...activeSourceFields(manifest.activeSources),
+    excludedCorpora: [...COHORT_ACTIVATION_EXCLUDED_CORPORA],
+    excludedConfigIds: canonicalExcludedConfigIds(manifest),
+    entries: prepared.entries,
+    switchedChatbotIds: [],
+    state: 'prepared',
+    reentry,
   })
 }
 
@@ -1693,6 +2506,7 @@ export async function assertCohortActivationNotPrepared(
 ): Promise<void> {
   validateManifest(manifest)
   validateCohortActivationReceiptIntent(intent)
+  assertOrdinaryReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
 
   await store.transaction(async (tx) => {
@@ -1754,6 +2568,7 @@ export async function recoverPreparedCohortActivation(
 ): Promise<CohortActivationReceipt> {
   validateManifest(manifest)
   validateCohortActivationReceiptIntent(intent)
+  assertOrdinaryReceiptIntent(intent)
   assertIntentMatchesManifest(manifest, intent)
   const recovered = await store.transaction(async (tx) => {
     const targetServer = await tx.findServerByName(manifest.target.serverName)
@@ -1820,6 +2635,8 @@ export async function recoverPreparedCohortActivation(
     target: manifest.target,
     targetServer: recovered.targetServer,
     heldConfigIds: manifest.heldConfigIds,
+    ...inactiveSourceFields(manifest.inactiveSource),
+    ...activeSourceFields(manifest.activeSources),
     excludedCorpora: [...COHORT_ACTIVATION_EXCLUDED_CORPORA],
     excludedConfigIds: canonicalExcludedConfigIds(manifest),
     entries: recovered.entries,
@@ -1861,6 +2678,17 @@ export async function switchCohortActivation(
     )
     // Keep every mode for one chatbot in the same serializable transaction.
     const switchedEntries = await store.transaction(async (tx) => {
+      await assertSourceExceptionsState(tx, {
+        ...current,
+        entries: current.entries.map((item) => item.manifest),
+      })
+      if (current.reentry || current.inactiveSource || current.activeSources) {
+        await assertCompleteModeCoverage(tx, {
+          entries: group.map((item) => item.manifest),
+          heldConfigIds: current.heldConfigIds,
+          excludedConfigIds: current.excludedConfigIds,
+        })
+      }
       const targetServer = await tx.findServerById(current.targetServer.id)
       if (
         !targetServer ||
@@ -1868,6 +2696,15 @@ export async function switchCohortActivation(
       ) {
         fail('TARGET_SERVER_DRIFT', 'target server changed after prepare')
       }
+      const sourceServer = await tx.findServerById(
+        group[0]!.manifest.sourceServerId
+      )
+      assertEligibleSourceServer(
+        sourceServer,
+        current.target,
+        canonicalInactiveSource(current.inactiveSource),
+        canonicalActiveSources(current.activeSources)
+      )
       const entries: CohortActivationReceiptEntry[] = []
       for (const item of group) {
         const source = await tx.findConfigById(item.manifest.configId)
@@ -1947,6 +2784,10 @@ async function readRollbackStates(
   targetServer: CohortActivationServerRecord
   states: RollbackTransactionState[]
 }> {
+  await assertSourceExceptionsState(tx, {
+    ...receipt,
+    entries: receipt.entries.map((item) => item.manifest),
+  })
   const targetServer = await tx.findServerById(receipt.targetServer.id)
   if (
     !targetServer ||
@@ -1977,6 +2818,17 @@ async function readRollbackStates(
   const hasNew = states.some(({ state }) => state === 'new')
   if (hasOld && hasNew) {
     fail('READBACK_STATE_MISMATCH', 'chatbot group is partially switched')
+  }
+  if (hasNew) {
+    const sourceServer = await tx.findServerById(
+      group[0]!.manifest.sourceServerId
+    )
+    assertEligibleSourceServer(
+      sourceServer,
+      receipt.target,
+      canonicalInactiveSource(receipt.inactiveSource),
+      canonicalActiveSources(receipt.activeSources)
+    )
   }
   return { targetServer, states }
 }
@@ -2172,6 +3024,10 @@ async function readCohortActivationStateInTransaction(
   tx: CohortActivationTransactionStore,
   receipt: CohortActivationReceipt
 ): Promise<CohortActivationReadback> {
+  await assertSourceExceptionsState(tx, {
+    ...receipt,
+    entries: receipt.entries.map((item) => item.manifest),
+  })
   const targetServer = await tx.findServerById(receipt.targetServer.id)
   if (
     !targetServer ||
@@ -2183,6 +3039,17 @@ async function readCohortActivationStateInTransaction(
   const actualChatbotStates = new Map<string, 'prepared' | 'switched'>()
   for (const item of receipt.entries) {
     const { source, target, state } = await readReceiptStateItem(tx, item)
+    if (source.isEnabled) {
+      const sourceServer = await tx.findServerById(
+        normalizeUuid(item.manifest.sourceServerId, 'entry.sourceServerId')
+      )
+      assertEligibleSourceServer(
+        sourceServer,
+        receipt.target,
+        canonicalInactiveSource(receipt.inactiveSource),
+        canonicalActiveSources(receipt.activeSources)
+      )
+    }
     recordReadbackItem(result, actualChatbotStates, item, source, target, state)
   }
   finalizeReadback(result, receipt, actualChatbotStates)

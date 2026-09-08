@@ -186,6 +186,23 @@ export default {
       description:
         'Test the current chatbot configuration. This conversation is not added to your saved conversations.',
       backToManage: 'Back to chatbot settings',
+      sidebarLabel: 'Owner preview conversations',
+      sidebarTitle: 'Test conversations',
+      conversationListLabel: 'Test conversation list',
+      newTestConversation: 'New test conversation',
+      testConversation: 'Test conversation {number}',
+      savedSettings: 'Saved settings',
+      savedSettingsNotice:
+        'This preview starts from the saved chatbot configuration.',
+      temporarySettings: 'Temporary settings',
+      temporarySettingsNotice:
+        'Model and reasoning changes apply only to this temporary conversation.',
+      fixedPolicy: 'Fixed model policy',
+      fixedPolicyNotice: 'Participants cannot change this saved policy.',
+      modelUnavailable: 'No model is available for this chatbot.',
+      toolLimitsTitle: 'Preview limits',
+      toolLimitsNotice:
+        'Preview supports document queries only. Attachments and other tools are unavailable.',
       loginTitle: 'Lecturer login required',
       loginMessage:
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
@@ -375,6 +392,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
@@ -1960,6 +1985,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       unavailableTitle: 'AI features unavailable',
       unavailableDescription:
         'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+      temporarilyUnavailableTitle: 'AI features temporarily unavailable',
+      temporarilyUnavailableDescription:
+        'AI features are temporarily unavailable. Please try again in a moment.',
+      retry: 'Try again',
     },
     general: {
       qrCode: 'QR Code',
@@ -2386,10 +2415,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
-      betaFeaturesDataUse:
-        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
-        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
       betaFeaturesConvergedOff: 'Beta access is no longer active.',
       betaFeaturesConvergedOn: 'Beta access is now active.',
       betaFeaturesEnrollment: 'Beta enrollment',
@@ -2398,16 +2429,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesError:
         'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
       betaFeaturesRefreshFailure:
-        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
       betaFeaturesRefreshing:
-        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Refreshing the displayed settings.',
       betaFeaturesSaved:
-        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
       betaFeaturesPending:
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
+      chatbotBetaAccessRequired:
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
-        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -4585,11 +4618,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotMobileSelector: 'Current chatbot',
       chatbotWorkspaceNavigation: 'Chatbot workspace',
       chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceKnowledge: 'Knowledge',
+      chatbotWorkspaceBehavior: 'Behavior',
+      chatbotWorkspaceDisclaimer: 'Disclaimer',
       chatbotWorkspaceSetup: 'Setup',
       chatbotWorkspaceAdvanced: 'Advanced',
-      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceUsage: 'Usage',
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotWorkspaceBehaviorDescription:
+        'Choose learning modes, framing, and the model policy used by this chatbot.',
+      chatbotWorkspaceDisclaimerDescription:
+        'Edit the participant-facing introduction and review the fixed institutional sections.',
+      chatbotWorkspaceKnowledgeDescription:
+        'Review the active knowledge base and open its management page. Multiple knowledge-base attachments are not available in this editor yet.',
+      chatbotKnowledgeSingleActive:
+        'One active knowledge base is currently supported here.',
+      chatbotKnowledgeEmptyDescription:
+        'The chatbot can still be used without course-material retrieval.',
+      chatbotKnowledgeManagementLink:
+        'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
+      chatbotTechnicalDetails: 'Technical details',
+      chatbotTechnicalId: 'ID',
+      chatbotTechnicalAvatar: 'Avatar',
+      chatbotUsageTechnicalIntegrations: 'Technical integrations',
+      chatbotUsageTechnicalIntegrationsDescription:
+        'Inspect configured MCP integrations and their current status.',
       chatbotSetupTitle: 'Set up your chatbot',
       chatbotSetupDescription:
         'Use the sections below to complete and save your chatbot setup before requesting publication.',
@@ -4651,6 +4705,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
         'Please wait until the current chatbot change has finished saving.',
+      chatbotPreviewUnsavedConfirmation:
+        'This preview opens the last saved chatbot configuration. Continue without saving your unsaved changes?',
       chatbotCreatedAt: 'Created',
       chatbotUpdatedAt: 'Last updated',
       chatbotName: 'Name',
@@ -4734,6 +4790,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The disclaimer introduction must be 10,000 characters or fewer.',
       chatbotDisclaimerIntroEditorPlaceholder:
         'Explain what participants should know before using this chatbot.',
+      chatbotDisclaimerSuggestedTitle: 'About this chatbot',
+      chatbotDisclaimerSuggestedIntro:
+        'This chatbot is provided as a learning aid for the linked course. Use its responses to support your learning and check important information against your course materials.',
+      chatbotDisclaimerSuggestedDescription:
+        'The current field is empty. You can add a suggested generic introduction and edit it before saving.',
+      chatbotDisclaimerUseSuggestedText: 'Use suggested text',
+      chatbotDisclaimerSuggestedUnsaved:
+        'This suggested text is not saved yet. Save your changes to use it for participants.',
       saveChatbotDisclaimer: 'Save disclaimer',
       chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
       chatbotDisclaimerSaveError:

@@ -12,7 +12,7 @@
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.
 services:
-  # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
+  # --- main database (disposable test DBs plus dump-support DBs via init SQL) ---
   postgres:
     image: postgres:15
     environment:
@@ -28,8 +28,10 @@ services:
       default: {}
       devnet: {}
     volumes:
-      # init.sql creates shadow + lti + qa + hatchet DBs and roles.
+      # init.sql retains the legacy database for separate operator workflows;
+      # apps use only the marked databases created by the disposable bootstrap.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
       - pgdata:/var/lib/postgresql/data
 
   # --- redis: live-quiz exec, assessment exec, page cache + pub/sub ---
@@ -110,7 +112,6 @@ services:
     env_file:
       - devcontainer.env
     environment:
-      - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
       - WORKSPACE=${WORKSPACE:-}
       - BLOB_STORAGE_ACCOUNT_NAME=klickerdev
       - BLOB_STORAGE_ACCESS_KEY=dGVzdA==
@@ -139,18 +140,9 @@ services:
       devnet: {}
     volumes:
       - ..:/workspaces/klicker-uzh:cached
-      # Named volume shadows host node_modules so Linux-native binaries (Prisma
-      # engines, esbuild, sharp) aren't clobbered. pnpm hoists native packages
-      # into the root node_modules/.pnpm. (GOTCHAS #6)
-      - node_modules_root:/workspaces/klicker-uzh/node_modules
-      # These package-level links are host-visible unless they are masked too.
-      # Keep the host Playwright runner and its workspace dependencies on Darwin
-      # while the devcontainer retains independent Linux dependency links.
-      - node_modules_playwright:/workspaces/klicker-uzh/playwright/node_modules
-      - node_modules_prisma:/workspaces/klicker-uzh/packages/prisma/node_modules
-      - node_modules_types:/workspaces/klicker-uzh/packages/types/node_modules
+      # Root and package dependency mounts come from docker-compose.dependencies.yml.
       # Machine-local, content-addressed package cache shared by every worktree.
-      # node_modules remains isolated in the project-scoped volume above.
+      # node_modules remains isolated in the generated project-scoped volumes.
       - pnpm_store:/pnpm/.pnpm-store
       # The workspace bind mount and the store volume are different devices
       # inside the container, so pnpm can fall back from the configured store
@@ -204,10 +196,6 @@ services:
 volumes:
   pgdata:
   azurite_data:
-  node_modules_root:
-  node_modules_playwright:
-  node_modules_prisma:
-  node_modules_types:
   pnpm_store:
     external: true
     name: klicker-uzh-pnpm-store-v1

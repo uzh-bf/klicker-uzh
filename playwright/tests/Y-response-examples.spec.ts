@@ -77,7 +77,7 @@ test.describe('Chatbot response-example review', () => {
           body: JSON.stringify({
             exampleId: CANDIDATE_ID,
             created: true,
-            reviewUrl: `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=advanced&responseExampleId=${CANDIDATE_ID}`,
+            reviewUrl: `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge&responseExampleId=${CANDIDATE_ID}`,
           }),
         })
       }
@@ -109,7 +109,7 @@ test.describe('Chatbot response-example review', () => {
       page.getByTestId('owner-preview-response-example-review')
     ).toHaveAttribute(
       'href',
-      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=advanced&responseExampleId=${CANDIDATE_ID}`
+      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge&responseExampleId=${CANDIDATE_ID}`
     )
     expect(captureBody).toEqual({
       receipt: 'synthetic-signed-receipt',
@@ -133,7 +133,7 @@ test.describe('Chatbot response-example review', () => {
     await loginLecturer()
     await gotoCommit(
       page,
-      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=advanced&responseExampleId=${CANDIDATE_ID}`
+      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge&responseExampleId=${CANDIDATE_ID}`
     )
 
     const review = page.getByTestId('response-examples-review')

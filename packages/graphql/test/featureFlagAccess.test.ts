@@ -18,26 +18,30 @@ const user = {
 }
 
 describe('requireFeatureFlagAccess', () => {
-  it('passes only sanitized authenticated-user attributes to the evaluator', () => {
+  it('passes only sanitized authenticated-user attributes to the evaluator', async () => {
     const isEnabled = vi.fn().mockReturnValue(true)
+    const preferenceLookup = vi.fn().mockResolvedValue({ betaEnabled: true })
 
-    expect(() =>
+    await expect(
       requireFeatureFlagAccess(
         {
           user,
           featureFlags: {
             isEnabled,
+            getAiBetaDecision: vi.fn(),
             refresh: vi.fn(async () => undefined),
           },
-        },
+          prisma: { user: { findUnique: preferenceLookup } },
+        } as unknown as ContextWithUser,
         'learning-analytics'
       )
-    ).not.toThrow()
+    ).resolves.toBeUndefined()
     expect(isEnabled).toHaveBeenCalledWith('learning-analytics', {
       id: 'user-id',
       actorType: 'user',
       role: UserRole.ADMIN,
       catalyst: false,
+      betaEnabled: true,
     })
   })
 
@@ -47,6 +51,7 @@ describe('requireFeatureFlagAccess', () => {
       'a disabled flag',
       {
         isEnabled: vi.fn().mockReturnValue(false),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
     ],
@@ -56,21 +61,29 @@ describe('requireFeatureFlagAccess', () => {
         isEnabled: vi.fn(() => {
           throw new Error('SDK failure')
         }),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
     ],
-  ])('fails closed for %s', (_, featureFlags) => {
+  ])('fails closed for %s', async (_, featureFlags) => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const preferenceLookup = vi.fn().mockResolvedValue({ betaEnabled: true })
 
-    expect(() =>
-      requireFeatureFlagAccess({ user, featureFlags }, 'learning-analytics')
-    ).toThrowError(
+    await expect(
+      requireFeatureFlagAccess(
+        {
+          user,
+          featureFlags,
+          prisma: { user: { findUnique: preferenceLookup } },
+        } as unknown as ContextWithUser,
+        'learning-analytics'
+      )
+    ).rejects.toThrowError(
       expect.objectContaining<Partial<GraphQLError>>({
         message: 'Forbidden',
         extensions: { code: 'FORBIDDEN' },
       })
     )
-
     warn.mockRestore()
   })
 })
@@ -97,12 +110,16 @@ describe('learning analytics services', () => {
       (ctx: ContextWithUser) =>
         getActivityAnalytics({ activityId: 'activity-id' }, ctx),
     ],
-  ])('denies %s before accessing Prisma', async (_, getAnalytics) => {
+  ])('denies %s before accessing service data', async (_, getAnalytics) => {
+    const preferenceLookup = vi.fn().mockResolvedValue({ betaEnabled: true })
     const prisma = new Proxy(
-      {},
+      { user: { findUnique: preferenceLookup } },
       {
-        get() {
-          throw new Error('Prisma must not be accessed when the flag is off')
+        get(target, property, receiver) {
+          if (property === 'user') {
+            return Reflect.get(target, property, receiver)
+          }
+          throw new Error('Prisma service data must not be accessed')
         },
       }
     )
@@ -110,6 +127,7 @@ describe('learning analytics services', () => {
       user,
       featureFlags: {
         isEnabled: vi.fn().mockReturnValue(false),
+        getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
       prisma,
@@ -118,6 +136,10 @@ describe('learning analytics services', () => {
     await expect(getAnalytics(ctx)).rejects.toMatchObject({
       message: 'Forbidden',
       extensions: { code: 'FORBIDDEN' },
+    })
+    expect(preferenceLookup).toHaveBeenCalledWith({
+      where: { id: user.sub },
+      select: { betaEnabled: true },
     })
   })
 })

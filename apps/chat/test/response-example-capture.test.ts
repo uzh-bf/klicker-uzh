@@ -197,7 +197,7 @@ describe('POST owner-preview response-example capture', () => {
     await expect(response.json()).resolves.toEqual({
       exampleId: EXAMPLE_ID,
       created: true,
-      reviewUrl: `https://manage.test/resources/chatbots?chatbotId=${CHATBOT_ID}&view=advanced&responseExampleId=${EXAMPLE_ID}`,
+      reviewUrl: `https://manage.test/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge&responseExampleId=${EXAMPLE_ID}`,
     })
     expect(fetch).toHaveBeenCalledWith(
       'https://api.test/api/graphql',

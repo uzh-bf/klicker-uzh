@@ -5,6 +5,14 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { z } from 'zod'
 import { OwnerPreviewAssistant } from '@/src/components/owner-preview-assistant'
+import {
+  getDefaultReasoningEffort,
+  toOwnerPreviewModelOption,
+} from '@/src/lib/ownerPreviewPolicy'
+import {
+  getAutomaticModelId,
+  getModelsForChatbot,
+} from '@/src/lib/server/chatModelRegistry'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
 import { getOwnerPreviewAccess } from '@/src/lib/server/ownerPreviewAuth'
 
@@ -38,6 +46,9 @@ export default async function OwnerPreviewPage({
       status: true,
       systemPrompts: true,
       standardModeConfig: true,
+      modelSelection: true,
+      allowedModelIds: true,
+      allowedReasoningEffortsByModel: true,
       mcpConfigurations: {
         select: {
           allowedTools: true,
@@ -57,6 +68,25 @@ export default async function OwnerPreviewPage({
     chatbot.mcpConfigurations,
     chatbot.standardModeConfig
   )
+  const availableModels = getModelsForChatbot(chatbot)
+  const automaticModelId = getAutomaticModelId(chatbot.allowedModelIds)
+  const fixedModel = availableModels.find(
+    (model) => model.id === automaticModelId
+  )
+  const modelOptions = (
+    chatbot.modelSelection ? availableModels : fixedModel ? [fixedModel] : []
+  ).map(toOwnerPreviewModelOption)
+  const selectedModelId = chatbot.modelSelection
+    ? (modelOptions.find((model) => model.id === automaticModelId)?.id ??
+      modelOptions[0]?.id ??
+      null)
+    : (fixedModel?.id ?? automaticModelId)
+  const selectedModelOption = modelOptions.find(
+    (model) => model.id === selectedModelId
+  )
+  const selectedReasoningEffort = selectedModelOption?.supportsReasoning
+    ? getDefaultReasoningEffort(selectedModelOption.allowedReasoningEfforts)
+    : null
   const manageBaseUrl = (
     process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
   ).replace(/\/$/, '')
@@ -69,6 +99,10 @@ export default async function OwnerPreviewPage({
         name: chatbot.name,
       }}
       initialModeOptions={initialModeOptions}
+      modelSelection={chatbot.modelSelection}
+      modelOptions={modelOptions}
+      selectedModelId={selectedModelId}
+      selectedReasoningEffort={selectedReasoningEffort}
       manageUrl={`${manageBaseUrl}/resources/chatbots?chatbotId=${encodeURIComponent(chatbot.id)}`}
     />
   )

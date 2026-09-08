@@ -19,35 +19,55 @@ import {
   COURSE_ID_TEST,
   LECTURER_EMAIL,
   SEEDED_COURSE,
+  URL_AUTH,
   URL_MANAGE,
   USER_ID_TEST,
 } from '../util/constants.js'
 
-function getGraphqlOperationName(request: Request) {
-  const getOperationName = new URL(request.url()).searchParams.get(
-    'operationName'
+const persistedOperations = JSON.parse(
+  await readFile(
+    new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+    'utf8'
   )
-  if (getOperationName) return getOperationName
+) as Record<string, string>
+const persistedNames = Object.fromEntries(
+  Object.entries(persistedOperations).map(([name, hash]) => [hash, name])
+)
 
-  const postData = request.postData()
-  if (!postData) return undefined
-
+function getGraphqlOperationName(request: Request) {
   try {
-    return (JSON.parse(postData) as { operationName?: string }).operationName
+    const url = new URL(request.url())
+    const body = request.postDataJSON() as {
+      operationName?: string
+      extensions?: { persistedQuery?: { sha256Hash?: string } }
+    } | null
+    const name = url.searchParams.get('operationName') ?? body?.operationName
+    if (name) return name
+    const extensions =
+      body?.extensions ??
+      JSON.parse(url.searchParams.get('extensions') ?? 'null')
+    const hash = extensions?.persistedQuery?.sha256Hash
+    return hash ? persistedNames[hash] : undefined
   } catch {
     return undefined
   }
 }
 
-async function setBackendGrowthBookLearningAnalytics(
+async function backendLearningAnalyticsState(
   request: APIRequestContext,
-  enabled: boolean
-) {
-  const growthbookPort = process.env.GROWTHBOOK_TEST_PORT ?? '4010'
-  const response = await request.post(
-    `http://127.0.0.1:${growthbookPort}/__test/learning-analytics?enabled=${enabled}`
-  )
+  enabled?: boolean
+): Promise<boolean> {
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  const url = `${manageUrl}/__growthbook__/__test/learning-analytics`
+  const response =
+    enabled === undefined
+      ? await request.get(url)
+      : await request.post(`${url}?enabled=${enabled}`)
   expect(response.ok()).toBe(true)
+  const state = (await response.json()) as { enabled: boolean }
+  expect(typeof state.enabled).toBe('boolean')
+  if (enabled !== undefined) expect(state.enabled).toBe(enabled)
+  return state.enabled
 }
 
 type AnalyticsGraphqlResult = {
@@ -74,13 +94,16 @@ async function loadActivityAnalytics(
   const response = await analyticsResponsePromise
   const body = (await response.json()) as {
     errors?: Array<{ extensions?: { code?: string } }>
+    data?: { getCourseActivityAnalytics?: unknown } | null
   }
+  const hasAnalytics = body.data?.getCourseActivityAnalytics != null
   const forbidden = Boolean(
-    body.errors?.some((error) => error.extensions?.code === 'FORBIDDEN')
+    !hasAnalytics &&
+      body.errors?.some((error) => error.extensions?.code === 'FORBIDDEN')
   )
 
   return {
-    allowed: response.ok() && !body.errors?.length,
+    allowed: response.ok() && !body.errors?.length && hasAnalytics,
     forbidden,
     response,
   }
@@ -204,6 +227,27 @@ test.describe('Tests the availability of standard activity creation formats', ()
     page,
     loginLecturer,
   }) => {
+    const growthbookApiHost =
+      process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST ?? 'https://growthbook.test'
+    const growthbookClientKey =
+      process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
+    const growthbookFeaturesUrl = `${growthbookApiHost.replace(
+      /\/$/,
+      ''
+    )}/api/features/${growthbookClientKey}*`
+    await page.unroute(growthbookFeaturesUrl)
+    await page.route(growthbookFeaturesUrl, (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          features: {
+            'beta-signup': { defaultValue: false },
+            'learning-analytics': { defaultValue: true },
+          },
+        }),
+      })
+    )
+
     await loginLecturer()
 
     // Production builds send hashed queries as GET requests without an
@@ -361,28 +405,99 @@ test.describe('Tests the availability of standard activity creation formats', ()
     expect(analyticsQueryRequested).toBe(false)
   })
 
+  test('Redirects unauthenticated analytics access to auth without loading analytics data', async ({
+    page,
+  }) => {
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const persistedNames: Record<string, string> = {}
+    for (const [name, hash] of Object.entries(persistedOperations)) {
+      persistedNames[hash] = name
+    }
+
+    let activityAnalyticsRequests = 0
+    page.on('request', (request) => {
+      const operationName = getGraphqlOperationName(request)
+      const requestUrl = new URL(request.url())
+      if (!requestUrl.pathname.endsWith('/api/graphql')) return
+
+      const postData = request.postData()
+      const serializedExtensions = requestUrl.searchParams.get('extensions')
+      const extensions = postData
+        ? (
+            JSON.parse(postData) as {
+              extensions?: { persistedQuery?: { sha256Hash?: string } }
+            }
+          ).extensions
+        : serializedExtensions
+          ? (JSON.parse(serializedExtensions) as {
+              persistedQuery?: { sha256Hash?: string }
+            })
+          : undefined
+      const persistedHash = extensions?.persistedQuery?.sha256Hash
+      const resolvedOperationName =
+        operationName ??
+        (persistedHash ? persistedNames[persistedHash] : undefined)
+
+      if (resolvedOperationName === 'GetCourseActivityAnalytics') {
+        activityAnalyticsRequests += 1
+      }
+    })
+
+    await page.context().clearCookies()
+    await mockGrowthBookLearningAnalytics(page, true)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+
+    const authUrl = process.env.URL_AUTH ?? URL_AUTH
+    const expectedAuthUrl = new URL(authUrl)
+    await expect
+      .poll(() => {
+        const url = new URL(page.url())
+        return (
+          url.origin === expectedAuthUrl.origin &&
+          url.pathname === expectedAuthUrl.pathname
+        )
+      })
+      .toBe(true)
+    expect(activityAnalyticsRequests).toBe(0)
+  })
+
   test('Allows direct analytics navigation with feature access', async ({
     page,
     loginLecturer,
     request,
   }) => {
-    await setBackendGrowthBookLearningAnalytics(request, true)
+    const previousState = await backendLearningAnalyticsState(request)
     await mockGrowthBookLearningAnalytics(page, true)
     await loginLecturer()
-    const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
-      page,
-      true
-    )
-    expect(analyticsResult.response.ok()).toBe(true)
-    await expect(
-      page.getByRole('heading', {
-        name: `Activity Dashboard: ${SEEDED_COURSE}`,
-      })
-    ).toBeVisible()
+    try {
+      await backendLearningAnalyticsState(request, true)
+      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
+        page,
+        true
+      )
+      expect(analyticsResult.response.ok()).toBe(true)
+      await expect(
+        page.getByRole('heading', {
+          name: `Activity Dashboard: ${SEEDED_COURSE}`,
+        })
+      ).toBeVisible()
 
-    await expect(
-      page.getByTestId('learning-analytics-access-denied')
-    ).not.toBeAttached()
+      await expect(
+        page.getByTestId('learning-analytics-access-denied')
+      ).not.toBeAttached()
+    } finally {
+      await backendLearningAnalyticsState(request, previousState)
+      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
+    }
   })
 
   test('Denies analytics data when the backend entitlement is false', async ({
@@ -392,9 +507,10 @@ test.describe('Tests the availability of standard activity creation formats', ()
   }) => {
     await mockGrowthBookLearningAnalytics(page, true)
     await loginLecturer()
-    await setBackendGrowthBookLearningAnalytics(request, false)
+    const previousState = await backendLearningAnalyticsState(request)
 
     try {
+      await backendLearningAnalyticsState(request, false)
       const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
         page,
         false
@@ -402,20 +518,34 @@ test.describe('Tests the availability of standard activity creation formats', ()
       expect(analyticsResult.response.ok()).toBe(true)
       expect(analyticsResult.forbidden).toBe(true)
     } finally {
-      await setBackendGrowthBookLearningAnalytics(request, true)
-      await waitForBackendGrowthBookLearningAnalytics(page, true)
+      await backendLearningAnalyticsState(request, previousState)
+      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
     }
   })
 
-  test('Shows analytics unavailable when the user profile cannot load', async ({
+  test('Shows analytics unavailable when the feature flag profile cannot load', async ({
     page,
     loginLecturer,
   }) => {
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    let releaseProfileFailure!: () => void
+    const profileFailureReady = new Promise<void>((resolve) => {
+      releaseProfileFailure = resolve
+    })
+    let profileFailureIntercepted = 0
+    let activityAnalyticsRequests = 0
     await page.route('**/api/graphql*', async (route) => {
-      if (getGraphqlOperationName(route.request()) === 'UserProfile') {
+      const request = route.request()
+      const operationName = getGraphqlOperationName(request)
+      if (operationName === 'GetCourseActivityAnalytics') {
+        activityAnalyticsRequests += 1
+      }
+
+      if (operationName === 'ManageFeatureFlagProfile') {
+        profileFailureIntercepted += 1
+        await profileFailureReady
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -430,21 +560,91 @@ test.describe('Tests the availability of standard activity creation formats', ()
     })
 
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
-
+    try {
+      await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+      await expect.poll(() => profileFailureIntercepted).toBeGreaterThan(0)
+      await expect(page.getByRole('status')).toBeVisible()
+      expect(activityAnalyticsRequests).toBe(0)
+    } finally {
+      releaseProfileFailure()
+    }
     await expect(
       page.getByTestId('learning-analytics-access-denied')
     ).toBeVisible()
-    await expect(page.getByText('Loading analytics data')).not.toBeAttached()
+    expect(activityAnalyticsRequests).toBe(0)
   })
 })
 
 test.describe('Beta feature enrollment discovery', () => {
-  test('Open signup links eligible Catalyst users to the enrollment setting', async ({
+  test('Unknown membership keeps information visible without guessing enrollment', async ({
     page,
     loginLecturer,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page, { aiBeta: true })
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: null,
+      mayChange: false,
+      signupAvailable: true,
+    })
+    await loginLecturer()
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+  })
+
+  test('First login explains chatbot beta features when preference editing is unavailable', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page)
+    await mockBetaEnrollmentGraphQL(page, {
+      membership: false,
+      mayChange: false,
+      signupAvailable: false,
+    })
+    const persisted = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      const body = request.postData() ? request.postDataJSON() : undefined
+      const extensions =
+        body?.extensions ??
+        JSON.parse(url.searchParams.get('extensions') ?? '{}')
+      const name = body?.operationName ?? url.searchParams.get('operationName')
+      const hash = extensions?.persistedQuery?.sha256Hash
+      const isProfileQuery = ['UserProfile', 'ManageUserProfile'].some(
+        (profileName) =>
+          name === profileName || (hash && hash === persisted[profileName])
+      )
+      if (!isProfileQuery) {
+        await route.fallback()
+        return
+      }
+      const response = await route.fetch()
+      const json = await response.json()
+      expect(json.data?.userProfile).toBeTruthy()
+      json.data.userProfile.firstLogin = true
+      await route.fulfill({ response, json })
+    })
+    await loginLecturer()
+    await expect(page.getByTestId('first-login-beta-enrollment')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+  })
+
+  test('Eligible Catalyst users reach enrollment through settings', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: false,
       mayChange: true,
@@ -453,15 +653,15 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).toBeVisible()
-    await page.getByTestId('menu-beta-features').click()
+    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await page.getByTestId('menu-user-settings').click()
 
-    await expect(page).toHaveURL(/\/user\/settings#beta-features$/)
+    await expect(page).toHaveURL(/\/user\/settings$/)
     await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
     await expect(page.getByTestId('beta-enrollment-switch')).not.toBeChecked()
   })
 
-  test('Closed signup hides enrollment from a non-member', async ({
+  test('Unavailable preference editing keeps beta discovery visible without an opt-in control', async ({
     page,
     loginLecturer,
   }) => {
@@ -474,12 +674,14 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 
-  test('Existing members can opt out after signup closes', async ({
+  test('Existing members can opt out after eligibility changes', async ({
     page,
     loginLecturer,
   }) => {
@@ -496,14 +698,15 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginLecturer()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
     const enrollmentSwitch = page.getByTestId('beta-enrollment-switch')
     await expect(enrollmentSwitch).toBeChecked()
     await enrollmentSwitch.click()
 
     await expect.poll(() => requestedMembership).toBe(false)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(enrollmentSwitch).not.toBeAttached()
   })
 
   test('Enrollment reports pending and feature-refresh failure states', async ({
@@ -514,12 +717,10 @@ test.describe('Beta feature enrollment discovery', () => {
     const setResponseGate = new Promise<void>((resolve) => {
       releaseSetResponse = resolve
     })
-    await mockGrowthBookFeatureFlags(page, {
-      betaSignup: true,
-      failRefresh: true,
-    })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       beforeSetResponse: () => setResponseGate,
+      failPreferenceRefresh: true,
       membership: false,
       mayChange: true,
       signupAvailable: true,
@@ -536,11 +737,11 @@ test.describe('Beta feature enrollment discovery', () => {
     ).toBeVisible()
   })
 
-  test('Open signup remains hidden from non-Catalyst users', async ({
+  test('Non-Catalyst users can discover beta features but cannot enroll', async ({
     page,
     loginFreeUser,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
       mayChange: false,
@@ -549,16 +750,18 @@ test.describe('Beta feature enrollment discovery', () => {
     await loginFreeUser()
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 
-  test('Open signup remains hidden from weaker login scopes', async ({
+  test('Weaker login scopes can discover beta features but cannot enroll', async ({
     page,
     loginFactory,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: null,
       mayChange: false,
@@ -574,8 +777,10 @@ test.describe('Beta feature enrollment discovery', () => {
     })
 
     await page.getByTestId('user-menu').click()
-    await expect(page.getByTestId('menu-beta-features')).not.toBeAttached()
+    await expect(page.getByTestId('menu-user-settings')).toBeVisible()
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/user/settings`)
-    await expect(page.getByTestId('beta-enrollment-section')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-section')).toBeVisible()
+    await expect(page.getByTestId('beta-enrollment-switch')).not.toBeAttached()
+    await expect(page.getByTestId('beta-enrollment-unavailable')).toBeVisible()
   })
 })

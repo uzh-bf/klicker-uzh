@@ -685,6 +685,7 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        owner: { select: { aiFeaturesEnabled: true } },
         course: {
           select: { displayName: true },
         },
@@ -705,6 +706,18 @@ export async function POST(
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    console.warn('Chat admission denied', {
+      requestId,
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    return NextResponse.json(
+      { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
+      { status: 403 }
+    )
   }
 
   const modeOptions = resolveEffectiveChatModeOptions(
@@ -855,9 +868,9 @@ export async function POST(
     selectedMode
   )
 
-  let scopedKbId: string | undefined
+  let scopedKbIds: string[] | undefined
   try {
-    scopedKbId = resolveMcpScope(
+    scopedKbIds = resolveMcpScope(
       enabledMCPConfigurations,
       selectedMode,
       selectedMCPConfigurations
@@ -1054,7 +1067,7 @@ export async function POST(
         chatbotId,
         participantId,
         authMode,
-        kbId: scopedKbId,
+        kbIds: scopedKbIds,
         sessionId: mcpScopeSessionId,
       })
       mcpTools = mcpToolsHandle.tools

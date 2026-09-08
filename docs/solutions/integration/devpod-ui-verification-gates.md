@@ -135,6 +135,24 @@ browser evidence that already passed.
 
 ## Prevention
 
+### Host dependency preparation
+
+Named dependency volumes isolate Linux package contents, but do not authorize
+replacing host mountpoint directories while the container runs. In pnpm 11,
+the outer `pnpm run` command can repair dependencies before the launcher starts.
+Guarding only commands inside the launcher therefore leaves an earlier write
+path unprotected.
+
+The workspace now uses `verifyDepsBeforeRun: error`, and the host launcher
+forces the same policy for its children. Missing-CLI preparation stops the
+exact checkout before explicit installation and reconciles it afterward.
+An inconsistent existing dependency tree fails instead of repairing itself.
+See [the host runner contract](../../../.devcontainer/README.md) for cold
+bootstrap and explicit repair. A successful startup after reconciliation does
+not prove that a preceding live host rewrite preserved mounts or routes.
+
+### Other verification boundaries
+
 - Extend the environment and testing preflights to report Node version, exact
   worktree, DevRouter TLS/SAN health, package-local build status, Chromium
   executable status, native browser dependencies, and ffmpeg availability.

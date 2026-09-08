@@ -35,7 +35,7 @@ import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
-import { useAiFeaturesEnabled } from '../lib/hooks/useAiFeaturesEnabled'
+import { useManageAiCapability } from '../components/featureFlags/ManageFeatureFlagProvider'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
@@ -43,7 +43,9 @@ import useSortingAndFiltering, {
 function Index() {
   const router = useRouter()
   const t = useTranslations()
-  const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const { state: aiCapability } = useManageAiCapability()
+  const aiFeaturesEnabled = aiCapability === 'enabled'
+  const aiTemporarilyUnavailable = aiCapability === 'temporarilyUnavailable'
 
   // search, filter and pagination states
   const [searchInput, setSearchInput] = useState('')
@@ -436,8 +438,14 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
-                {aiFeaturesEnabled ? (
+                {aiFeaturesEnabled || aiTemporarilyUnavailable ? (
                   <Button
+                    disabled={aiTemporarilyUnavailable}
+                    title={
+                      aiTemporarilyUnavailable
+                        ? t('manage.ai.temporarilyUnavailableDescription')
+                        : undefined
+                    }
                     onClick={() => router.push('/elements/generate')}
                     data={{ cy: 'generate-elements' }}
                     className={{ root: 'h-9 font-bold' }}

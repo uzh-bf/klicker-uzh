@@ -2527,6 +2527,12 @@ enum LocaleType {
   en
 }
 
+enum ManageAiCapabilityState {
+  DISABLED
+  ENABLED
+  TEMPORARILY_UNAVAILABLE
+}
+
 type MediaFile {
   createdAt: Date!
   href: String!
@@ -3307,6 +3313,7 @@ type Query {
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   liveQuizStudentAssessmentResponses(liveQuizId: String!, participantId: String!): [StudentAssessmentBlockResponse!]
+  manageAiCapability: ManageAiCapabilityState!
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -3841,6 +3848,7 @@ input UpdateGeneratedElementDraftInput {
 
 type User {
   aiFeaturesEnabled: Boolean!
+  betaEnabled: Boolean!
   catalyst: Boolean!
   catalystTier: String
   email: String!
