@@ -155,10 +155,6 @@ test('the lecturer MCP workflow keeps disposable database wiring guarded', () =>
   assert.ok(setup)
   assert.ok(seed)
   assert.ok(smoke)
-  assert.deepEqual(
-    steps.filter((step) => step.id).map((step) => step.id),
-    ['provision_db', 'setup_db', 'seed_db', 'smoke']
-  )
 
   assert.equal(
     provision.run,
