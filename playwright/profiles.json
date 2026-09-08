@@ -3,7 +3,10 @@
   "groups": [
     {
       "profile": "manage",
-      "specs": ["T-chatbot-authoring.spec.ts"]
+      "specs": [
+        "W5-block-list-scrollbar.spec.ts",
+        "T-chatbot-authoring.spec.ts"
+      ]
     },
     {
       "profile": "manage,pwa",

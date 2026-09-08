@@ -74,6 +74,7 @@
         "U-catalog.spec.ts",
         "V-template.spec.ts",
         "W4-activity-wizard-safety.spec.ts",
+        "W5-block-list-scrollbar.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Y-chat.spec.ts",

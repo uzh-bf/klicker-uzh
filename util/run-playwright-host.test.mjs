@@ -25,6 +25,7 @@ import {
 } from './playwright-host-policy.mjs'
 import {
   PNPM_VERIFY_DEPS_ENV,
+  parseHostArguments,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
   main as runPlaywrightHost,
@@ -744,3 +745,79 @@ test('Volta-routed pnpm commands retain the lowercase dependency guard', () => {
     )
   )
 })
+
+test('browser-only install invokes just the existing host CLI', () => {
+  const { calls, dependencies } = createLauncherHarness()
+  runPlaywrightHost(['--install-browser', '--force'], dependencies)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].command, process.execPath)
+  assert.deepEqual(calls[0].args, [
+    '/synthetic/klicker-uzh/playwright/node_modules/@playwright/test/cli.js',
+    'install',
+    'chromium',
+    '--force',
+  ])
+})
+
+test('browser-only install fails without touching dependencies or runtime when CLI is missing', () => {
+  const { calls, dependencies } = createLauncherHarness({
+    playwrightCli: false,
+  })
+  assert.throws(
+    () => runPlaywrightHost(['--install-browser'], dependencies),
+    /CLI is missing/
+  )
+  assert.deepEqual(calls, [])
+})
+
+test('explicit profile reaches Devrouter and is removed from Playwright arguments', () => {
+  const { calls, dependencies } = createLauncherHarness()
+  runPlaywrightHost(['--profile', 'manage', '--list'], dependencies)
+  assert.deepEqual(calls.find(({ args }) => args[0] === 'ensure').args, [
+    'ensure',
+    '/synthetic/klicker-uzh',
+    '--profile',
+    'manage',
+  ])
+  assert.ok(!pnpmCalls(calls).at(-1).args.includes('--profile'))
+  assert.deepEqual(parseHostArguments(['--profile=manage', '--list']), {
+    profile: 'manage',
+    args: ['--list'],
+  })
+  for (const args of [
+    ['--profile'],
+    ['--profile', '--list'],
+    ['--profile=a', '--profile=b'],
+  ]) {
+    assert.throws(() => parseHostArguments(args), /profile/)
+  }
+})
+
+test('browser-only rejects unsupported flags before touching runtime', () => {
+  for (const args of [
+    ['--install-browser', '--profile', 'manage'],
+    ['--install-browser', '--with-deps'],
+  ]) {
+    const { calls, dependencies } = createLauncherHarness()
+    assert.throws(() => runPlaywrightHost(args, dependencies))
+    assert.deepEqual(calls, [])
+  }
+})
+
+for (const playwrightCli of [false, true]) {
+  for (const prefix of [
+    '--force',
+    '--dry-run',
+    '--show-report',
+    '--print-env',
+  ]) {
+    test(`rejects ${prefix} before --install-browser without side effects (CLI present: ${playwrightCli})`, () => {
+      const { calls, dependencies } = createLauncherHarness({ playwrightCli })
+      assert.throws(
+        () => runPlaywrightHost([prefix, '--install-browser'], dependencies),
+        /--install-browser must be the first argument/
+      )
+      assert.deepEqual(calls, [])
+    })
+  }
+}
