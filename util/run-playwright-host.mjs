@@ -4,12 +4,14 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
 } from './playwright-host-policy.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 
 function fail(message) {
   throw new Error(`[playwright:host] ${message}`)
@@ -39,21 +41,58 @@ function commandExists(command) {
   return result.status === 0
 }
 
-function runPnpm(args, env = process.env) {
-  if (commandExists('volta')) {
-    const nodeBinary = run('volta', ['which', 'node'], { capture: true })
+function runPnpm(
+  args,
+  env = process.env,
+  { runCommand = run, commandExistsFn = commandExists } = {}
+) {
+  const pnpmEnvironment = {
+    ...env,
+    [PNPM_VERIFY_DEPS_ENV]: 'error',
+  }
+
+  if (commandExistsFn('volta')) {
+    const nodeBinary = runCommand('volta', ['which', 'node'], {
+      capture: true,
+    })
     const toolchainDirectory = dirname(nodeBinary)
     const toolchainEnvironment = {
-      ...env,
+      ...pnpmEnvironment,
       PATH: `${toolchainDirectory}${delimiter}${env.PATH ?? ''}`,
     }
 
-    return run(join(toolchainDirectory, 'corepack'), ['pnpm', ...args], {
+    return runCommand(join(toolchainDirectory, 'corepack'), ['pnpm', ...args], {
       env: toolchainEnvironment,
     })
   }
 
-  return run('pnpm', args, { env })
+  return runCommand('pnpm', args, { env: pnpmEnvironment })
+}
+
+function createRuntime({
+  commandRunner = run,
+  resolveDevrouterFn = resolveDevrouter,
+  commandExistsFn = (command) => commandExists(command),
+  pathExists = existsSync,
+  readFile = readFileSync,
+  root = repoRoot,
+  environment = process.env,
+  log = console.log,
+} = {}) {
+  let devrouter
+  return {
+    devrouter: () =>
+      (devrouter ??= resolveDevrouterFn({ repo: root, env: environment })),
+    commandRunner,
+    commandExistsFn,
+    environment,
+    log,
+    pathExists,
+    readFile,
+    repoRoot: root,
+    runPnpm: (args, env = environment) =>
+      runPnpm(args, env, { runCommand: commandRunner, commandExistsFn }),
+  }
 }
 
 export function readCommittedEnvironment(contents) {
@@ -109,43 +148,56 @@ export function resolvePlaywrightEnvironment({
   }
 }
 
-function resolveWorkspace() {
-  const gitDir = run(
+function resolveWorkspace(runtime) {
+  const gitDir = runtime.commandRunner(
     'git',
-    ['-C', repoRoot, 'rev-parse', '--path-format=absolute', '--git-dir'],
+    [
+      '-C',
+      runtime.repoRoot,
+      'rev-parse',
+      '--path-format=absolute',
+      '--git-dir',
+    ],
     { capture: true }
   )
-  const commonDir = run(
+  const commonDir = runtime.commandRunner(
     'git',
-    ['-C', repoRoot, 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+    [
+      '-C',
+      runtime.repoRoot,
+      'rev-parse',
+      '--path-format=absolute',
+      '--git-common-dir',
+    ],
     { capture: true }
   )
 
   if (gitDir === commonDir) return ''
 
   const workspaceFile = join(gitDir, 'devrouter-workspace')
-  if (!existsSync(workspaceFile)) {
+  if (!runtime.pathExists(workspaceFile)) {
     fail('devrouter did not persist a workspace token for this worktree')
   }
 
-  return readFileSync(workspaceFile, 'utf8').trim()
+  return runtime.readFile(workspaceFile, 'utf8').trim()
 }
 
-function resolveDatabasePort() {
-  const workingDirectory = join(repoRoot, '.devcontainer')
-  const containerIds = run(
-    'docker',
-    [
-      'ps',
-      '--filter',
-      `label=com.docker.compose.project.working_dir=${workingDirectory}`,
-      '--filter',
-      'label=com.docker.compose.service=postgres',
-      '--format',
-      '{{.ID}}',
-    ],
-    { capture: true }
-  )
+function resolveDatabasePort(runtime) {
+  const workingDirectory = join(runtime.repoRoot, '.devcontainer')
+  const containerIds = runtime
+    .commandRunner(
+      'docker',
+      [
+        'ps',
+        '--filter',
+        `label=com.docker.compose.project.working_dir=${workingDirectory}`,
+        '--filter',
+        'label=com.docker.compose.service=postgres',
+        '--format',
+        '{{.ID}}',
+      ],
+      { capture: true }
+    )
     .split(/\r?\n/)
     .filter(Boolean)
 
@@ -155,16 +207,18 @@ function resolveDatabasePort() {
     )
   }
 
-  const publishedPort = run('docker', ['port', containerIds[0], '5432/tcp'], {
-    capture: true,
-  })
+  const publishedPort = runtime.commandRunner(
+    'docker',
+    ['port', containerIds[0], '5432/tcp'],
+    { capture: true }
+  )
 
   return parsePublishedPort(publishedPort)
 }
 
-function ensureHostDependencies(playwrightArgs) {
+function ensureHostDependencies(runtime, playwrightArgs) {
   const playwrightCli = join(
-    repoRoot,
+    runtime.repoRoot,
     'playwright',
     'node_modules',
     '@playwright',
@@ -172,9 +226,11 @@ function ensureHostDependencies(playwrightArgs) {
     'cli.js'
   )
 
-  if (!existsSync(playwrightCli)) {
-    console.log('[playwright:host] Installing host Playwright dependencies')
-    runPnpm([
+  if (!runtime.pathExists(playwrightCli)) {
+    runtime.log('[playwright:host] Stopping the devcontainer before install')
+    runtime.commandRunner(runtime.devrouter(), ['stop', runtime.repoRoot])
+    runtime.log('[playwright:host] Installing host Playwright dependencies')
+    runtime.runPnpm([
       'install',
       '--filter',
       '@klicker-uzh/playwright...',
@@ -182,14 +238,22 @@ function ensureHostDependencies(playwrightArgs) {
     ])
   }
 
-  if (!existsSync(join(repoRoot, 'packages', 'prisma', 'dist', 'index.js'))) {
-    console.log('[playwright:host] Building host Prisma test dependency')
-    runPnpm(['--filter', '@klicker-uzh/prisma', 'build'])
+  if (
+    !runtime.pathExists(
+      join(runtime.repoRoot, 'packages', 'prisma', 'dist', 'index.js')
+    )
+  ) {
+    runtime.log('[playwright:host] Building host Prisma test dependency')
+    runtime.runPnpm(['--filter', '@klicker-uzh/prisma', 'build'])
   }
 
-  if (!existsSync(join(repoRoot, 'packages', 'types', 'dist', 'index.js'))) {
-    console.log('[playwright:host] Building host shared test types')
-    runPnpm(['--filter', '@klicker-uzh/types', 'build'])
+  if (
+    !runtime.pathExists(
+      join(runtime.repoRoot, 'packages', 'types', 'dist', 'index.js')
+    )
+  ) {
+    runtime.log('[playwright:host] Building host shared test types')
+    runtime.runPnpm(['--filter', '@klicker-uzh/types', 'build'])
   }
 
   if (playwrightArgs.includes('--list')) return
@@ -198,8 +262,8 @@ function ensureHostDependencies(playwrightArgs) {
     playwrightArgs.includes('--headed') || playwrightArgs.includes('--ui')
   const installArgs = headed ? ['chromium'] : ['--only-shell', 'chromium']
 
-  console.log('[playwright:host] Ensuring the host Chromium binary')
-  runPnpm([
+  runtime.log('[playwright:host] Ensuring the host Chromium binary')
+  runtime.runPnpm([
     '--filter',
     '@klicker-uzh/playwright',
     'exec',
@@ -209,17 +273,25 @@ function ensureHostDependencies(playwrightArgs) {
   ])
 }
 
-export function main(argv = process.argv.slice(2)) {
-  const hostEnvironment = { ...process.env, [HOST_RUNNER_ENV]: '1' }
-  assertPlaywrightHostBoundary({ env: hostEnvironment })
+export function main(argv = process.argv.slice(2), dependencies = {}) {
+  const runtime = createRuntime(dependencies)
+  const hostEnvironment = {
+    ...runtime.environment,
+    [HOST_RUNNER_ENV]: '1',
+  }
+  assertPlaywrightHostBoundary({
+    cwd: dependencies.cwd,
+    env: hostEnvironment,
+    pathExists: runtime.pathExists,
+  })
 
   const args = argv[0] === '--' ? argv.slice(1) : [...argv]
   const showReport = args[0] === '--show-report'
   if (showReport) args.shift()
 
   if (showReport) {
-    ensureHostDependencies(['--list'])
-    runPnpm(
+    ensureHostDependencies(runtime, ['--list'])
+    runtime.runPnpm(
       [
         '--filter',
         '@klicker-uzh/playwright',
@@ -236,13 +308,18 @@ export function main(argv = process.argv.slice(2)) {
   const printEnvironment = args[0] === '--print-env'
   if (printEnvironment) args.shift()
 
-  console.log('[playwright:host] Reconciling the devcontainer runtime')
-  run('devrouter', ['ensure', repoRoot])
+  if (!printEnvironment) ensureHostDependencies(runtime, args)
 
-  const workspace = resolveWorkspace()
-  const databasePort = resolveDatabasePort()
+  runtime.log('[playwright:host] Reconciling the devcontainer runtime')
+  runtime.commandRunner(runtime.devrouter(), ['ensure', runtime.repoRoot])
+
+  const workspace = resolveWorkspace(runtime)
+  const databasePort = resolveDatabasePort(runtime)
   const committedEnvironment = readCommittedEnvironment(
-    readFileSync(join(repoRoot, '.devcontainer', 'devcontainer.env'), 'utf8')
+    runtime.readFile(
+      join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
+      'utf8'
+    )
   )
   const databaseTemplate = committedEnvironment.get('DATABASE_URL')
   const appSecret = committedEnvironment.get('APP_SECRET')
@@ -259,7 +336,7 @@ export function main(argv = process.argv.slice(2)) {
   })
 
   if (printEnvironment) {
-    console.log(
+    runtime.log(
       JSON.stringify(
         {
           databaseHost: `127.0.0.1:${databasePort}`,
@@ -274,11 +351,10 @@ export function main(argv = process.argv.slice(2)) {
     return
   }
 
-  ensureHostDependencies(args)
-  console.log(
+  runtime.log(
     `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
   )
-  runPnpm(
+  runtime.runPnpm(
     [
       '--filter',
       '@klicker-uzh/playwright',
@@ -287,7 +363,7 @@ export function main(argv = process.argv.slice(2)) {
       'test',
       ...args,
     ],
-    { ...process.env, ...resolvedEnvironment }
+    { ...runtime.environment, ...resolvedEnvironment }
   )
 }
 

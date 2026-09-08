@@ -11,6 +11,17 @@ let nextConfig = {
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
+  async rewrites() {
+    return process.env.NODE_ENV === 'test'
+      ? [
+          {
+            source: '/__growthbook__/api/features/sdk-test',
+            destination:
+              'http://127.0.0.1:3000/__growthbook__/api/features/sdk-test',
+          },
+        ]
+      : []
+  },
   async redirects() {
     return [
       {
