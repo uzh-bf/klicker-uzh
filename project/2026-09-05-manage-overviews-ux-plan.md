@@ -81,7 +81,10 @@ revision 4be4408f1 in this same checkout. The latest task branch was immediately
 restored at 6a131a645. Fresh Devsy status reports Stopped, and exact source-path
 routeCount is zero. No data or runtime deletion occurred. This supersedes the
 blocked-shutdown state below. Latest-mount startup and full build remain blocked
-by configuration reconciliation; final integrated review is still active.
+by configuration reconciliation. Final integrated review passed without findings
+on origin/v3..6a131a645; the report is
+project/_local/reviews/2026-09-08-course-integrated-final-review.md.
+Ordinary publication awaits the required build.
 
 ### Current verified outcome, 2026-09-08 21:22 CEST
 
