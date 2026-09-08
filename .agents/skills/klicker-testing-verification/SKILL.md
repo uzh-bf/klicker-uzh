@@ -13,7 +13,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
 | Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
-| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment (marked disposable Postgres + Redis + Hatchet); serialized, don't parallelize                   |
 | Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
@@ -27,6 +27,12 @@ usability, and returned mutation count; do not infer production performance or
 atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
+
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` on the actual client before its first
+database operation, including cleanup after failed setup. Do not use a separate
+verification client or a hostname-only check. A refusal requires correcting the
+disposable environment, never bypassing the guard or marking retained data.
 
 For Git fixture or hook changes, run the focused Node test that exercises the
 fixture plus `pnpm run check:git-identity` and

@@ -269,11 +269,11 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
-  test('First login surfaces beta enrollment while signup is open', async ({
+  test('First login surfaces beta enrollment for eligible users', async ({
     page,
     loginLecturer,
   }) => {
-    await mockGrowthBookFeatureFlags(page, { betaSignup: true })
+    await mockGrowthBookFeatureFlags(page)
     await mockBetaEnrollmentGraphQL(page, {
       membership: false,
       mayChange: true,

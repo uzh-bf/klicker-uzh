@@ -25,7 +25,7 @@ RUN echo '#!/bin/bash\n\
   echo "Waiting for PostgreSQL to be ready..."\n\
   for i in {1..10}; do\n\
   echo "Attempt $i to connect to PostgreSQL..."\n\
-  if pg_isready -h postgres -U postgres; then\n\
+  if pg_isready -h postgres -U klicker -d klicker-prod; then\n\
   echo "PostgreSQL is ready!"\n\
   break\n\
   fi\n\
