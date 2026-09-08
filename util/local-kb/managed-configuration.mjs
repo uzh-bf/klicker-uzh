@@ -61,6 +61,7 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     DEVROUTER_WORKSPACE: `\${DEVROUTER_WORKSPACE:?Devrouter must supply the workspace}`,
     KLICKER_LOCAL_KB_RUNTIME_ONLY: '1',
     BLOB_STORAGE_ACCOUNT_URL: `https://blob.klicker.${workspace}.localhost/klickerdev`,
+    BLOB_STORAGE_INTERNAL_ACCOUNT_URL: `http://${workspace}-azurite:10000/klickerdev`,
   }
   app.depends_on = {}
   app.networks = {

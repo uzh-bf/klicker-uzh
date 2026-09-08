@@ -2,8 +2,35 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { renderBackingCompose } from './local-kb/backing-compose.mjs'
+import { renderProviderCompose } from './local-kb/compose.mjs'
+import {
+  docProcessingImageRevision,
+  renderDocProcessingCompose,
+} from './local-kb/doc-processing-compose.mjs'
+import {
+  ingestionImageRevision,
+  renderIngestionCompose,
+} from './local-kb/ingestion-compose.mjs'
 import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
+import {
+  claimPreparation,
+  completePreparation,
+  initializeManagedApplication,
+  initializeProviderStorage,
+  installManagedConfiguration,
+  prepareLocalConfiguration,
+} from './local-kb/preparation.mjs'
 import { providerCommands } from './local-kb/provider-commands.mjs'
+import {
+  renderRetrievalCompose,
+  retrievalImageRevision,
+} from './local-kb/retrieval-compose.mjs'
+import { renderRetrievalStoreCompose } from './local-kb/retrieval-store-compose.mjs'
+import {
+  renderScrapingCompose,
+  scrapingImageRevision,
+} from './local-kb/scraping-compose.mjs'
 
 const providers = [
   ['ingestion', 'DATA_INGESTION_REPO', 'scripts/start_ingestion_workers.sh'],
@@ -170,9 +197,33 @@ function readConfigPlanInput(path) {
 }
 
 function configPlan(config) {
+  const imagesMatch =
+    config.providers.ingestion.revision === ingestionImageRevision &&
+    config.providers.scraping.revision === scrapingImageRevision &&
+    config.providers.docProcessing.revision === docProcessingImageRevision &&
+    config.providers.retrieval.revision === retrievalImageRevision
   return {
     ...config,
     providerCommands: providerCommands(config),
+    providerCompose: imagesMatch ? renderProviderCompose(config) : null,
+    backingCompose: renderBackingCompose(config),
+    docProcessingCompose:
+      config.providers.docProcessing.revision === docProcessingImageRevision
+        ? renderDocProcessingCompose(config)
+        : null,
+    scrapingCompose:
+      config.providers.scraping.revision === scrapingImageRevision
+        ? renderScrapingCompose(config)
+        : null,
+    retrievalStoreCompose: renderRetrievalStoreCompose(config),
+    retrievalCompose:
+      config.providers.retrieval.revision === retrievalImageRevision
+        ? renderRetrievalCompose(config)
+        : null,
+    ingestionCompose:
+      config.providers.ingestion.revision === ingestionImageRevision
+        ? renderIngestionCompose(config)
+        : null,
     executable: false,
     blockers: configPlanBlockers,
     limitations: configPlanLimitations,
@@ -180,6 +231,15 @@ function configPlan(config) {
 }
 
 function parseArguments(args) {
+  if (
+    args.length === 5 &&
+    args[0] === 'setup' &&
+    args[1] === '--config' &&
+    args[3] === '--candidate' &&
+    /^[a-f0-9]{40}$/.test(args[4])
+  ) {
+    return { command: 'setup', configPath: args[2], candidateRevision: args[4] }
+  }
   if (args.length === 1 && ['status', 'plan'].includes(args[0])) {
     return { command: args[0] }
   }
@@ -191,16 +251,44 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>]'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or setup --config <path> --candidate <commit>'
   )
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const { command, configPath } = parseArguments(process.argv.slice(2))
+    const { command, configPath, candidateRevision } = parseArguments(
+      process.argv.slice(2)
+    )
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      if (command === 'plan') {
+      if (command === 'setup') {
+        // Resolve pins and fresh source state before the exclusive claim or
+        // any generated files, Docker operation, or managed lifecycle call.
+        renderProviderCompose(config)
+        if (
+          !inspectIsolatedProviderSources(config).every(
+            ({ qualified }) => qualified
+          )
+        ) {
+          throw new Error(
+            'Setup requires clean provider sources at the pinned revisions.'
+          )
+        }
+        await claimPreparation(config, candidateRevision)
+        await prepareLocalConfiguration(config, candidateRevision)
+        await installManagedConfiguration(config, candidateRevision)
+        await initializeProviderStorage(config, candidateRevision)
+        await initializeManagedApplication(config, candidateRevision)
+        await completePreparation(config, candidateRevision)
+        console.log(
+          JSON.stringify({
+            prepared: true,
+            applicationStarted: false,
+            aiQualified: false,
+          })
+        )
+      } else if (command === 'plan') {
         console.log(JSON.stringify(configPlan(config), null, 2))
         process.exitCode = 2
       } else {

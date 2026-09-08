@@ -9,6 +9,7 @@ import { renderProviderCompose } from './compose.mjs'
 import {
   inspectUnusedComposeProject,
   runLocalDocker,
+  runLocalManaged,
 } from './docker-preflight.mjs'
 import { validateIsolatedConfig } from './isolated-config.mjs'
 import {
@@ -146,7 +147,10 @@ export async function installManagedConfiguration(
       { services: {} },
       rendered.devrouter,
     ]
-    rendered.devcontainer.dockerComposeFile = ['docker-compose.yml']
+    rendered.devcontainer.dockerComposeFile = [
+      'docker-compose.yml',
+      'docker-compose.devrouter.yml',
+    ]
     for (const [index, file] of handles.entries()) {
       const bytes = Buffer.from(
         `${JSON.stringify(replacements[index], null, 2)}\n`
@@ -183,7 +187,9 @@ export async function installProviderRouting(
   )
   if (
     installation.candidateRevision !== candidateRevision ||
-    result?.kind !== 'linked'
+    result?.kind !== 'linked' ||
+    result.repoPath !== config.project.runtimeCheckoutPath ||
+    result.profile !== 'local-kb-setup'
   ) {
     throw new Error('Routing requires the linked checkout setup result.')
   }
@@ -192,6 +198,91 @@ export async function installProviderRouting(
     renderProviderRouting(result.workspace)
   )
   return { configured: true }
+}
+
+// Setup builds the managed image without starting application processes.
+// Every failure retains the attempt; normal startup never calls this phase.
+export async function initializeManagedApplication(
+  config,
+  candidateRevision,
+  runManaged = runLocalManaged,
+  runDocker = runLocalDocker
+) {
+  const { directory } = await verifyClaim(config, candidateRevision)
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  const installation = await readOwned(
+    join(directory, 'managed-installation/complete.json')
+  )
+  if (
+    storage.initialized !== true ||
+    !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(storage.context ?? '') ||
+    installation.candidateRevision !== candidateRevision
+  ) {
+    throw new Error(
+      'Managed setup requires initialized local storage and configuration.'
+    )
+  }
+  const attempt = join(directory, 'application-setup')
+  await mkdir(attempt, { mode: 0o700 })
+  const checkout = config.project.runtimeCheckoutPath
+  const compose = [
+    '--context',
+    storage.context,
+    'compose',
+    '--project-name',
+    config.project.identity,
+    '--file',
+    join(directory, 'providers.compose.json'),
+  ]
+  try {
+    const result = JSON.parse(
+      await runManaged([
+        'ensure',
+        checkout,
+        '--profile',
+        'local-kb-setup',
+        '--json',
+      ])
+    )
+    await installProviderRouting(config, candidateRevision, result)
+    await runDocker([
+      ...compose,
+      '--file',
+      join(directory, 'provider-routing.compose.json'),
+      'up',
+      '--detach',
+      '--no-deps',
+      'blob',
+    ])
+    for (const command of [
+      ['pnpm', '--filter', '@klicker-uzh/prisma', 'run', 'prisma:push:raw'],
+      ['pnpm', '--filter', '@klicker-uzh/prisma-data', 'run', 'seed:raw'],
+      [
+        'env',
+        `NEXT_PUBLIC_MANAGE_URL=https://manage.klicker.${result.workspace}.localhost`,
+        'pnpm',
+        '--filter',
+        '@klicker-uzh/graphql',
+        'exec',
+        'tsx',
+        'src/scripts/setupLocalBlobStorage.ts',
+      ],
+    ]) {
+      await runManaged(['exec', checkout, '--', ...command])
+    }
+    await writeExclusive(join(attempt, 'complete.json'), {
+      candidateRevision,
+      workspace: result.workspace,
+      context: storage.context,
+    })
+    return { initialized: true }
+  } catch {
+    throw new Error(
+      'Managed application setup failed; partial state is retained and output withheld.'
+    )
+  }
 }
 
 function readCandidateFile(checkout, revision, path) {
@@ -376,7 +467,7 @@ export async function initializeProviderStorage(
     initialized: true,
     context: observation.context,
   })
-  return { storageInitialized: true }
+  return { storageInitialized: true, context: observation.context }
 }
 
 // The setup caller captures this token from the exact owned Hatchet instance.

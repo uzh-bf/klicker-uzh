@@ -20,6 +20,7 @@ import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
   deliverHatchetToken,
+  initializeManagedApplication,
   initializeProviderStorage,
   inspectRuntimeCheckout,
   installManagedConfiguration,
@@ -76,7 +77,7 @@ test('managed installation replaces only candidate config and neutralizes the li
     JSON.parse(await readFile(join(checkout, path), 'utf8'))
   assert.deepEqual(
     (await json('.devcontainer/devcontainer.json')).dockerComposeFile,
-    ['docker-compose.yml']
+    ['docker-compose.yml', 'docker-compose.devrouter.yml']
   )
   assert.deepEqual(await json('.devcontainer/docker-compose.devrouter.yml'), {
     services: {},
@@ -95,7 +96,19 @@ test('managed installation replaces only candidate config and neutralizes the li
   ]) {
     await assert.rejects(installProviderRouting(config, revision, result))
   }
-  const result = { kind: 'linked', workspace: 'synthetic-runtime' }
+  const result = {
+    kind: 'linked',
+    workspace: 'synthetic-runtime',
+    repoPath: checkout,
+    profile: 'local-kb-setup',
+  }
+  await assert.rejects(
+    installProviderRouting(config, revision, {
+      ...result,
+      repoPath: '/synthetic/other',
+    }),
+    /linked checkout/
+  )
   await installProviderRouting(config, revision, result)
   assert.equal(
     (await json('.local-kb/provider-routing.compose.json')).services.blob
@@ -109,6 +122,59 @@ test('managed installation replaces only candidate config and neutralizes the li
     installManagedConfiguration(config, revision, read),
     /differs from the candidate/
   )
+})
+
+test('application setup initializes once and retains failures without replay', async () => {
+  for (const failure of [false, true]) {
+    const { config, checkout, read } = await installationFixture()
+    await prepareLocalConfiguration(config, revision)
+    await installManagedConfiguration(config, revision, read)
+    await initializeProviderStorage(
+      config,
+      revision,
+      async (args) =>
+        args.includes('exec') ? 'synthetic.header.signature' : '',
+      unusedProject
+    )
+    const calls = []
+    const managed = async (args) => {
+      calls.push(args)
+      if (args[0] === 'ensure')
+        return JSON.stringify({
+          kind: 'linked',
+          repoPath: checkout,
+          workspace: 'synthetic-runtime',
+          profile: 'local-kb-setup',
+        })
+      if (failure) throw new Error('synthetic private error must not escape')
+      return ''
+    }
+    const docker = async (args) => {
+      calls.push(args)
+      return ''
+    }
+    const run = () =>
+      initializeManagedApplication(config, revision, managed, docker)
+    if (failure) {
+      await assert.rejects(
+        run(),
+        /^Error: Managed application setup failed; partial state is retained and output withheld\.$/
+      )
+      assert.equal(calls.length, 3)
+    } else {
+      assert.deepEqual(await run(), { initialized: true })
+      assert.equal(calls.length, 5)
+      assert.ok(calls[2].includes('prisma:push:raw'))
+      assert.ok(calls[3].includes('seed:raw'))
+      assert.ok(calls[4].includes('src/scripts/setupLocalBlobStorage.ts'))
+    }
+    const before = calls.length
+    await assert.rejects(run(), { code: 'EEXIST' })
+    assert.equal(calls.length, before)
+    await assert.rejects(requirePreparation(config, revision), {
+      code: 'ENOENT',
+    })
+  }
 })
 
 test('changed managed input prevents all installation writes', async () => {
@@ -326,6 +392,7 @@ test('storage setup runs migrations once and does not qualify the full runtime',
     await initializeProviderStorage(config, revision, run, unusedProject),
     {
       storageInitialized: true,
+      context: 'synthetic-local',
     }
   )
   assert.deepEqual(

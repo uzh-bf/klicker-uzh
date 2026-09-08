@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { ingestionImageRevision } from './local-kb/ingestion-compose.mjs'
 import {
   inspectIsolatedProviderSources,
   inspectLocalKbStack,
@@ -66,7 +67,7 @@ function isolatedConfigInput(endpointOverrides = {}) {
   }
 }
 
-function runConfigPlan(input, command = 'plan') {
+function runConfigPlan(input, command = 'plan', extra = []) {
   const directory = mkdtempSync(join(tmpdir(), 'local-kb-stack-test-'))
   const path = join(directory, 'config.json')
   writeFileSync(path, JSON.stringify(input))
@@ -78,6 +79,7 @@ function runConfigPlan(input, command = 'plan') {
         command,
         '--config',
         path,
+        ...extra,
       ],
       { env: {}, encoding: 'utf8' }
     )
@@ -85,6 +87,16 @@ function runConfigPlan(input, command = 'plan') {
     rmSync(directory, { recursive: true, force: true })
   }
 }
+
+test('setup refuses unpinned providers before checkout or runtime mutation', () => {
+  const result = runConfigPlan(isolatedConfigInput(), 'setup', [
+    '--candidate',
+    'a'.repeat(40),
+  ])
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /source.*pinned|source.*image/i)
+})
 
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
@@ -97,11 +109,32 @@ test('config plan resolves a full synthetic input and rejects remote endpoints s
   assert.ok(plan.mutableState.docQuery)
   assert.equal(plan.sourceMounts.retrieval.readOnly, true)
   assert.ok(plan.providerCommands.start.length > 0)
+  assert.deepEqual(plan.backingCompose.services.hatchet.command, ['start'])
+  assert.equal(
+    plan.backingCompose.volumes.postgres.name,
+    plan.mutableState.postgres.volumeName
+  )
   assert.deepEqual(
     plan.blockers.map(({ id }) => id),
     ['rendered-local-deployment', 'provider-preparation']
   )
   assert.equal(plan.limitations[0].id, 'supplied-provider-observations')
+  assert.equal(plan.ingestionCompose, null)
+  const pinnedInput = isolatedConfigInput()
+  pinnedInput.providerRoots.ingestion.revision = ingestionImageRevision
+  pinnedInput.providerObservations.ingestion.revision = ingestionImageRevision
+  const pinnedResult = runConfigPlan(pinnedInput)
+  assert.equal(pinnedResult.status, 2)
+  const pinnedPlan = JSON.parse(pinnedResult.stdout)
+  assert.equal(pinnedPlan.executable, false)
+  assert.equal(
+    pinnedPlan.ingestionCompose.services['ingestion-api'].command[0],
+    'uvicorn'
+  )
+  assert.deepEqual(
+    pinnedPlan.ingestionCompose.services['ingestion-setup'].profiles,
+    ['local-kb-setup']
+  )
 
   const invalid = runConfigPlan(
     isolatedConfigInput({

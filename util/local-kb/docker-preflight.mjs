@@ -6,16 +6,24 @@ const execute = promisify(execFile)
 // Call only from an explicit lifecycle operation after its ownership gate.
 // Captured output can include the local Hatchet token and must not be logged.
 export async function runLocalDocker(args) {
+  return runHostCommand('docker', args, 300000)
+}
+
+export async function runLocalManaged(args) {
+  return runHostCommand('devrouter', args, 1800000)
+}
+
+async function runHostCommand(command, args, timeout) {
   try {
-    const { stdout } = await execute('docker', args, {
+    const { stdout } = await execute(command, args, {
       encoding: 'utf8',
-      timeout: 300000,
+      timeout,
       maxBuffer: 1024 * 1024,
       env: { PATH: process.env.PATH, HOME: process.env.HOME },
     })
     return stdout.trim()
   } catch {
-    throw new Error('Local Docker operation failed; output withheld.')
+    throw new Error(`Local ${command} operation failed; output withheld.`)
   }
 }
 
