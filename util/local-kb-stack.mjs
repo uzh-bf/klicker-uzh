@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process'
-import { realpathSync, statSync } from 'node:fs'
+import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import { providerCommands } from './local-kb/provider-commands.mjs'
 
 const providers = [
@@ -91,38 +92,100 @@ export async function inspectLocalKbStack(
   }
 }
 
+const configPlanBlockers = [
+  {
+    id: 'rendered-local-deployment',
+    status: 'required',
+    description:
+      'The validation model must be rendered into concrete local deployment services before execution.',
+  },
+  {
+    id: 'provider-preparation',
+    status: 'required',
+    description:
+      'Provider storage preparation and ownership evidence must be completed before execution.',
+  },
+]
+
+const configPlanLimitations = [
+  {
+    id: 'supplied-provider-observations',
+    status: 'unverified',
+    description:
+      'providerObservations are supplied input observations; config plan does not freshly verify provider source state.',
+  },
+  {
+    id: 'read-only-validation',
+    status: 'read-only',
+    description:
+      'Config plan runs no provider commands, probes, filesystem writes, setup, or lifecycle operations.',
+  },
+]
+
+function readConfigPlanInput(path) {
+  try {
+    if (!isAbsolute(path)) throw new Error()
+    return resolveIsolatedConfig(JSON.parse(readFileSync(path, 'utf8')))
+  } catch {
+    throw new Error('Invalid isolated local-KB configuration input.')
+  }
+}
+
+function configPlan(config) {
+  return {
+    ...config,
+    providerCommands: providerCommands(config),
+    executable: false,
+    blockers: configPlanBlockers,
+    limitations: configPlanLimitations,
+  }
+}
+
+function parseArguments(args) {
+  if (args.length === 1 && ['status', 'plan'].includes(args[0])) {
+    return { command: args[0] }
+  }
+  if (args.length === 3 && args[0] === 'plan' && args[1] === '--config') {
+    return { command: 'plan', configPath: args[2] }
+  }
+  throw new Error(
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>]'
+  )
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    if (
-      process.argv.length !== 3 ||
-      !['status', 'plan'].includes(process.argv[2])
-    ) {
-      throw new Error('Usage: node util/local-kb-stack.mjs <status|plan>')
-    }
-    const config = resolveLocalKbConfig(process.env)
-    if (process.argv[2] === 'plan') {
-      console.log(
-        JSON.stringify(
-          {
-            ...providerCommands(config),
-            executable: false,
-            blockers: [
-              'Prepared state, process ownership and queue safety must be verified before execution.',
-            ],
-          },
-          null,
-          2
-        )
-      )
+    const { command, configPath } = parseArguments(process.argv.slice(2))
+    if (command === 'plan' && configPath !== undefined) {
+      const config = readConfigPlanInput(configPath)
+      console.log(JSON.stringify(configPlan(config), null, 2))
       process.exitCode = 2
     } else {
-      const result = await inspectLocalKbStack(config)
-      console.log(JSON.stringify(result, null, 2))
-      process.exitCode =
-        result.providers.some((provider) => !provider.sourceAvailable) ||
-        result.endpoints.some((endpoint) => !endpoint.reachable)
-          ? 1
-          : 2
+      const config = resolveLocalKbConfig(process.env)
+      if (command === 'plan') {
+        console.log(
+          JSON.stringify(
+            {
+              ...providerCommands(config),
+              executable: false,
+              blockers: [
+                'Prepared state, process ownership and queue safety must be verified before execution.',
+              ],
+            },
+            null,
+            2
+          )
+        )
+        process.exitCode = 2
+      } else {
+        const result = await inspectLocalKbStack(config)
+        console.log(JSON.stringify(result, null, 2))
+        process.exitCode =
+          result.providers.some((provider) => !provider.sourceAvailable) ||
+          result.endpoints.some((endpoint) => !endpoint.reachable)
+            ? 1
+            : 2
+      }
     }
   } catch (error) {
     console.error(error.message)
