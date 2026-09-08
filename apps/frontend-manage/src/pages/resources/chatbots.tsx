@@ -28,7 +28,10 @@ function ChatbotsPage() {
       data.userScope === UserLoginScope.AccountOwner)
 
   return (
-    <Layout displayName={t('manage.resources.chatbots')}>
+    <Layout
+      displayName={t('manage.resources.chatbots')}
+      className={{ children: 'flex-none md:overflow-y-visible' }}
+    >
       {canAuthor ? (
         <Chatbots />
       ) : (

@@ -19,6 +19,11 @@ let nextConfig = {
             destination:
               'http://127.0.0.1:3000/__growthbook__/api/features/sdk-test',
           },
+          {
+            source: '/__growthbook__/__test/learning-analytics',
+            destination:
+              'http://127.0.0.1:3000/__growthbook__/__test/learning-analytics',
+          },
         ]
       : []
   },

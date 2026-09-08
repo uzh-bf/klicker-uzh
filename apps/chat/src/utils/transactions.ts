@@ -51,16 +51,7 @@ export async function loadChatbotCreditPolicyForWriter(
     `
   )
 
-  return tx.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: {
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      creditResetPeriodChangedAt: true,
-    },
-  })
+  return loadChatbotCreditPolicy(tx, chatbotId)
 }
 
 /**

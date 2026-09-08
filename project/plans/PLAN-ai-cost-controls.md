@@ -259,6 +259,32 @@ delivery; identifying a running container alone is insufficient.
   Browser submission and withdrawal pass after the legacy API corrections;
   the retained draft is editable again. No participant policy was activated.
 
+- Revision implementation committed as 477086ab1e after staged secret scan,
+  216 GraphQL regressions, source checks, and production build. Host commit
+  hooks were replaced with their container-equivalent checks because pnpm
+  belongs inside the retained container; host Git identity and Gitleaks passed.
+- Integrated target c939ab348a to resolve real PR conflicts. Editor conflicts
+  retain the target editor behavior already incorporated into the revision
+  implementation. Backend keeps the development-only feature payload and
+  accepts the target removal of the old test proxy. New target test handling
+  remains intact. No conflict markers remain.
+- Simplifier completed with two accepted reductions: reuse the existing credit
+  policy query after the writer lock, and remove redundant branches after
+  revision JSON validation. No new abstraction or dependency was added.
+- Frozen-lockfile installation and integrated focused TypeScript checks pass.
+  Integrated regressions pass 217 GraphQL tests and 11 credit tests.
+  Full merged checks and risk review are running before the integration commit.
+
+- Merged-tree checks pass 47 build/check/lint tasks plus formatting, Syncpack,
+  identity, agent guidance, retired-artifact and Prisma mirror checks. The
+  target's expanded host-launcher suite must run on the host: all 27 tests pass
+  there, as do all 68 Playwright CI contract tests. Its container refusal is an
+  environment boundary, not an application failure.
+- Risk review found no high-confidence service or credit-locking finding, but
+  its return narrowed the original scope incorrectly. The same reviewer is
+  completing schema, migration, projection, UI, and remaining credit seams;
+  the review gate remains pending until the full requested scope is covered.
+
 ## Goal
 
 Make the three existing AI cost controls clear and reliable:

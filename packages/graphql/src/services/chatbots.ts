@@ -706,14 +706,8 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
 
   return {
     name: value.name,
-    description:
-      value.description === null || value.description === undefined
-        ? null
-        : (value.description as string),
-    avatar:
-      value.avatar === null || value.avatar === undefined
-        ? null
-        : (value.avatar as string),
+    description: value.description,
+    avatar: value.avatar,
     standardModeConfig:
       value.standardModeConfig === null ||
       value.standardModeConfig === undefined
@@ -728,20 +722,9 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
     creditMaxCredits: value.creditMaxCredits as number,
-    disclaimerTitle:
-      value.disclaimerTitle === null || value.disclaimerTitle === undefined
-        ? null
-        : (value.disclaimerTitle as string),
-    disclaimerIntroText:
-      value.disclaimerIntroText === null ||
-      value.disclaimerIntroText === undefined
-        ? null
-        : (value.disclaimerIntroText as string),
-    publicationUseCase:
-      value.publicationUseCase === null ||
-      value.publicationUseCase === undefined
-        ? null
-        : (value.publicationUseCase as string),
+    disclaimerTitle: value.disclaimerTitle as string | null,
+    disclaimerIntroText: value.disclaimerIntroText as string | null,
+    publicationUseCase: value.publicationUseCase as string | null,
     expectedStudentCount:
       value.expectedStudentCount === undefined
         ? null

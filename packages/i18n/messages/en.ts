@@ -186,6 +186,23 @@ export default {
       description:
         'Test the current chatbot configuration. This conversation is not added to your saved conversations.',
       backToManage: 'Back to chatbot settings',
+      sidebarLabel: 'Owner preview conversations',
+      sidebarTitle: 'Test conversations',
+      conversationListLabel: 'Test conversation list',
+      newTestConversation: 'New test conversation',
+      testConversation: 'Test conversation {number}',
+      savedSettings: 'Saved settings',
+      savedSettingsNotice:
+        'This preview starts from the saved chatbot configuration.',
+      temporarySettings: 'Temporary settings',
+      temporarySettingsNotice:
+        'Model and reasoning changes apply only to this temporary conversation.',
+      fixedPolicy: 'Fixed model policy',
+      fixedPolicyNotice: 'Participants cannot change this saved policy.',
+      modelUnavailable: 'No model is available for this chatbot.',
+      toolLimitsTitle: 'Preview limits',
+      toolLimitsNotice:
+        'Preview supports document queries only. Attachments and other tools are unavailable.',
       loginTitle: 'Lecturer login required',
       loginMessage:
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
@@ -358,6 +375,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {

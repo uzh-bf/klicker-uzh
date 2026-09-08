@@ -190,6 +190,24 @@ export default {
       description:
         'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
       backToManage: 'Zurück zu den Chatbot-Einstellungen',
+      sidebarLabel: 'Vorschaugespräche der Eigentümerin oder des Eigentümers',
+      sidebarTitle: 'Testgespräche',
+      conversationListLabel: 'Liste der Testgespräche',
+      newTestConversation: 'Neue Testkonversation',
+      testConversation: 'Testkonversation {number}',
+      savedSettings: 'Gespeicherte Einstellungen',
+      savedSettingsNotice:
+        'Diese Vorschau startet mit der gespeicherten Chatbot-Konfiguration.',
+      temporarySettings: 'Temporäre Einstellungen',
+      temporarySettingsNotice:
+        'Modell- und Reasoning-Änderungen gelten nur für diese temporäre Konversation.',
+      fixedPolicy: 'Festgelegte Modelleinstellung',
+      fixedPolicyNotice:
+        'Teilnehmende können diese gespeicherte Einstellung nicht ändern.',
+      modelUnavailable: 'Für diesen Chatbot ist kein Modell verfügbar.',
+      toolLimitsTitle: 'Vorschau-Limits',
+      toolLimitsNotice:
+        'Die Vorschau unterstützt nur Dokumentabfragen. Anhänge und andere Tools sind nicht verfügbar.',
       loginTitle: 'Anmeldung für Dozierende erforderlich',
       loginMessage:
         'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
@@ -364,6 +382,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
