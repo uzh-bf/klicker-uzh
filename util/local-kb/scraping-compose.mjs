@@ -43,6 +43,7 @@ export function renderScrapingCompose(config) {
         mem_limit: '1g',
         pids_limit: 256,
         networks: ['default'],
+        depends_on: { crawl4ai: { condition: 'service_started' } },
         environment: {
           PYTHON_DOTENV_DISABLED: '1',
           PYTHONDONTWRITEBYTECODE: '1',

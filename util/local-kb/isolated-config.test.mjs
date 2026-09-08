@@ -136,6 +136,19 @@ test('combined provider composition resolves every dependency and named volume',
   }
   const rendered = renderProviderCompose(resolveIsolatedConfig(input))
   assert.equal(rendered.name, input.projectIdentity)
+  assert.deepEqual(rendered.services.scraping.depends_on, {
+    crawl4ai: { condition: 'service_started' },
+  })
+  assert.deepEqual(rendered.services['ingestion-api'].depends_on, {
+    postgres: { condition: 'service_healthy' },
+  })
+  assert.deepEqual(
+    rendered.services['ingestion-resource-fetch-worker'].depends_on,
+    {
+      postgres: { condition: 'service_healthy' },
+      hatchet: { condition: 'service_started' },
+    }
+  )
   for (const service of Object.values(rendered.services)) {
     for (const name of Object.keys(service.depends_on ?? {})) {
       assert.ok(Object.hasOwn(rendered.services, name))
@@ -197,6 +210,10 @@ test('document processing shares extracts across workers and only explicitly ini
   ])
   for (const [name, service] of Object.entries(services)) {
     assert.equal(service.environment.DOC_PROCESSING_AUTO_INITIALIZE, '0')
+    assert.equal(
+      service.env_file.some(({ path }) => path.endsWith('/hatchet-client.env')),
+      name !== 'doc-processing-setup'
+    )
     assert.equal(
       service.environment.DOC_PROCESSING_DEFAULT_PICTURE_DESCRIPTION,
       'off'
@@ -282,6 +299,10 @@ test('renders pinned ingestion commands with explicit setup and no writable prov
   ])
   for (const [name, service] of Object.entries(services)) {
     assert.match(service.image, /@sha256:[a-f0-9]{64}$/)
+    assert.equal(
+      service.env_file.some(({ path }) => path.endsWith('/hatchet-client.env')),
+      name !== 'ingestion-setup'
+    )
     assert.equal(service.restart, 'no')
     assert.equal(service.cpus, 1)
     assert.ok(['1g', '512m'].includes(service.mem_limit))

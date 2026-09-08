@@ -44,6 +44,10 @@ export function renderIngestionCompose(config) {
     cap_drop: ['ALL'],
     security_opt: ['no-new-privileges:true'],
     networks: ['default'],
+    depends_on: {
+      postgres: { condition: 'service_healthy' },
+      ...(worker ? { hatchet: { condition: 'service_started' } } : {}),
+    },
     environment: {
       PYTHON_DOTENV_DISABLED: '1',
       PYTHONDONTWRITEBYTECODE: '1',
@@ -53,7 +57,12 @@ export function renderIngestionCompose(config) {
         ? { INGESTION_CONFIG_DIR: '/etc/ingestion/project-configs' }
         : {}),
     },
-    env_file: [{ path: join(generated, 'ingestion.env'), required: true }],
+    env_file: [
+      { path: join(generated, 'ingestion.env'), required: true },
+      ...(command.includes('ingestion_api.migrations')
+        ? []
+        : [{ path: join(generated, 'hatchet-client.env'), required: true }]),
+    ],
     volumes: [
       bind(
         join(provider.sourcePath, 'modules/ingestion-shared/src'),

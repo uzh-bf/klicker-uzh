@@ -33,7 +33,12 @@ export function renderDocProcessingCompose(config) {
     networks: ['default'],
     tmpfs: ['/tmp:rw,nosuid,nodev,size=536870912,mode=1777'],
     command,
-    env_file: [{ path: join(directory, 'doc-processing.env'), required: true }],
+    env_file: [
+      { path: join(directory, 'doc-processing.env'), required: true },
+      ...(command.includes('doc_processing.setup')
+        ? []
+        : [{ path: join(directory, 'hatchet-client.env'), required: true }]),
+    ],
     environment: {
       PYTHON_DOTENV_DISABLED: '1',
       PYTHONDONTWRITEBYTECODE: '1',

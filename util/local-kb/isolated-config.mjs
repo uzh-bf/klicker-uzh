@@ -165,7 +165,7 @@ const GRAPH_NODES = [
   [
     'docQuery',
     'provider-service',
-    ['milvus', 'objectBacking', 'blob'],
+    ['milvus'],
     'retrieval',
     'docQuery',
     'retrieval',
@@ -173,7 +173,7 @@ const GRAPH_NODES = [
   [
     'documentProcessing',
     'provider-service',
-    [],
+    ['postgres'],
     'docProcessing',
     'documentProcessing',
     'docProcessing',
