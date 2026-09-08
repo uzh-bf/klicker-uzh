@@ -63,7 +63,7 @@ hatchet:
               app.kubernetes.io/component: hatchet-worker-general
 
     responseProcessor:
-      replicaCount: 8
+      replicaCount: 6
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
@@ -382,7 +382,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 8
+  replicaCount: 6
 
   autoscaling:
     enabled: false
@@ -542,7 +542,7 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  replicaCount: 8
+  replicaCount: 6
 
   autoscaling:
     enabled: false
@@ -717,7 +717,7 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 8
+  replicaCount: 6
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
