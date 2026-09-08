@@ -539,7 +539,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
         activityAnalyticsRequests += 1
       }
 
-      if (resolvedOperationName === 'ManageUserProfile') {
+      if (resolvedOperationName === 'ManageFeaturePreferences') {
         profileFailureIntercepted += 1
         await route.fulfill({
           status: 200,
