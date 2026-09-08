@@ -1,7 +1,7 @@
 # Three-day capacity increase and resource sizing
 
 Status: **draft; capacity and release validation required before deployment**.
-The temporary replica plan targets roughly twice normal demand for a 72-hour
+The temporary replica plan provides additional capacity for a 72-hour
 usage window. Replica counts are a capacity precaution, not a demonstrated
 throughput guarantee. Resource-request corrections are intended to remain after
 the temporary window. Operational measurements are retained locally.
@@ -10,10 +10,10 @@ the temporary window. Operational measurements are retained locally.
 
 | Values key                          | Normal → temporary | Restore after window | Reason                                                                                     |
 | ----------------------------------- | ------------------ | -------------------- | ------------------------------------------------------------------------------------------ |
-| `frontendPWA`                       | 4 → 8              | 4                    | Double the student-facing serving pool.                                                    |
-| `backendGraphql`                    | 4 → 8              | 4                    | Double the main API serving pool.                                                          |
-| `responseApi`                       | 4 → 8              | 4                    | Double response-ingestion processes for synchronized submissions.                          |
-| `hatchet.workers.responseProcessor` | 4 → 8              | 4                    | Increase aggregate response-processing capacity; per-instance serialization still applies. |
+| `frontendPWA`                       | 4 → 6              | 4                    | Increase the student-facing serving pool by 50%.                                           |
+| `backendGraphql`                    | 4 → 6              | 4                    | Increase the main API serving pool by 50%.                                                 |
+| `responseApi`                       | 4 → 6              | 4                    | Increase response-ingestion processes by 50% for synchronized submissions.                 |
+| `hatchet.workers.responseProcessor` | 4 → 6              | 4                    | Increase aggregate response-processing capacity; per-instance serialization still applies. |
 | `hatchet.workers.general`           | 2 → 4              | 2                    | Increase background-task capacity accompanying activity use.                               |
 | `olatApi`                           | 1 → 2              | 1                    | Add LMS-integration concurrency and redundancy.                                            |
 | `chat`                              | 1 → 2              | 1                    | Add chat-serving capacity; upstream limits remain independent.                             |
@@ -76,8 +76,8 @@ No MCP service changes are included in this chart revision.
 
 ## Reservation deltas and capacity prerequisite
 
-Compared with the base chart, the production proposal adds **20 pods, 1400m CPU
-requests and 9036Mi memory requests (~8.82Gi)**. Of the memory increase, 650Mi
+Compared with the pre-scaling base (`e3fb9873c`), production adds **12 pods, 800m CPU
+requests and 7292Mi memory requests (~7.12Gi)**. Of the memory increase, 650Mi
 belongs to assessment resource corrections, with no extra assessment pods.
 Staging adds **1490Mi memory requests**, with **zero additional pods or CPU
 requests**. These are computed manifest deltas, not private cluster observations.
