@@ -5,15 +5,21 @@ const {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   writeFileSync,
 } = require('node:fs')
 const { tmpdir } = require('node:os')
-const { join } = require('node:path')
+const { dirname, isAbsolute, join } = require('node:path')
 const { test } = require('node:test')
 
 test('CI refreshes pnpm workspace state after moving into the test container', () => {
+  assert.ok(
+    process.env.PNPM_EXECUTABLE && isAbsolute(process.env.PNPM_EXECUTABLE),
+    'PNPM_EXECUTABLE must be the absolute path from the pnpm setup step'
+  )
+  const pnpmExecutable = realpathSync(process.env.PNPM_EXECUTABLE)
   const root = mkdtempSync(join(tmpdir(), 'olat-workspace-install-'))
   try {
     const host = join(root, 'host')
@@ -31,9 +37,14 @@ test('CI refreshes pnpm workspace state after moving into the test container', (
         scripts: { build: 'node -e "process.exit(0)"' },
       })
     )
-    const env = { ...process.env, CI: 'true' }
+    const env = {
+      ...process.env,
+      CI: 'true',
+      PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
+      PNPM_EXECUTABLE: pnpmExecutable,
+    }
     const run = (cwd, args) =>
-      spawnSync('pnpm', args, { cwd, env, encoding: 'utf8' })
+      spawnSync(pnpmExecutable, args, { cwd, env, encoding: 'utf8' })
     const installed = run(host, [
       'install',
       '--no-frozen-lockfile',
@@ -49,11 +60,12 @@ test('CI refreshes pnpm workspace state after moving into the test container', (
     const dockerfile = readFileSync(join(__dirname, 'Dockerfile.test'), 'utf8')
     const entrypoint = dockerfile
       .match(/RUN echo '([\s\S]*?)' > \/app\/run-tests.sh/)[1]
-      .replace(/\\n\\\n/g, '\n')
+      .replaceAll(/\\n\\\n/g, '\n')
     const setup = entrypoint
       .split('  # Ensure PostgreSQL is ready')[0]
       .replace('cd /usr/src/app', 'cd "$FIXTURE_WORKSPACE"')
-    const refreshed = spawnSync('bash', ['-c', setup], {
+      .replace('pnpm install', '"$PNPM_EXECUTABLE" install')
+    const refreshed = spawnSync('/bin/bash', ['-c', setup], {
       cwd: container,
       env: { ...env, FIXTURE_WORKSPACE: container },
       encoding: 'utf8',
