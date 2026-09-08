@@ -60,10 +60,53 @@ describe('getDocQueryChipState', () => {
     expect(getDocQueryChipState(baseParams({ result }))).toBe('doneEmpty')
   })
 
+  test('documents mode ignores rendered cards without retrieved chunks', () => {
+    const result = {
+      mode: 'documents',
+      sources: [
+        {
+          reference: 'safe-synthetic-reference',
+          title: 'Synthetic document',
+          chunks: [],
+        },
+      ],
+    }
+    expect(getDocQueryChipState(baseParams({ result }))).toBe('doneEmpty')
+  })
+
+  test('documents mode with an empty result is doneEmpty', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({ result: { mode: 'documents', sources: [] } })
+      )
+    ).toBe('doneEmpty')
+  })
+
   test('done with garbage/unparseable result stays plain done, not a crash', () => {
     expect(getDocQueryChipState(baseParams({ result: 'not json {' }))).toBe(
       'done'
     )
+  })
+
+  test.each([
+    {},
+    { sources: null },
+    { sources: 'invalid' },
+  ])('does not claim an empty retrieval for a malformed object', (result) => {
+    expect(getDocQueryChipState(baseParams({ result }))).toBe('done')
+  })
+
+  test('counts retrieved documents without requiring display metadata', () => {
+    expect(
+      getDocQueryChipState(
+        baseParams({
+          result: {
+            mode: 'documents',
+            sources: [{ chunks: [{ content: 'Synthetic evidence' }] }],
+          },
+        })
+      )
+    ).toBe('done')
   })
 
   // A cancelled call leaves the in-flight placeholder behind as the result
@@ -196,6 +239,31 @@ describe('getDocQueryPanelContent', () => {
         docQueryState: 'done',
       })
     ).toEqual({ query: 'When is the exam?', showSourcesHint: true })
+  })
+
+  test('malformed results retain the raw panel rather than promising sources', () => {
+    expect(
+      getDocQueryPanelContent({
+        isDocQuery: true,
+        argsText,
+        result: {},
+        docQueryState: 'done',
+      })
+    ).toBeUndefined()
+  })
+
+  test('retrieved chunks without renderable metadata do not promise source cards', () => {
+    expect(
+      getDocQueryPanelContent({
+        isDocQuery: true,
+        argsText,
+        result: {
+          mode: 'documents',
+          sources: [{ chunks: [{ content: 'Evidence' }] }],
+        },
+        docQueryState: 'done',
+      })
+    ).toEqual({ query: 'When is the exam?', showSourcesHint: false })
   })
 
   test('parsed payload with zero sources shows the query but no hint', () => {

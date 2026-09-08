@@ -8,16 +8,17 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getManageProposalResult } from '../services/manageProposalResult'
-import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
-import { ManageProposalCard } from './manage-proposal-card'
-import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 import {
+  countDocQueryDocuments,
   isDocQueryToolName,
   normalizeSourcesFromParts,
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { getManageProposalResult } from '../services/manageProposalResult'
+import { ManageProposalCard } from './manage-proposal-card'
+import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -89,17 +90,15 @@ export type DocQueryChipState = 'running' | 'done' | 'doneEmpty' | 'failed'
  * component.
  *
  * "No results" is claimed only for a payload that actually parsed and
- * yielded no sources. Anything unreadable stays plain "done": a cancelled
- * call leaves the `'Loading...'`/`'Executing...'` placeholder from
- * `hooks/useChatResponse.ts` behind as the result, and telling a student
+ * yielded no valid retrieved documents. Anything unreadable stays plain
+ * "done": a cancelled call leaves the `'Loading...'`/`'Executing...'`
+ * placeholder from `hooks/useChatResponse.ts` behind as the result, and telling a student
  * their search found nothing would be worse than saying nothing at all.
  */
 export function getDocQueryChipState({
-  toolName,
   isRunning,
   isFailed,
   result,
-  isError,
 }: {
   toolName: string
   isRunning: boolean
@@ -109,12 +108,10 @@ export function getDocQueryChipState({
 }): DocQueryChipState {
   if (isFailed) return 'failed'
   if (isRunning) return 'running'
-  if (!parseDocQueryPayload(result)) return 'done'
+  const payload = parseDocQueryPayload(result)
+  if (!payload || !Array.isArray(payload.sources)) return 'done'
 
-  const sources = normalizeSourcesFromParts([
-    { type: 'tool-call', toolName, result, isError },
-  ])
-  return sources.length > 0 ? 'done' : 'doneEmpty'
+  return countDocQueryDocuments(payload) > 0 ? 'done' : 'doneEmpty'
 }
 
 function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
@@ -168,9 +165,8 @@ export interface DocQueryPanelContent {
  * placeholder/error value — see `getDocQueryChipState` — whose raw payload
  * keeps its debugging value).
  *
- * `'done'` only ever reaches here once `parseDocQueryPayload(result)` above
- * has already succeeded, so — unlike the chip label — it unambiguously means
- * "parsed with at least one source" and is safe to key the sources hint on.
+ * The chip describes retrieval, while the hint refers to visible source cards.
+ * Missing display metadata must not promise a card that cannot be rendered.
  */
 export function getDocQueryPanelContent({
   isDocQuery,
@@ -183,17 +179,23 @@ export function getDocQueryPanelContent({
   result: unknown
   docQueryState: DocQueryChipState | undefined
 }): DocQueryPanelContent | undefined {
+  const payload = parseDocQueryPayload(result)
   if (
     !isDocQuery ||
     docQueryState === 'running' ||
     docQueryState === 'failed' ||
-    !parseDocQueryPayload(result)
+    !payload ||
+    !Array.isArray(payload.sources)
   ) {
     return undefined
   }
 
   const query = parseDocQueryArgsQuery(argsText)
-  const showSourcesHint = docQueryState === 'done'
+  const showSourcesHint =
+    docQueryState === 'done' &&
+    normalizeSourcesFromParts([
+      { type: 'tool-call', toolName: 'doc_query', result },
+    ]).length > 0
   // doneEmpty with unreadable args would yield a panel with nothing in it —
   // fall back to the raw payload instead.
   if (query === undefined && !showSourcesHint) {
