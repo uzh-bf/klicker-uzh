@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Synthetic tests for the standalone evaluation judge launcher."""
+
+from __future__ import annotations
+
+import contextlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+
+MODULE_PATH = Path(__file__).with_name("klicker-eval-judge.py")
+SPEC = importlib.util.spec_from_file_location("klicker_eval_judge", MODULE_PATH)
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError("could not load judge launcher")
+JUDGE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(JUDGE)
+
+
+class JudgeTests(unittest.TestCase):
+    def test_config_is_pinned_and_has_no_database_settings(self) -> None:
+        config = JUDGE.CONFIG_PATH.read_text(encoding="utf-8")
+        self.assertIn("ghcr.io/berriai/litellm-database:v1.96.2", JUDGE.IMAGE)
+        self.assertIn("model_name: klickeruzh/azure/gpt-5.6-luna-high", config)
+        self.assertIn("model: openai/gpt-5.6-luna", config)
+        self.assertIn("api_base: os.environ/AZURE_OPENAI_BASE_URL", config)
+        self.assertIn("api_key: os.environ/AZURE_OPENAI_API_KEY", config)
+        self.assertIn("reasoning_effort: high", config)
+        self.assertIn("timeout: 120", config)
+        self.assertIn("drop_params: true", config)
+        self.assertIn("disable_spend_logs: true", config)
+        self.assertNotIn("database_url", config)
+
+    def test_missing_credentials_fails_before_docker(self) -> None:
+        environment = {"PATH": os.environ.get("PATH", "")}
+        values, missing = JUDGE.credentials_from_environment(environment)
+        self.assertIsNone(values)
+        self.assertEqual(missing, JUDGE.REQUIRED_CREDENTIALS)
+
+    def test_run_sends_credentials_only_on_bootstrap_stdin(self) -> None:
+        class Sink:
+            def __init__(self) -> None:
+                self.data = b""
+
+            def write(self, data: bytes) -> int:
+                self.data += data
+                return len(data)
+
+            def close(self) -> None:
+                return
+
+        class Process:
+            def __init__(self) -> None:
+                self.stdin = Sink()
+
+            def wait(self) -> int:
+                return 0
+
+        process = Process()
+        synthetic = {
+            "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
+            "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
+        }
+        output = io.StringIO()
+        errors = io.StringIO()
+        with (
+            patch.dict(os.environ, synthetic, clear=False),
+            patch.object(JUDGE.shutil, "which", return_value="/synthetic/docker"),
+            patch.object(JUDGE.subprocess, "Popen", return_value=process) as popen,
+            contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(errors),
+        ):
+            self.assertEqual(JUDGE.run(()), 0)
+
+        command = popen.call_args.args[0]
+        options = popen.call_args.kwargs
+        rendered_command = "\0".join(command)
+        self.assertNotIn(synthetic["AZURE_OPENAI_BASE_URL"], rendered_command)
+        self.assertNotIn(synthetic["AZURE_OPENAI_API_KEY"], rendered_command)
+        self.assertNotIn("AZURE_OPENAI_BASE_URL", options["env"])
+        self.assertNotIn("AZURE_OPENAI_API_KEY", options["env"])
+        self.assertEqual(json.loads(process.stdin.data), synthetic)
+        self.assertNotIn("synthetic-upstream-key", output.getvalue())
+        self.assertNotIn("synthetic-upstream-key", errors.getvalue())
+
+    def test_host_command_has_no_upstream_values(self) -> None:
+        synthetic = {
+            "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
+            "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
+            "PATH": "/synthetic/bin",
+        }
+        sanitized = JUDGE.host_environment(synthetic)
+        self.assertNotIn("AZURE_OPENAI_BASE_URL", sanitized)
+        self.assertNotIn("AZURE_OPENAI_API_KEY", sanitized)
+
+        command = JUDGE.docker_command("/synthetic/bin/docker", "judge-test")
+        rendered = "\0".join(command)
+        self.assertNotIn(synthetic["AZURE_OPENAI_BASE_URL"], rendered)
+        self.assertNotIn(synthetic["AZURE_OPENAI_API_KEY"], rendered)
+        self.assertIn("--rm", command)
+        self.assertIn("-i", command)
+        self.assertIn("127.0.0.1:4000:4000", command)
+        self.assertIn(JUDGE.IMAGE, command)
+
+    def test_bootstrap_rejects_missing_stdin(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-c", JUDGE.BOOTSTRAP],
+            input=b"",
+            capture_output=True,
+            check=False,
+            timeout=5,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"credentials input missing", result.stderr)
+
+    def test_bootstrap_sets_only_synthetic_credentials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="klicker-eval-judge-test-") as root:
+            root_path = Path(root)
+            record = root_path / "record.json"
+            executable = root_path / "litellm"
+            executable.write_text(
+                f"#!{sys.executable}\n"
+                "import json, os\n"
+                f"with open({str(record)!r}, 'w', encoding='utf-8') as stream:\n"
+                "    json.dump({'base': bool(os.environ.get('AZURE_OPENAI_BASE_URL')), "
+                "'key': bool(os.environ.get('AZURE_OPENAI_API_KEY'))}, stream)\n"
+                "print('synthetic child output')\n",
+                encoding="utf-8",
+            )
+            executable.chmod(executable.stat().st_mode | stat.S_IXUSR)
+            environment = dict(os.environ)
+            environment.pop("AZURE_OPENAI_BASE_URL", None)
+            environment.pop("AZURE_OPENAI_API_KEY", None)
+            environment["PATH"] = str(root_path)
+            payload = {
+                "AZURE_OPENAI_BASE_URL": "https://synthetic.invalid/v1",
+                "AZURE_OPENAI_API_KEY": "synthetic-upstream-key",
+            }
+            result = subprocess.run(
+                [sys.executable, "-c", JUDGE.BOOTSTRAP],
+                input=(json.dumps(payload) + "\n").encode("utf-8"),
+                capture_output=True,
+                env=environment,
+                check=False,
+                timeout=5,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(json.loads(record.read_text(encoding="utf-8")), {
+                "base": True,
+                "key": True,
+            })
+            self.assertEqual(result.stdout, b"")
+            self.assertEqual(result.stderr, b"")
+            self.assertNotIn(b"synthetic-upstream-key", result.stdout + result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()

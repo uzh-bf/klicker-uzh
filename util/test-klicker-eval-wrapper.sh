@@ -668,4 +668,25 @@ env -i \
 [ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
+# An unconfigured judge uses the standalone loopback gateway only.
+mv "$FAKE_REPO/evaluation/config.local.json" "$FAKE_REPO/evaluation/config.saved.json"
+write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
+exit "${KLICKER_TEST_CURL_STATUS:-0}"'
+chmod +x "$FAKE_BIN/curl"
+run_judge_case
+assert_line 'LITELLM_API_BASE=http://127.0.0.1:4000' "$CHILD_LOG"
+[ ! -s "$INFISICAL_LOG" ] || fail 'local judge must not fetch judge credentials'
+status=0
+run_judge_case KLICKER_TEST_CURL_STATUS=7 >"$TEST_ROOT/local-judge-missing.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'unavailable local judge must fail before evaluator'
+[ ! -s "$CHILD_LOG" ] || fail 'unavailable local judge must not invoke evaluator'
+status=0
+run_judge_case LITELLM_API_BASE=https://explicit.example.test >"$TEST_ROOT/partial-remote.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'partial explicit settings must not select local default'
+status=0
+run_judge_case KLICKER_EVAL_CONFIG= >"$TEST_ROOT/explicit-empty-config.out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail 'explicit empty config must not select local default'
+env -i PATH="$TEST_PATH" KLICKER_TEST_CURL_STATUS=7 \
+  "$WRAPPER" --check --mode eval >/dev/null
+
 echo '[test-klicker-eval-wrapper] PASS'

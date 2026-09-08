@@ -33,8 +33,17 @@ FRAMEWORK_RUNNER="$FRAMEWORK_ROOT/scripts/_run_eval.sh"
 # Infisical scope. No credentials are stored in the setup file or command argv.
 JUDGE_SOURCE_NAMES=()
 JUDGE_CONFIG_FIELDS=()
+LOCAL_JUDGE=false
 
 read_judge_config() {
+  if [ -z "${LITELLM_API_BASE:-}" ] && [ -z "${LITELLM_API_KEY:-}" ] &&
+    [ -z "${KLICKER_EVAL_CONFIG+x}" ] && [ ! -e "$REPO_ROOT/evaluation/config.local.json" ]; then
+    # This credential belongs only to the loopback development gateway.
+    export LITELLM_API_BASE=http://127.0.0.1:4000
+    export LITELLM_API_KEY=sk-klicker-eval-local
+    LOCAL_JUDGE=true
+    return 0
+  fi
   if [ -n "${LITELLM_API_BASE:-}" ] && [ -n "${LITELLM_API_KEY:-}" ]; then
     return 0
   fi
@@ -101,6 +110,14 @@ fetch_judge_setting() {
 resolve_judge_settings() {
   read_judge_config || return 1
   if [ "${#JUDGE_CONFIG_FIELDS[@]}" -eq 0 ]; then
+    if [ "$LOCAL_JUDGE" = true ]; then
+      if ! command -v curl >/dev/null 2>&1 ||
+        ! curl --silent --fail --max-time 3 --output /dev/null \
+          http://127.0.0.1:4000/health/liveliness; then
+        echo 'Error: local evaluation judge is unavailable at 127.0.0.1:4000; start util/klicker-eval-judge.py with Infisical-injected Azure credentials (see evaluation/README.md)' >&2
+        return 1
+      fi
+    fi
     return 0
   fi
   local version
@@ -515,7 +532,11 @@ run_offline_check() {
   if [ "$NEEDS_JUDGE" = true ]; then
     printf '%s\n' 'Required judge variables: LITELLM_API_BASE and LITELLM_API_KEY'
     if read_judge_config; then
-      printf '%s\n' 'Judge configuration: supplied explicitly or scope metadata is valid'
+      if [ "$LOCAL_JUDGE" = true ]; then
+        printf '%s\n' 'Judge configuration: local Docker gateway at 127.0.0.1:4000'
+      else
+        printf '%s\n' 'Judge configuration: supplied explicitly or scope metadata is valid'
+      fi
     else
       CHECK_STATUS=1
     fi

@@ -3,6 +3,10 @@ packages:
   - packages/*
   - playwright
 
+# Scripts such as evaluation use their own runtime and need no monorepo install.
+# Keep dependency installation explicit; pnpm still warns when it is needed.
+verifyDepsBeforeRun: warn
+
 # Delay automated dependency resolution for newly published packages by 14 days
 # to reduce exposure to compromised releases. Manual emergency exceptions should
 # be exact package/version selectors reviewed with the matching package.json bump.

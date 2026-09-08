@@ -13,6 +13,11 @@ Klicker application stack.
 
 ## One-time setup
 
+Use the repository's pinned Node 24 and pnpm versions. pnpm warns about missing or
+stale workspace dependencies without installing them before scripts. Evaluation
+runs through uv and does not require the monorepo dependencies or an application
+build. For application work, install dependencies with `pnpm install --frozen-lockfile`.
+
 The pinned framework is a private submodule. Developers with GitLab access
 materialize it explicitly:
 
@@ -20,6 +25,58 @@ materialize it explicitly:
 git submodule update --init --checkout evaluation/framework
 uv sync --frozen --project evaluation/framework
 ```
+
+### Standalone Docker judge
+
+Start only the evaluation judge in a separate terminal. It uses Azure's
+OpenAI-compatible `/openai/v1` endpoint and the `gpt-5.6-luna` deployment.
+Supply `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL` from the approved
+Infisical scope. Human developers can use their authenticated native CLI:
+
+```bash
+infisical run --domain "https://<approved-infisical-host>" \
+  --projectId "<approved-project-id>" --env "<environment>" \
+  --path "<approved-secret-path>" -- python3 util/klicker-eval-judge.py
+```
+
+Agent runs use the restricted operator's existing allowlist:
+
+```bash
+rs-infisical-operator --profile klicker-dev run \
+  --map AZURE_OPENAI_API_KEY=AZURE_OPENAI_API_KEY \
+  --map AZURE_OPENAI_BASE_URL=AZURE_OPENAI_BASE_URL -- \
+  python3 util/klicker-eval-judge.py
+```
+
+The helper runs Docker in the foreground. Stop it with Ctrl-C. It binds only
+`127.0.0.1:4000`, needs no database, and forwards the two upstream settings
+through stdin into process memory. It does not put them in Docker environment
+metadata or configuration files. This local gateway has a fixed development-only
+key; do not expose it to a network or use this configuration for a shared service.
+
+Without judge overrides or an `evaluation/config.local.json`, judge modes select
+this local gateway automatically. They fail before evaluation if it is not running.
+`--check` remains offline and does not prove gateway access. Target-only modes
+never select a judge. Explicit configuration, including incomplete configuration,
+does not fall back to the local gateway after a failure.
+
+Place the supplied QA and metrics files at their requested paths under the
+ignored framework data directories, then run from the Klicker repository:
+
+```bash
+pnpm run eval:klicker -- \
+  --mode eval \
+  --qa-file evaluation/framework/data/output/qa_pairs/qa_pairs_fineco_chatbot_clean.json \
+  --metrics evaluation/framework/data/input/metrics/klicker_chatbot.yaml \
+  --eval-mode self-assessment \
+  --limit 1
+```
+
+No `LITELLM_*` exports or `PIPELINES_LITELLM_API_KEY` are needed for this local
+path. The QA and metric files are supplied separately; they are not generated
+or replaced by the launcher. Keep QA data and result files uncommitted.
+
+### Remote judge through Infisical
 
 Use Python 3.12 and uv. The launcher uses the standard Infisical CLI for human
 developer runs. The host validation for the supported CLI was performed with
@@ -104,7 +161,7 @@ pnpm run eval:klicker -- \
   --limit 1
 ```
 
-The normal developer path uses the local scope file and one host login; it does
+The remote developer path uses the local scope file and one host login; it does
 not require routine export commands. Automated agent runs use the existing
 restricted rs-infisical-operator allowlist for approved values. Do not place
 credentials in prompts, arguments, logs, or committed files, and do not invent
