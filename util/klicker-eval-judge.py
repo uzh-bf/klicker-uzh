@@ -12,14 +12,13 @@ import argparse
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import signal
 import subprocess
 import sys
+from collections.abc import Mapping, Sequence
+from pathlib import Path
 from types import FrameType
-from typing import Mapping, Sequence
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPO_ROOT / "evaluation" / "litellm.yaml"
@@ -133,9 +132,7 @@ def credentials_from_environment(
 def docker_command(docker: str, name: str) -> list[str]:
     """Build the Docker invocation without embedding any credential values."""
 
-    mount = (
-        f"type=bind,source={CONFIG_PATH},target={CONTAINER_CONFIG_PATH},readonly"
-    )
+    mount = f"type=bind,source={CONFIG_PATH},target={CONTAINER_CONFIG_PATH},readonly"
     return [
         docker,
         "run",
@@ -201,9 +198,7 @@ def run(arguments: Sequence[str] | None = None) -> int:
     name = container_name()
     environment = host_environment()
     command = docker_command(docker, name)
-    payload = (json.dumps(credentials, separators=(",", ":")) + "\n").encode(
-        "utf-8"
-    )
+    payload = (json.dumps(credentials, separators=(",", ":")) + "\n").encode("utf-8")
 
     try:
         process = subprocess.Popen(

@@ -8,14 +8,13 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
 import stat
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
-
 
 MODULE_PATH = Path(__file__).with_name("klicker-eval-judge.py")
 SPEC = importlib.util.spec_from_file_location("klicker_eval_judge", MODULE_PATH)
@@ -153,10 +152,13 @@ class JudgeTests(unittest.TestCase):
                 timeout=5,
             )
             self.assertEqual(result.returncode, 0)
-            self.assertEqual(json.loads(record.read_text(encoding="utf-8")), {
-                "base": True,
-                "key": True,
-            })
+            self.assertEqual(
+                json.loads(record.read_text(encoding="utf-8")),
+                {
+                    "base": True,
+                    "key": True,
+                },
+            )
             self.assertEqual(result.stdout, b"")
             self.assertEqual(result.stderr, b"")
             self.assertNotIn(b"synthetic-upstream-key", result.stdout + result.stderr)
