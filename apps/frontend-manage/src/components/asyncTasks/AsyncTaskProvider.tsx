@@ -237,6 +237,8 @@ export function AsyncTaskProvider({
   } = useQuery(GetAsyncTasksDocument, {
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-first',
+    // Publish cache updates before a refetch can fail and retain stale data.
+    notifyOnNetworkStatusChange: true,
     skip: !userId,
     ssr: false,
     variables: { trackedIds: requestedTrackedIds },

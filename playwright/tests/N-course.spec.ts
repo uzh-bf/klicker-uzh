@@ -902,7 +902,10 @@ async function verifyCourseAccessLost(page: Page) {
 async function loginStudentPassword(page: Page, username: string) {
   await page.context().clearCookies()
   await page.goto('about:blank').catch(() => undefined)
-  await page.goto(URL_STUDENT_LOGIN, { waitUntil: 'commit', timeout: 300_000 })
+  await page.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN, {
+    waitUntil: 'domcontentloaded',
+    timeout: 300_000,
+  })
   await page.evaluate(() => {
     try {
       localStorage.clear()
@@ -2052,7 +2055,8 @@ test.describe('Part 1: Course creation', () => {
 // ===========================================================================
 test.describe('Part 2: Randomized group creation', () => {
   test('Have 10 students join the course and the random assignment pool', async ({
-    page,
+    browser,
+    contextOptions,
   }, testInfo) => {
     testInfo.setTimeout(180_000)
     const coursePin = await getCoursePin(COURSE2.name)
@@ -2070,13 +2074,26 @@ test.describe('Part 2: Randomized group creation', () => {
     ]
 
     for (const studentUsername of students) {
-      await loginStudentPassword(page, studentUsername)
-      await joinCourse(page, coursePin)
-      await openStudentCourse(page, COURSE2.displayName)
-      await openStudentGroupTab(page)
-      await page.getByTestId('student-course-create-group').click()
-      await page.getByTestId('enter-random-group-pool').click()
-      await expect(page.getByTestId('leave-random-group-pool')).toBeVisible()
+      // Each student gets independent cookies, storage, and service workers.
+      const studentContext = await browser.newContext(contextOptions)
+      try {
+        const page = await studentContext.newPage()
+        await loginStudentPassword(page, studentUsername)
+        await joinCourse(page, coursePin)
+        await openStudentCourse(page, COURSE2.displayName)
+        await openStudentGroupTab(page)
+        await page.getByTestId('student-course-create-group').click()
+        const enterPool = page.getByTestId('enter-random-group-pool')
+        const leavePool = page.getByTestId('leave-random-group-pool')
+        await expect(enterPool.or(leavePool)).toBeVisible()
+        // A retry retains server-side joins from the previous attempt. Leave
+        // first so every attempt still exercises the actual join transition.
+        if (await leavePool.isVisible()) await leavePool.click()
+        await enterPool.click()
+        await expect(leavePool).toBeVisible()
+      } finally {
+        await studentContext.close()
+      }
     }
   })
 
@@ -3812,6 +3829,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
                 asyncTaskAttentionCount: jobs.filter((job) => !job.readAt)
                   .length,
                 asyncTasks: jobs.map((job) => ({
+                  __typename: 'AsyncTask',
                   id: job.id,
                   kind: 'COURSE_DUPLICATION',
                   status: 'SUCCEEDED',
@@ -3890,6 +3908,25 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(taskB).toContainText(restoredJobs[1].name)
     await expect(page.getByTestId(/^async-task-open-/)).toHaveCount(2)
     await expect(page).toHaveURL(preActionUrl)
+    await page.evaluate(() => {
+      // Install after hydration so only the handled synthetic error bypasses
+      // Next's console-error overlay; genuine browser errors remain visible.
+      const originalConsoleError = console.error.bind(console)
+      const testWindow = window as typeof window & {
+        __handledTaskRefetchFailures: number
+      }
+      testWindow.__handledTaskRefetchFailures = 0
+      console.error = (...args) => {
+        if (
+          args[0] === 'Failed to refresh asynchronous tasks' &&
+          args[1]?.message === 'Synthetic task refetch failure'
+        ) {
+          testWindow.__handledTaskRefetchFailures += 1
+          return
+        }
+        originalConsoleError(...args)
+      }
+    })
     await taskA
       .getByRole('link', {
         name: messages.manage.asyncTasks.openResultLabel.replace(
@@ -3905,6 +3942,15 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       'aria-label',
       '1 task needs attention'
     )
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as typeof window & { __handledTaskRefetchFailures: number })
+              .__handledTaskRefetchFailures
+        )
+      )
+      .toBe(1)
     await asyncTaskCenterTrigger(page).click()
     await expect(
       taskA.getByText(messages.manage.asyncTasks.unread)
