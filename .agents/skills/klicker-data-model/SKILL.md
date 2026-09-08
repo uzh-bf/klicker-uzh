@@ -11,10 +11,17 @@ Facts (schema layout, seed paths, gotchas): [docs/data-and-migrations.md](../../
 
 ```bash
 # 1. edit the right area file in packages/prisma/src/prisma/schema/ (15 schema files)
-pnpm run prisma:migrate      # 2. create/apply migration + regenerate TS client (needs dev postgres)
+pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw # 2. create/apply + regenerate TS client
 pnpm run prisma:sync         # 3. mirror model files into apps/analytics — NEVER skip
 pnpm run build               # 4. regenerate Prisma client + dependent packages
 ```
+
+Run these config-derived commands inside the provisioned self-contained container
+(or through host `devrouter exec <checkout-path> -- <command>`). Migration requires
+the restricted `klicker_test` login and independently marked `klicker_test` and
+`klicker_test_shadow` databases. Never replace the raw command with an Infisical
+wrapper targeting retained dev, staging or production data. A refusal is a stop,
+not permission to mark a retained database or bypass the guard.
 
 Then, if the change is API-visible: update Pothos types/resolvers (`klicker-graphql-api`) — the Pothos Prisma plugin picks up new fields, but object types expose them explicitly.
 
@@ -43,7 +50,12 @@ A fixture needed by tests must be added to EACH consumer:
 
 Use the supported `prisma-data` seed wrappers rather than invoking `seedTEST.ts`, `seedFlashcards.ts`, or internal `seed:test:raw` directly. `seed`, `seed:raw`, `seed:test`, `seed:qa`, `seed:flashcards`, and `seed:prod:flashcards` run the GraphQL stale-fingerprint repair bootstrap after their writer attempt; they continue to the repair after a partial writer failure while preserving a non-zero overall exit. The bootstrap inherits the wrapper's already-selected `DATABASE_URL`, takes the rollout advisory lock, and is bounded to ten passes/four minutes; it must not select an environment independently or expand into an unbounded historical backfill. Any direct seed helper that updates an existing element must clear `importFingerprint` and `importFingerprintVersion` in the same update so the bounded repair finds semantic changes without a full-corpus scan.
 
-Prisma 7 reset/migrate commands do not seed automatically. The legacy host uses `pnpm run prisma:setup`; the self-contained DevPod uses the raw reset/push/Prisma Data seed sequence in `.devcontainer/post-create.sh`. Both are explicit and **destructive** — apply `klicker-environment-doctor` check 8 first.
+Prisma 7 reset/migrate commands do not seed automatically. Use the raw
+reset/push/Prisma Data seed sequence in `.devcontainer/post-create.sh` only in
+the provisioned disposable environment. It is **destructive**; retained legacy
+host databases are not valid test-seed targets. Every new destructive test seed
+must await `requireDisposableDatabase(client)` before using its actual client,
+including cleanup after failed setup.
 
 ## Boot-time data migrations (rare)
 

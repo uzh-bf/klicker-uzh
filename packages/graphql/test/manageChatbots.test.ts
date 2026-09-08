@@ -49,6 +49,10 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       emitter
     )
     userOneCtx = ctx1
+    userOneCtx.featureFlags = {
+      refresh: async () => {},
+      isEnabled: (key) => key === 'ai-beta',
+    } as NonNullable<ContextWithUser['featureFlags']>
     userTwoCtx = ctx2
   })
 
@@ -1135,7 +1139,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         userOneCtx
       )
 
-      const [result] = await getChatbotsInfo(userOneCtx)
+      const [result] = (await getChatbotsInfo(userOneCtx)) ?? []
       expect(result?.disclaimerSummary).toMatchObject({
         acceptedCount: 0,
         pendingCount: 1,
@@ -1163,7 +1167,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         },
       })
 
-      const [info] = await getChatbotsInfo(userOneCtx)
+      const [info] = (await getChatbotsInfo(userOneCtx)) ?? []
 
       expect(info).toMatchObject({
         id: chatbot.id,
@@ -1194,7 +1198,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         },
       })
 
-      const [info] = await getChatbotsInfo(userOneCtx)
+      const [info] = (await getChatbotsInfo(userOneCtx)) ?? []
 
       expect(info).toMatchObject({
         id: chatbot.id,
@@ -1222,7 +1226,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         },
       })
 
-      const [info] = await getChatbotsInfo(userOneCtx)
+      const [info] = (await getChatbotsInfo(userOneCtx)) ?? []
 
       expect(info).toMatchObject({
         id: chatbot.id,
@@ -1261,7 +1265,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       process.env.CHAT_PRIMARY_MODEL_ID = 'gpt-4.1'
 
       try {
-        const [info] = await getChatbotsInfo(userOneCtx)
+        const [info] = (await getChatbotsInfo(userOneCtx)) ?? []
         expect(info).toMatchObject({
           id: chatbot.id,
           allowedModelIds: ['gpt-4.1'],

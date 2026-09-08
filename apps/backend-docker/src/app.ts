@@ -1,4 +1,6 @@
 // import { useSentry } from '@envelop/sentry'
+
+import { createRequire } from 'node:module'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
@@ -6,12 +8,12 @@ import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operation
 import {
   assertImportExportPackageStorageConfig,
   assertImportExportTokenSecretConfig,
+  type Context,
   enhanceContext,
   getImportExportStartupResponsibilities,
   initializeImportExportRuntimeConfig,
   isLocalImportExportPackageStorageEnabled,
   schema,
-  type Context,
 } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { verifyJWT } from '@klicker-uzh/util'
@@ -19,7 +21,6 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
-import { createRequire } from 'node:module'
 import {
   registerImportExportPreflightRoute,
   registerImportExportRoutes,
@@ -79,6 +80,31 @@ function prepareApp({
     registerImportExportPreflightRoute(app, {
       manageOrigin: importExportManageOrigin,
     })
+  }
+
+  // Share the preload's current membership with the local test browser.
+  // No management endpoint is exposed, and production never mounts this route.
+  if (
+    process.env.NODE_ENV === 'test' &&
+    process.env.GROWTHBOOK_API_HOST === 'https://growthbook.test' &&
+    process.env.GROWTHBOOK_CLIENT_KEY === 'sdk-test'
+  ) {
+    app.get(
+      '/__growthbook__/api/features/sdk-test',
+      async (_req, res, next) => {
+        try {
+          const response = await fetch(
+            'https://growthbook.test/api/features/sdk-test'
+          )
+          res
+            .set('Cache-Control', 'no-store')
+            .status(response.status)
+            .json(await response.json())
+        } catch (error) {
+          next(error)
+        }
+      }
+    )
   }
 
   app.use(
@@ -228,7 +254,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 
