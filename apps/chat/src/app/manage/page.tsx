@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
-import { isManageAiEnabled } from '../../lib/server/featureFlags'
+import { getManageAiCapability } from '../../lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '../../lib/server/manageAuth'
 
 interface ManageAssistantPageProps {
@@ -12,20 +12,23 @@ export default async function ManageAssistantPage({
   searchParams,
 }: ManageAssistantPageProps) {
   const manageUser = await getAuthenticatedManageUser()
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const embedded = isEmbeddedParam(resolvedSearchParams.embed)
 
   // The gate is evaluated per lecturer, so it can only be evaluated once one
   // is signed in. A signed-out visitor keeps the login prompt rather than a
   // 404: it is a static page carrying no capability, and 404ing it would
   // strand an opted-in lecturer whose session expired.
   if (!manageUser) {
-    const resolvedSearchParams = (await searchParams) ?? {}
-    const embedded = isEmbeddedParam(resolvedSearchParams.embed)
-
     return <ManageLoginRequired embedded={embedded} />
   }
 
-  if (!(await isManageAiEnabled(manageUser))) {
+  const capability = await getManageAiCapability(manageUser)
+  if (capability === 'disabled') {
     notFound()
+  }
+  if (capability === 'temporarilyUnavailable') {
+    return <ManageAiTemporarilyUnavailable embedded={embedded} />
   }
 
   return <ManageAssistant />
@@ -81,6 +84,40 @@ function ManageLoginRequired({ embedded }: { embedded: boolean }) {
             Go to KlickerUZH Manage
           </Link>
         )}
+      </div>
+    </div>
+  )
+}
+
+function ManageAiTemporarilyUnavailable({ embedded }: { embedded: boolean }) {
+  return (
+    <div className="bg-muted flex min-h-dvh w-full items-center justify-center px-4">
+      <div
+        className={
+          embedded
+            ? 'bg-card w-full max-w-sm rounded-md border p-4 text-center shadow-sm'
+            : 'bg-card w-full max-w-lg rounded-md border p-8 text-center shadow-sm'
+        }
+        data-cy="manage-ai-temporarily-unavailable"
+      >
+        <h1
+          className={
+            embedded
+              ? 'text-foreground text-lg font-semibold'
+              : 'text-foreground text-2xl font-semibold'
+          }
+        >
+          AI features are temporarily unavailable
+        </h1>
+        <p
+          className={
+            embedded
+              ? 'text-muted-foreground mt-2 text-sm'
+              : 'text-muted-foreground mt-4 text-base'
+          }
+        >
+          Please try again in a moment.
+        </p>
       </div>
     </div>
   )
