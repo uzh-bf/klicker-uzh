@@ -2440,10 +2440,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportElements: 'Export elements',
       spreadsheetTitle: 'Excel',
       spreadsheetInfo:
-        'Import the fixed Klicker or Kahoot Excel template. Klicker supports all nine element types. Valid elements can be imported even when other rows need correction.',
+        'Import the fixed Klicker Excel template. Klicker supports all nine element types. Valid elements can be imported even when other rows need correction.',
       spreadsheetTemplate: 'Download Klicker template',
       spreadsheetExport: 'Export selected elements to Excel',
-      spreadsheetKahootTemplate: 'Kahoot template',
       spreadsheetUpload: 'Upload an Excel workbook',
       spreadsheetWorking: 'Processing workbook…',
       spreadsheetFailure:
@@ -2460,10 +2459,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       spreadsheetRow: 'row {row}',
       spreadsheetImageDependency:
         'The original public image link is retained. The image depends on the source blob remaining available.',
-      spreadsheetTimerOmitted:
-        'Kahoot time limits are not imported into elements.',
-      spreadsheetImagesOmitted:
-        'Images in the Kahoot workbook are not imported.',
       spreadsheetInvalidRow:
         'This row or its related element cannot be imported. Correct the indicated field and its related rows.',
       spreadsheetInvalidOrder:

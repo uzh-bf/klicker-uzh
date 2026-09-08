@@ -1,7 +1,7 @@
 ---
 type: Feature
 title: Fixed Element Spreadsheets
-description: Editable Klicker workbooks and Kahoot quiz template imports, with partial validation and authoritative duplicate skipping.
+description: Editable Klicker workbooks, with partial validation and authoritative duplicate skipping.
 timestamp: '2026-09-05'
 tags:
   - elements
@@ -11,7 +11,7 @@ tags:
 # Fixed Element Spreadsheets
 
 The element library's Excel dialog downloads a fixed Klicker template, exports
-selected elements to that format, and imports Klicker or Kahoot quiz workbooks.
+selected elements to that format, and imports Klicker workbooks.
 It uses the same full-access, private-preview and assessment gates as
 [element ZIP packages](./import-export-packages.md). Imported elements are
 private copies in REVIEW, without source tags, permissions or activity data.
@@ -33,13 +33,8 @@ The compressed workbook limit is 5 MiB, with bounded decompression before
 ExcelJS parsing, 100 elements and Excel's 32,767-character cell limit. ZIP is
 available for content that exceeds spreadsheet cell limits.
 
-Kahoot imports accept the official quiz XLSX layout with headers on row 8 and
-authored questions from row 9, in its 120/75 and older 95/60 character variants.
-One correct answer becomes SC; multiple correct answers become MC. Text is
-escaped as plain text. Timers and worksheet images are omitted with explicit
-warnings; the official workbook's decorative logo is allowed. Result exports
-are not question templates. Mentimeter support is deferred because the reviewed
-official XLSX export describes voting results, not authored interactive content.
+Only the fixed Klicker workbook is supported. Kahoot quiz import templates and
+result exports are not accepted. Mentimeter imports are also outside this scope.
 
 ## Public media references
 

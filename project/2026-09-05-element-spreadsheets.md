@@ -2,7 +2,7 @@
 
 ## Goal
 
-Import fixed Klicker and Kahoot XLSX templates into the importing lecturer's
+Import fixed Klicker XLSX templates into the importing lecturer's
 element library. Export Klicker elements as the same editable workbook. Cover
 all nine element types, with explicit worksheet/row diagnostics and an action
 to import valid elements. Preserve original public Klicker image URLs across
@@ -11,7 +11,7 @@ owners. Skip exact duplicates automatically and identify every skipped row.
 ## Non-goals
 
 Arbitrary column mapping, Mentimeter result imports, embedded Excel images,
-Kahoot images, course backups, blob copying, publishing, and changes to ZIP
+Kahoot templates and result exports, course backups, blob copying, publishing, and changes to ZIP
 duplicate policy. Do not copy tags, status, or permissions between lecturers.
 
 ## Contract and architecture
@@ -46,7 +46,7 @@ the repository's schema/migration workflow before integration.
 
 ## Slices and evidence
 
-1. Fixed workbook codec and official Kahoot layout; round-trip all nine types,
+1. Fixed Klicker workbook codec; round-trip all nine types,
    malformed rows, references, formulas, bounds, and image URL preservation.
 2. Durable service adapter and exact duplicate enforcement; test existing,
    within-file, concurrent, cross-owner, changed-image and replay cases.
@@ -91,3 +91,7 @@ the repository's schema/migration workflow before integration.
   the repository is bare; its Compose source edit was reverted after startup.
   The running isolated container retains that setting. Shared Git config and
   unrelated runtimes were not changed. No implementation commit or push made.
+
+- 2026-09-08: User removed Kahoot import-template support from scope. Remove the
+  fallback parser and template UI; accept only the versioned Klicker workbook.
+  Earlier Kahoot verification above is historical and no longer supported.

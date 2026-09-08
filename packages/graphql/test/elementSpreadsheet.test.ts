@@ -8,8 +8,8 @@ import {
   readKlickerWorkbook,
   writeKlickerWorkbook,
 } from '../src/lib/elementSpreadsheetWorkbook.js'
-import { parseKahootWorkbook } from '../src/lib/kahootSpreadsheet.js'
 import { parseElementImportPackage } from '../src/services/elementImportPackageParser.js'
+import { parseElementSpreadsheet } from '../src/services/elementSpreadsheet.js'
 import { createNineTypeImportPackage } from './fixtures/importExportNineTypes.js'
 
 function fixtureTables() {
@@ -165,7 +165,7 @@ describe('fixed element workbooks', () => {
     ).toHaveLength(2)
   })
 
-  it('maps the current Kahoot layout to SC and MC with row-level errors', () => {
+  it('rejects Kahoot import templates instead of converting their questions', async () => {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('Quiz')
     sheet.getRow(8).values = [
@@ -176,31 +176,8 @@ describe('fixed element workbooks', () => {
       'Correct answer(s)',
     ]
     sheet.getRow(9).values = [1, 'One correct?', 'Yes', 'No', null, null, 15, 1]
-    sheet.getRow(10).values = [
-      2,
-      'Two correct?',
-      'First',
-      'Second',
-      null,
-      null,
-      45,
-      '1,2',
-    ]
-    sheet.getRow(11).values = [
-      3,
-      'Invalid correct index',
-      'First',
-      'Second',
-      null,
-      null,
-      20,
-      4,
-    ]
-    const result = parseKahootWorkbook(workbook)
-    expect(result.elements.map((element) => element.type)).toEqual(['SC', 'MC'])
-    expect(result.issues).toContainEqual(
-      expect.objectContaining({ row: 11, code: 'INVALID_KAHOOT_ROW' })
-    )
-    expect(result.sources.map((source) => source.row)).toEqual([9, 10])
+    await expect(
+      parseElementSpreadsheet(Buffer.from(await workbook.xlsx.writeBuffer()))
+    ).rejects.toThrow('UNSUPPORTED_TEMPLATE_VERSION')
   })
 })

@@ -19,8 +19,6 @@ type Preview = NonNullable<
 
 const issueMessages = {
   SOURCE_IMAGE_DEPENDENCY: 'spreadsheetImageDependency',
-  TIMER_NOT_IMPORTED: 'spreadsheetTimerOmitted',
-  KAHOOT_IMAGES_NOT_IMPORTED: 'spreadsheetImagesOmitted',
   INVALID_ORDER: 'spreadsheetInvalidOrder',
   DUPLICATE_REFERENCE: 'spreadsheetDuplicateRef',
   UNKNOWN_REFERENCE: 'spreadsheetUnknownRef',
@@ -238,14 +236,6 @@ function SpreadsheetModal({
           >
             <Button.Label>{t('spreadsheetExport')}</Button.Label>
           </Button>
-          <a
-            className="self-center underline"
-            href="https://support.kahoot.com/hc/en-us/articles/115002812547-How-to-import-questions-from-a-spreadsheet-to-your-kahoot"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t('spreadsheetKahootTemplate')}
-          </a>
         </div>
         <label className="flex flex-col gap-2">
           {t('spreadsheetUpload')}

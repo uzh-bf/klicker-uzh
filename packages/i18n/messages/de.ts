@@ -2463,10 +2463,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportElements: 'Elemente exportieren',
       spreadsheetTitle: 'Excel',
       spreadsheetInfo:
-        'Importieren Sie die feste Excel-Vorlage von Klicker oder Kahoot. Klicker unterstützt alle neun Elementtypen. Gültige Elemente können importiert werden, auch wenn andere Zeilen korrigiert werden müssen.',
+        'Importieren Sie die feste Excel-Vorlage von Klicker. Klicker unterstützt alle neun Elementtypen. Gültige Elemente können importiert werden, auch wenn andere Zeilen korrigiert werden müssen.',
       spreadsheetTemplate: 'Klicker-Vorlage herunterladen',
       spreadsheetExport: 'Ausgewählte Elemente als Excel exportieren',
-      spreadsheetKahootTemplate: 'Kahoot-Vorlage',
       spreadsheetUpload: 'Excel-Arbeitsmappe hochladen',
       spreadsheetWorking: 'Arbeitsmappe wird verarbeitet…',
       spreadsheetFailure:
@@ -2483,10 +2482,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       spreadsheetRow: 'Zeile {row}',
       spreadsheetImageDependency:
         'Der ursprüngliche öffentliche Bildlink bleibt erhalten. Das Bild ist davon abhängig, dass der ursprüngliche Blob verfügbar bleibt.',
-      spreadsheetTimerOmitted:
-        'Kahoot-Zeitlimits werden nicht in Elemente übernommen.',
-      spreadsheetImagesOmitted:
-        'Bilder in der Kahoot-Datei werden nicht importiert.',
       spreadsheetInvalidRow:
         'Diese Zeile oder ihr zugehöriges Element kann nicht importiert werden. Korrigieren Sie das angegebene Feld und die zugehörigen Zeilen.',
       spreadsheetImported: 'Importierte Elemente: {count}',

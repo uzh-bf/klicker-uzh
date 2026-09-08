@@ -21,7 +21,6 @@ import {
   collectElementMediaReferences,
   MediaReferenceKind,
 } from '../lib/importExportMediaReferences.js'
-import { parseKahootWorkbook } from '../lib/kahootSpreadsheet.js'
 import {
   assertElementExportSnapshotPublishable,
   loadElementExportSnapshot,
@@ -63,12 +62,8 @@ const fail = (code: ImportExportErrorCode) => {
 
 export async function parseElementSpreadsheet(buffer: Buffer) {
   const workbook = await loadElementWorkbook(buffer)
-  const parsed = workbook.getWorksheet('Instructions')
-    ? (() => {
-        const read = readKlickerWorkbook(workbook)
-        return parseElementSpreadsheetTables(read.tables, read.issues)
-      })()
-    : parseKahootWorkbook(workbook)
+  const read = readKlickerWorkbook(workbook)
+  const parsed = parseElementSpreadsheetTables(read.tables, read.issues)
   const invalid = new Set<string>()
   for (const element of parsed.elements) {
     const source = parsed.sources.find((source) => source.ref === element.ref)!
