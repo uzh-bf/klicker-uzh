@@ -765,9 +765,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       .fill('Unsaved metadata must block publication.')
     await expect(submitButton).toBeDisabled()
     await expect(
-      page.getByText(
-        'Save or wait for changes in Basics, Learning modes, Disclaimer, and Credits before requesting publication.'
-      )
+      page.getByTestId('chatbot-publication-unsaved-setup')
     ).toBeVisible()
 
     const metadataSaveGate = createRequestGate()

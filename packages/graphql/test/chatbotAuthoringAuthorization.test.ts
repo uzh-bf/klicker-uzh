@@ -5,6 +5,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 
 const serviceMocks = vi.hoisted(() => ({
   updateChatbotModelSettings: vi.fn(),
+  updateChatbotCreditPolicy: vi.fn(),
   updateChatbotModelPolicy: vi.fn(),
   updateChatbotStandardModeConfig: vi.fn(),
   createChatbot: vi.fn(),
@@ -62,6 +63,11 @@ describe('AI beta listing boundary', () => {
 describe('AI beta authoring field boundary', () => {
   const operations = [
     {
+      field: 'updateChatbotCreditPolicy',
+      query:
+        'mutation { updateChatbotCreditPolicy(chatbotId: "synthetic-chatbot", creditInitialCredits: 1, creditResetPeriod: WEEKLY, creditResetAmount: 1, creditMaxCredits: 1) { id } }',
+    },
+    {
       field: 'updateChatbotModelSettings',
       query:
         'mutation { updateChatbotModelSettings(chatbotId: "synthetic-chatbot", modelSelection: false, allowedModelIds: []) { id } }',
@@ -94,7 +100,7 @@ describe('AI beta authoring field boundary', () => {
     {
       field: 'requestChatbotPublication',
       query:
-        'mutation { requestChatbotPublication(id: "synthetic-chatbot", useCase: "Synthetic test", expectedStudentCount: 1, proposedCredits: 1) { id } }',
+        'mutation { requestChatbotPublication(id: "synthetic-chatbot", useCase: "Synthetic test", expectedStudentCount: 1) { id } }',
     },
     {
       field: 'getChatbotPublishingCapability',

@@ -420,7 +420,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
       const operationName = getGraphqlOperationName(route.request())
       if (
         operationName === 'UserProfile' ||
-        operationName === 'ManageUserProfile'
+        operationName === 'ManageUserProfile' ||
+        operationName === 'ManageFeatureFlagProfile'
       ) {
         await route.fulfill({
           status: 200,

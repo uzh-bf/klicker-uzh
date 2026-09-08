@@ -288,7 +288,10 @@ function ChatbotPublicationRequest({
           ) : null}
 
           {setupDirty || setupPending ? (
-            <UserNotification type="warning">
+            <UserNotification
+              type="warning"
+              data={{ cy: 'chatbot-publication-unsaved-setup' }}
+            >
               {t('manage.resources.chatbotPublicationUnsavedSetup')}
             </UserNotification>
           ) : null}

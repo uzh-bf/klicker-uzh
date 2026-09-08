@@ -5,6 +5,10 @@ import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
+import {
+  forcedFeatureFlagPayload,
+  normalizeFeatureFlagEnvironment,
+} from '@klicker-uzh/feature-flags'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
@@ -39,6 +43,20 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
+
+  // Local browsers use the same explicit development flags as the backend.
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/__growthbook__/api/features/sdk-test', (_req, res) => {
+      res.set('Cache-Control', 'no-store').json({
+        features: forcedFeatureFlagPayload(
+          process.env.FEATURE_FLAGS_FORCED_ON,
+          normalizeFeatureFlagEnvironment(
+            process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV
+          )
+        ),
+      })
+    })
+  }
 
   // Share the preload's current membership with the local test browser.
   // No management endpoint is exposed, and production never mounts this route.
