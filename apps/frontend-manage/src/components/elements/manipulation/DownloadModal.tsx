@@ -334,8 +334,10 @@ function DownloadModal({
             })}
           </div>
           <ul
-            className="max-h-48 list-disc overflow-auto pl-6"
+            tabIndex={0}
+            className="max-h-48 list-disc overflow-auto rounded-sm pl-6 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             aria-label={t('shared.generic.elements')}
+            data-cy="element-export-selected-elements"
           >
             {selectedElements.map((element) => (
               <li key={element.id}>{element.name}</li>

@@ -1960,10 +1960,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
-      betaFeaturesDataUse:
-        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
       betaFeaturesDescription:
-        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+        'Zu den Beta-Features gehört die Erstellung von Chatbots. Ihre Beta-Einstellung ist standardmässig aktiviert und kann hier ausgeschaltet werden. Die Verfügbarkeit einzelner Features und die Freigabe der KI-Nutzung werden separat verwaltet. Beta-Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesSignupClosed:
+        'Neue Beta-Anmeldungen sind derzeit geschlossen. Informationen zu Beta-Features finden Sie weiterhin hier.',
+      betaFeaturesEnrollmentRestricted:
+        'Mit diesem Konto oder dieser Anmeldung kann die Beta-Anmeldung nicht geändert werden. Neue Anmeldungen erfordern Catalyst und vollen Kontozugriff.',
       betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
       betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
       betaFeaturesEnrollment: 'Beta-Anmeldung',
@@ -1972,16 +1974,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesError:
         'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
       betaFeaturesRefreshFailure:
-        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+        'Ihre Beta-Einstellung wurde gespeichert, aber die angezeigten Einstellungen konnten nicht aktualisiert werden. Laden Sie die Seite neu, um den aktuellen Stand zu sehen.',
       betaFeaturesRefreshing:
-        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Die angezeigten Einstellungen werden aktualisiert.',
       betaFeaturesSaved:
-        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Verfügbare Features hängen weiterhin von der Einführung und erforderlichen Freigaben ab.',
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
-        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
+        'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:

@@ -14,9 +14,6 @@ data:
   APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
-  {{- if .Values.backendGraphql.betaSavedGroupId }}
-  GROWTHBOOK_BETA_SAVED_GROUP_ID: {{ .Values.backendGraphql.betaSavedGroupId | quote }}
-  {{- end }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}

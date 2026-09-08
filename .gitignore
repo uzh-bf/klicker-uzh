@@ -71,6 +71,7 @@ output/
 .devcontainer/.runtime/
 # Devrouter-generated selective Dev Container config (runtime state, not source)
 .devcontainer/devcontainer.devrouter.json
+.devcontainer/docker-compose.dependencies.yml
 playwright/playwright-report/
 playwright/test-results/
 

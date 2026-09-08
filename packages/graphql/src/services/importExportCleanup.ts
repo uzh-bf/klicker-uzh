@@ -255,11 +255,7 @@ async function cleanupExpiredReceipts({
   let cleanupStoppedEarly = false
   const attemptedPendingReceiptIds: string[] = []
 
-  for (
-    let batch = 0;
-    !cleanupStoppedEarly && batch < MAX_CLEANUP_BATCHES;
-    batch++
-  ) {
+  for (let batch = 0; batch < MAX_CLEANUP_BATCHES; batch++) {
     if (shouldStop()) {
       cleanupStoppedEarly = true
       break
