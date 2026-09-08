@@ -250,6 +250,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
