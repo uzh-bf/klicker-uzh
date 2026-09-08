@@ -4,6 +4,33 @@ Draft delivery: [RAG chunk display and stable citations](https://github.com/uzh-
 
 ## Approval summary
 
+### Progress — PR readiness, 2026-09-08
+
+The user approved continuing source readiness and merging the separate
+[Devrouter CI prerequisite](https://github.com/uzh-bf/klicker-uzh/pull/5834).
+It merged to `v3` as `1a270f33053e12d56df6e4536133753edcaae636`.
+The RAG task integrates that exact target to obtain the trusted CI installer;
+the only conflict selects the approved Devrouter minimum 0.0.59.
+All 62 host CI contracts pass after integration. Fresh hosted verification
+remains pending; no RAG merge or deployment is authorized by this continuation.
+
+Before integration, published Devrouter 0.0.59 started the exact task's Chat
+profile with ready status and zero drift. In-app Browser inspection confirmed
+the saved synthetic conversation, seven disclosed passages, fourteen source
+groups, origin links and page labels, and unchanged citations after reload.
+Managed shutdown verified the provider Stopped and zero routes, preserving
+data. This is local persisted-display proof, not live retrieval or staging proof.
+The integration has not yet repeated runtime-dependent verification.
+
+The earlier hosted failures occurred before application tests: the trusted
+`v3` workflow installed Devrouter 0.0.55 while the RAG branch required 0.0.57.
+The prerequisite fixes both the base minimum and trusted installer at 0.0.59.
+Existing implementation reviews remain applicable to unchanged RAG behavior.
+Review suggestions to assume nullable error fields lack a supplied producer
+contract; creating a missing view during database preservation would introduce
+an unrequested setup write. Neither suggestion was applied. Remaining style
+and performance suggestions are not yet dispositioned.
+
 ### Current acceptance status
 
 Source-only draft delivery is complete at implementation head
