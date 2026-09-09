@@ -41,6 +41,8 @@ const config = defineConfig([
         compilerOptions: {
           incremental: false,
           tsBuildInfoFile: undefined,
+          // Keep the live compiler lean; `check` and normal builds check types.
+          noCheck: process.env.ROLLUP_WATCH === 'true',
         },
         include: [
           'src/**/*.cts',

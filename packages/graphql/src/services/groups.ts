@@ -274,9 +274,10 @@ export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunning
           })
         })
 
-        await executionCtx.logger.info(
-          `[INFO] [RunningRandomGroupAssignments] Successfully assigned ${groups.length} new random groups for ${course.name} (id: ${course.id}; rolling assignment).`
-        )
+        await executionCtx.logger.info('Rolling group assignment completed', {
+          event: 'groups.rolling.completed',
+          groupCount: groups.length,
+        })
       } catch (e) {
         await sendTeamsNotification({
           scope: 'hatchet/running-random-group-assignments',
@@ -285,9 +286,9 @@ export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunning
           }`,
         })
 
-        await executionCtx.logger.error(
-          `[ERROR] [RunningRandomGroupAssignments] Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${e || 'missing'}`
-        )
+        await executionCtx.logger.error('Rolling group assignment failed', {
+          extra: { event: 'groups.rolling.failed' },
+        })
       }
     }
 
@@ -406,9 +407,9 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           globalCtx.emitter
         )
 
-        await executionCtx.logger.info(
-          `[INFO] [FinalRandomGroupAssignments] Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
-        )
+        await executionCtx.logger.info('Single participant groups resolved', {
+          event: 'groups.singles.resolved',
+        })
 
         const poolParticipantIds =
           courseExtendedPool.groupAssignmentPoolEntries.map(
@@ -423,7 +424,8 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           })
 
           await executionCtx.logger.info(
-            `[INFO] [FinalRandomGroupAssignments] Finalized random assignment for course ${course.name} (id: ${course.id}) - no participants in pool.`
+            'Final group assignment completed with empty pool',
+            { event: 'groups.final.empty_pool' }
           )
 
           continue
@@ -456,7 +458,8 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           })
 
           await executionCtx.logger.info(
-            `[INFO] [FinalRandomGroupAssignments] Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
+            'Final group assignment requires manual intervention; owner notified',
+            { event: 'groups.final.manual_intervention' }
           )
 
           // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
@@ -491,13 +494,14 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           },
         })
 
-        await executionCtx.logger.info(
-          `[INFO] [FinalRandomGroupAssignments] Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`
-        )
+        await executionCtx.logger.info('Final group assignment completed', {
+          event: 'groups.final.completed',
+          groupCount: groups.length,
+        })
       } catch (e) {
-        await executionCtx.logger.error(
-          `[ERROR] [FinalRandomGroupAssignments] Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${e || 'missing'}`
-        )
+        await executionCtx.logger.error('Final group assignment failed', {
+          extra: { event: 'groups.final.failed' },
+        })
 
         continue
       }
@@ -1207,9 +1211,9 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
         await fetch(process.env.HEARTBEAT_DAILY_GROUP_SCORES)
       }
     } catch (e) {
-      await executionCtx.logger.error(
-        `[ERROR] [UpdateGroupAverageScores] Failed to update average group scores with error: ${e || 'missing'}`
-      )
+      await executionCtx.logger.error('Group average score update failed', {
+        extra: { event: 'groups.average_scores.failed' },
+      })
       return false
     }
 

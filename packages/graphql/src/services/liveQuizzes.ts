@@ -2564,6 +2564,7 @@ export async function resetAssessmentLiveQuiz(
   try {
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
+      loggingContext: ctx.requestContext,
     })
 
     // loop through the blocks and element instances and document the number of deducted points
@@ -2573,6 +2574,7 @@ export async function resetAssessmentLiveQuiz(
           instance.liveQuizResponses.map(async (response) => {
             await ctx.hatchet.events.push('create-audit-log-entry', {
               info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
+              loggingContext: ctx.requestContext,
             })
           })
         )
@@ -2642,6 +2644,7 @@ export async function resetAssessmentLiveQuiz(
 
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
+      loggingContext: ctx.requestContext,
     })
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
@@ -2714,6 +2717,7 @@ export async function resetAssessmentLiveQuiz(
   } catch (error) {
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
+      loggingContext: ctx.requestContext,
     })
 
     return null
@@ -3411,9 +3415,13 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
           redis: globalCtx.redisAssessmentExec,
         })
       } catch (error) {
-        executionCtx.logger.error(
-          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
-        )
+        executionCtx.logger.error('Live quiz block cache removal failed', {
+          extra: {
+            event: 'live_quiz.cache_removal.failed',
+            blockId,
+            liveQuizId,
+          },
+        })
       }
 
       return true
@@ -3471,9 +3479,13 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         },
       })
     } catch (error) {
-      executionCtx.logger.error(
-        `Error updating instance results for block with ID ${blockId} in quiz with ID ${liveQuizId} based on live quiz responses: ${error}`
-      )
+      executionCtx.logger.error('Live quiz instance results update failed', {
+        extra: {
+          event: 'live_quiz.results_update.failed',
+          blockId,
+          liveQuizId,
+        },
+      })
     }
 
     try {
@@ -3486,9 +3498,9 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         redis: globalCtx.redisAssessmentExec,
       })
     } catch (error) {
-      executionCtx.logger.error(
-        `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
-      )
+      executionCtx.logger.error('Live quiz block cache removal failed', {
+        extra: { event: 'live_quiz.cache_removal.failed', blockId, liveQuizId },
+      })
     }
 
     executionCtx.logger.info(

@@ -1120,6 +1120,7 @@ async function upsertResponseAppliedCorrection(
   })
 
   return {
+    loggingContext: ctx.requestContext,
     message: {
       info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
     },

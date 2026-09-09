@@ -855,19 +855,10 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       return true
     } catch (error) {
-      await log.error(
-        {
-          event: 'course_duplication.failed',
-          jobId,
-          errorType: error instanceof Error ? error.name : 'unknown',
-        },
-        'Course duplication job failed.'
-      )
-
       const errorType = getCourseDuplicationJobErrorType(error)
 
       if (committedCourseId || errorType === 'generic') {
-        await log.error(
+        await log.warn(
           {
             event: 'course_duplication.retryable',
             jobId,
@@ -889,7 +880,7 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
           errorMessage: getCourseDuplicationJobErrorMessage(error),
         })
       } catch (statusUpdateError) {
-        await log.error(
+        await log.warn(
           {
             event: 'course_duplication.status_update_failed',
             jobId,
@@ -920,6 +911,14 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
         throw statusUpdateError
       }
 
+      await log.error(
+        {
+          event: 'course_duplication.failed',
+          jobId,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Course duplication job failed.'
+      )
       return false
     } finally {
       if (processLockRenewal) clearInterval(processLockRenewal)

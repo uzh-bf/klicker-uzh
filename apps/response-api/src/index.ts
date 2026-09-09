@@ -345,7 +345,10 @@ async function handleAddAssessmentResponse(
 
   // audit log entry for received response
   hatchetClient.events.push('create-audit-log-entry', {
-    info: '[AddResponse Assessment] Response received.',
+    correlationId: assessmentSubmissionId,
+    info: `[AddResponse Assessment] Response-API received response for instance ${instanceId} in live quiz ${liveQuizId} from participant ${user.sub}: ${JSON.stringify(
+      response
+    )}`,
     loggingContext: {
       requestId: request.context.requestId,
       correlationId: request.context.correlationId,
@@ -363,7 +366,8 @@ async function handleAddAssessmentResponse(
       'Assessment response already recorded'
     )
     hatchetClient.events.push('create-audit-log-entry', {
-      info: '[AddResponse Assessment] Duplicate response received.',
+      correlationId: assessmentSubmissionId,
+      info: `[AddResponse Assessment] Participant with correlationId ${assessmentSubmissionId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
       loggingContext: {
         requestId: request.context.requestId,
         correlationId: request.context.correlationId,
