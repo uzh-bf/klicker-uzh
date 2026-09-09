@@ -6,6 +6,12 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  HATCHET_HEALTH_PORT: {{ .Values.hatchet.workers.general.health.port | quote }}
+  HATCHET_WORKFLOWS: {{ .Values.hatchet.workers.general.workflows | quote }}
+  IMPORT_EXPORT_PACKAGE_STORAGE: {{ .Values.importExport.packageStorage | quote }}
+  IMPORT_EXPORT_PACKAGE_TTL_HOURS: {{ .Values.importExport.packageTtlHours | quote }}
+  IMPORT_EXPORT_AZURE_METADATA_TIMEOUT_MS: {{ .Values.importExport.timeouts.azureMetadataMs | quote }}
+  IMPORT_EXPORT_AZURE_TRANSFER_TIMEOUT_MS: {{ .Values.importExport.timeouts.azureTransferMs | quote }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
 ---
