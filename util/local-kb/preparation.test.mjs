@@ -351,6 +351,50 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
     { service: 'postgres', state: 'running', health: 'unreported' },
   ])
   assert.equal(status.aiQualified, false)
+  assert.equal(status.infrastructureHealthy, false)
+  assert.deepEqual(
+    status.infrastructure.find(({ service }) => service === 'postgres'),
+    { service: 'postgres', status: 'readiness-unverified' }
+  )
+  assert.deepEqual(
+    status.infrastructure.find(({ service }) => service === 'ingestion-api'),
+    { service: 'ingestion-api', status: 'missing' }
+  )
+  const services = status.infrastructure.map(({ service }) => service)
+  for (const condition of [
+    'healthy',
+    'starting',
+    'unhealthy',
+    'exited',
+    'duplicate',
+  ]) {
+    const observed =
+      condition === 'duplicate' ? [...services, services[0]] : services
+    const ids = observed.map((_, index) =>
+      (index + 1).toString(16).padStart(12, '0')
+    )
+    const observation = async (args) => {
+      if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+      if (args.includes('ls')) return ids.join('\n')
+      assert.ok(args.includes('inspect'))
+      return [
+        config.project.identity,
+        directory,
+        join(directory, 'providers.compose.json'),
+        observed[ids.indexOf(args.at(-1))],
+        condition === 'exited' ? 'exited' : 'running',
+        ['starting', 'unhealthy'].includes(condition) ? condition : 'healthy',
+      ].join('|')
+    }
+    const result = await inspectPreparedInfrastructure(
+      config,
+      revision,
+      observation
+    )
+    assert.equal(result.infrastructureHealthy, condition === 'healthy')
+    assert.equal(result.aiQualified, false)
+    assert.equal(result.managedRuntimeObserved, false)
+  }
   assert.equal(writes.length, 0)
   await assert.rejects(
     stopPreparedInfrastructure(config, revision, managed, docker),

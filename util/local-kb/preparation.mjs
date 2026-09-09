@@ -649,14 +649,44 @@ async function observeOwnedProviders(config, runtime, runDocker) {
   return rows
 }
 
+const infrastructureServices = [
+  'postgres',
+  'redis',
+  'blob',
+  'hatchet',
+  'milvus-etcd',
+  'minio',
+  'milvus',
+  'crawl4ai',
+  'scraping',
+  'ingestion-api',
+  'doc-processing',
+]
+
 export async function inspectPreparedInfrastructure(
   config,
   candidateRevision,
   runDocker = runLocalDocker
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  const providers = await observeOwnedProviders(config, runtime, runDocker)
+  const infrastructure = infrastructureServices.map((service) => {
+    const instances = providers.filter((row) => row.service === service)
+    if (instances.length === 0) return { service, status: 'missing' }
+    if (instances.length !== 1) return { service, status: 'ambiguous' }
+    const [{ state, health }] = instances
+    if (state !== 'running') return { service, status: 'not-running' }
+    return {
+      service,
+      status: health === 'unreported' ? 'readiness-unverified' : health,
+    }
+  })
   return {
-    providers: await observeOwnedProviders(config, runtime, runDocker),
+    providers,
+    infrastructure,
+    infrastructureHealthy: infrastructure.every(
+      ({ status }) => status === 'healthy'
+    ),
     managedRuntimeObserved: false,
     aiQualified: false,
   }
@@ -734,17 +764,7 @@ export async function startPreparedInfrastructure(
       '--wait',
       '--wait-timeout',
       '180',
-      'postgres',
-      'redis',
-      'blob',
-      'hatchet',
-      'milvus-etcd',
-      'minio',
-      'milvus',
-      'crawl4ai',
-      'scraping',
-      'ingestion-api',
-      'doc-processing',
+      ...infrastructureServices,
     ])
     const managed = JSON.parse(
       await runManaged([
