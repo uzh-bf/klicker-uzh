@@ -109,16 +109,21 @@ pass. English and German help renders correctly; screenshots are retained in
 project/_local/visuals/2026-09-09-recovery/leaderboard-review-*.png.
 No raw Docker fallback, database reset or recovery callback execution was needed.
 
-Commit is blocked by the host PreToolUse data-hygiene hook: it flags existing
-maintainer emails in package.json and credential-related locale content. The
-actual hunks change only test:dev-runtime and leaderboard inclusion prose.
-The hook requires explicit permission for AGENTS_SKIP_DATA_HYGIENE=1.
-The package remains uncommitted pending that permission; no bypass was used.
-All 35 typecheck tasks, seven lint tasks, syncpack and all 23 build tasks pass.
-Staged Gitleaks passes. The isolated browser is closed. Canonical task-only
-shutdown is in progress; independent committed-delta review remains after
-the commit gate is resolved.
-
+The host PreToolUse hook flagged existing maintainer emails and unrelated
+credential-related translations. The user explicitly approved
+AGENTS_SKIP_DATA_HYGIENE=1 for this commit; exact changed hunks and staged
+Gitleaks were checked before commit 77f987608. No new credential or personal
+record is introduced. All 35 typechecks, seven lint tasks, syncpack and all
+23 build tasks pass. English and German inclusion-help browser checks pass.
+The isolated browser is closed; provider Stopped and zero source routes are
+verified. Independent review confirmed the recovery boundary and found that
+weekly/single-week custom views can retain zero-point entries. Main verified
+the backend branch and removed the unsupported second sentence in both locales
+in 57c43b26a. The previously rendered first sentence remains unchanged.
+Focused source inspection and staged Gitleaks pass; prior build/render evidence
+is reused for the unchanged code and retained text. Locke passes the final correction review without findings at 57c43b26a.
+The live PR was marked ready outside this task; preserve that state while
+keeping the remaining merge gates explicit.
 
 ### Target integration verified, 2026-09-09
 
