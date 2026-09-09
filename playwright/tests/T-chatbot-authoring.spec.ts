@@ -193,22 +193,21 @@ async function approveRevision(page: Page, id: string, version: number) {
       'utf8'
     )
   ) as Record<string, string>
-  const response = await page.request.post(
-    `${process.env.URL_MANAGE ?? URL_MANAGE}/api/graphql`,
-    {
-      headers: { 'x-graphql-yoga-csrf': 'true' },
-      data: {
-        operationName: 'MApproveChatbotRevision',
-        variables: { id, expectedRevisionVersion: version },
-        extensions: {
-          persistedQuery: {
-            version: 1,
-            sha256Hash: persisted.MApproveChatbotRevision,
-          },
+  // GraphQL is served by the API app, not by the manage frontend origin.
+  const apiOrigin = process.env.APP_ORIGIN_API ?? 'http://127.0.0.1:3000'
+  const response = await page.request.post(`${apiOrigin}/api/graphql`, {
+    headers: { 'x-graphql-yoga-csrf': 'true' },
+    data: {
+      operationName: 'MApproveChatbotRevision',
+      variables: { id, expectedRevisionVersion: version },
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: persisted.MApproveChatbotRevision,
         },
       },
-    }
-  )
+    },
+  })
   expect(response.ok()).toBeTruthy()
   const result = await response.json()
   expect(result.errors).toBeUndefined()
