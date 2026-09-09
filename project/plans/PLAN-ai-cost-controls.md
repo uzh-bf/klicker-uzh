@@ -132,6 +132,15 @@ delivery; identifying a running container alone is insufficient.
 
 ### Extension progress
 
+- 2026-09-09 review continuation: the user explicitly authorized AGY or GLM
+  5.3 Flash as the final-review fallback. AGY failed before producing a review;
+  the GLM correction pass inspected all eleven corrected files at `c016aacd7a`
+  and found all six issues resolved with no new defect. Earlier complete
+  integrated coverage remains applicable. German revision visual and full
+  local reset-based Playwright coverage remain unverified; hosted checks must
+  establish the latter on the published head. The user submitted revision 14
+  for approval (5 initial, daily reset of 5, maximum 5); leave it pending.
+
 - Current checkpoint, 2026-09-09: implementation and target integration are
   committed through `769cd462fa`. The final review covered the complete range
   from `c939ab348a`, including migration equivalence, revision isolation,
