@@ -1,5 +1,7 @@
 # Reliable review execution and selective-draft qualification
 
+First layer: [draft PR5850, review execution](https://github.com/uzh-bf/klicker-uzh/pull/5850).
+
 ## Approval summary
 
 Make CI failures diagnosable and preserve the evidence needed to reduce draft
@@ -187,10 +189,13 @@ the same planner approved the Python standard-library seam. The 25 routing and
 workflow-policy tests pass in a disposable Node 24.16.0 image with Git installed.
 Scoped formatting, diff inspection and secret scanning pass. Slice review is
 done with no findings; simplification removes three redundant test fields and
-assertions. Final review remains before publication. The configured Husky
+assertions. Integrated final review completed; producing-run evidence resolves
+the banner concern, and the cumulative stderr field is explicitly labelled.
+The lower layer is published at88fc9b3258; its exact-head CI is in progress.
+The upper offline qualifier is being implemented separately. The configured Husky
 entrypoint is absent in this worktree; full monorepo build/check hooks are not
 claimed. No hook configuration was changed or bypass flag used.
-No implementation PR is published yet.
+No merge, rollout or runner change is performed.
 The existing `collect-smart-draft-qualification-evidence` hourly automation is
 active; its completed one-time post-merge observation has been removed. Its evidence and
 cursor live in the old scheduling worktree's ignored
