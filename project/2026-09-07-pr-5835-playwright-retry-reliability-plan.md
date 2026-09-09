@@ -287,6 +287,14 @@ The local implementation and verification package is complete for the ordinary
 draft update. Exact-head GitHub CI and human review remain before any separately
 authorized merge. No runner, shared infrastructure or release change is included.
 
+## Historical investigation record — superseded by the configuration-only delivery
+
+The entries below preserve earlier experiments and approvals in reverse
+chronological order. Their patch proposals, temporary implementations and
+qualification results are historical, not the shipped scope. The final branch
+removes the Next.js patch and its registration; the approval summary and current
+Progress entries above describe the configuration-only implementation.
+
 ### September 8 causal observation and configuration-only comparison
 
 This investigation leaves implementation and publication unchanged. Ref refresh
