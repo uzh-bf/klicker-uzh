@@ -74,6 +74,32 @@ Use new worktree's manage profile for Manage/auth/API visual inspection and the 
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
 
+### Target integration verified, 2026-09-09
+
+Integration commit 65bbd2ffeff6f05589f53e8f84c79a4f8565d3d7 contains target
+cbcede79718e8e60ff04d3f8376ab6a3f4bb64ed. The task branch is zero commits
+behind this resolved target. Canonical normal ensure passes with no drift
+and recreated false. Repair mode was correctly refused for a healthy stopped
+runtime. No manual replacement, volume deletion or database initialization
+was performed during this integration.
+
+Current integration checks pass: 35 typecheck tasks, seven lint tasks,
+syncpack, six readiness and development-configuration tests, the shell runtime
+suite, 31 host launcher tests, scoped Biome/Prettier checks, and all 23 release
+build tasks. Git identity and staged gitleaks checks pass. Hooks are split into
+host/container equivalents; HUSKY=0 is used only after those checks.
+
+Delegated lecturer login, course overview navigation and Testkurs detail pass
+against this head. Desktop and 390px screenshots are saved in
+project/_local/visuals/2026-09-09-recovery with the integrated suffix.
+The global header still clips on mobile; course content remains usable.
+The earlier 79-test course/activity-log run remains earlier-head evidence.
+The complete long-title/read-only visual matrix and hosted CI remain merge
+readiness gates. The browser is closed; canonical task-only shutdown succeeds and frees ten
+routes. Exact source-path readback confirms zero routes.
+Turing passes the bounded integrated final review without findings, reusing
+the earlier passed package review for unchanged source.
+
 ### Recovered dependency mounts and live Manage proof, 2026-09-09
 
 Source devrouter aacf9ea completes app-only dependency-volume recovery. The
