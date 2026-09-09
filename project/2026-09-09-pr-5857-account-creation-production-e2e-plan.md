@@ -92,3 +92,19 @@ Authorized source delivery is complete: the ordinary task branch is pushed and t
 Slice risk correction `66e9b2b074` pins the complete candidate account workflow to trusted controller bytes before accepting run/job/artifact evidence. Conditional build, test, and upload negative cases pass with all 23 promoter tests. The same reviewer returned DONE on its one correction pass. The introducing ordinary-lane bootstrap concern remains an explicit draft/merge blocker. The artifact-cache lesson is committed in `ec631d9bd6`.
 
 Integrated final review continuity: Claude Opus 5 stopped on session-limit API 429; AGY Gemini 3.8 Flash terminated before review; a fresh independent GLM 5.3 Flash max reviewer completed all 35 changed paths with schema-validated `pass` and no findings. Scoped evidence is in `_local/reviews/account-final-glm.json`. The final documentation-only update preserves reviewed implementation and verification.
+
+## Approved TypeScript consolidation
+
+The user approved consolidating the supporting scripts and converting them to TypeScript in this draft PR. Six coherent modules own production runtime, planning, sharding, cache identity, telemetry, and workflow validation. Preserve application behavior, data boundaries and CI enforcement. Add no dependencies or runtime compiler; merging and deployment remain outside scope.
+
+Production uses one four-service lifecycle. Local `start` supervises the applications while the canonical host launcher owns browser execution. CI `test` owns that same lifecycle, readiness, inventory, tests and cleanup. Preserve child failures, spawn errors, early and during-test exits, SIGINT/SIGTERM and bounded cleanup without orphaned processes.
+
+Use native Node 24.16.0 erasable TypeScript with explicit `.ts` imports, strict checking and no emitted JavaScript. Modules are import-safe: no startup, environment validation, CLI side effects or top-level await on import. Planning, sharding, cache, telemetry and report paths remain dependency-free. Existing YAML parsing remains isolated in workflow validation after installation. Use real runtime, plan and report types without suppression or runtime aliases.
+
+Update all consumers together: workflows, composite actions, trusted Node setup before planning, process matching, source fingerprints, cache inputs, mandatory promotion report command matching and tests, whole-workflow byte equality, validator policy and package commands. Retire the replaced files without compatibility wrappers.
+
+Ownership: the explorer maps planning and telemetry contracts; the executor owns production consolidation and lifecycle tests; the main session owns remaining CI modules, callers, strict tool configuration, integration and final proof. Preserve disjoint write sets. Planner review of this amended contract is APPROVED after acceptance of its runtime, pre-install and consumer-coverage corrections.
+
+Acceptance requires existing consequential tests under exact Node 24, strict TypeScript and formatting checks, isolated dependency-free CLI subprocesses from trusted control with a separate candidate, and real synthetic child lifecycle failure/signal/cleanup checks. Verify all nine actual local production browser tests and artifact reuse, then stop the exact runtime and verify zero routes. Count modules, entrypoints and tests before and after. Review committed changes and update the same draft PR. Do not bypass the existing trusted-selector bootstrap limitation.
+
+Status: consolidation_in_progress. Approval covers reversible implementation, applicable checks and reviews, scoped commits, ordinary task-branch push and draft updates. The terminal condition is a verified consolidated draft with explicit CI limitations; no second approval is needed for these steps.
