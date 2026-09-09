@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/i18n",
-  "version": "3.4.0-alpha.74",
+  "version": "3.4.0-alpha.75",
   "files": [
     "index.ts",
     "routing.ts",
