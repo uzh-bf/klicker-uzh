@@ -10,6 +10,7 @@ import type {
   ChatAccountUsageLane,
   ChatAccountUsageOverview,
 } from '../services/chatAccountUsage.js'
+import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
@@ -209,6 +210,87 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
     }),
   }
 )
+
+export const ChatbotRevisionMetadataInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['metadata']>
+>('ChatbotRevisionMetadataInput')
+export const ChatbotRevisionMetadataInput =
+  ChatbotRevisionMetadataInputRef.implement({
+    fields: (t) => ({
+      name: t.string({ required: false }),
+      description: t.string({ required: false }),
+      avatar: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotRevisionModelPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['modelPolicy']>
+>('ChatbotRevisionModelPolicyInput')
+export const ChatbotRevisionModelPolicyInput =
+  ChatbotRevisionModelPolicyInputRef.implement({
+    fields: (t) => ({
+      modelSelection: t.boolean({ required: true }),
+      allowedModelIds: t.stringList({ required: true }),
+      allowedReasoningEffortsByModel: t.field({
+        type: [ChatbotReasoningConfigInputRef],
+        required: false,
+      }),
+    }),
+  })
+
+export const ChatbotCreditPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['creditPolicy']>
+>('ChatbotCreditPolicyInput')
+export const ChatbotCreditPolicyInput = ChatbotCreditPolicyInputRef.implement({
+  fields: (t) => ({
+    creditInitialCredits: t.int({ required: true }),
+    creditResetPeriod: t.field({
+      type: CreditResetPeriod,
+      required: true,
+    }),
+    creditResetAmount: t.int({ required: true }),
+    creditMaxCredits: t.int({ required: true }),
+  }),
+})
+
+export const ChatbotRevisionDisclaimerInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['disclaimer']>
+>('ChatbotRevisionDisclaimerInput')
+export const ChatbotRevisionDisclaimerInput =
+  ChatbotRevisionDisclaimerInputRef.implement({
+    fields: (t) => ({
+      title: t.string({ required: true }),
+      introText: t.string({ required: true }),
+      expectedDisclaimerId: t.string({ required: false }),
+    }),
+  })
+
+export const ChatbotRevisionSaveInputRef =
+  builder.inputRef<ChatbotRevisionSaveInputShape>('ChatbotRevisionSaveInput')
+export const ChatbotRevisionSaveInput = ChatbotRevisionSaveInputRef.implement({
+  fields: (t) => ({
+    metadata: t.field({
+      type: ChatbotRevisionMetadataInputRef,
+      required: false,
+    }),
+    modelPolicy: t.field({
+      type: ChatbotRevisionModelPolicyInputRef,
+      required: false,
+    }),
+    standardModeConfig: t.field({
+      type: ChatbotStandardModeConfigInputRef,
+      required: false,
+    }),
+    creditPolicy: t.field({
+      type: ChatbotCreditPolicyInputRef,
+      required: false,
+    }),
+    disclaimer: t.field({
+      type: ChatbotRevisionDisclaimerInputRef,
+      required: false,
+    }),
+  }),
+})
 
 export const ChatbotAuthoringRevisionRef =
   builder.objectRef<ChatbotAuthoringRevisionProjection>(

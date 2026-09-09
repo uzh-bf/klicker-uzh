@@ -120,6 +120,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
+  ChatbotRevisionSaveInputRef,
   ChatbotStandardModeConfigInput,
   CreditResetPeriod,
 } from './resource.js'
@@ -1587,6 +1588,24 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) =>
           ChatbotsService.updateChatbotRevisionMetadata(args, ctx),
+      }),
+
+      saveChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          input: t.arg({
+            type: ChatbotRevisionSaveInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.saveChatbotRevision(args, ctx),
       }),
 
       updateChatbotRevisionModelSettings: t.withAuth(asChatbotAuthor).field({

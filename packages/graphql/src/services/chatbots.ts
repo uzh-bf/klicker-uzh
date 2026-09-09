@@ -1121,13 +1121,102 @@ function validateCompleteRevision(
   return normalizedRevision
 }
 
+type RevisionModelPolicyInput = Pick<
+  UpdateChatbotModelSettingsArgs,
+  'modelSelection' | 'allowedModelIds' | 'allowedReasoningEffortsByModel'
+>
+
+type RevisionDisclaimerInput = {
+  expectedDisclaimerId?: string | null
+  title: string
+  introText: string
+}
+
+// Omitted sections retain the saved revision. Metadata patches individual fields;
+// other supplied sections use their existing complete-section normalization.
+export type ChatbotRevisionSaveInput = {
+  metadata?: {
+    name?: string | null
+    description?: string | null
+    avatar?: string | null
+  } | null
+  modelPolicy?: RevisionModelPolicyInput | null
+  standardModeConfig?: ChatbotStandardModeConfigInput | null
+  creditPolicy?: ChatbotCreditPolicy | null
+  disclaimer?: RevisionDisclaimerInput | null
+}
+
+export async function saveChatbotRevision(
+  args: {
+    chatbotId: string
+    expectedRevisionVersion: number
+    input: ChatbotRevisionSaveInput
+  },
+  ctx: ContextWithUser
+) {
+  if (
+    !Number.isInteger(args.expectedRevisionVersion) ||
+    args.expectedRevisionVersion < 0
+  ) {
+    throw chatbotError(REVISION_CONFLICT_MESSAGE, 'CHATBOT_EDIT_CONFLICT')
+  }
+  const { input } = args
+  const sections = [
+    'metadata',
+    'modelPolicy',
+    'standardModeConfig',
+    'creditPolicy',
+    'disclaimer',
+  ] as const
+  if (
+    !input ||
+    sections.some((section) => input[section] === null) ||
+    !sections.some((section) => input[section] !== undefined)
+  ) {
+    throw chatbotError(
+      'Provide at least one non-null revision section',
+      'BAD_USER_INPUT'
+    )
+  }
+  if (
+    input.metadata &&
+    (input.metadata.name === null ||
+      (input.metadata.name === undefined &&
+        input.metadata.description === undefined &&
+        input.metadata.avatar === undefined))
+  ) {
+    throw chatbotError(
+      'Provide metadata fields; name cannot be null',
+      'BAD_USER_INPUT'
+    )
+  }
+  const patch: Partial<ChatbotAuthoringRevision> = {
+    ...(input.metadata ? normalizeRevisionMetadata(input.metadata) : {}),
+    ...(input.modelPolicy
+      ? normalizeRevisionModelPolicy(input.modelPolicy)
+      : {}),
+    ...(input.standardModeConfig
+      ? {
+          standardModeConfig: parseRevisionStandardModeConfig(
+            input.standardModeConfig
+          ),
+        }
+      : {}),
+    ...(input.creditPolicy
+      ? normalizeAndValidateCreditPolicy(input.creditPolicy)
+      : {}),
+  }
+  return await stageRevision(args, patch, ctx, input.disclaimer ?? undefined)
+}
+
 async function stageRevision(
   args: {
     chatbotId: string
     expectedRevisionVersion?: number | null
   },
   patch: Partial<ChatbotAuthoringRevision>,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  disclaimer?: RevisionDisclaimerInput
 ) {
   await requireFeatureFlagAccess(ctx, 'ai-beta')
   return await ctx.prisma.$transaction(async (tx) => {
@@ -1139,7 +1228,56 @@ async function stageRevision(
     assertSaveRevisionVersion(chatbot, args.expectedRevisionVersion)
 
     const current = getRevisionSnapshot(chatbot)
-    const next = { ...current, ...patch }
+    let next = { ...current, ...patch }
+    if (disclaimer) {
+      const title = normalizeDisclaimerText(disclaimer.title)
+      const introText = normalizeDisclaimerText(disclaimer.introText)
+      validateDisclaimerContent(title, introText)
+      if (
+        args.expectedRevisionVersion == null &&
+        disclaimer.expectedDisclaimerId === undefined
+      ) {
+        throw chatbotError(
+          'expectedDisclaimerId must be provided, using null when no disclaimer is linked',
+          'BAD_USER_INPUT'
+        )
+      }
+      const currentDisclaimerId = current.disclaimerId ?? chatbot.disclaimerId
+      if (
+        disclaimer.expectedDisclaimerId !== undefined &&
+        disclaimer.expectedDisclaimerId !== currentDisclaimerId
+      ) {
+        throw chatbotError(
+          'Chatbot disclaimer changed since it was loaded',
+          'CHATBOT_DISCLAIMER_CONFLICT'
+        )
+      }
+
+      if (
+        current.disclaimerTitle !== title ||
+        current.disclaimerIntroText !== introText
+      ) {
+        const replacement = await tx.chatbotDisclaimer.create({
+          data: {
+            name: chatbot.disclaimer?.name ?? `${chatbot.name} disclaimer`,
+            description: chatbot.disclaimer?.description ?? null,
+            title,
+            introText,
+            mediaUrl: chatbot.disclaimer?.mediaUrl ?? null,
+            mediaType: chatbot.disclaimer?.mediaType ?? null,
+            ownerId: ctx.user.sub,
+          },
+          select: { id: true },
+        })
+
+        next = {
+          ...next,
+          disclaimerId: replacement.id,
+          disclaimerTitle: title,
+          disclaimerIntroText: introText,
+        }
+      }
+    }
     if (next.name === '') {
       throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
     }
@@ -1202,33 +1340,29 @@ export async function getChatbotPendingRevision(
   )
 }
 
-export async function updateChatbotRevisionMetadata(
-  args: RevisionExpectedArgs & {
-    name?: string | null
-    description?: string | null
-    avatar?: string | null
-  },
-  ctx: ContextWithUser
+function normalizeRevisionMetadata(
+  args: NonNullable<ChatbotRevisionSaveInput['metadata']>
 ) {
-  return await stageRevision(
-    args,
-    {
-      ...(args.name !== undefined && args.name !== null
-        ? { name: args.name }
-        : {}),
-      ...(args.description !== undefined
-        ? { description: args.description }
-        : {}),
-      ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
-    },
-    ctx
-  )
+  return {
+    ...(args.name !== undefined && args.name !== null
+      ? { name: args.name }
+      : {}),
+    ...(args.description !== undefined
+      ? { description: args.description }
+      : {}),
+    ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+  }
 }
 
-export async function updateChatbotRevisionModelSettings(
-  args: RevisionExpectedArgs & UpdateChatbotModelSettingsArgs,
+export async function updateChatbotRevisionMetadata(
+  args: RevisionExpectedArgs &
+    NonNullable<ChatbotRevisionSaveInput['metadata']>,
   ctx: ContextWithUser
 ) {
+  return await stageRevision(args, normalizeRevisionMetadata(args), ctx)
+}
+
+function normalizeRevisionModelSettings(args: RevisionModelPolicyInput) {
   const modelRegistry = getChatModelRegistry()
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
   const allowedModelIds = dedupeStrings(args.allowedModelIds)
@@ -1271,21 +1405,21 @@ export async function updateChatbotRevisionModelSettings(
     reasoningMap[entry.modelId] = efforts
   }
 
-  return await stageRevision(
-    args,
-    {
-      modelSelection: args.modelSelection,
-      allowedModelIds,
-      allowedReasoningEffortsByModel: reasoningMap,
-    },
-    ctx
-  )
+  return {
+    modelSelection: args.modelSelection,
+    allowedModelIds,
+    allowedReasoningEffortsByModel: reasoningMap,
+  }
 }
 
-export async function updateChatbotRevisionModelPolicy(
+export async function updateChatbotRevisionModelSettings(
   args: RevisionExpectedArgs & UpdateChatbotModelSettingsArgs,
   ctx: ContextWithUser
 ) {
+  return await stageRevision(args, normalizeRevisionModelSettings(args), ctx)
+}
+
+function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
   const modelRegistry = getChatModelRegistry()
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
   const allowedModelIds = dedupeStrings(args.allowedModelIds)
@@ -1323,32 +1457,33 @@ export async function updateChatbotRevisionModelPolicy(
     )
   }
 
-  return await stageRevision(
-    args,
-    {
-      modelSelection: args.modelSelection,
-      allowedModelIds,
-      allowedReasoningEffortsByModel:
-        normalizedReasoningConfig.length > 0
-          ? Object.fromEntries(
-              normalizedReasoningConfig.map(({ modelId, efforts }) => [
-                modelId,
-                efforts,
-              ])
-            )
-          : null,
-    },
-    ctx
-  )
+  return {
+    modelSelection: args.modelSelection,
+    allowedModelIds,
+    allowedReasoningEffortsByModel:
+      normalizedReasoningConfig.length > 0
+        ? Object.fromEntries(
+            normalizedReasoningConfig.map(({ modelId, efforts }) => [
+              modelId,
+              efforts,
+            ])
+          )
+        : null,
+  }
 }
 
-export async function updateChatbotRevisionStandardModeConfig(
-  args: RevisionExpectedArgs & { config: ChatbotStandardModeConfigInput },
+export async function updateChatbotRevisionModelPolicy(
+  args: RevisionExpectedArgs & UpdateChatbotModelSettingsArgs,
   ctx: ContextWithUser
 ) {
-  let config: ReturnType<typeof parseChatbotStandardModeConfigInput>
+  return await stageRevision(args, normalizeRevisionModelPolicy(args), ctx)
+}
+
+function parseRevisionStandardModeConfig(
+  input: ChatbotStandardModeConfigInput
+) {
   try {
-    config = parseChatbotStandardModeConfigInput(args.config)
+    return parseChatbotStandardModeConfigInput(input)
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1357,7 +1492,17 @@ export async function updateChatbotRevisionStandardModeConfig(
       'BAD_USER_INPUT'
     )
   }
-  return await stageRevision(args, { standardModeConfig: config }, ctx)
+}
+
+export async function updateChatbotRevisionStandardModeConfig(
+  args: RevisionExpectedArgs & { config: ChatbotStandardModeConfigInput },
+  ctx: ContextWithUser
+) {
+  return await stageRevision(
+    args,
+    { standardModeConfig: parseRevisionStandardModeConfig(args.config) },
+    ctx
+  )
 }
 
 export async function updateChatbotRevisionCreditPolicy(
@@ -1369,89 +1514,10 @@ export async function updateChatbotRevisionCreditPolicy(
 }
 
 export async function saveChatbotRevisionDisclaimer(
-  args: RevisionExpectedArgs & {
-    expectedDisclaimerId?: string | null
-    title: string
-    introText: string
-  },
+  args: RevisionExpectedArgs & RevisionDisclaimerInput,
   ctx: ContextWithUser
 ) {
-  await requireFeatureFlagAccess(ctx, 'ai-beta')
-  const title = normalizeDisclaimerText(args.title)
-  const introText = normalizeDisclaimerText(args.introText)
-  validateDisclaimerContent(title, introText)
-
-  return await ctx.prisma.$transaction(async (tx) => {
-    await lockChatbotRevision(tx, args.chatbotId)
-    const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
-    if (!chatbot) return null
-    assertRevisionEditable(chatbot)
-    assertSaveRevisionVersion(chatbot, args.expectedRevisionVersion)
-    if (
-      args.expectedRevisionVersion == null &&
-      args.expectedDisclaimerId === undefined
-    ) {
-      throw chatbotError(
-        'expectedDisclaimerId must be provided, using null when no disclaimer is linked',
-        'BAD_USER_INPUT'
-      )
-    }
-    const current = getRevisionSnapshot(chatbot)
-    const currentDisclaimerId = current.disclaimerId ?? chatbot.disclaimerId
-    if (
-      args.expectedDisclaimerId !== undefined &&
-      args.expectedDisclaimerId !== currentDisclaimerId
-    ) {
-      throw chatbotError(
-        'Chatbot disclaimer changed since it was loaded',
-        'CHATBOT_DISCLAIMER_CONFLICT'
-      )
-    }
-
-    if (
-      current.disclaimerTitle === title &&
-      current.disclaimerIntroText === introText
-    ) {
-      return await saveRevisionSnapshot(
-        tx,
-        chatbot,
-        current,
-        undefined,
-        undefined,
-        undefined,
-        args.expectedRevisionVersion != null
-      )
-    }
-
-    const replacement = await tx.chatbotDisclaimer.create({
-      data: {
-        name: chatbot.disclaimer?.name ?? `${chatbot.name} disclaimer`,
-        description: chatbot.disclaimer?.description ?? null,
-        title,
-        introText,
-        mediaUrl: chatbot.disclaimer?.mediaUrl ?? null,
-        mediaType: chatbot.disclaimer?.mediaType ?? null,
-        ownerId: ctx.user.sub,
-      },
-      select: { id: true },
-    })
-
-    const revision = {
-      ...current,
-      disclaimerId: replacement.id,
-      disclaimerTitle: title,
-      disclaimerIntroText: introText,
-    }
-    return await saveRevisionSnapshot(
-      tx,
-      chatbot,
-      revision,
-      undefined,
-      undefined,
-      undefined,
-      args.expectedRevisionVersion != null
-    )
-  })
+  return await stageRevision(args, {}, ctx, args)
 }
 
 export async function submitChatbotRevision(
@@ -1878,7 +1944,7 @@ export async function updateChatbotModelSettings(
 type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
 
 function normalizeStrictReasoningConfig(
-  args: UpdateChatbotModelPolicyArgs,
+  args: RevisionModelPolicyInput,
   selectedModels: ChatModelCapability[],
   modelById: Map<string, ChatModelCapability>
 ) {

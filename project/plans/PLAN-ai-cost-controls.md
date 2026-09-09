@@ -1,5 +1,52 @@
 # AI cost controls
 
+## Approved refactor: consolidate revision saves
+
+The user approved replacing granular revision saves with one typed
+`saveChatbotRevision` mutation on 2026-09-09. Existing forms retain independent
+save controls and send optional metadata, model policy, modes, credits, or
+disclaimer sections. Multiple supplied sections save atomically with one
+required expected version and one version increment. Lifecycle actions remain
+separate. No migration, provider change, or participant-balance change applies.
+
+Metadata is a leaf patch; omitted sections remain unchanged. Other supplied
+sections retain their existing complete-section normalization. Whole-section
+nulls, empty input, empty metadata, and null names fail on the new endpoint.
+Nullable metadata leaves may be cleared. Legacy endpoints and persisted
+operations remain compatible, including loose model-settings validation and
+tokenless first-publication restrictions. They reuse shared normalizers and
+one transaction kernel. Disclaimer replacement creation and rollback remain
+inside that transaction; normalized no-ops retain identity.
+
+Main owns the service transaction and regression tests. Executor
+`revision_save_client` owns typed schema, the new operation, and three existing
+form consumers after the service contract. Main owns generated output,
+integration, verification, reviews, and delivery within PR #5771. The planner
+approved this contract with explicit legacy and section-semantics constraints.
+
+Acceptance requires atomic multi-section saves, rollback including disclaimer
+creation, omission and clearing behavior, conflict and pending guards, retained
+legacy behavior, generated schema/client builds and checks, and synthetic
+browser save/reload verification. Preserve the user's pending Benibot revision
+14; use separate fixtures and no seed reset. Runtime remains retained at the
+user's request. Authority and terminal condition are unchanged from the
+approved extension below. Pause only for a material contract change or an
+unavailable required capability.
+
+### Refactor progress
+
+- Baseline `fabf3673a0` is clean, synchronized with its upstream, and mergeable
+  against live PR target `v3-ai`. Remote refresh succeeded. Implementation is
+  complete. GraphQL generation, focused backend and frontend typechecks, and
+  five isolated regression suites pass (231 tests), including the unified save
+  and legacy API behavior. Required independent reviews remain pending.
+- Browser reload shows the rebuilt page and preserves Benibot's pending revision
+  14. Automatic approval review rejected creation of a separate synthetic
+  chatbot because it would persist in the signed-in account. No creation or
+  workaround occurred. Browser save/reload proof needs explicit approval for
+  that test fixture; database regression tests use the already-approved
+  disposable auxiliary database.
+
 ## Approved extension: revise published chatbot settings
 
 ### Approval summary

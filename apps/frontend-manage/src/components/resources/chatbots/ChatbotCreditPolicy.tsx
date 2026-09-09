@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ChatbotStatus,
   CreditResetPeriod,
-  MUpdateChatbotRevisionCreditPolicyDocument,
+  MSaveChatbotRevisionDocument,
   QGetChatbotsInfoWithAuthoringRevisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -163,9 +163,7 @@ function ChatbotCreditPolicy({
   onSaved?: () => void
 }) {
   const t = useTranslations()
-  const [updateCreditPolicy] = useMutation(
-    MUpdateChatbotRevisionCreditPolicyDocument
-  )
+  const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
@@ -250,21 +248,25 @@ function ChatbotCreditPolicy({
         setSaveError(null)
         setSaveSuccess(false)
         try {
-          const result = await updateCreditPolicy({
+          const result = await saveRevision({
             variables: {
               chatbotId: chatbot.id,
               expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
-              creditInitialCredits: Number(values.creditInitialCredits),
-              creditResetPeriod: values.creditResetPeriod,
-              creditResetAmount: Number(values.creditResetAmount),
-              creditMaxCredits: Number(values.creditMaxCredits),
+              input: {
+                creditPolicy: {
+                  creditInitialCredits: Number(values.creditInitialCredits),
+                  creditResetPeriod: values.creditResetPeriod,
+                  creditResetAmount: Number(values.creditResetAmount),
+                  creditMaxCredits: Number(values.creditMaxCredits),
+                },
+              },
             },
             refetchQueries: [
               { query: QGetChatbotsInfoWithAuthoringRevisionsDocument },
             ],
             awaitRefetchQueries: true,
           })
-          const saved = result.data?.updateChatbotRevisionCreditPolicy
+          const saved = result.data?.saveChatbotRevision
           if (!saved) {
             throw new Error('Credit policy update returned no chatbot')
           }

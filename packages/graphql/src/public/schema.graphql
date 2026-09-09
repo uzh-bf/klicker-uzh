@@ -792,6 +792,13 @@ type ChatbotAuthoringRevision {
   version: Int!
 }
 
+input ChatbotCreditPolicyInput {
+  creditInitialCredits: Int!
+  creditMaxCredits: Int!
+  creditResetAmount: Int!
+  creditResetPeriod: CreditResetPeriod!
+}
+
 type ChatbotDisclaimerSummary {
   acceptedCount: Int!
   declinedCount: Int!
@@ -833,6 +840,32 @@ type ChatbotReasoningConfig {
 input ChatbotReasoningConfigInput {
   efforts: [String!]!
   modelId: String!
+}
+
+input ChatbotRevisionDisclaimerInput {
+  expectedDisclaimerId: String
+  introText: String!
+  title: String!
+}
+
+input ChatbotRevisionMetadataInput {
+  avatar: String
+  description: String
+  name: String
+}
+
+input ChatbotRevisionModelPolicyInput {
+  allowedModelIds: [String!]!
+  allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!]
+  modelSelection: Boolean!
+}
+
+input ChatbotRevisionSaveInput {
+  creditPolicy: ChatbotCreditPolicyInput
+  disclaimer: ChatbotRevisionDisclaimerInput
+  metadata: ChatbotRevisionMetadataInput
+  modelPolicy: ChatbotRevisionModelPolicyInput
+  standardModeConfig: ChatbotStandardModeConfigInput
 }
 
 type ChatbotStandardModeConfig {
@@ -2743,6 +2776,7 @@ type Mutation {
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, expectedRevisionVersion: Int, introText: String!, title: String!): Chatbot
+  saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveChatbotRevisionDisclaimer(chatbotId: String!, expectedDisclaimerId: String, expectedRevisionVersion: Int!, introText: String!, title: String!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta

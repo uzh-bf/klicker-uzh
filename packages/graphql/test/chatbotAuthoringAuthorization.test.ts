@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
 const serviceMocks = vi.hoisted(() => ({
+  saveChatbotRevision: vi.fn(),
   updateChatbotModelSettings: vi.fn(),
   updateChatbotCreditPolicy: vi.fn(),
   updateChatbotModelPolicy: vi.fn(),
@@ -62,6 +63,11 @@ describe('AI beta listing boundary', () => {
 
 describe('AI beta authoring field boundary', () => {
   const operations = [
+    {
+      field: 'saveChatbotRevision',
+      query:
+        'mutation { saveChatbotRevision(chatbotId: "synthetic-chatbot", expectedRevisionVersion: 0, input: { metadata: { name: "Synthetic revision" } }) { id } }',
+    },
     {
       field: 'updateChatbotCreditPolicy',
       query:

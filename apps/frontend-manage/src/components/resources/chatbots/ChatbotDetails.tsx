@@ -5,7 +5,7 @@ import {
   ChatbotStatus,
   type ChatModelCapability,
   CreditResetPeriod,
-  MUpdateChatbotRevisionModelPolicyDocument,
+  MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
   QGetChatbotsInfoWithAuthoringRevisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -195,8 +195,8 @@ function ChatbotDetails({
   const t = useTranslations()
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
-  const [updateChatbotModelPolicy, { loading: isSaving }] = useMutation(
-    MUpdateChatbotRevisionModelPolicyDocument
+  const [saveRevision, { loading: isSaving }] = useMutation(
+    MSaveChatbotRevisionDocument
   )
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -555,13 +555,17 @@ function ChatbotDetails({
       })
 
     try {
-      await updateChatbotModelPolicy({
+      await saveRevision({
         variables: {
           chatbotId: chatbot.id,
           expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
-          modelSelection: modelSelectionEnabled,
-          allowedModelIds: normalizedAllowedModelIds,
-          allowedReasoningEffortsByModel: normalizedReasoningConfig,
+          input: {
+            modelPolicy: {
+              modelSelection: modelSelectionEnabled,
+              allowedModelIds: normalizedAllowedModelIds,
+              allowedReasoningEffortsByModel: normalizedReasoningConfig,
+            },
+          },
         },
         refetchQueries: [
           { query: QGetChatbotsInfoWithAuthoringRevisionsDocument },

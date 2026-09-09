@@ -2,9 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ChatbotStatus,
   type LocaleType,
-  MSaveChatbotRevisionDisclaimerDocument,
-  MUpdateChatbotRevisionMetadataDocument,
-  MUpdateChatbotRevisionStandardModeConfigDocument,
+  MSaveChatbotRevisionDocument,
   QGetChatbotsInfoWithAuthoringRevisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -344,11 +342,7 @@ function ChatbotAuthoring({
   onNavigationStateChange: (state: ChatbotNavigationState) => void
 }) {
   const t = useTranslations()
-  const [updateChatbot] = useMutation(MUpdateChatbotRevisionMetadataDocument)
-  const [updateStandardModeConfig] = useMutation(
-    MUpdateChatbotRevisionStandardModeConfigDocument
-  )
-  const [saveDisclaimer] = useMutation(MSaveChatbotRevisionDisclaimerDocument)
+  const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [modeError, setModeError] = useState<string | null>(null)
@@ -585,13 +579,18 @@ function ChatbotAuthoring({
                         description: values.description.trim(),
                       }
                       try {
-                        await updateChatbot({
+                        await saveRevision({
                           variables: {
                             chatbotId: chatbot.id,
                             expectedRevisionVersion: revisionVersion,
-                            name: normalizedValues.name,
-                            description: normalizedValues.description || null,
-                            avatar: revisionValues.avatar,
+                            input: {
+                              metadata: {
+                                name: normalizedValues.name,
+                                description:
+                                  normalizedValues.description || null,
+                                avatar: revisionValues.avatar,
+                              },
+                            },
                           },
                           refetchQueries: [
                             {
@@ -755,11 +754,11 @@ function ChatbotAuthoring({
                       setModeError(null)
                       setModeSuccess(false)
                       try {
-                        await updateStandardModeConfig({
+                        await saveRevision({
                           variables: {
                             chatbotId: chatbot.id,
                             expectedRevisionVersion: revisionVersion,
-                            config: values,
+                            input: { standardModeConfig: values },
                           },
                           refetchQueries: [
                             {
@@ -1070,12 +1069,16 @@ function ChatbotAuthoring({
                         introText: values.introText.trim(),
                       }
                       try {
-                        await saveDisclaimer({
+                        await saveRevision({
                           variables: {
                             chatbotId: chatbot.id,
                             expectedRevisionVersion: revisionVersion,
-                            title: normalizedValues.title,
-                            introText: normalizedValues.introText,
+                            input: {
+                              disclaimer: {
+                                title: normalizedValues.title,
+                                introText: normalizedValues.introText,
+                              },
+                            },
                           },
                           refetchQueries: [
                             {
