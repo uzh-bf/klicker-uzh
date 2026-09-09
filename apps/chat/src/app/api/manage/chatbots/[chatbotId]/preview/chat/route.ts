@@ -160,6 +160,9 @@ export async function POST(
     )
   }
 
+  const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
+    (configuration) => configuration.isEnabled !== false
+  )
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
@@ -266,7 +269,7 @@ export async function POST(
   let tools: ToolSet
   try {
     const kbIds = resolveMcpScope(
-      chatbot.mcpConfigurations,
+      enabledMCPConfigurations,
       selectedMode,
       modeConfigurations
     )

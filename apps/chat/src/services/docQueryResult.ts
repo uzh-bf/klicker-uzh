@@ -1,20 +1,12 @@
 import { createHash } from 'node:crypto'
+import { isIngestionReference } from '../lib/sources/normalizeSources'
 
 function redactGateway(value: string): string {
   return value.replace(/https?:\/\/[^\s<>"'\\]+/gi, (candidate) => {
-    try {
-      const url = new URL(candidate)
-      const hostname = url.hostname.toLowerCase().replace(/\.$/, '')
-      if (
-        hostname.endsWith('.svc') ||
-        hostname.endsWith('.svc.cluster.local') ||
-        url.pathname.startsWith('/api/ingestion/resources/')
-      ) {
-        return `document-${createHash('sha256').update(candidate).digest('hex').slice(0, 16)}`
-      }
-    } catch {
-      // Non-URL text is preserved verbatim.
+    if (isIngestionReference(candidate)) {
+      return `document-${createHash('sha256').update(candidate).digest('hex').slice(0, 16)}`
     }
+    // Non-URL text is preserved verbatim.
     return candidate
   })
 }

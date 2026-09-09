@@ -4,6 +4,27 @@
 
 ### Current delivery ownership — 2026-09-09
 
+The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.
+The full container build passed 26/26 and the worktree was clean before the
+final-review corrections. Claude Opus 5 completed the integrated review of all
+55 paths with seven findings. Main is correcting generated-state Git exclusion,
+repository/CI wiring for offline lifecycle tests, and the duplicated gateway
+predicate. The new `check:local-kb` command passes 71/71; the shared-predicate
+Chat regressions pass 88/88. Aquinas completed the disabled-binding preview and
+metadata-only result-display corrections: 44 focused tests and Chat type-check
+pass. Main inspected all four changed files and closed the executor. Disabled
+bindings no longer enter effective scope; metadata-only results remain visible,
+and malformed sources are not classified as genuinely empty.
+
+Two findings require an explicit disposition before claiming final readiness.
+ADR 0018 assigns launchers/configuration to providers, but this package assembles
+them in Klicker. Do not silently amend that accepted decision or describe this
+as a complete local AI profile. The unused process-identity helper is also not
+part of the operating Compose lifecycle; its unit tests are not operational
+ownership proof. No source-file deletion is performed under the current
+no-deletion boundary. Browser consent and live qualification remain pending.
+This receipt supersedes the historical in-progress merge/reviewer notes below.
+
 Approved target integration is in progress on `rs/local-kb-ingestion-retrieval`.
 All sixteen conflict paths are resolved; both executors are closed. Main owns
 integration and verification. The

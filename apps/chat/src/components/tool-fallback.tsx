@@ -117,7 +117,10 @@ export function getDocQueryChipState({
     return retrievalState === 'empty' ? 'doneEmpty' : 'done'
   }
 
-  return countDocQueryDocuments(payload) > 0 ? 'done' : 'doneEmpty'
+  const documentCount = countDocQueryDocuments(payload)
+  if (documentCount > 0 || retrievalState === 'success') return 'done'
+
+  return retrievalState === 'empty' ? 'doneEmpty' : 'done'
 }
 
 function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {

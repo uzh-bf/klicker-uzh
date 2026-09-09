@@ -86,7 +86,7 @@ describe('getDocQueryChipState', () => {
     expect(getDocQueryChipState(baseParams({ result }))).toBe('doneEmpty')
   })
 
-  test('documents mode ignores rendered cards without retrieved chunks', () => {
+  test('documents mode treats renderable metadata-only sources as done', () => {
     const result = {
       mode: 'documents',
       sources: [
@@ -97,7 +97,7 @@ describe('getDocQueryChipState', () => {
         },
       ],
     }
-    expect(getDocQueryChipState(baseParams({ result }))).toBe('doneEmpty')
+    expect(getDocQueryChipState(baseParams({ result }))).toBe('done')
   })
 
   test('documents mode with an empty result is doneEmpty', () => {
@@ -118,6 +118,7 @@ describe('getDocQueryChipState', () => {
     {},
     { sources: null },
     { sources: 'invalid' },
+    { sources: [null] },
   ])('does not claim an empty retrieval for a malformed object', (result) => {
     expect(getDocQueryChipState(baseParams({ result }))).toBe('done')
   })

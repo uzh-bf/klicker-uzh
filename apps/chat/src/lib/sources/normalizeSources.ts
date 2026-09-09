@@ -292,7 +292,7 @@ function lastPathSegment(value: string): string | undefined {
 
 // Resource ingestion gateways are machine-to-machine fetch endpoints, never
 // participant source links, even when exposed through a public API hostname.
-function isIngestionReference(value: string | undefined): boolean {
+export function isIngestionReference(value: string | undefined): boolean {
   if (!value) return false
   try {
     const url = new URL(value)

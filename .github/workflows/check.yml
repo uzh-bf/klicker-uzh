@@ -79,6 +79,9 @@ jobs:
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
 
+      - name: Check local KB lifecycle contracts
+        run: pnpm run check:local-kb
+
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs
 

@@ -335,6 +335,55 @@ describe('POST owner preview chat', () => {
     )
   })
 
+  it('ignores a disabled KB scope beside an enabled configuration', async () => {
+    const chatbot = createChatbot()
+    const [enabledConfiguration] = chatbot.mcpConfigurations as Array<
+      Record<string, unknown>
+    >
+    chatbot.mcpConfigurations = [
+      enabledConfiguration,
+      {
+        ...enabledConfiguration,
+        isEnabled: false,
+        parameters: {
+          ...(enabledConfiguration.parameters as Record<string, unknown>),
+          kb_id: additionalKbId,
+        },
+        priority: 2,
+      },
+    ]
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ kbIds: [originalKbId] })
+    )
+  })
+
+  it('does not create a KB scope from disabled-only configurations', async () => {
+    const chatbot = createChatbot()
+    const [configuration] = chatbot.mcpConfigurations as Array<
+      Record<string, unknown>
+    >
+    chatbot.mcpConfigurations = [{ ...configuration, isEnabled: false }]
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ kbIds: undefined })
+    )
+  })
+
   it('rejects an unavailable saved model before opening MCP tools', async () => {
     mocks.getModelsForChatbot.mockReturnValue([])
 
