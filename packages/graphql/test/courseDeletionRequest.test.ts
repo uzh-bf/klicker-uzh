@@ -182,9 +182,10 @@ describe('course deletion worker', () => {
 
     await run({ ...event, loggingContext }, context)
 
-    expect(context.logger.warn).toHaveBeenCalledWith('Deletion warning', {
-      extra: { ...loggingContext, event: 'course.deletion.warning' },
-    })
+    expect(context.logger.warn).toHaveBeenCalledWith(
+      'Deletion warning [correlationId=correlation-1]',
+      { extra: { ...loggingContext, event: 'course.deletion.warning' } }
+    )
   })
 
   it('keeps the marker while retries remain', async () => {
