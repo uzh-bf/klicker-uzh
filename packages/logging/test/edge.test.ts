@@ -1,6 +1,22 @@
 import { createEdgeLogger } from '../src/edge.js'
 
 describe('createEdgeLogger', () => {
+  it.each([
+    'constructor',
+    '__proto__',
+    'toString',
+  ])('uses the info threshold for inherited property name %s', (level) => {
+    const lines: string[] = []
+    const logger = createEdgeLogger({
+      service: 'edge-test',
+      level,
+      sink: (_level, line) => lines.push(line),
+    })
+    logger.debug({ event: 'edge.debug.suppressed' }, 'Suppressed')
+    logger.info({ event: 'edge.info.defaulted' }, 'Defaulted')
+    expect(lines.map((line) => JSON.parse(line).level)).toEqual(['info'])
+  })
+
   it('emits the same record contract without leaking unknown fields', () => {
     const lines: string[] = []
     const logger = createEdgeLogger({

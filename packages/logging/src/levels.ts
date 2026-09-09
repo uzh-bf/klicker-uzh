@@ -19,7 +19,7 @@ export const LOG_LEVEL_VALUES: Record<LogLevel, number> = {
 
 export function normalizeLogLevel(level?: string): LogLevel {
   const normalized = level?.toLowerCase()
-  return normalized && normalized in LOG_LEVEL_VALUES
+  return normalized && Object.hasOwn(LOG_LEVEL_VALUES, normalized)
     ? (normalized as LogLevel)
     : 'info'
 }
