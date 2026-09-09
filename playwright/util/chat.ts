@@ -405,8 +405,8 @@ export type StreamOptions = {
   textChunks?: string[]
   /** Delays each streamed SSE line by this many milliseconds. */
   chunkDelayMs?: number
-  /** Pauses after this many text deltas until the test releases the stream. */
-  pauseAfterTextChunk?: number
+  /** Pauses at each specified text-delta count until the test releases the stream. */
+  pauseAfterTextChunk?: number | number[]
   /** Pauses after the first tool output, before answer text starts. */
   pauseAfterToolOutput?: boolean
   /** Payload of the `finish` part; omitted entirely when not given. */
@@ -565,7 +565,11 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
 
               if (eventType === 'text-delta') {
                 textChunkCount += 1
-                if (textChunkCount === pauseAfterTextChunk) {
+                if (
+                  Array.isArray(pauseAfterTextChunk)
+                    ? pauseAfterTextChunk.includes(textChunkCount)
+                    : textChunkCount === pauseAfterTextChunk
+                ) {
                   if (signal?.aborted) {
                     controller.error(abortError())
                     return
