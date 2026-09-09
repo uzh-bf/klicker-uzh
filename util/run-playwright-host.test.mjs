@@ -19,12 +19,50 @@ import {
 import {
   parsePublishedPort,
   resolvePlaywrightEnvironment,
+  validateRetainedCitationEnvironment,
 } from './run-playwright-host.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
+
+test('retained citation checks require local targets and explicit fixture identities', () => {
+  const env = {
+    PLAYWRIGHT_BASE_URL: 'https://chat.klicker.test.localhost',
+    APP_SECRET: 'synthetic-test-only',
+    PARTICIPANT_ID: '11111111-1111-4111-8111-111111111111',
+    CHATBOT_ID: '22222222-2222-4222-8222-222222222222',
+    THREAD_ID: '33333333-3333-4333-8333-333333333333',
+  }
+  assert.doesNotThrow(() => validateRetainedCitationEnvironment(env))
+  for (const target of [
+    'https://chat.example.org',
+    'https://localhost.example.org',
+    'file:///tmp/test',
+    'https://test:synthetic@chat.klicker.test.localhost',
+    'https://chat.klicker.test.localhost/?token=synthetic',
+    'https://chat.klicker.test.localhost/#synthetic',
+    'https://chat.klicker.test.localhost/another/path',
+  ]) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({
+        ...env,
+        PLAYWRIGHT_BASE_URL: target,
+      })
+    )
+  }
+  for (const key of Object.keys(env)) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({ ...env, [key]: '' })
+    )
+  }
+  for (const key of ['PARTICIPANT_ID', 'CHATBOT_ID', 'THREAD_ID']) {
+    assert.throws(() =>
+      validateRetainedCitationEnvironment({ ...env, [key]: 'not-a-uuid' })
+    )
+  }
+})
 
 function cliFixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))

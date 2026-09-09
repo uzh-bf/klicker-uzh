@@ -11,6 +11,14 @@ import {
 } from './playwright-host-policy.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const retainedCitationsConfig = resolve(
+  repoRoot,
+  'playwright',
+  'retained-citations.config.ts'
+)
+const retainedCitationsSpec = 'retained-citations.spec.ts'
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function fail(message) {
   throw new Error(`[playwright:host] ${message}`)
@@ -55,6 +63,100 @@ function runPnpm(args, env = process.env) {
   }
 
   return run('pnpm', args, { env })
+}
+
+function isLocalhostUrl(value) {
+  let parsed
+  try {
+    parsed = new URL(value)
+  } catch {
+    return false
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  return (
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    !parsed.username &&
+    !parsed.password &&
+    !parsed.search &&
+    !parsed.hash &&
+    parsed.pathname === '/' &&
+    (hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '[::1]')
+  )
+}
+
+export function validateRetainedCitationEnvironment(env = process.env) {
+  const required = [
+    'PLAYWRIGHT_BASE_URL',
+    'APP_SECRET',
+    'PARTICIPANT_ID',
+    'CHATBOT_ID',
+    'THREAD_ID',
+  ]
+  const missing = required.filter((name) => !env[name])
+  if (missing.length > 0) {
+    fail(
+      `--retained-citations requires ${missing.join(', ')} in the process environment`
+    )
+  }
+
+  if (!isLocalhostUrl(env.PLAYWRIGHT_BASE_URL)) {
+    fail(
+      '--retained-citations requires PLAYWRIGHT_BASE_URL to be a local origin without credentials, query or fragment'
+    )
+  }
+
+  for (const name of ['PARTICIPANT_ID', 'CHATBOT_ID', 'THREAD_ID']) {
+    if (!uuidPattern.test(env[name])) {
+      fail(`--retained-citations requires ${name} to be a UUID`)
+    }
+  }
+}
+
+function assertRetainedCitationDependencies() {
+  const playwrightCli = join(
+    repoRoot,
+    'playwright',
+    'node_modules',
+    '@playwright',
+    'test',
+    'cli.js'
+  )
+
+  if (!existsSync(playwrightCli)) {
+    fail(
+      '--retained-citations requires existing host Playwright dependencies; refusing to install them'
+    )
+  }
+}
+
+function runRetainedCitations() {
+  const retainedEnvironment = {
+    ...process.env,
+    [HOST_RUNNER_ENV]: '1',
+  }
+
+  validateRetainedCitationEnvironment(retainedEnvironment)
+  assertRetainedCitationDependencies()
+
+  console.log('[playwright:host] Running retained citation test only')
+  runPnpm(
+    [
+      '--filter',
+      '@klicker-uzh/playwright',
+      'exec',
+      'playwright',
+      'test',
+      `--config=${retainedCitationsConfig}`,
+      retainedCitationsSpec,
+      '--project=chromium',
+    ],
+    retainedEnvironment
+  )
 }
 
 export function readCommittedEnvironment(contents) {
@@ -215,6 +317,17 @@ export function main(argv = process.argv.slice(2)) {
   assertPlaywrightHostBoundary({ env: hostEnvironment })
 
   const args = argv[0] === '--' ? argv.slice(1) : [...argv]
+  if (args.includes('--retained-citations')) {
+    const remainingArgs = args.filter((arg) => arg !== '--retained-citations')
+    if (remainingArgs.length > 0) {
+      fail(
+        '--retained-citations does not accept additional Playwright arguments'
+      )
+    }
+    runRetainedCitations()
+    return
+  }
+
   const showReport = args[0] === '--show-report'
   if (showReport) args.shift()
 
