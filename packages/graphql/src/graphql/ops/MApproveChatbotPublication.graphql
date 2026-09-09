@@ -1,4 +1,7 @@
-mutation ApproveChatbotPublication($id: String!, $expectedRevisionVersion: Int) {
+mutation ApproveChatbotPublication(
+  $id: String!
+  $expectedRevisionVersion: Int
+) {
   approveChatbotPublication(
     id: $id
     expectedRevisionVersion: $expectedRevisionVersion
