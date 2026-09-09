@@ -63,7 +63,7 @@ Current Next.js documentation was retrieved through Context7. It confirms standa
 
 ## Progress
 
-Status: delivery_pending. Implementation is uncommitted; required implementation reviews and the draft PR remain outstanding. Main owns all changed files and the exact runtime. All implementation and exploration children have completed or been closed; no reviewer is active.
+Status: delivery_pending. Implementation is committed at `2b30ea61a7`. Slice risk review completed after one correction; integrated final review and the draft PR remain outstanding. Main owns all changed files and the exact runtime. All implementation and exploration children have completed or been closed; all slice reviewers are closed. The simplifier completed with one optional cleanup-state reduction, explicitly deferred after main-session inspection.
 
 ### Current verification
 
@@ -77,14 +77,16 @@ The final full run passes all nine tests in 13.7 seconds with zero failures, ski
 
 ### Runtime and local-only configuration
 
-Exact source: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/account-creation-production-e2e`. Devsy workspace: `rs-account-creation-production-e`; compose project: `default-rs-0170d`. The active local runtime has isolated Postgres/Hatchet, three Redis services, MailHog, and API/Auth/PWA/Manage. Stop through Devrouter and verify provider stopped plus zero exact routes after final runtime verification or a genuine pause.
+Exact source: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/account-creation-production-e2e`. Devsy workspace: `rs-account-creation-production-e`; compose project: `default-rs-0170d`. The retained stopped runtime contains isolated Postgres/Hatchet, three Redis services, MailHog, and API/Auth/PWA/Manage. Final runtime release is verified: Devrouter stop succeeded, the source-matched Devsy workspace reports `Stopped`, and exact route count is zero. Local provider/status/route receipts are under `_local/account-provider-*.json` and `_local/account-routes.json`.
 
-The user explicitly approved a task-local subnet remedy after Docker exhausted its predefined pools. Four compose lines selecting `172.30.240.0/24` are machine-local and must not be staged. Commit only the separate MailHog loopback port mapping. Retain runtime data; no network, volume, branch or worktree deletion is authorized.
+The user explicitly approved a task-local subnet remedy after Docker exhausted its predefined pools. Four compose lines selecting `172.30.240.0/24` were kept out of the commit and removed after the runtime stopped. The committed compose change contains only the MailHog loopback port mapping. Retain runtime data; no network, volume, branch or worktree deletion is authorized.
 
 ### Delivery and limits
 
-Target `origin/v3` is confirmed by the merged source dependency PR. At the last refresh this task was five commits ahead and one behind that target because the source repair was squash-merged. Integrate the squash result once near delivery to remove misleading source history, preserving unrelated changes and using no force push.
+Target `origin/v3` is confirmed by the merged source dependency PR. Refreshed target SHA `236ecd4fef9c9fddb6f4e6dd252e7e2f2226ddc4` was integrated once in `92adeba259` to remove misleading squash history. Only the source-owner plan document differed; that add/add conflict uses the merged target version. No application or test content changed, so passing runtime evidence remains applicable.
 
 The dedicated production workflow and promotion prerequisite are implemented but have not run in GitHub. The previously trusted `v3` selector does not yet recognize newly introduced production-only specs, so the introducing PR can encounter the ordinary-lane bootstrap failure. Do not skip tests or claim that local proof establishes CI enforcement; keep the PR draft and state this limitation until the trusted selector and manifest land together. This package does not authorize that merge or any promotion.
 
-Before delivery: complete all nine real browser checks and validate the actual JSON inventory/result; finish applicable formatting and changed-source checks; inspect staged data and comments; commit the implementation; obtain the required simplifier, slice risk review and integrated final review; push the ordinary task branch and create one coherent draft PR. No application dependencies, migrations, visible product UI, production records or external email are changed. Screenshot publication does not apply because this package changes test/runtime infrastructure only.
+Before delivery: obtain the integrated final review; push the ordinary task branch and create one coherent draft PR. No application dependencies, migrations, visible product UI, production records or external email are changed. Screenshot publication does not apply because this package changes test/runtime infrastructure only.
+
+Slice risk correction `66e9b2b074` pins the complete candidate account workflow to trusted controller bytes before accepting run/job/artifact evidence. Conditional build, test, and upload negative cases pass with all 23 promoter tests. The same reviewer returned DONE on its one correction pass. The introducing ordinary-lane bootstrap concern remains an explicit draft/merge blocker. The artifact-cache lesson is committed in `ec631d9bd6`.
