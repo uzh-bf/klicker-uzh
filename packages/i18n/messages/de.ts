@@ -3581,7 +3581,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
       leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
       leaderboardInclusion:
-        'Teilnehmende ohne Punkte erscheinen nur in der Rangliste für den gesamten Kurs.',
+        'Teilnehmende ohne Punkte werden in der Rangliste für den gesamten Kurs und in rollierenden Ranglisten aufgeführt. Wöchentliche Ranglisten und Ranglisten für benutzerdefinierte Zeiträume lassen Einträge ohne Punkte aus.',
       leaderboardExportHelp: 'Hinweise zum CSV-Export',
       leaderboardExportDescription:
         'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',

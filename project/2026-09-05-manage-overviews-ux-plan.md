@@ -74,6 +74,52 @@ Use new worktree's manage profile for Manage/auth/API visual inspection and the 
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
 
+### External review corrections, 2026-09-09
+
+The user authorizes applying supported findings from the supplied readiness
+review. Main owns disposition, documentation and leaderboard copy; Hooke owns
+recovery pin checks, mounted runtime-source verification, CI wiring and narrow
+secret temporary-file ignores. Verification targets are synthetic shell tests,
+focused formatting and independent review of the recovery boundary.
+
+Accepted: stale runtime source pin, missing automated recovery checks, mounted
+runtime-source verification, secret temporary-file ignores, missing operator
+contract documentation, stale Auth readiness documentation and overstated
+leaderboard inclusion copy. The MCP acceptance suite is documented as a manual
+container integration check rather than silently claimed as CI coverage.
+
+The callback invoker exists in reviewed devrouter source aacf9ea595b9, but the
+repository-pinned release does not implement it. Document this source-only
+contract instead of guessing a published minimum version. Do not execute the
+callback manually or change a recovery journal to test these source fixes.
+
+Deferred: pre-existing query-error UI and disabled-tooltip accessibility need
+separate behavior coverage; prefetch amplification is estimated, not measured;
+retries, diagnostic expansion, cache-policy changes and recovery orchestration
+changes lack sufficient evidence to modify their contracts in this correction.
+Dead-component removal is optional cleanup. Existing long-title/read-only visual
+acceptance remains outstanding. Review age alone does not invalidate unchanged
+reviewed source.
+
+The audit left this runtime Running and canonical exec initially refused
+with `Lifecycle transition is blocked`. Canonical stop followed by normal ensure
+restored readiness with no drift. Recovery shell tests, all-pin drift cases,
+mounted-helper rejection, secret-temp ignores, formatting and Manage typechecking
+pass. English and German help renders correctly; screenshots are retained in
+project/_local/visuals/2026-09-09-recovery/leaderboard-review-*.png.
+No raw Docker fallback, database reset or recovery callback execution was needed.
+
+Commit is blocked by the host PreToolUse data-hygiene hook: it flags existing
+maintainer emails in package.json and credential-related locale content. The
+actual hunks change only test:dev-runtime and leaderboard inclusion prose.
+The hook requires explicit permission for AGENTS_SKIP_DATA_HYGIENE=1.
+The package remains uncommitted pending that permission; no bypass was used.
+All 35 typecheck tasks, seven lint tasks, syncpack and all 23 build tasks pass.
+Staged Gitleaks passes. The isolated browser is closed. Canonical task-only
+shutdown is in progress; independent committed-delta review remains after
+the commit gate is resolved.
+
+
 ### Target integration verified, 2026-09-09
 
 Integration commit 65bbd2ffeff6f05589f53e8f84c79a4f8565d3d7 contains target

@@ -113,7 +113,7 @@ Post-create publishes a fixed container-local completion marker only after the
 destructive bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
-the canonical stop/recovery path. A warm profile switch never manufactures the
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
 marker or reruns database bootstrap. The `ROOT` contract in
 [post-create](../.devcontainer/post-create.sh) and
 [post-start](../.devcontainer/post-start.sh) canonicalizes
@@ -129,7 +129,8 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
