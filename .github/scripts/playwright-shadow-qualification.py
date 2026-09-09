@@ -87,7 +87,9 @@ def parse_json(data):
             object_pairs_hook=pairs,
             parse_constant=lambda _: require(False, "invalid-json"),
         )
-    except (UnicodeError, json.JSONDecodeError, RecursionError):
+    except EvidenceError:
+        raise
+    except (UnicodeError, ValueError, RecursionError):
         raise EvidenceError("invalid-json") from None
 
 
@@ -121,7 +123,12 @@ class Files:
 
 
 def validate_plan(plan, event, candidates=None):
-    require(isinstance(plan, dict) and plan.get("schemaVersion") == 1, "invalid-plan")
+    require(
+        isinstance(plan, dict)
+        and type(plan.get("schemaVersion")) is int
+        and plan["schemaVersion"] == 1,
+        "invalid-plan",
+    )
     require(
         all(plan.get(key) == event[key] for key in SHA_FIELDS[:3]),
         "plan-identity-mismatch",
@@ -176,7 +183,8 @@ def validate_plan(plan, event, candidates=None):
             and index not in indexed
             and type(shard.get("shardTotal")) is int
             and shard["shardTotal"] == count
-            and shard.get("version") == 1,
+            and type(shard.get("version")) is int
+            and shard["version"] == 1,
             "invalid-shard",
         )
         files = specs(shard.get("files"))
@@ -411,7 +419,8 @@ def evaluate(manifest_path):
     manifest = parse_json(files.read(path.name))
     require(
         isinstance(manifest, dict)
-        and manifest.get("schemaVersion") == 1
+        and type(manifest.get("schemaVersion")) is int
+        and manifest["schemaVersion"] == 1
         and isinstance(manifest.get("entries"), list)
         and len(manifest["entries"]) <= 128,
         "invalid-manifest",

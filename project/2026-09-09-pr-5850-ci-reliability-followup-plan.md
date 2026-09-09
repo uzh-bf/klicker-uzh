@@ -202,7 +202,14 @@ initial fixture used a different shape from the real producer; no replacement
 worker was started. Ten qualifier tests and eleven existing timing tests pass.
 The evaluator independently reconciles retained run34321312168: 1050 tests,
 two failures, zero errors, twelve skipped, no missed failure, full-fallback
-control on v3-ai. It does not qualify selective execution. Review is pending.
+control on v3-ai. It does not qualify selective execution. The simplifier's
+fixture-only reduction preserves the original checks. Main reproduced and
+corrected an unhandled oversized JSON integer conversion: parser failures now
+return structured rejection while duplicate-key reasons remain intact. Slice
+review confirmed that defect and found boolean schema versions accepted as one.
+All three version fields now require exact integers. All 23 Python checks pass.
+The same reviewer `01a08590-f486-7bc2-82e7-30c68657b32a` will check the bounded
+correction, followed by integrated final review and upper stacked draft delivery.
 The configured Husky
 entrypoint is absent in this worktree; full monorepo build/check hooks are not
 claimed. No hook configuration was changed or bypass flag used.
@@ -213,9 +220,9 @@ Linux CI passing.
 This is source evidence only: no release, install or consumer runtime change
 has occurred. Missing stop-baseline repair remains separate; retain runtime data.
 The existing `collect-smart-draft-qualification-evidence` hourly automation is
-paused. The sole PR watcher completed and its handle is gone, but the automation
-approval check rejected reactivation on an overlapping-watcher concern. Do not
-bypass it or create a duplicate monitor. Its evidence and
+active again after an elevated read-only host process check proved that no
+GitHub run/check watcher remained. The automation API confirmed reactivation
+of the same hourly collector; no duplicate monitor was created. Its evidence and
 cursor live in the old scheduling worktree's ignored
 `project/_local/evidence/2026-09-08-goal-audit/`; do not replace or duplicate it.
 

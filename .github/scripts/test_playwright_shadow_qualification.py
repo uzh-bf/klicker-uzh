@@ -78,11 +78,6 @@ class Fixture:
         *,
         selected=None,
         failure_specs=(),
-        shadow_run_attempt=None,
-        missing_shard=False,
-        expired=False,
-        unsafe_path=False,
-        unsafe_xml=False,
     ):
         selected = list(
             SPECS
@@ -96,35 +91,28 @@ class Fixture:
         artifact_dir.mkdir()
         descriptors = []
 
-        def add_artifact(
-            artifact_id, kind, path, artifact_attempt=None, expired_value=False
-        ):
+        def add_artifact(kind, path):
             descriptors.append(
                 {
                     "artifactId": self.number * 100 + len(descriptors) + 1,
                     "kind": kind,
                     "path": path,
                     "runId": self.run_id,
-                    "runAttempt": artifact_attempt or self.run_attempt,
-                    "expired": expired_value,
+                    "runAttempt": self.run_attempt,
+                    "expired": False,
                 }
             )
 
         canonical_path = artifact_dir / "canonical.json"
         shadow_path = artifact_dir / "shadow.json"
-        report_ids = []
         shards = []
         for index in range(1, 9):
             shard_specs = [SPECS[index - 1]]
-            report_id = f"junit-{index}"
-            report_ids.append(report_id)
             report_name = f"shard-{index}.xml"
             report_path = artifact_dir / report_name
             xml = _xml_report(shard_specs, failure_specs=failure_specs)
-            if unsafe_xml and index == 1:
-                xml = '<!DOCTYPE testsuites [<!ENTITY bad "x">]>' + xml
             report_path.write_text(xml, encoding="utf-8")
-            add_artifact(report_id, "junit", str(report_path.relative_to(self.root)))
+            add_artifact("junit", str(report_path.relative_to(self.root)))
             descriptors[-1]["shardIndex"] = index
             shards.append(
                 {
@@ -183,20 +171,12 @@ class Fixture:
         shadow_path.write_text(json.dumps(shadow), encoding="utf-8")
         add_artifact(
             "canonical-plan",
-            "canonical-plan",
             str(canonical_path.relative_to(self.root)),
         )
         add_artifact(
             "shadow-plan",
-            "shadow-plan",
             str(shadow_path.relative_to(self.root)),
-            artifact_attempt=shadow_run_attempt,
-            expired_value=expired,
         )
-        if unsafe_path:
-            descriptors[-1]["path"] = "../outside.json"
-        if missing_shard:
-            descriptors.pop(0)
         return {
             "event": self.event,
             "fullRun": {
@@ -220,6 +200,44 @@ def _write_manifest(root, entries):
 
 
 class PlaywrightShadowQualificationTests(unittest.TestCase):
+    def test_boolean_versions_cannot_qualify(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Fixture(directory)
+            entry = fixture.entry(selected=[SPECS[0]])
+            path = _write_manifest(directory, [entry])
+            manifest = json.loads(path.read_text())
+            manifest["schemaVersion"] = True
+            path.write_text(json.dumps(manifest))
+            with self.assertRaises(qualification.EvidenceError) as raised:
+                evaluate(path)
+            self.assertEqual(raised.exception.reason, "invalid-manifest")
+            path = _write_manifest(directory, [entry])
+            plan_path = Path(directory) / entry["artifacts"][-1]["path"]
+            original = plan_path.read_text()
+            for field in ("plan", "shard"):
+                with self.subTest(field=field):
+                    plan = json.loads(original)
+                    if field == "plan":
+                        plan["schemaVersion"] = True
+                    else:
+                        plan["shards"][0]["version"] = True
+                    plan_path.write_text(json.dumps(plan))
+                    result = evaluate(path)["entries"][0]
+                    self.assertEqual(result["status"], "hard-rejection")
+
+    def test_json_conversion_failure_preserves_structured_rejection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            for data, reason in (
+                ('{"schemaVersion":' + "1" * 5000 + "}", "invalid-json"),
+                ('{"schemaVersion":1,"schemaVersion":1}', "duplicate-json-key"),
+            ):
+                with self.subTest(reason=reason):
+                    path.write_text(data, encoding="utf-8")
+                    with self.assertRaises(qualification.EvidenceError) as raised:
+                        evaluate(path)
+                    self.assertEqual(raised.exception.reason, reason)
+
     def test_selective_success_preserves_failure_inside_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Fixture(directory)
@@ -242,7 +260,8 @@ class PlaywrightShadowQualificationTests(unittest.TestCase):
     def test_identity_attempt_mismatch_is_hard_rejection(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Fixture(directory)
-            entry = fixture.entry(shadow_run_attempt=2)
+            entry = fixture.entry()
+            entry["artifacts"][-1]["runAttempt"] = 2
             report = evaluate(_write_manifest(directory, [entry]))
             self.assertEqual(report["entries"][0]["status"], "hard-rejection")
             self.assertIn("artifact-identity-mismatch", report["entries"][0]["reasons"])
@@ -250,13 +269,15 @@ class PlaywrightShadowQualificationTests(unittest.TestCase):
     def test_missing_shards_and_expired_artifact_are_missing_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Fixture(directory, number=1)
-            entry = fixture.entry(missing_shard=True)
+            entry = fixture.entry()
+            entry["artifacts"].pop(0)
             result = evaluate(_write_manifest(directory, [entry]))["entries"][0]
             self.assertEqual(result["status"], "missing-evidence")
             self.assertIn("incomplete-artifacts", result["reasons"])
 
             fixture = Fixture(directory, number=2)
-            entry = fixture.entry(expired=True)
+            entry = fixture.entry()
+            entry["artifacts"][-1]["expired"] = True
             result = evaluate(_write_manifest(directory, [entry]))["entries"][0]
             self.assertEqual(result["status"], "missing-evidence")
             self.assertIn("expired-artifact", result["reasons"])
@@ -314,13 +335,18 @@ class PlaywrightShadowQualificationTests(unittest.TestCase):
     def test_unsafe_path_and_xml_cannot_qualify(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Fixture(directory)
-            entry = fixture.entry(unsafe_path=True)
+            entry = fixture.entry()
+            entry["artifacts"][-1]["path"] = "../outside.json"
             result = evaluate(_write_manifest(directory, [entry]))["entries"][0]
             self.assertEqual(result["status"], "hard-rejection")
             self.assertIn("unsafe-path", result["reasons"])
 
             fixture = Fixture(directory, number=2)
-            entry = fixture.entry(unsafe_xml=True)
+            entry = fixture.entry()
+            report_path = Path(directory) / entry["artifacts"][0]["path"]
+            report_path.write_text(
+                '<!DOCTYPE testsuites [<!ENTITY bad "x">]><testsuites/>'
+            )
             result = evaluate(_write_manifest(directory, [entry]))["entries"][0]
             self.assertEqual(result["status"], "hard-rejection")
             self.assertIn("unsafe-xml", result["reasons"])
