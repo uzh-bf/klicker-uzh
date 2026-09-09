@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  after: vi.fn(),
+  afterCallback: null as (() => unknown) | null,
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   chatbotFindUnique: vi.fn(),
@@ -26,8 +28,16 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageEnforcementEnabled: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   finalizeChatTurn: vi.fn(),
+  flushLangfuseTelemetry: vi.fn(async () => {}),
   ensureImagePreviewBase64: vi.fn(),
+  getChatTraceContext: vi.fn(),
+  getLangfuseAiSdkIntegration: vi.fn(),
   generateText: vi.fn(),
+  isAiTelemetryEnabled: vi.fn(),
+  langfuseObservationEnd: vi.fn(),
+  langfuseObservationUpdate: vi.fn(),
+  propagateAttributes: vi.fn(),
+  startActiveObservation: vi.fn(),
   streamText: vi.fn(),
   roundChatUsageCredits: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
@@ -109,9 +119,21 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
-  getParentSpanContext: vi.fn(),
-  getTraceIdForMessage: vi.fn(),
-  isAiTelemetryEnabled: false,
+  flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
+  getChatTraceContext: mocks.getChatTraceContext,
+  getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
+  isAiTelemetryEnabled: mocks.isAiTelemetryEnabled,
+  LANGFUSE_CHAT_TRACE_NAME: 'generate-chat-response',
+}))
+
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>()
+  return { ...actual, after: mocks.after }
+})
+
+vi.mock('@langfuse/tracing', () => ({
+  propagateAttributes: mocks.propagateAttributes,
+  startActiveObservation: mocks.startActiveObservation,
 }))
 
 vi.mock('@/src/lib/server/openaiCachePolicy', () => ({
@@ -157,6 +179,7 @@ type StreamCallbacks = {
 }
 
 type ResponseOptions = {
+  onError: (error: unknown) => string
   messageMetadata: (input: {
     part: {
       type: string
@@ -181,6 +204,7 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    owner: { aiFeaturesEnabled: true },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -234,6 +258,10 @@ describe('account usage chat route', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
     mocks.responseOptions = null
+    mocks.afterCallback = null
+    mocks.after.mockImplementation((callback: () => unknown) => {
+      mocks.afterCallback = callback
+    })
     mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
@@ -281,6 +309,184 @@ describe('account usage chat route', () => {
         },
       }
     })
+    mocks.isAiTelemetryEnabled.mockReturnValue(false)
+    mocks.getChatTraceContext.mockResolvedValue({
+      parentSpanContext: {
+        spanId: '0123456789abcdef',
+        traceFlags: 1,
+        traceId: '0123456789abcdef0123456789abcdef',
+      },
+      pseudonymousChatbotId: 'pseudonymous-chatbot',
+      sessionId: 'pseudonymous-session',
+      traceId: '0123456789abcdef0123456789abcdef',
+    })
+    mocks.getLangfuseAiSdkIntegration.mockReturnValue({
+      name: 'test-langfuse-integration',
+    })
+    mocks.propagateAttributes.mockImplementation(
+      (_attributes, callback: () => unknown) => callback()
+    )
+    mocks.startActiveObservation.mockImplementation(
+      (_name, callback: (observation: unknown) => unknown) =>
+        callback({
+          end: mocks.langfuseObservationEnd,
+          update: mocks.langfuseObservationUpdate,
+        })
+    )
+  })
+
+  test('enables metadata-only Langfuse tracing and closes an aborted turn once', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getChatTraceContext).toHaveBeenCalledWith({
+      assistantMessageId: 'assistant-1',
+      chatbotId: 'chatbot-1',
+      threadId: 'thread-1',
+    })
+    expect(mocks.propagateAttributes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          chatbotId: 'pseudonymous-chatbot',
+          chatMode: 'tutor',
+          imageAttachmentCount: '0',
+          modelId: 'gpt-4.1',
+          toolCount: '0',
+        }),
+        sessionId: 'pseudonymous-session',
+        traceName: 'generate-chat-response',
+      }),
+      expect.any(Function)
+    )
+    expect(mocks.streamConfig?.telemetry).toMatchObject({
+      functionId: 'generate-chat-response',
+      integrations: [{ name: 'test-langfuse-integration' }],
+      isEnabled: true,
+      recordInputs: false,
+      recordOutputs: false,
+    })
+
+    const steps = [
+      {
+        content: [{ type: 'text', text: 'Partial answer.' }],
+        usage: { inputTokens: 2, outputTokens: 1 },
+      },
+    ]
+    await streamCallbacks().onAbort({ steps })
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      steps,
+    })
+    await mocks.afterCallback?.()
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenLastCalledWith({
+      output: expect.objectContaining({ status: 'aborted' }),
+    })
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+    expect(mocks.after).toHaveBeenCalledWith(mocks.flushLangfuseTelemetry)
+    expect(mocks.flushLangfuseTelemetry).toHaveBeenCalledOnce()
+  })
+
+  test('closes a successful Langfuse trace once with aggregate output only', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+    const request = createRequest()
+
+    const response = await POST(request, {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.abortSignal).toBeInstanceOf(AbortSignal)
+    expect(mocks.streamConfig?.abortSignal).toBe(request.signal)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
+    })
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenLastCalledWith({
+      output: {
+        reasoningLength: 0,
+        responseLength: 0,
+        status: 'success',
+        stepsCount: 1,
+      },
+    })
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+  })
+
+  test('keeps provider errors fail-open when Langfuse trace closure throws', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+    mocks.after.mockImplementationOnce(() => {
+      throw new Error('synthetic scheduling failure')
+    })
+    mocks.langfuseObservationUpdate
+      .mockImplementationOnce(() => {})
+      .mockImplementationOnce(() => {
+        throw new Error('synthetic update failure')
+      })
+    mocks.langfuseObservationEnd.mockImplementationOnce(() => {
+      throw new Error('synthetic end failure')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await expect(
+      streamCallbacks().onError(new Error('synthetic provider failure'))
+    ).resolves.toBeUndefined()
+    await expect(
+      streamCallbacks().onError(new Error('late provider failure'))
+    ).resolves.toBeUndefined()
+    const errorMessage = responseOptions().onError(
+      new Error('synthetic UI stream failure')
+    )
+    expect(errorMessage).toEqual(expect.any(String))
+    expect(errorMessage).not.toContain('synthetic UI stream failure')
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenCalledTimes(2)
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    false,
+    true,
+  ])('requires AI approval with budget enforcement %s', async (enforced) => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(enforced)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: false } })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
+      requestId: expect.any(String),
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
+  })
+
+  test('allows participant model use when an approved owner opts out of beta', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {

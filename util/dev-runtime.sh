@@ -186,9 +186,9 @@ probe_url() {
 }
 
 # Chat proves its nested dynamic API route graph through the authentication
-# contract above. The other apps prove their static route table through a
-# committed shell page that renders HTML without database content, so a 404
-# there can never be a legitimate data-driven miss.
+# contract above. Pages apps first prove their dynamic development inventory,
+# then a committed shell page without database content. A shell 404 cannot be
+# a legitimate data-driven miss, but an incomplete inventory is not cache damage.
 probe_mode() {
   case "$1" in
     chat) echo 'auth-json' ;;
@@ -305,6 +305,22 @@ prepare_runtime() {
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
   (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Turbo can return before its Git subprocess exits. Preparation must leave
+  # no live children for the managed process lifecycle to accept it.
+  local preparation_pgid preparation_deadline preparation_processes
+  preparation_pgid="$(ps -o pgid= -p "$$" | tr -d ' ')"
+  preparation_deadline=$((SECONDS + 5))
+  while true; do
+    preparation_processes="$(ps -eo pgid=,stat=,comm=)" ||
+      die 'Unable to inspect preparation child processes.'
+    awk -v group="$preparation_pgid" '
+    $1 == group && $2 !~ /^Z/ && $3 == "git" { found = 1 }
+    END { exit(found ? 0 : 1) }
+    ' <<<"$preparation_processes" || break
+    [ "$SECONDS" -lt "$preparation_deadline" ] ||
+      die 'Preparation still has a live Git child after five seconds.'
+    sleep 0.1
+  done
 }
 
 remove_next_dir() {
@@ -382,10 +398,38 @@ classify_response() {
 
 probe_app() {
   local app="$1" timeout="${2:-15}" mode url response status content_type curl_status=0
+  local deadline=$((SECONDS + timeout)) inventory inventory_status=0
 
   mode="$(probe_mode "$app")" || die "No probe contract is defined for: $app"
   url="$(probe_url "$app")" || die "No probe URL is defined for: $app"
   require_tool curl
+  if [ "$mode" = 'html-shell' ] && [ "${DEV_TURBO_TASK:-dev}" = dev ]; then
+    require_tool node
+    response="$(curl --silent --show-error --output - \
+      --write-out $'\n%{http_code}\t%{content_type}' \
+      --connect-timeout 2 --max-time "$timeout" --noproxy '*' \
+      "${url%/*}/_next/static/development/_devPagesManifest.json" 2>/dev/null)" || curl_status=$?
+    if [ "$curl_status" -ne 0 ]; then
+      echo "waiting: $app development inventory transport failed (curl $curl_status)"
+      return "$WAITING_STATUS"
+    fi
+    inventory="${response%$'\n'*}"
+    response="${response##*$'\n'}"
+    status="${response%%$'\t'*}"
+    content_type="${response#*$'\t'}"
+    if [ "$status" != 200 ] || [[ "${content_type,,}" != application/json* ]]; then
+      echo "unexpected: $app development inventory HTTP $status ${content_type:-unknown-content-type}"
+      return "$UNEXPECTED_STATUS"
+    fi
+    node "$(dirname "$SCRIPT_PATH")/check-dev-pages-manifest.mjs" \
+      "$ROOT/apps/$app/src/pages" <<<"$inventory" || inventory_status=$?
+    [ "$inventory_status" -eq 0 ] || return "$inventory_status"
+    timeout=$((deadline - SECONDS))
+    if [ "$timeout" -le 0 ]; then
+      echo "waiting: $app readiness request budget exhausted"
+      return "$WAITING_STATUS"
+    fi
+  fi
   response="$(curl --silent --show-error --output /dev/null \
     --write-out $'%{http_code}\t%{content_type}' \
     --connect-timeout 2 --max-time "$timeout" --noproxy '*' \

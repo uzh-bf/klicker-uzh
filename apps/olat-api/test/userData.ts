@@ -10,6 +10,7 @@ export interface Course {
   id: string
   owner: User
   name: string
+  pinCode: number
 }
 
 export const userOne: User = {
@@ -32,40 +33,47 @@ export const courseOne: Course = {
   id: 'ad248322-d357-43bd-8912-52ff6794b94d',
   owner: userOne,
   name: 'Test Course One',
+  pinCode: 1001,
 }
 
 export const courseTwo: Course = {
   id: '778011ac-a0e2-4cdb-a95c-1491a515fafc',
   owner: userOne,
   name: 'Test Course Two',
+  pinCode: 1002,
 }
 
 export const courseThree: Course = {
   id: '0f99f142-065a-4333-8905-5eba73c2ffdd',
   owner: userTwo,
   name: 'Test Course Three',
+  pinCode: 1003,
 }
 
 export const courseFour: Course = {
   id: '35dc67b3-0b27-40b7-840f-57e6e6f9dee2',
   owner: userTwo,
   name: 'Test Course Four',
+  pinCode: 1004,
 }
 
 export const courseFive: Course = {
   id: 'b91a3592-24ec-46ab-9957-8793329819e8',
   owner: userTwo,
   name: 'Test Course Five',
+  pinCode: 1005,
 }
 
 export const courseArchivedOne: Course = {
   id: 'dc31d03f-0a2a-4d20-8313-a04c62fcfd9a',
   owner: userOne,
   name: 'Archived Course One',
+  pinCode: 1006,
 }
 
 export const courseArchivedTwo: Course = {
   id: 'fecbe18f-04ee-43c1-851d-1a811ed5a085',
   owner: userTwo,
   name: 'Archived Course Two',
+  pinCode: 1007,
 }

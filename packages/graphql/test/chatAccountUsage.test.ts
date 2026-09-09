@@ -72,7 +72,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       email: `${label}-${id}@invalid.example`,
       shortname: `${label}-${id}`,
       role,
-      aiChatbotPublishingEnabled: authorized,
+      aiFeaturesEnabled: authorized,
     }
   }
 
@@ -384,7 +384,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   it('keeps disabled capability visible but rejects budget writes', async () => {
     await prisma.user.update({
       where: { id: ownerId },
-      data: { aiChatbotPublishingEnabled: false },
+      data: { aiFeaturesEnabled: false },
     })
     await seedUsage({ usageClass: 'BASE', budgetCredits: 5, usedCredits: 1 })
 
@@ -771,7 +771,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     await prisma.user.update({
       where: { id: ownerId },
-      data: { aiChatbotPublishingEnabled: false },
+      data: { aiFeaturesEnabled: false },
     })
     const disabledResult = await executeGraphql({
       source,

@@ -3,7 +3,11 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
+import {
+  type LangfuseSpan,
+  propagateAttributes,
+  startActiveObservation,
+} from '@langfuse/tracing'
 import {
   consumeStream,
   generateText,
@@ -13,7 +17,7 @@ import {
   streamText,
   type ToolSet,
 } from 'ai'
-import { type NextRequest, NextResponse } from 'next/server'
+import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
@@ -31,9 +35,11 @@ import {
 } from '@/src/lib/server/effectiveChatModes'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
-  getParentSpanContext,
-  getTraceIdForMessage,
+  flushLangfuseTelemetry,
+  getChatTraceContext,
+  getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled,
+  LANGFUSE_CHAT_TRACE_NAME,
 } from '@/src/lib/server/langfuseTracing'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -46,6 +52,7 @@ import {
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -729,6 +736,7 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
+        owner: { select: { aiFeaturesEnabled: true } },
         course: {
           select: { displayName: true },
         },
@@ -749,6 +757,18 @@ export async function POST(
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    console.warn('Chat admission denied', {
+      requestId,
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    return NextResponse.json(
+      { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
+      { status: 403 }
+    )
   }
 
   const modeOptions = resolveEffectiveChatModeOptions(
@@ -1056,6 +1076,42 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let langfuseTrace: LangfuseSpan | null = null
+  let langfuseTraceEnded = false
+
+  const finishLangfuseTrace = (
+    status: 'success' | 'error' | 'aborted',
+    summary: Record<string, string | number | boolean | null> = {}
+  ) => {
+    if (!langfuseTrace || langfuseTraceEnded) return
+    langfuseTraceEnded = true
+    try {
+      langfuseTrace.update({
+        output: { status, ...summary },
+        ...(status === 'error'
+          ? {
+              level: 'ERROR' as const,
+              statusMessage: 'Chat generation failed',
+            }
+          : {}),
+      })
+    } catch (error) {
+      console.error('[chat] Failed to update Langfuse trace:', {
+        requestId,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+
+    try {
+      langfuseTrace.end()
+    } catch (error) {
+      console.error('[chat] Failed to end Langfuse trace:', {
+        requestId,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
@@ -1168,9 +1224,6 @@ export async function POST(
       imageDescription: string | null
     }[] = []
     if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
-      const descriptionPrompt = (userContent: string | undefined) =>
-        `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
-
       const results = await Promise.allSettled(
         resolvedImages.map(async (image) => {
           const descriptionResult = await generateText({
@@ -1182,12 +1235,15 @@ export async function POST(
                   { type: 'image', image: image.imageBase64 },
                   {
                     type: 'text',
-                    text: descriptionPrompt(lastMessage?.content),
+                    text: renderPromptTemplate('image-description', {
+                      userContent: lastMessage?.content ?? '',
+                    }),
                   },
                 ],
               },
             ],
             maxOutputTokens: 1000,
+            telemetry: { isEnabled: false },
           })
           return { image, descriptionResult }
         })
@@ -1516,18 +1572,62 @@ export async function POST(
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
-    // Langfuse v4 addresses traces by OTel trace id, so the id is derived from the
-    // assistant message id here and re-derived when a rating comes in later.
-    const traceId = isAiTelemetryEnabled
-      ? await getTraceIdForMessage(assistantMessageId)
-      : null
+    let langfuseContext: Awaited<
+      ReturnType<typeof getChatTraceContext>
+    > | null = null
+    let langfuseAiSdkIntegration: ReturnType<
+      typeof getLangfuseAiSdkIntegration
+    > | null = null
+    if (isAiTelemetryEnabled()) {
+      try {
+        const [context, integration] = await Promise.all([
+          getChatTraceContext({
+            assistantMessageId,
+            chatbotId,
+            threadId: owningThread.id,
+          }),
+          Promise.resolve(getLangfuseAiSdkIntegration()),
+        ])
+        langfuseContext = context
+        langfuseAiSdkIntegration = integration
+      } catch (error) {
+        console.error('[chat] Failed to prepare Langfuse telemetry:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+      }
+    }
+    const langfuseTelemetryEnabled = Boolean(
+      langfuseContext && langfuseAiSdkIntegration
+    )
+    if (langfuseTelemetryEnabled) {
+      // Next keeps `after` work alive after the streamed response closes and
+      // drains it during self-hosted graceful shutdown. At that point all AI
+      // SDK child spans and the custom root have ended, so the batch is ready.
+      try {
+        after(flushLangfuseTelemetry)
+      } catch (error) {
+        console.error('[chat] Failed to schedule a Langfuse flush:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+      }
+    }
 
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        telemetry: {
+          isEnabled: langfuseTelemetryEnabled,
+          recordInputs: false,
+          recordOutputs: false,
+          functionId: LANGFUSE_CHAT_TRACE_NAME,
+          ...(langfuseAiSdkIntegration
+            ? { integrations: [langfuseAiSdkIntegration] }
+            : {}),
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest
@@ -1681,6 +1781,11 @@ export async function POST(
                 : null,
               stepsCount: result.steps?.length ?? 0,
             })
+            finishLangfuseTrace('success', {
+              responseLength: partialContent.length,
+              reasoningLength: partialReasoningContent.length,
+              stepsCount: result.steps?.length ?? 0,
+            })
           }
         },
 
@@ -1740,6 +1845,11 @@ export async function POST(
 
           emitFinalOnce('aborted', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          })
+          finishLangfuseTrace('aborted', {
+            responseLength: partialContent.length,
+            reasoningLength: partialReasoningContent.length,
             stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
           })
         },
@@ -1803,19 +1913,65 @@ export async function POST(
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             classification: classification.classification,
           })
+          finishLangfuseTrace('error', {
+            errorClassification: classification.classification,
+          })
           await failAssistantClaim('stream.error')
         },
       })
     }
 
-    // The wrapper span only exists to put the derived trace id on the context the
-    // AI SDK reads when it opens its own spans; it is created and closed around
-    // the synchronous streamText call, while the spans it parents keep streaming.
-    const result = traceId
-      ? startActiveObservation('chat.stream', startStream, {
-          parentSpanContext: getParentSpanContext(traceId),
+    let result: ReturnType<typeof startStream>
+    if (langfuseContext) {
+      try {
+        result = propagateAttributes(
+          {
+            traceName: LANGFUSE_CHAT_TRACE_NAME,
+            sessionId: langfuseContext.sessionId,
+            tags: ['chat'],
+            metadata: {
+              requestId,
+              chatbotId: langfuseContext.pseudonymousChatbotId,
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              deploymentId: selectedModelConfig.deploymentId,
+              routingSource: routing.source,
+              reasoningEffort: appliedReasoningEffort ?? 'none',
+              toolCount: String(toolNames.length),
+              imageAttachmentCount: String(images.length),
+            },
+          },
+          () =>
+            startActiveObservation(
+              LANGFUSE_CHAT_TRACE_NAME,
+              (observation) => {
+                langfuseTrace = observation
+                observation.update({
+                  input: {
+                    messageCount: messages.length,
+                    imageAttachmentCount: images.length,
+                  },
+                })
+                return startStream()
+              },
+              {
+                parentSpanContext: langfuseContext.parentSpanContext,
+                endOnExit: false,
+              }
+            )
+        )
+      } catch (error) {
+        if (providerStreamStarted) throw error
+        finishLangfuseTrace('error', { stage: 'telemetry-setup' })
+        console.error('[chat] Failed to start Langfuse trace:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
         })
-      : startStream()
+        result = startStream()
+      }
+    } else {
+      result = startStream()
+    }
 
     logEvent('response.stream.created', {
       stage: 'response-object-created',
@@ -1837,6 +1993,9 @@ export async function POST(
           suggestedAction: classification.suggestedAction,
         })
         void failAssistantClaim('response.stream.error')
+        finishLangfuseTrace('error', {
+          errorClassification: classification.classification,
+        })
 
         return 'An error occurred while processing the request.'
       },
@@ -1868,6 +2027,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    finishLangfuseTrace('error', { stage: 'request' })
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

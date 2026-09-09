@@ -1,0 +1,37 @@
+name: Set up Node.js with shared pnpm cache
+description: Reuse the hosted pnpm store while keeping cache writes on push jobs.
+inputs:
+  cache-write:
+    description: Allow setup-node to save the store after a successful push job.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: package.json
+        cache: ${{ inputs.cache-write == 'true' && github.event_name == 'push' && 'pnpm' || '' }}
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Locate pnpm cache
+      if: inputs.cache-write != 'true' || github.event_name != 'push'
+      id: cache
+      shell: bash
+      env:
+        LOCKFILE_HASH: ${{ hashFiles('pnpm-lock.yaml') }}
+      run: |
+        set -euo pipefail
+        : "${LOCKFILE_HASH:?The pnpm lockfile hash is required}"
+        store_path=$(pnpm store path --silent)
+        : "${store_path:?The pnpm store path is required}"
+        arch=$(node -p 'require("node:os").arch()')
+        printf 'path=%s\n' "$store_path" >> "$GITHUB_OUTPUT"
+        printf 'key=node-cache-%s-%s-pnpm-%s\n' "$RUNNER_OS" "$arch" "$LOCKFILE_HASH" >> "$GITHUB_OUTPUT"
+
+    - name: Restore pnpm cache
+      if: inputs.cache-write != 'true' || github.event_name != 'push'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ steps.cache.outputs.path }}
+        key: ${{ steps.cache.outputs.key }}

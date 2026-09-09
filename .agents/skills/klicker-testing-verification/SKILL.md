@@ -13,7 +13,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
 | Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
-| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment (marked disposable Postgres + Redis + Hatchet); serialized, don't parallelize                   |
 | Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
@@ -27,6 +27,12 @@ usability, and returned mutation count; do not infer production performance or
 atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
+
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` on the actual client before its first
+database operation, including cleanup after failed setup. Do not use a separate
+verification client or a hostname-only check. A refusal requires correcting the
+disposable environment, never bypassing the guard or marking retained data.
 
 For Git fixture or hook changes, run the focused Node test that exercises the
 fixture plus `pnpm run check:git-identity` and
@@ -151,7 +157,7 @@ seconds so container readiness is detected promptly.
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
 - Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
-- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- You are **authorized to start the required servers for this purpose** through the host launcher. By default it reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor. For focused tests with an existing synthetic baseline, explicit local options `--runtime-profile chat --preserve-database` before Playwright arguments select Chat dependencies and skip global reset/seed. Inspect the selected spec's own fixture writes and cleanup first; those remain active. CI and default setup are unchanged.
 - If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 

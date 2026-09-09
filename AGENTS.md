@@ -9,9 +9,20 @@
 
 ## Stacked PRs
 
+- To bring `v3` back into `v3-ai` or a similar feature branch, use a normal merge commit on the receiving branch and a normal, non-force push to that branch. Do not open an integration PR or substitute selective cherry-picks for this branch synchronization. This convention applies to integrating `v3` into feature branches, not promoting feature work into `v3`; retain the applicable verification and merge/deployment authorization gates.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
+
+## Release preparation
+
+Use the release scripts in the root `package.json` to generate versions and
+`CHANGELOG.md`; never hand-edit package versions or assemble release notes as a
+substitute. For an alpha release, run `pnpm run release:alpha` (preview with
+`pnpm run release:alpha:dry`). The script uses `.versionrc.js` as the authoritative
+version-target list. During PR preparation, pass `--skip.tag` and create the tag
+only at the approved merged release commit. Tag publication and production
+activation remain separately authorized actions.
 
 ## Commands
 
@@ -49,7 +60,15 @@ pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
 
-The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
+The commands above are legacy host/Infisical wrappers, not permission to mutate
+retained development, staging or production databases. Guarded reset, push,
+development migration and test seeds require the restricted `klicker_test`
+login and marked databases. Inside the provisioned self-contained container,
+use `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` for development
+migration (also requires marked `klicker_test_shadow`). For a full destructive
+reset and reseed, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`.
 
 ### GraphQL codegen
 
@@ -125,7 +144,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file, run `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` inside the provisioned disposable container (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit raw seed command for local fixtures. See [Data & Migrations](docs/data-and-migrations.md) for the guarded shadow requirement and schema-drift checks.
 
 ## Auth Model
 
