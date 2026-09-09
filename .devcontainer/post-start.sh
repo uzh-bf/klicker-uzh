@@ -105,6 +105,12 @@ else
   PROFILE_WANTS_MCP=no
 fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
+DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
+if [ "$PROFILE_WANTS_DEV" = yes ] &&
+  ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
+  echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
+  exit 1
+fi
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
 if profile_wants klicker-workers; then
@@ -176,6 +182,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
   else
@@ -183,6 +190,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi

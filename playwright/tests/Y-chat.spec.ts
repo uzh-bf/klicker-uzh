@@ -804,6 +804,45 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(assistantContent).toContainText('The formula is complete.')
   })
 
+  test('Streaming hides incomplete chemistry until its delimiter closes', async ({
+    page,
+  }) => {
+    const prefix = 'Reaction: '
+    const suffix = ' End.'
+    const formula = String.raw`\ce{2 H2 + O2 -> 2 H2O}`
+    await mockChatStream(page, {
+      textChunks: [prefix, `$${formula}`, `$${suffix}`],
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+    await sendMessage(page, 'Show a reaction equation')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toHaveText(prefix.trim())
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    const row = await page.getByTestId('chat-assistant-message').elementHandle()
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(content.locator('.katex')).toHaveCount(1)
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    await expect(content.locator('.katex-mathml math')).toHaveCount(1)
+    await expect(content).toContainText(suffix.trim())
+    await expect(content.locator('.katex-html')).not.toContainText('\\ce')
+    expect(
+      await row?.evaluate(
+        (element) =>
+          element ===
+          document.querySelector('[data-cy="chat-assistant-message"]')
+      )
+    ).toBe(true)
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {

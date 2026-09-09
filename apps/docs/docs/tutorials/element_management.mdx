@@ -87,6 +87,32 @@ When creating a new element, the following fields are available:
   - List of all interactions of users with this element (creation / modifications / sharing operations / ...)
   - Support of comments to allow for detailed content reviews in combination with the element status
 
+### Chemistry formulae and units
+
+Use `\ce{...}` for chemical formulae and reaction equations, and `\pu{...}` for
+units. In the element editor, wrap an inline expression in double dollar signs:
+
+```text
+Water: $$\ce{H2O}$$. Concentration: $$\pu{1.5 mol L-1}$$.
+```
+
+The rendered expressions look like this: $\ce{H2O}$ and $\pu{1.5 mol L-1}$.
+
+For a centered reaction, put the delimiters on separate lines:
+
+```text
+$$
+\ce{2 H2 + O2 -> 2 H2O}
+$$
+```
+
+$$
+\ce{2 H2 + O2 -> 2 H2O}
+$$
+
+This syntax renders notation, not molecular structure drawings. `chemfig`, full
+LaTeX documents, and biological diagrams are not supported by this feature.
+
 ## How can I modify an Element?
 
 ### Editing an Element

@@ -155,8 +155,6 @@ volumes:
   node_modules_prisma:
   node_modules_types:
   pnpm_store:
-    external: true
-    name: klicker-uzh-pnpm-store-v1
   hatchet_lite_config:
 
 networks:

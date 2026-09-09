@@ -2,6 +2,7 @@ import type * as Preset from '@docusaurus/preset-classic'
 import type { Config } from '@docusaurus/types'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
+import 'katex/contrib/mhchem'
 
 const config: Config = {
   future: {
@@ -17,7 +18,6 @@ const config: Config = {
   // scripts: ['https://identity.netlify.com/v1/netlify-identity-widget.js'],
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
-    'https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css',
   ],
   favicon: '/favicon.ico',
   customFields: {
@@ -54,7 +54,10 @@ const config: Config = {
         },
         sitemap: {},
         theme: {
-          customCss: ['./src/custom.css'],
+          customCss: [
+            require.resolve('katex/dist/katex.min.css'),
+            './src/custom.css',
+          ],
         },
       } satisfies Preset.Options,
     ],
