@@ -209,11 +209,12 @@ return structured rejection while duplicate-key reasons remain intact. Slice
 review confirmed that defect and found boolean schema versions accepted as one.
 All three version fields now require exact integers. All 23 Python checks pass.
 The same reviewer confirmed both corrections in `11492485a1` and completed.
-Integrated final review is capability-blocked: Claude returned session-limit
-429 (reset reported at 13:00 Europe/Zurich, September 9); the single configured
-AGY fallback terminated without a review. No third route or reset was used.
-Resume final review when capacity returns, then publish the upper stacked draft
-and verify Actions. All five upper paths remain in scope; no gate is waived.
+Claude final review returned session-limit 429. The user requested AGY fallback.
+AGY's schema flag failed, then headless command permission blocked inspection.
+The same AGY session received the complete immutable source directly, with no
+tool use or permission changes. It returned a source-only pass for all five paths
+at `0f606b3a2f`; main validated its JSON against the shared review schema.
+Publish the upper stacked draft and verify Actions. No gate or rollout is waived.
 The configured Husky
 entrypoint is absent in this worktree; full monorepo build/check hooks are not
 claimed. No hook configuration was changed or bypass flag used.
