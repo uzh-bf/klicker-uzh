@@ -1,7 +1,7 @@
 name: Production translation context
 on:
   pull_request:
-    branches: [v3]
+    branches: [v3, v3-ai]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/frontend-pwa/**'

@@ -195,7 +195,8 @@ function Chatbots() {
 
   const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {
-      setNavigationState(cleanNavigationState)
+      // The creation refetch may already have mounted the new draft and
+      // reported its unsaved disclaimer. Preserve that editor state.
       return router.push(
         {
           pathname: router.pathname,

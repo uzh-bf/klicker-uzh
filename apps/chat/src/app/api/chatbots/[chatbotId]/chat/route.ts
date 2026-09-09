@@ -1055,6 +1055,7 @@ export async function POST(
     mcpToolsHandle = undefined
     await activeHandle?.close()
   }
+
   let langfuseTrace: LangfuseSpan | null = null
   let langfuseTraceEnded = false
 
@@ -1769,8 +1770,8 @@ export async function POST(
           includeRuntimeContext: {
             responseExampleRole: true,
             responseExampleSkillAvailable: true,
-            responseExampleSetDigest: true,
-            responseExampleProjectionDigest: true,
+            responseExampleSetDigest: false,
+            responseExampleProjectionDigest: false,
           },
         },
         providerOptions: {
