@@ -19,7 +19,7 @@ jobs:
   # Joining the same PR group cancels obsolete execution without an API token.
   # Push verification uses its branch ref and remains independent.
   cancel-closed-pr:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -34,7 +34,7 @@ jobs:
   # route and selector state from the immutable event payload and exposes one
   # result to the required status job.
   test-playwright-execution:
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    if: github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -62,6 +62,8 @@ jobs:
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
+          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
         run: |
           set -euo pipefail
           {
@@ -69,6 +71,8 @@ jobs:
             printf 'mode=%s\n' "${MODE:-unknown}"
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
+            printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
+            printf 'is_draft=%s\n' "${IS_DRAFT:-unknown}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
 
@@ -81,11 +85,21 @@ jobs:
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # A newer event cancels the old reusable invocation. The surviving
-          # invocation is the required signal for the pull request.
-          if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
-            echo 'Superseded by a newer Playwright invocation.'
+          if [ "${IS_PULL_REQUEST:-false}" = 'true' ] && [ "${IS_DRAFT:-false}" = 'true' ]; then
+            if [ "$EXECUTION_RESULT" != 'skipped' ]; then
+              echo 'Draft Playwright execution was not skipped.'
+              exit 1
+            fi
+            echo '- Draft pull request: execution skipped before prepare, build, and shards.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Draft pull request: Playwright execution skipped before prepare/build/shards.'
             exit 0
+          fi
+
+          # A cancelled invocation may be obsolete, but this job has no proof
+          # that a newer invocation survived. Keep the required status failed.
+          if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
+            echo 'Playwright execution was cancelled without proven supersession.'
+            exit 1
           fi
           if [ "$EXECUTION_RESULT" != 'success' ]; then
             echo 'Playwright execution envelope failed.'
@@ -95,6 +109,53 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
+
+          # Push verification keeps its existing selector behavior. Ready PRs
+          # must prove the full trusted eight-shard execution plan.
+          if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
+            if [ "$MODE" != 'full' ]; then
+              echo 'Ready pull request execution did not use full mode.'
+              exit 1
+            fi
+            if [ "$SHOULD_RUN" != 'true' ]; then
+              echo 'Ready pull request execution did not select Playwright.'
+              exit 1
+            fi
+            if ! node <<'NODE'
+          const raw = process.env.SHARD_MATRIX ?? ''
+          let matrix
+          try {
+            matrix = JSON.parse(raw)
+          } catch {
+            process.exit(1)
+          }
+
+          const shards = matrix?.include
+          const complete =
+            matrix !== null &&
+            !Array.isArray(matrix) &&
+            Object.keys(matrix).length === 1 &&
+            Array.isArray(shards) &&
+            shards.length === 8 &&
+            shards.every(
+              (shard) =>
+                shard !== null &&
+                typeof shard === 'object' &&
+                !Array.isArray(shard) &&
+                Object.keys(shard).length === 2 &&
+                Number.isInteger(shard.shardIndex) &&
+                shard.shardIndex >= 1 && shard.shardIndex <= 8 &&
+                shard.shardTotal === 8
+            ) &&
+            new Set(shards.map((shard) => shard.shardIndex)).size === 8
+          process.exit(complete ? 0 : 1)
+          NODE
+            then
+              echo 'Ready pull request execution did not expose the complete eight-shard matrix.'
+              exit 1
+            fi
+          fi
+
           if [ "$SHOULD_RUN" = 'false' ]; then
             echo 'No Playwright-relevant tests selected.'
             exit 0
@@ -117,7 +178,7 @@ jobs:
   # actions: read permission and never runs on the public self-hosted pool.
   playwright-queue-telemetry:
     needs: [test-playwright-execution, test-playwright-status]
-    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
+    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed') && (github.event_name != 'pull_request' || github.event.pull_request.draft != true)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

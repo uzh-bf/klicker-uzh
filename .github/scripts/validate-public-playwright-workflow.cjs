@@ -6,8 +6,11 @@ const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
 const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
+const EXECUTION_EVENT =
+  "github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)"
 const CLOSED_EVENT =
-  "github.event_name == 'pull_request' && github.event.action == 'closed'"
+  "github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')"
+const TELEMETRY_EVENT = `always() && (${OPEN_EVENT}) && (github.event_name != 'pull_request' || github.event.pull_request.draft != true)`
 
 function validateCallerLifecycle(caller) {
   const issues = []
@@ -35,13 +38,18 @@ function validateCallerLifecycle(caller) {
       issues.push(`${name} must remain outside execution concurrency`)
     }
   }
-  if (execution?.if !== OPEN_EVENT) {
-    issues.push('execution must exclude closed PR events')
+  if (execution?.if !== EXECUTION_EVENT) {
+    issues.push('execution must exclude closed and draft PR events')
   }
-  for (const name of ['test-playwright-status', 'playwright-queue-telemetry']) {
-    if (jobs[name]?.if !== `always() && (${OPEN_EVENT})`) {
-      issues.push(`${name} must retain always() and exclude closed PR events`)
-    }
+  if (jobs['test-playwright-status']?.if !== `always() && (${OPEN_EVENT})`) {
+    issues.push(
+      'test-playwright-status must retain always() and exclude closed PR events'
+    )
+  }
+  if (jobs['playwright-queue-telemetry']?.if !== TELEMETRY_EVENT) {
+    issues.push(
+      'playwright-queue-telemetry must retain always(), exclude closed PR events, and skip drafts'
+    )
   }
   if (
     close?.if !== CLOSED_EVENT ||

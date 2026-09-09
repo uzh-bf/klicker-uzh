@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict')
-const { execFileSync } = require('node:child_process')
+const { execFileSync, spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -83,7 +83,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   assert.match(workflow, /test-playwright-status:/)
 })
 
-test('lifecycle policy rejects cancellation outside the exact closed-PR boundary', () => {
+test('lifecycle policy rejects cancellation outside the exact conversion/closed-PR boundary', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/test-playwright.yml'),
     'utf8'
@@ -110,6 +110,14 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     'missing close guard': (w) => {
       delete w.jobs['cancel-closed-pr'].if
     },
+    'missing conversion cancellation': (w) => {
+      w.jobs['cancel-closed-pr'].if =
+        "github.event_name == 'pull_request' && github.event.action == 'closed'"
+    },
+    'missing draft execution guard': (w) => {
+      w.jobs['test-playwright-execution'].if =
+        "github.event_name != 'pull_request' || github.event.action != 'closed'"
+    },
     'execution on close': (w) => {
       delete w.jobs['test-playwright-execution'].if
     },
@@ -118,6 +126,10 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     },
     'telemetry on close': (w) => {
       w.jobs['playwright-queue-telemetry'].if = 'always()'
+    },
+    'telemetry on draft': (w) => {
+      w.jobs['playwright-queue-telemetry'].if =
+        "always() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
     'elevated token': (w) => {
       w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
@@ -136,6 +148,171 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     const workflow = YAML.parse(source)
     mutate(workflow)
     assert.notDeepEqual(validateCallerLifecycle(workflow), [], name)
+  }
+})
+
+function readStatusScript() {
+  const root = path.join(__dirname, '../..')
+  const workflow = YAML.parse(
+    fs.readFileSync(
+      path.join(root, '.github/workflows/test-playwright.yml'),
+      'utf8'
+    )
+  )
+  return workflow.jobs['test-playwright-status'].steps.find(
+    (step) => step.name === 'Check result'
+  ).run
+}
+
+// Synthetic fixture using the buildPlanMetadata shardMatrix output schema.
+function fullShardMatrix() {
+  return {
+    include: Array.from({ length: 8 }, (_, index) => ({
+      shardIndex: index + 1,
+      shardTotal: 8,
+    })),
+  }
+}
+
+function runStatusReporter(t, overrides = {}) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'playwright-status-reporter-')
+  )
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  const summaryPath = path.join(directory, 'summary.md')
+  const result = spawnSync(
+    'bash',
+    ['-euo', 'pipefail', '-c', readStatusScript()],
+    {
+      cwd: directory,
+      env: {
+        PATH: process.env.PATH,
+        GITHUB_STEP_SUMMARY: summaryPath,
+        EXECUTION_RESULT: 'success',
+        ROUTE: 'public-pr',
+        MODE: 'full',
+        SHOULD_RUN: 'true',
+        SHARD_MATRIX: JSON.stringify(fullShardMatrix()),
+        IS_PULL_REQUEST: 'true',
+        IS_DRAFT: 'false',
+        ...overrides,
+      },
+      encoding: 'utf8',
+    }
+  )
+  return {
+    ...result,
+    output: `${result.stdout}${result.stderr}`,
+    metadata: Object.fromEntries(
+      fs
+        .readFileSync(
+          path.join(directory, 'playwright-run-metadata.txt'),
+          'utf8'
+        )
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const separator = line.indexOf('=')
+          return [line.slice(0, separator), line.slice(separator + 1)]
+        })
+    ),
+  }
+}
+
+test('status reporter executes draft skip and strict ready decisions', (t) => {
+  const draft = runStatusReporter(t, {
+    EXECUTION_RESULT: 'skipped',
+    ROUTE: 'unknown',
+    MODE: 'unknown',
+    SHOULD_RUN: 'unknown',
+    SHARD_MATRIX: '',
+    IS_DRAFT: 'true',
+  })
+  assert.equal(draft.status, 0, draft.output)
+  assert.equal(draft.metadata.execution_result, 'skipped')
+  assert.equal(draft.metadata.is_draft, 'true')
+
+  const ready = runStatusReporter(t)
+  assert.equal(ready.status, 0, ready.output)
+  assert.equal(ready.metadata.execution_result, 'success')
+  assert.equal(ready.metadata.mode, 'full')
+  assert.equal(ready.metadata.should_run, 'true')
+  assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
+
+  const rejected = [
+    {
+      name: 'draft execution was not skipped',
+      overrides: { IS_DRAFT: 'true' },
+    },
+    {
+      name: 'skipped ready execution',
+      overrides: { EXECUTION_RESULT: 'skipped' },
+    },
+    {
+      name: 'cancelled ready execution',
+      overrides: { EXECUTION_RESULT: 'cancelled' },
+    },
+    {
+      name: 'invalid route',
+      overrides: { ROUTE: 'candidate' },
+    },
+    {
+      name: 'non-full mode',
+      overrides: { MODE: 'focused' },
+    },
+    {
+      name: 'selection skipped',
+      overrides: { SHOULD_RUN: 'false' },
+    },
+    {
+      name: 'incomplete shard matrix',
+      overrides: {
+        SHARD_MATRIX: JSON.stringify({
+          include: fullShardMatrix().include.slice(0, 4),
+        }),
+      },
+    },
+  ]
+  for (const scenario of rejected) {
+    const result = runStatusReporter(t, scenario.overrides)
+    assert.equal(result.status, 1, scenario.name)
+  }
+
+  for (const MODE of ['selected', 'skip', '']) {
+    assert.equal(runStatusReporter(t, { MODE }).status, 1, `mode=${MODE}`)
+  }
+  for (const EXECUTION_RESULT of ['failure', 'cancelled', 'skipped']) {
+    assert.equal(runStatusReporter(t, { EXECUTION_RESULT }).status, 1)
+  }
+  const duplicate = fullShardMatrix()
+  duplicate.include[7].shardIndex = 1
+  const wrongTotal = fullShardMatrix()
+  wrongTotal.include[7].shardTotal = 7
+  for (const SHARD_MATRIX of [
+    '',
+    '{',
+    '{}',
+    'null',
+    JSON.stringify(duplicate),
+    JSON.stringify(wrongTotal),
+    JSON.stringify({ shard: [1, 2, 3, 4, 5, 6, 7, 8] }),
+    JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8]),
+    JSON.stringify({
+      include: Array.from({ length: 8 }, (_, i) => ({ shard: i + 1 })),
+    }),
+  ]) {
+    assert.equal(runStatusReporter(t, { SHARD_MATRIX }).status, 1, SHARD_MATRIX)
+  }
+  for (const SHOULD_RUN of ['true', 'false']) {
+    const push = runStatusReporter(t, {
+      IS_PULL_REQUEST: 'false',
+      ROUTE: 'hosted',
+      SHOULD_RUN,
+    })
+    assert.equal(push.status, 0, push.output)
+    assert.equal(push.metadata.is_pull_request, 'false')
+    assert.equal(push.metadata.execution_result, 'success')
+    assert.equal(push.metadata.should_run, SHOULD_RUN)
   }
 })
 
