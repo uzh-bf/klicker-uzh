@@ -9,6 +9,8 @@ const {
   canonicalProfile,
   parseProfileManifest,
   parseTimings,
+  productionSpecs,
+  planShards,
   SELECTED_MAX_SHARDS,
   SELECTED_TARGET_SHARD_SECONDS,
   selectedDurationMap,
@@ -244,5 +246,30 @@ test('selected plans reject empty, duplicate, or unprofiled files', () => {
   assert.throws(
     () => buildSelectedShardPlans(['b.spec.ts'], durations, profiles),
     /no validated profile/
+  )
+})
+
+test('production and ordinary lanes partition the complete inventory exactly once', () => {
+  const production = productionSpecs(manifest, allFiles)
+  const ordinary = planShards({
+    testsDir,
+    timingsPath: path.join(repositoryRoot, 'playwright/timings.json'),
+    profilesPath: path.join(repositoryRoot, 'playwright/profiles.json'),
+    numShards: 8,
+  }).flatMap((plan) => plan.files.map((file) => path.basename(file)))
+  assert.deepEqual([...ordinary, ...production].sort(), allFiles)
+  assert.equal(new Set([...ordinary, ...production]).size, allFiles.length)
+  assert.throws(
+    () =>
+      productionSpecs(
+        {
+          version: 1,
+          groups: [
+            { profile: 'pwa', runtime: 'typo', specs: ['synthetic.spec.ts'] },
+          ],
+        },
+        ['synthetic.spec.ts']
+      ),
+    /unsupported Playwright runtime/
   )
 })

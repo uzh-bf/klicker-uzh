@@ -233,6 +233,10 @@ runs:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
         APP_SECRET: abcd
+        EMAIL_HOST: mailhog
+        EMAIL_PORT: 1025
+        EMAIL_FROM: account-tests@example.invalid
+        URL_MAILHOG: http://mailhog:8025
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
         PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001

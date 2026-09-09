@@ -12,6 +12,7 @@ const {
   selectPlaywrightPlan,
 } = require('./playwright-selector.cjs')
 
+const { productionSpecs } = require('./get-shard-files.js')
 const repositoryRoot = path.join(__dirname, '../..')
 const localGitEnvironmentVariables = childProcess
   .execFileSync(
@@ -227,9 +228,20 @@ test('ready state overrides a documentation-only diff with the full candidate su
   })
 
   assert.equal(plan.mode, 'full')
+  const production = productionSpecs(
+    JSON.parse(
+      fs.readFileSync(
+        path.join(repositoryRoot, 'playwright/profiles.json'),
+        'utf8'
+      )
+    ),
+    trustedCandidateSpecs
+  )
   assert.deepEqual(
     plan.selectedSpecs,
-    trustedCandidateSpecs.map((spec) => `tests/${spec}`)
+    trustedCandidateSpecs
+      .filter((spec) => !production.includes(spec))
+      .map((spec) => `tests/${spec}`)
   )
   assert.equal(plan.shardCount, 8)
   assert.deepEqual(

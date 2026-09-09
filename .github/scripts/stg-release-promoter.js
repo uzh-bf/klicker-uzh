@@ -1424,6 +1424,126 @@ async function resolveInputs({
   throw new Error(`unsupported promotion event ${context.eventName}`)
 }
 
+const ACCOUNT_PRODUCTION_WORKFLOW = Object.freeze({
+  path: '.github/workflows/test-account-production.yml',
+  name: 'Account production Playwright',
+  jobs: [{ id: 'account-production' }],
+})
+
+async function collectAccountProductionEvidence({
+  github,
+  context,
+  candidateSha,
+  sourceBranch,
+}) {
+  const workflow = ACCOUNT_PRODUCTION_WORKFLOW
+  const response = await github.rest.repos.getContent({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    path: workflow.path,
+    ref: candidateSha,
+  })
+  const content = Buffer.from(response.data.content, 'base64').toString('utf8')
+  if (
+    extractName(content, workflow.path) !== workflow.name ||
+    canonicalJson(extractPushBranches(content, workflow.path)) !==
+      canonicalJson(APPROVED_PUSH_BRANCHES)
+  ) {
+    throw new Error('Unapproved account production workflow triggers')
+  }
+  const jobs = extractJobBlocks(content, workflow.path)
+  if (
+    jobs.length !== 1 ||
+    jobs[0].id !== 'account-production' ||
+    /(?:continue-on-error|strategy|uses):/.test(
+      jobs[0].content.split('    steps:')[0]
+    )
+  ) {
+    throw new Error('Unapproved account production job')
+  }
+  const steps = extractActionSteps(jobs[0], workflow.path)
+  const verification = steps.filter((step) =>
+    /^ {6}- name: Verify complete production coverage$/m.test(step)
+  )
+  if (
+    verification.length !== 1 ||
+    /continue-on-error:| {8}if:/.test(verification[0]) ||
+    !/^ {8}run: node \.github\/scripts\/account-production-report\.cjs /m.test(
+      verification[0]
+    )
+  ) {
+    throw new Error('Missing mandatory account production verification')
+  }
+  const evidence = await collectWorkflowEvidence({
+    github,
+    context,
+    workflow,
+    candidateSha,
+    sourceBranch,
+    repository: repositoryName(context),
+  })
+  if (evidence.status !== 'success') {
+    throw new Error(
+      `Account production coverage incomplete: ${evidence.reason}`
+    )
+  }
+  const completedJobs = await paginate(
+    github,
+    github.rest.actions.listJobsForWorkflowRun,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: evidence.run.id,
+      per_page: 100,
+    }
+  )
+  const completedVerification = completedJobs
+    .find((job) => job.name === 'account-production')
+    ?.steps?.filter(
+      (step) => step.name === 'Verify complete production coverage'
+    )
+  if (
+    completedVerification?.length !== 1 ||
+    completedVerification[0].status !== 'completed' ||
+    completedVerification[0].conclusion !== 'success'
+  ) {
+    throw new Error(
+      'Account production verification step did not execute successfully'
+    )
+  }
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: evidence.run.id,
+      per_page: 100,
+    }
+  )
+  const matching = artifacts.filter(
+    (artifact) =>
+      artifact.name === `account-production-${candidateSha}` &&
+      !artifact.expired
+  )
+  if (
+    matching.length !== 1 ||
+    matching[0].size_in_bytes <= 0 ||
+    !DIGEST_PATTERN.test(matching[0].digest)
+  ) {
+    throw new Error('Missing account production artifact identity')
+  }
+  return {
+    ...evidence,
+    artifact: {
+      id: matching[0].id,
+      name: matching[0].name,
+      digest: matching[0].digest,
+      size_in_bytes: matching[0].size_in_bytes,
+    },
+  }
+}
+
 async function runPromotion({
   github,
   context,
@@ -1504,6 +1624,12 @@ async function runPromotion({
   if (!evidence.valid) {
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
   }
+  const accountProduction = await collectAccountProductionEvidence({
+    github,
+    context,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+  })
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
     evidence,
@@ -1547,6 +1673,7 @@ async function runPromotion({
 
   const receipt = {
     schema_version: 'stg-release-promotion/v1',
+    account_production: accountProduction,
     controller_run_id: context.runId,
     repository,
     source_branch: inputs.sourceBranch,
@@ -1597,6 +1724,8 @@ async function runPromotion({
 }
 
 module.exports = {
+  ACCOUNT_PRODUCTION_WORKFLOW,
+  collectAccountProductionEvidence,
   APPROVED_PUSH_BRANCHES,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_ATTEMPTS,

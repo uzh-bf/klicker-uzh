@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolveDevrouter } from './devrouter-cli.mjs'
@@ -121,6 +128,7 @@ export function parseLocalOptions(argv) {
   let profile
   let mode
   let preserveDatabase = false
+  let production = false
   while (args.length) {
     const option = args[0]
     if (option === '--') {
@@ -142,6 +150,10 @@ export function parseLocalOptions(argv) {
       ) {
         fail('Invalid runtime profile list')
       }
+    } else if (option === '--production') {
+      if (production) fail('Specify --production only once')
+      args.shift()
+      production = true
     } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
@@ -165,7 +177,20 @@ export function parseLocalOptions(argv) {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-  return { args, profile, mode, preserveDatabase }
+  if (
+    production &&
+    (mode === '--show-report' ||
+      (profile && profile.split(',').sort().join(',') !== 'email,manage,pwa'))
+  ) {
+    fail('Production mode requires manage,pwa,email and cannot show reports')
+  }
+  return {
+    args,
+    profile,
+    mode,
+    preserveDatabase,
+    ...(production ? { production } : {}),
+  }
 }
 
 export function resolvePlaywrightEnvironment({
@@ -184,6 +209,7 @@ export function resolvePlaywrightEnvironment({
   const studentUrl = appUrl('pwa')
 
   return {
+    APP_ORIGIN_API: appUrl('api'),
     APP_ORIGIN_AUTH: appUrl('auth'),
     APP_SECRET: appSecret,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
@@ -235,7 +261,7 @@ function resolveWorkspace(runtime) {
   return runtime.readFile(workspaceFile, 'utf8').trim()
 }
 
-function resolveDatabasePort(runtime) {
+function resolveDatabasePort(runtime, service = 'postgres', port = '5432/tcp') {
   const workingDirectory = join(runtime.repoRoot, '.devcontainer')
   const containerIds = runtime
     .commandRunner(
@@ -245,7 +271,7 @@ function resolveDatabasePort(runtime) {
         '--filter',
         `label=com.docker.compose.project.working_dir=${workingDirectory}`,
         '--filter',
-        'label=com.docker.compose.service=postgres',
+        `label=com.docker.compose.service=${service}`,
         '--format',
         '{{.ID}}',
       ],
@@ -262,7 +288,7 @@ function resolveDatabasePort(runtime) {
 
   const publishedPort = runtime.commandRunner(
     'docker',
-    ['port', containerIds[0], '5432/tcp'],
+    ['port', containerIds[0], port],
     { capture: true }
   )
 
@@ -327,7 +353,13 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 }
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
-  const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
+  const {
+    args,
+    profile,
+    mode,
+    preserveDatabase,
+    production = false,
+  } = parseLocalOptions(argv)
   const runtime = createRuntime(dependencies)
   const hostEnvironment = {
     ...runtime.environment,
@@ -363,11 +395,70 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
   if (!printEnvironment) ensureHostDependencies(runtime, args)
 
+  const selectionPath = join(
+    runtime.repoRoot,
+    '.devcontainer/.runtime/account-production.json'
+  )
+  if (production) {
+    const sourceSha = runtime.commandRunner(
+      'git',
+      ['-C', runtime.repoRoot, 'rev-parse', 'HEAD'],
+      { capture: true }
+    )
+    const files = runtime
+      .commandRunner(
+        'git',
+        [
+          '-C',
+          runtime.repoRoot,
+          'ls-files',
+          '--cached',
+          '--others',
+          '--exclude-standard',
+          '-z',
+          '--',
+          'apps',
+          'packages',
+          'util',
+          'package.json',
+          'pnpm-lock.yaml',
+          'pnpm-workspace.yaml',
+          'turbo.json',
+          '.npmrc',
+        ],
+        { capture: true }
+      )
+      .split('\0')
+      .filter(Boolean)
+    files.push(
+      'util/production-standalone.mjs',
+      'util/start-account-production.mjs',
+      '.devcontainer/post-start.sh'
+    )
+    const hash = createHash('sha256')
+    for (const file of [...new Set(files)].sort()) {
+      const path = join(runtime.repoRoot, file)
+      if (runtime.pathExists(path))
+        hash.update(file).update(runtime.readFile(path))
+    }
+    mkdirSync(dirname(selectionPath), { recursive: true })
+    writeFileSync(
+      selectionPath,
+      JSON.stringify({ sourceSha, sourceDigest: hash.digest('hex') })
+    )
+  } else if (runtime.pathExists(selectionPath)) {
+    unlinkSync(selectionPath)
+  }
+
   runtime.log('[playwright:host] Reconciling the devcontainer runtime')
   runtime.commandRunner(runtime.devrouter(), [
     'ensure',
     runtime.repoRoot,
-    ...(profile === undefined ? [] : ['--profile', profile]),
+    ...(production
+      ? ['--profile', 'manage,pwa,email']
+      : profile === undefined
+        ? []
+        : ['--profile', profile]),
   ])
 
   const workspace = resolveWorkspace(runtime)
@@ -391,6 +482,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     databasePort,
     workspace,
   })
+
+  if (production) {
+    resolvedEnvironment.KLICKER_PLAYWRIGHT_PRODUCTION = '1'
+    resolvedEnvironment.URL_MAILHOG = `http://127.0.0.1:${resolveDatabasePort(runtime, 'mailhog', '8025/tcp')}`
+  }
 
   if (printEnvironment) {
     runtime.log(

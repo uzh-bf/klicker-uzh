@@ -16,7 +16,7 @@ Boundary owner: self.
 Pause: unavailable isolated runtime, unresolved application-source contract, or a new authority/data/cost boundary.
 
 Branch: `rs/account-creation-production-e2e`; target and initial upstream: `origin/v3`.
-Source dependency now integrated through authorized fast-forward to `575d32444659ec2b10d42139126931f4ab8479a5`. The account draft PR is proposed against `rs/translation-context-fix`, as agreed with its owner; no native stack mutation is authorized. Default-branch drift and this dependency are separate.
+Source dependency now integrated through authorized fast-forward to `575d32444659ec2b10d42139126931f4ab8479a5`. The source repair merged in PR [#5854, translation-context repair](https://github.com/uzh-bf/klicker-uzh/pull/5854). The account draft PR now targets `v3`; integrate that squash result once to remove misleading dependency history before delivery.
 Baseline: `cbcede79718e8e60ff04d3f8376ab6a3f4bb64ed`.
 Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/account-creation-production-e2e`.
 The primary checkout has unrelated changes and is not an implementation workspace.
@@ -37,7 +37,7 @@ The package uses the full workflow. Preserve one writer per path. Commit the pla
 
 The source-fix task exclusively owns `.github/workflows/test-intl-production.yml`, `.github/scripts/intl-production-smoke.mjs`, `.github/fixtures/intl-production/**`, and `util/test-intl-resolution.mjs`. Its checks are `intl-production-smoke (frontend-pwa)` and `intl-production-smoke (frontend-manage)`. Reuse its real PWA standalone output and translation regression receipts; do not duplicate that harness or use a fixture-only image for account journeys. This task owns account-specific browser coverage, host launcher integration, and its separate CI enforcement.
 
-The agreed artifact interface uses the actual application Dockerfile and standalone runner image. Supply synthetic NEXT_PUBLIC_API_URL, NEXT_PUBLIC_API_URL_SSR, NEXT_PUBLIC_PWA_URL and COOKIE_DOMAIN at build time, then the existing PORT/HOSTNAME/APP_SECRET runtime contract. The runner entry is `node apps/frontend-pwa/server.js`. Provenance includes source SHA, Dockerfile/bundler, build-input names and artifact identity. The source owner's harness is not yet frozen; coordinate before integration.
+The local and account-CI adapters build actual API/Auth/PWA/Manage workspace artifacts with production Webpack, then start the emitted standalone servers with copied public/static assets. The source owner separately verified the pruned Docker production regression fixture; that receipt does not replace actual account journeys. Both modes share `util/production-standalone.mjs`, with local routed HTTPS origins or CI loopback origins. Provenance includes source SHA, source digest, bundler, build-input identity and artifact digests.
 
 Separate production outputs and startup from ordinary Turbopack artifact caches. Include standalone dependencies, public/static assets, source SHA, bundler, relevant synthetic environment, architecture, build ID, and artifact digest. Prevent host-launch reconciliation from silently replacing the production server. Build-time public origins must match the test runtime.
 
@@ -45,7 +45,7 @@ Use the existing getPrisma disposable-database guard and isolated cleanup lifecy
 
 Use existing jose for test-only HS256 signing with configured issuer, internal sub/email/scope, and expiry. The current verifier has five seconds of clock tolerance; callers do not enforce issuer, so wrong-issuer rejection is not an assertion. Verify participant identity and participantAccount.ssoId linkage. Invalid/expired launches must not adopt an unrelated participant identity; this is not a global session-revocation requirement. Cookie-free continuation may retain participantToken in URLs.
 
-Exercise the actual course/[courseId]/createAccount route. It currently drops query parameters. Retain the failing cookie-free query assertion and obtain the source-owner correction; do not bypass the route or fix application source in this package. Do not infer course enrollment from this redirect.
+Exercise the actual course/[courseId]/createAccount route. The integrated source-owner correction preserves the JWT query parameter. Retain the cookie-free query assertion; do not bypass the route or fix application source in this package. Do not infer course enrollment from this redirect.
 
 ### Coverage and CI contract
 
@@ -63,16 +63,28 @@ Current Next.js documentation was retrieved through Context7. It confirms standa
 
 ## Progress
 
-Status: delivery_pending; runtime available and source dependency integrated; implementation next.
+Status: delivery_pending. Implementation is uncommitted; required implementation reviews and the draft PR remain outstanding. Main owns all changed files and the exact runtime. All implementation and exploration children have completed or been closed; no reviewer is active.
 
-Remote refs were refreshed for this execution phase. The task began at origin/v3 with zero ahead/behind and now includes the authorized source dependency through `575d32444659ec2b10d42139126931f4ab8479a5`. Application source remains owned by the translation-context task. Its course route now forwards one JWT query string and rejects repeated query arrays.
+### Current verification
 
-The user explicitly approved the task-local subnet remedy after Docker exhausted its predefined address pools. Compose validation and managed startup passed on 172.30.240.0/24. Workspace `rs-account-creation-production-e`, compose project `default-rs-0170d`, has healthy Postgres/Hatchet, three Redis services, local MailHog, and API/Auth/PWA/Manage. Dependency reconciliation passed with no drift. This proves development-runtime availability only. The four-line subnet override is machine-local and must not be committed; retain data and remove only the override after stopping the exact runtime. No network, volume, or worktree deletion is authorized.
+The final full run passes all nine tests in 13.7 seconds with zero failures, skips or flaky results. `_local/account-production-result.json` and independently discovered `_local/account-production-inventory.json` pass the production report validator; `_local/account-local-receipt.json` records all three specs and nine executed tests. Repeat launch reused verified production artifacts. Final Playwright types and touched spec/helper formatting pass.
 
-All 35 package type checks passed. The root check failed because its installed-Devrouter contract test ran inside the container, where the host executable is intentionally absent. Run that contract and host-launcher checks on the host; complete the interrupted remaining checks inside the container. No application failure is inferred from this environment mismatch.
+- The complete real production browser run in `_local/account-production-e2e-retry4.log` passed seven of nine checks: four EN/DE desktop/mobile registration documents, real Manage translated controls, ordinary registration/activation/fresh login, and invalid/expired LTI rejection with unrelated-session preservation. The next focused run in `_local/account-lti-diagnostic.log` passed the new-account LTI flow after correcting in-flight route teardown. Existing-account cookie-free redirects remained failing because Playwright route interception did not strip subsequent redirect cookies.
+- The replacement Chromium request interception covers redirect hops and observes on-wire cookie headers. Its type check passes in `_local/account-types-cdp.log`; all three LTI checks pass in `_local/account-lti-cdp.log`. Production builds now explicitly disable Matomo defaults for synthetic tests. No evidence of an application-source defect or actual external analytics transmission is claimed.
+- Ninety focused host tests pass in `_local/account-focused-tests.log`. Complete configured host checks `check:playwright-ci` and `check:playwright-host` also pass. All 35 package type checks and remaining baseline lint, syncpack, agent instructions, Git identity, removed-document and Prisma checks passed earlier; reuse unaffected checks and rerun changed Playwright types and formatting.
+- Managed artifact reuse succeeds after browser traffic. Digests exclude Next.js request-written image and rendered page caches while retaining executable output; a focused regression test rejects replaced server code. An earlier idle Rollup process recovered after one exact managed stop and clean restart; its root cause remains unconfirmed.
+- The source owner separately supplied pruned Docker regression receipts at `575d32444659ec2b10d42139126931f4ab8479a5`: corrected PWA/Manage EN/DE documents return HTTP 200 with translations, while the reverted dependency graph returns HTTP 500. Those fixture receipts do not replace this package's actual application account journeys.
 
-Registration mapping is complete in `_local/reviews/2026-09-09-account-registration-mapping.md`. It confirms selectors, the activation-template fixture, exact participant-count proof, and fresh-context login. No scoped mail-capture helper exists. Preserve current behavior: password login does not require activation, and activation can repeat while the JWT remains valid.
+### Runtime and local-only configuration
 
-The user clarified Playwright only. Native executor owns bounded production runtime integration; main owns integration verification and account CI. Add explicit production mode to the host launcher and managed startup, build actual Webpack standalone artifacts with routed build-time origins, preserve artifact identity, and use local SMTP. Ordinary development stays the default. Source-owner Docker-pruned regression proof remains separately labeled. This task retains sole database fixture and runtime ownership; any source-owner browser acceptance must use a serialized agreed window.
+Exact source: `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/account-creation-production-e2e`. Devsy workspace: `rs-account-creation-production-e`; compose project: `default-rs-0170d`. The active local runtime has isolated Postgres/Hatchet, three Redis services, MailHog, and API/Auth/PWA/Manage. Stop through Devrouter and verify provider stopped plus zero exact routes after final runtime verification or a genuine pause.
 
-Production artifact verification, account and LTI journeys, CI enforcement, reviews, push, and the coherent draft PR remain. Continue the approved sequence without another approval request. Stop the exact runtime and verify stopped status at a genuine pause or completion unless the user explicitly retains it.
+The user explicitly approved a task-local subnet remedy after Docker exhausted its predefined pools. Four compose lines selecting `172.30.240.0/24` are machine-local and must not be staged. Commit only the separate MailHog loopback port mapping. Retain runtime data; no network, volume, branch or worktree deletion is authorized.
+
+### Delivery and limits
+
+Target `origin/v3` is confirmed by the merged source dependency PR. At the last refresh this task was five commits ahead and one behind that target because the source repair was squash-merged. Integrate the squash result once near delivery to remove misleading source history, preserving unrelated changes and using no force push.
+
+The dedicated production workflow and promotion prerequisite are implemented but have not run in GitHub. The previously trusted `v3` selector does not yet recognize newly introduced production-only specs, so the introducing PR can encounter the ordinary-lane bootstrap failure. Do not skip tests or claim that local proof establishes CI enforcement; keep the PR draft and state this limitation until the trusted selector and manifest land together. This package does not authorize that merge or any promotion.
+
+Before delivery: complete all nine real browser checks and validate the actual JSON inventory/result; finish applicable formatting and changed-source checks; inspect staged data and comments; commit the implementation; obtain the required simplifier, slice risk review and integrated final review; push the ordinary task branch and create one coherent draft PR. No application dependencies, migrations, visible product UI, production records or external email are changed. Screenshot publication does not apply because this package changes test/runtime infrastructure only.

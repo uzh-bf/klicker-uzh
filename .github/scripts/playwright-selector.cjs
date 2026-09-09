@@ -6,6 +6,7 @@ const {
   buildSelectedShardPlans,
   buildShardPlans,
   parseTimings,
+  productionSpecs,
   selectedDurationMap,
 } = require('./get-shard-files.js')
 
@@ -534,6 +535,18 @@ function buildSelectionPlan({
     trustedSpecs,
     trustedProfileNames
   )
+  const production = new Set(
+    productionSpecs(
+      readJson(
+        path.join(controlRoot, 'playwright/profiles.json'),
+        'trusted profiles'
+      ),
+      trustedSpecs
+    )
+  )
+  // Only trusted control can move an existing spec out of ordinary shards.
+  // Candidate-only specs retain the maximal-profile fallback until it lands.
+  candidateSpecs = candidateSpecs.filter((spec) => !production.has(spec))
   const relevanceManifest = readJson(
     path.join(controlRoot, 'playwright/relevance-manifest.json'),
     'relevance manifest'
@@ -640,7 +653,7 @@ function selectPlaywrightPlan({
     plan.selectedSpecs = plan.candidateSpecs
     plan.selectedProfiles = [
       ...new Set(
-        candidateSpecs.map((spec) => plan.profileAssignments[`tests/${spec}`])
+        plan.candidateSpecs.map((spec) => plan.profileAssignments[spec])
       ),
     ].sort(compareNames)
     plan.selectedGroupIds = []

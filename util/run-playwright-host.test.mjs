@@ -990,3 +990,49 @@ test('Volta-routed pnpm commands retain the lowercase dependency guard', () => {
     )
   )
 })
+
+test('production mode is explicit and requires the account service union', () => {
+  assert.equal(
+    parseLocalOptions(['--production', '--project=chromium']).production,
+    true
+  )
+  assert.equal(
+    parseLocalOptions(['--production', '--runtime-profile=email,pwa,manage'])
+      .production,
+    true
+  )
+  assert.throws(() => parseLocalOptions(['--production', '--production']))
+  assert.throws(() =>
+    parseLocalOptions(['--production', '--runtime-profile=chat'])
+  )
+  assert.throws(() => parseLocalOptions(['--production', '--show-report']))
+})
+
+test('production reconciliation carries source identity, exact profile and local mail endpoint', (t) => {
+  const harness = createLauncherHarness()
+  const root = mkdtempSync(join(tmpdir(), 'account-launcher-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const originalRunner = harness.dependencies.commandRunner
+  harness.dependencies.root = root
+  harness.dependencies.commandRunner = (command, args, options) => {
+    if (command === 'git' && args.at(-1) === 'HEAD') return 'a'.repeat(40)
+    if (command === 'git' && args.includes('ls-files')) return ''
+    return originalRunner(command, args, options)
+  }
+  runPlaywrightHost(
+    ['--production', '--list', '--project=chromium'],
+    harness.dependencies
+  )
+  assert.deepEqual(
+    harness.calls.find((call) => call.args[0] === 'ensure').args,
+    ['ensure', root, '--profile', 'manage,pwa,email']
+  )
+  const env = pnpmCalls(harness.calls).at(-1).options.env
+  assert.equal(env.KLICKER_PLAYWRIGHT_PRODUCTION, '1')
+  assert.equal(env.URL_MAILHOG, 'http://127.0.0.1:49153')
+  const selection = JSON.parse(
+    readFileSync(join(root, '.devcontainer/.runtime/account-production.json'))
+  )
+  assert.equal(selection.sourceSha, 'a'.repeat(40))
+  assert.match(selection.sourceDigest, /^[a-f0-9]{64}$/)
+})

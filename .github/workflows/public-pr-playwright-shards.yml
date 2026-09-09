@@ -259,6 +259,8 @@ jobs:
           --health-timeout 10s
           --health-retries 10
           --health-start-period 30s
+      mailhog:
+        image: mailhog/mailhog:v1.0.1
       redis_cache:
         image: redis:7
         options: >-
@@ -357,6 +359,8 @@ jobs:
           --health-timeout 10s
           --health-retries 10
           --health-start-period 30s
+      mailhog:
+        image: mailhog/mailhog:v1.0.1
       redis_cache:
         image: redis:7
         options: >-

@@ -70,6 +70,18 @@ function parseProfileManifest(manifest, allFiles) {
   return profiles
 }
 
+function productionSpecs(manifest, allFiles) {
+  parseProfileManifest(manifest, allFiles)
+  const specs = []
+  for (const group of manifest.groups) {
+    if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
+      fail(`unsupported Playwright runtime ${group.runtime}`)
+    }
+    if (group.runtime === 'production-webpack') specs.push(...group.specs)
+  }
+  return specs.sort(compareNames)
+}
+
 function parseTimings(timings, allFiles, warn = console.error) {
   if (!timings || !Array.isArray(timings.durations)) {
     fail('durations must be an array')
@@ -267,7 +279,13 @@ function planShards({ testsDir, timingsPath, profilesPath, numShards }) {
   const durationMap = parseTimings(timings, allFiles)
   const profiles = parseProfileManifest(manifest, allFiles)
 
-  return buildShardPlans(allFiles, durationMap, profiles, numShards)
+  const production = new Set(productionSpecs(manifest, allFiles))
+  return buildShardPlans(
+    allFiles.filter((file) => !production.has(file)),
+    durationMap,
+    profiles,
+    numShards
+  )
 }
 
 function main(argv = process.argv.slice(2)) {
@@ -321,6 +339,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  productionSpecs,
   DEFAULT_DURATION_SECONDS,
   SELECTED_FALLBACK_DURATION_SECONDS,
   SELECTED_MAX_SHARDS,

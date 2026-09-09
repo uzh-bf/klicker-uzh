@@ -280,7 +280,8 @@ test('installed Devrouter plans every shard profile union from the real contract
     'manage,pwa',
     'live-quiz,manage,pwa',
     'chat,manage,pwa',
-    'full,live-quiz,manage,pwa',
+    'full,email,live-quiz,manage,pwa',
+    'email,pwa',
   ]
 
   try {
@@ -293,7 +294,7 @@ test('installed Devrouter plans every shard profile union from the real contract
 
     assert.deepEqual(
       runtimes.map((runtime) => runtime.turboFilters.length),
-      [4, 8, 5, 9]
+      [4, 8, 5, 9, 3]
     )
     assert.ok(
       runtimes[1].turboFilters.includes(
@@ -304,6 +305,9 @@ test('installed Devrouter plans every shard profile union from the real contract
       runtimes[2].serviceEndpoints.includes('http://127.0.0.1:3004/noLogin')
     )
     assert.equal(runtimes[3].profile, 'playwright')
+    assert.ok(runtimes[3].managedServices.includes('mailhog'))
+    assert.ok(runtimes[4].managedServices.includes('mailhog'))
+    assert.ok(!runtimes[0].managedServices.includes('mailhog'))
     assert.throws(
       () =>
         resolveRuntimePlan({
