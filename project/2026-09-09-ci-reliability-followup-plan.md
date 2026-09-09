@@ -42,7 +42,8 @@ primitive or irreversible architecture changes are proposed; no ADR is needed.
   for the exact source and runtime it examined.
 - [Post-merge push run](https://github.com/uzh-bf/klicker-uzh/actions/runs/34327702924)
   built on hosted infrastructure in 3m41s. All eight hosted shards started three
-  to four seconds later. They were running at the initial observation.
+  to four seconds later. All eight shards and the final status passed on the
+  exact merge commit. This is hosted push proof, not a controlled ARM64 comparison.
 - [Failed final review](https://github.com/uzh-bf/klicker-uzh/actions/runs/34326218356)
   printed OCR 1.11.0 successfully, then exited 127 before findings. It retained
   zero artifacts. The existing 113 review-helper tests pass despite this gap.
@@ -69,10 +70,10 @@ switching and main as the only topology owner. Publish through the non-force
 upper layer begins unless an actual correction requires deliberate integration.
 Never run automatic sync, force-push, reorder, unstack or delete existing branches.
 
-| Layer and branch | Base | Complete work package | Review audience | Size signal |
-| --- | --- | --- | --- | --- |
-| Review execution — `rs/ci-review-execution` | `v3` | Immutable OCR process, safe failure diagnosis and command-boundary regression coverage | CI/security maintainers; judgment-heavy | 150–300 human-authored lines in 3–5 files; no generated changes |
-| Draft qualification — `rs/ci-draft-qualification` | `rs/ci-review-execution` | Offline comparison of shadow plans with complete, identity-bound full-run evidence | Test/CI maintainers; judgment-heavy | 150–350 human-authored lines in 3–5 files; no generated changes |
+| Layer and branch                                  | Base                     | Complete work package                                                                  | Review audience                         | Size signal                                                     |
+| ------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------- |
+| Review execution — `rs/ci-review-execution`       | `v3`                     | Immutable OCR process, safe failure diagnosis and command-boundary regression coverage | CI/security maintainers; judgment-heavy | 150–300 human-authored lines in 3–5 files; no generated changes |
+| Draft qualification — `rs/ci-draft-qualification` | `rs/ci-review-execution` | Offline comparison of shadow plans with complete, identity-bound full-run evidence     | Test/CI maintainers; judgment-heavy     | 150–350 human-authored lines in 3–5 files; no generated changes |
 
 Both are safe independently: the first fixes execution determinism, the second
 adds evidence assessment without changing test selection. They form one CI
@@ -82,13 +83,13 @@ actual scope exceeds the estimates; do not split by commit count.
 
 ### Delegation map and acceptance
 
-| Slice | Owner | Dependency and acceptance |
-| --- | --- | --- |
-| Immutable OCR execution and safe diagnostics | Main | Credential-boundary coupling; both workflow jobs preserve failure, cleanup and budgets |
-| OCR process regression coverage | Executor | Settled shell boundary; actual workflow commands exercise success, failure, version drift and non-disclosure |
-| Qualification seam mapping | Existing explore child | Exact helper/test paths and available provenance fields; no duplicate investigation |
-| Offline cohort qualification | Executor | Main accepts mapped seam and parser; valid cohorts pass while mismatches, duplicates and missing reports cannot qualify |
-| Real evidence, integration and draft delivery | Main | Per-layer checks, readiness report and separately owned runtime proposal |
+| Slice                                         | Owner                  | Dependency and acceptance                                                                                               |
+| --------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Immutable OCR execution and safe diagnostics  | Main                   | Credential-boundary coupling; both workflow jobs preserve failure, cleanup and budgets                                  |
+| OCR process regression coverage               | Executor               | Settled shell boundary; actual workflow commands exercise success, failure, version drift and non-disclosure            |
+| Qualification seam mapping                    | Existing explore child | Exact helper/test paths and available provenance fields; no duplicate investigation                                     |
+| Offline cohort qualification                  | Executor               | Main accepts mapped seam and parser; valid cohorts pass while mismatches, duplicates and missing reports cannot qualify |
+| Real evidence, integration and draft delivery | Main                   | Per-layer checks, readiness report and separately owned runtime proposal                                                |
 
 #### Review executable and diagnostics
 
@@ -112,13 +113,13 @@ diagnostic contract, without changing unrelated guidance.
 
 #### Offline draft qualification
 
-Do not modify production selector behavior. Freeze the helper/parser seam after
-the existing mapping returns; a small new offline helper and its tests are
-explicitly allowed if no reusable qualifier exists. Proposed paths are
-`.github/scripts/playwright-shadow-qualification.cjs` and its adjacent test.
-Return to the same planner before choosing an incompatible parser or broader
-producer change. The existing Python timing parser rejects failing reports and
-therefore cannot be reused unchanged for missed-failure evidence.
+Do not modify production selector behavior. Mapping found no reusable qualifier.
+Use `.github/scripts/playwright-shadow-qualification.py` and
+`.github/scripts/test_playwright_shadow_qualification.py`, with Python's standard
+library XML parser and no added dependency. The same planner approved this seam.
+Reject DTD/entity declarations before parsing, including encoded inputs. The
+existing timing parser rejects failing reports and cannot be reused unchanged
+for missed-failure evidence. No producer change is included.
 
 Bind repository/PR, actual event draft state, head/base/merge-base, trusted
 control SHA, run/attempt and artifact provenance to canonical and shadow plans
@@ -142,12 +143,12 @@ report into a claim that qualification passed.
 
 ### Test portfolio and delivery gates
 
-| Risk | Obligation and primary seam | Required evidence |
-| --- | --- | --- |
-| Executable changes under a pinned workflow | Extend existing shell boundary tests | Update suppression spans installation/version/review; drift fails closed |
-| Failed process hides evidence or leaks output | Extend same shell boundary | Original nonzero exit, safe structured summary, no sentinel leakage, no publication/resume after failure |
-| Incomplete or mismatched cohorts look qualified | New offline evaluator test only where no existing seam exists | Complete synthetic coverage, duplicate/mismatch/partial rejection and missed-failure detection |
-| Full coverage and trust regressions | Reuse existing policy/route tests | Ready/push full coverage and runner/cache/permission restrictions unchanged |
+| Risk                                            | Obligation and primary seam                                   | Required evidence                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Executable changes under a pinned workflow      | Extend existing shell boundary tests                          | Update suppression spans installation/version/review; drift fails closed                                 |
+| Failed process hides evidence or leaks output   | Extend same shell boundary                                    | Original nonzero exit, safe structured summary, no sentinel leakage, no publication/resume after failure |
+| Incomplete or mismatched cohorts look qualified | New offline evaluator test only where no existing seam exists | Complete synthetic coverage, duplicate/mismatch/partial rejection and missed-failure detection           |
+| Full coverage and trust regressions             | Reuse existing policy/route tests                             | Ready/push full coverage and runner/cache/permission restrictions unchanged                              |
 
 Use the existing pinned disposable Node 24.16.0 toolchain for dependency-free
 checks; no application runtime, browser or database is needed. Run syntax,
@@ -177,15 +178,25 @@ from CI runner performance and post-merge test success.
 
 ## Progress
 
-New goal active. Worktree is clean at the merged `v3` baseline. Baseline review
-tests: 113 passed. Upstream updater behavior and missing shell diagnostics are
-reproduced. No source changes or PRs published yet. No new watcher has been
-started; post-merge Playwright is running.
+New goal active. Plan committed as `ce39f38ae7`. Both workflow jobs now suppress
+the updater and preserve safe failure diagnostics. All 114 review tests pass,
+including direct Bash execution with version drift, nonzero exits and synthetic
+redaction sentinels. The executor's focused correction is integrated.
+Qualification mapping is complete, and
+the same planner approved the Python standard-library seam. The 25 routing and
+workflow-policy tests pass in a disposable Node 24.16.0 image with Git installed.
+Scoped formatting, diff inspection and secret scanning pass. Slice and final
+reviews remain before publication. No implementation PR is published yet.
+The existing `collect-smart-draft-qualification-evidence` hourly automation is
+active; its completed one-time post-merge observation has been removed. Its evidence and
+cursor live in the old scheduling worktree's ignored
+`project/_local/evidence/2026-09-08-goal-audit/`; do not replace or duplicate it.
 
 Planner round one requested explicit safe-exit coverage, a real qualification
 seam, complete cohort definitions and fixed ownership. All were accepted.
 Round two approved the plan, with parser compatibility and category accounting
 retained as preimplementation conditions for the upper layer. Browser review
 cannot cover unpublished local runtime evidence without separate destination
-authority; the complete scope remains on the trusted native route. An optional
-cross-provider challenge has not yet completed and is not a passed review.
+authority; the complete scope remains on the trusted native route. The optional
+AGY challenge was rejected by the approval reviewer because it would transmit
+unpublished context externally. No workaround was used and no review is claimed.
