@@ -3,6 +3,7 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
 import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { createElement } from 'react'
 import {
   formatModeLabel,
   getModeDescription,
@@ -14,8 +15,10 @@ import { useWritingCoachIsCustom } from './mode-options-context'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
   const writingCoachIsCustom = useWritingCoachIsCustom()
-  const Icon = getModeIcon(mode, writingCoachIsCustom)
-  return <Icon aria-hidden="true" className={className} />
+  return createElement(getModeIcon(mode, writingCoachIsCustom), {
+    'aria-hidden': true,
+    className,
+  })
 }
 
 export function ModeSwitcher({
