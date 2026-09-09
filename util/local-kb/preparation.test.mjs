@@ -300,6 +300,7 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
   await completePreparation(config, revision)
   let foreign = true
   let stopped = false
+  let remainsRunning = true
   const writes = []
   const directory = join(checkout, '.local-kb')
   const docker = async (args) => {
@@ -311,7 +312,7 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
         foreign ? '/synthetic/other' : directory,
         join(directory, 'providers.compose.json'),
         'postgres',
-        stopped ? 'exited' : 'running',
+        stopped && !remainsRunning ? 'exited' : 'running',
         'unreported',
       ].join('|')
     writes.push(args)
@@ -320,7 +321,24 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
   }
   const managed = async (args) => {
     writes.push(args)
-    return JSON.stringify({ stopped: true, kind: 'linked', repoPath: checkout, workspace: 'synthetic-runtime' })
+    return JSON.stringify({
+      stopped: true,
+      kind: 'linked',
+      repoPath: checkout,
+      workspace: 'synthetic-runtime',
+    })
+  }
+  const remoteDocker = async (args) => {
+    assert.equal(args[0], 'context')
+    return 'tcp://synthetic.invalid:2376'
+  }
+  for (const operation of [
+    () => startPreparedInfrastructure(config, revision, managed, remoteDocker),
+    () => stopPreparedInfrastructure(config, revision, managed, remoteDocker),
+    () => inspectPreparedInfrastructure(config, revision, remoteDocker),
+  ]) {
+    await assert.rejects(operation(), /local Docker context/)
+    assert.equal(writes.length, 0)
   }
   await assert.rejects(
     stopPreparedInfrastructure(config, revision, managed, docker),
@@ -334,6 +352,11 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
   ])
   assert.equal(status.aiQualified, false)
   assert.equal(writes.length, 0)
+  await assert.rejects(
+    stopPreparedInfrastructure(config, revision, managed, docker),
+    /Provider shutdown is incomplete/
+  )
+  remainsRunning = false
   assert.deepEqual(
     await stopPreparedInfrastructure(config, revision, managed, docker),
     { stopped: true, dataRetained: true }

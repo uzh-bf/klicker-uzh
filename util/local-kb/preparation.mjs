@@ -674,8 +674,10 @@ export async function stopPreparedInfrastructure(
     await runManaged(['stop', runtime.checkout, '--json'])
   )
   if (
-    managed.stopped !== true || managed.kind !== 'linked' ||
-    managed.repoPath !== runtime.checkout || managed.workspace !== runtime.workspace
+    managed.stopped !== true ||
+    managed.kind !== 'linked' ||
+    managed.repoPath !== runtime.checkout ||
+    managed.workspace !== runtime.workspace
   )
     throw new Error('Managed shutdown is not confirmed.')
   await runDocker([
