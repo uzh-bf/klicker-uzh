@@ -168,7 +168,10 @@ the database. Individual specs still own their fixture writes and cleanup. Use t
 when the required baseline already exists, and never against real course data.
 Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
 Broad or unresolved filters use the maximal `playwright` profile. An explicit
-`--runtime-profile` takes precedence. Normal database cleanup and seeding remain
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
 the acceptance default. Keep one worker for a shared runtime because per-spec
 cleanup resets shared fixed identities; parallel shards need separate complete
 worktree runtimes, including Redis and Hatchet.

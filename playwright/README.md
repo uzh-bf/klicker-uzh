@@ -55,6 +55,9 @@ Explicit spec paths automatically select the union of their entries in
 `profiles.json`. Broad runs and filters that cannot be resolved safely use the
 `playwright` runtime profile, which excludes optional AI and email services.
 Override inference with `--runtime-profile` before Playwright arguments.
+Applying a profile reconciles the runtime downward: services outside the
+selected profile (for example LiteLLM, MailHog or the local MCP process) are
+stopped, so pass `--runtime-profile` explicitly when you need them running.
 
 Use one worker per runtime: specs share seeded identities and database-wide resets.
 Concurrent shards require separate worktrees and complete isolated runtimes,

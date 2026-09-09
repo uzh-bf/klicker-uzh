@@ -290,7 +290,7 @@ function createLauncherHarness({
   }
 }
 
-test('launcher preserves the full default and forwards Playwright arguments verbatim', () => {
+test('launcher falls back to the maximal playwright profile and forwards Playwright arguments verbatim', () => {
   const { calls, dependencies } = createLauncherHarness()
   const args = [
     '--project=chromium',

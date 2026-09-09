@@ -177,6 +177,7 @@ test('restore SQL keeps one guarded transaction and strips unsafe dump lines', (
     )
   )
   assert.ok(sql.includes('pg_terminate_backend(pid)'))
+  assert.ok(sql.includes('usename = session_user'))
   assert.ok(sql.includes('DROP SCHEMA public CASCADE;'))
   assert.ok(sql.includes('CREATE SCHEMA public;'))
   assert.ok(sql.includes('COPY public."User" ("id") FROM stdin;'))
@@ -250,6 +251,25 @@ test('schema fingerprints ignore volatile pg_dump restrict tokens', () => {
     })
     assert.equal(restored.status, 'restored')
   })
+})
+
+test('restore keeps COPY payload rows verbatim and strips only meta lines', () => {
+  const dump = [
+    'SET statement_timeout = 0;',
+    'COPY public."Element" ("id", "content") FROM stdin;',
+    'elt1\tSET content that must survive verbatim',
+    '\\restrict insidetokenmustsurvive',
+    '\\.',
+    'SELECT pg_catalog.setval(public."Element_id_seq", 1, false);',
+  ].join('\n')
+  const sql = composeRestoreSql(dump)
+
+  assert.ok(sql.includes('COPY public."Element" ("id", "content") FROM stdin;'))
+  assert.ok(sql.includes('elt1\tSET content that must survive verbatim'))
+  assert.ok(sql.includes('\\restrict insidetokenmustsurvive'))
+  assert.ok(sql.includes('\\.'))
+  assert.ok(!sql.includes('SET statement_timeout = 0;'))
+  assert.ok(sql.includes('pg_catalog.setval'))
 })
 
 test('restore reports a controlled miss for every invalid cache state', () => {

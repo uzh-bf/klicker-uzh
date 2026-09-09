@@ -268,18 +268,35 @@ const RESTORE_GUARD_SQL = [
   '$seed_snapshot_guard$;',
 ].join('\n')
 
+function stripSnapshotMetaLines(snapshotDump) {
+  const kept = []
+  let inCopyPayload = false
+  for (const line of snapshotDump.split(/\r?\n/)) {
+    if (inCopyPayload) {
+      // COPY payload rows are data; a row value can legitimately start with
+      // "SET " or a backslash, so only the exact terminator ends the block.
+      kept.push(line)
+      if (line === '\\.') inCopyPayload = false
+      continue
+    }
+    if (line.startsWith('COPY ') && line.endsWith('FROM stdin;')) {
+      inCopyPayload = true
+    }
+    if (
+      !line.startsWith('SET ') &&
+      !line.startsWith('CREATE SCHEMA public;') &&
+      !line.startsWith('COMMENT ON SCHEMA public') &&
+      !line.startsWith('\\restrict ') &&
+      !line.startsWith('\\unrestrict ')
+    ) {
+      kept.push(line)
+    }
+  }
+  return kept.join('\n')
+}
+
 export function composeRestoreSql(snapshotDump) {
-  const body = snapshotDump
-    .split(/\r?\n/)
-    .filter(
-      (line) =>
-        !line.startsWith('SET ') &&
-        !line.startsWith('CREATE SCHEMA public;') &&
-        !line.startsWith('COMMENT ON SCHEMA public') &&
-        !line.startsWith('\\restrict ') &&
-        !line.startsWith('\\unrestrict ')
-    )
-    .join('\n')
+  const body = stripSnapshotMetaLines(snapshotDump)
 
   return [
     '\\set ON_ERROR_STOP on',
@@ -288,7 +305,11 @@ export function composeRestoreSql(snapshotDump) {
     RESTORE_GUARD_SQL,
     'SELECT pg_terminate_backend(pid)',
     'FROM pg_stat_activity',
-    'WHERE datname = current_database() AND pid <> pg_backend_pid();',
+    // Terminating another role's backend would need privileged rights and
+    // abort the whole transaction, so only same-role sessions are targeted.
+    'WHERE datname = current_database()',
+    '  AND usename = session_user',
+    '  AND pid <> pg_backend_pid();',
     'DROP SCHEMA public CASCADE;',
     'CREATE SCHEMA public;',
     body,
@@ -346,7 +367,9 @@ function resolveContext({
     cacheRoot,
     sources: collectKeySources({ root, readFile }),
     timezone: env.TZ ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    year: new Date().getUTCFullYear(),
+    // The seed derives course dates from the local year, so the key must use
+    // the same clock to stay valid across local/UTC year rollover.
+    year: new Date().getFullYear(),
     readFile,
     pathExists,
   }
