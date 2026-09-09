@@ -206,3 +206,14 @@ records delivery and renames this plan; source verification remains applicable.
 All approved implementation and local verification steps are complete. Hosted
 CI and human review remain merge gates. No ready conversion, merge, deployment
 or runtime/data deletion occurred. The wider lifecycle roadmap remains partial.
+
+### Translation smoke configuration correction — 2026-09-09
+
+After the target merge at f5dd7a5fac, the Manage production translation job
+failed before compilation: the generated test environment omitted the required
+chat-origin mapping. The smoke harness now supplies the mapping and a synthetic
+loopback chat origin. A focused host probe ran the real environment generator
+and unchanged Dockerfile guard, reproducing the failure before correction and
+passing after it. Script syntax and diff checks pass. This probe substitutes
+Docker execution and does not claim a full image build or rendering result;
+hosted CI must establish those results. Production application code is unchanged.
