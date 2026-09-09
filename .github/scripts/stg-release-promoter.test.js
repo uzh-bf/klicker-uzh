@@ -80,19 +80,10 @@ function evidenceRuns(workflows, overrides = {}) {
   )
 }
 
-const productionWorkflowFixture = `name: Account production Playwright
-on:
-  push:
-    branches:
-      - v3
-      - v3*
-jobs:
-  account-production:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify complete production coverage
-        run: node .github/scripts/account-production-report.cjs inventory result specs receipt
-`
+const productionWorkflowFixture = fs.readFileSync(
+  path.join(__dirname, '../workflows/test-account-production.yml'),
+  'utf8'
+)
 
 function evidenceGithub({
   definitions = [],
@@ -1733,6 +1724,22 @@ test('requires exact candidate production coverage and artifact identity before 
     CANDIDATE_SHA
   )
   for (const mutate of [
+    ...[
+      'Build production account applications',
+      'Run production account journeys',
+      'Upload production evidence',
+    ].map((name) => (github) => {
+      github.rest.repos.getContent = async () => ({
+        data: {
+          content: Buffer.from(
+            productionWorkflowFixture.replace(
+              `- name: ${name}`,
+              `- if: false\n        name: ${name}`
+            )
+          ).toString('base64'),
+        },
+      })
+    }),
     (github) => {
       github.rest.actions.listWorkflowRuns = async () => ({
         data: {

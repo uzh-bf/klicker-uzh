@@ -1444,6 +1444,13 @@ async function collectAccountProductionEvidence({
     ref: candidateSha,
   })
   const content = Buffer.from(response.data.content, 'base64').toString('utf8')
+  const trustedContent = fs.readFileSync(
+    path.resolve(__dirname, '..', '..', workflow.path),
+    'utf8'
+  )
+  if (content !== trustedContent) {
+    throw new Error('Account production workflow differs from trusted control')
+  }
   if (
     extractName(content, workflow.path) !== workflow.name ||
     canonicalJson(extractPushBranches(content, workflow.path)) !==
