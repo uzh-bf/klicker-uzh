@@ -6,7 +6,7 @@
     "requestedModel": "gpt-5.6-luna",
     "expectedSelectedModel": "gpt-5.6-luna",
     "reasoningEffort": "low",
-    "maxAttemptedSubmissions": 60
+    "maxAttemptedSubmissions": 72
   },
   "writingCoachExpectations": [
     "Identify evidence-supported strengths and useful priorities, grounded in the supplied excerpt.",

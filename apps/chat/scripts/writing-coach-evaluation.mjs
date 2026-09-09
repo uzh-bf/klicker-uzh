@@ -31,7 +31,7 @@ export const EXPECTED_CWD = '/workspaces/klicker-uzh'
 export const SYNTHETIC_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
 export const SYNTHETIC_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
 export const SYNTHETIC_PARTICIPANT_USERNAME = 'testuser1'
-export const MAX_ATTEMPTED_SUBMISSIONS = 60
+export const MAX_ATTEMPTED_SUBMISSIONS = 72
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = resolve(scriptDirectory, '../../..')

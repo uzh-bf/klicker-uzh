@@ -1,6 +1,6 @@
 # Writing Coach evaluation
 
-Status: acceptance incomplete; the approved evaluation cap is exhausted. All 30 frozen cases completed at least once. There have been 60 of the approved 60 attempted submissions. Writing Coach cases pass their bounded expectations; the Tutor and Explainer expert-context contrasts still fail the strict prior-knowledge requirement after a verified restart. Overall model acceptance remains incomplete. This is a bounded synthetic acceptance check, not a statistical guarantee or evidence of lasting learning gains.
+Status: acceptance decision pending after 65 of 72 authorized submissions. The user approved 12 additional submissions after the original 60; seven remain available. All 30 frozen cases completed at least once. Writing Coach passes its bounded expectations. Tutor and Explainer show the expected shift in depth and focus, but still begin with brief risk explanations. The main evaluator treated any opening recap as failure; the frontier review identified this as stricter than the literal frozen criteria. The historical ratings below are preserved, with the disagreement recorded rather than silently relabeled. This is a bounded synthetic check, not a statistical guarantee or evidence of lasting learning gains.
 
 ## Method and provenance
 
@@ -42,3 +42,25 @@ A targeted lecturer-guidance sentence told the model to adapt those examples to 
 Both recovered responses still open with known risk definitions and fail the frozen prior-knowledge expectation. The Tutor response also makes an overbroad claim about combining perfectly correlated assets changing only position scale; unequal asset volatilities require more precise wording. The ineffective additional guidance sentence was reverted. Earlier mode-level context instructions remain as reviewed source. The recovery establishes observed model behavior but does not change the failed adapter transport receipts into successful end-to-end runs. The readback 404 remains an unresolved local verification issue.
 
 No further provider requests are authorized under the current cap. The next bounded experiment should first repair or explain the adapter readback failure and then distinguish the influence of stored demonstrations from tool-result phrasing. That experiment requires an explicit new submission allowance. Do not weaken the frozen acceptance, silently remove the legacy guidance, or change the model/provider to manufacture a pass.
+
+## Additional authorized evaluation
+
+The user approved 12 more synthetic submissions on 9 September 2026, raising the cumulative ceiling to 72. Cases and acceptance expectations remain frozen.
+
+The original two failed response URLs returned HTTP 200 with their two saved messages after the supported runtime recovery. During recovery, Chat readiness itself observed an HTML 404 before the runtime completed its repair. The old failure bodies were not captured, so framework routing is a supported explanation, not a conclusively reconstructed cause.
+
+Attempts 61–62 temporarily omitted the synthetic chatbot's legacy standard-mode guidance. Both completed through the adapter, but still opened with known definitions. Tutor also lacked the useful tutoring question. Legacy guidance, the owner flag and the temporary budget were restored and read back. This rules out the legacy examples as a sufficient explanation of the context failures. No product behavior removes stored guidance.
+
+The installed AI SDK preserves instructions through tool steps, consistent with its official version 7 documentation. The next hypothesis concerns presentation of retrieved material: a focused grounding paragraph asks for evidence to be presented at the level established by lecturer context, rather than copying a source's introductory sequence. Attempts 63–64 both completed but still began with known definitions. The paragraph was reverted.
+
+Attempt 65 disabled the exact synthetic KB bindings after normal preflight. It completed with no tool calls, but still opened with basic risk explanations. One unrelated tool definition remained on the outbound request; this isolates the absence of KB retrieval, not a literally tool-free request. A preliminary fixture-preflight failure consumed no submission. Temporary values-free wire instrumentation confirmed a developer instruction message of 14,607 serialized content characters containing the expert context. The instrumentation and diagnostic runner switch were removed. This does not prove how the gateway/provider internally interprets that role.
+
+Five of the additional 12 submissions have been used; seven remain authorized. The original owner flags and zero temporary budget are restored, with incurred usage retained. German learner controls and saved German feedback now have inspected desktop/mobile captures. The German lecturer authoring refresh still encounters an authentication redirect. The focused frontier consultation completed; its disagreement is recorded below.
+
+## Evaluation disagreement and proposed disposition
+
+The frontier review compared the original case expectations with the applied ratings. The frozen Tutor check says to build on stated knowledge and focus on correlated assets or a boundary case. The Explainer check says to focus on covariance/correlation and its limits. Neither specifies that the first sentence must omit every risk-category recap. The lecturer contexts do ask to avoid basic definitions, so the observed recaps remain a real limitation in following that preference.
+
+Main accepts that the reports conflated two questions: whether context meaningfully guides teaching, and whether every stylistic preference is followed exactly. The observed expert responses provide correlation/covariance reasoning and boundary cases, while novice responses use introductory examples. That supports useful guidance, although the persistent recaps do not fully follow the prior-knowledge preference. Earlier no-tool outputs also include an overbroad perfect-correlation statement; those diagnostic responses are not replacements for the frozen acceptance cases.
+
+Recommended disposition: retain the original criteria and record the recap behavior as a limitation rather than requiring a newly invented first-sentence rule. Do not silently change the historical failed ratings or claim universal compliance. A human decision on that disposition remains before final acceptance and review. Seven authorized submissions remain available; do not request another allowance merely to resume them. No experimental prompt change, diagnostic transport logging or fixture bypass remains in source.
