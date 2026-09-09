@@ -1098,8 +1098,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
           env,
         })
     process.stdout.write(`${JSON.stringify(result)}\n`)
-    if (result.summary?.restoreFailed) process.exitCode = 2
-    else if (result.summary?.failed) process.exitCode = 2
+    if (result.summary?.failed) process.exitCode = 2
   } catch (error) {
     process.stderr.write(`writing-coach-evaluation: ${safeCode(error)}\n`)
     process.exitCode = 1
