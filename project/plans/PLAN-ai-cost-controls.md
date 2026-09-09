@@ -41,6 +41,11 @@ unavailable required capability.
 
 ### Refactor progress
 
+- Final integrated review found no blocking source defect. Its verification
+  gap claim is rejected: the post-removal runs recorded below pass, and the
+  only later change is documentation. Hosted CI must still cover the pushed
+  head. Accepted documentation findings align the older non-goals and credit
+  contract with the approved revision extension and its one migration.
 - 2026-09-09: The user explicitly approved creating a separate synthetic local
   chatbot for browser verification. Creation, disclaimer save/reload (revision
   1), and credit save/reload (revision 2; initial 3, weekly reset 2, maximum 8)
@@ -426,9 +431,10 @@ Make the three existing AI cost controls clear and reliable:
 
 - No consolidated AI-cost dashboard or KB graph quota card in user settings.
 - No course-collaborator access or change to chatbot ownership.
-- No post-publication credit-policy edits or reconciliation of existing
-  participant credit rows.
-- No Prisma migration, gamification change, or new seed fixture.
+- No direct post-publication live-policy edits or reconciliation of existing
+  participant credit rows; published changes use reviewed revisions.
+- No gamification change. The approved revision extension adds one additive
+  Prisma migration; browser verification uses an approved synthetic draft.
 
 ## Design answers
 
@@ -437,7 +443,8 @@ Make the three existing AI cost controls clear and reliable:
   in `CONTEXT.md`.
 - **Layer footprint:** `packages/graphql`, `packages/kb-management`,
   `apps/frontend-manage`, `packages/i18n`, focused GraphQL tests, and browser
-  evidence. The existing Prisma fields are sufficient.
+  evidence. The approved revision extension also adds revision storage in
+  Prisma and updates chat credit locking; one additive migration is required.
 - **Authorization:** existing `asChatbotAuthor` scope plus the live persisted
   chatbot owner; no course-sharing permission is introduced.
 - **Gamification:** none.
@@ -458,8 +465,9 @@ Make the three existing AI cost controls clear and reliable:
 - Initial credits and reset amount cannot exceed maximum credits.
 - `NONE` normalizes reset amount to zero; every other reset period requires a
   positive reset amount and positive maximum.
-- The policy is editable only in `DRAFT` and `REJECTED`, then frozen while
-  pending, published, or paused.
+- Draft and rejected configurations are editable. Published chatbots can stage
+  a policy revision while the live policy remains unchanged until approval.
+  Pending revisions and paused chatbots are locked.
 - Publication reviews the saved policy without overwriting it.
 
 ## Implementation slices
