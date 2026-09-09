@@ -19,7 +19,7 @@ const SYNTHETIC_FIXTURE = {
   ownerId: '22222222-2222-4222-8222-222222222222',
   courseId: '33333333-3333-4333-8333-333333333333',
   kbId: '44444444-4444-4444-8444-444444444444',
-  chatMode: 'biology-help',
+  chatMode: 'synthetic-help',
   documentsFile: 'synthetic-documents.json',
 }
 
@@ -330,7 +330,7 @@ describe('local MCP seed ownership', () => {
   test.each([
     ['owner', { ownerId: '55555555-5555-4555-8555-555555555555' }],
     ['course', { courseId: '66666666-6666-4666-8666-666666666666' }],
-    ['mode', { chatMode: 'biology-other-mode' }],
+    ['mode', { chatMode: 'synthetic-other-mode' }],
     ['tool set', { allowedTools: ['doc_query', 'other_tool'] }],
     [
       'knowledge-base scope',

@@ -69,25 +69,28 @@ describe('local MCP document loading', () => {
   test('retrieves keywords case-insensitively and preserves citation provenance', async () => {
     const filePath = await documentFile([
       {
-        title: 'Synthetic structure exercise',
+        title: 'Synthetic document exercise',
         page: 7,
-        keywords: ['PyMOL', 'S3'],
+        keywords: ['ExampleTool', 'S3'],
         content: 'Synthetic embedded content',
-        reference: 'sources/structure-display-exercise.md',
+        reference: 'sources/example-exercise.md',
         reference_type: 'md',
       },
     ])
     const documents = loadLocalMcpDocuments({
       LOCAL_MCP_DOCUMENTS_FILE: filePath,
     })
-    const matches = findLocalMcpDocuments(documents, 'please explain pymol')
+    const matches = findLocalMcpDocuments(
+      documents,
+      'please explain exampletool'
+    )
 
     expect(matches).toHaveLength(1)
     expect(toLocalMcpDocumentSource(matches[0])).toEqual({
-      reference: 'sources/structure-display-exercise.md',
+      reference: 'sources/example-exercise.md',
       reference_type: 'md',
       source_type: 'document',
-      title: 'Synthetic structure exercise',
+      title: 'Synthetic document exercise',
       chunks: [
         {
           content: 'Synthetic embedded content',
