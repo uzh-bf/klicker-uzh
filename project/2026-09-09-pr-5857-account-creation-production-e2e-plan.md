@@ -1,4 +1,4 @@
-# Account creation and production Playwright coverage
+# Account creation and production Playwright coverage — PR #5857
 
 ## Approval summary
 
@@ -63,7 +63,7 @@ Current Next.js documentation was retrieved through Context7. It confirms standa
 
 ## Progress
 
-Status: delivery_pending. Implementation is committed at `2b30ea61a7`. Slice risk review completed after one correction; integrated final review and the draft PR remain outstanding. Main owns all changed files and the exact runtime. All implementation and exploration children have completed or been closed; all slice reviewers are closed. The simplifier completed with one optional cleanup-state reduction, explicitly deferred after main-session inspection.
+Status: draft_delivered. [PR #5857, production account Playwright coverage](https://github.com/uzh-bf/klicker-uzh/pull/5857) is open against `v3`. Implementation is committed at `2b30ea61a7`; slice risk review completed after one correction, and integrated final review passed on `5d293ba9f5`. Main owns all changed files and the exact runtime. All implementation and exploration children have completed or been closed; all slice reviewers are closed. The simplifier completed with one optional cleanup-state reduction, explicitly deferred after main-session inspection.
 
 ### Current verification
 
@@ -87,6 +87,8 @@ Target `origin/v3` is confirmed by the merged source dependency PR. Refreshed ta
 
 The dedicated production workflow and promotion prerequisite are implemented but have not run in GitHub. The previously trusted `v3` selector does not yet recognize newly introduced production-only specs, so the introducing PR can encounter the ordinary-lane bootstrap failure. Do not skip tests or claim that local proof establishes CI enforcement; keep the PR draft and state this limitation until the trusted selector and manifest land together. This package does not authorize that merge or any promotion.
 
-Before delivery: obtain the integrated final review; push the ordinary task branch and create one coherent draft PR. No application dependencies, migrations, visible product UI, production records or external email are changed. Screenshot publication does not apply because this package changes test/runtime infrastructure only.
+Authorized source delivery is complete: the ordinary task branch is pushed and the coherent PR remains draft. GitHub checks were queued at initial readback. Merge, successful CI enforcement, and any rollout remain outstanding; no merge or deployment is authorized. No application dependencies, migrations, visible product UI, production records or external email are changed. Screenshot publication does not apply because this package changes test/runtime infrastructure only.
 
 Slice risk correction `66e9b2b074` pins the complete candidate account workflow to trusted controller bytes before accepting run/job/artifact evidence. Conditional build, test, and upload negative cases pass with all 23 promoter tests. The same reviewer returned DONE on its one correction pass. The introducing ordinary-lane bootstrap concern remains an explicit draft/merge blocker. The artifact-cache lesson is committed in `ec631d9bd6`.
+
+Integrated final review continuity: Claude Opus 5 stopped on session-limit API 429; AGY Gemini 3.8 Flash terminated before review; a fresh independent GLM 5.3 Flash max reviewer completed all 35 changed paths with schema-validated `pass` and no findings. Scoped evidence is in `_local/reviews/account-final-glm.json`. The final documentation-only update preserves reviewed implementation and verification.
