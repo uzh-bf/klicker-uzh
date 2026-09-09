@@ -578,6 +578,10 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
     )
     assert.equal(result.managedRuntimeObserved, true)
     assert.equal(result.managedRuntimeReady, false)
+    assert.equal(
+      result.managedRuntimeStatus,
+      observation.repo.managedRuntime.status
+    )
     assert.equal(result.aiQualified, false)
   }
   for (const change of [
@@ -590,6 +594,12 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
     (value) => {
       value.repo.managedRuntime.workspace = 'other'
     },
+    (value) => {
+      value.repo.managedRuntime.status = 'unknown'
+    },
+    (value) => {
+      value.repo.managedRuntime.drift = null
+    },
   ]) {
     const observation = structuredClone(managedObservation)
     change(observation)
@@ -598,6 +608,17 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
         JSON.stringify(observation)
       ),
       /observation is unavailable or mismatched/
+    )
+  }
+  for (const observe of [
+    async () => 'synthetic malformed response',
+    async () => {
+      throw new Error('synthetic private diagnostic')
+    },
+  ]) {
+    await assert.rejects(
+      inspectPreparedInfrastructure(config, revision, docker, observe),
+      { message: 'Managed runtime observation is unavailable or mismatched.' }
     )
   }
   assert.equal(writes.length, 0)
