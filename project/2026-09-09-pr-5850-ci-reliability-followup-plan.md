@@ -208,8 +208,12 @@ corrected an unhandled oversized JSON integer conversion: parser failures now
 return structured rejection while duplicate-key reasons remain intact. Slice
 review confirmed that defect and found boolean schema versions accepted as one.
 All three version fields now require exact integers. All 23 Python checks pass.
-The same reviewer `01a08590-f486-7bc2-82e7-30c68657b32a` will check the bounded
-correction, followed by integrated final review and upper stacked draft delivery.
+The same reviewer confirmed both corrections in `11492485a1` and completed.
+Integrated final review is capability-blocked: Claude returned session-limit
+429 (reset reported at 13:00 Europe/Zurich, September 9); the single configured
+AGY fallback terminated without a review. No third route or reset was used.
+Resume final review when capacity returns, then publish the upper stacked draft
+and verify Actions. All five upper paths remain in scope; no gate is waived.
 The configured Husky
 entrypoint is absent in this worktree; full monorepo build/check hooks are not
 claimed. No hook configuration was changed or bypass flag used.
