@@ -53,6 +53,13 @@ launcher tests passed. The ingestion worktree `trees/rs/provider-local-launcher`
 is based on `main@69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`. The historical
 launcher worktree remains untouched. No provider implementation has landed yet.
 
+The unused process-identity helper and its nine self-only tests are removed.
+Repository search found no operational callers. The remaining offline launcher
+suite passes 62/62 in the retained task container. This removes unneeded source,
+not runtime state; Git retains the removed files. Provider implementation is
+owned by Popper for ingestion and Banach for Doc Processing. Main owns consumer
+integration. No runtime startup, shutdown or work submission occurred.
+
 ### Current delivery ownership — 2026-09-09
 
 The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.
