@@ -3518,7 +3518,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       leaderboardSummary: 'Compare participant points for the selected period.',
       leaderboardInclusionHelp: 'Who appears in the leaderboard?',
       leaderboardInclusion:
-        'Participants without points are included in the entire-course and rolling leaderboards. Weekly and custom-period leaderboards omit entries without points.',
+        'Participants without points are included in the entire-course and rolling leaderboards.',
       leaderboardExportHelp: 'About CSV export',
       leaderboardExportDescription:
         'The CSV export includes participant email addresses in addition to usernames.',
