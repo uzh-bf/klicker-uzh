@@ -1076,9 +1076,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(publishedPreview).toContainText('Student Responsibility')
     await expect(publishedPreview).toContainText('Data Protection')
+    // A published chatbot renders the resubmission form instead of the
+    // readonly panel, so the approved publication values appear prefilled.
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
+      'Support students with a synthetic study aid.'
+    )
     await expect(
-      page.getByTestId('chatbot-publication-readonly')
-    ).toContainText('Support students with a synthetic study aid.')
+      page.getByTestId('chatbot-publication-expected-student-count')
+    ).toHaveValue('40')
     await navigateToSetupStep(page, 'review')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
