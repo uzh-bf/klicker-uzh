@@ -39,7 +39,11 @@ import {
   setGeneratedFlashcardDecision,
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
-import { claimIncompleteFlashcardPublication } from './flashcardGenerationPersistence.js'
+import {
+  claimIncompleteFlashcardPublication,
+  correlateFlashcardPublication,
+  recoverUndispatchedFlashcardPublication,
+} from './flashcardPublicationLifecycle.js'
 import {
   isFlashcardGenerationRuntime,
   requireFlashcardGenerationRuntime,
@@ -539,50 +543,25 @@ async function dispatchIncompletePublication(
         if (!recovered) throw error
         recoveredRunId = recovered.runId
       } else {
-        await ctx.prisma.elementGenerationBuild.updateMany({
-          where: {
-            id: build.id,
-            ownerId: ctx.user.sub,
-            status: DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-            syncLeaseOwner: leaseOwner,
-            providerPublicationDispatchAttemptId: dispatchAttemptId,
-            providerPublicationEventId: null,
-            providerPublicationWorkflowRunId: null,
-          },
-          data: {
-            status:
-              DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
-            stage: 'awaiting_incomplete_publication',
-            incompletePublishedById: null,
-            incompletePublishedAt: null,
-            providerPublicationDispatchAttemptId: null,
-          },
-        })
+        await recoverUndispatchedFlashcardPublication(
+          build.id,
+          leaseOwner,
+          dispatchAttemptId,
+          ctx
+        )
         return
       }
     }
   }
 
-  const updated = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-      syncLeaseOwner: leaseOwner,
-      providerPublicationDispatchAttemptId: dispatchAttemptId,
-    },
-    data: {
-      providerPublicationEventId: eventId,
-      providerPublicationWorkflowRunId: recoveredRunId,
-      lastSynchronizedAt: new Date(),
-    },
-  })
-  if (updated.count !== 1) {
-    return serviceError(
-      'CONCURRENT_MODIFICATION',
-      'Incomplete flashcard publication was changed by another request'
-    )
-  }
+  await correlateFlashcardPublication(
+    build.id,
+    leaseOwner,
+    dispatchAttemptId,
+    eventId,
+    recoveredRunId,
+    ctx
+  )
 }
 
 async function markResumableOrFailed(
