@@ -87,6 +87,29 @@ context, and model output intended for publication.
 
 ## Prevention
 
+### Distinguish process failure from publisher rejection
+
+The diagnostic boundary above starts after a review result exists. In
+[run 34326218356](https://github.com/uzh-bf/klicker-uzh/actions/runs/34326218356),
+`ocr version` succeeded but `ocr review` exited 127 before findings. No rejected
+publisher input existed, so widening the publisher artifact list would not
+explain this failure. Its exact historical cause remains unproved.
+
+OCR 1.11.0's [npm launcher](https://github.com/alibaba/open-code-review/blob/v1.11.0/bin/ocr.js)
+starts a detached updater even for `ocr version`. Its
+[updater](https://github.com/alibaba/open-code-review/blob/v1.11.0/scripts/update.js)
+can replace the pinned global installation with registry latest. The workflow
+therefore sets `OCR_NO_UPDATE=1` at job scope and checks the expected version
+before every review attempt. A pinned install alone does not prevent this drift.
+
+Process failures record only the stage, original exit status and numeric output
+sizes. Raw stderr stays suppressed because it may contain provider or credential
+details. Shell-boundary tests must call the extracted function directly under
+`set -e`; calling it inside an `if` condition disables that error behavior and
+can conceal the regression the test intends to reproduce.
+
+### Keep publisher artifacts narrow
+
 - Keep source tests that assert the exact failure condition, pinned upload
   action, file list, and one-day retention
   ([final-ai-review.test.js](../../../.github/scripts/final-ai-review.test.js#L839),
