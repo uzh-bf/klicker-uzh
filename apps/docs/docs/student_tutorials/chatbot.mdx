@@ -42,7 +42,11 @@ Type your question in the input field at the bottom and send it. The answer is s
 
 The modes offered depend on your course chatbot. Quizzer requires connected course-material capabilities, so it may not appear. Switching modes affects your next message.
 
-## Can I ask for help during a practice quiz?
+## Using the chatbot alongside practice quizzes
+
+:::info Upcoming integration
+The embedded course-chat panel is not yet included in the current v3 release. The instructions below apply when this integration becomes available for your course.
+:::
 
 If your course offers the integrated chatbot, open **AI tutor** while working on a practice quiz. You can ask for a hint or an explanation without leaving the quiz. The panel can use the current question as context. If several chatbots are available, choose the one you want to use in the panel.
 
@@ -71,12 +75,14 @@ Below every answer, you can mark it as **helpful** or **not helpful**. You can c
 ## Does the chatbot show sources?
 
 :::info
-If your chatbot is connected to a knowledge base with course materials, answers can cite them. Numbered markers such as `[1]` in the answer refer to source cards below it, which point to the corresponding file and page or to a link. Not every chatbot is connected to a knowledge base; if yours is not, the assistant answers based on the AI model alone and no sources are shown.
+If course-material retrieval is configured for your chatbot, answers may cite those materials. Markers such as `[1]` link to matching cards in **Sources**. **Cited in this answer** shows sources referenced in the response. Expand **Other retrieved material** to inspect additional results the chatbot retrieved but did not cite; these are not necessarily evidence for its answer.
+
+Select a citation to inspect the matching source card and, where available, open the original material. Source numbers apply only to that answer and may have gaps. Without configured retrieval, the chatbot cannot retrieve or cite course sources.
 :::
 
 ## In which language does the chatbot answer?
 
-The chat interface follows the language of the KlickerUZH application you came from. The chatbot answers in the language of your message, or the language you explicitly request. Short acknowledgements keep the conversation's existing language. German answers use Swiss spelling.
+The chat interface follows the language of the KlickerUZH application you came from. The chatbot answers in the language of your message, or the language you explicitly request. Short acknowledgements keep the conversation's existing language.
 
 ## What happens with my data?
 

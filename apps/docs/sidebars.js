@@ -8,9 +8,6 @@ module.exports = {
     'Lecturer - Content': [
       'tutorials/supported_element_types',
       'tutorials/element_management',
-      'tutorials/ai_element_generation',
-      'tutorials/ai_assistant',
-      'tutorials/knowledge_bases',
       'tutorials/course_management',
       'tutorials/element_stacks',
       'tutorials/answer_collections',
@@ -27,6 +24,11 @@ module.exports = {
       'tutorials/activity_batch_operations',
       'tutorials/element_updates_activities',
       'tutorials/chatbot',
+    ],
+    'Upcoming AI Features': [
+      'tutorials/ai_element_generation',
+      'tutorials/ai_assistant',
+      'tutorials/knowledge_bases',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',

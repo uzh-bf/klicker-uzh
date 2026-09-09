@@ -17,7 +17,7 @@ Course chatbots are AI beta features. Beta features are enabled by default. You 
 
 The course chatbot is an AI assistant that you can offer to the students of a specific course. Students open it through a course-specific link, ask questions about the course content and receive answers in a familiar chat interface. Every chatbot is scoped to one course: only students who are logged in and enrolled in that course can use it.
 
-A chatbot can be configured with one or several **conversation modes** (for example a tutor mode that guides students with questions, or an explainer mode that answers directly), and it can optionally be connected to a knowledge base with your course materials. Usage is limited through a **credit** system, so a chatbot cannot consume an unlimited amount of resources.
+A chatbot can be configured with one or several **conversation modes** (for example a tutor mode that guides students with questions, or an explainer mode that answers directly), and it can optionally be configured to retrieve your course materials. A **credit** system tracks each student’s usage. When their balance reaches zero, the chatbot continues with a smaller fallback model.
 
 :::warning
 AI-generated answers can be wrong or incomplete. Please inform your students that they should verify important information against the official course materials. The chat interface itself also displays a corresponding hint.
@@ -31,7 +31,7 @@ AI-generated answers can be wrong or incomplete. Please inform your students tha
 4. In **Review and submit**, check the saved setup and describe your **Use case**, **Expected student count**, and **Proposed credits**. These publication details are submitted with the request rather than saved separately.
 5. Select **Request publication**. The team reviews the request; submitting it does not make the chatbot available to students. If changes are requested, update the draft and resubmit it for approval.
 
-Use **Overview** to check the status, **Setup** to edit the available settings, **Advanced** for model settings, and **Usage & integrations** for operational details. Some settings are read-only while a request is under review or the chatbot is paused. Connect course materials through [knowledge-base management](/tutorials/knowledge_bases/), and contact the team for credit allocation or additional integrations.
+Use **Overview** to check the status, **Setup** to edit the available settings, **Advanced** for model settings, and **Usage & integrations** for operational details. Some settings are read-only while a request is under review or the chatbot is paused. Contact the team to configure course-material retrieval, credit allocation, or additional integrations. Self-service [knowledge-base management](/tutorials/knowledge_bases/) is an upcoming feature.
 
 ## Which learning modes can I offer?
 
@@ -49,7 +49,7 @@ To inspect your chatbots, navigate to the **"Resources"** section and open the *
 - The number of students who have **accepted or declined the disclaimer**.
 - The **connected tools** the chatbot can use while answering.
 
-Credit allocation is maintained with the KlickerUZH team. You can connect a knowledge base yourself and edit the chatbot setup and model settings when its status allows it:
+Credit allocation is maintained with the KlickerUZH team. Course-material retrieval is configured with the team. You can edit the chatbot setup and model settings when its status allows it:
 
 **Model settings:**
 
@@ -80,7 +80,7 @@ Embedding is only possible on domains that are on the allow-list of KlickerUZH. 
 
 ## What do students see?
 
-When the course-chat panel is enabled for a practice quiz, students can also open the chatbot alongside the quiz to ask for hints or explanations about the current question. This requires an available course chatbot; the panel is not shown for every quiz.
+An upcoming integration will let students open the course chatbot alongside practice quizzes to ask for hints or explanations about the current question. This panel is not yet included in the current v3 release.
 
 The student view is described in detail in the [student documentation on the course chatbot](/student_tutorials/chatbot/). In short, students can:
 
@@ -103,7 +103,9 @@ The credit settings (initial amount, reset period and maximum) are part of the c
 ## Can the chatbot cite course materials?
 
 :::info
-If your chatbot is connected to a course knowledge base, its answers can cite the materials it used. Numbered markers such as `[1]` in the answer refer to source cards displayed underneath it, which point to the corresponding file and page or to a link. Connect your materials through the [knowledge-base management interface](/tutorials/knowledge_bases/#how-do-i-connect-a-chatbot). Without connected materials, the chatbot cannot retrieve or cite those course sources.
+If course-material retrieval is configured for your chatbot, answers may cite those materials. Bracketed markers such as `[1]` link to matching cards in **Sources**. **Cited in this answer** contains sources referenced in the response; the expandable **Other retrieved material** section contains additional results that were retrieved but not cited. Retrieved material is not necessarily evidence for the answer.
+
+Select a citation to inspect its source. Cards can show document pages or media references and may link to the original material. Source numbers apply to one answer and may have gaps when some retrieved sources were not cited. Without configured retrieval, the chatbot cannot retrieve or cite course sources. Contact the team to configure the materials it should use.
 :::
 
 ## What about data protection and the disclaimer?
