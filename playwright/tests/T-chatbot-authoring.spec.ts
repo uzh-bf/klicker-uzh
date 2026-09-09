@@ -194,9 +194,19 @@ async function approveRevision(page: Page, id: string, version: number) {
     )
   ) as Record<string, string>
   // GraphQL is served by the API app, not by the manage frontend origin.
+  // The API derives the JWT from a cookie only when the request origin
+  // matches a known app subdomain, so send the session token from the
+  // browser context's cookie jar as a Bearer token instead.
   const apiOrigin = process.env.APP_ORIGIN_API ?? 'http://127.0.0.1:3000'
+  const sessionToken = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'next-auth.session-token'
+  )?.value
+  if (!sessionToken) throw new Error('No lecturer session token in context')
   const response = await page.request.post(`${apiOrigin}/api/graphql`, {
-    headers: { 'x-graphql-yoga-csrf': 'true' },
+    headers: {
+      'x-graphql-yoga-csrf': 'true',
+      authorization: `Bearer ${sessionToken}`,
+    },
     data: {
       operationName: 'MApproveChatbotRevision',
       variables: { id, expectedRevisionVersion: version },
