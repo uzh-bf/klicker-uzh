@@ -285,3 +285,27 @@ describe('resolveCitationSource', () => {
     expect(resolveCitationSource(1, [])).toBeUndefined()
   })
 })
+
+describe('citation protocol across streaming boundaries', () => {
+  test.each([
+    ['[1]', [1]],
+    ['[12]', [12]],
+    ['[1][2]', [1, 2]],
+    ['[1] [2]', [1, 2]],
+    ['[2–4]', [2, 3, 4]],
+    ['[2-4]', [2, 3, 4]],
+    ['[2—4]', [2, 3, 4]],
+  ] as const)('emits only completed markers while %s arrives character by character', (input, expected) => {
+    for (let length = 0; length <= input.length; length += 1) {
+      const prefix = input.slice(0, length)
+      const lastComplete = prefix.lastIndexOf(']')
+      const indices = splitCitationMarkers(prefix)
+        .filter((node) => node.type === 'link')
+        .map((node) => parseCitationHref(node.url))
+      if (lastComplete < 0) expect(indices).toEqual([])
+      else if (lastComplete === input.length - 1)
+        expect(indices).toEqual(expected)
+      else expect(indices).toEqual([expected[0]])
+    }
+  })
+})

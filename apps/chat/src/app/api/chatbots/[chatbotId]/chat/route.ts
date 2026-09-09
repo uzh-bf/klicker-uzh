@@ -46,6 +46,7 @@ import {
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -1181,9 +1182,6 @@ export async function POST(
       imageDescription: string | null
     }[] = []
     if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
-      const descriptionPrompt = (userContent: string | undefined) =>
-        `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
-
       const results = await Promise.allSettled(
         resolvedImages.map(async (image) => {
           const descriptionResult = await generateText({
@@ -1195,7 +1193,9 @@ export async function POST(
                   { type: 'image', image: image.imageBase64 },
                   {
                     type: 'text',
-                    text: descriptionPrompt(lastMessage?.content),
+                    text: renderPromptTemplate('image-description', {
+                      userContent: lastMessage?.content ?? '',
+                    }),
                   },
                 ],
               },
