@@ -76,6 +76,21 @@ export default {
       dependencies: ['remark-math'],
       isIgnored: true,
     },
+    {
+      // mhchem JS, CSS and fonts must come from one katex build across all
+      // render surfaces; a split version silently breaks chemistry rendering.
+      // Docs keeps its policy-required tilde dev range, so only the exact
+      // production surfaces are compared here.
+      label: 'katex must be aligned across markdown, chat, docs and frontend apps',
+      dependencies: ['katex'],
+      packages: [
+        '@klicker-uzh/markdown',
+        '@klicker-uzh/chat',
+        '@klicker-uzh/frontend-control',
+        '@klicker-uzh/frontend-manage',
+        '@klicker-uzh/frontend-pwa',
+      ],
+    },
   ],
   sortAz: [
     'dependencies',

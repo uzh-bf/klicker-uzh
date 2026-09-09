@@ -812,6 +812,7 @@ test.describe('Chatbot Messaging Interface', () => {
     const formula = String.raw`\ce{2 H2 + O2 -> 2 H2O}`
     await mockChatStream(page, {
       textChunks: [prefix, `$${formula}`, `$${suffix}`],
+      chunkDelayMs: 80,
       pauseAfterTextChunk: 2,
     })
     await visitChat(page)

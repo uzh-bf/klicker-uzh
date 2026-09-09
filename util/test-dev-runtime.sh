@@ -476,8 +476,9 @@ assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
 
 cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
-export DEVROUTER_PROFILE=manage
-build_filters="$(bash "$RUNTIME_SCRIPT" preparation-filters)"
+# Scoped per invocation: a leaked exported profile would silently change every
+# later post-start and preparation call in this script.
+build_filters="$(DEVROUTER_PROFILE=manage bash "$RUNTIME_SCRIPT" preparation-filters)"
 assert_equal "$build_filters" '--filter=@klicker-uzh/backend-docker^... --filter=@klicker-uzh/auth^... --filter=@klicker-uzh/frontend-manage^...'
 for selection in ai mcp email ai,email; do
   assert_equal "$(DEVROUTER_PROFILE="$selection" bash "$RUNTIME_SCRIPT" preparation-filters)" ''
@@ -515,12 +516,18 @@ assert_equal "$status" 17
 
 HELPER_LOG="$TEST_ROOT/helper.log"
 export KLICKER_TEST_HELPER_LOG="$HELPER_LOG"
+HELPER_PROBE_LOG="$TEST_ROOT/helper-probe.log"
+export KLICKER_TEST_HELPER_PROBE_LOG="$HELPER_PROBE_LOG"
 write_file "$FAKE_BIN/process-helper" '#!/usr/bin/env bash
 set -euo pipefail
-if [ "${2:-}" = --help ]; then
-  [ "${KLICKER_TEST_OLD_HELPER:-false}" = false ] && echo --prepare-command
-  exit 0
-fi
+for arg in "$@"; do
+  if [ "$arg" = --help ]; then
+    [ -n "${KLICKER_TEST_HELPER_PROBE_LOG:-}" ] &&
+      printf "probed\n" >>"$KLICKER_TEST_HELPER_PROBE_LOG"
+    [ "${KLICKER_TEST_OLD_HELPER:-false}" = false ] && echo --prepare-command
+    exit 0
+  fi
+done
 printf "%s\n" "$*" >>"$KLICKER_TEST_HELPER_LOG"
 [ "$1" = ensure ] || exit 0
 shift
@@ -535,14 +542,16 @@ done
 echo launched >>"$KLICKER_TEST_HELPER_LOG"'
 chmod +x "$FAKE_BIN/process-helper"
 : >"$HELPER_LOG"
+: >"$HELPER_PROBE_LOG"
 : >"$CURL_LOG"
-if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROFILE=manage DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
   KLICKER_TEST_OLD_HELPER=true bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
   fail 'post-start accepted a helper without preparation support'
 fi
+[ -s "$HELPER_PROBE_LOG" ] || fail 'capability probe was not exercised'
 [ ! -s "$HELPER_LOG" ] || fail 'unsupported helper caused a lifecycle operation'
 [ ! -s "$CURL_LOG" ] || fail 'unsupported helper reached readiness'
-if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROFILE=manage DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
   KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
   bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
   fail 'post-start ignored preparation failure'

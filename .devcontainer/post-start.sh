@@ -105,11 +105,13 @@ else
   PROFILE_WANTS_MCP=no
 fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
-DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
-if [ "$PROFILE_WANTS_DEV" = yes ] &&
-  ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
-  echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
-  exit 1
+DEV_BUILD_FILTERS=''
+if [ "$PROFILE_WANTS_DEV" = yes ]; then
+  DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
+  if ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
+    echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
+    exit 1
+  fi
 fi
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
@@ -173,6 +175,13 @@ fi
 # repository owns only the application command and environment above.
 start_managed_runtime() {
   local runtime_fingerprint runtime_generation
+  local prepare_args=()
+  # Cache-only repair restarts pass no-prepare: removing a stale .next cache
+  # changes no dependencies, so rebuilding the dependency closure again would
+  # only replay the turbo graph moments after the initial start did.
+  if [ "${1:-}" != no-prepare ]; then
+    prepare_args=(--prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}")
+  fi
 
   runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
   runtime_generation="$(bash ./util/dev-runtime.sh generation)"
@@ -182,7 +191,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
-      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
+      "${prepare_args[@]}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
   else
@@ -190,7 +199,7 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
-      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
+      "${prepare_args[@]}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi
@@ -239,7 +248,7 @@ if [ "$READINESS_STATUS" -eq 20 ]; then
   for app in "${STALE_NEXT_APPS[@]}"; do
     bash ./util/dev-runtime.sh request-repair "$app"
   done
-  start_managed_runtime
+  start_managed_runtime no-prepare
 
   READINESS_STATUS=0
   run_readiness_pass || READINESS_STATUS=$?
