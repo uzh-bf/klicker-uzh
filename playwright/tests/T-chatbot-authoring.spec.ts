@@ -936,6 +936,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const submitButton = page.getByTestId('request-chatbot-publication')
     await expect(submitButton).toBeEnabled()
 
+    await page.getByTestId('chatbot-setup-edit-basics').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
     await page
       .getByTestId('chatbot-description')
