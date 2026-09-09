@@ -1,3 +1,4 @@
+import { Context } from '@hatchet-dev/typescript-sdk'
 import { createLogger } from '@klicker-uzh/logging/node'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -42,6 +43,88 @@ function fakeHatchetContext() {
 
 describe('withHatchetTaskLogging', () => {
   it.each([
+    'started',
+    'completed',
+    'failed',
+  ])('preserves task outcomes when SDK persistence rejects the %s lifecycle log', async (stage) => {
+    const { logger, records } = testLogger()
+    const failure = new Error('original task failure')
+    const putLog = vi.fn(async (_id, message: string) => {
+      if (message.startsWith(`Hatchet task ${stage}`)) {
+        throw new Error('log persistence unavailable')
+      }
+    })
+    const context = Object.assign(Object.create(Context.prototype), {
+      action: {
+        stepRunId: 'task-run-1',
+        workflowRunId: 'workflow-run-1',
+        retryCount: 0,
+      },
+      v1: {
+        config: {
+          logger: createHatchetLoggerFactory(logger),
+          log_level: 'INFO',
+        },
+        event: { putLog },
+      },
+    })
+    const handler = vi.fn(async () => {
+      if (stage === 'failed') throw failure
+      return 'committed result'
+    })
+    const wrapped = withHatchetTaskLogging({ taskName: 'sink-outage', handler })
+    const result = wrapped({}, context)
+    if (stage === 'failed') await expect(result).rejects.toBe(failure)
+    else await expect(result).resolves.toBe('committed result')
+    expect(handler).toHaveBeenCalledOnce()
+    expect(
+      records.some((record) => record.event === `hatchet.task.${stage}`)
+    ).toBe(true)
+  })
+
+  it('includes correlation in the real SDK log message and structured output', async () => {
+    const { logger, records } = testLogger()
+    const putLog = vi.fn(async () => undefined)
+    // Exercise the SDK logger and log method, replacing only its network sink.
+    const context = Object.assign(Object.create(Context.prototype), {
+      action: {
+        stepRunId: 'task-run-1',
+        workflowRunId: 'workflow-run-1',
+        retryCount: 0,
+      },
+      v1: {
+        config: {
+          logger: createHatchetLoggerFactory(logger),
+          log_level: 'INFO',
+        },
+        event: { putLog },
+      },
+    })
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'visible-correlation',
+      handler: async (_input, ctx) => {
+        await ctx.logger.info('Inner milestone')
+        await ctx.logger.debug('Debug milestone')
+        await ctx.logger.warn('Warning milestone')
+        throw new Error('private detail')
+      },
+    })
+    await expect(
+      wrapped({ loggingContext: { correlationId: 'correlation-1' } }, context)
+    ).rejects.toThrow('private detail')
+
+    expect(putLog).toHaveBeenCalledTimes(5)
+    for (const call of putLog.mock.calls as unknown as unknown[][]) {
+      expect(call[1]).toContain('[correlationId=correlation-1]')
+      expect(call[4]).toMatchObject({ correlationId: 'correlation-1' })
+    }
+    expect(records).toHaveLength(4) // debug is filtered from info-level stdout
+    for (const record of records) {
+      expect(record.correlationId).toBe('correlation-1')
+    }
+    expect(JSON.stringify(putLog.mock.calls)).not.toContain('private detail')
+  })
+  it.each([
     null,
     undefined,
   ])('preserves empty cron input (%s) and logs its lifecycle', async (input) => {
@@ -84,7 +167,10 @@ describe('withHatchetTaskLogging', () => {
     expect(context.logger.info).toHaveBeenCalledTimes(2)
     expect(
       context.logger.info.mock.calls.map((call: any[]) => call[0])
-    ).toEqual(['Hatchet task started', 'Hatchet task completed'])
+    ).toEqual([
+      'Hatchet task started [correlationId=correlation-1]',
+      'Hatchet task completed [correlationId=correlation-1]',
+    ])
     expect(context.logger.info.mock.calls[0]?.[1]).toMatchObject({
       requestId: 'request-1',
       correlationId: 'correlation-1',
@@ -155,7 +241,8 @@ describe('withHatchetTaskLogging', () => {
     )
 
     const innerCall = context.logger.info.mock.calls.find(
-      (call: unknown[]) => call[0] === 'Inner milestone'
+      (call: unknown[]) =>
+        call[0] === 'Inner milestone [correlationId=correlation-1]'
     )
     expect(innerCall?.[1]).toMatchObject({
       event: 'task.milestone',
@@ -194,6 +281,14 @@ describe('withHatchetTaskLogging', () => {
 })
 
 describe('createHatchetLoggerFactory', () => {
+  it('supplies a stable event for legacy task messages', () => {
+    const { logger, records } = testLogger()
+    createHatchetLoggerFactory(logger)('ctx', 'INFO').info('Legacy milestone')
+    expect(records[0]).toMatchObject({
+      event: 'hatchet.task.log',
+      msg: 'Legacy milestone',
+    })
+  })
   it('writes context logger calls to the process Pino logger', () => {
     const { logger, records } = testLogger()
     const contextLogger = createHatchetLoggerFactory(logger)('ctx', 'INFO')
@@ -261,7 +356,8 @@ describe('createHatchetLoggerFactory', () => {
     )
 
     const innerRecord = records.find(
-      ({ msg }) => msg === 'Inner response milestone'
+      ({ msg }) =>
+        msg === 'Inner response milestone [correlationId=correlation-1]'
     )
     expect(innerRecord).toMatchObject({
       event: 'response.milestone',

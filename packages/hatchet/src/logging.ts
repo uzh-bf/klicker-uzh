@@ -68,17 +68,33 @@ function withTaskLoggingContext<TContext extends HatchetTaskContext<unknown>>(
 ): TContext {
   if (Object.keys(fields).length === 0) return context
 
+  // Hatchet renders the message separately from extra metadata. Include only
+  // the validated diagnostic ID so it is visible in the task's log text too.
+  const visibleMessage = (message: string) =>
+    fields.correlationId
+      ? `${message} [correlationId=${fields.correlationId}]`
+      : message
+
   const logger = {
     info: (message: string, extra?: Record<string, unknown>) =>
-      context.logger.info(message, { ...fields, ...extra }),
+      context.logger.info(visibleMessage(message), { ...fields, ...extra }),
     debug: (message: string, extra?: Record<string, unknown>) =>
-      context.logger.debug(message, { ...fields, ...extra }),
+      context.logger.debug(visibleMessage(message), { ...fields, ...extra }),
     warn: (message: string, extra?: unknown) =>
-      context.logger.warn(message, mergeContextExtra(extra, fields)),
+      context.logger.warn(
+        visibleMessage(message),
+        mergeContextExtra(extra, fields)
+      ),
     error: (message: string, extra?: unknown) =>
-      context.logger.error(message, mergeContextExtra(extra, fields)),
+      context.logger.error(
+        visibleMessage(message),
+        mergeContextExtra(extra, fields)
+      ),
     util: (key: string, message: string, extra?: Record<string, unknown>) =>
-      context.logger.util?.(key, message, { ...fields, ...extra }),
+      context.logger.util?.(key, visibleMessage(message), {
+        ...fields,
+        ...extra,
+      }),
   } as TContext['logger']
 
   return new Proxy(context, {
@@ -96,6 +112,7 @@ function withTaskLoggingContext<TContext extends HatchetTaskContext<unknown>>(
  */
 export function createHatchetLoggerFactory(root: AppLogger): LogConstructor {
   const pinoFields = (extra?: LogExtra) => ({
+    event: 'hatchet.task.log',
     ...taskDiagnosticContext.getStore(),
     ...extra,
   })
@@ -135,10 +152,16 @@ async function logTaskContext<TInput>(
   message: string,
   fields: LogExtra
 ) {
-  if (level === 'info') {
-    await context.logger.info(message, fields)
-  } else {
-    await context.logger.error(message, logExtra(fields))
+  try {
+    if (level === 'info') {
+      await context.logger.info(message, fields)
+    } else {
+      await context.logger.error(message, logExtra(fields))
+    }
+  } catch {
+    // Diagnostic lifecycle persistence must not prevent execution, retry a
+    // committed result, or replace the handler's original failure. The SDK
+    // also emits through the process logger independently of its log API.
   }
 }
 

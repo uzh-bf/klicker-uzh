@@ -747,7 +747,7 @@ export async function processResponseMessage(
       'Response processing failed'
     )
     redisMulti?.discard()
-    throw new Error('Response processing failed')
+    return { status: 500 }
   }
 
   try {
