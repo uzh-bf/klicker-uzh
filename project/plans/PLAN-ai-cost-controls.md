@@ -35,6 +35,20 @@ unavailable required capability.
 
 ### Refactor progress
 
+- The unified save is committed as `bda0ee03fe`; the accepted simplifier
+  correction is `5df4afe241`. The correction inlines the sole-use legacy model
+  normalizer and preserves its validation. Formatting and GraphQL typechecks
+  pass. Full precommit checks for the refactor also pass.
+- Integrated target `7a4648aa931dab207146dd06a54131581ab0a63c` without
+  conflicts to incorporate the target's chatbot creation-navigation fix for
+  the failing owner-preview test. Integrated verification passes 231 regression
+  tests, 13 scoped tasks, formatting, and all 26 production build tasks. Host
+  checks pass 54 launcher/cache tests and 71 identity/CI tests. Container-only
+  precommit checks pass; host-dependent checks run on the host. This target
+  refresh is a deliberate readiness pass, not ongoing freshness work.
+- Delivery is pending browser save/reload verification. Final review and
+  publication of the refactor wait for that acceptance check; earlier final
+  reviews and published CI do not cover the refactor.
 - Baseline `fabf3673a0` is clean, synchronized with its upstream, and mergeable
   against live PR target `v3-ai`. Remote refresh succeeded. Implementation is
   complete. GraphQL generation, focused backend and frontend typechecks, and
