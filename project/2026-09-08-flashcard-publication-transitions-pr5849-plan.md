@@ -196,3 +196,13 @@ wiring; no source correction was required. Runtime rs-flashcard-publication-tran
 is Stopped in Devsy, matched to this exact source path; devrouter reports zero
 routes. The installed provider is Devsy, so its workspace list/status replaces
 the unavailable legacy devpod CLI. Final review and draft publication remain.
+
+### Draft delivery — 2026-09-09
+
+[PR #5849 — incomplete flashcard publication transitions](https://github.com/uzh-bf/klicker-uzh/pull/5849)
+is published as a draft targeting v3-ai. Native integrated final review passed
+without findings on c939ab348a..73b6d5608b. The final metadata update only
+records delivery and renames this plan; source verification remains applicable.
+All approved implementation and local verification steps are complete. Hosted
+CI and human review remain merge gates. No ready conversion, merge, deployment
+or runtime/data deletion occurred. The wider lifecycle roadmap remains partial.
