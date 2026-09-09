@@ -1,0 +1,76 @@
+{
+  "manifest_version": "2",
+  "fixture_status": "synthetic_only",
+  "rights_policy": {
+    "basis": "original synthetic teaching material authored for this prototype",
+    "reproduction": "no external content copied",
+    "selection": "user approved synthetic material only"
+  },
+  "sources": [
+    {
+      "id": "synthetic-structure-display",
+      "title": "Synthetic structure-display exercise",
+      "path": "sources/structure-display-exercise.md",
+      "version": "1",
+      "source_type": "synthetic_teaching_note",
+      "binding_status": "local_synthetic_mcp_verified",
+      "software_accuracy_validated": false
+    },
+    {
+      "id": "synthetic-alignment",
+      "title": "Synthetic alignment and paper-reading exercise",
+      "path": "sources/alignment-exercise.md",
+      "version": "1",
+      "source_type": "synthetic_teaching_note",
+      "binding_status": "local_synthetic_mcp_verified",
+      "software_accuracy_validated": false
+    },
+    {
+      "id": "synthetic-kinetics",
+      "title": "Synthetic plot-reading exercise",
+      "path": "sources/kinetics-exercise.md",
+      "version": "1",
+      "source_type": "synthetic_teaching_note",
+      "binding_status": "local_synthetic_mcp_verified",
+      "software_accuracy_validated": false
+    }
+  ],
+  "deferred_external_references": [
+    {
+      "id": "pymol-command-reference",
+      "title": "PyMOL Command Reference",
+      "publisher": "PyMOL",
+      "edition_or_version": "reference version unspecified",
+      "url": "https://pymol.org/pymol-command-ref.html",
+      "locator": ["#select", "#show"],
+      "pointer_type": "external_url",
+      "checked_on": "2026-09-09",
+      "rights_status": "external-link-only; staff approval pending",
+      "selected_purpose": "selection and display guidance"
+    },
+    {
+      "id": "clc-main-workbench-26-sequence-alignment",
+      "title": "QIAGEN CLC Main Workbench manual",
+      "publisher": "QIAGEN Bioinformatics",
+      "edition_or_version": "26.0",
+      "url": "https://resources.qiagenbioinformatics.com/manuals/clcmainworkbench/2600/index.php?manual=Sequence_alignment.html",
+      "locator": "Sequence_alignment.html",
+      "pointer_type": "external_url",
+      "checked_on": "2026-09-09",
+      "rights_status": "external-link-only; staff approval pending",
+      "selected_purpose": "sequence-alignment workflow guidance"
+    },
+    {
+      "id": "graphpad-prism-enzyme-kinetics",
+      "title": "GraphPad Prism enzyme-kinetics example",
+      "publisher": "GraphPad",
+      "edition_or_version": "Prism 11 from the page heading; URL is mutable latest",
+      "url": "https://www.graphpad.com/guides/prism/latest/curve-fitting/reg_example_enzyme_kinetics.htm",
+      "locator": "page heading: Prism 11; enzyme-kinetics example",
+      "pointer_type": "external_url",
+      "checked_on": "2026-09-09",
+      "rights_status": "external-link-only; staff approval pending",
+      "selected_purpose": "curve-fitting workflow orientation"
+    }
+  ]
+}

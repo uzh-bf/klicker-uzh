@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic structure-display teaching schematic</title>
+  <desc id="desc">A fictional vector diagram for a structure-display teaching case. Distances are not to scale. This is not a real structure or a screenshot.</desc>
+  <rect width="900" height="470" fill="#f7fafc"/>
+  <rect x="28" y="26" width="844" height="418" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="58" y="68" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#0f172a">Synthetic structure-display schematic</text>
+  <text x="58" y="96" font-family="Arial, sans-serif" font-size="16" fill="#475569">Teaching fixture: representation only; distances are not to scale.</text>
+
+  <path d="M110 276 C155 170 205 170 245 276 S335 382 380 276 S470 170 515 276 S605 382 650 276 S740 170 790 276" fill="none" stroke="#2563eb" stroke-width="27" stroke-linecap="round"/>
+  <path d="M110 276 C155 170 205 170 245 276 S335 382 380 276 S470 170 515 276 S605 382 650 276 S740 170 790 276" fill="none" stroke="#bfdbfe" stroke-width="7" stroke-linecap="round"/>
+
+  <path d="M432 228 C455 190 481 196 505 235 S548 314 575 276" fill="none" stroke="#f97316" stroke-width="34" stroke-linecap="round"/>
+  <path d="M432 228 C455 190 481 196 505 235 S548 314 575 276" fill="none" stroke="#fed7aa" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="455" cy="204" r="13" fill="#ea580c" stroke="#7c2d12" stroke-width="3"/>
+  <circle cx="505" cy="235" r="13" fill="#ea580c" stroke="#7c2d12" stroke-width="3"/>
+  <circle cx="548" cy="313" r="13" fill="#ea580c" stroke="#7c2d12" stroke-width="3"/>
+  <text x="494" y="165" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#9a3412">S3</text>
+  <line x1="500" y1="174" x2="500" y2="195" stroke="#9a3412" stroke-width="2"/>
+
+  <rect x="78" y="352" width="292" height="58" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <line x1="100" y1="381" x2="145" y2="381" stroke="#2563eb" stroke-width="12" stroke-linecap="round"/>
+  <text x="160" y="387" font-family="Arial, sans-serif" font-size="16" fill="#1e3a8a">synthetic backbone</text>
+  <rect x="410" y="352" width="362" height="58" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <circle cx="438" cy="381" r="9" fill="#ea580c" stroke="#7c2d12" stroke-width="2"/>
+  <text x="458" y="387" font-family="Arial, sans-serif" font-size="16" fill="#9a3412">selected display markers in S3</text>
+
+  <text x="58" y="432" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Fictional teaching diagram — not a screenshot, real protein, contact map, or functional evidence.</text>
+</svg>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500" viewBox="0 0 900 500" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic sequence-alignment teaching schematic</title>
+  <desc id="desc">A fictional alignment-grid vector diagram with made-up symbol rows and a compact neutral teaching caption. This is not a real alignment or screenshot.</desc>
+  <rect width="900" height="500" fill="#f8fafc"/>
+  <rect x="28" y="24" width="844" height="452" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="56" y="62" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Synthetic alignment schematic</text>
+  <text x="56" y="88" font-family="Arial, sans-serif" font-size="15" fill="#475569">Made-up symbol rows for teaching; the figure is not a sequence record or screenshot.</text>
+
+  <text x="160" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">1</text>
+  <text x="220" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">2</text>
+  <text x="280" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">3</text>
+  <text x="340" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">4</text>
+  <text x="400" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">5</text>
+  <text x="460" y="125" font-family="Arial, sans-serif" font-size="14" fill="#64748b">6</text>
+  <text x="76" y="164" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#334155">S1</text>
+  <text x="76" y="224" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#334155">S2</text>
+  <text x="76" y="284" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#334155">Ref</text>
+
+  <g stroke="#cbd5e1" stroke-width="1">
+    <rect x="140" y="136" width="60" height="45" fill="#dbeafe"/><rect x="200" y="136" width="60" height="45" fill="#dbeafe"/><rect x="260" y="136" width="60" height="45" fill="#dbeafe"/><rect x="320" y="136" width="60" height="45" fill="#dbeafe"/><rect x="380" y="136" width="60" height="45" fill="#f1f5f9"/><rect x="440" y="136" width="60" height="45" fill="#dbeafe"/>
+    <rect x="140" y="196" width="60" height="45" fill="#dbeafe"/><rect x="200" y="196" width="60" height="45" fill="#dbeafe"/><rect x="260" y="196" width="60" height="45" fill="#f1f5f9"/><rect x="320" y="196" width="60" height="45" fill="#dbeafe"/><rect x="380" y="196" width="60" height="45" fill="#dbeafe"/><rect x="440" y="196" width="60" height="45" fill="#dbeafe"/>
+    <rect x="140" y="256" width="60" height="45" fill="#dbeafe"/><rect x="200" y="256" width="60" height="45" fill="#dbeafe"/><rect x="260" y="256" width="60" height="45" fill="#dbeafe"/><rect x="320" y="256" width="60" height="45" fill="#dbeafe"/><rect x="380" y="256" width="60" height="45" fill="#dbeafe"/><rect x="440" y="256" width="60" height="45" fill="#dbeafe"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="#0f172a">
+    <text x="170" y="166">A</text><text x="230" y="166">C</text><text x="290" y="166">G</text><text x="350" y="166">T</text><text x="410" y="166">-</text><text x="470" y="166">G</text>
+    <text x="170" y="226">A</text><text x="230" y="226">C</text><text x="290" y="226">-</text><text x="350" y="226">T</text><text x="410" y="226">T</text><text x="470" y="226">G</text>
+    <text x="170" y="286">A</text><text x="230" y="286">C</text><text x="290" y="286">G</text><text x="350" y="286">T</text><text x="410" y="286">A</text><text x="470" y="286">G</text>
+  </g>
+
+  <rect x="56" y="344" width="764" height="82" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="76" y="375" font-family="Arial, sans-serif" font-size="15" fill="#475569">Fictional caption:</text>
+  <text x="76" y="399" font-family="Arial, sans-serif" font-size="14" fill="#334155">This is a teaching schematic; any paper claim is supplied separately.</text>
+  <text x="76" y="419" font-family="Arial, sans-serif" font-size="14" fill="#334155">It is not a sequence record or a scientific result.</text>
+  <text x="56" y="460" font-family="Arial, sans-serif" font-size="14" fill="#64748b">Fictional teaching diagram — not a screenshot, real alignment, or scientific evidence.</text>
+</svg>
