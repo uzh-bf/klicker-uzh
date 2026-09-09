@@ -53,6 +53,39 @@ neither Node nor pnpm.
 - **Public ARM64 performance evidence**: The first eight-way run after rollout (`33246023106`, 2026-08-29) scheduled all eight shards simultaneously on distinct `public-pr-arm64-01` through `-08` runners. The restore-only build took 3m59s instead of the prior 7m43s cache-writing build. Shard jobs ranged from 14m30s to 21m24s; the remaining floor was spec structure, led by the 846-second serial live-quiz file. Job summaries report the prepare, build, and shard runner names, while the hosted status job records the selected route and dependency results. GitHub's own step timestamps remain the source for phase duration.
 - **Closed PR execution**: Closing or merging a PR starts a checkout-free GitHub-hosted no-op in that PR's existing execution concurrency group. It cancels obsolete Playwright execution without an Actions write token. The close event does not start preparation, builds, shards, status reporting, or telemetry. Push verification uses a branch-ref key and remains independent. Cancellation is asynchronous; verify actual job termination before counting capacity as recovered. Reopening a PR resumes the normal execution path.
 - **Playwright selector shadow**: The hosted-only preparation step observes open pull-request lifecycle transitions, including conversion back to draft. It checks out trusted `v3` policy code separately from the candidate checkout, treats the candidate as data, computes the exact base-to-head merge-base diff, and uploads a values-free plan artifact. Draft plans propose a selected spec set and one to four timing-balanced shards; ready plans always propose the full eight-shard suite. The existing full execution remains authoritative until the selector has at least ten representative draft comparisons with no unexplained misses. Documentation-only paths may skip in draft mode; unknown, global, malformed, or unavailable inputs fail closed to the full suite. This shadow plan never requests the public runner group.
+
+  Qualify selection against retained results from the same completed full run,
+  not a successful aggregate status alone. Preserve the original canonical and
+  shadow JSON plans and all eight JUnit reports before artifact expiration.
+  Record the repository, PR, actual event draft state, head, base, merge-base,
+  trusted-control revision, run attempt and artifact identities separately.
+  The canonical plan's effective ready-state label is not the event's draft
+  state. Operator-collected metadata is evidence provenance, not a cryptographic
+  attestation of arbitrary local files.
+
+  Keep `v3` and `v3-ai` cohorts separate. Reruns of the same PR head count once;
+  full-fallback and skip controls do not count toward ten selective comparisons.
+  Cancelled, partial, expired or mismatched results cannot qualify. A failed test
+  outside the proposed subset is a missed failure, not a report to discard.
+  Specifications with only skipped tests provide no execution proof. Preserve
+  representative feature, specification and shared-change coverage, and report
+  documentation, new/deleted specification and unknown-change controls separately.
+  Qualification never changes a repository variable or enables the canary.
+
+  Run `python .github/scripts/playwright-shadow-qualification.py <manifest.json>`
+  against an operator-acquired manifest. Its `schemaVersion: 1` contains `entries`.
+  Each entry supplies `event` (the identity fields above), `fullRun` (`runId`,
+  `runAttempt`, `mode: full`, `completed: true`), a change `category`, and ten
+  `artifacts`: one `canonical-plan`, one `shadow-plan`, and eight `junit` entries.
+  Artifact descriptors supply positive numeric `artifactId`, `runId` and
+  `runAttempt`, `expired: false`, and a relative `path` beneath the manifest
+  directory; JUnit descriptors also supply `shardIndex`. Use original producer
+  JSON and XML, not rewritten normalized artifacts. The event's exact field names
+  and synthetic examples live in `test_playwright_shadow_qualification.py`.
+  The command returns per-entry dispositions and separate repository/base cohorts.
+  Exit zero means evaluation completed, not that any cohort qualified; inspect
+  each cohort's `qualified` field. Invalid top-level input exits two.
+
 - **Organization ARM64 pool provisioning**: `util/provision-hetzner-arm64-runner.sh` provisions a fresh or explicitly reset ARM64 VM as either `public-pr-arm64-01` through `-08` or `trusted-arm64-01` through `-04`. A VM may host several isolated runner directories and services while sharing Docker and disk cleanup. `util/provision-public-pr-arm64-pool.sh` runs from an administrator host and provisions runners `01` through `04` on one fresh 16-vCPU, 32-GB VM and `05` through `08` on another. It verifies both remote platforms, pins and verifies the remote provisioner, keeps the short-lived GitHub token out of command arguments and files, proves `runner-admin` SSH before root login is disabled, and verifies every service. The matching runner groups must exist before provisioning and must use selected-repository access. The provisioner deliberately does not enforce GitHub's optional workflow allowlist, so the groups and runners can be created before their final reusable workflows exist. The public group may select only public repositories, while the trusted group may select only private repositories. Before enabling public rollout, restrict the public group to `uzh-bf/klicker-uzh` and the exact `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3` workflow. Configure trusted repository and workflow restrictions after its workflow exists; neither policy change requires runner reprovisioning. Pool assignment is immutable after provisioning because a persistent runner may retain job data. Every apply downloads the pinned runner archive, verifies its checksum, and compares an existing installation against every packaged file before reuse. The short-lived registration token enters `config.sh` through its supported environment input rather than process arguments. `util/reset-hetzner-arm64-runner-host.sh` supports the one-time conversion of the five dedicated, local-disk hosts created by the earlier Klicker-specific provisioner. It removes runner credentials, work data, the runner account, Docker packages, and all local Docker data while preserving `runner-admin`, SSH hardening, SSH keys, UFW, and OS updates. It is not compromise recovery or secure disk erasure: never use it after untrusted execution or suspected compromise, and never prepare a public-PR host if it has received repository, organization, environment, or external secrets, private data, or private source. Those cases require VM replacement. Public PR services are reachable only inside each job's Docker network, and each Playwright shard uses a run-specific Hatchet volume. The provisioner enables UFW with deny-by-default inbound traffic and OpenSSH as the only inbound allowance. Threshold cleanup removes unused Docker volumes as well as old containers, images, and builder data. Use the VM's local NVMe storage initially and add a protected volume only after monitoring shows sustained disk pressure.
 - **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
 - **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.

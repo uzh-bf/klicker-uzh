@@ -191,13 +191,31 @@ Scoped formatting, diff inspection and secret scanning pass. Slice review is
 done with no findings; simplification removes three redundant test fields and
 assertions. Integrated final review completed; producing-run evidence resolves
 the banner concern, and the cumulative stderr field is explicitly labelled.
-The lower layer is published at88fc9b3258; its exact-head CI is in progress.
-The upper offline qualifier is being implemented separately. The configured Husky
+The lower layer is published at `99e3883238`; executable behavior is unchanged
+from `88fc9b3258`. Its static checks pass. Its exact-head hosted Playwright run
+34333572968 passed seven shards and failed one unchanged Chat streaming-scroll
+assertion on both attempts (533/532 pixels from the expected bottom). The final
+status correctly failed. No blind retry or application change is made here.
+The upper offline qualifier is implemented and wired into the existing Python
+CI checks. Main took over its artifact/provenance integration after the worker's
+initial fixture used a different shape from the real producer; no replacement
+worker was started. Ten qualifier tests and eleven existing timing tests pass.
+The evaluator independently reconciles retained run34321312168: 1050 tests,
+two failures, zero errors, twelve skipped, no missed failure, full-fallback
+control on v3-ai. It does not qualify selective execution. Review is pending.
+The configured Husky
 entrypoint is absent in this worktree; full monorepo build/check hooks are not
 claimed. No hook configuration was changed or bypass flag used.
-No merge, rollout or runner change is performed.
+No merge, rollout or runner change is performed. The separate Devrouter owner
+reports [draft recovery PR67](https://github.com/rschlaefli/devrouter/pull/67)
+at `75b082d`, with 1300 unit tests, clean packed synthetic qualification and
+Linux CI passing.
+This is source evidence only: no release, install or consumer runtime change
+has occurred. Missing stop-baseline repair remains separate; retain runtime data.
 The existing `collect-smart-draft-qualification-evidence` hourly automation is
-active; its completed one-time post-merge observation has been removed. Its evidence and
+paused. The sole PR watcher completed and its handle is gone, but the automation
+approval check rejected reactivation on an overlapping-watcher concern. Do not
+bypass it or create a duplicate monitor. Its evidence and
 cursor live in the old scheduling worktree's ignored
 `project/_local/evidence/2026-09-08-goal-audit/`; do not replace or duplicate it.
 
