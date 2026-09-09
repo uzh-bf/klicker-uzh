@@ -109,11 +109,17 @@ Validate the release on staging with synthetic DE/EN direct and LTI entry plus t
 
 ## Progress
 
-Execution approved on 2026-09-09. Source worktree remains at the current v3 baseline; no application edits yet. The production Docker builder/prune stage completed in an isolated source archive. An isolated pruned-install diagnostic is running on the existing bridge network; full browser verification remains blocked by Docker address-pool exhaustion. No managed source runtime exists and no source routes are registered.
+Execution approved on 2026-09-09. The plan and source slice are committed on rs/translation-context-fix. Source commit: 11dbb6de92a27eb2f1c6cde68bc9999edd1d183b. The root-cause note is committed separately as 4ae89d0c0e; the branch is three commits ahead of origin/v3 and zero behind. No PR exists yet.
 
-Main owns reproduction, dependency choice, the approved JWT redirect extension, and integration. The account-coverage task owns registration/post-launch Playwright and its CI package in `rs/account-creation-production-e2e`; coordinate rather than duplicate those files. This source package retains its translation-boundary smoke and six-app acceptance. A read-only explorer owns the network-capacity inventory. No network deletion, reconfiguration, production action or publishing has occurred.
+The production-pruned baseline reproduces account-page 500. Aligning existing Babel and i18n Next/React peer resolutions fixes that page while its original hook remains. The minimized lockfile passes frozen pruned installation. The source also removes the unused username hook and preserves a single JWT through the course redirect. Direct EN/DE final PWA SSR and three actual HTTP redirect cases pass.
 
-Next: record pruned installer topology, reproduce the shared-hook failure, and select the resolution correction. Remaining gates: production baseline/candidate proof, synthetic browser matrix, configured slice and final reviews, repository checks, and actual draft PR CI. Planning review remains valid; the approved redirect extension will receive the authentication/redirect lens in source review.
+All six local production runner builds pass: PWA, Assessment, Manage, Control, Auth and Chat. Anonymous entry probes pass with networking disabled; Assessment retains its intended account-page redirect. Final PWA DE desktop and EN mobile screenshots show the styled form; inputs and disclosures respond without uncaught browser errors. Account registration, profile continuation and the full shared-consumer matrix are not yet proven. Browser and probe runtimes are stopped.
+
+Main owns dependency correction, source checks, six-app receipts and integration. The harness worker was stopped after the narrowed assignment produced no artifacts. Main now owns the translation regression harness and CI files; both production fixture builds and EN/DE translated SSR probes pass. Restoring the original dependency graph with the hook removal retained reproduces the missing-context 500. The account-coverage task retains registration and synthetic post-launch tests. Its isolated services remain blocked by Docker address-pool capacity. Exact unused-network cleanup was requested separately; no network cleanup is authorized or performed yet.
+
+The native simplifier completed with no recommended reduction. The source slice risk review remains active.
+
+Remaining gates: synthetic authenticated and iframe flows; complete shared-consumer coverage; completion of the active slice review, then integrated final review after full acceptance; repository checks; and draft PR CI. Evidence is in [implementation receipts](_local/translation-context/implementation-evidence.md). Delivery remains pending, with merge and deployment outside current authority.
 
 ### Review provenance
 
