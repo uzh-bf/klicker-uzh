@@ -19,7 +19,7 @@ import {
 import { productionSpecs } from './playwright-shards.ts'
 
 const repositoryRoot = path.join(import.meta.dirname, '../..')
-const nativeNode = '/Users/rschlae/.volta/tools/image/node/24.16.0/bin/node'
+const nativeNode = process.execPath
 const localGitEnvironmentVariables = execFileSync(
   'git',
   ['-C', repositoryRoot, 'rev-parse', '--local-env-vars'],
