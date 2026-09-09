@@ -41,6 +41,18 @@ unavailable required capability.
 
 ### Refactor progress
 
+- 2026-09-09: The user explicitly approved creating a separate synthetic local
+  chatbot for browser verification. Creation, disclaimer save/reload (revision
+  1), and credit save/reload (revision 2; initial 3, weekly reset 2, maximum 8)
+  pass in Browser on the removal commit. The test draft remains available for
+  user testing; Benibot's pending revision 14 is unchanged. This resolves the
+  fixture-approval and save/reload blocker recorded below. The removal risk
+  review found no blocking defect. Its reported removal counts were transposed;
+  the verified diff removes 15 schema fields and 14 operation files. The
+  simplifier suggested combining overlapping disclaimer tests; this optional
+  test-suite cleanup is deferred because existing migrated coverage is retained.
+  Complete integrated final review is running through the user-approved GLM
+  fallback before publication. Runtime retention remains explicitly authorized.
 - Removed all 15 obsolete save/publication mutation fields, their client
   operations, and service wrappers following the user's no-compatibility
   instruction. Migrated regression and browser callers to the unified save
