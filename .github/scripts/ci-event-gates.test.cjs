@@ -36,11 +36,6 @@ test('trusted review policy admits only lifecycle events and exact PR commands',
   const workflow = readWorkflow('check-ocr-final-review.yml')
   const gate = workflow.jobs.trusted_policy.if
 
-  assert.match(gate, /github\.event_name == 'pull_request_target'/)
-  assert.match(gate, /github\.event\.issue\.pull_request != null/)
-  assert.match(gate, /github\.event\.comment\.body == '\/final-review'/)
-  assert.match(gate, /github\.event\.comment\.body == '\/final-review-stack'/)
-
   const allowed = [
     { name: 'pull_request_target' },
     {
