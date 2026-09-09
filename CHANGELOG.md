@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.74...v3.4.0-alpha.75) (2026-09-09)
+
+### Bug Fixes
+
+- Restore the shared translation context in production account forms and other frontend consumers ([#5854](https://github.com/uzh-bf/klicker-uzh/pull/5854)).
+- Show retrieved Chat chunks with stable citations and distinguish sources cited in an answer from retrieved material ([#5831](https://github.com/uzh-bf/klicker-uzh/pull/5831), [#5842](https://github.com/uzh-bf/klicker-uzh/pull/5842)).
+- Make focused activity tests repeatable, isolate host and container dependencies, and restore deterministic CI fixtures ([#5835](https://github.com/uzh-bf/klicker-uzh/pull/5835), [#5821](https://github.com/uzh-bf/klicker-uzh/pull/5821), [#5829](https://github.com/uzh-bf/klicker-uzh/pull/5829)).
+- Align the CI planner with Devrouter 0.0.59 ([#5834](https://github.com/uzh-bf/klicker-uzh/pull/5834)).
+
+### Enhancements
+
+- Improve Chat tracing and use repository-owned prompt templates. Production telemetry remains disabled ([#5761](https://github.com/uzh-bf/klicker-uzh/pull/5761)).
+
+### Deployment
+
+- Adjust resource requests and replica pools. These configuration changes are already applied in production with the previous application images ([#5840](https://github.com/uzh-bf/klicker-uzh/pull/5840), [#5841](https://github.com/uzh-bf/klicker-uzh/pull/5841)).
+
 ## [3.4.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.73...v3.4.0-alpha.74) (2026-09-07)
 
 
