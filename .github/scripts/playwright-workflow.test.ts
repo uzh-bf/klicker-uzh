@@ -1,19 +1,19 @@
-const assert = require('node:assert/strict')
-const { execFileSync } = require('node:child_process')
-const fs = require('node:fs')
-const os = require('node:os')
-const path = require('node:path')
-const test = require('node:test')
-const YAML = require('yaml')
+import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import test from 'node:test'
+import YAML from 'yaml'
 
-const {
+import {
   EXPECTED_CALL,
   validateCallerLifecycle,
   validatePublicPlaywrightWorkflow,
-} = require('./validate-public-playwright-workflow.cjs')
+} from './playwright-workflow.ts'
 
 test('the current public workflow satisfies the runner trust boundary', () => {
-  const root = path.join(__dirname, '../..')
+  const root = path.join(import.meta.dirname, '../..')
   const result = validatePublicPlaywrightWorkflow(root)
 
   assert.equal(result.ok, true, result.issues.join('\n'))
@@ -58,7 +58,7 @@ test('the current public workflow satisfies the runner trust boundary', () => {
 test('the reusable envelope owns lifecycle routing and selector shadow planning', () => {
   const workflow = fs.readFileSync(
     path.join(
-      path.join(__dirname, '../..'),
+      path.join(import.meta.dirname, '../..'),
       '.github/workflows/test-playwright.yml'
     ),
     'utf8'
@@ -85,18 +85,37 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
 
 test('lifecycle policy rejects cancellation outside the exact closed-PR boundary', () => {
   const source = fs.readFileSync(
-    path.join(__dirname, '../workflows/test-playwright.yml'),
+    path.join(import.meta.dirname, '../workflows/test-playwright.yml'),
     'utf8'
   )
-  const mutations = {
+  type MutableJob = {
+    concurrency: { group?: string; 'cancel-in-progress'?: boolean } | string
+    if?: string
+    permissions?: Record<string, string>
+    steps?: { uses?: string }[]
+    'runs-on'?: string | string[]
+    needs?: string
+  }
+  type MutableWorkflow = {
+    jobs: Record<string, MutableJob>
+    concurrency?: string
+  }
+  const mutations: Record<string, (w: MutableWorkflow) => void> = {
     'wrong close key': (w) => {
-      w.jobs['cancel-closed-pr'].concurrency.group = 'other'
+      ;(w.jobs['cancel-closed-pr'].concurrency as { group: string }).group =
+        'other'
     },
     'wrong execution key': (w) => {
-      w.jobs['test-playwright-execution'].concurrency.group = 'other'
+      ;(
+        w.jobs['test-playwright-execution'].concurrency as { group: string }
+      ).group = 'other'
     },
     'missing cancellation': (w) => {
-      w.jobs['cancel-closed-pr'].concurrency['cancel-in-progress'] = false
+      ;(
+        w.jobs['cancel-closed-pr'].concurrency as {
+          'cancel-in-progress': boolean
+        }
+      )['cancel-in-progress'] = false
     },
     'workflow concurrency': (w) => {
       w.concurrency = 'other'
@@ -158,11 +177,14 @@ test('missing policy files produce actionable validator issues', (t) => {
 test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
   const workflow = YAML.parse(
     fs.readFileSync(
-      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      path.join(
+        import.meta.dirname,
+        '../workflows/public-pr-playwright-shards.yml'
+      ),
       'utf8'
     )
   )
-  const fetchStep = workflow.jobs.prepare.steps.find((step) =>
+  const fetchStep = workflow.jobs.prepare.steps.find((step: { run?: string }) =>
     step.run?.includes('git -C .candidate fetch')
   )
   const fetchCommand = fetchStep.run
@@ -179,7 +201,7 @@ test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
     GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
     GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
   })
-  const git = (...args) =>
+  const git = (...args: string[]) =>
     execFileSync('git', args, {
       cwd: root,
       env,

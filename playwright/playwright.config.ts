@@ -4,6 +4,12 @@ import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs
 assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
+const isProduction = process.env.KLICKER_PLAYWRIGHT_PRODUCTION === '1'
+const productionSpecs = [
+  '**/A-account-production.spec.ts',
+  '**/A-account-registration.spec.ts',
+  '**/A-account-lti.spec.ts',
+]
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -13,7 +19,8 @@ const baseURL =
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: '**/*.spec.ts',
+  testMatch: isProduction ? productionSpecs : '**/*.spec.ts',
+  testIgnore: !isCI && !isProduction ? productionSpecs : [],
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,

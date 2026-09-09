@@ -39,6 +39,7 @@ managedRuntime:
   services:
     allowed:
       - hatchet
+      - mailhog
       - postgres
       - redis_assessment
       - redis_cache

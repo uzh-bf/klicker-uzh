@@ -990,3 +990,107 @@ test('Volta-routed pnpm commands retain the lowercase dependency guard', () => {
     )
   )
 })
+
+test('production mode is explicit and requires the account service union', () => {
+  assert.equal(
+    parseLocalOptions(['--production', '--project=chromium']).production,
+    true
+  )
+  assert.equal(
+    parseLocalOptions(['--production', '--runtime-profile=email,pwa,manage'])
+      .production,
+    true
+  )
+  assert.throws(() => parseLocalOptions(['--production', '--production']))
+  assert.throws(() =>
+    parseLocalOptions(['--production', '--runtime-profile=chat'])
+  )
+  assert.throws(() => parseLocalOptions(['--production', '--show-report']))
+})
+
+test('production reconciliation carries source identity, exact profile and local mail endpoint', (t) => {
+  const harness = createLauncherHarness()
+  const root = mkdtempSync(join(tmpdir(), 'account-launcher-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const selectionPath = join(
+    root,
+    '.devcontainer/.runtime/account-production.json'
+  )
+  let selectionDuringEnsure
+  const originalRunner = harness.dependencies.commandRunner
+  harness.dependencies.root = root
+  harness.dependencies.commandRunner = (command, args, options) => {
+    if (command === 'git' && args.at(-1) === 'HEAD') return 'a'.repeat(40)
+    if (command === 'git' && args.includes('ls-files')) return ''
+    if (command === '/synthetic/bin/devrouter' && args[0] === 'ensure') {
+      selectionDuringEnsure = JSON.parse(readFileSync(selectionPath))
+    }
+    return originalRunner(command, args, options)
+  }
+  runPlaywrightHost(
+    ['--production', '--list', '--project=chromium'],
+    harness.dependencies
+  )
+  assert.deepEqual(
+    harness.calls.find((call) => call.args[0] === 'ensure').args,
+    ['ensure', root, '--profile', 'manage,pwa,email']
+  )
+  assert.equal(existsSync(selectionPath), false)
+  const env = pnpmCalls(harness.calls).at(-1).options.env
+  assert.equal(env.KLICKER_PLAYWRIGHT_PRODUCTION, '1')
+  assert.equal(env.URL_MAILHOG, 'http://127.0.0.1:49153')
+  assert.equal(selectionDuringEnsure.sourceSha, 'a'.repeat(40))
+  assert.match(selectionDuringEnsure.sourceDigest, /^[a-f0-9]{64}$/)
+})
+
+test('production selection is cleaned after thrown startup and test failures', (t) => {
+  for (const failure of ['ensure', 'test']) {
+    const harness = createLauncherHarness()
+    const root = mkdtempSync(join(tmpdir(), `account-launcher-${failure}-`))
+    t.after(() => rmSync(root, { recursive: true, force: true }))
+    const selectionPath = join(
+      root,
+      '.devcontainer/.runtime/account-production.json'
+    )
+    let selectionDuringEnsure = false
+    const originalRunner = harness.dependencies.commandRunner
+    harness.dependencies.root = root
+    harness.dependencies.commandRunner = (command, args, options) => {
+      if (command === 'git' && args.at(-1) === 'HEAD') return 'a'.repeat(40)
+      if (command === 'git' && args.includes('ls-files')) return ''
+      if (command === '/synthetic/bin/devrouter' && args[0] === 'ensure') {
+        selectionDuringEnsure = existsSync(selectionPath)
+        if (failure === 'ensure') throw new Error('synthetic ensure failure')
+      }
+      if (failure === 'test' && command === 'pnpm' && args.includes('test')) {
+        throw new Error('synthetic test failure')
+      }
+      return originalRunner(command, args, options)
+    }
+
+    assert.throws(() =>
+      runPlaywrightHost(
+        ['--production', '--list', '--project=chromium'],
+        harness.dependencies
+      )
+    )
+    assert.equal(selectionDuringEnsure, true)
+    assert.equal(existsSync(selectionPath), false)
+  }
+})
+
+test('production print-env cleans its selection marker before returning', (t) => {
+  const harness = createLauncherHarness()
+  const root = mkdtempSync(join(tmpdir(), 'account-launcher-print-env-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  const selectionPath = join(
+    root,
+    '.devcontainer/.runtime/account-production.json'
+  )
+  harness.dependencies.root = root
+  runPlaywrightHost(
+    ['--production', '--print-env', '--project=chromium'],
+    harness.dependencies
+  )
+  assert.equal(existsSync(selectionPath), false)
+})

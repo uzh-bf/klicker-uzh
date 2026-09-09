@@ -157,6 +157,33 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
   done
 fi
 
+# Production account verification is an explicit checkout-local selection.
+PRODUCTION_SELECTION="$ROOT/.devcontainer/.runtime/account-production.json"
+if [ -f "$PRODUCTION_SELECTION" ]; then
+  node -e 'process.exit(process.env.DEVROUTER_PROFILE.split(",").sort().join(",") === "email,manage,pwa" ? 0 : 1)' || {
+    echo '[post-start] Production account runtime requires manage,pwa,email.' >&2
+    exit 1
+  }
+  export NODE_ENV=production
+  export EMAIL_HOST=mailhog EMAIL_PORT=1025 EMAIL_FROM=account-tests@example.invalid
+  unset EMAIL_USER EMAIL_PASS TEAMS_WEBHOOK_URL
+  export KLICKER_PRODUCTION_SOURCE_SHA
+  export KLICKER_PRODUCTION_SOURCE_DIGEST
+  KLICKER_PRODUCTION_SOURCE_SHA=$(node -e 'const s=require(process.argv[1]); if(!/^[a-f0-9]{40}$/.test(s.sourceSha))process.exit(1);process.stdout.write(s.sourceSha)' "$PRODUCTION_SELECTION")
+  KLICKER_PRODUCTION_SOURCE_DIGEST=$(node -e 'const s=require(process.argv[1]); if(!/^[a-f0-9]{64}$/.test(s.sourceDigest))process.exit(1);process.stdout.write(s.sourceDigest)' "$PRODUCTION_SELECTION")
+  export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},NODE_ENV,KLICKER_PRODUCTION_SOURCE_SHA,KLICKER_PRODUCTION_SOURCE_DIGEST,EMAIL_HOST,EMAIL_PORT,EMAIL_FROM"
+  "$DEVROUTER_PROCESS_HELPER" stop --name klicker-local-mcp >/dev/null 2>&1 || true
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-dev \
+    --match 'playwright-production.ts start' \
+    --log /tmp/account-production.log \
+    --prepare-command 'node util/playwright-production.ts build' \
+    -- node util/playwright-production.ts start
+  node util/playwright-production.ts verify
+  node util/playwright-production.ts ready
+  exit 0
+fi
+
 # The test seed connects Benibot's Tutor and Explainer modes to this local,
 # read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
 # selection drops it, stop the exact owned process instead of leaving it stale.

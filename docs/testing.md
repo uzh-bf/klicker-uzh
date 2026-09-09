@@ -168,6 +168,24 @@ the database. Individual specs still own their fixture writes and cleanup. Use t
 when the required baseline already exists, and never against real course data.
 Without these options, runtime selection and database setup remain unchanged.
 
+For participant account and synthetic LTI coverage against production Webpack
+artifacts, run `pnpm playwright:host -- --production --project=chromium`.
+This selects only the three account specs and the `manage,pwa,email` runtime.
+The launcher builds the real API/Auth/PWA/Manage applications, copies standalone
+assets, and verifies source and artifact identity before testing. SMTP stays in
+the checkout's MailHog service; its API uses a discovered random loopback port.
+The production test builder disables Matomo analytics explicitly.
+`KLICKER_MAILHOG_HOST_PORT` optionally fixes that port for local tooling.
+Ordinary local runs keep their development runtime. Stop the exact checkout
+with `devrouter stop <checkout-path>` after verification.
+
+The dedicated `Account production Playwright` workflow runs the same production
+builder and three specs in disposable CI services. It rejects incomplete,
+skipped, flaky, failed, or wrong-revision results. Staging promotion requires its
+successful exact-candidate push run and evidence artifact, in addition to the
+existing image-build requirements. The ordinary trusted shard selector excludes
+known production specs; candidate-only specs retain its conservative fallback.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
 |               | Playwright (`playwright/`)                                 |

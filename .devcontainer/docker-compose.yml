@@ -51,6 +51,8 @@ services:
   mailhog:
     image: mailhog/mailhog:latest
     networks: [default]
+    ports:
+      - '127.0.0.1:${KLICKER_MAILHOG_HOST_PORT:-0}:8025'
 
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
   # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose

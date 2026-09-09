@@ -8,6 +8,7 @@ name: Promote to stg
 on:
   workflow_run:
     workflows:
+      - 'Account production Playwright'
       - 'Build Docker image for analytics (stg)'
       - 'Build Docker image for auth (stg)'
       - 'Build Docker image for backend-docker (stg)'
