@@ -1,0 +1,7 @@
+mutation PrepareElementSpreadsheetUpload($filename: String!, $bytes: Int!) {
+  prepareElementSpreadsheetUpload(filename: $filename, bytes: $bytes) {
+    uploadURL
+    uploadCapability
+    artifactId
+  }
+}

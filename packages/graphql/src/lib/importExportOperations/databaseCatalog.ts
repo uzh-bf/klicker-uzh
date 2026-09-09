@@ -153,11 +153,11 @@ async function repositoryTriggerFunctionSources() {
       'utf8'
     )
     const functionPattern =
-      /CREATE FUNCTION "public"\."([^"]+)"\(\)\s+RETURNS TRIGGER\s+LANGUAGE plpgsql\s+AS \$\$(.*?)\$\$;/gs
+      /CREATE( OR REPLACE)? FUNCTION "public"\."([^"]+)"\(\)\s+RETURNS TRIGGER\s+LANGUAGE plpgsql\s+AS \$\$(.*?)\$\$;/gs
     for (const match of contents.matchAll(functionPattern)) {
-      const [, functionName, functionSource] = match
+      const [, replacement, functionName, functionSource] = match
       if (!functionName || typeof functionSource === 'undefined') continue
-      if (functionSources.has(functionName)) {
+      if (functionSources.has(functionName) && !replacement) {
         throw new ImportExportOperationError('MIGRATION_STATE_UNEXPECTED')
       }
       functionSources.set(functionName, normalizeSqlSource(functionSource))

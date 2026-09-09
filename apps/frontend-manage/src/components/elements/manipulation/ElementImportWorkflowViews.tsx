@@ -31,7 +31,11 @@ function ElementImportDropzone({
         'application/zip': ['.zip'],
         'application/x-zip-compressed': ['.zip'],
       }}
-      title={t('manage.elements.uploadElementsFile')}
+      title={t(
+        compact
+          ? 'manage.elements.elementImportReplaceFile'
+          : 'manage.elements.uploadElementsFile'
+      )}
       description={
         <>
           <p>{t('manage.elements.uploadElementsZipDescription')}</p>
@@ -49,13 +53,17 @@ function ElementImportDropzone({
       compact={compact}
       isUploading={isUploading}
       maxSize={ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES}
-      inputAriaLabel={t('manage.elements.uploadElementsFile')}
+      inputAriaLabel={t(
+        compact
+          ? 'manage.elements.elementImportReplaceFile'
+          : 'manage.elements.uploadElementsFile'
+      )}
       onDropAccepted={onDropAccepted}
       onDropRejected={onDropRejected}
       data={{ cy: 'element-import-dropzone' }}
       className={{
         root: compact
-          ? 'h-10 rounded-md border border-solid bg-white px-3 text-sm'
+          ? 'min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold'
           : 'min-h-40 rounded-md border border-solid bg-white px-4 py-6 text-sm',
         title: compact ? 'w-full truncate text-center' : undefined,
         description: 'text-slate-600',
@@ -91,7 +99,9 @@ export function ElementImportReviewView({
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <H4>{t('manage.elements.reviewElementsBeforeImport')}</H4>
+          <H4 className={{ root: 'font-semibold' }}>
+            {t('manage.elements.reviewElementsBeforeImport')}
+          </H4>
           {fileName ? (
             <div
               className="mt-1 truncate text-sm text-slate-600"
@@ -240,7 +250,9 @@ export function ElementImportUploadView({
       </div>
 
       <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
-        <H4>{t('manage.elements.reviewElementsBeforeImport')}</H4>
+        <H4 className={{ root: 'font-semibold' }}>
+          {t('manage.elements.reviewElementsBeforeImport')}
+        </H4>
         <UserNotification
           message={t('manage.elements.elementImportEmptyState')}
           className={{ root: 'text-sm' }}

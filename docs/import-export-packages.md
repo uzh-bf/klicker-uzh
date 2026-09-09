@@ -11,7 +11,7 @@ tags:
 
 # Element Import/Export Packages
 
-**Import/export duplicate detection is advisory, not authoritative.** The backend computes internal fingerprints for elements and answer collections to show duplicate warnings, but imports still create the selected elements and their required package dependencies. Users decide by selecting or deselecting preview rows.
+**ZIP import duplicate detection is advisory, not authoritative.** The backend computes internal fingerprints for elements and answer collections to show duplicate warnings, but ZIP imports still create the selected elements and their required package dependencies. Users decide by selecting or deselecting preview rows. [Fixed Excel imports](./element-spreadsheets.md) instead skip exact duplicates automatically and retain their report in the import receipt.
 
 ## Package format
 

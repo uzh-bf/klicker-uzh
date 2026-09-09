@@ -1,18 +1,18 @@
 import {
-  ElementData,
-  ElementInstance,
+  type ElementData,
+  type ElementInstance,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
-  InstanceStackStudentResponseType,
-  StackStudentResponseType,
+  type InstanceStackStudentResponseType,
+  type StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { Checkbox, FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
-import { ElementFormTypes } from './types'
+import type { ElementFormTypes } from './types'
 
 interface StudentElementPreviewWrapperProps {
   values: ElementData | ElementFormTypes
@@ -180,7 +180,7 @@ function StudentElementPreviewWrapper({
                       b: (text) => <b>{text}</b>,
                     })
               }
-              className={{ label: 'font-normal' }}
+              className={{ label: 'min-w-0 font-normal' }}
             />
           </div>
         )}

@@ -8,17 +8,17 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { ELEMENT_IMPORT_EXPORT_PACKAGE_MAX_BYTES } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { ErrorCode, type FileRejection } from 'react-dropzone'
 import { createElementImportReviewModel } from '~/lib/elementImportPreview'
 import {
+  type ElementImportWorkflowAction,
+  type ElementImportWorkflowState,
   elementImportWorkflowReducer,
   initialElementImportWorkflowState,
   isElementImportWorkflowBusy,
-  type ElementImportWorkflowAction,
-  type ElementImportWorkflowState,
 } from '~/lib/elementImportWorkflow'
 import {
   getImportExportErrorCode,
@@ -568,7 +568,13 @@ export function useElementImportWorkflow({
   const processing = workflowBusy || refreshing
   const nonDismissible = importing
   const packageWarnings =
-    review?.warnings.map((code) => translatePackageWarning(te, code)) ?? []
+    review?.warnings
+      // Review status is already explained in the review guidance.
+      .filter(
+        (code) =>
+          code !== ImportExportWarningCode.ImportStatusNormalizedToReview
+      )
+      .map((code) => translatePackageWarning(te, code)) ?? []
 
   const workflowStatus = (() => {
     switch (workflowState.phase) {
