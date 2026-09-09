@@ -4,7 +4,10 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    # ready_for_review is intentionally absent: this suite runs the same jobs
+    # for draft and ready PRs, and the transition fires on an unchanged head,
+    # so listing it would only re-run validation that already passed.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}

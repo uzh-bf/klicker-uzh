@@ -112,4 +112,16 @@ source delivery; merging and activation remain separate actions.
 - YAML and embedded-script syntax, focused Biome/Prettier formatting and diff
   checks pass. Full application build/typecheck hooks are not applicable to this
   CI-only package; they are not claimed as passing.
+- Ready-for-review churn: PR #5866 was marked ready at 19:13:48Z with an
+  unchanged head and every PR workflow re-fired. `test-graphql` had already
+  passed for real on the same SHA at 18:14Z because it has no draft gate, so
+  the ready run was a pure duplicate of the heavy Postgres/Hatchet suite.
+  Draft-gated workflows (unit, CodeQL, SonarCloud, staging builds) only start
+  at the transition by design. Fix: `test-graphql` and `test-intl-production`
+  no longer list `ready_for_review`, so their draft-era green runs stay
+  authoritative; a new `ci-event-gates` policy test fails any
+  `ready_for_review` trigger without a draft gate or documented lifecycle role
+  (Playwright plan recompute, final review handoff) and it flagged
+  `test-intl-production` immediately. Contract documented under PR gates in
+  `docs/ci-and-deployment.md`.
 - Simplifier, risk review, final review and draft PR remain pending.

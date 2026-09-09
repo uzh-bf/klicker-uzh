@@ -168,3 +168,63 @@ test('Playwright keeps closed PR cancellation separate and telemetry in status',
   assert.equal(telemetryUpload.with['if-no-files-found'], 'ignore')
   assert.match(metadataUpload.if, /!cancelled\(\)/)
 })
+
+// Marking a draft PR ready fires ready_for_review on the unchanged head SHA
+// and re-runs every workflow that lists it. That is only justified when the
+// draft boundary changes what the workflow executes: either jobs are gated on
+// the draft state (skipped while drafting, first real run at the transition),
+// or the workflow owns PR lifecycle handling. Workflows that execute
+// identically for draft and ready PRs must not list the type, or marking a
+// PR ready duplicates validation that already passed.
+const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
+  [
+    'test-playwright.yml',
+    'selector state and closed-PR cancellation follow the draft/ready lifecycle',
+  ],
+  [
+    'check-ocr-final-review.yml',
+    'final review ownership transfers from the draft review at the ready boundary',
+  ],
+])
+
+test('ready_for_review triggers only change execution at the draft boundary', () => {
+  const directory = path.join(root, '.github/workflows')
+  const unaccounted = []
+
+  for (const entry of fs.readdirSync(directory).sort()) {
+    if (!entry.endsWith('.yml')) continue
+    const workflow = YAML.parse(
+      fs.readFileSync(path.join(directory, entry), 'utf8')
+    )
+    const triggers = [
+      workflow.on?.pull_request,
+      workflow.on?.pull_request_target,
+    ]
+    const listsReadyForReview = triggers.some(
+      (trigger) =>
+        Array.isArray(trigger?.types) &&
+        trigger.types.includes('ready_for_review')
+    )
+    if (!listsReadyForReview) continue
+
+    const source = fs.readFileSync(path.join(directory, entry), 'utf8')
+    const draftGated = /pull_request\.draft == (?:true|false)/.test(source)
+    if (draftGated || READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS.has(entry)) continue
+    unaccounted.push(entry)
+  }
+
+  assert.deepEqual(
+    unaccounted,
+    [],
+    'Workflows trigger on ready_for_review without a draft-state gate or a documented lifecycle role, so marking a PR ready re-runs identical validation on an unchanged head. Either gate the jobs on github.event.pull_request.draft or remove ready_for_review from the trigger.'
+  )
+})
+
+test('graphql validation stays authoritative across the ready transition', () => {
+  const workflow = readWorkflow('test-graphql.yml')
+  assert.deepEqual(workflow.on.pull_request.types, [
+    'opened',
+    'synchronize',
+    'reopened',
+  ])
+})
