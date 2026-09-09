@@ -300,7 +300,7 @@ function DownloadModal({
       dataCloseButton={{ cy: 'close-element-download-modal' }}
       dataContent={{ cy: 'element-download-modal' }}
     >
-      <div className="flex max-h-[calc(100vh-8rem)] min-h-0 flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <UserNotification type="info" className={{ root: 'text-sm' }}>
           {t('manage.elements.exportElementsInfo')}
         </UserNotification>

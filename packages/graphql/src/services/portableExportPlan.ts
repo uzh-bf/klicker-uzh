@@ -191,7 +191,10 @@ function createPortableExportMediaInventory(
 
   const firstPartyByStorageIdentity = new Map<string, string[]>()
   const external: Array<{ href: string }> = []
-  for (const href of Array.from(autoLoadingHrefs).sort()) {
+  for (const href of Array.from(autoLoadingHrefs).sort((left, right) => {
+    if (left === right) return 0
+    return left < right ? -1 : 1
+  })) {
     const classification = classifyMediaHref(href)
     if (!classification) {
       external.push({ href })
