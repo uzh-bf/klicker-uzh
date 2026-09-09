@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { ImportExportWarningCode } from '../src/lib/importExportErrors.js'
 import { MAX_IMPORT_EXPORT_ELEMENTS } from '../src/lib/importExportPackageConfig.js'
 import {
@@ -24,6 +25,22 @@ describe('element import receipt orchestration boundaries', () => {
       prepareElementImportSelection([...refs, 'element-over-limit'])
     ).toThrowError(
       expect.objectContaining({ code: 'IMPORT_INVALID_SELECTION' })
+    )
+  })
+
+  it('preserves code-unit ordering and the persisted selection digest', () => {
+    const ordered = ['ref-A', 'ref-Z', 'ref_a', 'ref_a-1']
+    const result = prepareElementImportSelection([
+      'ref_a-1',
+      'ref-Z',
+      'ref_a',
+      'ref-A',
+      'ref-Z',
+    ])
+
+    expect(result.selectedElementRefs).toEqual(ordered)
+    expect(result.selectionDigest).toBe(
+      createHash('sha256').update(JSON.stringify(ordered)).digest('hex')
     )
   })
 
