@@ -189,3 +189,10 @@ checks pass all 40 typecheck tasks plus lint, Syncpack and policy checks;
 98 host validator/identity tests pass. All 26 builds pass. Test-only assertion
 refinements cover stale correlation clearing and explicit caller results.
 Public SDL and schemas remain unchanged. Reviews and publication are pending.
+
+Native simplifier and data-integrity slice reviewer both returned no findings
+on c939ab348a..cfc2a85011. Main verified the exact predicates, fields and caller
+wiring; no source correction was required. Runtime rs-flashcard-publication-transit
+is Stopped in Devsy, matched to this exact source path; devrouter reports zero
+routes. The installed provider is Devsy, so its workspace list/status replaces
+the unavailable legacy devpod CLI. Final review and draft publication remain.
