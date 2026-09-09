@@ -7,7 +7,7 @@
 {{- if and $chatTelemetry (hasKey $chatTelemetry "enabled") -}}
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
-{{- $langfuseRelease := .Values.chat.image.tag | default .Chart.AppVersion -}}
+{{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
 {{- with .Values.chat.podAnnotations -}}
 {{- $langfuseRelease = index . "rollout.klicker.uzh.ch/release" | default $langfuseRelease -}}
 {{- end -}}
