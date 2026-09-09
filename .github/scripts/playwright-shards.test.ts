@@ -1,26 +1,26 @@
-const assert = require('node:assert/strict')
-const fs = require('node:fs')
-const path = require('node:path')
-const test = require('node:test')
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
 
-const {
-  buildShardPlans,
+import {
   buildSelectedShardPlans,
+  buildShardPlans,
   canonicalProfile,
   parseProfileManifest,
   parseTimings,
-  productionSpecs,
   planShards,
+  productionSpecs,
   SELECTED_MAX_SHARDS,
   SELECTED_TARGET_SHARD_SECONDS,
   selectedDurationMap,
-} = require('./get-shard-files.js')
+} from './playwright-shards.ts'
 
-const repositoryRoot = path.join(__dirname, '../..')
+const repositoryRoot = path.join(import.meta.dirname, '../..')
 const testsDir = path.join(repositoryRoot, 'playwright/tests')
 const allFiles = fs
   .readdirSync(testsDir)
-  .filter((file) => file.endsWith('.spec.ts'))
+  .filter((file: string) => file.endsWith('.spec.ts'))
   .sort()
 const manifest = JSON.parse(
   fs.readFileSync(path.join(repositoryRoot, 'playwright/profiles.json'), 'utf8')
@@ -62,8 +62,8 @@ test('eight shard plans preserve every spec and emit canonical profiles', () => 
 
   assert.equal(plans.length, 8)
   assert.deepEqual(
-    plans.flatMap((plan) => plan.files).sort(),
-    allFiles.map((file) => `tests/${file}`).sort()
+    plans.flatMap((plan: { files: string[] }) => plan.files).sort(),
+    allFiles.map((file: string) => `tests/${file}`).sort()
   )
   for (const [index, plan] of plans.entries()) {
     assert.equal(plan.version, 1)
@@ -74,7 +74,9 @@ test('eight shard plans preserve every spec and emit canonical profiles', () => 
     assert.equal(
       plan.profile,
       canonicalProfile(
-        plan.files.map((file) => profiles.get(path.basename(file))).join(',')
+        plan.files
+          .map((file: string) => profiles.get(path.basename(file)))
+          .join(',')
       )
     )
   }
@@ -204,8 +206,8 @@ test('selected shard plans are deterministic, capped at four, and preserve exact
   assert.equal(first.length, SELECTED_MAX_SHARDS)
   assert.deepEqual(first, second)
   assert.deepEqual(
-    first.flatMap((plan) => plan.files).sort(),
-    selected.map((file) => `tests/${file}`).sort()
+    first.flatMap((plan: { files: string[] }) => plan.files).sort(),
+    selected.map((file: string) => `tests/${file}`).sort()
   )
   assert.ok(first.every((plan) => plan.files.length > 0))
 
@@ -256,7 +258,9 @@ test('production and ordinary lanes partition the complete inventory exactly onc
     timingsPath: path.join(repositoryRoot, 'playwright/timings.json'),
     profilesPath: path.join(repositoryRoot, 'playwright/profiles.json'),
     numShards: 8,
-  }).flatMap((plan) => plan.files.map((file) => path.basename(file)))
+  }).flatMap((plan: { files: string[] }) =>
+    plan.files.map((file: string) => path.basename(file))
+  )
   assert.deepEqual([...ordinary, ...production].sort(), allFiles)
   assert.equal(new Set([...ordinary, ...production]).size, allFiles.length)
   assert.throws(

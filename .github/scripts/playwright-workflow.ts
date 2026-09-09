@@ -1,16 +1,37 @@
-const fs = require('node:fs')
-const path = require('node:path')
-const YAML = require('yaml')
+import fs from 'node:fs'
+import path from 'node:path'
+import YAML from 'yaml'
+
+type WorkflowStep = { uses?: string; run?: string }
+type WorkflowJob = {
+  concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
+  if?: string
+  needs?: unknown
+  'runs-on'?: string
+  'timeout-minutes'?: number
+  permissions?: Record<string, string>
+  uses?: string
+  container?: unknown
+  services?: unknown
+  steps?: WorkflowStep[]
+}
+type Workflow = {
+  name?: string
+  on?: { pull_request?: { types?: string[] } }
+  concurrency?: unknown
+  jobs?: Record<string, WorkflowJob>
+}
 
 const EXECUTION_GROUP =
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub Actions expression contract
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
 const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
 const CLOSED_EVENT =
   "github.event_name == 'pull_request' && github.event.action == 'closed'"
 
-function validateCallerLifecycle(caller) {
-  const issues = []
+function validateCallerLifecycle(caller: Workflow) {
+  const issues: string[] = []
   const jobs = caller?.jobs ?? {}
   const execution = jobs['test-playwright-execution']
   const close = jobs['cancel-closed-pr']
@@ -70,36 +91,36 @@ const EXPECTED_BUILD_ACTION =
 const EXPECTED_SHARD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
 
-function readWorkflow(root, name, issues) {
+function readWorkflow(root: string, name: string, issues: string[]) {
   const relativePath = `.github/workflows/${name}`
   try {
     return fs.readFileSync(path.join(root, relativePath), 'utf8')
   } catch (error) {
     issues.push(
-      `could not read required workflow ${relativePath}: ${error.message}`
+      `could not read required workflow ${relativePath}: ${error instanceof Error ? error.message : String(error)}`
     )
     return ''
   }
 }
 
-function readAction(root, name, issues) {
+function readAction(root: string, name: string, issues: string[]) {
   const relativePath = `.github/actions/${name}/action.yml`
   try {
     return fs.readFileSync(path.join(root, relativePath), 'utf8')
   } catch (error) {
     issues.push(
-      `could not read required action ${relativePath}: ${error.message}`
+      `could not read required action ${relativePath}: ${error instanceof Error ? error.message : String(error)}`
     )
     return ''
   }
 }
 
-function namedSteps(text) {
+function namedSteps(text: string) {
   return text.split(/\n(?=\s+- name: )/)
 }
 
-function validatePublicPlaywrightWorkflow(root) {
-  const issues = []
+function validatePublicPlaywrightWorkflow(root: string) {
+  const issues: string[] = []
   const caller = readWorkflow(root, 'test-playwright.yml', issues)
   try {
     issues.push(...validateCallerLifecycle(YAML.parse(caller)))
@@ -116,6 +137,27 @@ function validatePublicPlaywrightWorkflow(root) {
     readAction(root, 'playwright-build', issues),
     readAction(root, 'playwright-shard', issues),
   ].join('\n')
+  // Planning and cache identity execute before dependency installation.
+  for (const source of [
+    publicWorkflow,
+    ...['playwright-build', 'playwright-shard'].map((name) =>
+      readAction(root, name, issues)
+    ),
+  ]) {
+    const steps = namedSteps(source)
+    const setup = steps.findIndex(
+      (step) =>
+        step.includes('uses: actions/setup-node@v4') &&
+        step.includes('node-version-file: .ci-control/package.json')
+    )
+    const tooling = steps.findIndex((step) =>
+      /node \.ci-control\/\.github\/scripts\/playwright-.*\.ts/.test(step)
+    )
+    if (setup < 0 || tooling < 0 || setup >= tooling)
+      issues.push(
+        'pre-install TypeScript tooling must follow trusted Node setup'
+      )
+  }
   const publicCacheRestoreSteps = namedSteps(publicActions).filter((step) =>
     step.includes('uses: actions/cache/restore@v4')
   )
@@ -215,8 +257,7 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('the trusted preparation job must run on GitHub-hosted Ubuntu')
   }
   if (
-    !publicWorkflow.includes('playwright-route.cjs') ||
-    !publicWorkflow.includes('playwright-plan-metadata.cjs') ||
+    !publicWorkflow.includes('playwright-plan.ts') ||
     !publicWorkflow.includes('playwright-execution-plan.json') ||
     !publicWorkflow.includes('fromJSON(needs.prepare.outputs.shard_matrix)')
   ) {
@@ -336,7 +377,7 @@ function validatePublicPlaywrightWorkflow(root) {
 }
 
 function main(argv = process.argv.slice(2)) {
-  const root = argv[0] ?? path.join(__dirname, '../..')
+  const root = argv[0] ?? path.join(import.meta.dirname, '../..')
   const result = validatePublicPlaywrightWorkflow(path.resolve(root))
   if (!result.ok) {
     for (const issue of result.issues) console.error(`ERROR: ${issue}`)
@@ -346,12 +387,12 @@ function main(argv = process.argv.slice(2)) {
   console.log('Public Playwright workflow policy passed')
 }
 
-if (require.main === module) main()
+if (import.meta.main) main()
 
-module.exports = {
-  validateCallerLifecycle,
+export {
   EXPECTED_BUILD_ACTION,
   EXPECTED_CALL,
   EXPECTED_SHARD_ACTION,
+  validateCallerLifecycle,
   validatePublicPlaywrightWorkflow,
 }

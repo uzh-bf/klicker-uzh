@@ -167,11 +167,11 @@ jobs:
         env:
           DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
       - name: Build production account applications
-        run: bash util/_with_local_test_origins.sh node util/production-standalone.mjs build
+        run: bash util/_with_local_test_origins.sh node util/playwright-production.ts build
       - name: Run production account journeys
-        run: bash util/_with_local_test_origins.sh bash .github/scripts/run-account-production.sh
+        run: bash util/_with_local_test_origins.sh node util/playwright-production.ts test
       - name: Verify complete production coverage
-        run: node .github/scripts/account-production-report.cjs account-production-inventory.json account-production-result.json account-production-specs.json account-production-receipt.json
+        run: node util/playwright-production.ts report account-production-inventory.json account-production-result.json account-production-specs.json account-production-receipt.json
       - name: Upload production evidence
         uses: actions/upload-artifact@v4
         with:

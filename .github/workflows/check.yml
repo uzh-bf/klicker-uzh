@@ -62,9 +62,6 @@ jobs:
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
 
-      - name: Check hosted pnpm cache policy
-        run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
-
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
 

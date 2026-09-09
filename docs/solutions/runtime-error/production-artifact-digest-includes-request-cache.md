@@ -22,7 +22,7 @@ resolved the PWA mismatch. A later Manage evaluation request materialized
 locale-specific `.html` and `.json` files under `.next/server/pages`, producing
 the same failure in Manage.
 
-`util/production-standalone.mjs` excludes those request-generated files from its
+`util/playwright-production.ts` excludes those request-generated files from its
 artifact digest. Server JavaScript, trace manifests, build identifiers, bundled
 dependencies, public assets and static chunks remain covered. Source identity
 and public build inputs are checked separately. The focused artifact test

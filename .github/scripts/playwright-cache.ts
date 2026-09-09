@@ -1,7 +1,7 @@
-const crypto = require('node:crypto')
-const fs = require('node:fs')
-const path = require('node:path')
-const { execFileSync } = require('node:child_process')
+import { execFileSync } from 'node:child_process'
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const CACHE_SCHEMA = '2'
 const BUILD_ENVIRONMENT_SCHEMA = '1'
@@ -13,9 +13,8 @@ const BUILD_IMAGE_DIGEST =
 const FIXED_FILES = [
   '.github/actions/playwright-build/action.yml',
   '.github/actions/playwright-shard/action.yml',
-  '.github/scripts/playwright-cache-contract.cjs',
-  '.github/scripts/playwright-telemetry.cjs',
-  '.github/scripts/turbo-telemetry.cjs',
+  '.github/scripts/playwright-cache.ts',
+  '.github/scripts/playwright-telemetry.ts',
   '.github/workflows/playwright-cache-seed.yml',
   '.github/workflows/public-pr-playwright-shards.yml',
   '.github/workflows/test-playwright.yml',
@@ -27,11 +26,11 @@ const FIXED_FILES = [
   'turbo.json',
 ]
 
-function compareNames(a, b) {
+function compareNames(a: string, b: string) {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
-function trackedFiles(root) {
+function trackedFiles(root: string) {
   const output = execFileSync('git', ['ls-files', '-z'], {
     cwd: root,
     encoding: 'buffer',
@@ -40,11 +39,11 @@ function trackedFiles(root) {
   return output.toString('utf8').split('\0').filter(Boolean)
 }
 
-function isPackageManifest(file) {
+function isPackageManifest(file: string) {
   return path.basename(file) === 'package.json'
 }
 
-function relevantFiles(files) {
+function relevantFiles(files: string[]) {
   const selected = new Set(
     files.filter(
       (file) => FIXED_FILES.includes(file) || isPackageManifest(file)
@@ -58,6 +57,10 @@ function buildFingerprint({
   root,
   files = trackedFiles(root),
   buildImageDigest = BUILD_IMAGE_DIGEST,
+}: {
+  root: string
+  files?: string[]
+  buildImageDigest?: string
 }) {
   const hash = crypto.createHash('sha256')
   hash.update(
@@ -72,12 +75,12 @@ function buildFingerprint({
 
   for (const file of relevantFiles(files)) {
     const filePath = path.join(root, file)
-    let contents
+    let contents: Buffer
     try {
       contents = fs.readFileSync(filePath)
     } catch (error) {
       throw new Error(
-        `could not read cache contract file ${file}: ${error.message}`
+        `could not read cache contract file ${file}: ${error instanceof Error ? error.message : String(error)}`
       )
     }
 
@@ -94,6 +97,10 @@ function dependencyFingerprint({
   root,
   files = trackedFiles(root),
   buildImageDigest = BUILD_IMAGE_DIGEST,
+}: {
+  root: string
+  files?: string[]
+  buildImageDigest?: string
 }) {
   const hash = crypto.createHash('sha256')
   hash.update(
@@ -119,7 +126,7 @@ function dependencyFingerprint({
     hash.update('\0')
     hash.update(file)
     hash.update('\0')
-    let contents = fs.readFileSync(path.join(root, file))
+    let contents: Buffer | string = fs.readFileSync(path.join(root, file))
     if (isPackageManifest(file)) {
       const manifest = JSON.parse(contents.toString('utf8'))
       // The pnpm store is reused before a fresh frozen install, not as node_modules.
@@ -163,24 +170,26 @@ function main(argv = process.argv.slice(2)) {
   console.log(fingerprint)
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   try {
     main()
   } catch (error) {
-    console.error(`Playwright cache contract failed: ${error.message}`)
+    console.error(
+      `Playwright cache contract failed: ${error instanceof Error ? error.message : String(error)}`
+    )
     process.exitCode = 1
   }
 }
 
-module.exports = {
+export {
   BUILD_ENVIRONMENT_SCHEMA,
   BUILD_IMAGE_DIGEST,
+  buildFingerprint,
   CACHE_SCHEMA,
+  dependencyFingerprint,
   FIXED_FILES,
+  isPackageManifest,
   NODE_VERSION,
   PNPM_VERSION,
-  buildFingerprint,
-  dependencyFingerprint,
-  isPackageManifest,
   relevantFiles,
 }

@@ -58,7 +58,7 @@ runs:
     - name: Define node version
       uses: actions/setup-node@v4
       with:
-        node-version-file: package.json
+        node-version-file: .ci-control/package.json
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
@@ -70,7 +70,7 @@ runs:
       id: cache-contract
       continue-on-error: true
       shell: bash
-      run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+      run: node .ci-control/.github/scripts/playwright-cache.ts --root "$GITHUB_WORKSPACE"
 
     - name: Get pnpm store directory
       shell: bash
@@ -191,7 +191,7 @@ runs:
       if: always()
       continue-on-error: true
       shell: bash
-      run: node .ci-control/.github/scripts/turbo-telemetry.cjs --log turbo-build.log
+      run: node .ci-control/.github/scripts/playwright-telemetry.ts turbo --log turbo-build.log
 
     - name: Write build telemetry
       if: always()
@@ -209,7 +209,7 @@ runs:
         TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
         TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
         PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
-      run: node .ci-control/.github/scripts/playwright-telemetry.cjs --output playwright-build-telemetry.json
+      run: node .ci-control/.github/scripts/playwright-telemetry.ts record --output playwright-build-telemetry.json
 
     - name: Upload build telemetry
       if: always()

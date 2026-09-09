@@ -1727,6 +1727,7 @@ test('requires exact candidate production coverage and artifact identity before 
     ...[
       'Build production account applications',
       'Run production account journeys',
+      'Verify complete production coverage',
       'Upload production evidence',
     ].map((name) => (github) => {
       github.rest.repos.getContent = async () => ({

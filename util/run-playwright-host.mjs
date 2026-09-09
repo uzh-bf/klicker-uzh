@@ -431,8 +431,8 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       .split('\0')
       .filter(Boolean)
     files.push(
-      'util/production-standalone.mjs',
-      'util/start-account-production.mjs',
+      'util/playwright-production.ts',
+      '.github/scripts/playwright-shards.ts',
       '.devcontainer/post-start.sh'
     )
     const hash = createHash('sha256')

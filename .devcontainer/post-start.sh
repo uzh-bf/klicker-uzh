@@ -175,12 +175,12 @@ if [ -f "$PRODUCTION_SELECTION" ]; then
   "$DEVROUTER_PROCESS_HELPER" stop --name klicker-local-mcp >/dev/null 2>&1 || true
   "$DEVROUTER_PROCESS_HELPER" ensure \
     --name klicker-dev \
-    --match 'start-account-production.mjs' \
+    --match 'playwright-production.ts start' \
     --log /tmp/account-production.log \
-    --prepare-command 'node util/production-standalone.mjs build' \
-    -- node util/start-account-production.mjs
-  node util/production-standalone.mjs verify
-  node util/production-standalone.mjs ready
+    --prepare-command 'node util/playwright-production.ts build' \
+    -- node util/playwright-production.ts start
+  node util/playwright-production.ts verify
+  node util/playwright-production.ts ready
   exit 0
 fi
 

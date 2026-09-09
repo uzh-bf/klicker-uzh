@@ -1,62 +1,175 @@
-const childProcess = require('node:child_process')
-const fs = require('node:fs')
-const path = require('node:path')
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
 
-const {
+import {
   buildSelectedShardPlans,
   buildShardPlans,
+  canonicalProfile,
   parseTimings,
   productionSpecs,
   selectedDurationMap,
-} = require('./get-shard-files.js')
+} from './playwright-shards.ts'
 
-const SELECTOR_SCHEMA_VERSION = 1
-const SUPPORTED_PROFILE_VERSION = 1
+export const ROUTE_SCHEMA_VERSION = 1
+export const PLAN_SCHEMA_VERSION = 1
+export const SELECTOR_SCHEMA_VERSION = 1
+export const SUPPORTED_PROFILE_VERSION = 1
 const TEST_FILE_PATTERN = /^[^/]+\.spec\.ts$/
 
-function compareNames(a, b) {
+type Route = 'hosted' | 'public-pr'
+type SelectorPrState = 'draft' | 'ready'
+type PlanMode = 'skip' | 'selected' | 'full'
+
+export interface RouteInput {
+  eventName?: string
+  repository?: string
+  repositoryPrivate?: string
+  headRepository?: string
+  prAuthor?: string
+  prDraft?: string
+  pullRequestNumber?: string
+  publicRolloutEnabled?: string
+  publicRolloutCanaryPr?: string
+  smartDraftEnabled?: string
+  smartDraftCanaryPr?: string
+  forceHostedCanaryPr?: string
+  requestedRoute?: unknown
+}
+
+export interface RouteDecision {
+  schemaVersion: number
+  route: Route
+  selectorPrState: SelectorPrState
+  reasonCodes: string[]
+}
+
+interface RelevanceGroup {
+  id: string
+  pathPrefixes: string[]
+  specs: string[]
+}
+
+type PathClassification =
+  | { kind: 'full' }
+  | { kind: 'docs' }
+  | { kind: 'groups'; groups: string[] }
+  | { kind: 'unknown' }
+
+interface RelevanceManifest {
+  version: number
+  groups: RelevanceGroup[]
+  docsOnlyPathPrefixes: string[]
+  docsOnlyExtensions: string[]
+  fullPathPrefixes: string[]
+  fullPathEquals: string[]
+  fullPathSuffixes: string[]
+}
+
+interface ProfileManifest {
+  version: number
+  groups: Array<{
+    profile: string
+    specs: string[]
+    runtime?: unknown
+  }>
+}
+
+interface ShardPlan {
+  version: number
+  shardIndex: number
+  shardTotal: number
+  files: string[]
+  estimatedDuration: number
+  profile: string
+}
+
+export interface PlaywrightPlan {
+  schemaVersion: number
+  mode: PlanMode
+  reasonCodes: string[]
+  baseSha: string
+  headSha: string
+  mergeBase: string | null
+  trustedRuntimeApps: string[]
+  candidateSpecs: string[]
+  selectedSpecs: string[]
+  profileAssignments: Record<string, string>
+  selectedProfiles: string[]
+  selectedGroupIds: string[]
+  shardCount: number
+  shards: ShardPlan[]
+}
+
+interface ChangeRecord {
+  status: string
+  kind: string
+  paths: string[]
+}
+
+interface SelectionResult {
+  mode: PlanMode
+  reasonCodes: string[]
+  selectedSpecs: string[]
+  selectedGroupIds: string[]
+}
+
+export interface PlanMetadata {
+  route: Route
+  mode: PlanMode
+  selectorPrState: SelectorPrState
+  shouldRun: boolean
+  shardMatrix: { include: Array<{ shardIndex: number; shardTotal: number }> }
+  reasonCodes: string[]
+}
+
+interface PlanMetadataInput {
+  schemaVersion: number
+  mode: PlanMode
+  shardCount: number
+  reasonCodes: string[]
+  shards: Array<{
+    shardIndex: number
+    shardTotal: number
+    files: string[]
+  }>
+}
+type RouteMetadataInput = Pick<RouteDecision, 'route' | 'selectorPrState'>
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function compareNames(a: string, b: string) {
   if (a < b) return -1
   if (a > b) return 1
   return 0
 }
 
-function fail(message) {
+function fail(message: string): never {
   throw new Error(message)
 }
 
-function canonicalProfile(profile) {
-  if (typeof profile !== 'string') {
-    fail('every profile needs an app list')
-  }
-
-  const apps = profile
-    .split(',')
-    .map((app) => app.trim())
-    .filter(Boolean)
-
-  if (apps.length === 0) {
-    fail('profile cannot be empty')
-  }
-
-  return [...new Set(apps)].sort(compareNames).join(',')
-}
-
-function readJson(filePath, label) {
+function readJson(filePath: string, label: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'))
   } catch (error) {
-    fail(`could not parse ${label} at ${filePath}: ${error.message}`)
+    fail(`could not parse ${label} at ${filePath}: ${errorMessage(error)}`)
   }
 }
 
-function listCandidateSpecs(candidateRoot) {
+function listCandidateSpecs(candidateRoot: string): string[] {
   const testsDir = path.join(candidateRoot, 'playwright/tests')
-  let entries
+  let entries: fs.Dirent[]
 
   try {
     entries = fs.readdirSync(testsDir, { withFileTypes: true })
   } catch (error) {
-    fail(`could not inventory candidate specs: ${error.message}`)
+    fail(`could not inventory candidate specs: ${errorMessage(error)}`)
   }
 
   const specs = entries
@@ -75,14 +188,14 @@ function listCandidateSpecs(candidateRoot) {
   return specs
 }
 
-function listTrustedSpecs(controlRoot) {
+function listTrustedSpecs(controlRoot: string): string[] {
   const testsDir = path.join(controlRoot, 'playwright/tests')
-  let entries
+  let entries: fs.Dirent[]
 
   try {
     entries = fs.readdirSync(testsDir, { withFileTypes: true })
   } catch (error) {
-    fail(`could not inventory trusted specs: ${error.message}`)
+    fail(`could not inventory trusted specs: ${errorMessage(error)}`)
   }
 
   const specs = entries
@@ -97,17 +210,17 @@ function listTrustedSpecs(controlRoot) {
   return specs
 }
 
-function readRuntimeApps(controlRoot) {
+export function readRuntimeApps(controlRoot: string): string[] {
   const filePath = path.join(controlRoot, 'playwright/runtime-contract.yml')
-  let source
+  let source: string
 
   try {
     source = fs.readFileSync(filePath, 'utf8')
   } catch (error) {
-    fail(`could not read trusted runtime contract: ${error.message}`)
+    fail(`could not read trusted runtime contract: ${errorMessage(error)}`)
   }
 
-  const apps = []
+  const apps: string[] = []
   let inApps = false
 
   for (const line of source.split(/\r?\n/)) {
@@ -129,17 +242,19 @@ function readRuntimeApps(controlRoot) {
   return [...new Set(apps)].sort(compareNames)
 }
 
-function readTrustedProfileNames(controlRoot) {
+function readTrustedProfileNames(controlRoot: string): string[] {
   const filePath = path.join(controlRoot, '.devrouter.yml')
-  let source
+  let source: string
 
   try {
     source = fs.readFileSync(filePath, 'utf8')
   } catch (error) {
-    fail(`could not read trusted Devrouter profile contract: ${error.message}`)
+    fail(
+      `could not read trusted Devrouter profile contract: ${errorMessage(error)}`
+    )
   }
 
-  const profiles = []
+  const profiles: string[] = []
   let inProfiles = false
   for (const line of source.split(/\r?\n/)) {
     if (!inProfiles) {
@@ -159,11 +274,15 @@ function readTrustedProfileNames(controlRoot) {
   return [...new Set(profiles)].sort(compareNames)
 }
 
-function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
+function parseTrustedProfiles(
+  controlRoot: string,
+  trustedSpecs: string[],
+  trustedProfileNames: string[]
+): Map<string, string> {
   const manifest = readJson(
     path.join(controlRoot, 'playwright/profiles.json'),
     'trusted profiles'
-  )
+  ) as ProfileManifest
 
   if (manifest?.version !== SUPPORTED_PROFILE_VERSION) {
     fail(`unsupported trusted profile schema version ${manifest?.version}`)
@@ -173,7 +292,7 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
   }
 
   const trustedProfileSet = new Set(trustedProfileNames)
-  const profiles = new Map()
+  const profiles = new Map<string, string>()
 
   for (const group of manifest.groups) {
     const profile = canonicalProfile(group?.profile)
@@ -206,7 +325,10 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
   return profiles
 }
 
-function validateRelevanceManifest(manifest, trustedSpecs) {
+export function validateRelevanceManifest(
+  manifest: RelevanceManifest,
+  trustedSpecs: string[]
+) {
   if (!manifest || manifest.version !== SELECTOR_SCHEMA_VERSION) {
     fail(`unsupported relevance manifest schema version ${manifest?.version}`)
   }
@@ -215,7 +337,7 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
   }
 
   const trustedSpecSet = new Set(trustedSpecs)
-  const groupIds = new Set()
+  const groupIds = new Set<string>()
 
   for (const group of manifest.groups) {
     if (
@@ -250,13 +372,13 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
     'fullPathEquals',
     'fullPathSuffixes',
   ]) {
-    if (!Array.isArray(manifest[key])) {
+    if (!Array.isArray(manifest[key as keyof RelevanceManifest])) {
       fail(`relevance manifest ${key} must be an array`)
     }
   }
 }
 
-function isSafeRepoPath(value) {
+function isSafeRepoPath(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     value.length > 0 &&
@@ -266,13 +388,13 @@ function isSafeRepoPath(value) {
   )
 }
 
-function parseNameStatusZ(raw) {
+export function parseNameStatusZ(raw: string): ChangeRecord[] {
   if (raw === '') return []
 
   const fields = raw.split('\0')
   if (fields.at(-1) === '') fields.pop()
 
-  const changes = []
+  const changes: ChangeRecord[] = []
   for (let index = 0; index < fields.length; ) {
     const status = fields[index++]
     if (!/^[A-Z](?:[0-9]{1,3})?$/.test(status)) {
@@ -280,7 +402,7 @@ function parseNameStatusZ(raw) {
     }
 
     const kind = status[0]
-    const paths = []
+    const paths: string[] = []
     const pathCount = kind === 'R' || kind === 'C' ? 2 : 1
     for (let pathIndex = 0; pathIndex < pathCount; pathIndex++) {
       const changedPath = fields[index++]
@@ -296,7 +418,7 @@ function parseNameStatusZ(raw) {
   return changes
 }
 
-function runGit(candidateRoot, args) {
+function runGit(candidateRoot: string, args: string[]): string {
   // Hooks export repository-local Git variables. Candidate commands must use
   // the repository selected by `-C`, even when the selector runs in a hook.
   const env = Object.fromEntries(
@@ -304,23 +426,34 @@ function runGit(candidateRoot, args) {
   )
 
   try {
-    return childProcess.execFileSync('git', ['-C', candidateRoot, ...args], {
+    return execFileSync('git', ['-C', candidateRoot, ...args], {
       encoding: 'utf8',
       env,
       maxBuffer: 16 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   } catch (error) {
-    const detail = error.stderr?.trim() || error.message
+    const detail =
+      isRecord(error) && typeof error.stderr === 'string'
+        ? error.stderr.trim()
+        : errorMessage(error)
     fail(`git ${args.join(' ')} failed: ${detail}`)
   }
 }
 
-function computeMergeBase(candidateRoot, baseSha, headSha) {
+function computeMergeBase(
+  candidateRoot: string,
+  baseSha: string,
+  headSha: string
+): string {
   return runGit(candidateRoot, ['merge-base', baseSha, headSha]).trim()
 }
 
-function readChangedRecords(candidateRoot, mergeBase, headSha) {
+function readChangedRecords(
+  candidateRoot: string,
+  mergeBase: string,
+  headSha: string
+): ChangeRecord[] {
   const diff = runGit(candidateRoot, [
     'diff',
     '--name-status',
@@ -332,13 +465,16 @@ function readChangedRecords(candidateRoot, mergeBase, headSha) {
   return parseNameStatusZ(diff)
 }
 
-function isPrefixMatch(value, prefix) {
+function isPrefixMatch(value: string, prefix: unknown): boolean {
   if (typeof prefix !== 'string' || prefix.length === 0) return false
   const normalizedPrefix = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix
   return value === normalizedPrefix || value.startsWith(`${normalizedPrefix}/`)
 }
 
-function classifyPath(changedPath, manifest) {
+export function classifyPath(
+  changedPath: string,
+  manifest: RelevanceManifest
+): PathClassification {
   if (manifest.fullPathEquals.includes(changedPath)) return { kind: 'full' }
   if (
     manifest.fullPathSuffixes.some(
@@ -382,20 +518,30 @@ function classifyPath(changedPath, manifest) {
   return { kind: 'unknown' }
 }
 
-function specFromPath(changedPath) {
+function specFromPath(changedPath: string): string | null {
   const match = /^playwright\/tests\/([^/]+\.spec\.ts)$/.exec(changedPath)
   return match?.[1] ?? null
 }
 
-function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
+export function selectFromChanges({
+  changes,
+  candidateSpecs,
+  manifest,
+  prState,
+}: {
+  changes: ChangeRecord[]
+  candidateSpecs: string[]
+  manifest: RelevanceManifest
+  prState: SelectorPrState
+}): SelectionResult {
   if (prState !== 'draft' && prState !== 'ready') {
     fail(`unsupported pull request state ${prState}`)
   }
 
   const candidateSet = new Set(candidateSpecs)
-  const selected = new Set()
-  const reasonCodes = new Set()
-  const groupIds = new Set()
+  const selected = new Set<string>()
+  const reasonCodes = new Set<string>()
+  const groupIds = new Set<string>()
   let full = prState === 'ready'
 
   if (prState === 'ready') reasonCodes.add('ready-for-review')
@@ -404,7 +550,7 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     reasonCodes.add('empty-diff')
   }
 
-  const addGroup = (groupId) => {
+  const addGroup = (groupId: string) => {
     const group = manifest.groups.find((entry) => entry.id === groupId)
     if (!group) {
       full = true
@@ -417,7 +563,7 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     }
   }
 
-  const classifyNonSpecPaths = (paths) => {
+  const classifyNonSpecPaths = (paths: string[]) => {
     const classifications = paths.map((changedPath) =>
       classifyPath(changedPath, manifest)
     )
@@ -510,15 +656,19 @@ function profileAssignments({
   candidateSpecs,
   trustedProfiles,
   maximalProfile,
-}) {
-  const assignments = {}
+}: {
+  candidateSpecs: string[]
+  trustedProfiles: Map<string, string>
+  maximalProfile: string
+}): Record<string, string> {
+  const assignments: Record<string, string> = {}
   for (const spec of candidateSpecs) {
     assignments[spec] = trustedProfiles.get(spec) ?? maximalProfile
   }
   return assignments
 }
 
-function buildSelectionPlan({
+export function buildSelectionPlan({
   controlRoot,
   candidateSpecs,
   changes,
@@ -526,7 +676,15 @@ function buildSelectionPlan({
   headSha,
   mergeBase,
   prState,
-}) {
+}: {
+  controlRoot: string
+  candidateSpecs: string[]
+  changes: ChangeRecord[]
+  baseSha: string
+  headSha: string
+  mergeBase: string | null
+  prState: SelectorPrState
+}): PlaywrightPlan {
   const trustedSpecs = listTrustedSpecs(controlRoot)
   const runtimeApps = readRuntimeApps(controlRoot)
   const trustedProfileNames = readTrustedProfileNames(controlRoot)
@@ -550,7 +708,7 @@ function buildSelectionPlan({
   const relevanceManifest = readJson(
     path.join(controlRoot, 'playwright/relevance-manifest.json'),
     'relevance manifest'
-  )
+  ) as RelevanceManifest
   validateRelevanceManifest(relevanceManifest, trustedSpecs)
 
   const maximalProfile = trustedProfileNames.includes('full')
@@ -565,7 +723,7 @@ function buildSelectionPlan({
     changes,
     candidateSpecs,
     manifest: relevanceManifest,
-    prState,
+    prState: prState as SelectorPrState,
   })
   const profileMap = new Map(Object.entries(assignments))
   const trustedTimings = readJson(
@@ -573,7 +731,7 @@ function buildSelectionPlan({
     'trusted Playwright timings'
   )
   const durationMap = parseTimings(trustedTimings, trustedSpecs, () => {})
-  let shards = []
+  let shards: ShardPlan[] = []
 
   if (selection.mode === 'selected') {
     shards = buildSelectedShardPlans(
@@ -615,23 +773,29 @@ function buildSelectionPlan({
   }
 }
 
-function selectPlaywrightPlan({
+export function selectPlaywrightPlan({
   controlRoot,
   candidateRoot,
   baseSha,
   headSha,
   prState,
-}) {
+}: {
+  controlRoot: string
+  candidateRoot: string
+  baseSha: string
+  headSha: string
+  prState: SelectorPrState
+}): PlaywrightPlan {
   const candidateSpecs = listCandidateSpecs(candidateRoot)
   let mergeBase = null
-  let changes
+  let changes: ChangeRecord[]
   let fallbackReason = null
 
   try {
     mergeBase = computeMergeBase(candidateRoot, baseSha, headSha)
     changes = readChangedRecords(candidateRoot, mergeBase, headSha)
   } catch (error) {
-    fallbackReason = error.message.includes('merge-base')
+    fallbackReason = errorMessage(error).includes('merge-base')
       ? 'history-unavailable'
       : 'malformed-diff'
     changes = [{ kind: 'M', status: 'M', paths: ['__selector_failure__'] }]
@@ -662,8 +826,8 @@ function selectPlaywrightPlan({
   return plan
 }
 
-function parseArgs(argv) {
-  const args = {}
+function parseArgs(argv: string[]): Record<string, string> {
+  const args: Record<string, string> = {}
   for (let index = 0; index < argv.length; index++) {
     const value = argv[index]
     if (!value.startsWith('--') || index + 1 >= argv.length) {
@@ -672,51 +836,298 @@ function parseArgs(argv) {
     args[value.slice(2)] = argv[++index]
   }
 
+  return args
+}
+
+function parseSelectorArgs(argv: string[]): Record<string, string> {
+  const args = parseArgs(argv)
   for (const key of ['candidate-root', 'base-sha', 'head-sha', 'pr-state']) {
     if (!args[key]) fail(`missing --${key}`)
   }
   return args
 }
 
-function main(argv = process.argv.slice(2)) {
-  const args = parseArgs(argv)
+function writeJsonOutput(value: unknown, output?: string) {
+  const serialized = `${JSON.stringify(value, null, 2)}\n`
+  if (output) {
+    fs.writeFileSync(path.resolve(output), serialized)
+  } else {
+    process.stdout.write(serialized)
+  }
+}
+
+export function choosePlaywrightRoute(input: RouteInput): RouteDecision {
+  const requestedRoute =
+    input.requestedRoute === undefined ? 'auto' : input.requestedRoute
+  const normalizedRequestedRoute =
+    typeof requestedRoute === 'string'
+      ? requestedRoute.trim() || 'auto'
+      : requestedRoute
+  if (normalizedRequestedRoute !== 'auto') {
+    fail(`unsupported requested route ${JSON.stringify(requestedRoute)}`)
+  }
+  if (input.eventName !== 'pull_request' && input.eventName !== 'push') {
+    fail(`unsupported event ${JSON.stringify(input.eventName)}`)
+  }
+
+  if (input.eventName === 'push') {
+    return {
+      schemaVersion: ROUTE_SCHEMA_VERSION,
+      route: 'hosted',
+      selectorPrState: 'ready',
+      reasonCodes: ['push'],
+    }
+  }
+
+  const reasons: string[] = []
+  const nonEmptyString = (value: unknown) =>
+    typeof value === 'string' && value.trim().length > 0
+  const validRepository = nonEmptyString(input.repository)
+  const validHeadRepository = nonEmptyString(input.headRepository)
+  const validAuthor = nonEmptyString(input.prAuthor)
+  const validPullRequestNumber =
+    typeof input.pullRequestNumber === 'string' &&
+    /^[1-9]\d*$/.test(input.pullRequestNumber)
+  const samePublicRepository =
+    input.repositoryPrivate === 'false' &&
+    validRepository &&
+    validHeadRepository &&
+    input.headRepository === input.repository
+  const bot =
+    typeof input.prAuthor === 'string' &&
+    input.prAuthor.toLowerCase().endsWith('[bot]')
+  const validDraft = input.prDraft === 'true' || input.prDraft === 'false'
+  const exactCanaryMatch = (value: unknown) =>
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value === String(input.pullRequestNumber)
+  const forceHosted = exactCanaryMatch(input.forceHostedCanaryPr)
+  const publicRollout =
+    input.publicRolloutEnabled === 'true' ||
+    exactCanaryMatch(input.publicRolloutCanaryPr)
+  const smartDraft =
+    input.smartDraftEnabled === 'true' ||
+    exactCanaryMatch(input.smartDraftCanaryPr)
+
+  if (!validRepository || !validHeadRepository)
+    reasons.push('invalid-repository')
+  if (!validAuthor) reasons.push('invalid-author')
+  if (!validPullRequestNumber) reasons.push('invalid-pull-request')
+  if (input.repositoryPrivate !== 'false') reasons.push('private-repository')
+  if (input.headRepository !== input.repository) reasons.push('fork')
+  if (bot) reasons.push('bot')
+  if (!validDraft) reasons.push('invalid-draft-state')
+
+  const publicEligible =
+    samePublicRepository &&
+    validAuthor &&
+    validPullRequestNumber &&
+    !bot &&
+    validDraft
+  if (forceHosted) reasons.push('force-hosted-canary')
+
+  if (input.prDraft === 'true' && publicEligible && smartDraft) {
+    reasons.push('smart-draft-enabled')
+    return {
+      schemaVersion: ROUTE_SCHEMA_VERSION,
+      route: publicRollout && !forceHosted ? 'public-pr' : 'hosted',
+      selectorPrState: 'draft',
+      reasonCodes: [
+        ...new Set([
+          ...reasons,
+          publicRollout && !forceHosted
+            ? 'public-pr-rollout'
+            : 'hosted-fallback',
+        ]),
+      ].sort(compareNames),
+    }
+  }
+
+  if (input.prDraft === 'true' && !smartDraft) {
+    reasons.push('smart-draft-disabled')
+  }
+  const publicReady =
+    input.prDraft === 'false' && publicEligible && publicRollout && !forceHosted
+  if (publicReady) reasons.push('public-pr-rollout')
+  else reasons.push('hosted-fallback')
+
+  return {
+    schemaVersion: ROUTE_SCHEMA_VERSION,
+    route: publicReady ? 'public-pr' : 'hosted',
+    selectorPrState: 'ready',
+    reasonCodes: [...new Set(reasons)].sort(compareNames),
+  }
+}
+
+export function envInput(env: NodeJS.ProcessEnv = process.env): RouteInput {
+  return {
+    eventName: env.EVENT_NAME,
+    repository: env.REPOSITORY,
+    repositoryPrivate: env.REPOSITORY_PRIVATE,
+    headRepository: env.HEAD_REPOSITORY,
+    prAuthor: env.PR_AUTHOR,
+    prDraft: env.PR_DRAFT,
+    pullRequestNumber: env.PR_NUMBER,
+    publicRolloutEnabled: env.PUBLIC_ROLLOUT_ENABLED ?? '',
+    publicRolloutCanaryPr: env.PUBLIC_ROLLOUT_CANARY_PR ?? '',
+    smartDraftEnabled: env.SMART_DRAFT_ENABLED ?? '',
+    smartDraftCanaryPr: env.SMART_DRAFT_CANARY_PR ?? '',
+    forceHostedCanaryPr: env.FORCE_HOSTED_CANARY_PR ?? '',
+    requestedRoute: env.ROUTE_HINT ?? 'auto',
+  }
+}
+
+export function buildPlanMetadata(
+  plan: PlanMetadataInput,
+  routeDecision: RouteMetadataInput
+): PlanMetadata {
+  if (!plan || plan.schemaVersion !== PLAN_SCHEMA_VERSION) {
+    fail(`unsupported Playwright plan schema ${plan?.schemaVersion}`)
+  }
+  if (!['skip', 'selected', 'full'].includes(plan.mode)) {
+    fail(`unsupported Playwright plan mode ${plan.mode}`)
+  }
+  if (!Number.isInteger(plan.shardCount) || plan.shardCount < 0) {
+    fail('Playwright plan shard count must be a non-negative integer')
+  }
+  if (plan.mode === 'skip' && plan.shardCount !== 0) {
+    fail('skip Playwright plans must not contain shards')
+  }
+  if (plan.mode !== 'skip' && plan.shardCount === 0) {
+    fail('non-skip Playwright plans must contain at least one shard')
+  }
+  if (!['hosted', 'public-pr'].includes(routeDecision?.route)) {
+    fail(`unsupported Playwright route ${routeDecision?.route}`)
+  }
+  if (!['draft', 'ready'].includes(routeDecision.selectorPrState)) {
+    fail(
+      `unsupported selector pull-request state ${routeDecision.selectorPrState}`
+    )
+  }
+  if (routeDecision.selectorPrState === 'ready' && plan.mode !== 'full') {
+    fail('ready execution must use the full Playwright plan')
+  }
+  if (routeDecision.selectorPrState === 'ready' && plan.shardCount !== 8) {
+    fail('ready execution must use exactly eight Playwright shards')
+  }
+  if (!Array.isArray(plan.shards) || plan.shards.length !== plan.shardCount) {
+    fail('Playwright plan shard count does not match its shard list')
+  }
+
+  const include = plan.shards.map((shard) => {
+    if (
+      !Number.isInteger(shard.shardIndex) ||
+      !Number.isInteger(shard.shardTotal) ||
+      shard.shardIndex < 1 ||
+      shard.shardIndex > shard.shardTotal ||
+      shard.shardTotal !== plan.shardCount ||
+      !Array.isArray(shard.files) ||
+      shard.files.length === 0
+    ) {
+      fail('Playwright plan contains an invalid shard')
+    }
+    return { shardIndex: shard.shardIndex, shardTotal: shard.shardTotal }
+  })
+
+  const shardIndices = include.map((shard) => shard.shardIndex)
+  if (new Set(shardIndices).size !== shardIndices.length) {
+    fail('Playwright plan contains duplicate shard indices')
+  }
+  for (let index = 1; index <= plan.shardCount; index++) {
+    if (!shardIndices.includes(index)) {
+      fail(`Playwright plan is missing shard ${index}`)
+    }
+  }
+  const reasonCodes = Array.isArray(plan.reasonCodes) ? plan.reasonCodes : []
+  if (
+    !reasonCodes.every(
+      (code) =>
+        typeof code === 'string' &&
+        code.trim().length > 0 &&
+        !/[\r\n]/.test(code)
+    )
+  ) {
+    fail('Playwright plan reason codes must be non-empty single-line strings')
+  }
+
+  return {
+    route: routeDecision.route,
+    mode: plan.mode,
+    selectorPrState: routeDecision.selectorPrState,
+    shouldRun: plan.mode !== 'skip',
+    shardMatrix: { include },
+    reasonCodes,
+  }
+}
+
+export function writeGithubOutputs(metadata: PlanMetadata, outputPath: string) {
+  const lines = [
+    `route=${metadata.route}`,
+    `mode=${metadata.mode}`,
+    `selector_pr_state=${metadata.selectorPrState}`,
+    `should_run=${metadata.shouldRun}`,
+    `shard_matrix=${JSON.stringify(metadata.shardMatrix)}`,
+    `reason_codes=${metadata.reasonCodes.join(',')}`,
+  ]
+  fs.appendFileSync(outputPath, `${lines.join('\n')}\n`)
+}
+
+function runSelectionCommand(argv: string[]) {
+  const args = parseSelectorArgs(argv)
   const controlRoot = args['control-root']
     ? path.resolve(args['control-root'])
-    : path.resolve(__dirname, '../..')
+    : path.resolve(import.meta.dirname, '../..')
   const candidateRoot = path.resolve(args['candidate-root'])
   const plan = selectPlaywrightPlan({
     controlRoot,
     candidateRoot,
     baseSha: args['base-sha'],
     headSha: args['head-sha'],
-    prState: args['pr-state'],
+    prState: args['pr-state'] as SelectorPrState,
   })
 
-  const serialized = `${JSON.stringify(plan, null, 2)}\n`
-  if (args.output) {
-    fs.writeFileSync(path.resolve(args.output), serialized)
-  } else {
-    process.stdout.write(serialized)
-  }
+  writeJsonOutput(plan, args.output)
 }
 
-if (require.main === module) {
+export function main(argv = process.argv.slice(2), env = process.env) {
+  if (argv[0] === 'select') {
+    runSelectionCommand(argv.slice(1))
+    return
+  }
+
+  const args = parseArgs(argv)
+  for (const key of [
+    'control-root',
+    'candidate-root',
+    'base-sha',
+    'head-sha',
+    'output',
+    'route-output',
+    'github-output',
+  ]) {
+    if (!args[key]) fail(`missing --${key}`)
+  }
+  const controlRoot = path.resolve(args['control-root'])
+  const candidateRoot = path.resolve(args['candidate-root'])
+  const route = choosePlaywrightRoute(envInput(env))
+  const plan = selectPlaywrightPlan({
+    controlRoot,
+    candidateRoot,
+    baseSha: args['base-sha'],
+    headSha: args['head-sha'],
+    prState: route.selectorPrState,
+  })
+  const metadata = buildPlanMetadata(plan, route)
+  writeJsonOutput(plan, args.output)
+  writeJsonOutput(route, args['route-output'])
+  writeGithubOutputs(metadata, args['github-output'])
+}
+
+if (import.meta.main) {
   try {
     main()
   } catch (error) {
-    console.error(`Playwright selection failed: ${error.message}`)
+    console.error(`Playwright plan failed: ${errorMessage(error)}`)
     process.exitCode = 1
   }
-}
-
-module.exports = {
-  SELECTOR_SCHEMA_VERSION,
-  buildSelectionPlan,
-  classifyPath,
-  listCandidateSpecs,
-  parseNameStatusZ,
-  readRuntimeApps,
-  selectFromChanges,
-  selectPlaywrightPlan,
-  validateRelevanceManifest,
 }

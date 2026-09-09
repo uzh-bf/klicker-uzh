@@ -1475,7 +1475,7 @@ async function collectAccountProductionEvidence({
   if (
     verification.length !== 1 ||
     /continue-on-error:| {8}if:/.test(verification[0]) ||
-    !/^ {8}run: node \.github\/scripts\/account-production-report\.cjs /m.test(
+    !/^ {8}run: node util\/playwright-production\.ts report /m.test(
       verification[0]
     )
   ) {

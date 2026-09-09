@@ -1,24 +1,62 @@
-const fs = require('node:fs')
-const path = require('node:path')
+import fs from 'node:fs'
+import path from 'node:path'
 
-const DEFAULT_DURATION_SECONDS = 30
-const SELECTED_FALLBACK_DURATION_SECONDS = 120
-const SELECTED_TARGET_SHARD_SECONDS = 600
-const SELECTED_MAX_SHARDS = 4
+export interface ShardPlan {
+  version: number
+  shardIndex: number
+  shardTotal: number
+  files: string[]
+  estimatedDuration: number
+  profile: string
+}
+
+interface ProfileGroup {
+  profile: string
+  specs: string[]
+  runtime?: unknown
+}
+
+interface ProfileManifest {
+  version: number
+  groups: ProfileGroup[]
+}
+
+interface TimingEntry {
+  spec: string
+  duration: number
+}
+
+interface TimingManifest {
+  version?: number
+  durations: TimingEntry[]
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+export const DEFAULT_DURATION_SECONDS = 30
+export const SELECTED_FALLBACK_DURATION_SECONDS = 120
+export const SELECTED_TARGET_SHARD_SECONDS = 600
+export const SELECTED_MAX_SHARDS = 4
 const SUPPORTED_TIMING_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 
-function compareNames(a, b) {
+export function compareNames(a: string, b: string) {
   if (a < b) return -1
   if (a > b) return 1
   return 0
 }
 
-function fail(message) {
+function fail(message: string): never {
   throw new Error(message)
 }
 
-function canonicalProfile(profile) {
+export function canonicalProfile(profile: string): string {
   if (typeof profile !== 'string') {
     fail('every profile group needs a profile string')
   }
@@ -31,27 +69,49 @@ function canonicalProfile(profile) {
   return [...new Set(apps)].sort(compareNames).join(',')
 }
 
-function parseProfileManifest(manifest, allFiles) {
-  if (!manifest || manifest.version !== SUPPORTED_PROFILE_VERSION) {
-    fail(`unsupported profile schema version ${manifest?.version}`)
+function normalizedProfileManifest(manifest: unknown): ProfileManifest {
+  const version = isRecord(manifest) ? manifest.version : undefined
+  if (!isRecord(manifest) || version !== SUPPORTED_PROFILE_VERSION) {
+    fail(`unsupported profile schema version ${version}`)
   }
   if (!Array.isArray(manifest.groups) || manifest.groups.length === 0) {
     fail('profile groups must be a non-empty array')
   }
 
-  const activeFiles = new Set(allFiles)
-  const profiles = new Map()
-
-  for (const group of manifest.groups) {
-    const profile = canonicalProfile(group?.profile)
-    if (!Array.isArray(group.specs) || group.specs.length === 0) {
+  const groups: ProfileGroup[] = []
+  for (const rawGroup of manifest.groups) {
+    if (!isRecord(rawGroup) || typeof rawGroup.profile !== 'string') {
+      fail('every profile group needs a profile string')
+    }
+    const profile = canonicalProfile(rawGroup.profile)
+    if (!Array.isArray(rawGroup.specs) || rawGroup.specs.length === 0) {
       fail(`profile ${profile} needs at least one spec`)
     }
-
-    for (const spec of group.specs) {
+    const specs: string[] = []
+    for (const spec of rawGroup.specs) {
       if (typeof spec !== 'string' || !spec.endsWith('.spec.ts')) {
         fail(`profile ${profile} contains an invalid spec ${spec}`)
       }
+      specs.push(spec)
+    }
+    groups.push({ profile, specs, runtime: rawGroup.runtime })
+  }
+
+  return { version: SUPPORTED_PROFILE_VERSION, groups }
+}
+
+function profileData(
+  manifest: unknown,
+  allFiles: string[]
+): { manifest: ProfileManifest; profiles: Map<string, string> } {
+  const normalized = normalizedProfileManifest(manifest)
+
+  const activeFiles = new Set(allFiles)
+  const profiles = new Map<string, string>()
+
+  for (const group of normalized.groups) {
+    const profile = group.profile
+    for (const spec of group.specs) {
       if (!activeFiles.has(spec)) {
         fail(`profile ${profile} references inactive spec ${spec}`)
       }
@@ -67,13 +127,23 @@ function parseProfileManifest(manifest, allFiles) {
     fail(`active specs without a profile: ${missingFiles.join(', ')}`)
   }
 
-  return profiles
+  return { manifest: normalized, profiles }
 }
 
-function productionSpecs(manifest, allFiles) {
-  parseProfileManifest(manifest, allFiles)
-  const specs = []
-  for (const group of manifest.groups) {
+export function parseProfileManifest(
+  manifest: unknown,
+  allFiles: string[]
+): Map<string, string> {
+  return profileData(manifest, allFiles).profiles
+}
+
+export function productionSpecs(
+  manifest: unknown,
+  allFiles: string[]
+): string[] {
+  const { manifest: normalized } = profileData(manifest, allFiles)
+  const specs: string[] = []
+  for (const group of normalized.groups) {
     if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
       fail(`unsupported Playwright runtime ${group.runtime}`)
     }
@@ -82,19 +152,24 @@ function productionSpecs(manifest, allFiles) {
   return specs.sort(compareNames)
 }
 
-function parseTimings(timings, allFiles, warn = console.error) {
-  if (!timings || !Array.isArray(timings.durations)) {
+export function parseTimings(
+  timings: unknown,
+  allFiles: string[],
+  warn: (message: string) => void = console.error
+): Map<string, number> {
+  const manifest = timings as Partial<TimingManifest>
+  if (!timings || !Array.isArray(manifest.durations)) {
     fail('durations must be an array')
   }
   if (
-    timings.version !== undefined &&
-    timings.version !== SUPPORTED_TIMING_VERSION
+    manifest.version !== undefined &&
+    manifest.version !== SUPPORTED_TIMING_VERSION
   ) {
-    fail(`unsupported timing schema version ${timings.version}`)
+    fail(`unsupported timing schema version ${manifest.version}`)
   }
 
-  const durationMap = new Map()
-  for (const entry of timings.durations) {
+  const durationMap = new Map<string, number>()
+  for (const entry of manifest.durations) {
     if (!entry || typeof entry.spec !== 'string') {
       fail('every duration entry needs a spec path')
     }
@@ -133,11 +208,16 @@ function parseTimings(timings, allFiles, warn = console.error) {
   return durationMap
 }
 
-function profileUnion(files, profiles) {
+function profileUnion(files: string[], profiles: Map<string, string>): string {
   return canonicalProfile(files.map((file) => profiles.get(file)).join(','))
 }
 
-function buildShardPlans(allFiles, durationMap, profiles, numShards) {
+export function buildShardPlans(
+  allFiles: string[],
+  durationMap: Map<string, number>,
+  profiles: Map<string, string>,
+  numShards: number
+): ShardPlan[] {
   if (!Number.isInteger(numShards) || numShards < 1) {
     fail(`shard count ${numShards} must be a positive integer`)
   }
@@ -155,10 +235,13 @@ function buildShardPlans(allFiles, durationMap, profiles, numShards) {
     (a, b) => b.duration - a.duration || compareNames(a.file, b.file)
   )
 
-  const shards = Array.from({ length: numShards }, () => ({
-    files: [],
-    totalDuration: 0,
-  }))
+  const shards: Array<{ files: string[]; totalDuration: number }> = Array.from(
+    { length: numShards },
+    () => ({
+      files: [],
+      totalDuration: 0,
+    })
+  )
 
   for (const item of filesWithDuration) {
     let targetIndex = 0
@@ -182,9 +265,12 @@ function buildShardPlans(allFiles, durationMap, profiles, numShards) {
   }))
 }
 
-function positiveMedian(values) {
+export function positiveMedian(values: unknown[]): number | null {
   const positiveValues = values
-    .filter((value) => typeof value === 'number' && Number.isFinite(value))
+    .filter(
+      (value): value is number =>
+        typeof value === 'number' && Number.isFinite(value)
+    )
     .filter((value) => value > 0)
     .sort((a, b) => a - b)
 
@@ -195,19 +281,24 @@ function positiveMedian(values) {
   return (positiveValues[middle - 1] + positiveValues[middle]) / 2
 }
 
-function selectedDurationMap(selectedFiles, durationMap, profiles) {
-  const durationsByProfile = new Map()
-  const knownDurations = []
+export function selectedDurationMap(
+  selectedFiles: string[],
+  durationMap: Map<string, number>,
+  profiles: Map<string, string>
+): Map<string, number> {
+  const durationsByProfile = new Map<string, number[]>()
+  const knownDurations: number[] = []
   for (const [file, duration] of durationMap.entries()) {
     if (!profiles.has(file)) continue
     knownDurations.push(duration)
     const profile = profiles.get(file)
+    if (!profile) fail(`selected spec ${file} has no validated profile`)
     const profileDurations = durationsByProfile.get(profile) ?? []
     profileDurations.push(duration)
     durationsByProfile.set(profile, profileDurations)
   }
   const globalMedian = positiveMedian(knownDurations)
-  const selectedDurations = new Map()
+  const selectedDurations = new Map<string, number>()
 
   for (const file of selectedFiles) {
     const directDuration = durationMap.get(file)
@@ -221,6 +312,7 @@ function selectedDurationMap(selectedFiles, durationMap, profiles) {
     }
 
     const profile = profiles.get(file)
+    if (!profile) fail(`selected spec ${file} has no validated profile`)
     const profileMedian = positiveMedian(durationsByProfile.get(profile) ?? [])
     selectedDurations.set(
       file,
@@ -231,9 +323,12 @@ function selectedDurationMap(selectedFiles, durationMap, profiles) {
   return selectedDurations
 }
 
-function selectedShardCount(selectedFiles, durationMap) {
+export function selectedShardCount(
+  selectedFiles: string[],
+  durationMap: Map<string, number>
+): number {
   const totalDuration = [...selectedFiles].reduce(
-    (total, file) => total + durationMap.get(file),
+    (total, file) => total + (durationMap.get(file) ?? 0),
     0
   )
   return Math.min(
@@ -243,7 +338,11 @@ function selectedShardCount(selectedFiles, durationMap) {
   )
 }
 
-function buildSelectedShardPlans(selectedFiles, durationMap, profiles) {
+export function buildSelectedShardPlans(
+  selectedFiles: string[],
+  durationMap: Map<string, number>,
+  profiles: Map<string, string>
+): ShardPlan[] {
   if (!Array.isArray(selectedFiles) || selectedFiles.length === 0) {
     fail('selected spec files must be a non-empty array')
   }
@@ -261,21 +360,31 @@ function buildSelectedShardPlans(selectedFiles, durationMap, profiles) {
   return buildShardPlans(selectedFiles, estimates, profiles, numShards)
 }
 
-function readJson(filePath, label) {
+function readJson(filePath: string, label: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'))
   } catch (error) {
-    fail(`could not parse ${label} at ${filePath}: ${error.message}`)
+    fail(`could not parse ${label} at ${filePath}: ${errorMessage(error)}`)
   }
 }
 
-function planShards({ testsDir, timingsPath, profilesPath, numShards }) {
+export function planShards({
+  testsDir,
+  timingsPath,
+  profilesPath,
+  numShards,
+}: {
+  testsDir: string
+  timingsPath: string
+  profilesPath: string
+  numShards: number
+}): ShardPlan[] {
   const allFiles = fs
     .readdirSync(testsDir)
     .filter((file) => file.endsWith('.spec.ts'))
     .sort(compareNames)
-  const timings = readJson(timingsPath, 'timings')
-  const manifest = readJson(profilesPath, 'profiles')
+  const timings = readJson(timingsPath, 'timings') as TimingManifest
+  const manifest = readJson(profilesPath, 'profiles') as ProfileManifest
   const durationMap = parseTimings(timings, allFiles)
   const profiles = parseProfileManifest(manifest, allFiles)
 
@@ -288,7 +397,7 @@ function planShards({ testsDir, timingsPath, profilesPath, numShards }) {
   )
 }
 
-function main(argv = process.argv.slice(2)) {
+export function main(argv = process.argv.slice(2)) {
   if (
     argv.length < 2 ||
     argv.length > 3 ||
@@ -311,7 +420,7 @@ function main(argv = process.argv.slice(2)) {
     fail(`shard index ${argv[0]} must be between 1 and ${numShards}`)
   }
 
-  const repositoryRoot = path.join(__dirname, '../..')
+  const repositoryRoot = path.join(import.meta.dirname, '../..')
   const plans = planShards({
     testsDir: path.join(repositoryRoot, 'playwright/tests'),
     timingsPath: path.join(repositoryRoot, 'playwright/timings.json'),
@@ -329,28 +438,11 @@ function main(argv = process.argv.slice(2)) {
   console.log(json ? JSON.stringify(plan) : plan.files.join(' '))
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   try {
     main()
   } catch (error) {
-    console.error(`Playwright shard planning failed: ${error.message}`)
+    console.error(`Playwright shard planning failed: ${errorMessage(error)}`)
     process.exitCode = 1
   }
-}
-
-module.exports = {
-  productionSpecs,
-  DEFAULT_DURATION_SECONDS,
-  SELECTED_FALLBACK_DURATION_SECONDS,
-  SELECTED_MAX_SHARDS,
-  SELECTED_TARGET_SHARD_SECONDS,
-  buildShardPlans,
-  buildSelectedShardPlans,
-  canonicalProfile,
-  parseProfileManifest,
-  parseTimings,
-  planShards,
-  positiveMedian,
-  selectedDurationMap,
-  selectedShardCount,
 }
