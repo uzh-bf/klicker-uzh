@@ -8,16 +8,14 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getManageProposalResult } from '../services/manageProposalResult'
+import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { getManageProposalResult } from '../services/manageProposalResult'
+import { DocQueryResults } from './doc-query-results'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
-import {
-  isDocQueryToolName,
-  normalizeSourcesFromParts,
-  parseDocQueryPayload,
-} from '@/src/lib/sources/normalizeSources'
-import type { Translate } from '@/src/lib/sources/sourceDisplay'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -95,7 +93,7 @@ export type DocQueryChipState = 'running' | 'done' | 'doneEmpty' | 'failed'
  * their search found nothing would be worse than saying nothing at all.
  */
 export function getDocQueryChipState({
-  toolName,
+  toolName: _toolName,
   isRunning,
   isFailed,
   result,
@@ -107,14 +105,10 @@ export function getDocQueryChipState({
   result: unknown
   isError?: boolean
 }): DocQueryChipState {
-  if (isFailed) return 'failed'
   if (isRunning) return 'running'
-  if (!parseDocQueryPayload(result)) return 'done'
-
-  const sources = normalizeSourcesFromParts([
-    { type: 'tool-call', toolName, result, isError },
-  ])
-  return sources.length > 0 ? 'done' : 'doneEmpty'
+  const state = getDocQueryResult(result).state
+  if (isFailed || isError || state === 'failed') return 'failed'
+  return state === 'empty' ? 'doneEmpty' : 'done'
 }
 
 function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
@@ -149,58 +143,14 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
     return undefined
   }
 
-  const query = (parsed as Record<string, unknown>).query
+  const args = parsed as Record<string, unknown>
+  const query =
+    typeof args.question === 'string' && args.question.trim()
+      ? args.question
+      : args.query
   return typeof query === 'string' && query.trim().length > 0
     ? query
     : undefined
-}
-
-export interface DocQueryPanelContent {
-  query?: string
-  showSourcesHint: boolean
-}
-
-/**
- * Friendly, non-raw content for an expanded doc_query tool call's panel, or
- * `undefined` when the raw tool-name/args/result fallback should render
- * instead: a non-doc_query tool, or a doc_query result that never parsed
- * (running, cancelled, or failed calls all leave `result` as a
- * placeholder/error value — see `getDocQueryChipState` — whose raw payload
- * keeps its debugging value).
- *
- * `'done'` only ever reaches here once `parseDocQueryPayload(result)` above
- * has already succeeded, so — unlike the chip label — it unambiguously means
- * "parsed with at least one source" and is safe to key the sources hint on.
- */
-export function getDocQueryPanelContent({
-  isDocQuery,
-  argsText,
-  result,
-  docQueryState,
-}: {
-  isDocQuery: boolean
-  argsText: string
-  result: unknown
-  docQueryState: DocQueryChipState | undefined
-}): DocQueryPanelContent | undefined {
-  if (
-    !isDocQuery ||
-    docQueryState === 'running' ||
-    docQueryState === 'failed' ||
-    !parseDocQueryPayload(result)
-  ) {
-    return undefined
-  }
-
-  const query = parseDocQueryArgsQuery(argsText)
-  const showSourcesHint = docQueryState === 'done'
-  // doneEmpty with unreadable args would yield a panel with nothing in it —
-  // fall back to the raw payload instead.
-  if (query === undefined && !showSourcesHint) {
-    return undefined
-  }
-
-  return { query, showSourcesHint }
 }
 
 interface ToolFallbackProps {
@@ -244,12 +194,8 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
     : undefined
 
-  const docQueryPanelContent = getDocQueryPanelContent({
-    isDocQuery,
-    argsText,
-    result,
-    docQueryState,
-  })
+  const retrieval = isDocQuery ? getDocQueryResult(result) : undefined
+  const query = isDocQuery ? parseDocQueryArgsQuery(argsText) : undefined
 
   const resultText =
     result === undefined
@@ -314,22 +260,21 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           <div className="bg-muted mt-1 rounded p-2 text-xs">
             {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
                 `--muted`, under the 4.5:1 AA floor for 12px text. */}
-            {docQueryPanelContent ? (
+            {isDocQuery ? (
               <>
-                {docQueryPanelContent.query !== undefined && (
+                {query && (
                   <p>
-                    <span className="font-medium">
-                      {t('chat.toolFallback.docQueryQueryLabel')}:
-                    </span>{' '}
-                    {docQueryPanelContent.query}
+                    {t('chat.toolFallback.docQueryQueryLabel')}: {query}
                   </p>
                 )}
-                {docQueryPanelContent.showSourcesHint && (
-                  <p
-                    className={docQueryPanelContent.query ? 'mt-1' : undefined}
-                  >
-                    {t('chat.toolFallback.docQuerySourcesHint')}
-                  </p>
+                {docQueryState === 'running' ||
+                docQueryState === 'failed' ||
+                retrieval?.state === 'empty' ? (
+                  <p>{docQueryChipLabel(t, docQueryState ?? 'done')}</p>
+                ) : retrieval && retrieval.groups.length > 0 ? (
+                  <DocQueryResults groups={retrieval.groups} />
+                ) : (
+                  <p>{t('chat.toolFallback.resultUnavailable')}</p>
                 )}
               </>
             ) : (

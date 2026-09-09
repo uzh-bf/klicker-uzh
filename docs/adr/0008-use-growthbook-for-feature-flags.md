@@ -38,7 +38,40 @@ Email is excluded. Missing configuration, an invalid non-empty environment,
 and unavailable boolean definitions fail closed to false. At the time of this
 decision, flags controlled rollout and presentation only. ADR 0038 later
 permits a flag to become an additional backend-enforced feature entitlement;
-it still cannot replace authentication or resource authorization.
+it still cannot replace authentication or resource authorization. A server-side
+flag may be a restrictive condition in an authorization gate, but it never
+replaces authentication, role, login-scope, ownership, or account-approval
+checks.
+
+Amendment, 2026-09-06: the approved beta authoring gate uses the database-owned
+`User.betaEnabled` preference, default `true`, as a trusted input to the
+server-side, read-only `ai-beta` rollout. The backend reads the authenticated
+actor's preference per request with request-local reuse, then evaluates
+GrowthBook with the existing stable actor id, user actor type, role, and
+Catalyst attributes. The rollout rule must require `betaEnabled: true`,
+`catalyst: true`, and the existing actor conditions; browser evaluation is not
+authoritative. A false or unreadable preference stays false even when a remote
+definition would otherwise force the flag on.
+
+The preference is not stored in GrowthBook. Beta enrollment uses no saved group,
+management API, `beta-signup` flag, or Redis membership lock. The separate
+backend management API configuration remains available for other flag-control
+use cases; beta enrollment does not depend on it.
+`FULL_ACCESS` and `ACCOUNT_OWNER` sessions may edit
+the preference; the enrollment capability returns unknown membership for weaker
+scopes without reading the preference. Catalyst is required to opt in, while full-access opt-out remains
+available without Catalyst.
+
+The database-owned `User.aiFeaturesEnabled`, default `false`, remains the sole
+account approval gate for Knowledge Base access, question/graph generation,
+chatbot publication, and model usage, even when budget enforcement is
+disabled. Chatbot authoring is preapproval: the beta preference and `ai-beta`
+rollout may allow authoring without that approval, but neither grants it.
+Per-chatbot publication review and published participant access remain separate
+and unchanged. Token provisioning and validation belong to v3-ai, not this flag
+contract. See the
+[approved beta authoring plan](../../project/2026-09-05-v3-beta-authoring-gate-plan.md)
+and [the publication approval decision](./0020-two-tier-chatbot-approval.md).
 
 Existing preview booleans migrate incrementally. A field remains authoritative
 until every consumer for that behavior has moved; deleting the database or
@@ -69,7 +102,9 @@ upgrade path for a sensitive flag.
 The cluster must expose a browser-accessible, CORS-enabled HTTPS SDK endpoint in
 addition to its internal service. GrowthBook feature definitions and ordinary
 client-side targeting rules are observable in browser traffic, so sensitive
-attributes and browser-only authorization decisions are prohibited.
+attributes must not appear there. Client-side decisions cannot authorize backend
+operations; the authoring restriction above is independently evaluated by the
+backend.
 
 Each adopting app or service owns its connectivity configuration and must be
 tested with missing configuration. Browser definitions load on provider mount;

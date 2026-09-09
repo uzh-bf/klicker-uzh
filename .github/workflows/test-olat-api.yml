@@ -10,8 +10,11 @@ on:
       - 'packages/util/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.devcontainer/disposable-test-init.sql'
       - 'tsconfig.json'
       - '.github/workflows/test-olat-api.yml'
+      - '.github/scripts/olat-runner.test.cjs'
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -22,8 +25,11 @@ on:
       - 'packages/util/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.devcontainer/disposable-test-init.sql'
       - 'tsconfig.json'
       - '.github/workflows/test-olat-api.yml'
+      - '.github/scripts/olat-runner.test.cjs'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -52,6 +58,9 @@ jobs:
         with:
           version: 11.5.0
           run_install: true
+
+      - name: Check isolated runner failure handling
+        run: node --test .github/scripts/olat-runner.test.cjs
 
       - name: Run tests using Docker
         run: |

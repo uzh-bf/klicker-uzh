@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -11,14 +13,23 @@ import { tmpdir } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { parse as parseYaml } from 'yaml'
 import { resolveDevrouter } from './devrouter-cli.mjs'
+import {
+  createDependencyCompose,
+  discoverWorkspacePackages,
+} from './generate-dependency-mounts.mjs'
 import {
   assertPlaywrightHostBoundary,
   HOST_RUNNER_ENV,
+  preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 import {
+  PNPM_VERIFY_DEPS_ENV,
+  parseLocalOptions,
   parsePublishedPort,
   resolvePlaywrightEnvironment,
+  main as runPlaywrightHost,
 } from './run-playwright-host.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -26,6 +37,328 @@ const simulatedHostCwd = '/Users/test/klicker-uzh'
 
 const noContainerPaths = () => false
 
+test('database preservation is explicit, host-only, and excluded from CI', () => {
+  const selected = {
+    [HOST_RUNNER_ENV]: '1',
+    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+  }
+  assert.equal(preserveLocalDatabase({}), false)
+  assert.equal(preserveLocalDatabase(selected), true)
+
+  assert.throws(
+    () =>
+      preserveLocalDatabase({
+        KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '1',
+      }),
+    /host launcher marker/
+  )
+
+  for (const variable of ['CI', 'GITHUB_ACTIONS']) {
+    for (const value of ['true', 'false', '0']) {
+      assert.equal(preserveLocalDatabase({ [variable]: value }), false)
+      assert.throws(
+        () => preserveLocalDatabase({ ...selected, [variable]: value }),
+        /incompatible with CI or GitHub Actions/
+      )
+    }
+  }
+})
+
+test('local runner options preserve defaults and forward test selectors', () => {
+  assert.deepEqual(parseLocalOptions(['--project=chromium']), {
+    args: ['--project=chromium'],
+    profile: undefined,
+    preserveDatabase: false,
+  })
+  assert.deepEqual(
+    parseLocalOptions([
+      '--runtime-profile',
+      'chat',
+      '--preserve-database',
+      'tests/Y-chat.spec.ts',
+    ]),
+    {
+      args: ['tests/Y-chat.spec.ts'],
+      profile: 'chat',
+      preserveDatabase: true,
+    }
+  )
+  assert.throws(() => parseLocalOptions(['--runtime-profile', '--help']))
+  assert.throws(() => parseLocalOptions(['--runtime-profile']))
+  assert.throws(
+    () => parseLocalOptions(['--runtime-profile=chat']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['--preserve-database=1']),
+    /space syntax/
+  )
+  assert.throws(
+    () => parseLocalOptions(['tests/example.spec.ts', '--preserve-database']),
+    /before Playwright arguments/
+  )
+  assert.throws(
+    () =>
+      parseLocalOptions(['--project=chromium', '--runtime-profile', 'chat']),
+    /before Playwright arguments/
+  )
+})
+
+function createLauncherHarness({
+  playwrightCli = true,
+  prismaDist = true,
+  typesDist = true,
+  failWhen,
+  environment = { PATH: '/synthetic/bin' },
+} = {}) {
+  const calls = []
+  const logs = []
+  const root = '/synthetic/klicker-uzh'
+  const workspaceGitDir = '/synthetic/git/worktrees/launcher'
+
+  const commandRunner = (command, args, options = {}) => {
+    calls.push({ command, args: [...args], options })
+    if (failWhen?.({ command, args, options })) {
+      throw new Error('synthetic launcher failure')
+    }
+
+    if (command === 'git' && args.at(-1) === '--git-dir') {
+      return workspaceGitDir
+    }
+    if (command === 'git' && args.at(-1) === '--git-common-dir') {
+      return '/synthetic/git'
+    }
+    if (command === 'docker' && args[0] === 'ps') return 'container-id'
+    if (command === 'docker' && args[0] === 'port') {
+      return '127.0.0.1:49153'
+    }
+
+    return ''
+  }
+
+  const pathExists = (path) => {
+    if (path.endsWith('/.dockerenv') || path.endsWith('/.containerenv')) {
+      return false
+    }
+    if (path.endsWith('/playwright/node_modules/@playwright/test/cli.js')) {
+      return playwrightCli
+    }
+    if (path.endsWith('/packages/prisma/dist/index.js')) return prismaDist
+    if (path.endsWith('/packages/types/dist/index.js')) return typesDist
+    if (path.endsWith('/devrouter-workspace')) return true
+    return false
+  }
+
+  const readFile = (path) => {
+    if (path.endsWith('/devrouter-workspace')) return 'synthetic-launcher\n'
+    if (path.endsWith('/devcontainer.env')) {
+      return [
+        'DATABASE_URL=postgres://user:password@postgres:5432/database',
+        'APP_SECRET=synthetic-app-secret',
+      ].join('\n')
+    }
+    throw new Error(`unexpected synthetic file: ${path}`)
+  }
+
+  return {
+    calls,
+    logs,
+    dependencies: {
+      resolveDevrouterFn: () => '/synthetic/bin/devrouter',
+      commandExistsFn: () => false,
+      commandRunner,
+      environment,
+      log: (message) => logs.push(message),
+      pathExists,
+      readFile,
+      root,
+    },
+  }
+}
+
+test('invalid preservation and local options fail before launcher effects', () => {
+  for (const { args, environment, error } of [
+    {
+      args: ['--preserve-database', '--list'],
+      environment: { PATH: '/synthetic/bin', CI: 'false' },
+      error: /incompatible with CI or GitHub Actions/,
+    },
+    {
+      args: ['--runtime-profile=chat', '--list'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /space syntax/,
+    },
+    {
+      args: ['--runtime-profile'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /separate profile name/,
+    },
+    {
+      args: ['--list', '--preserve-database'],
+      environment: { PATH: '/synthetic/bin' },
+      error: /before Playwright arguments/,
+    },
+  ]) {
+    const harness = createLauncherHarness({ environment })
+
+    assert.throws(() => runPlaywrightHost(args, harness.dependencies), error)
+    assert.deepEqual(harness.calls, [])
+  }
+})
+
+function commandIndex(calls, command, firstArg) {
+  return calls.findIndex(
+    ({ command: actualCommand, args }) =>
+      actualCommand === command &&
+      (firstArg === undefined || args[0] === firstArg)
+  )
+}
+
+function pnpmCalls(calls) {
+  return calls.filter(({ command }) => command === 'pnpm')
+}
+
+function parseDependencyMounts(compose) {
+  const appVolumes = compose?.services?.app?.volumes
+
+  assert.ok(
+    Array.isArray(appVolumes),
+    'compose app service has no volumes list'
+  )
+
+  const mounts = appVolumes
+    .filter((mount) => typeof mount === 'string')
+    .flatMap((mount) => {
+      const match = mount.match(
+        /^([a-zA-Z0-9_.-]+):\/workspaces\/klicker-uzh\/([^:]+)(?::[^:]*)?$/
+      )
+
+      return match ? [[match[2], match[1]]] : []
+    })
+    .filter(
+      ([target]) =>
+        target === 'node_modules' || target.endsWith('/node_modules')
+    )
+
+  assert.equal(
+    new Set(mounts.map(([target]) => target)).size,
+    mounts.length,
+    'app dependency mount targets must be distinct'
+  )
+
+  return new Map(mounts)
+}
+
+function assertDependencyMountCoverage(compose, workspacePackages) {
+  const mounts = parseDependencyMounts(compose)
+  const declarations = compose?.volumes
+
+  assert.ok(
+    declarations && typeof declarations === 'object',
+    'compose file has no top-level volumes section'
+  )
+
+  for (const [target, volume] of [
+    ['node_modules', 'node_modules_root'],
+    ['playwright/node_modules', 'node_modules_playwright'],
+    ['packages/prisma/node_modules', 'node_modules_prisma'],
+    ['packages/types/node_modules', 'node_modules_types'],
+  ]) {
+    assert.equal(
+      mounts.get(target),
+      volume,
+      `${target} must keep its existing ${volume} volume`
+    )
+    assert.ok(Object.hasOwn(declarations, volume), `${volume} is not declared`)
+  }
+
+  const packageVolumes = workspacePackages.map((workspacePackage) => {
+    const target = `${workspacePackage}/node_modules`
+    const volume = mounts.get(target)
+
+    assert.ok(volume, `${target} is not isolated from the host`)
+    assert.ok(Object.hasOwn(declarations, volume), `${volume} is not declared`)
+
+    return volume
+  })
+
+  assert.equal(
+    new Set(['node_modules_root', ...packageVolumes]).size,
+    workspacePackages.length + 1,
+    'root and workspace package dependency volumes must be distinct'
+  )
+  assert.ok(
+    packageVolumes.every(
+      (volume) =>
+        volume.startsWith('node_modules_') && volume !== 'node_modules'
+    ),
+    'workspace package dependency volumes must use package-scoped names'
+  )
+
+  const expectedDependencyVolumes = new Set([
+    'node_modules_root',
+    ...packageVolumes,
+  ])
+  assert.deepEqual(
+    Object.keys(declarations)
+      .filter((volume) => volume.startsWith('node_modules_'))
+      .sort(),
+    [...expectedDependencyVolumes].sort(),
+    'dependency volume declarations must match app service mounts'
+  )
+
+  for (const volume of expectedDependencyVolumes) {
+    const declaration = declarations[volume] ?? {}
+    assert.equal(
+      declaration.external,
+      undefined,
+      `${volume} must remain project-scoped`
+    )
+    assert.equal(
+      declaration.name,
+      undefined,
+      `${volume} must remain project-scoped`
+    )
+  }
+
+  const store = declarations.pnpm_store
+  assert.deepEqual(store, {
+    external: true,
+    name: 'klicker-uzh-pnpm-store-v1',
+  })
+}
+
+function createOriginalMountFixture(compose) {
+  const original = structuredClone(compose)
+  const legacyTargets = new Set([
+    'playwright/node_modules',
+    'packages/prisma/node_modules',
+    'packages/types/node_modules',
+  ])
+  const mounts = parseDependencyMounts(compose)
+  const removedVolumes = new Set()
+
+  original.services.app.volumes = original.services.app.volumes.filter(
+    (mount) => {
+      const match = mount.match(
+        /^([a-zA-Z0-9_.-]+):\/workspaces\/klicker-uzh\/([^:]+)(?::[^:]*)?$/
+      )
+      const dependencyMount = mounts.get(match?.[2])
+
+      if (!dependencyMount) return true
+
+      const target = match[2]
+      if (legacyTargets.has(target) || target === 'node_modules') return true
+
+      removedVolumes.add(dependencyMount)
+      return false
+    }
+  )
+
+  for (const volume of removedVolumes) delete original.volumes[volume]
+
+  return original
+}
 function cliFixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-host-cli-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
@@ -227,20 +560,323 @@ test('every local Playwright package script routes through the host launcher', (
   }
 })
 
-test('devcontainer dependency mounts cannot overwrite the host runner links', () => {
-  const compose = readFileSync(
-    join(repoRoot, '.devcontainer', 'docker-compose.yml'),
-    'utf8'
+test('devcontainer dependency mounts isolate every workspace package', () => {
+  const devcontainer = JSON.parse(
+    readFileSync(join(repoRoot, '.devcontainer', 'devcontainer.json'), 'utf8')
+  )
+  assert.deepEqual(devcontainer.dockerComposeFile.slice(0, 2), [
+    'docker-compose.yml',
+    'docker-compose.dependencies.yml',
+  ])
+  const compose = parseYaml(
+    readFileSync(join(repoRoot, '.devcontainer', 'docker-compose.yml'), 'utf8')
+  )
+  const workspacePackages = discoverWorkspacePackages(repoRoot)
+  const generated = createDependencyCompose(workspacePackages)
+  assert.equal(parseDependencyMounts(compose).size, 0)
+  assert.equal(
+    Object.keys(compose.volumes).some((name) =>
+      name.startsWith('node_modules_')
+    ),
+    false
+  )
+  compose.services.app.volumes.push(...generated.services.app.volumes)
+  Object.assign(compose.volumes, generated.volumes)
+
+  assertDependencyMountCoverage(compose, workspacePackages)
+
+  assert.throws(
+    () =>
+      assertDependencyMountCoverage(
+        createOriginalMountFixture(compose),
+        workspacePackages
+      ),
+    /is not isolated from the host/
+  )
+})
+
+test('native initialization aborts before host setup when generation fails', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'native-mount-failure-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  mkdirSync(join(root, '.devcontainer'))
+  mkdirSync(join(root, 'util'))
+  writeFileSync(
+    join(root, '.devcontainer', 'initialize.sh'),
+    readFileSync(join(repoRoot, '.devcontainer', 'initialize.sh'))
+  )
+  writeFileSync(
+    join(root, 'util', 'generate-dependency-mounts.mjs'),
+    'process.exit(42)\n'
+  )
+  const result = spawnSync(
+    'bash',
+    [join(root, '.devcontainer', 'initialize.sh')],
+    {
+      cwd: tmpdir(),
+      env: {
+        ...process.env,
+        PATH: `${dirname(process.execPath)}${delimiter}${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  )
+  assert.equal(result.status, 42)
+  assert.equal(existsSync(join(root, '.devcontainer', 'certs')), false)
+})
+
+test('cold runs stop before host preparation and reconcile afterward', () => {
+  const harness = createLauncherHarness({ playwrightCli: false })
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  const stop = commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop')
+  const install = commandIndex(harness.calls, 'pnpm', 'install')
+  const ensure = commandIndex(
+    harness.calls,
+    '/synthetic/bin/devrouter',
+    'ensure'
+  )
+  assert.ok(stop >= 0)
+  assert.ok(install > stop)
+  assert.ok(ensure > install)
+  assert.equal(
+    harness.calls.filter(
+      ({ command, args }) => command === 'pnpm' && args.includes('playwright')
+    ).length,
+    1,
+    'list mode must not install a browser'
+  )
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
+})
+
+test('host preparation preserves explicit runtime profile and database selection', () => {
+  const harness = createLauncherHarness({ playwrightCli: false })
+  runPlaywrightHost(
+    ['--runtime-profile', 'chat', '--preserve-database', '--list'],
+    harness.dependencies
+  )
+  const ensure = harness.calls.find(
+    ({ command, args }) =>
+      command === '/synthetic/bin/devrouter' && args[0] === 'ensure'
+  )
+  assert.deepEqual(ensure.args, [
+    'ensure',
+    '/synthetic/klicker-uzh',
+    '--profile',
+    'chat',
+  ])
+  const testRun = pnpmCalls(harness.calls).find(({ args }) =>
+    args.includes('test')
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') <
+      harness.calls.indexOf(testRun),
+    'runtime must be reconciled before Playwright test execution'
+  )
+  assert.equal(testRun.options.env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE, '1')
+  assert.equal(testRun.options.env[PNPM_VERIFY_DEPS_ENV], 'error')
+  assert.deepEqual(testRun.args, [
+    '--filter',
+    '@klicker-uzh/playwright',
+    'exec',
+    'playwright',
+    'test',
+    '--list',
+  ])
+})
+
+test('cold runs complete builds and browser preparation before reconciliation', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
+
+  const stop = commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop')
+  const install = commandIndex(harness.calls, 'pnpm', 'install')
+  const prismaBuild = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/prisma') &&
+      args.includes('build')
+  )
+  const typesBuild = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/types') &&
+      args.includes('build')
+  )
+  const browserInstall = harness.calls.findIndex(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('playwright') &&
+      args.includes('install')
+  )
+  const ensure = commandIndex(
+    harness.calls,
+    '/synthetic/bin/devrouter',
+    'ensure'
   )
 
-  for (const dependencyPath of [
-    'playwright/node_modules',
-    'packages/prisma/node_modules',
-    'packages/types/node_modules',
-  ]) {
-    assert.ok(
-      compose.includes(`:/workspaces/klicker-uzh/${dependencyPath}`),
-      `${dependencyPath} is not isolated from the host`
+  assert.ok(stop >= 0)
+  assert.ok(stop < install)
+  assert.ok(install < prismaBuild)
+  assert.ok(prismaBuild < typesBuild)
+  assert.ok(typesBuild < browserInstall)
+  assert.ok(browserInstall < ensure)
+})
+
+test('cold preparation aborts before reconciliation when stopping fails', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    failWhen: ({ command, args }) =>
+      command === '/synthetic/bin/devrouter' && args[0] === 'stop',
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
+})
+
+test('cold preparation aborts before reconciliation when install fails', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    failWhen: ({ command, args }) =>
+      command === 'pnpm' && args[0] === 'install',
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
+})
+
+test('warm preparation aborts before reconciliation when a host build fails', () => {
+  const harness = createLauncherHarness({
+    failWhen: ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('@klicker-uzh/prisma') &&
+      args.includes('build'),
+    prismaDist: false,
+  })
+
+  assert.throws(
+    () => runPlaywrightHost(['--list'], harness.dependencies),
+    /synthetic launcher failure/
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
+})
+
+test('warm runs skip stop and package installation but preserve browser mode', () => {
+  const harness = createLauncherHarness()
+
+  runPlaywrightHost(['--headed', '--project=chromium'], harness.dependencies)
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.equal(commandIndex(harness.calls, 'pnpm', 'install'), -1)
+  const browserInstall = harness.calls.find(
+    ({ command, args }) =>
+      command === 'pnpm' &&
+      args.includes('playwright') &&
+      args.includes('install')
+  )
+  assert.deepEqual(browserInstall?.args.slice(-1), ['chromium'])
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
     )
-  }
+  )
+})
+
+test('print-env reconciles without dependency preparation', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--print-env'], harness.dependencies)
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop'),
+    -1
+  )
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure') >= 0,
+    true
+  )
+  assert.equal(pnpmCalls(harness.calls).length, 0)
+})
+
+test('show-report does not reconcile the runtime', () => {
+  const harness = createLauncherHarness({
+    playwrightCli: false,
+    prismaDist: false,
+    typesDist: false,
+  })
+
+  runPlaywrightHost(['--show-report'], harness.dependencies)
+
+  assert.equal(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'ensure'),
+    -1
+  )
+  assert.ok(
+    commandIndex(harness.calls, '/synthetic/bin/devrouter', 'stop') >= 0
+  )
+  const report = harness.calls.find(
+    ({ command, args }) => command === 'pnpm' && args.includes('show-report')
+  )
+  assert.ok(report)
+  assert.ok(
+    pnpmCalls(harness.calls).every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
+})
+
+test('Volta-routed pnpm commands retain the lowercase dependency guard', () => {
+  const harness = createLauncherHarness()
+  harness.dependencies.commandExistsFn = () => true
+
+  runPlaywrightHost(['--list'], harness.dependencies)
+
+  const pnpmChildren = harness.calls.filter(
+    ({ command, args }) => command === 'corepack' && args[0] === 'pnpm'
+  )
+  assert.ok(pnpmChildren.length > 0)
+  assert.ok(
+    pnpmChildren.every(
+      ({ options }) => options.env?.[PNPM_VERIFY_DEPS_ENV] === 'error'
+    )
+  )
 })

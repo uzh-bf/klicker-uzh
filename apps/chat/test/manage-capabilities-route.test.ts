@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   getAuthenticatedManageUser: vi.fn(),
-  isManageAiEnabled: vi.fn(),
+  getManageAiCapability: vi.fn(),
   loadLecturerMcpTools: vi.fn(),
   rateLimitCheck: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/featureFlags', () => ({
-  isManageAiEnabled: mocks.isManageAiEnabled,
+  getManageAiCapability: mocks.getManageAiCapability,
 }))
 
 vi.mock('@/src/lib/server/manageAuth', () => ({
@@ -49,7 +49,7 @@ describe('GET /api/manage/capabilities', () => {
       scope: 'FULL_ACCESS',
       sub: 'lecturer-1',
     })
-    mocks.isManageAiEnabled.mockReset().mockResolvedValue(true)
+    mocks.getManageAiCapability.mockReset().mockResolvedValue('enabled')
     mocks.rateLimitCheck.mockReset().mockReturnValue({
       allowed: true,
       retryAfterMs: 0,
@@ -70,14 +70,24 @@ describe('GET /api/manage/capabilities', () => {
     mocks.getAuthenticatedManageUser.mockResolvedValue(null)
 
     await expectState(await GET(request()), 401, 'unavailable')
-    expect(mocks.isManageAiEnabled).not.toHaveBeenCalled()
+    expect(mocks.getManageAiCapability).not.toHaveBeenCalled()
     expect(mocks.loadLecturerMcpTools).not.toHaveBeenCalled()
   })
 
   test('returns only unavailable when the Manage AI gate is closed', async () => {
-    mocks.isManageAiEnabled.mockResolvedValue(false)
+    mocks.getManageAiCapability.mockResolvedValue('disabled')
 
     await expectState(await GET(request()), 403, 'unavailable')
+    expect(mocks.loadLecturerMcpTools).not.toHaveBeenCalled()
+  })
+
+  test('returns a retryable outage before opening an MCP session', async () => {
+    mocks.getManageAiCapability.mockResolvedValue('temporarilyUnavailable')
+
+    const response = await GET(request())
+
+    await expectState(response, 503, 'unavailable')
+    expect(response.headers.get('retry-after')).toBe('30')
     expect(mocks.loadLecturerMcpTools).not.toHaveBeenCalled()
   })
 

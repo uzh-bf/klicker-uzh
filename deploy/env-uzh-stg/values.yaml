@@ -39,6 +39,8 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -64,6 +66,8 @@ hatchet:
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -86,6 +90,8 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -125,9 +131,6 @@ auth:
     rollout.klicker.uzh.ch/release: '047f147261bd'
 
   replicaCount: 1
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -297,9 +300,6 @@ chat:
         input: 5.0
         output: 30.0
   replicaCount: 1
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -541,9 +541,6 @@ frontendControl:
     pullPolicy: Always
     tag: v3-ai
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -695,9 +692,6 @@ olatApi:
     pullPolicy: Always
     tag: v3-ai
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -797,9 +791,6 @@ responseApi:
     tag: v3-ai
     pullPolicy: Always
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -844,8 +835,6 @@ assessment:
     podAnnotations:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -908,8 +897,6 @@ assessment:
     podAnnotations:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -986,9 +973,6 @@ assessment:
     podAnnotations:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
-
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:

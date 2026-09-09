@@ -83,6 +83,14 @@ function exactObject(actual, expected) {
 export function assertLocalSeedOwnership(server, configs) {
   const legacy =
     server?.authType === 'none' &&
+    server.passChatbotId === true &&
+    !server.authSecret &&
+    (server.parameters === null || exactObject(server.parameters, {}))
+  // The current seed leaves retrieval disabled until its KB binding is ready.
+  // Authenticate that owned fixture without changing its activation state.
+  const scopedSeed =
+    server?.authType === 'scope_token' &&
+    server.passChatbotId === false &&
     !server.authSecret &&
     (server.parameters === null || exactObject(server.parameters, {}))
   const authenticated =
@@ -94,9 +102,9 @@ export function assertLocalSeedOwnership(server, configs) {
     server?.name !== 'KB' ||
     server.url !== 'http://localhost:1417/mcp' ||
     !server.isActive ||
-    !server.passChatbotId ||
+    typeof server.passChatbotId !== 'boolean' ||
     server.chatbotIdHeader !== null ||
-    (!legacy && !authenticated) ||
+    (!legacy && !scopedSeed && !authenticated) ||
     configs.length !== 2 ||
     new Set(configs.map((config) => config.chatMode)).size !== 2 ||
     configs.some(
@@ -105,12 +113,14 @@ export function assertLocalSeedOwnership(server, configs) {
         config.ownerId !== '76047345-3801-4628-ae7b-adbebcfe8821' ||
         config.courseId !== '7c12e44e-d083-4acf-845e-4c34aaff6b49' ||
         !['tutor', 'explainer'].includes(config.chatMode) ||
-        !config.isEnabled ||
+        (legacy
+          ? config.isEnabled !== true
+          : typeof config.isEnabled !== 'boolean') ||
         config.priority !== 0 ||
         !Array.isArray(config.allowedTools) ||
         config.allowedTools.length !== 1 ||
         config.allowedTools[0] !== 'doc_query' ||
-        !(legacy
+        !(legacy || scopedSeed
           ? config.parameters === null || exactObject(config.parameters, {})
           : exactObject(config.parameters, LOCAL_SCOPE))
     )

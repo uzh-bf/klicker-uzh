@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
@@ -116,6 +116,7 @@ export const PARTICIPANT_GROUP_IDS = [
 ]
 
 async function seedTest(prisma: Prisma.PrismaClient) {
+  await requireDisposableDatabase(prisma)
   if (process.env.ENV !== 'development') process.exit(1)
 
   await seedLevels(prisma)

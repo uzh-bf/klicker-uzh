@@ -75,7 +75,7 @@ export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  requireFeatureFlagAccess(ctx, 'learning-analytics')
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
   return ctx.prisma.$transaction(
     async (prisma) => {
       const eligibleParticipantIds =
@@ -151,7 +151,7 @@ export async function getCourseWeeklyActivity(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  requireFeatureFlagAccess(ctx, 'learning-analytics')
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -550,7 +550,7 @@ export async function getCoursePerformanceAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  requireFeatureFlagAccess(ctx, 'learning-analytics')
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   return ctx.prisma.$transaction(
     async (prisma) => {
@@ -661,7 +661,7 @@ export async function getActivityAnalytics(
   { activityId }: { activityId: string },
   ctx: ContextWithUser
 ) {
-  requireFeatureFlagAccess(ctx, 'learning-analytics')
+  await requireFeatureFlagAccess(ctx, 'learning-analytics')
 
   const activityIncludes = {
     stacks: {

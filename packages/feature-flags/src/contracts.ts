@@ -10,7 +10,6 @@ export const FEATURE_FLAG_DEFAULTS = {
   // move together on purpose — a surface withdrawn while the tools behind it
   // stay live is a gap, not a finer control.
   'ai-beta': false,
-  'beta-signup': false,
   'learning-analytics': false,
 } as const satisfies Record<string, false>
 
@@ -50,9 +49,10 @@ export type FeatureFlagAttributes = Record<
 > & {
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
+  betaEnabled?: boolean
   role?: string
   // Whether the lecturer holds Catalyst, institutionally or individually.
-  // The beta targeting rule requires it alongside saved-group membership, so
+  // The beta targeting rule requires it alongside the beta preference, so
   // a rule can never grant a surface to an account without it.
   catalyst?: boolean
 }
@@ -83,6 +83,9 @@ export function sanitizeFeatureFlagAttributes(
   if (typeof source.id === 'string') sanitized.id = source.id
   if (typeof source.catalyst === 'boolean') {
     sanitized.catalyst = source.catalyst
+  }
+  if (typeof source.betaEnabled === 'boolean') {
+    sanitized.betaEnabled = source.betaEnabled
   }
   if (typeof source.role === 'string') sanitized.role = source.role
   return sanitized

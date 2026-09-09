@@ -14,14 +14,62 @@ tags:
 
 ## Which level for which change
 
-| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
-| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
-| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+### Disposable database boundary
+
+Destructive test setup, cleanup, test seeds and Prisma development commands
+require the `klicker_test` database and login, plus the database comment
+`klicker-disposable-test-v1`. The login must have no elevated PostgreSQL role
+privileges. A localhost address, port forward, CI variable or `--force` is not
+proof that a database is disposable. Never mark an existing retained database
+to get past a refusal.
+
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` before its first database operation. Arm
+the same actual client used for mutation; cleanup must also check it when setup
+has failed. Do not substitute a hostname check or a separate verification client.
+
+`packages/prisma/src/disposableDatabase.ts:requireDisposableDatabase` checks
+the actual registered Prisma client and its captured connection string.
+It rejects a client already used without the guard, checks the live identity
+and marker before setup or cleanup, and gates each new pooled connection.
+Changing `DATABASE_URL` after importing Prisma does not change that client's
+destination. GraphQL tests no longer provide a default URL.
+
+The repository reset, push, development-migration and seed wrappers validate
+their destinations before invoking Prisma. Development migration requires a
+separately marked `klicker_test_shadow`; migration diff guards its shadow replay
+while allowing its main datasource to remain read-only. Configuration/schema
+overrides, unsupported CLI flags and ambient `PG*` overrides are refused.
+Production application access and `prisma migrate deploy` are unchanged.
+These guards protect repository entrypoints, not arbitrary administrative SQL
+or direct invocation of the installed Prisma binary.
+
+Fresh self-contained volumes provision the dedicated test databases. Existing
+volumes without them fail closed and require an explicitly approved fresh
+disposable environment. The legacy `test:local` Compose helper is disabled
+because it deletes shared volumes. Run the serialized GraphQL suite inside a
+provisioned self-contained environment using
+`pnpm --filter @klicker-uzh/graphql test` (config-derived).
+
+On a refusal, stop destructive work. Without displaying connection strings,
+check that the invoking process uses the intended disposable database/login,
+that no ambient `PG*` override is present, and that the exact PostgreSQL service
+completed fresh provisioning. The current sanitized refusal can represent a
+connection failure, wrong identity/marker, or a client used before arming;
+it does not identify which one. Do not retry reset blindly or print driver
+errors, which can contain credentials. For retained volumes, follow the
+[fresh-environment guidance](../.devcontainer/README.md#retained-postgresql-volumes).
+
+### Test selection
+
+| Change                                                                            | Test level                                                                                              | Command                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                          | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                                | `npx agent-browser@0.32.2` against the adopting app                                                                 |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs marked disposable Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment                         |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
 sizes, the opt-in `All` transition, the reset back to 50, and explicit
@@ -128,6 +176,15 @@ before global setup can reset data. The devcontainer also sets a non-directory
 browser path so browser installation fails there. GitHub Actions is explicitly
 allowed and retains the direct official-container workflow.
 
+For focused local checks against an existing synthetic baseline, pass
+`--runtime-profile chat --preserve-database` before the Playwright arguments.
+The explicit profile is validated by Devrouter. Database preservation skips
+global cleanup and seed only for a local host-launcher run. An explicit request
+in CI or without the launcher marker fails before setup instead of resetting
+the database. Individual specs still own their fixture writes and cleanup. Use this only
+when the required baseline already exists, and never against real course data.
+Without these options, runtime selection and database setup remain unchanged.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
 |               | Playwright (`playwright/`)                                 |
@@ -178,6 +235,7 @@ provider-level acceptance check.
   accept answers that never reach cockpit/evaluation.
 - The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, desktop and embedded-mobile close controls, and both missing-participation and no-chatbot entry fallbacks.
 - The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, compact modal isolation and focus restoration, cross-origin Escape and focus restoration, persistent context and change announcements, short mobile viewports, desktop-only size persistence, viewport-clamped size presets, breakpoint transitions that preserve the conversation, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, localized draft confirmation and parent-owned editor navigation, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
+- GrowthBook-backed AI availability is covered in `playwright/tests/Y-ai-beta-availability.spec.ts`. The suite injects the authenticated capability query, verifies that an enabled-to-temporarily-unavailable transition keeps the AI entry visible but disabled with recovery guidance, confirms the direct Generate route remains a stable retryable state, and proves recovery without a full reload. Its explicit-denial case verifies that the AI entry remains hidden and the direct route stays unavailable. This is presentation evidence; backend authorization remains covered by the GraphQL and Chat contract tests.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
 - `evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.

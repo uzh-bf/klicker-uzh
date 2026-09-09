@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet-worker-response-processor",
-  "version": "3.3.0-alpha.82",
+  "version": "3.4.0-alpha.74",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,7 +40,8 @@
     "dev:run": "nodemon -w dist/ --exec 'node --env-file .env dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file .env src/index.ts",
     "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
-    "start:test": "node --env-file .env dist/index.js"
+    "start:test": "node --env-file .env dist/index.js",
+    "test:run": "tsx --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

@@ -48,8 +48,20 @@ export const User = UserRef.implement({
 
     publicPreview: t.exposeBoolean('publicPreview'),
     privatePreview: t.exposeBoolean('privatePreview'),
-
-    aiFeaturesEnabled: t.exposeBoolean('aiFeaturesEnabled'),
+    betaEnabled: t
+      .withAuth((user, _, ctx) =>
+        ctx.user?.sub === user.id
+          ? { authenticated: true, role: DB.UserRole.USER }
+          : false
+      )
+      .exposeBoolean('betaEnabled'),
+    aiFeaturesEnabled: t
+      .withAuth((user, _, ctx) =>
+        ctx.user?.sub === user.id
+          ? { authenticated: true, role: DB.UserRole.USER }
+          : false
+      )
+      .exposeBoolean('aiFeaturesEnabled'),
 
     numChatbots: t.int({
       resolve: async (user, _, ctx) => {

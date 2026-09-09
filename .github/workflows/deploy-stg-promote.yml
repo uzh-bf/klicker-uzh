@@ -49,7 +49,7 @@ concurrency:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 jobs:
   promote:
@@ -81,6 +81,7 @@ jobs:
         env:
           CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.event.inputs.sha }}
           GITHUB_TOKEN: ${{ github.token }}
+          STG_PROMOTE_TOKEN: ${{ ((github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' && github.event.inputs.confirm_ref_update == 'stg-release') || (github.event_name == 'workflow_run' && vars.STG_RELEASE_PROMOTION_ENABLED == 'true')) && secrets.STG_PROMOTE_TOKEN || '' }}
           PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
           SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
           RECEIPT_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.json
@@ -94,6 +95,7 @@ jobs:
               context,
               core,
               github,
+              gitToken: process.env.STG_PROMOTE_TOKEN,
               promotionEnabled: process.env.PROMOTION_ENABLED,
               sourceBranch: process.env.SOURCE_BRANCH,
               receiptPath: process.env.RECEIPT_PATH,

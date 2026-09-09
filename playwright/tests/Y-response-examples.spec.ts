@@ -22,9 +22,10 @@ test.describe('Chatbot response-example review', () => {
     await loginLecturer()
     await gotoCommit(
       page,
-      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=advanced`
+      `${manageUrl}/resources/chatbots?chatbotId=${CHATBOT_ID_TEST}&view=knowledge`
     )
 
+    await page.getByTestId('chatbot-response-examples-trigger').click()
     const review = page.getByTestId('response-examples-review')
     await expect(review).toBeVisible()
     await expect(review.getByTestId('response-examples-loading')).toBeHidden()

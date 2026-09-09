@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.auth.autoscaling.enabled }}
+  {{- if hasKey .Values.auth "replicaCount" }}
   replicas: {{ .Values.auth.replicaCount }}
   {{- end }}
   selector:
@@ -92,7 +92,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendPWA.autoscaling.enabled }}
+  {{- if and (hasKey .Values.frontendPWA "replicaCount") (not .Values.frontendPWA.autoscaling.enabled) }}
   replicas: {{ .Values.frontendPWA.replicaCount }}
   {{- end }}
   selector:
@@ -171,7 +171,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendManage.autoscaling.enabled }}
+  {{- if and (hasKey .Values.frontendManage "replicaCount") (not .Values.frontendManage.autoscaling.enabled) }}
   replicas: {{ .Values.frontendManage.replicaCount }}
   {{- end }}
   selector:
@@ -250,7 +250,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendControl.autoscaling.enabled }}
+  {{- if hasKey .Values.frontendControl "replicaCount" }}
   replicas: {{ .Values.frontendControl.replicaCount }}
   {{- end }}
   selector:
@@ -329,7 +329,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.backendGraphql.autoscaling.enabled }}
+  {{- if and (hasKey .Values.backendGraphql "replicaCount") (not .Values.backendGraphql.autoscaling.enabled) }}
   replicas: {{ .Values.backendGraphql.replicaCount }}
   {{- end }}
   selector:
@@ -418,7 +418,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.olatApi.autoscaling.enabled }}
+  {{- if hasKey .Values.olatApi "replicaCount" }}
   replicas: {{ .Values.olatApi.replicaCount }}
   {{- end }}
   selector:
@@ -501,7 +501,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.lti.autoscaling.enabled }}
+  {{- if hasKey .Values.lti "replicaCount" }}
   replicas: {{ .Values.lti.replicaCount }}
   {{- end }}
   selector:

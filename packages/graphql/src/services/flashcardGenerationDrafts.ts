@@ -1,9 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type {
-  GeneratedFlashcard,
-  GeneratedFlashcardEditable,
-  QuestionGenerationArtifactRef,
-} from '@klicker-uzh/types'
+import type { GeneratedFlashcardEditable } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import { assertQuestionGenerationPreviewAccess } from './questionGenerationGraph.js'
@@ -79,116 +75,6 @@ export function normalizeGeneratedFlashcardEditable(
     cardType: value.cardType,
     tags: normalizedTags,
   }
-}
-
-function editableFromOriginal(
-  original: GeneratedFlashcard
-): GeneratedFlashcardEditable {
-  return normalizeGeneratedFlashcardEditable({
-    name: original.name,
-    front: original.front,
-    back: original.back,
-    cardType: original.cardType,
-    tags: original.tags,
-  })
-}
-
-export async function persistInitialGeneratedFlashcardDrafts(
-  input: {
-    buildId: string
-    leaseOwner: string
-    cards: GeneratedFlashcard[]
-    resultStatus: 'completed' | 'completed_with_review' | 'incomplete'
-    unresolvedElementCount: number
-    warningCount: number
-    resultManifestArtifact: QuestionGenerationArtifactRef
-    finalBankArtifact: QuestionGenerationArtifactRef
-    checkpointArtifact: QuestionGenerationArtifactRef | null
-  },
-  ctx: ContextWithUser
-) {
-  await ctx.prisma.$transaction(async (transaction) => {
-    const build = await transaction.elementGenerationBuild.findFirst({
-      where: {
-        id: input.buildId,
-        elementType: DB.ElementType.FLASHCARD,
-        status: {
-          in: [
-            DB.ElementGenerationBuildStatus.RUNNING,
-            DB.ElementGenerationBuildStatus.QUEUED,
-            DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-          ],
-        },
-        syncLeaseOwner: input.leaseOwner,
-      },
-      select: { id: true },
-    })
-    if (!build) {
-      throw questionGenerationServiceError(
-        'CONCURRENT_MODIFICATION',
-        'Flashcard build completion lost its lease'
-      )
-    }
-
-    await transaction.generatedElementDraft.createMany({
-      data: input.cards.map((card, order) => ({
-        buildId: input.buildId,
-        sourceElementId: card.sourceFlashcardId,
-        order,
-        elementType: DB.ElementType.FLASHCARD,
-        original: card,
-        current: editableFromOriginal(card),
-        citations: [],
-      })),
-      skipDuplicates: true,
-    })
-    const draftCount = await transaction.generatedElementDraft.count({
-      where: { buildId: input.buildId },
-    })
-    if (draftCount !== input.cards.length) {
-      return draftError('Generated flashcard count does not match the bank')
-    }
-
-    const terminalStatus =
-      input.resultStatus === 'incomplete'
-        ? DB.ElementGenerationBuildStatus.INCOMPLETE
-        : DB.ElementGenerationBuildStatus.COMPLETED
-    const completed = await transaction.elementGenerationBuild.updateMany({
-      where: {
-        id: input.buildId,
-        elementType: DB.ElementType.FLASHCARD,
-        status: {
-          in: [
-            DB.ElementGenerationBuildStatus.RUNNING,
-            DB.ElementGenerationBuildStatus.QUEUED,
-            DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-          ],
-        },
-        syncLeaseOwner: input.leaseOwner,
-      },
-      data: {
-        resultManifestArtifact: input.resultManifestArtifact,
-        finalBankArtifact: input.finalBankArtifact,
-        checkpointArtifact: input.checkpointArtifact ?? DB.Prisma.DbNull,
-        generatedElementCount: input.cards.length,
-        unresolvedElementCount: input.unresolvedElementCount,
-        warningCount: input.warningCount,
-        status: terminalStatus,
-        stage:
-          terminalStatus === DB.ElementGenerationBuildStatus.INCOMPLETE
-            ? 'incomplete'
-            : 'completed',
-        completedAt: new Date(),
-        lastSynchronizedAt: new Date(),
-      },
-    })
-    if (completed.count !== 1) {
-      throw questionGenerationServiceError(
-        'CONCURRENT_MODIFICATION',
-        'Flashcard build completion lost its lease'
-      )
-    }
-  })
 }
 
 async function findOwnedDraft(draftId: string, ctx: ContextWithUser) {

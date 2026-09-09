@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-09-03'
+timestamp: '2026-09-06'
 tags:
   - architecture
   - frontend
@@ -22,34 +22,98 @@ The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
 holds the `ai-beta` and `learning-analytics` product flags. Applications
 initialize GrowthBook only when they adopt their first flag.
 
-`ai-beta` is not the whole gate over the lecturer AI surfaces. It decides
-whether the beta is open to an account; the account's `aiFeaturesEnabled`
-column decides whether that account may spend model budget at all, and an
-administrator sets it once a cost center has been supplied to bill the usage
-to. Both must hold, and the flag alone never opens a surface — see
-[Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers). In
-`frontend-manage`, the same two conditions (via `useAiFeaturesEnabled`)
-control the top-level AI dropdown that carries the Knowledge Bases and
-Chatbots management routes; when the gate is closed the AI routes render a
-localized unavailable state instead of redirecting. GraphQL independently
-applies the same gate to every lecturer KB service entry point and to Manage
-chatbot reads and mutations; participant chatbot discovery and worker-only KB
-settlement are unaffected.
+`ai-beta` is not the whole gate over the lecturer AI surfaces. For Knowledge
+Base access and question/graph generation, the account's `aiFeaturesEnabled`
+column remains an independent approval gate, and both conditions must hold.
+Chatbot authoring is preapproval: it uses the database beta preference and the
+`ai-beta` rollout with Catalyst and allowed account scope, without requiring
+`aiFeaturesEnabled`. Chatbot publication and model usage still require that
+approval — see [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
+In `frontend-manage`, `aiFeaturesEnabled` controls the Knowledge Bases and
+generation entries while the separate authoring gate can expose the Chatbots
+entry before AI approval; each denied route renders a localized unavailable
+state instead of redirecting. GraphQL applies the combined flag and approval
+gate to every lecturer KB and question/graph-generation entry point. Chatbot
+authoring uses the separate beta preference and rollout gate, while publication
+and model usage still check `aiFeaturesEnabled`; participant chatbot discovery
+and worker-only KB settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer                                             | Fallback | Disabled behavior                                                                       |
-| -------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| `learning-analytics` | Lecturer UI/Manage                                   | `false`  | Analytics controls remain visible but are not usable                                    |
-| `ai-beta`            | Lecturer AI surfaces, including Manage account usage | `false`  | AI surfaces are not mounted; protected reads return no data without reading domain data |
-| `beta-signup`        | Manage beta enrollment discovery and new opt-ins     | `false`  | Enrollment is hidden and new opt-ins are denied; existing members can still opt out     |
+| Key                  | Consumer                                                | Fallback | Disabled behavior                                                                              |
+| -------------------- | ------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                           |
+| `ai-beta`            | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data |
+
+Beta Features is discoverable in account settings and the first-login dialog
+regardless of Catalyst, login scope, or rollout availability. The information
+names chatbot creation as a beta feature. Discovery never grants access.
+
+See [Beta preference and rollout ownership](#beta-preference-and-rollout-ownership)
+for preference permissions, rollout attributes and the independent AI approval.
+
+Chatbot authoring requires `ai-beta`, Catalyst, and `FULL_ACCESS` or
+account-owner scope in both Manage and GraphQL. A denied direct route displays
+an explanation and a link to beta settings without mounting authoring queries.
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
 from a broken control without implying that lecturers can enable it themselves.
 
+### AI capability states
+
+The backend-owned capability for Knowledge Bases, generation, and Manage assistants
+has three states. Chatbot authoring keeps its separate upstream gate.
+
+| State                    | Meaning                                                      | Manage behavior                                    |
+| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| `enabled`                | Live database entitlement and `ai-beta` both allow the actor | AI navigation and protected operations are enabled |
+| `disabled`               | The entitlement is absent or false, or GrowthBook denies it  | AI navigation is hidden and operations are denied  |
+| `temporarilyUnavailable` | Entitlement is true but no usable GrowthBook answer is ready | AI navigation stays visible but disabled; retry    |
+
+The backend reads `User.aiFeaturesEnabled` and `User.betaEnabled` live before
+GrowthBook evaluation. Both must be exactly `true`; an absent account, revoked
+approval, or beta opt-out denies immediately, including during a payload outage.
+Unreadable database state never grants access. The trusted `betaEnabled` value
+is included in the sanitized evaluation attributes and the stale-allowance key.
+
+The shared Node adapter gives `ai-beta` a named 15-minute bounded-stale policy
+only for the same sanitized actor whose decision was previously validated as
+`true` while that payload was fresh. A newly seen actor, newly started process,
+missing payload, or expired payload is `temporarilyUnavailable`; a newly
+refreshed `false` applies immediately. These actor allowances are process-local,
+cleared when the payload is replaced, and never persisted or logged. Generic
+`isEnabled` retains its 120-second stale limit, so `learning-analytics` and
+other flags and the separate chatbot-authoring gate do not inherit the longer
+AI grace. Changing the beta preference invalidates the prior actor allowance.
+
+Manage keeps the last capability only in React memory. It does not persist an
+actor identifier or decision, does not poll while healthy, and schedules retries only
+while temporarily unavailable with jittered backoff capped at 60 seconds. It
+also revalidates on browser focus and when the browser comes online, including
+while healthy. Each event can issue one capability request and live account
+read; concurrent requests are coalesced within the controller. Authentication
+errors stop recovery rather than entering the outage retry loop. Capability
+queries do not reuse Apollo cache entries or deduplicated requests across
+identity lifetimes. Only the query controller resets; application children
+remain mounted while the profile resolves. A recovery
+re-enables the existing menu without a full reload. Profile or authentication
+failure is treated as an absent identity, so cached profile or capability data
+is not presented for the next user and the AI entry remains hidden and fail
+closed.
+
+Protected AI operations distinguish the cause of a denial:
+
+| Boundary                                  | Explicit denial                         | Temporary GrowthBook outage          |
+| ----------------------------------------- | --------------------------------------- | ------------------------------------ |
+| GraphQL AI operations                     | `AI_BETA_ACCESS_REQUIRED`               | `AI_FEATURE_TEMPORARILY_UNAVAILABLE` |
+| Chat `/manage` page                       | Existing unavailable/not-found response | Dedicated unavailable page state     |
+| Chat `POST /api/manage/chat`              | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+| Chat `POST /api/manage/proposals/confirm` | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+| Chat `GET /api/manage/capabilities`       | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+
 Manage mounts the browser provider at the application root with anonymous
-attributes, then updates it after `QUserProfile` resolves to target the
+attributes, then updates it after `QManageFeatureFlagProfile` resolves to target the
 authenticated lecturer by stable `User.id`, role, actor type, and environment.
 It does not expose the provider as ready until that authenticated identity is
 available, so an initially anonymous evaluation cannot unlock a protected
@@ -101,6 +165,8 @@ supplies the actor contract from
 - `actorType`: `user`, `participant`, or `anonymous`;
 - `catalyst`: whether the authenticated lecturer currently has Catalyst
   eligibility;
+- `betaEnabled`: the trusted database-backed beta preference when evaluating
+  the server-side `ai-beta` rollout;
 - `role`: the Klicker role when applicable;
 - `environment`: added by each adapter after normalizing its deployment config;
 
@@ -188,6 +254,23 @@ authentication, API, and database are exercised.
 
 ## Node.js adoption
 
+### Local beta-preference verification
+
+Use a disposable test database for browser or integration verification. The
+local fixture supplies only an SDK payload for `ai-beta`; it does not emulate
+enrollment membership, a GrowthBook management API, or a Redis lock. Exercise
+the real `User.betaEnabled` read and write through GraphQL and confirm that the
+preference persists across a new request or process. Do not run the fixture
+against a retained manual database and do not infer database persistence from
+an SDK payload alone.
+
+The fixture is test-only and uses synthetic actors and payloads. It must not
+provision or validate v3-ai tokens, access a real GrowthBook management
+endpoint, or carry approval data. Token provisioning and validation belong to
+the v3-ai workflow.
+
+### Server configuration
+
 The adopting service maps server-only variables into one process-level client:
 
 - `GROWTHBOOK_API_HOST`: HTTPS GrowthBook SDK service or proxy reachable from
@@ -211,10 +294,15 @@ flags.isEnabled(featureKey, requestAttributes)
 lifecycle so a long-running backend never serves a silently stale definition:
 it fetches with an abortable two-second deadline, polls every 30 seconds
 (`GROWTHBOOK_REFRESH_INTERVAL_MS` override), deduplicates overlapping refreshes,
-and marks the client healthy only after a validated payload update. A payload
-becomes unusable 120 seconds after the last successful refresh; every
-evaluation fails closed before initialization, while stale, and after
-`destroy()`. A direct client setting of zero disables polling, so it is only
+and marks the client healthy only after a validated payload update. For generic
+boolean evaluation, a payload
+becomes unusable 120 seconds after the last successful refresh. The AI-specific
+`getAiBetaDecision` may reuse a previously enabled decision for the same actor
+and payload generation for at most 15 minutes after the last successful refresh,
+provided that decision was earned while the payload was fresh. Otherwise it
+reports temporary unavailability. Evaluations fail closed before initialization
+and after `destroy()`. A direct client setting of zero disables polling, so it is
+only
 suitable for consumers that call `refresh()` themselves. The backend requires
 `GROWTHBOOK_REFRESH_INTERVAL_MS` to be positive and falls back to 30 seconds
 when it is zero or invalid, preventing an unattended startup payload from
@@ -247,7 +335,7 @@ chart makes the Kubernetes-deployed Node workloads configuration-ready:
 
 - `GROWTHBOOK_ENV` comes from `global.deploymentEnvironment`; the checked-in
   environment values set it to `staging` or `production`.
-- backend GraphQL, OLAT API, LTI, both response APIs, and all three Hatchet
+- backend GraphQL, backend assessment, Chat, OLAT API, LTI, both response APIs, and all three Hatchet
   worker Deployments optionally import
   `<rendered-chart-fullname>-secret-growthbook`.
 - that externally provisioned Secret contains exactly
@@ -261,83 +349,124 @@ enabling the first backend flag, then restart the affected workloads so
 environment-variable values are re-read. Secrets remain external to this
 public repository; never add their values to Helm files or documentation.
 
-Auth and Chat receive the public browser configuration only. If either hybrid
-Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
-to that Deployment in the same change that initializes the Node adapter.
+Auth receives public browser configuration only. Chat also initializes the
+Node adapter and consumes the shared GrowthBook Secret; include its pods when
+rotating the server SDK configuration.
 
-## Beta enrollment ownership
+## Diagnosing unavailable AI
 
-SDK evaluation and GrowthBook administration use separate trust boundaries.
-The beta enrollment setting uses the GrowthBook Management API only from the
-primary GraphQL backend. The browser calls typed GraphQL operations and never
-receives the management key.
+First distinguish an expired login from an AI dependency failure. An
+`Unauthorized` GraphQL response requires login, not a feature-flag retry.
+For an authenticated account, verify live beta opt-in and AI approval before
+investigating GrowthBook. A closed database gate returns `disabled` without
+evaluating the flag.
 
-- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API origin or base URL; the
-  adapter accepts an optional trailing `/api` or `/api/v1`;
-- `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Personal Access
-  Token or Secret Access Token sent as a bearer credential;
-- `GROWTHBOOK_BETA_SAVED_GROUP_ID`: the non-secret identifier of the list saved
-  group that owns beta membership.
+For `temporarilyUnavailable`, check the values-free backend startup status
+(`configured`, `healthy`) and `[feature-flags] payload availability` transition
+logs. Verify SDK configuration presence, environment alignment, endpoint
+reachability and a boolean `ai-beta` definition without printing keys or
+payloads. Capability-query transport and database failures can also cause the
+same browser presentation. These checks require access to the affected
+environment; a healthy application probe does not prove GrowthBook health.
 
-The primary backend GraphQL Deployment optionally imports the first two from
-`<rendered-chart-fullname>-secret-growthbook-management`. It is the only
-workload with the management Secret. Evaluator-only APIs and workers continue
-to receive only the read-only SDK connection. The saved-group id renders from
-`backendGraphql.betaSavedGroupId` only when an environment configures it; the
-checked-in default is empty. Missing configuration keeps membership unknown and
-causes mutations to fail as unavailable. An otherwise eligible caller still
-receives `mayChange: true` so the UI can keep the enrollment section findable
-and explain the outage without guessing a switch state.
+Grace is process-local and limited to actors evaluated true against the current
+fresh payload. Every successful replacement clears allowances. GraphQL and
+Chat, or different replicas, can disagree during an outage; the accepting
+service's own gate always decides whether an operation runs. The 15-minute
+bound is not a guaranteed grace period for every user or every AI surface.
+Generic boolean callers, including chatbot authoring, retain their shorter
+policy. Do not widen or share grace without a separate authorization decision.
 
-The GraphQL service is the sole writer for this saved group. It serializes each
-read-modify-write operation with a saved-group-scoped Redis lease and verifies
-ownership plus sufficient remaining lease immediately before the write. Any
-future reconciliation, cleanup, or operator path must reuse that same lock
-contract. Do not edit the owned saved group through GrowthBook's UI or API while
-application mutations are available. A manual repair requires a maintenance
-window that blocks application membership changes.
+During an outage, changing a flag requires reachable GrowthBook. The live
+per-account approval and beta preference remain immediate stop controls on
+the next protected request. Source rollback requires rebuilding and deploying
+compatible backend, Chat and Manage revisions; merely restarting a floating
+image tag does not select an older image. Rollout and rollback are separately
+authorized operations, not part of these diagnostic checks.
 
-New opt-ins require a `FULL_ACCESS` or account-owner login, current Catalyst
-eligibility, and `beta-signup`. Opt-out remains available to existing members
-after eligibility changes or signup closes. Weaker login scopes receive no
-saved-group read and see membership as unknown. Production `ai-beta` targeting
-must require both membership in this saved group and `catalyst: true`; the
-source default remains false until that operational rule is configured.
+## Beta preference and rollout ownership
 
-Do not remove the Management API configuration while the saved group still has
-members. Missing configuration also prevents self-service opt-out, so first
-close signup, keep the integration available, reconcile the group to empty,
-and verify absence before unprovisioning it or reverting this source path.
+### Separate backend management connection
 
-Never pass the management key to `NodeFeatureFlagClient`, a frontend image
-build, or a `NEXT_PUBLIC_*` variable. If another workload becomes the
-control-plane owner, mount the management Secret there in the same reviewed
-change rather than broadening it preemptively.
+The primary GraphQL backend retains the optional external
+`<rendered-chart-fullname>-secret-growthbook-management` reference for other
+backend flag-control use cases. It supplies `GROWTHBOOK_MANAGEMENT_API_URL`
+and `GROWTHBOOK_MANAGEMENT_API_KEY`; both remain in `turbo.json` for server
+task environment forwarding. This configuration is separate from SDK evaluation.
+Never pass the management key to `NodeFeatureFlagClient`, frontend builds, or
+`NEXT_PUBLIC_*` variables. Other workloads do not receive this management Secret.
+No management API call is introduced here; future writers need their own
+authorization and target contracts. Beta preference requires neither variable.
 
-### Beta enrollment activation and rollback
+### Database-owned preference
 
-1. Land and deploy the source with `beta-signup` absent or false. Confirm from
-   rendered manifests and values-free runtime metadata that only the primary
-   GraphQL backend receives the management Secret and saved-group id.
-2. Record the approved purpose, legal basis, retention owner, monthly removal
-   procedure, and support contact before collecting membership. Keep the group
-   limited to stable `User.id` values.
-3. Rehearse read, add, propagation, remove, and absence verification against a
-   disposable list saved group on the deployed GrowthBook version. Do not use
-   the production group for this proof.
-4. Configure `ai-beta` to require both membership in the intended saved group
-   and `catalyst: true`. Create `beta-signup` with a false default and verify
-   that browser and backend SDK connections receive equivalent definitions.
-5. Open `beta-signup` only for a small internal Catalyst cohort. Verify the
-   first-login prompt, user-menu link, settings control, opt-in, `ai-beta`
-   access, account-usage visibility, reload persistence, and opt-out before
-   widening the target.
+The database owns the personal beta preference. `User.betaEnabled` defaults to
+`true`, and the GraphQL enrollment service reads and writes the authenticated
+actor's own row. Request-local reuse prevents duplicate reads without turning
+the preference into a process-wide cache. See
+`packages/prisma/src/prisma/schema/user.prisma:User`,
+`packages/graphql/src/services/betaEnrollment.ts:getBetaEnrollment`, and
+`packages/graphql/src/lib/featureFlags.ts:getBetaPreference`.
 
-To stop new enrollment, set `beta-signup` false; this preserves current beta
-access and self-service opt-out. To hide unsafe AI beta surfaces, also set
-`ai-beta` false. Keep the Management API configuration available until the
-saved group has been reconciled and verified empty. Revert the source path only
-after that lifecycle completes.
+`FULL_ACCESS` and `ACCOUNT_OWNER` sessions may read and edit the preference
+through the enrollment capability. That capability returns unknown membership
+for weaker scopes without a database read. Catalyst is
+required to opt in; full-access opt-out remains possible without Catalyst.
+The API's `signupAvailable` field is a Catalyst-eligibility compatibility
+signal, not a GrowthBook enrollment switch.
+
+The backend passes the trusted preference to the read-only GrowthBook `ai-beta`
+evaluation with the existing stable actor id, `actorType: user`, role, and
+Catalyst attributes. The rollout rule must require `betaEnabled: true`,
+`catalyst: true`, and `actorType: user`; preserve the environment boundary and
+any deliberately narrower role or rollout restrictions. A missing, false, or
+unreadable preference fails closed, and a remote force-true result cannot
+override a false database value.
+
+This flow does not use a saved group, GrowthBook Management API, management Secret,
+`beta-signup` flag, or Redis membership lock. GrowthBook supplies rollout
+evaluation only; it does not persist or mutate beta membership. Token
+provisioning and validation belong to v3-ai and are outside this contract.
+
+`User.aiFeaturesEnabled` defaults to `false` and remains the sole account
+approval gate for Knowledge Base access, question/graph generation, chatbot
+publication, and model usage, even when budget enforcement is disabled.
+Chatbot authoring is preapproval and may use the beta preference and `ai-beta`
+rollout without that approval, but neither grants it. Per-chatbot publication
+review and published participant access remain separate and unchanged.
+
+### Transition from saved-group targeting
+
+This is an operator checklist, not authorization to deploy or edit live flags.
+No live rule or saved-group contents were verified for this change.
+
+1. Before deployment, record the current rule configuration and check which
+   other flags reference the old beta saved group. Keep any targeting identifiers
+   in the restricted operator system, not Git or PR comments. Confirm the
+   [release approval prerequisites](../project/2026-09-06-v3-release-readiness.md#release-activation-prerequisites),
+   including account AI approval; changing `ai-beta` cannot grant it.
+2. Deploy the complete migration and application candidate first. Old images
+   do not send `betaEnabled`, so switching the rule first can exclude everyone.
+   During the interim window, the old rule still selects the rollout cohort,
+   but the new backend additionally denies a false or unreadable database
+   preference. Default-on preference alone does not broaden the old rule.
+3. Verify the new attribute in both Manage and backend evaluation for a synthetic
+   eligible lecturer. If the old rule has an eligible canary, prove `ai-beta`
+   remains true there; otherwise record the expected false result and require
+   a controlled rule-change canary. Then replace only the saved-group membership
+   condition with `betaEnabled: true`, retaining `catalyst: true`,
+   `actorType: user`, and the intended environment/role/rollout restrictions.
+   Prove enabled authoring, opt-out denial, and unchanged participant access
+   independently of the owner's beta preference.
+4. If verification fails, restore the prior rule configuration while retaining
+   the new application and its database opt-out guard. Do not force-enable the
+   flag or roll back to a binary that selects the removed approval column.
+   Rolling the rule back narrows the cohort but does not undo saved preferences.
+5. Once the rollback window closes, the GrowthBook operator checks again for
+   other consumers and obtains explicit approval to delete the obsolete group.
+   Do not export its personal membership list by default. Any required retention
+   needs a separately approved purpose, restricted destination and deletion date.
+   Keep the general backend management API configuration for future flag writers.
 
 ## Failure and rollout behavior
 
@@ -346,10 +475,11 @@ after that lifecycle completes.
 - An invalid non-empty environment performs no fetch and evaluates boolean
   flags false, even if the remote definition would match the actor or default
   to true.
-- Network or unusable-payload initialization leaves unavailable flags false;
-  the Node adapter keeps a validated cached payload only within its two-minute
-  stale bound, while a missing, expired, or unusable payload stays on the false
-  fallback.
+- Network or unusable-payload initialization leaves generic flags false. The
+  Node adapter keeps a validated cached payload only within its two-minute
+  stale bound for generic evaluation; `getAiBetaDecision` gives only a
+  previously enabled `ai-beta` decision the separate 15-minute bound and
+  reports `temporarilyUnavailable` outside it.
 - A hung Node request is aborted at the adapter deadline and is not retained in
   GrowthBook's shared fetch cache, so the next scheduled refresh can recover.
 - Healthy backend definitions refresh every 30 seconds by default. Revocations
@@ -362,9 +492,15 @@ after that lifecycle completes.
   two evaluations disagree, a backend `false` always denies. A browser `false`
   may still hide the feature when the backend result is true; a backend `true`
   never bypasses existing authentication and resource permissions.
+- For `ai-beta`, an explicit backend denial and an unavailable GrowthBook
+  decision use separate capability states and public error contracts. Only the
+  unavailable state preserves a visible, disabled Manage entry for recovery;
+  neither state authorizes a protected operation.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
-  SDK evaluation never uses the optional management API key; only a future,
-  explicitly authorized control-plane integration may do so.
+  SDK evaluation never uses the optional management API key; the beta
+  preference path uses only the read-only SDK payload and has no management
+  credential or enrollment control plane. Only a future, explicitly authorized
+  control-plane integration may use that key.
 - Remote evaluation is the upgrade path when a future flag's rules or
   attributes are too sensitive for browser evaluation.
 
@@ -397,13 +533,15 @@ after that lifecycle completes.
 3. Provision the shared external Kubernetes Secret in staging and production
    with the two exact Node keys documented above. Resolve its final name by
    rendering the chart for that environment; do not guess the Helm fullname.
-4. If a GrowthBook administration feature is introduced, provision the separate
-   management Secret with the exact URL/key names documented above. Prefer a
-   narrowly scoped Personal Access Token and do not add these keys to the shared
-   evaluator Secret.
+4. Do not provision a GrowthBook management Secret for beta preference or
+   `ai-beta` rollout. Token provisioning and validation are v3-ai-only concerns
+   and are not defined by this feature-flag contract.
 5. Confirm the public GrowthBook endpoint allows the real Klicker browser
    origins and the internal endpoint is reachable from the target namespace.
-6. Build/deploy with no active flag first. Inspect a frontend bundle/runtime
+6. Before deploying the AI capability adapter, register `ai-beta` with a boolean
+   false default and provision its server SDK connection. Missing configuration
+   or an absent feature definition makes opted-in, approved accounts visibly
+   unavailable rather than silently hiding AI. Inspect a frontend bundle/runtime
    request and a backend pod's variable names without printing credential
    values, then enable the first flag in staging.
 

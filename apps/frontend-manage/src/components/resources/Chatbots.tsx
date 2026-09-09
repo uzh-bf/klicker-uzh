@@ -4,9 +4,9 @@ import {
   type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
-  QGetChatbotsInfoWithStandardModesDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
+  QGetChatbotsInfoWithStandardModesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -169,10 +169,7 @@ function Chatbots() {
     internal = false
   ) => {
     if (!selectedChatbot) return
-    if (
-      view === workspaceState.view &&
-      (view !== 'setup' || step === workspaceState.step)
-    ) {
+    if (view === workspaceState.view && step === workspaceState.step) {
       return
     }
     const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
@@ -202,10 +199,7 @@ function Chatbots() {
       return router.push(
         {
           pathname: router.pathname,
-          query: buildWorkspaceQuery(chatbotId, {
-            view: 'setup',
-            step: 'disclaimer',
-          }),
+          query: buildWorkspaceQuery(chatbotId, { view: 'disclaimer' }),
         },
         undefined,
         { shallow: true }
@@ -219,9 +213,9 @@ function Chatbots() {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="flex min-h-0 w-full flex-1 flex-col">
       <H2>{t('manage.resources.chatbots')}</H2>
-      <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white lg:flex lg:min-h-[42rem]">
+      <div className="mt-6 flex min-h-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white lg:flex-row lg:min-h-[42rem] lg:overflow-visible">
         <div className="border-b border-gray-200 p-4 lg:hidden">
           <div className="flex items-end gap-2">
             <label
@@ -267,7 +261,7 @@ function Chatbots() {
             onCreate={openCreateModal}
           />
         </aside>
-        <main className="min-w-0 flex-1 p-4 lg:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-visible p-4 lg:p-6">
           <ChatbotDetails
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}

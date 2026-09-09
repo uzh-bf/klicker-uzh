@@ -105,11 +105,25 @@ export npm_config_verify_deps_before_run=false
 export DEVROUTER_PROFILE
 echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
 
+# Opt-in fixture mode uses only this checkout's synthetic lecturer and test
+# processes. Ordinary development and production never load the fixture.
+DEV_TURBO_TASK=dev
+if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
+  if [ "$DEVROUTER_PROFILE" != manage ]; then
+    echo '[post-start] ERROR: beta enrollment fixture requires the manage profile.' >&2
+    exit 1
+  fi
+  DEV_TURBO_TASK=dev:test
+  export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
+fi
+export DEV_TURBO_TASK
+
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
 pnpm --filter @klicker-uzh/graphql exec tsx src/scripts/setupLocalBlobStorage.ts
 
 export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,KB_GRAPH_BLOB_ACCOUNT_URL,KB_SOURCE_GATEWAY_URL,KB_INGESTION_API_URL,KB_INGESTION_PROJECT_ID,KB_GRAPH_HATCHET_CLIENT_HOST_PORT,KB_GRAPH_HATCHET_API_URL,KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY,KB_GRAPH_HATCHET_WORKFLOW_NAME,KB_FALKORDB_HOST,KB_FALKORDB_PORT,KB_FALKORDB_TLS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK"
 
 # Resolve the complete selection first through the pure table in
 # util/profile-resolver.sh: exact turbo roots, readiness apps, and process
@@ -223,7 +237,7 @@ start_managed_runtime() {
       --log /tmp/dev.log \
       --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
-      -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
+      -- pnpm exec turbo run "$DEV_TURBO_TASK" ${DEV_TURBO_FILTERS}
   else
     "$DEVROUTER_PROCESS_HELPER" ensure \
       --name klicker-dev \

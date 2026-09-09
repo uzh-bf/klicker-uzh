@@ -2,7 +2,9 @@ import type { FeatureFlagAttributes } from '../src/index.js'
 import { NodeFeatureFlagClient } from '../src/node.js'
 
 type TestFeatures = {
+  'ai-beta': boolean
   'default-on-flag': boolean
+  'learning-analytics': boolean
   'targeted-flag': boolean
 }
 
@@ -18,12 +20,22 @@ const disabledAttributes: FeatureFlagAttributes = {
   role: 'USER',
 }
 
-function featureResponse(defaultOn = true) {
+function featureResponse(
+  defaultOn = true,
+  aiBeta = false,
+  learningAnalytics = true
+) {
   return new Response(
     JSON.stringify({
       features: {
+        'ai-beta': {
+          defaultValue: aiBeta,
+        },
         'default-on-flag': {
           defaultValue: defaultOn,
+        },
+        'learning-analytics': {
+          defaultValue: learningAnalytics,
         },
         'targeted-flag': {
           defaultValue: false,
@@ -97,6 +109,118 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
     expect(client.isEnabled('targeted-flag', disabledAttributes)).toBe(false)
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
+  })
+
+  it('returns explicit ai-beta decisions and applies refreshed false immediately', async () => {
+    mockFetch
+      .mockResolvedValueOnce(featureResponse(true, true))
+      .mockResolvedValueOnce(featureResponse(true, false))
+    const client = createClient()
+
+    expect(await client.initialize()).toBe(true)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+
+    await client.refresh()
+
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('disabled')
+  })
+
+  it('reports unavailable without an authoritative ai-beta payload', () => {
+    const client = createClient()
+
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
+    expect(client.isEnabled('learning-analytics', enabledAttributes)).toBe(
+      false
+    )
+  })
+
+  it('uses the extended stale bound only for ai-beta', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-25T12:00:00Z'))
+    mockFetch
+      .mockResolvedValueOnce(featureResponse(true, true, true))
+      .mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const client = createClient()
+
+    expect(await client.initialize()).toBe(true)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+    await client.refresh()
+
+    vi.advanceTimersByTime(120_001)
+
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+    expect(client.getAiBetaDecision(disabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
+    expect(
+      client.getAiBetaDecision({ ...enabledAttributes, betaEnabled: false })
+    ).toBe('temporarilyUnavailable')
+    expect(client.isEnabled('learning-analytics', enabledAttributes)).toBe(
+      false
+    )
+
+    vi.advanceTimersByTime(15 * 60_000 - 120_000)
+
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
+  })
+
+  it('does not carry actor allowances across a successful payload refresh', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-25T12:00:00Z'))
+    mockFetch
+      .mockResolvedValueOnce(featureResponse(true, true))
+      .mockResolvedValueOnce(featureResponse(true, true))
+      .mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const client = createClient()
+
+    expect(await client.initialize()).toBe(true)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+
+    await client.refresh()
+    await client.refresh()
+    vi.advanceTimersByTime(120_001)
+
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
+  })
+
+  it('logs only process-wide payload availability transitions', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-25T12:00:00Z'))
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFetch
+      .mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+      .mockResolvedValueOnce(featureResponse(true, true))
+      .mockResolvedValueOnce(featureResponse(true, true))
+    const client = createClient()
+
+    expect(await client.initialize()).toBe(false)
+    await client.refresh()
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+    vi.advanceTimersByTime(120_001)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe('enabled')
+    vi.advanceTimersByTime(15 * 60_000 - 120_000)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
+    await client.refresh()
+
+    expect(warning.mock.calls.map(([message]) => message)).toEqual([
+      '[feature-flags] payload availability: unavailable',
+      '[feature-flags] payload availability: recovered',
+      '[feature-flags] payload availability: bounded-stale',
+      '[feature-flags] payload availability: expired',
+      '[feature-flags] payload availability: recovered',
+    ])
+    expect(warning.mock.calls.flat().join(' ')).not.toMatch(
+      /ai-beta|learning-analytics|enabled-user/
+    )
+    warning.mockRestore()
   })
 
   it.each([
@@ -250,11 +374,23 @@ describe('NodeFeatureFlagClient', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('fails closed without configuration and does not fetch', async () => {
-    const client = createClient({ apiHost: undefined, clientKey: undefined })
+  it.each([
+    'development',
+    'test',
+    'staging',
+    'production',
+  ])('reports unavailable without configuration in %s and does not fetch', async (environment) => {
+    const client = createClient({
+      environment,
+      apiHost: undefined,
+      clientKey: undefined,
+    })
 
     expect(await client.initialize()).toBe(false)
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
+    expect(client.getAiBetaDecision(enabledAttributes)).toBe(
+      'temporarilyUnavailable'
+    )
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
@@ -266,12 +402,16 @@ describe('NodeFeatureFlagClient', () => {
       forcedOn: 'ai-beta',
     })
     expect(development.isEnabled('ai-beta', attributes)).toBe(true)
+    expect(development.getAiBetaDecision(attributes)).toBe('enabled')
 
     const production = new NodeFeatureFlagClient({
       environment: 'production',
       forcedOn: 'ai-beta',
     })
     expect(production.isEnabled('ai-beta', attributes)).toBe(false)
+    expect(production.getAiBetaDecision(attributes)).toBe(
+      'temporarilyUnavailable'
+    )
   })
 
   // GrowthBook is authoritative wherever it is reachable: a configured client
@@ -318,6 +458,10 @@ describe('NodeFeatureFlagClient', () => {
     'not-a-url',
     'https://growthbook.test?source=invalid',
     'https://growthbook.test/#invalid',
+    'https://growthbook.test?',
+    'https://growthbook.test/#',
+    ' https://growthbook.test',
+    'https://growthbook.test ',
   ])('fails closed without fetching for invalid API host %s', async (apiHost) => {
     const client = createClient({ apiHost })
 

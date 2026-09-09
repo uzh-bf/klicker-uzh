@@ -3,7 +3,10 @@
   "groups": [
     {
       "profile": "manage",
-      "specs": ["Y-question-generation-review.spec.ts"]
+      "specs": [
+        "Y-ai-beta-availability.spec.ts",
+        "Y-question-generation-review.spec.ts"
+      ]
     },
     {
       "profile": "manage,pwa",

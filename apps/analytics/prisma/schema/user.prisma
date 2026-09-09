@@ -107,22 +107,16 @@ model User {
   catalystIndividual    Boolean @default(false)
   catalystTier          String?
 
-  // Account-level AI chatbot publishing capability. Approved by the team out of
-  // band (cost center recorded) and checked against this row, never a JWT claim,
-  // when a lecturer requests publication. Separate from Catalyst, which only
-  // reveals the configuration features. See
-  // docs/adr/0020-two-tier-chatbot-approval.md.
-  aiChatbotPublishingEnabled Boolean @default(false)
-  aiChatbotCostCenter        String?
+  // Account-level approval for AI usage and chatbot publication. Checked from
+  // the database, never granted by beta preference or a JWT claim.
+  aiFeaturesEnabled   Boolean @default(false)
+  aiChatbotCostCenter String?
+
+  // Personal beta preference; feature rollout and AI approval remain separate.
+  betaEnabled Boolean @default(true)
 
   publicPreview  Boolean @default(false)
   privatePreview Boolean @default(false)
-
-  // Set by an administrator once the account has supplied a cost center that
-  // the AI usage it causes can be billed to. Independent of the preview flags
-  // above: those decide which unreleased features an account may see, this one
-  // decides whether it may run anything that spends model budget.
-  aiFeaturesEnabled Boolean @default(false)
 
   logins                     UserLogin[]
   session                    Session[]

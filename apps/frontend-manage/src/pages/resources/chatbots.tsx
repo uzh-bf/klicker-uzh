@@ -1,17 +1,53 @@
+import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
+import {
+  ManageUserProfileDocument,
+  UserLoginScope,
+} from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import AiBetaUnavailable from '../../components/AiBetaUnavailable'
+import { useManageAiCapability } from '../../components/featureFlags/ManageFeatureFlagProvider'
 import Layout from '../../components/Layout'
 import Chatbots from '../../components/resources/Chatbots'
-import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
 
 function ChatbotsPage() {
   const t = useTranslations()
-  const aiFeaturesEnabled = useAiFeaturesEnabled()
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { betaEnabled } = useManageAiCapability()
+  const { data } = useQuery(ManageUserProfileDocument, {
+    fetchPolicy: 'cache-first',
+    ssr: false,
+  })
+  const canAuthor =
+    aiBetaEnabled &&
+    betaEnabled &&
+    data?.userProfile?.catalyst === true &&
+    (data.userScope === UserLoginScope.FullAccess ||
+      data.userScope === UserLoginScope.AccountOwner)
 
   return (
-    <Layout displayName={t('manage.resources.chatbots')}>
-      {aiFeaturesEnabled ? <Chatbots /> : <AiBetaUnavailable />}
+    <Layout
+      displayName={t('manage.resources.chatbots')}
+      className={{ children: 'flex-none md:overflow-y-visible' }}
+    >
+      {canAuthor ? (
+        <Chatbots />
+      ) : (
+        <div data-cy="chatbot-authoring-unavailable">
+          <UserNotification type="info">
+            <p>{t('manage.settings.chatbotBetaAccessRequired')}</p>
+            <Link
+              href="/user/settings#beta-features"
+              className="underline"
+              data-cy="chatbot-beta-settings"
+            >
+              {t('manage.settings.betaFeaturesTitle')}
+            </Link>
+          </UserNotification>
+        </div>
+      )}
     </Layout>
   )
 }

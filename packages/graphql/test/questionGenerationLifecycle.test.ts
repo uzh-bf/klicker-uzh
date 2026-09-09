@@ -96,6 +96,7 @@ import {
 } from '../src/services/flashcardGeneration.js'
 import {
   isFlashcardRetrySpend,
+  releaseUnclaimedElementGenerationSpend,
   reserveFlashcardRetrySpend,
 } from '../src/services/elementGenerationAccounting.js'
 import {
@@ -606,6 +607,10 @@ describe('terminal workflow artifact lifecycle', () => {
     await expect(
       getQuestionGenerationBuild(fixtures.buildId, ctx as never)
     ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: fixtures.buildId, syncLeaseOwner: expect.any(String) },
+      data: { syncLeaseOwner: null, syncLeaseUntil: null },
+    })
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -674,6 +679,10 @@ describe('terminal workflow artifact lifecycle', () => {
     await expect(
       getFlashcardGenerationBuild(fixtures.buildId, ctx as never)
     ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: fixtures.buildId, syncLeaseOwner: expect.any(String) },
+      data: { syncLeaseOwner: null, syncLeaseUntil: null },
+    })
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -1125,5 +1134,66 @@ describe('flashcard incomplete-publication lifecycle', () => {
         }),
       })
     )
+  })
+})
+
+describe('flashcard preparation polling failure policy', () => {
+  it.each([
+    true,
+    false,
+  ])('preserves polling failure policy when retryable=%s', async (retryable) => {
+    const failure = questionGenerationServiceError(
+      'ARTIFACT_INVALID',
+      'Synthetic polling upload failure',
+      retryable
+    )
+    let build = {
+      ...preparingBuild(),
+      elementType: DB.ElementType.FLASHCARD,
+      configuration: { language: 'de', flashcardCount: 1, objectives: [] },
+    }
+    const release = vi
+      .mocked(releaseUnclaimedElementGenerationSpend)
+      .mockClear()
+    const errorLog = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const updateMany = vi.fn(async ({ data }) => {
+      build = { ...build, ...data }
+      return { count: 1 }
+    })
+    try {
+      const result = await getFlashcardGenerationBuild(fixtures.buildId, {
+        user: { sub: fixtures.ownerId },
+        prisma: {
+          elementGenerationBuild: {
+            findFirst: vi.fn(async () => build),
+            updateMany,
+          },
+        },
+        elementGenerationRuntime: {
+          questionInputContainer: 'synthetic',
+          uploadCreateOnly: vi.fn(async () => {
+            throw failure
+          }),
+          startFlashcards: vi.fn(),
+          publishIncompleteFlashcards: vi.fn(),
+          findRunByFlashcardBuildId: vi.fn(),
+        },
+      } as never)
+      expect(result.status).toBe(
+        retryable
+          ? DB.ElementGenerationBuildStatus.PREPARING_INPUT
+          : DB.ElementGenerationBuildStatus.FAILED
+      )
+      if (!retryable) {
+        expect(result.errorCode).toBe(failure.code)
+        expect(result.errorRetryable).toBe(false)
+      }
+      expect(result.syncLeaseOwner).toBeNull()
+      expect(release).not.toHaveBeenCalled()
+    } finally {
+      errorLog.mockRestore()
+    }
   })
 })

@@ -76,6 +76,7 @@
         "W4-activity-wizard-safety.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Y-ai-beta-availability.spec.ts",
         "Y-chat.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
