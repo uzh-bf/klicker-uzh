@@ -64,9 +64,8 @@ invariants.
   normalized by this policy. They remain readable through the current
   `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists
   retaining the Luna fallback. The strict owner-only
-  `updateChatbotModelPolicy` mutation canonicalizes fixed and participant-choice
-  rows, while `updateChatbotModelSettings` remains available for rolling
-  clients.
+  `saveChatbotRevision` model-policy section canonicalizes fixed and
+  participant-choice rows. Granular save mutations are removed.
 - Manage renders a localized lifecycle status for every chatbot. A participant
   link is rendered only for `PUBLISHED`; every other state explains that the
   link becomes available after publication. Published model-policy edits stay

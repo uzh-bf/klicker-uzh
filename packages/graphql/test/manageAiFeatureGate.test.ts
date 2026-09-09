@@ -9,8 +9,7 @@ import {
 } from '../src/lib/manageAiFeatureGate.js'
 import {
   getManageChatModelRegistry,
-  updateChatbotCreditPolicy,
-  updateChatbotModelSettings,
+  saveChatbotRevision,
 } from '../src/services/chatbots.js'
 
 function createContext(
@@ -145,11 +144,16 @@ describe('Manage AI feature gate', () => {
   test('denies chatbot authoring before reading chatbot data', async () => {
     const { ctx } = createContext(true, 'disabled')
     await expect(
-      updateChatbotModelSettings(
+      saveChatbotRevision(
         {
-          allowedModelIds: [],
           chatbotId: 'chatbot-1',
-          modelSelection: true,
+          expectedRevisionVersion: 0,
+          input: {
+            modelPolicy: {
+              allowedModelIds: ['auto'],
+              modelSelection: false,
+            },
+          },
         },
         ctx
       )
@@ -160,13 +164,18 @@ describe('Manage AI feature gate', () => {
     const { ctx, findUnique } = createContext(true)
 
     await expect(
-      updateChatbotCreditPolicy(
+      saveChatbotRevision(
         {
           chatbotId: 'chatbot-1',
-          creditInitialCredits: 2,
-          creditResetPeriod: CreditResetPeriod.MONTHLY,
-          creditResetAmount: 2,
-          creditMaxCredits: 2,
+          expectedRevisionVersion: 0,
+          input: {
+            creditPolicy: {
+              creditInitialCredits: 2,
+              creditResetPeriod: CreditResetPeriod.MONTHLY,
+              creditResetAmount: 2,
+              creditMaxCredits: 2,
+            },
+          },
         },
         ctx
       )

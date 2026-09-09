@@ -21,11 +21,13 @@ browser tabs to fail safely instead of overwriting a newer edit.
 The lecturer authoring path replaces a changed disclaimer instead of updating
 the linked row:
 
-- `saveChatbotDisclaimer` receives the disclaimer ID the lecturer loaded, with
-  `null` representing a chatbot that has no disclaimer yet.
+- `saveChatbotRevision` receives the disclaimer section and the expected
+  revision version. An optional expected disclaimer ID provides an additional
+  identity check, with `null` representing no disclaimer.
 - The service normalizes and validates the lecturer-editable title and
-  introduction, then creates and links a replacement in one transaction.
-- The link update compares the expected disclaimer ID and editable chatbot
+  introduction, then creates a replacement and saves its ID in the revision
+  in one transaction.
+- The save compares the revision version, optional disclaimer ID, and editable
   status. A stale or concurrent save rolls back the replacement row.
 - A normalized no-op keeps the existing row and ID.
 - Replacement rows preserve the existing management name, description, and
@@ -33,8 +35,8 @@ the linked row:
 - Owner-facing acceptance counts include only participants whose accepted ID
   equals the chatbot's currently linked disclaimer ID.
 
-Published disclaimers remain read-only in this MVP. A later workflow may add
-explicit published revisions and review, but it must retain the same
+Published chatbot edits retain the live disclaimer until the submitted
+revision is approved. Approval links the replacement while retaining the same
 acceptance-to-version invariant.
 
 ## Consequences

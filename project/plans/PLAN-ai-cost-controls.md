@@ -12,21 +12,27 @@ separate. No migration, provider change, or participant-balance change applies.
 Metadata is a leaf patch; omitted sections remain unchanged. Other supplied
 sections retain their existing complete-section normalization. Whole-section
 nulls, empty input, empty metadata, and null names fail on the new endpoint.
-Nullable metadata leaves may be cleared. Legacy endpoints and persisted
-operations remain compatible, including loose model-settings validation and
-tokenless first-publication restrictions. They reuse shared normalizers and
-one transaction kernel. Disclaimer replacement creation and rollback remain
-inside that transaction; normalized no-ops retain identity.
+Nullable metadata leaves may be cleared. On 2026-09-09 the user explicitly
+removed the compatibility requirement: delete all twelve granular save fields,
+their operation documents and service wrappers, plus the three duplicate
+publication aliases. Configuration writes use only `saveChatbotRevision`;
+submit, withdraw, approve and reject each retain one dedicated operation.
+Every write requires a revision version. Strict model validation is the sole
+save policy. Existing stored configurations remain readable. Disclaimer
+replacement creation and rollback remain inside the save transaction;
+normalized no-ops retain identity.
 
 Main owns the service transaction and regression tests. Executor
 `revision_save_client` owns typed schema, the new operation, and three existing
 form consumers after the service contract. Main owns generated output,
 integration, verification, reviews, and delivery within PR #5771. The planner
-approved this contract with explicit legacy and section-semantics constraints.
+approved the section semantics; the user subsequently removed API compatibility.
+For compatibility removal, main owns source and delivery; executor
+`remove_compat_tests` owns the migrated service and Playwright tests.
 
 Acceptance requires atomic multi-section saves, rollback including disclaimer
-creation, omission and clearing behavior, conflict and pending guards, retained
-legacy behavior, generated schema/client builds and checks, and synthetic
+creation, omission and clearing behavior, conflict and pending guards,
+a reduced API surface, generated schema/client builds and checks, and synthetic
 browser save/reload verification. Preserve the user's pending Benibot revision
 14; use separate fixtures and no seed reset. Runtime remains retained at the
 user's request. Authority and terminal condition are unchanged from the
@@ -35,6 +41,14 @@ unavailable required capability.
 
 ### Refactor progress
 
+- Removed all 15 obsolete save/publication mutation fields, their client
+  operations, and service wrappers following the user's no-compatibility
+  instruction. Migrated regression and browser callers to the unified save
+  and versioned lifecycle operations. The corrected two-suite run passes all
+  103 tests; the four unchanged suites passed in the preceding run. Formatting,
+  13 scoped check/lint tasks, all 26 production build tasks, and container
+  precommit checks pass. Slice reviews remain pending. Browser acceptance and
+  publication retain the fixture-approval boundary below.
 - The unified save is committed as `bda0ee03fe`; the accepted simplifier
   correction is `5df4afe241`. The correction inlines the sole-use legacy model
   normalizer and preserves its validation. Formatting and GraphQL typechecks
@@ -115,15 +129,10 @@ model and multiple drafts are out of scope. Expose the version even when the
 draft is absent. The owner projection returns explicit authoring revision
 content alongside unchanged live fields, usage, and acceptance counts.
 
-All six authoring services share the fence: updateChatbot,
-updateChatbotModelSettings, updateChatbotModelPolicy,
-updateChatbotStandardModeConfig, updateChatbotCreditPolicy, and
-saveChatbotDisclaimer. Published edits require the expected version. The first
-edit atomically copies the live configuration and applies the change. Every
-save compares and increments the version, including first-publication saves.
-Absent version arguments may retain compatibility only where no race fence can
-be defeated. Never substitute the current version for an omitted published-edit
-token. Preserve null-versus-omitted metadata semantics.
+All authoring sections use `saveChatbotRevision` and require the expected
+version. The first edit atomically copies the live configuration and applies
+the change. Every save compares and increments the version, including
+first-publication saves. Preserve null-versus-omitted metadata semantics.
 
 Submission validates the complete saved configuration and live account
 publishing capability, increments the version, clears a previous rejection
@@ -136,9 +145,8 @@ Approval requires administrator authorization, the exact pending token, and
 live account capability. After acquiring the Chatbot row lock, revalidate and
 copy only allowlisted configuration, then clear the draft and increment the
 version in one transaction. Preserve live PUBLISHED status and first
-publishedAt. PAUSED bots cannot be edited or approved. Tokenless administrative
-compatibility is limited to pre-migration pending requests at version zero;
-every new submission needs its exact token. Legacy pending queries represent
+publishedAt. PAUSED bots cannot be edited or approved. Administrative writes require the exact version, including version zero for
+pre-migration pending requests. Legacy pending queries represent
 the existing live configuration and version zero explicitly.
 
 Draft disclaimer saves create unlinked replacement identities. Normalized

@@ -70,9 +70,9 @@ history, balances, and the original publication date. See
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
 Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
 course name, subject domain, language of instruction, and an optional scope
-note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
-replacements in editable first-publication or revision states, requires Tutor
-or Explainer to remain enabled, and fences every save with the authoring
+note. The owner-only `saveChatbotRevision` mutation accepts full replacements
+through its `standardModeConfig` section in editable first-publication or
+revision states, requires Tutor or Explainer to remain enabled, and fences every save with the authoring
 version so a concurrent submission cannot be overwritten. Published changes
 remain staged until approval. Tutor and Explainer do not require
 a knowledge base; Quizzer remains independently configurable but is filtered by
@@ -84,9 +84,9 @@ Manage projection exposes the combined effective settings, never raw
 options, never this owner configuration or raw system prompts. The chat compiler
 keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
 model policy with no reasoning entries. The strict owner-only
-`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
-cardinality and model-specific reasoning invariants; the previous model
-settings mutation remains available for rolling clients. Legacy fixed rows
+`saveChatbotRevision` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants through its `modelPolicy`
+section. Granular save mutations are removed. Legacy fixed rows
 resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
 retired-only lists use Luna without a migration. Manage exposes one optional
 Chatbot framing field with a 200-character UI limit. The persisted parser

@@ -463,28 +463,34 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       const requestBody = postData
         ? (JSON.parse(postData) as {
             operationName?: string
-            variables?: Record<string, unknown> & {
-              config?: Record<string, unknown>
+            variables?: {
+              input?: {
+                metadata?: Record<string, unknown>
+                modelPolicy?: Record<string, unknown>
+                standardModeConfig?: Record<string, unknown>
+                disclaimer?: Record<string, unknown>
+              }
             }
           })
         : undefined
       const operationName = requestBody?.operationName
-      if (operationName === 'MUpdateChatbotRevisionStandardModeConfig') {
-        modeConfigVariables = requestBody?.variables?.config
-      }
-      if (operationName === 'MUpdateChatbotRevisionModelPolicy') {
-        modelPolicyVariables = requestBody?.variables
+      const input = requestBody?.variables?.input
+      if (operationName === 'MSaveChatbotRevision') {
+        modeConfigVariables = input?.standardModeConfig
+        modelPolicyVariables = input?.modelPolicy
       }
       const requestGate =
-        operationName === 'MUpdateChatbotRevisionModelPolicy'
-          ? modelSettingsRequestGate
-          : operationName === 'MUpdateChatbotRevisionStandardModeConfig'
-            ? modeRequestGate
-            : operationName === 'MUpdateChatbotRevisionMetadata'
-              ? metadataRequestGate
-              : operationName === 'MSaveChatbotRevisionDisclaimer'
-                ? disclaimerRequestGate
-                : undefined
+        operationName !== 'MSaveChatbotRevision'
+          ? undefined
+          : input?.modelPolicy
+            ? modelSettingsRequestGate
+            : input?.standardModeConfig
+              ? modeRequestGate
+              : input?.metadata
+                ? metadataRequestGate
+                : input?.disclaimer
+                  ? disclaimerRequestGate
+                  : undefined
 
       if (!requestGate) {
         await route.continue()
@@ -936,8 +942,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
       if (
-        request.postDataJSON()?.operationName !==
-        'MUpdateChatbotRevisionMetadata'
+        request.postDataJSON()?.operationName !== 'MSaveChatbotRevision' ||
+        !request.postDataJSON()?.variables?.input?.metadata
       ) {
         await route.continue()
         return

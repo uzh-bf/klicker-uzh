@@ -284,26 +284,26 @@ describe('chatbot authoring revision transitions', () => {
       )
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_NOT_EDITABLE' } })
     expect(await read(bot.id)).toEqual(pending)
-    const draft = await seed(ChatbotStatus.DRAFT)
+  })
+
+  it('stages metadata writes and approves only the submitted version', async () => {
+    const bot = await seed()
     await expect(
       service.saveChatbotRevision(
         {
-          chatbotId: draft.id,
-          expectedRevisionVersion: undefined as unknown as number,
-          input,
+          chatbotId: bot.id,
+          expectedRevisionVersion: 1,
+          input: { metadata: { name: 'Stale' } },
         },
         owner
       )
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
-  })
-
-  it('stages legacy tokened writes and approves only the submitted version', async () => {
-    const bot = await seed()
-    await expect(
-      service.updateChatbot({ id: bot.id, name: 'Unfenced' }, owner)
-    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
-    await service.updateChatbot(
-      { id: bot.id, name: 'Revised', expectedRevisionVersion: 0 },
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { name: 'Revised' } },
+      },
       owner
     )
     expect(await read(bot.id)).toMatchObject({
@@ -317,9 +317,6 @@ describe('chatbot authoring revision transitions', () => {
     expect(
       await service.getChatbotPendingRevision({ id: bot.id }, admin)
     ).toMatchObject({ version: pending.revisionVersion, name: 'Revised' })
-    await expect(
-      service.approveChatbotPublication({ id: bot.id }, admin)
-    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
     await expect(
       service.approveChatbotRevision(
         { id: bot.id, expectedRevisionVersion: 1 },
@@ -339,64 +336,41 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
-  it('stages every legacy configuration save until exact-version approval', async () => {
+  it('stages every configuration section until exact-version approval', async () => {
     const bot = await seed()
     const writes = [
-      (version: number | undefined) =>
-        service.updateChatbotModelSettings(
-          {
-            chatbotId: bot.id,
-            expectedRevisionVersion: version,
-            modelSelection: false,
-            allowedModelIds: ['auto'],
-          },
-          owner
-        ),
-      (version: number | undefined) =>
-        service.updateChatbotModelPolicy(
-          {
-            chatbotId: bot.id,
-            expectedRevisionVersion: version,
-            modelSelection: false,
-            allowedModelIds: ['auto'],
-          },
-          owner
-        ),
-      (version: number | undefined) =>
-        service.updateChatbotStandardModeConfig(
-          {
-            chatbotId: bot.id,
-            expectedRevisionVersion: version,
-            config: {
-              tutorEnabled: true,
-              explainerEnabled: false,
-              quizzerEnabled: true,
-              courseName: 'Synthetic course',
-              subjectDomain: 'Synthetic subject',
-              languageOfInstruction: 'en',
-              scopeNote: 'Synthetic scope',
-            },
-          },
-          owner
-        ),
-      (version: number | undefined) =>
-        service.updateChatbotCreditPolicy(
-          {
-            chatbotId: bot.id,
-            expectedRevisionVersion: version,
-            creditInitialCredits: 25,
-            creditResetAmount: 15,
-            creditMaxCredits: 50,
-            creditResetPeriod: CreditResetPeriod.DAILY,
-          },
-          owner
-        ),
+      {
+        modelPolicy: { modelSelection: false, allowedModelIds: ['auto'] },
+      },
+      {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: true,
+          courseName: 'Synthetic course',
+          subjectDomain: 'Synthetic subject',
+          languageOfInstruction: 'en' as const,
+          scopeNote: 'Synthetic scope',
+        },
+      },
+      {
+        creditPolicy: {
+          creditInitialCredits: 25,
+          creditResetAmount: 15,
+          creditMaxCredits: 50,
+          creditResetPeriod: CreditResetPeriod.DAILY,
+        },
+      },
     ]
-    for (const [version, write] of writes.entries()) {
-      await expect(write(undefined)).rejects.toMatchObject({
-        extensions: { code: 'CHATBOT_EDIT_CONFLICT' },
-      })
-      await write(version)
+    for (const [version, input] of writes.entries()) {
+      await service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: version,
+          input,
+        },
+        owner
+      )
       const row = await read(bot.id)
       expect(row).toMatchObject({
         modelSelection: bot.modelSelection,
@@ -409,9 +383,9 @@ describe('chatbot authoring revision transitions', () => {
         revisionVersion: version + 1,
       })
     }
-    await submit(bot.id, 4)
+    await submit(bot.id, 3)
     await service.approveChatbotRevision(
-      { id: bot.id, expectedRevisionVersion: 5 },
+      { id: bot.id, expectedRevisionVersion: 4 },
       admin
     )
     expect(await read(bot.id)).toMatchObject({
@@ -431,8 +405,12 @@ describe('chatbot authoring revision transitions', () => {
     const bot = await seed()
     const results = await Promise.allSettled(
       ['First', 'Second'].map((name) =>
-        service.updateChatbot(
-          { id: bot.id, name, expectedRevisionVersion: 0 },
+        service.saveChatbotRevision(
+          {
+            chatbotId: bot.id,
+            expectedRevisionVersion: 0,
+            input: { metadata: { name } },
+          },
           owner
         )
       )
@@ -445,8 +423,12 @@ describe('chatbot authoring revision transitions', () => {
     ).toHaveLength(1)
     await submit(bot.id, 1)
     await expect(
-      service.updateChatbot(
-        { id: bot.id, name: 'Late', expectedRevisionVersion: 2 },
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 2,
+          input: { metadata: { name: 'Late' } },
+        },
         owner
       )
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_NOT_EDITABLE' } })
@@ -454,11 +436,11 @@ describe('chatbot authoring revision transitions', () => {
 
   it('allows only one approval or withdrawal of the submitted version', async () => {
     const bot = await seed()
-    await service.updateChatbotRevisionMetadata(
+    await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
-        name: 'Concurrent revision',
         expectedRevisionVersion: 0,
+        input: { metadata: { name: 'Concurrent revision' } },
       },
       owner
     )
@@ -498,78 +480,20 @@ describe('chatbot authoring revision transitions', () => {
     }
   })
 
-  it('preserves first-publication preview and fences tokenless legacy saves', async () => {
-    const bot = await seed(ChatbotStatus.DRAFT)
-    await service.updateChatbot({ id: bot.id, name: 'Legacy first' }, owner)
-    await service.updateChatbot(
-      { id: bot.id, description: 'Legacy second' },
-      owner
-    )
-    expect(await read(bot.id)).toMatchObject({
-      name: 'Legacy first',
-      description: 'Legacy second',
-      revisionVersion: 2,
-      draftConfig: null,
-    })
-    await expect(
-      service.updateChatbot(
-        { id: bot.id, name: 'Stale', expectedRevisionVersion: 0 },
-        owner
-      )
-    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
-    await service.updateChatbotRevisionMetadata(
-      { chatbotId: bot.id, name: 'Preview', expectedRevisionVersion: 2 },
-      owner
-    )
-    expect(await read(bot.id)).toMatchObject({
-      name: 'Preview',
-      draftConfig: { name: 'Preview' },
-    })
-    await expect(
-      service.updateChatbot({ id: bot.id, name: 'Unfenced' }, owner)
-    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
-    await submit(bot.id, 3)
-    await service.withdrawChatbotRevision(
-      { chatbotId: bot.id, expectedRevisionVersion: 4 },
-      owner
-    )
-    expect(await read(bot.id)).toMatchObject({
-      status: ChatbotStatus.DRAFT,
-      revisionStatus: ChatbotStatus.DRAFT,
-      revisionVersion: 5,
-    })
-    await submit(bot.id, 5)
-    await service.rejectChatbotRevision(
-      {
-        id: bot.id,
-        expectedRevisionVersion: 6,
-        comment: 'Synthetic requested revision',
-      },
-      admin
-    )
-    expect(await read(bot.id)).toMatchObject({
-      status: ChatbotStatus.REJECTED,
-      revisionStatus: ChatbotStatus.REJECTED,
-      revisionVersion: 7,
-    })
-    await submit(bot.id, 7)
-    await expect(
-      service.approveChatbotRevision(
-        { id: bot.id, expectedRevisionVersion: 6 },
-        admin
-      )
-    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
-  })
-
   it('uses the revision version for sequential disclaimer saves', async () => {
     const bot = await seed()
 
-    await service.saveChatbotDisclaimer(
+    await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
         expectedRevisionVersion: bot.revisionVersion,
-        title: 'First replacement',
-        introText: 'First replacement introduction.',
+        input: {
+          disclaimer: {
+            expectedDisclaimerId: bot.disclaimerId,
+            title: 'First replacement',
+            introText: 'First replacement introduction.',
+          },
+        },
       },
       owner
     )
@@ -584,12 +508,17 @@ describe('chatbot authoring revision transitions', () => {
       },
     })
 
-    await service.saveChatbotDisclaimer(
+    await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
         expectedRevisionVersion: first.revisionVersion,
-        title: 'Second replacement',
-        introText: 'Second replacement introduction.',
+        input: {
+          disclaimer: {
+            expectedDisclaimerId: first.draftConfig?.disclaimerId as string,
+            title: 'Second replacement',
+            introText: 'Second replacement introduction.',
+          },
+        },
       },
       owner
     )
@@ -606,13 +535,17 @@ describe('chatbot authoring revision transitions', () => {
     expect(second.draftConfig?.disclaimerId).not.toBe(bot.disclaimerId)
 
     await expect(
-      service.saveChatbotDisclaimer(
+      service.saveChatbotRevision(
         {
           chatbotId: bot.id,
           expectedRevisionVersion: second.revisionVersion,
-          expectedDisclaimerId: bot.disclaimerId,
-          title: 'Stale replacement',
-          introText: 'Stale replacement introduction.',
+          input: {
+            disclaimer: {
+              expectedDisclaimerId: bot.disclaimerId,
+              title: 'Stale replacement',
+              introText: 'Stale replacement introduction.',
+            },
+          },
         },
         owner
       )
@@ -628,13 +561,17 @@ describe('chatbot authoring revision transitions', () => {
 
   it('leaves a changed disclaimer unlinked until approval', async () => {
     const bot = await seed()
-    await service.saveChatbotDisclaimer(
+    await service.saveChatbotRevision(
       {
         chatbotId: bot.id,
         expectedRevisionVersion: 0,
-        expectedDisclaimerId: bot.disclaimerId,
-        title: 'Replacement',
-        introText: 'Synthetic replacement.',
+        input: {
+          disclaimer: {
+            expectedDisclaimerId: bot.disclaimerId,
+            title: 'Replacement',
+            introText: 'Synthetic replacement.',
+          },
+        },
       },
       owner
     )
@@ -658,8 +595,12 @@ describe('chatbot authoring revision transitions', () => {
 
   it('blocks paused approval and requires an administrator with live publishing capability', async () => {
     const bot = await seed()
-    await service.updateChatbot(
-      { id: bot.id, name: 'Revised', expectedRevisionVersion: 0 },
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { name: 'Revised' } },
+      },
       owner
     )
     await submit(bot.id, 1)
@@ -700,8 +641,12 @@ describe('chatbot authoring revision transitions', () => {
 
   it('blocks withdrawal when the ai-beta flag is revoked', async () => {
     const bot = await seed()
-    await service.updateChatbot(
-      { id: bot.id, name: 'Revised', expectedRevisionVersion: 0 },
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { name: 'Revised' } },
+      },
       owner
     )
     await submit(bot.id, 1)

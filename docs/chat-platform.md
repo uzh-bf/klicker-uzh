@@ -274,11 +274,12 @@ conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed Auto policy by default: the owner projection contains
 one effective `auto` model and no reasoning entries. The strict owner-only
-`updateChatbotModelPolicy` mutation requires exactly one active model for fixed
-mode, one supported reasoning effort when that model supports reasoning, and at
-least one active model plus valid reasoning entries for every selected
-reasoning model in participant-choice mode. The older
-`updateChatbotModelSettings` mutation remains unchanged for rolling clients.
+`saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
+one active model for fixed mode, one supported reasoning effort when that model
+supports reasoning, and at least one active model plus valid reasoning entries
+for every selected
+reasoning model in participant-choice mode. Configuration saves use this single
+mutation; granular save mutations and publication aliases are removed.
 Legacy fixed rows are readable without a migration: empty or multi-model values
 resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
 while a retired-only list falls back to Luna. Participant-choice empty lists
