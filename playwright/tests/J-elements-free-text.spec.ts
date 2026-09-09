@@ -116,11 +116,14 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(FT.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(FT.contentEdited)
+    const questionText = page.getByTestId('insert-question-text')
+    await questionText.click()
+    await questionText.clear()
+    // The Slate model settles asynchronously; typing before the editor is
+    // verifiably empty can append to the previous content.
+    await expect(questionText).toHaveText('')
+    await questionText.pressSequentially(FT.contentEdited)
+    await expect(questionText).toHaveText(FT.contentEdited)
 
     await page.getByTestId('set-free-text-length').click()
     await page.getByTestId('set-free-text-length').clear()
