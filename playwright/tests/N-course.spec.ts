@@ -2081,14 +2081,16 @@ test.describe('Part 2: Randomized group creation', () => {
       await page.getByTestId('student-course-create-group').click()
       const enterPool = page.getByTestId('enter-random-group-pool')
       const leavePool = page.getByTestId('leave-random-group-pool')
-      await expect(enterPool.or(leavePool)).toBeVisible()
       // A previous attempt may have enrolled this student before failing later.
       // Leave first so every attempt still exercises entering the pool.
-      if (await leavePool.isVisible()) {
-        await leavePool.click()
+      if (testInfo.retry > 0) {
+        await expect(enterPool.or(leavePool)).toBeVisible()
+        if (await leavePool.isVisible()) {
+          await leavePool.click()
+        }
       }
-      await page.getByTestId('enter-random-group-pool').click()
-      await expect(page.getByTestId('leave-random-group-pool')).toBeVisible()
+      await enterPool.click()
+      await expect(leavePool).toBeVisible()
     }
   })
 
