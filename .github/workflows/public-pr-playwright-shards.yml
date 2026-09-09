@@ -9,6 +9,9 @@ on:
         type: string
         default: auto
     outputs:
+      duplicate_run_id:
+        description: Successful equivalent PR validation run, when reused
+        value: ${{ jobs.prepare.outputs.duplicate_run_id }}
       should_run:
         description: Whether the canonical Playwright plan contains tests
         value: ${{ jobs.prepare.outputs.should_run }}
@@ -30,9 +33,14 @@ env:
 
 jobs:
   prepare:
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
+      duplicate_run_id: ${{ steps.equivalent.outputs.duplicate_run_id }}
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
       mode: ${{ steps.metadata.outputs.mode }}
@@ -133,6 +141,22 @@ jobs:
             --route route.json \
             --output "$GITHUB_OUTPUT"
 
+      - name: Reuse proven equivalent PR validation
+        id: equivalent
+        if: github.event_name == 'push' && github.ref != 'refs/heads/v3'
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CONTROL_SHA: ${{ job.workflow_sha }}
+        with:
+          script: |
+            const fs = require('node:fs')
+            await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({
+              github, context, core, kind: 'playwright',
+              controlSha: process.env.CONTROL_SHA,
+              plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),
+            })
+
       - name: Summarize canonical plan
         shell: bash
         run: |
@@ -182,8 +206,10 @@ jobs:
           retention-days: 7
 
   build-and-compile-hosted:
+    permissions:
+      contents: read
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     container:
@@ -194,6 +220,37 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Record tested source tree
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ job.workflow_sha }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
+            schemaVersion: 1,
+            event: process.env.GITHUB_EVENT_NAME,
+            runId: Number(process.env.GITHUB_RUN_ID),
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.SOURCE_HEAD_SHA,
+            baseSha: process.env.SOURCE_BASE_SHA,
+            controlSha: process.env.CONTROL_SHA,
+            treeSha: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+          }))
+          NODE
+
+      - name: Upload tested source receipt
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-receipt
+          path: ci-validation-receipt.json
+          retention-days: 7
+
       - name: Build shared Playwright artifact
         uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
         with:
@@ -202,8 +259,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   build-and-compile-public-pr:
+    permissions:
+      contents: read
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
@@ -224,8 +283,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   test-playwright-hosted:
+    permissions:
+      contents: read
     needs: [prepare, build-and-compile-hosted]
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
@@ -320,8 +381,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   test-playwright-public-pr:
+    permissions:
+      contents: read
     needs: [prepare, build-and-compile-public-pr]
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]

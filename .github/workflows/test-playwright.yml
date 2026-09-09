@@ -40,6 +40,8 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
+      actions: read
+      pull-requests: read
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
@@ -49,14 +51,20 @@ jobs:
   # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
     needs: test-playwright-execution
-    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.test-playwright-execution.result != 'cancelled' &&
+      (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - name: Check result
         shell: bash
         env:
+          DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
@@ -69,6 +77,7 @@ jobs:
             printf 'mode=%s\n' "${MODE:-unknown}"
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
+            printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
 
@@ -95,6 +104,15 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
+          if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
+            if ! [[ "$DUPLICATE_RUN_ID" =~ ^[0-9]+$ ]]; then
+              echo 'Invalid equivalent validation run ID.'
+              exit 1
+            fi
+            echo "Equivalent PR validation passed in run $DUPLICATE_RUN_ID."
+            echo "- Reused validation: [run $DUPLICATE_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$DUPLICATE_RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [ "$SHOULD_RUN" = 'false' ]; then
             echo 'No Playwright-relevant tests selected.'
             exit 0
@@ -106,24 +124,21 @@ jobs:
           echo 'Playwright execution passed.'
 
       - name: Upload run metadata
-        if: always()
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
           retention-days: 7
 
-  # Queue inspection is deliberately hosted and checkout-free. It has only
-  # actions: read permission and never runs on the public self-hosted pool.
-  playwright-queue-telemetry:
-    needs: [test-playwright-execution, test-playwright-status]
-    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      actions: read
-    steps:
+      # Queue inspection is best effort, hosted, and checkout-free. It runs
+      # for every non-cancelled open-event status report, including failures.
       - name: Collect current-run queue telemetry
+        id: queue_telemetry
+        if: >-
+          always() &&
+          !cancelled()
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ github.token }}
@@ -229,10 +244,14 @@ jobs:
               .write()
 
       - name: Upload queue telemetry
-        if: always()
+        if: >-
+          always() &&
+          !cancelled() &&
+          steps.queue_telemetry.outcome != 'skipped'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-queue-telemetry
           path: playwright-queue-telemetry.json
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 7

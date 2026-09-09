@@ -238,7 +238,11 @@ jobs:
   # so this job can be used as a required check in branch protection.
   test-graphql-status:
     needs: [filter, test-graphql]
-    if: always()
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.filter.result != 'cancelled' &&
+      needs.test-graphql.result != 'cancelled'
     runs-on: ubuntu-latest
     steps:
       - name: Check result

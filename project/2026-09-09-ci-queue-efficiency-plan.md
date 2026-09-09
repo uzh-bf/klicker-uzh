@@ -45,7 +45,9 @@ per file; wire caller permissions after the executor returns.
 Only a non-`v3` push can reuse validation. Require one current, open, ready,
 same-repository PR at the exact head and branch. Its latest same-workflow PR run
 and latest attempt must have succeeded, with the recorded base matching the live
-PR base and the tested merge tree matching the push tree. Reject ambiguous PRs,
+PR base and the tested merge tree matching the push tree. A small artifact records the
+actual checkout tree, event head/base, run ID and attempt; old runs without this
+receipt remain ineligible. Reject ambiguous PRs,
 forks, drafts, manual runs, skipped tests, failed or canceled replacements, API
 errors and incomplete evidence. Revalidate immediately before accepting reuse.
 
@@ -96,4 +98,16 @@ source delivery; merging and activation remain separate actions.
   All findings were incorporated. Frozen r2: APPROVED, no blockers.
 - Planner: native Astra medium. Complete unpublished scope stays on the trusted
   route; it was not submitted to ChatGPT Browser.
-- Implementation, final verification, reviews, PR and cleanup remain pending.
+- Implementation is complete. The integrated pinned-container suite passes all
+  245 tests, including equivalence, cleanup, reporting, review, cache and runtime
+  planning contracts. No tests are skipped.
+- All changed workflow YAML and 86 embedded shell/JavaScript scripts parse.
+- Initial full suite passed 232/233; the sole failure was the old telemetry-job
+  fixture during executor integration. The pinned Devrouter planner is installed
+  only in the disposable test container, with no router or app runtime started.
+- Read-only cleanup inventory found four active validation runs, all at their
+  current PR heads. No runs were eligible and no cancellation was performed.
+- YAML and embedded-script syntax, focused Biome/Prettier formatting and diff
+  checks pass. Full application build/typecheck hooks are not applicable to this
+  CI-only package; they are not claimed as passing.
+- Simplifier, risk review, final review and draft PR remain pending.
