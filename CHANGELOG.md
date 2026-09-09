@@ -4,20 +4,26 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [3.4.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.74...v3.4.0-alpha.75) (2026-09-09)
 
+
 ### Bug Fixes
 
-- Restore the shared translation context in production account forms and other frontend consumers ([#5854](https://github.com/uzh-bf/klicker-uzh/pull/5854)).
-- Show retrieved Chat chunks with stable citations and distinguish sources cited in an answer from retrieved material ([#5831](https://github.com/uzh-bf/klicker-uzh/pull/5831), [#5842](https://github.com/uzh-bf/klicker-uzh/pull/5842)).
-- Make focused activity tests repeatable, isolate host and container dependencies, and restore deterministic CI fixtures ([#5835](https://github.com/uzh-bf/klicker-uzh/pull/5835), [#5821](https://github.com/uzh-bf/klicker-uzh/pull/5821), [#5829](https://github.com/uzh-bf/klicker-uzh/pull/5829)).
-- Align the CI planner with Devrouter 0.0.59 ([#5834](https://github.com/uzh-bf/klicker-uzh/pull/5834)).
+* **chat:** distinguish cited sources from retrieved material ([#5842](https://github.com/uzh-bf/klicker-uzh/issues/5842)) ([a0472c6](https://github.com/uzh-bf/klicker-uzh/commit/a0472c6732430ddc35b3372b9292069d3e504acf))
+* **chat:** show retrieved chunks with stable source citations ([#5831](https://github.com/uzh-bf/klicker-uzh/issues/5831)) ([7936b6e](https://github.com/uzh-bf/klicker-uzh/commit/7936b6e51a1158d4b6218aa384f39b5c43462edc))
+* **ci:** align Devrouter planner and repository at 0.0.59 ([#5834](https://github.com/uzh-bf/klicker-uzh/issues/5834)) ([1a270f3](https://github.com/uzh-bf/klicker-uzh/commit/1a270f33053e12d56df6e4536133753edcaae636))
+* **ci:** restore release manifest order and deterministic OLAT fixtures ([#5829](https://github.com/uzh-bf/klicker-uzh/issues/5829)) ([7592bc8](https://github.com/uzh-bf/klicker-uzh/commit/7592bc8e2b246c1a6f5e6883d24968ad022cb3f1))
+* **i18n:** restore shared translation context in production ([#5854](https://github.com/uzh-bf/klicker-uzh/issues/5854)) ([236ecd4](https://github.com/uzh-bf/klicker-uzh/commit/236ecd4fef9c9fddb6f4e6dd252e7e2f2226ddc4))
+* **playwright:** make focused activity runs repeatable ([#5835](https://github.com/uzh-bf/klicker-uzh/issues/5835)) ([cbcede7](https://github.com/uzh-bf/klicker-uzh/commit/cbcede79718e8e60ff04d3f8376ab6a3f4bb64ed))
+* **tooling:** isolate host and container dependencies ([#5821](https://github.com/uzh-bf/klicker-uzh/issues/5821)) ([e3fb987](https://github.com/uzh-bf/klicker-uzh/commit/e3fb9873c98a664987cc48f0ec9bbf51c9337e8a))
 
-### Enhancements
-
-- Improve Chat tracing and use repository-owned prompt templates. Production telemetry remains disabled ([#5761](https://github.com/uzh-bf/klicker-uzh/pull/5761)).
 
 ### Deployment
 
-- Adjust resource requests and replica pools. These configuration changes are already applied in production with the previous application images ([#5840](https://github.com/uzh-bf/klicker-uzh/pull/5840), [#5841](https://github.com/uzh-bf/klicker-uzh/pull/5841)).
+* **prd:** roll out v3.4.0-alpha.74 ([#5830](https://github.com/uzh-bf/klicker-uzh/issues/5830)) ([7f81442](https://github.com/uzh-bf/klicker-uzh/commit/7f81442ad98138f99a88277d59ba06eada2abe9a))
+
+
+### Enhancements
+
+* **chat:** improve Langfuse tracing ([#5761](https://github.com/uzh-bf/klicker-uzh/issues/5761)) ([825a5a5](https://github.com/uzh-bf/klicker-uzh/commit/825a5a55d4b783f480ebfdea832ac5af36a47653))
 
 ## [3.4.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.73...v3.4.0-alpha.74) (2026-09-07)
 

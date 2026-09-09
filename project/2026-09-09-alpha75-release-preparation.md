@@ -4,7 +4,8 @@
 
 Prepare version `3.4.0-alpha.75` from verified application source
 `236ecd4fef9c9fddb6f4e6dd252e7e2f2226ddc4` on `v3`. This package updates the
-21 version targets declared in `.versionrc.js`, records release notes, and
+21 version targets declared in `.versionrc.js` through `pnpm run release:alpha`,
+generates the changelog, documents the command requirement in `AGENTS.md`, and
 provides the publication and activation checklist. It changes no executable
 application logic, dependencies, database schema, or deployment values.
 
@@ -63,7 +64,8 @@ explicit authority, either in the rollout approval or separately when needed.
 ## Verification of this preparation
 
 No new tests are needed for version metadata and release documentation.
-Validate every configured version target, preserve every other manifest field,
+Run `pnpm run release:alpha --skip.tag --commit-all` for PR preparation; defer
+the tag until the approved merged release commit. Validate every configured version target, preserve every other manifest field,
 check the changelog and document formatting, inspect the exact diff, and scan
 staged content for secrets. Existing exact-candidate CI covers unchanged
 application source. PRD image builds and candidate runtime acceptance remain
