@@ -73,7 +73,8 @@ otherwise starts a background global npm update even for `ocr version`, so a
 pinned installation alone does not keep the executable immutable. Each review
 attempt verifies the pinned version before running. Process failures retain
 their exit code and write only a fixed stage, exit status and numeric output
-sizes to the job summary. Raw version failures, stdout, stderr and provider
+sizes to the job summary: stdout for that attempt and explicitly labelled
+`stderr_total_bytes` accumulated across the step's attempts. Raw version failures, stdout, stderr and provider
 configuration remain suppressed. An execution error is not a clean review;
 cleanup and final-status failure handling still run.
 

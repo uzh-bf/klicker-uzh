@@ -169,7 +169,7 @@ function assertOCRSummary(result, stage, expectedExit) {
   const match =
     stage === 'review'
       ? result.summary.match(
-          /^OCR stage=review exit=(\d+) stdout_bytes=[ \t]*(\d+) stderr_bytes=[ \t]*(\d+)\n$/
+          /^OCR stage=review exit=(\d+) stdout_bytes=[ \t]*(\d+) stderr_total_bytes=[ \t]*(\d+)\n$/
         )
       : result.summary.match(/^OCR stage=version exit=(\d+)\n$/)
   assert.ok(match, 'missing structured OCR summary')

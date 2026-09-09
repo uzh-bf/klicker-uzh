@@ -444,7 +444,7 @@ jobs:
             else
               exit_code=$?
             fi
-            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_bytes=%s\n' \
+            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
               "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
               >>"${GITHUB_STEP_SUMMARY}"
             return "${exit_code}"
@@ -1020,7 +1020,7 @@ jobs:
             else
               exit_code=$?
             fi
-            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_bytes=%s\n' \
+            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
               "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
               >>"${GITHUB_STEP_SUMMARY}"
             return "${exit_code}"

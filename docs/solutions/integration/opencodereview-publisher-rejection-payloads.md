@@ -95,6 +95,10 @@ The diagnostic boundary above starts after a review result exists. In
 publisher input existed, so widening the publisher artifact list would not
 explain this failure. Its exact historical cause remains unproved.
 
+The install step reported `open-code-review v1.11.0 (c7dd11e03) linux/amd64`.
+This observed banner supports the exact version-token boundary in the guard;
+the synthetic test is not its only evidence.
+
 OCR 1.11.0's [npm launcher](https://github.com/alibaba/open-code-review/blob/v1.11.0/bin/ocr.js)
 starts a detached updater even for `ocr version`. Its
 [updater](https://github.com/alibaba/open-code-review/blob/v1.11.0/scripts/update.js)
