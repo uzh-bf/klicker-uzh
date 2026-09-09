@@ -1,7 +1,15 @@
 {{- $fullName := include "chart.fullname" . -}}
-{{- $chatTelemetryEnabled := true -}}
-{{- if and .Values.chat.telemetry (hasKey .Values.chat.telemetry "enabled") -}}
-{{- $chatTelemetryEnabled = .Values.chat.telemetry.enabled -}}
+{{- $chatTelemetry := .Values.chat.telemetry | default dict -}}
+{{- if and $chatTelemetry.baseUrl (not (hasPrefix "https://" $chatTelemetry.baseUrl)) -}}
+{{- fail "chat.telemetry.baseUrl must use https://" -}}
+{{- end -}}
+{{- $chatTelemetryEnabled := false -}}
+{{- if and $chatTelemetry (hasKey $chatTelemetry "enabled") -}}
+{{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
+{{- end -}}
+{{- $langfuseRelease := .Values.chat.image.tag | default .Chart.AppVersion -}}
+{{- with .Values.chat.podAnnotations -}}
+{{- $langfuseRelease = index . "rollout.klicker.uzh.ch/release" | default $langfuseRelease -}}
 {{- end -}}
 apiVersion: v1
 kind: ConfigMap
@@ -13,6 +21,13 @@ data:
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
+  LANGFUSE_RELEASE: {{ $langfuseRelease | quote }}
+  {{- if $chatTelemetry.environment }}
+  LANGFUSE_TRACING_ENVIRONMENT: {{ $chatTelemetry.environment | quote }}
+  {{- end }}
+  {{- if $chatTelemetry.baseUrl }}
+  LANGFUSE_BASE_URL: {{ $chatTelemetry.baseUrl | quote }}
+  {{- end }}
   CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: {{ .Values.chat.accountUsageEnforcementEnabled | default false | quote }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
