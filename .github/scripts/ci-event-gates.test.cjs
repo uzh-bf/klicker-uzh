@@ -18,6 +18,9 @@ function evaluateGate(expression, github, needs = {}, cancelled = false) {
     /needs\.([a-z][a-z0-9-]*)/g,
     'needs["$1"]'
   )
+  // Repository-controlled input only: the expression must originate from a
+  // parsed file under .github/workflows/. Do not route external or untrusted
+  // text here.
   return new Function(
     'github',
     'needs',

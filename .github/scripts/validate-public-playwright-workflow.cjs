@@ -10,7 +10,8 @@ const CLOSED_EVENT =
   "github.event_name == 'pull_request' && github.event.action == 'closed'"
 
 function hasExactPermissions(actual, expected) {
-  if (actual == null || typeof actual !== 'object') return false
+  if (actual === null || actual === undefined || typeof actual !== 'object')
+    return false
   const actualKeys = Object.keys(actual).sort()
   const expectedKeys = Object.keys(expected).sort()
   return (

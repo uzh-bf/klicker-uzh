@@ -131,8 +131,12 @@ source delivery; merging and activation remain separate actions.
   validation when lookup scopes are unavailable. Execution tokens stay pinned.
   The other findings are addressed by rerun-only unit lookup, removing duplicate
   assertions and dead cancellation branches, and correcting list formatting.
-  One correction review is pending on the final committed range.
-- PR #5866 (CI queue efficiency) is ready for review against `v3`. Hosted
-  checks ran at the ready transition; the reusable workflow remains pinned
-  to trusted `v3`, so this PR cannot demonstrate activation or measured
-  queue improvement before merge.
+  The corrections were rebased onto the ready-transition fix and pushed.
+- The hosted `z-ai/glm-5.3-flash` final review on `a00fe56d63` confirmed the
+  package and returned two minor notes: document the
+  repository-controlled-input invariant on the event-gate expression helper,
+  and use strict equality in the Playwright workflow validator. Both are
+  applied here.
+- PR #5866 (CI queue efficiency) is ready for review against `v3`. The
+  reusable workflow remains pinned to trusted `v3`, so this PR cannot
+  demonstrate activation or measured queue improvement before merge.
