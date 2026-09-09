@@ -29,6 +29,7 @@ function StudentElementPreviewWrapper({
   const [showFeedbacksExplanation, setShowFeedbacksExplanation] = useState(
     initialFeedbacksExplanation
   )
+  const feedbackToggleId = React.useId()
 
   const explanationOrFeedbacksDefined =
     'explanation' in values &&
@@ -150,12 +151,14 @@ function StudentElementPreviewWrapper({
         {explanationOrFeedbacksDefined && (
           <div className="mb-2 flex flex-row items-center gap-2">
             <Checkbox
+              id={feedbackToggleId}
               checked={showFeedbacksExplanation}
               onCheck={() =>
                 setShowFeedbacksExplanation(!showFeedbacksExplanation)
               }
             />
             <FormLabel
+              id={feedbackToggleId}
               required={false}
               labelType="large"
               label={

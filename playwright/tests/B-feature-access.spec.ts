@@ -191,6 +191,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
   }) => {
     await updateLecturerPrivatePreview(true)
     await loginLecturer()
+    await expect(page.getByTestId('elements-download')).toBeVisible()
+    await expect(page.getByTestId('elements-upload')).toBeVisible()
     await validateFeatureAvailability(page, {
       learningAnalytics: true,
       privatePreview: true,
@@ -204,6 +206,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
   }) => {
     await updateLecturerPrivatePreview(false)
     await loginLecturer()
+    await page.reload()
+    await expect(page.getByTestId('elements-download')).not.toBeAttached()
+    await expect(page.getByTestId('elements-upload')).not.toBeAttached()
     await validateFeatureAvailability(page, {
       learningAnalytics: true,
       privatePreview: false,
@@ -218,6 +223,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await mockGrowthBookLearningAnalytics(page, false)
     await updateLecturerPrivatePreview(true)
     await loginLecturer()
+    await page.reload()
+    await expect(page.getByTestId('elements-download')).toBeVisible()
+    await expect(page.getByTestId('elements-upload')).toBeVisible()
     await validateFeatureAvailability(page, {
       learningAnalytics: false,
       privatePreview: true,
@@ -232,6 +240,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await mockGrowthBookLearningAnalytics(page, false)
     await updateLecturerPrivatePreview(false)
     await loginLecturer()
+    await page.reload()
+    await expect(page.getByTestId('elements-download')).not.toBeAttached()
+    await expect(page.getByTestId('elements-upload')).not.toBeAttached()
     await validateFeatureAvailability(page, {
       learningAnalytics: false,
       privatePreview: false,
