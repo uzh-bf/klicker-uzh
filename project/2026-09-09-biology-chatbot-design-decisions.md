@@ -89,7 +89,7 @@ separate later approvals, not assumptions supplied by this interview.
 - PIN and embed source mapping completed. PIN is course admission; current
   participant cookies use SameSite=Lax. Cross-site Teams authentication remains
   unverified and may require separate senior-owned platform work.
-- The [proposal](2026-09-09-biology-chatbot-prototype-plan.md) passed native
+- The [proposal](2026-09-09-biology-chatbot-prototype-plan-pr-5862.md) passed native
   planner review after correction and received execution approval. Synthetic
   persona, cases and figures are prepared and statically checked. No runtime
   or model acceptance is established.
