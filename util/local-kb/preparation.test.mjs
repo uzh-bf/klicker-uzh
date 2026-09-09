@@ -22,11 +22,14 @@ import {
   deliverHatchetToken,
   initializeManagedApplication,
   initializeProviderStorage,
+  inspectPreparedInfrastructure,
   inspectRuntimeCheckout,
   installManagedConfiguration,
   installProviderRouting,
   prepareLocalConfiguration,
   requirePreparation,
+  startPreparedInfrastructure,
+  stopPreparedInfrastructure,
 } from './preparation.mjs'
 import { retrievalImageRevision } from './retrieval-compose.mjs'
 import { scrapingImageRevision } from './scraping-compose.mjs'
@@ -203,6 +206,70 @@ test('application setup initializes once and retains failures without replay', a
   }
 })
 
+test('prepared infrastructure starts without migrations or consumers and retains failures', async () => {
+  for (const failure of [false, true]) {
+    const { config, checkout, read } = await installationFixture()
+    await prepareLocalConfiguration(config, revision)
+    await installManagedConfiguration(config, revision, read)
+    const identity = {
+      kind: 'linked',
+      repoPath: checkout,
+      workspace: 'synthetic-runtime',
+      profile: 'local-kb-setup',
+    }
+    await installProviderRouting(config, revision, identity)
+    await setupReceipts(config)
+    await completePreparation(config, revision)
+    const calls = []
+    const docker = async (args) => {
+      calls.push(args)
+      if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+      if (args.includes('ls')) return ''
+      if (failure) throw new Error('synthetic private diagnostic')
+      return ''
+    }
+    const managed = async (args) => {
+      calls.push(args)
+      return JSON.stringify({ ...identity, profile: 'manage,chat' })
+    }
+    const run = () =>
+      startPreparedInfrastructure(config, revision, managed, docker)
+    if (failure) {
+      await assert.rejects(
+        run(),
+        /partial state is retained and output withheld/
+      )
+      assert.equal(calls.length, 3)
+    } else {
+      assert.deepEqual(await run(), {
+        infrastructureStarted: true,
+        aiQualified: false,
+        workersStarted: false,
+      })
+      assert.equal(calls.length, 4)
+      assert.deepEqual(calls[3], [
+        'ensure',
+        checkout,
+        '--profile',
+        'manage,chat',
+        '--json',
+      ])
+    }
+    assert.equal(
+      calls
+        .flat()
+        .some((value) =>
+          /worker|dispatcher|callback|seed|migrat|doc-query/.test(value)
+        ),
+      false
+    )
+    const before = calls.length
+    await assert.rejects(run(), { code: 'EEXIST' })
+    // The repeated local-context observation is read-only.
+    assert.equal(calls.length, before + 2)
+  }
+})
+
 test('changed managed input prevents all installation writes', async () => {
   const { config, checkout, inputs, read } = await installationFixture()
   await writeFile(join(checkout, '.devrouter.yml'), 'changed')
@@ -217,6 +284,68 @@ test('changed managed input prevents all installation writes', async () => {
   await assert.rejects(stat(join(checkout, '.local-kb/managed-installation')), {
     code: 'ENOENT',
   })
+})
+
+test('status is read-only and stop refuses foreign provider ownership', async () => {
+  const { config, checkout, read } = await installationFixture()
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  await installProviderRouting(config, revision, {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  })
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  let foreign = true
+  let stopped = false
+  const writes = []
+  const directory = join(checkout, '.local-kb')
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('ls')) return 'abcdef123456'
+    if (args.includes('inspect'))
+      return [
+        config.project.identity,
+        foreign ? '/synthetic/other' : directory,
+        join(directory, 'providers.compose.json'),
+        'postgres',
+        stopped ? 'exited' : 'running',
+        'unreported',
+      ].join('|')
+    writes.push(args)
+    stopped = true
+    return ''
+  }
+  const managed = async (args) => {
+    writes.push(args)
+    return JSON.stringify({ stopped: true, kind: 'linked', repoPath: checkout, workspace: 'synthetic-runtime' })
+  }
+  await assert.rejects(
+    stopPreparedInfrastructure(config, revision, managed, docker),
+    /ownership/
+  )
+  assert.equal(writes.length, 0)
+  foreign = false
+  const status = await inspectPreparedInfrastructure(config, revision, docker)
+  assert.deepEqual(status.providers, [
+    { service: 'postgres', state: 'running', health: 'unreported' },
+  ])
+  assert.equal(status.aiQualified, false)
+  assert.equal(writes.length, 0)
+  assert.deepEqual(
+    await stopPreparedInfrastructure(config, revision, managed, docker),
+    { stopped: true, dataRetained: true }
+  )
+  assert.deepEqual(writes[0], ['stop', checkout, '--json'])
+  assert.equal(writes[1].at(-1), 'stop')
+  assert.equal(
+    writes
+      .flat()
+      .some((value) => ['down', 'rm', '--volumes', 'delete'].includes(value)),
+    false
+  )
 })
 
 test('interrupted installation remains claimed and cannot be replayed', async () => {

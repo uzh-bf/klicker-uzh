@@ -559,6 +559,225 @@ export async function requirePreparation(config, candidateRevision) {
   return prepared
 }
 
+async function preparedRuntime(config, candidateRevision, runDocker) {
+  const prepared = await requirePreparation(config, candidateRevision)
+  const checkout = config.project.runtimeCheckoutPath
+  const directory = join(checkout, '.local-kb')
+  const { context, workspace } = prepared.application
+  const composition = await readOwned(join(directory, 'providers.compose.json'))
+  const routing = await readOwned(
+    join(directory, 'provider-routing.compose.json')
+  )
+  if (
+    JSON.stringify(composition) !==
+      JSON.stringify(renderProviderCompose(config)) ||
+    JSON.stringify(routing) !== JSON.stringify(renderProviderRouting(workspace))
+  ) {
+    throw new Error('Prepared provider configuration has changed.')
+  }
+  const endpoint = await runDocker([
+    'context',
+    'inspect',
+    context,
+    '--format',
+    '{{.Endpoints.docker.Host}}',
+  ])
+  if (!endpoint.startsWith('unix:///') || /[\r\n]/.test(endpoint)) {
+    throw new Error('Prepared runtime requires its local Docker context.')
+  }
+  return { checkout, directory, context, workspace }
+}
+
+async function observeOwnedProviders(config, runtime, runDocker) {
+  const { context, directory } = runtime
+  const ids = (
+    await runDocker([
+      '--context',
+      context,
+      'container',
+      'ls',
+      '--all',
+      '--quiet',
+      '--filter',
+      `label=com.docker.compose.project=${config.project.identity}`,
+    ])
+  )
+    .split(/\s+/)
+    .filter(Boolean)
+  const services = renderProviderCompose(config).services
+  const rows = []
+  for (const id of ids) {
+    if (!/^[a-f0-9]{12,64}$/.test(id))
+      throw new Error('Invalid provider container identity.')
+    const result = await runDocker([
+      '--context',
+      context,
+      'container',
+      'inspect',
+      '--format',
+      '{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.project.working_dir"}}|{{index .Config.Labels "com.docker.compose.project.config_files"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}unreported{{end}}',
+      id,
+    ])
+    const [project, workingDirectory, files, service, state, health, extra] =
+      result.split('|')
+    const allowedFiles = [
+      join(directory, 'bootstrap.compose.json'),
+      join(directory, 'providers.compose.json'),
+      join(directory, 'provider-routing.compose.json'),
+    ]
+    if (
+      project !== config.project.identity ||
+      workingDirectory !== directory ||
+      !files ||
+      files.split(',').some((file) => !allowedFiles.includes(file)) ||
+      !Object.hasOwn(services, service) ||
+      extra !== undefined ||
+      ![
+        'created',
+        'running',
+        'paused',
+        'restarting',
+        'removing',
+        'exited',
+        'dead',
+      ].includes(state) ||
+      !['unreported', 'starting', 'healthy', 'unhealthy'].includes(health)
+    )
+      throw new Error('Provider container ownership or state is ambiguous.')
+    rows.push({ service, state, health })
+  }
+  return rows
+}
+
+export async function inspectPreparedInfrastructure(
+  config,
+  candidateRevision,
+  runDocker = runLocalDocker
+) {
+  const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  return {
+    providers: await observeOwnedProviders(config, runtime, runDocker),
+    managedRuntimeObserved: false,
+    aiQualified: false,
+  }
+}
+
+export async function stopPreparedInfrastructure(
+  config,
+  candidateRevision,
+  runManaged = runLocalManaged,
+  runDocker = runLocalDocker
+) {
+  const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  await observeOwnedProviders(config, runtime, runDocker)
+  const managed = JSON.parse(
+    await runManaged(['stop', runtime.checkout, '--json'])
+  )
+  if (
+    managed.stopped !== true || managed.kind !== 'linked' ||
+    managed.repoPath !== runtime.checkout || managed.workspace !== runtime.workspace
+  )
+    throw new Error('Managed shutdown is not confirmed.')
+  await runDocker([
+    '--context',
+    runtime.context,
+    'compose',
+    '--project-name',
+    config.project.identity,
+    '--file',
+    join(runtime.directory, 'providers.compose.json'),
+    '--file',
+    join(runtime.directory, 'provider-routing.compose.json'),
+    '--profile',
+    '*',
+    'stop',
+  ])
+  const providers = await observeOwnedProviders(config, runtime, runDocker)
+  if (
+    providers.some(
+      ({ state }) => !['exited', 'created', 'dead'].includes(state)
+    )
+  ) {
+    throw new Error('Provider shutdown is incomplete; data is retained.')
+  }
+  return { stopped: true, dataRetained: true }
+}
+
+// This phase starts no queue consumers or model-dependent services. A failed
+// attempt remains claimed; another invocation cannot silently resume work.
+export async function startPreparedInfrastructure(
+  config,
+  candidateRevision,
+  runManaged = runLocalManaged,
+  runDocker = runLocalDocker
+) {
+  const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  const { checkout, directory, context, workspace } = runtime
+  await observeOwnedProviders(config, runtime, runDocker)
+  const attempt = join(directory, 'infrastructure-start')
+  await mkdir(attempt, { mode: 0o700 })
+  try {
+    await runDocker([
+      '--context',
+      context,
+      'compose',
+      '--project-name',
+      config.project.identity,
+      '--file',
+      join(directory, 'providers.compose.json'),
+      '--file',
+      join(directory, 'provider-routing.compose.json'),
+      'up',
+      '--detach',
+      '--wait',
+      '--wait-timeout',
+      '180',
+      'postgres',
+      'redis',
+      'blob',
+      'hatchet',
+      'milvus-etcd',
+      'minio',
+      'milvus',
+      'crawl4ai',
+      'scraping',
+      'ingestion-api',
+      'doc-processing',
+    ])
+    const managed = JSON.parse(
+      await runManaged([
+        'ensure',
+        checkout,
+        '--profile',
+        'manage,chat',
+        '--json',
+      ])
+    )
+    if (
+      managed.kind !== 'linked' ||
+      managed.repoPath !== checkout ||
+      managed.workspace !== workspace ||
+      managed.profile !== 'manage,chat'
+    ) {
+      throw new Error('Managed startup identity differs from preparation.')
+    }
+    await writeExclusive(join(attempt, 'complete.json'), {
+      candidateRevision,
+      context,
+      workspace,
+    })
+    return {
+      infrastructureStarted: true,
+      aiQualified: false,
+      workersStarted: false,
+    }
+  } catch {
+    throw new Error(
+      'Infrastructure startup failed; partial state is retained and output withheld.'
+    )
+  }
+}
+
 async function readApplicationSetup(directory, candidateRevision) {
   const application = await readOwned(
     join(directory, 'application-setup/complete.json')

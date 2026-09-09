@@ -18,8 +18,11 @@ import {
   completePreparation,
   initializeManagedApplication,
   initializeProviderStorage,
+  inspectPreparedInfrastructure,
   installManagedConfiguration,
   prepareLocalConfiguration,
+  startPreparedInfrastructure,
+  stopPreparedInfrastructure,
 } from './local-kb/preparation.mjs'
 import { providerCommands } from './local-kb/provider-commands.mjs'
 import {
@@ -135,7 +138,7 @@ function requireProviderSources(config) {
     !inspectIsolatedProviderSources(config).every(({ qualified }) => qualified)
   ) {
     throw new Error(
-      'Setup requires clean provider sources at the pinned revisions.'
+      'Local lifecycle requires clean provider sources at the pinned revisions.'
     )
   }
 }
@@ -244,12 +247,12 @@ function configPlan(config) {
 function parseArguments(args) {
   if (
     args.length === 5 &&
-    args[0] === 'setup' &&
+    ['setup', 'start', 'stop', 'status'].includes(args[0]) &&
     args[1] === '--config' &&
     args[3] === '--candidate' &&
     /^[a-f0-9]{40}$/.test(args[4])
   ) {
-    return { command: 'setup', configPath: args[2], candidateRevision: args[4] }
+    return { command: args[0], configPath: args[2], candidateRevision: args[4] }
   }
   if (args.length === 1 && ['status', 'plan'].includes(args[0])) {
     return { command: args[0] }
@@ -262,7 +265,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or setup --config <path> --candidate <commit>'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|stop|status> --config <path> --candidate <commit>'
   )
 }
 
@@ -293,6 +296,26 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             aiQualified: false,
           })
         )
+      } else if (command === 'start') {
+        requireProviderSources(config)
+        console.log(
+          JSON.stringify(
+            await startPreparedInfrastructure(config, candidateRevision)
+          )
+        )
+      } else if (command === 'stop') {
+        console.log(
+          JSON.stringify(
+            await stopPreparedInfrastructure(config, candidateRevision)
+          )
+        )
+      } else if (command === 'status' && candidateRevision) {
+        console.log(
+          JSON.stringify(
+            await inspectPreparedInfrastructure(config, candidateRevision)
+          )
+        )
+        process.exitCode = 2
       } else if (command === 'plan') {
         console.log(JSON.stringify(configPlan(config), null, 2))
         process.exitCode = 2
