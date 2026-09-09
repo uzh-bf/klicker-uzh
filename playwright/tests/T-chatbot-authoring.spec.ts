@@ -1235,6 +1235,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     expect(approved.publishedAt).toEqual(chatbot.publishedAt)
     await page.reload()
+    // The credit editor mounts on the usage view, not on the review step
+    // the page was left on after the resubmission.
+    await navigateToSetupStep(page, 'credits')
     await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('30')
     await expect(page.getByTestId('chatbot-credit-initial')).toBeEnabled()
   })
