@@ -2,6 +2,19 @@
 
 ## Goal
 
+### 2026-09-08 repair gates
+
+- Preserve existing response failure outcomes and assessment audit payloads;
+  keep audit content out of Pino through the audit-task allowlist.
+- Correct the local submission endpoint, then prove a synthetic successful
+  response across the API, worker and persisted Hatchet logs.
+- Replace remaining unsafe task messages and require stable event fields.
+- Retain the user-approved visible correlation suffix and structured metadata.
+- Verify tests/builds and independent review; fold fixes into their owning
+  native stack layers only with the required stack workflow available.
+- Do not claim production readiness until published exact-head CI, conflicts,
+  and acceptance gaps are resolved. No cluster changes or merge authorization.
+
 Adjust the existing five-PR production-logging stack so that application code
 inside a Hatchet task uses the Hatchet execution context as its single logging
 entry point. One safe task log call must:

@@ -701,11 +701,15 @@ async function handlePOST(
   }
 
   if (!chatbot.owner.aiFeaturesEnabled) {
-    console.warn('Chat admission denied', {
-      requestId,
-      phase: 'admission.accountApproval',
-      code: 'AI_FEATURES_DISABLED',
-    })
+    log.warn(
+      {
+        event: 'chat.admission.denied',
+        requestId,
+        phase: 'admission.accountApproval',
+        code: 'AI_FEATURES_DISABLED',
+      },
+      'Chat admission denied'
+    )
     return NextResponse.json(
       { error: 'AI usage is not authorized', code: 'AI_FEATURES_DISABLED' },
       { status: 403 }
@@ -1073,19 +1077,27 @@ async function handlePOST(
           : {}),
       })
     } catch (error) {
-      console.error('[chat] Failed to update Langfuse trace:', {
-        requestId,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.error(
+        {
+          event: 'chat.telemetry.trace_update.failed',
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        },
+        'Failed to update Langfuse trace'
+      )
     }
 
     try {
       langfuseTrace.end()
     } catch (error) {
-      console.error('[chat] Failed to end Langfuse trace:', {
-        requestId,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.error(
+        {
+          event: 'chat.telemetry.trace_end.failed',
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        },
+        'Failed to end Langfuse trace'
+      )
     }
   }
 
@@ -1718,10 +1730,14 @@ async function handlePOST(
         langfuseContext = context
         langfuseAiSdkIntegration = integration
       } catch (error) {
-        console.error('[chat] Failed to prepare Langfuse telemetry:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.prepare.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to prepare Langfuse telemetry'
+        )
       }
     }
     const langfuseTelemetryEnabled = Boolean(
@@ -1734,10 +1750,14 @@ async function handlePOST(
       try {
         after(flushLangfuseTelemetry)
       } catch (error) {
-        console.error('[chat] Failed to schedule a Langfuse flush:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.flush_schedule.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to schedule a Langfuse flush'
+        )
       }
     }
 
@@ -2109,10 +2129,14 @@ async function handlePOST(
       } catch (error) {
         if (providerStreamStarted) throw error
         finishLangfuseTrace('error', { stage: 'telemetry-setup' })
-        console.error('[chat] Failed to start Langfuse trace:', {
-          requestId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          {
+            event: 'chat.telemetry.trace_start.failed',
+            requestId,
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to start Langfuse trace'
+        )
         result = startStream()
       }
     } else {

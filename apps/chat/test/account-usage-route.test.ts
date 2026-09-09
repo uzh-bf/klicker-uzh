@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  logRecords: [] as Record<string, unknown>[],
   after: vi.fn(),
   afterCallback: null as (() => unknown) | null,
   withChatbotAuth: vi.fn(),
@@ -48,6 +49,16 @@ const mocks = vi.hoisted(() => ({
   responseOptions: null as Record<string, unknown> | null,
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
 }))
+
+vi.mock('@/src/lib/server/logger', async () => {
+  const { createLogger } = await import('@klicker-uzh/logging/node')
+  return {
+    logger: createLogger(
+      { service: 'chat-test', level: 'info', pretty: false },
+      { write: (line) => mocks.logRecords.push(JSON.parse(line)) }
+    ),
+  }
+})
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
@@ -264,6 +275,7 @@ describe('account usage chat route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.logRecords.length = 0
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
@@ -677,11 +689,16 @@ describe('account usage chat route', () => {
     })
     expect(response.status).toBe(403)
     expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
-    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
-      requestId: expect.any(String),
-      phase: 'admission.accountApproval',
-      code: 'AI_FEATURES_DISABLED',
-    })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        level: 'warn',
+        event: 'chat.admission.denied',
+        requestId: expect.any(String),
+        correlationId: response.headers.get('x-correlation-id'),
+        phase: 'admission.accountApproval',
+        code: 'AI_FEATURES_DISABLED',
+      })
+    )
     expect(mocks.streamText).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
