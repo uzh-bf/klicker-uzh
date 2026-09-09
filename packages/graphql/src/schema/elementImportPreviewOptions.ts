@@ -30,11 +30,13 @@ export function createElementImportPackagePreviewOptions(
   return element
 }
 
-export const ElementImportPackagePreviewSCOptions = builder
-  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.SC>>(
-    'ElementImportPackagePreviewSCOptions'
-  )
-  .implement({
+function createChoicePreviewOptions<
+  Type extends
+    | typeof DB.ElementType.SC
+    | typeof DB.ElementType.MC
+    | typeof DB.ElementType.KPRIM,
+>(name: string) {
+  return builder.objectRef<PreviewOptionsWrapper<Type>>(name).implement({
     fields: (t) => ({
       type: t.field({
         type: ElementType,
@@ -56,60 +58,20 @@ export const ElementImportPackagePreviewSCOptions = builder
       }),
     }),
   })
+}
 
-export const ElementImportPackagePreviewMCOptions = builder
-  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.MC>>(
-    'ElementImportPackagePreviewMCOptions'
-  )
-  .implement({
-    fields: (t) => ({
-      type: t.field({
-        type: ElementType,
-        resolve: ({ type }) => type,
-      }),
-      displayMode: t.field({
-        type: ElementDisplayMode,
-        resolve: ({ options }) => options.displayMode,
-      }),
-      hasSampleSolution: t.boolean({
-        resolve: ({ options }) => options.hasSampleSolution,
-      }),
-      hasAnswerFeedbacks: t.boolean({
-        resolve: ({ options }) => options.hasAnswerFeedbacks,
-      }),
-      choices: t.field({
-        type: [Choice],
-        resolve: ({ options }) => options.choices,
-      }),
-    }),
-  })
+export const ElementImportPackagePreviewSCOptions = createChoicePreviewOptions<
+  typeof DB.ElementType.SC
+>('ElementImportPackagePreviewSCOptions')
 
-export const ElementImportPackagePreviewKPRIMOptions = builder
-  .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.KPRIM>>(
+export const ElementImportPackagePreviewMCOptions = createChoicePreviewOptions<
+  typeof DB.ElementType.MC
+>('ElementImportPackagePreviewMCOptions')
+
+export const ElementImportPackagePreviewKPRIMOptions =
+  createChoicePreviewOptions<typeof DB.ElementType.KPRIM>(
     'ElementImportPackagePreviewKPRIMOptions'
   )
-  .implement({
-    fields: (t) => ({
-      type: t.field({
-        type: ElementType,
-        resolve: ({ type }) => type,
-      }),
-      displayMode: t.field({
-        type: ElementDisplayMode,
-        resolve: ({ options }) => options.displayMode,
-      }),
-      hasSampleSolution: t.boolean({
-        resolve: ({ options }) => options.hasSampleSolution,
-      }),
-      hasAnswerFeedbacks: t.boolean({
-        resolve: ({ options }) => options.hasAnswerFeedbacks,
-      }),
-      choices: t.field({
-        type: [Choice],
-        resolve: ({ options }) => options.choices,
-      }),
-    }),
-  })
 
 export const ElementImportPackagePreviewNumericalOptions = builder
   .objectRef<PreviewOptionsWrapper<typeof DB.ElementType.NUMERICAL>>(
