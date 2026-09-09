@@ -2,6 +2,57 @@
 
 ## Approval summary
 
+### Approved provider-owned launcher extension — 2026-09-09
+
+The user approved completing the local ingestion and retrieval package through
+provider-owned launchers, preserving ADR 0018. Each provider owns its service
+configuration and backing storage; Klicker invokes the supported contract and
+owns only consumer configuration and end-to-end acceptance. This supersedes the
+earlier unresolved architecture and source-helper deletion notes below.
+
+Authority covers source changes, offline verification, independent reviews,
+ordinary branch pushes and draft delivery in the four provider repositories and
+the existing Klicker package. It does not cover runtime activation, new ingestion
+or model requests, graph builds, merges, deployments, or retained-data and
+branch/worktree deletion. Replacing superseded source files is an ordinary
+in-scope refactor. Boundary owner: self. Terminal: reviewed source drafts with
+explicit dependency and live-acceptance gaps; no claim of a working live profile.
+
+The native planner approved this sequence with ownership and verification
+clarifications. Deliver ingestion first, then Doc Processing, scraping, Doc
+Query, and the thin Klicker integration. Main owns cross-provider contracts and
+integration; bounded executors own disjoint provider implementation and focused
+tests. Provider merges remain prerequisites for consumer merge readiness, not
+for publishing an explicitly dependency-pending draft.
+
+Every facade binds an explicit source revision, instance and private state path.
+Setup alone initializes schemas and credentials. Infrastructure start requires
+setup and cannot migrate, consume queues, submit smoke work or make paid calls.
+Unsupported modes fail explicitly. Status reports allowlisted identity and
+readiness only. Stop verifies ownership, handles partial starts and preserves
+state. Shared endpoints never transfer lifecycle ownership. Do not introduce a
+shared launcher framework or retain copied provider assembly in Klicker.
+
+Ingestion owns ingestion state, Hatchet and vector backing. Doc Processing owns
+extract storage and consumes explicit Hatchet endpoints. Scraping owns its cache
+and Crawl4AI. Doc Query owns retrieval configuration and consumes vector storage.
+Klicker retains its app database, Redis, Blob storage and consumer bindings.
+
+Provider acceptance uses real argument parsing and dispatch with stubbed process
+runners: setup/start separation, two-instance isolation, foreign-owner rejection,
+partial-start shutdown, preserved state, explicit configuration and sanitized
+errors. Consumer tests cover dependency order, reverse stop and retained resume
+guards. Existing consequential regressions are reused rather than duplicated.
+Each substantive slice receives simplification and risk review; complete source
+packages receive integrated review before draft publication. Live browser proof
+and paid retrieval remain separately gated.
+
+Progress: Klicker corrections are committed at
+`e0a55613cbddf0ce27ed89d864c8928a6eeec07e`; 132 focused Chat tests and 71 local
+launcher tests passed. The ingestion worktree `trees/rs/provider-local-launcher`
+is based on `main@69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`. The historical
+launcher worktree remains untouched. No provider implementation has landed yet.
+
 ### Current delivery ownership — 2026-09-09
 
 The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.
