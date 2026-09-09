@@ -13,6 +13,16 @@
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
 
+## Release preparation
+
+Use the release scripts in the root `package.json` to generate versions and
+`CHANGELOG.md`; never hand-edit package versions or assemble release notes as a
+substitute. For an alpha release, run `pnpm run release:alpha` (preview with
+`pnpm run release:alpha:dry`). The script uses `.versionrc.js` as the authoritative
+version-target list. During PR preparation, pass `--skip.tag` and create the tag
+only at the approved merged release commit. Tag publication and production
+activation remain separately authorized actions.
+
 ## Commands
 
 ### Root-level (from repo root)
