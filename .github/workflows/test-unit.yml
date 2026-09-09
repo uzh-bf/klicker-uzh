@@ -60,7 +60,8 @@ permissions:
 
 jobs:
   equivalent-validation:
-    if: github.event_name == 'push' && github.ref != 'refs/heads/v3'
+    # First attempts keep one runner allocation; reuse lookup is for reruns.
+    if: github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

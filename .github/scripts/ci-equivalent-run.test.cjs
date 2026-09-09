@@ -431,7 +431,7 @@ test('reuse wiring keeps execution tokens read-only and the canonical plan intac
   )
   assert.equal(
     units.jobs['equivalent-validation'].if,
-    "github.event_name == 'push' && github.ref != 'refs/heads/v3'"
+    "github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1"
   )
   assert.equal(units.jobs['test-unit'].needs, 'equivalent-validation')
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))

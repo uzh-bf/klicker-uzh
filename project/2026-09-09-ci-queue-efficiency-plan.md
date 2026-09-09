@@ -58,7 +58,9 @@ plan metadata and expose a separate reused-run identifier. Forward read-only API
 permissions only to preparation; actual builds and shards retain contents-read.
 The caller remains compatible with the old trusted reusable workflow until merge.
 
-Unit suites require actual successful test steps. Other workflows retain push
+Unit suites require actual successful test steps. Their reuse lookup runs only
+on push reruns: initial pushes retain one runner allocation, avoiding a new
+serial queue wait when equivalent PR validation is not yet complete. Other workflows retain push
 coverage where path or build selection semantics differ. Translation checks are
 already PR-only. Default-branch timing feedback and image publication continue.
 
