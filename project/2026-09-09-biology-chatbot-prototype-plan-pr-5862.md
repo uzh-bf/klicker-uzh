@@ -1,4 +1,4 @@
-# Biology chatbot: a small course-support prototype
+# Biology chatbot: a small course-support prototype — draft PR #5862
 
 ## Approval summary
 
@@ -267,3 +267,7 @@ At that historical checkpoint, the work was proposal-only. No implementation, ru
 Local retrieval checkpoint: all 35 focused checks passed. After the final rejection tests, managed stop completed and fresh Devsy status is Stopped, all three exact task containers are exited, and zero exact-workspace routes remain. The source implementation is committed locally; draft publication and model evaluation remain pending.
 
 Source delivery checks: all 35 focused tests pass. The full hook was split between host and container: 93 host checks passed; type/lint and remaining repository checks passed after adding JavaScript overload declarations for the default boolean authenticator contract. Staged formatting, secret scanning and Git identity passed. No runtime behavior changed in this type correction. Dedicated simplifier reviewed d2b63506ba and found no worthwhile net reduction.
+
+### Draft source delivery
+
+[Draft PR #5862 — synthetic biology prototype](https://github.com/uzh-bf/klicker-uzh/pull/5862) targets v3. Full-package review passed on 07e295a8ef with no findings; its JSON validated against the configured schema. The full pre-push build passed all 23 tasks. Host/container hooks were split without changing configuration. CI is queued; senior human review and explicit merge authority remain required. Scientific/model evaluation awaits a named provider/model and approved spending cap. No model calls occurred.
