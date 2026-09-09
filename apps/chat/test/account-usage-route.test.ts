@@ -536,8 +536,8 @@ describe('account usage chat route', () => {
           includeRuntimeContext: {
             responseExampleRole: true,
             responseExampleSkillAvailable: true,
-            responseExampleSetDigest: true,
-            responseExampleProjectionDigest: true,
+            responseExampleSetDigest: false,
+            responseExampleProjectionDigest: false,
           },
         }),
       })
