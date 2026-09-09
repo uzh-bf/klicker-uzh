@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
@@ -843,6 +844,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const legacyScopeNote = 'Legacy framing. '.repeat(20).trim()
     expect(legacyScopeNote.length).toBeGreaterThan(200)
     const prisma = await getPrisma()
+    // Model a chatbot from before authoring revisions: clear the saved
+    // snapshot so the UI reads the live columns directly, as it does for
+    // rows that never had a revision.
     await prisma.chatbot.update({
       where: { id: firstChatbotId },
       data: {
@@ -855,6 +859,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
           languageOfInstruction: null,
           scopeNote: legacyScopeNote,
         },
+        draftConfig: Prisma.DbNull,
+        revisionStatus: null,
+        revisionVersion: 0,
       },
     })
     await page.reload()
