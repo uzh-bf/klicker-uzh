@@ -115,16 +115,18 @@ Optional opposing-provider review was attempted on an isolated public-source dra
 - https://nextjs.org/blog/next-16-3 describes release behavior, including default build caching and versioned agent docs.
 - Context7 /vercel/next.js upgrade guidance retrieved September 9 confirms coordinated Next/React/lint upgrades and explicit Webpack flags.
 
-No build, install or browser test has yet proved the upgraded tree. Reviewer findings and baseline results must be filled from producing-run evidence, not inferred from existing plan history.
+The upgraded tree passes the install, build, unit and browser checks recorded below. Release and deployment remain outside this package.
 
 ## Progress
 
-- Complete: remote baseline, isolated task worktree, registry inventory, selected Next 16.3.4.
-- Complete: official compatibility research and native planner round two.
-- Complete: supported-profile baseline runtime readiness and final planner update review.
-- Passed on unchanged baseline: pnpm run check:syncpack (814 version entries valid); apps/chat image-preview.test.ts (2 tests; Sharp mocked); plan Prettier check.
-- Upgraded install, builds, native Sharp smoke and browser/e2e proof have not run.
-- Runtime stopped for approval pause: devrouter stop freed 7 routes; devsy workspace status rs-next-16-3-upgrade reported Stopped; filtered devrouter ls returned zero exact routes. Worktree and runtime data retained.
-- Approved by user September 9, 2026: concrete package, exact release-age exceptions, Sharp defaults and execution through tested draft PR.
-- Running: implementation and upgraded verification.
-- Remote refresh on execution: task branch tracks origin/v3, 0 ahead and 1 behind; target-only change is production image values, outside this package. No integration needed for current verification.
+- User approved the package September 9, 2026, including exact release-age exceptions and Sharp defaults. Implementation commit: c15a6fe8ffcf8b3e01a3a0a3a72183dfac73221e.
+- All 82 manifest substitutions and the frozen lockfile match the approved versions. Existing overrides and policy settings remain unchanged. The target advanced only in production image values, so integration was unnecessary.
+- Passing container checks: syncpack (814 entries), type/lint (42 tasks), Chat (629 tests; 21 existing skips), Auth (2 tests), PWA (7 tests), native JPEG/WebP/AVIF encode/decode, agent-docs, Git identity tests, removed-doc policy and Prisma sync.
+- Passing host checks: CI policy (62 tests), Playwright launcher (31 tests), staged secret scan and Git identity. The host-only policy tests correctly reject container execution; hook-equivalent checks were split across host/container before commits.
+- Production build: 23 tasks passed, including all five Next apps with unchanged bundlers. Removed mixed-version generated-type interference by preserving baseline development artifacts outside `.next`; no source fix was needed. Docs production build and all 21 test-build tasks passed.
+- All five standalone apps started and served pages, static JavaScript and decodable optimized images. All three PWA apps served generated workers. Native and standalone checks preceded test-build overwrites. Temporary smoke servers stopped.
+- Browser screenshots cover Auth, Manage, Control, PWA and Chat before/after, German Manage navigation/reload, and mobile participant login. Docs rendered correctly. Auth/PWA/Chat layouts match the baseline; Manage/Control fixture contents differ after guarded E2E reset, so their comparison covers layout rather than identical data. No browser page errors were captured. Task browser and docs preview stopped.
+- Initial login/Chat E2E run: 110 passed, one history-rail test failed. The failure reproduced on an unchanged rerun. The short transcript fit the default desktop viewport, so its current turn changed during immediate reopening. A smaller desktop viewport creates real scroll distance; an explicit overflow assertion verifies that prerequisite. No production code, existing behavior assertion, or test count changed. The corrected test passed three consecutive repetitions (9.7 seconds total).
+- Native dependency slice review: DONE, no qualifying findings. Simplification skipped for mechanical manifests/lockfile and a direct test-precondition assertion. Integrated final review follows the remaining verification and runtime shutdown.
+- Nonfatal warnings remain: existing peer declarations/overrides, large page data, QR missing-message output, and deprecation/cache warnings. Other native platforms, real identity-provider login, paid model calls and production deployment were not tested locally.
+- Remaining: commit the test repair and evidence, stop and verify the exact runtime, complete integrated final review, then push and create the draft PR against v3. Merge and deployment remain unauthorized.
