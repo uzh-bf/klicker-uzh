@@ -258,3 +258,50 @@ explicit Achievement/sequence checks. Both accepted; round 3 APPROVED. Execution
   remaining snapshot decisions using verified reset seams and planner findings.
 - Active bounded implementation owners: Laplace (launcher), Dalton (CI). Parent
   retains commits, integration, snapshot prototype, real runs and delivery.
+
+### Execution checkpoint 2 (2026-09-09 evening, ZCode takeover)
+
+- Took over from the codex handoff at 22:19 CEST. Verified the recorded state
+  (tree, tests, commit script, review record), re-ran the three focused suites
+  (fail 0), and committed the four planned slices with full hooks
+  (gitleaks + check:all 35/35). The codex-sandbox git/escalation blockers do
+  not exist on this host session.
+- Rebased onto origin/v3 (one non-overlapping manage commit, d3a1853565).
+- Started the worktree runtime: `devrouter ensure --profile manage,chat` is
+  ready (api, auth, chat, manage, pwa; Postgres/Hatchet/Redis healthy). The
+  earlier subnet exhaustion is gone.
+- Cold E2E A-login 16/16 with launcher phase timings and first capture. Found
+  a real bug: the snapshot never hit — pg_dump (PG 15 security backport)
+  emits `\restrict <random-token>` lines, so every schema fingerprint differed.
+  Fixed `normalizeSchemaDump` to strip them (mirroring the restore filter) and
+  added a regression test; commit `0e3cff9359`.
+- Snapshot acceptance passed: synthetic Achievement id 99999 and a mutated
+  `CatalogCollectionAssignment_id_seq` (4321→7) are both wiped by a restore,
+  15 bootstrap achievements retained, 16/16 browser assertions pass.
+- Timing verdict (honest): restore median ~1046ms (778–1320) vs cleanup+seed
+  median ~947ms (676–1087) on this host — restore is NOT faster. Per the
+  plan's negative branch, reseeding stays the default; the accepted snapshot
+  implementation is retained behind `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`
+  (commit `23fe303b10`, docs/skill updated). Default-mode E2E re-verified:
+  zero snapshot activity, 16/16.
+- Independent final review dispatched via the Claude CLI final-reviewer route
+  (route reopened after 23:00) over the frozen range
+  d3a1853565..23fe303b10; result pending. An opt-in-gate E2E receipt and the
+  Y-chat / MA-elements runs were queued behind host-wide devrouter provider
+  contention from concurrent agent sessions at the time of writing.
+- Receipts after the queue drained: opt-in gate verified live (key-mismatch
+  miss → reseed → recapture → restore, 16/16); Y-chat 95/95 (5.5 min);
+  MA-elements 81/82 with one dev-mode `<nextjs-portal>` overlay click flake in
+  a cleanup test, then 82/82 on immediate rerun — flake, not regression; the
+  branch touches no app code.
+- Final review returned 7 findings (no blockers). Disposition: five fixed in
+  `251512822f` (snapshot tests wired into `check:playwright-host`; same-role
+  backend termination in the restore; COPY-aware dump-meta filtering; cache
+  key bound to the seed's local year; stale launcher test title), one was
+  already satisfied by the post-gate receipt, and the profile-narrowing
+  teardown was accepted as the approved inference design and documented in
+  README/testing.md. Post-fix opt-in rerun: both restores hit with the new
+  SQL (1187/1093 ms), 16/16.
+- Delivered: branch pushed non-force to origin and published as a draft PR
+  against v3 with the measured results in the body. Mark-ready remains
+  withheld; live GitHub draft/ready transitions are not exercised.
