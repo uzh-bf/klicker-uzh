@@ -324,8 +324,6 @@ function executeExtractedOCRAttempt({
     calls: fs.readFileSync(callsPath, 'utf8'),
     stdoutSentinel,
     stderrSentinel,
-    versionSentinel,
-    jobEnv,
   }
   fs.rmSync(directory, { recursive: true, force: true })
   return result
@@ -414,7 +412,6 @@ test('executes both workflow OCR command boundaries with pinned version diagnost
 
   for (const form of forms) {
     const result = runCase(form)
-    assert.equal(result.jobEnv.OCR_NO_UPDATE, '1', form.name)
     assertReviewAttempt(result, form, 0)
   }
 

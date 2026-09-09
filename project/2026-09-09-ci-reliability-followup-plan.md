@@ -185,8 +185,12 @@ redaction sentinels. The executor's focused correction is integrated.
 Qualification mapping is complete, and
 the same planner approved the Python standard-library seam. The 25 routing and
 workflow-policy tests pass in a disposable Node 24.16.0 image with Git installed.
-Scoped formatting, diff inspection and secret scanning pass. Slice and final
-reviews remain before publication. No implementation PR is published yet.
+Scoped formatting, diff inspection and secret scanning pass. Slice review is
+done with no findings; simplification removes three redundant test fields and
+assertions. Final review remains before publication. The configured Husky
+entrypoint is absent in this worktree; full monorepo build/check hooks are not
+claimed. No hook configuration was changed or bypass flag used.
+No implementation PR is published yet.
 The existing `collect-smart-draft-qualification-evidence` hourly automation is
 active; its completed one-time post-merge observation has been removed. Its evidence and
 cursor live in the old scheduling worktree's ignored
