@@ -18,7 +18,10 @@ import { twMerge } from 'tailwind-merge'
 
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
-import { useMessageSourcesContext } from './message-sources-context'
+import {
+  partitionSources,
+  useMessageSourcesContext,
+} from './message-sources-context'
 import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -145,9 +148,11 @@ export function SourcesSection() {
   // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
-  const { messageId, sources } = useMessageSourcesContext()
+  const { citationCounts, citationsReady, messageId, sources } =
+    useMessageSourcesContext()
   const threadViewportStore = useThreadViewportStore()
   const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
+  const didRevealRef = useRef(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // Auto-scroll follows the answer while it streams but deliberately switches
@@ -156,11 +161,21 @@ export function SourcesSection() {
   // possible scroll instead of jumping to the final card. If they had scrolled
   // up, preserve their position entirely.
   useLayoutEffect(() => {
-    if (!revealOnMountRef.current) return
-    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [])
+    if (!citationsReady || didRevealRef.current || !revealOnMountRef.current) {
+      return
+    }
 
-  if (sources.length === 0) return null
+    if (!headingRef.current) return
+    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    didRevealRef.current = true
+  }, [citationsReady])
+
+  if (sources.length === 0 || !citationsReady) return null
+
+  const { citedSources, uncitedSources } = partitionSources(
+    sources,
+    citationCounts
+  )
 
   const headingId = `chat-sources-heading-${messageId}`
 
@@ -179,14 +194,53 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
-      {/* All source types share one responsive grid. Equal-width tracks keep
-          mixed document/media results aligned, while min(230px, 100%) prevents
-          horizontal overflow in mobile and embedded containers. */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
-        {sources.map((source) => (
-          <SourceCard key={source.id} source={source} messageId={messageId} />
-        ))}
-      </div>
+      {citedSources.length > 0 && (
+        <>
+          <h4 className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+            {t('chat.sources.cited')}
+          </h4>
+          {/* All source types share one responsive grid. Equal-width tracks keep
+              mixed document/media results aligned, while min(230px, 100%) prevents
+              horizontal overflow in mobile and embedded containers. */}
+          <div
+            data-cy="chat-cited-sources"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2"
+          >
+            {citedSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {uncitedSources.length > 0 && (
+        <details
+          data-cy="chat-other-sources"
+          className="mt-3 rounded-md border border-dashed px-3 py-2"
+        >
+          <summary
+            data-cy="chat-other-sources-toggle"
+            className="text-muted-foreground cursor-pointer text-xs font-semibold uppercase tracking-wide outline-none focus-visible:ring-1"
+          >
+            {t('chat.sources.otherRetrieved', {
+              count: uncitedSources.length,
+            })}
+          </summary>
+          <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
+            {uncitedSources.map((source) => (
+              <SourceCard
+                key={source.id}
+                source={source}
+                messageId={messageId}
+              />
+            ))}
+          </div>
+        </details>
+      )}
     </section>
   )
 }

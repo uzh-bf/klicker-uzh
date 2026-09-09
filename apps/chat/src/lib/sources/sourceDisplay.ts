@@ -194,6 +194,8 @@ export function getSourceSecondaryLine(
   // video branch above, so this filter is what keeps the two apart.
   if (
     source.labeledPage &&
+    (typeof source.page !== 'number' ||
+      source.labeledPage.trim() !== String(source.page)) &&
     parseLabeledTimestampSeconds(source.labeledPage) === undefined
   ) {
     parts.push(source.labeledPage)

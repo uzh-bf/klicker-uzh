@@ -155,6 +155,12 @@ describe('getDisplayUrl', () => {
 })
 
 describe('getSourceSecondaryLine', () => {
+  test.each(['36', ' 36 '])('omits an identical page label (%s)', (label) => {
+    expect(
+      getSourceSecondaryLine(source({ page: 36, labeledPage: label }), t)
+    ).toBe(getSourceSecondaryLine(source({ page: 36 }), t))
+  })
+
   test('documents lead with the page', () => {
     expect(
       getSourceSecondaryLine(

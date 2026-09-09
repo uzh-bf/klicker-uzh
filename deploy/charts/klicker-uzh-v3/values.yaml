@@ -215,6 +215,8 @@ chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false
+  # Allows active requests and pending trace exports time to drain on shutdown.
+  terminationGracePeriodSeconds: 90
 
   replicaCount: 1
 
@@ -223,7 +225,9 @@ chat:
     storeResponses: false
 
   telemetry:
-    enabled: true
+    enabled: false
+    baseUrl: ''
+    environment: ''
 
   mcp:
     key: ''

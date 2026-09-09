@@ -117,46 +117,55 @@ export function parsePublishedPort(output) {
 }
 
 export function parseLocalOptions(argv) {
-  const args = [...argv]
+  const args = argv[0] === '--' ? argv.slice(1) : [...argv]
   let profile
+  let mode
   let preserveDatabase = false
   while (args.length) {
-    if (args[0] === '--runtime-profile') {
+    const option = args[0]
+    if (option === '--') {
       args.shift()
-      profile = args.shift()
-      if (!profile || profile.startsWith('-')) {
-        fail(
-          '--runtime-profile requires a separate profile name before Playwright arguments'
-        )
+      break
+    }
+    if (
+      option === '--runtime-profile' ||
+      option.startsWith('--runtime-profile=')
+    ) {
+      if (profile !== undefined) fail('Specify --runtime-profile only once')
+      args.shift()
+      profile = option === '--runtime-profile' ? args.shift() : option.slice(18)
+      const names = profile?.split(',') ?? []
+      if (
+        !names.length ||
+        names.some((name) => !/^[a-z][a-z0-9-]*$/.test(name)) ||
+        new Set(names).size !== names.length
+      ) {
+        fail('Invalid runtime profile list')
       }
-      if (!/^[a-z0-9][a-z0-9-]*(,[a-z0-9][a-z0-9-]*)*$/.test(profile)) {
-        fail(
-          '--runtime-profile requires a profile name or comma-separated names'
-        )
-      }
-    } else if (args[0] === '--preserve-database') {
+    } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
-    } else break
-  }
-
-  for (const option of args) {
-    if (option.startsWith('--runtime-profile=')) {
-      fail(
-        '--runtime-profile requires a separate profile name; use space syntax before Playwright arguments'
-      )
+    } else if (option === '--print-env' || option === '--show-report') {
+      if (mode) fail('Specify only one launcher mode')
+      mode = args.shift()
+    } else {
+      break
     }
+  }
+  if (mode === '--show-report' && profile !== undefined) {
+    fail('--show-report cannot select a runtime profile')
+  }
+  for (const option of args) {
     if (option.startsWith('--preserve-database=')) {
       fail(
         '--preserve-database does not accept a value; use space syntax before Playwright arguments'
       )
     }
-    if (option === '--runtime-profile' || option === '--preserve-database') {
+    if (option === '--preserve-database') {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-
-  return { args, profile, preserveDatabase }
+  return { args, profile, mode, preserveDatabase }
 }
 
 export function resolvePlaywrightEnvironment({
@@ -318,8 +327,7 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 }
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
-  const localArgs = argv[0] === '--' ? argv.slice(1) : argv
-  const { args, profile, preserveDatabase } = parseLocalOptions(localArgs)
+  const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
   const runtime = createRuntime(dependencies)
   const hostEnvironment = {
     ...runtime.environment,
@@ -334,10 +342,8 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     env: hostEnvironment,
     pathExists: runtime.pathExists,
   })
-  const showReport = args[0] === '--show-report'
-  if (showReport) args.shift()
 
-  if (showReport) {
+  if (mode === '--show-report') {
     ensureHostDependencies(runtime, ['--list'])
     runtime.runPnpm(
       [
@@ -353,8 +359,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     return
   }
 
-  const printEnvironment = args[0] === '--print-env'
-  if (printEnvironment) args.shift()
+  const printEnvironment = mode === '--print-env'
 
   if (!printEnvironment) ensureHostDependencies(runtime, args)
 
@@ -362,7 +367,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
   runtime.commandRunner(runtime.devrouter(), [
     'ensure',
     runtime.repoRoot,
-    ...(profile ? ['--profile', profile] : []),
+    ...(profile === undefined ? [] : ['--profile', profile]),
   ])
 
   const workspace = resolveWorkspace(runtime)

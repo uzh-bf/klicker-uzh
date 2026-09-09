@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
+import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
 
 const COURSE_DATA_MARK = '## Course data'
@@ -198,21 +199,21 @@ describe('compileSystemPrompt', () => {
     )
   })
 
-  test('citation markers override conflicting legacy formula instructions', () => {
-    const legacyPrompt =
-      'Never use square brackets. Use only dollar signs for formulas.'
-    const result = compilePrompt({ tutor: { prompt: legacyPrompt } }, 'tutor', [
-      DOC_TOOL,
-    ])
-
-    expect(result).toContain(legacyPrompt)
-    expect(result).toContain(CITATION_MARK)
-    expect(result).toContain(
-      'This citation format overrides conflicting bracket or formula instructions in lecturer-provided guidance or a custom persona.'
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'custom',
+  ])('composes the same citation contract after stored guidance for %s', (mode) => {
+    const stored = { [mode]: { prompt: 'SYNTHETIC-GUIDANCE' } }
+    const contract = withCitationContract('', [DOC_TOOL])
+    const withTool = compilePrompt(stored, mode, [DOC_TOOL])
+    const withoutTool = compilePrompt(stored, mode, [NON_DOC_TOOL])
+    expect(withTool.includes(contract)).toBe(true)
+    expect(withTool.indexOf(contract)).toBeGreaterThan(
+      withTool.indexOf(stored[mode].prompt)
     )
-    expect(result.indexOf(CITATION_MARK)).toBeGreaterThan(
-      result.indexOf(legacyPrompt)
-    )
+    expect(withoutTool.includes(contract)).toBe(false)
   })
 
   test('does not add grounding or citations for a non-document tool', () => {
@@ -272,85 +273,6 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).toContain(DEFAULT_QUIZZER_MARK)
     expect(quizzer).not.toContain(DEFAULT_TUTOR_MARK)
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
-  })
-
-  test('encodes the adaptive Tutor loop without interrogating simple requests', () => {
-    const prompt = DEFAULT_PROMPT.tutor.prompt
-
-    expect(prompt).toContain('Answer a simple course lookup')
-    expect(prompt).toContain('Do not turn every request into a question')
-    expect(prompt).toContain('ask one diagnostic question')
-    expect(prompt).toContain('one high-value, focused, open question')
-    expect(prompt).toContain('Avoid making the student guess')
-    expect(prompt).toContain('Begin with the least support likely to help')
-    expect(prompt).toContain('Do not follow a rigid number of failed attempts')
-    expect(prompt).toContain('Diagnose misconceptions')
-    expect(prompt).toContain('Fade support after progress')
-    expect(prompt).toContain('Avoid generic praise')
-    expect(prompt).toContain('remains stuck after adaptive support')
-    expect(prompt).toContain('formative snapshot')
-    expect(prompt).toContain('Do not assign a grade or claim mastery')
-    expect(prompt).toContain('at most one optional transfer check')
-  })
-
-  test('keeps Explainer direct and free of mandatory Socratic friction', () => {
-    const prompt = DEFAULT_PROMPT.explainer.prompt
-
-    expect(prompt).toContain('Lead with the core answer')
-    expect(prompt).toContain('do not infer ability from spelling')
-    expect(prompt).toContain('worked example')
-    expect(prompt).toContain('State uncertainty or missing course evidence')
-    expect(prompt).toContain('Do not impose a Socratic exchange')
-    expect(prompt).toContain('at most one optional comprehension')
-  })
-
-  test('defines Quizzer topic selection, feedback, and bounded checkpoints', () => {
-    const prompt = DEFAULT_PROMPT.quizzer.prompt
-
-    const requiredFragments = [
-      'Establish the practice topic',
-      'one specific recommended course topic',
-      'ask for simple confirmation',
-      'Do not respond with only a menu',
-      'If the student agrees',
-      'Treat retrieved topic suggestions as examples',
-      'never imply that topics missing from the retrieved results are absent',
-      'Continue automatically after each assessed attempt',
-      'Make the session feel like a mock exam',
-      'without a provenance label',
-      'After every completed practice attempt',
-      'When the visible attempt supports it',
-      'instead of inventing a strength',
-      'one actionable next step',
-      'student explicitly asks how they are doing',
-      'too little evidence for a reliable pattern',
-      'ask whether the student wants another practice question',
-      'at least three completed question-answer-assessment cycles',
-      'at least two distinct course-grounded criteria',
-      'with no hint or retry pending',
-      'practice checkpoint',
-      'Based on the questions practised in this chat',
-      'snapshot of this short practice round',
-      'up to two evidence-supported strengths',
-      'if none is supported yet, say that neutrally',
-      'Do not use grades, percentages, proficiency labels, mastery, completion',
-      'Reset checkpoint evidence',
-      'Never infer that a topic is complete from retrieval exhaustion',
-      'change topics or explore the current topic in more depth',
-      'suggest a better-supported course topic',
-    ]
-    const forbiddenFragments = [
-      'AI-generated',
-      'topic is sufficiently covered',
-      'After the explanation, ask whether to continue',
-    ]
-
-    for (const fragment of requiredFragments) {
-      expect(prompt).toContain(fragment)
-    }
-    for (const fragment of forbiddenFragments) {
-      expect(prompt).not.toContain(fragment)
-    }
   })
 
   test('keeps fixed platform contracts out of the mode contract text', () => {

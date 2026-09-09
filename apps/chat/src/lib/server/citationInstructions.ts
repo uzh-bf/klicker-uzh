@@ -1,4 +1,8 @@
-import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import {
+  isDocQueryToolName,
+  MAX_SOURCES,
+} from '@/src/lib/sources/normalizeSources'
 
 /**
  * Appended to a chatbot's system prompt only when a doc_query-style RAG tool
@@ -23,22 +27,9 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * brackets for formulas. The closing precedence sentence keeps those
  * instructions from suppressing citation markers.
  */
-const CITATION_CONTRACT =
-  'Citation format: when a statement is grounded in retrieved course material, ' +
-  'mark it with a bracketed source number such as [1] or [2]. Citation ' +
-  'numbering is local to this assistant message: start at [1] in every new ' +
-  'assistant message and never continue numbering from an earlier message. ' +
-  'Within this message, number unique sources in first-appearance order ' +
-  'across all doc_query calls. If a later search returns a source you have ' +
-  'already cited in this message, reuse the ' +
-  'number you gave it the first time instead of assigning a new one. Only ' +
-  'use numbers returned for this message - never invent or carry over a ' +
-  'citation. For multiple consecutive sources, a compact range such as ' +
-  '[2–4] is allowed only when every number in the range was returned. ' +
-  'Do not add a citation when you are not drawing on retrieved ' +
-  'material. These bracketed numbers are citation markers, not formula ' +
-  'delimiters. This citation format overrides conflicting bracket or formula ' +
-  'instructions in lecturer-provided guidance or a custom persona.'
+const CITATION_CONTRACT = renderPromptTemplate('citation-contract', {
+  maxSources: MAX_SOURCES,
+})
 
 /**
  * Appends the citation contract to `systemPrompt` when `toolNames` includes

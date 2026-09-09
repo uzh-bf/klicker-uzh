@@ -24,7 +24,7 @@ hatchet:
     apiUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
   workers:
     general:
-      replicaCount: 2
+      replicaCount: 4
       podDisruptionBudget:
         minAvailable: 1
       priorityClassName: production-workload
@@ -35,7 +35,7 @@ hatchet:
       resources:
         requests:
           cpu: 50m
-          memory: 64Mi
+          memory: 512Mi
         limits:
           memory: 2Gi
       affinity:
@@ -65,7 +65,7 @@ hatchet:
               app.kubernetes.io/component: hatchet-worker-general
 
     responseProcessor:
-      replicaCount: 4
+      replicaCount: 6
       podDisruptionBudget:
         minAvailable: 2
       priorityClassName: production-workload
@@ -76,7 +76,7 @@ hatchet:
       resources:
         requests:
           cpu: 50m
-          memory: 64Mi
+          memory: 192Mi
         limits:
           memory: 512Mi
       affinity:
@@ -117,7 +117,7 @@ hatchet:
       resources:
         requests:
           cpu: 50m
-          memory: 64Mi
+          memory: 192Mi
         limits:
           memory: 512Mi
       affinity:
@@ -205,7 +205,7 @@ auth:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 192Mi
     limits:
       memory: 512Mi
 
@@ -219,8 +219,9 @@ chat:
 
   telemetry:
     enabled: false
+    environment: 'production'
 
-  replicaCount: 1
+  replicaCount: 2
 
   automaticModels:
     primaryId: auto
@@ -482,7 +483,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 4
+  replicaCount: 6
 
   autoscaling:
     enabled: false
@@ -581,7 +582,7 @@ frontendManage:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 256Mi
     limits:
       memory: 512Mi
 
@@ -632,7 +633,7 @@ frontendControl:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 96Mi
     limits:
       memory: 512Mi
 
@@ -640,7 +641,7 @@ backendGraphql:
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
 
-  replicaCount: 4
+  replicaCount: 6
 
   autoscaling:
     enabled: false
@@ -703,14 +704,14 @@ backendGraphql:
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 384Mi
     limits:
       memory: 1Gi
 
 olatApi:
   priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
@@ -753,7 +754,7 @@ olatApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
       memory: 512Mi
 
@@ -813,7 +814,7 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 4
+  replicaCount: 6
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
@@ -856,7 +857,7 @@ responseApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 96Mi
     limits:
       memory: 512Mi
 
@@ -1083,7 +1084,7 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 96Mi
       limits:
         memory: 512Mi
 
