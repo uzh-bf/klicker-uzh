@@ -205,18 +205,12 @@ function validatePublicPlaywrightWorkflow(root) {
     }
   }
 
-  if (!hasExactPermissions(publicParsed?.permissions, { contents: 'read' })) {
-    issues.push('public workflow root must grant only contents: read')
-  }
   if (
-    !hasExactPermissions(publicParsed?.jobs?.prepare?.permissions, {
-      contents: 'read',
-      actions: 'read',
-      'pull-requests': 'read',
-    })
+    publicParsed?.permissions !== undefined ||
+    publicParsed?.jobs?.prepare?.permissions !== undefined
   ) {
     issues.push(
-      'trusted preparation must have contents, actions, and pull-requests read permissions'
+      'trusted preparation must inherit caller permissions for compatibility'
     )
   }
   for (const name of [

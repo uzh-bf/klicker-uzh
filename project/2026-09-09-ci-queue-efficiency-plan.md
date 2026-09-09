@@ -55,7 +55,7 @@ Playwright additionally requires the same trusted reusable control revision,
 hosted route and full eight-shard coverage. Compare the previous canonical plan
 artifact with the current spec, profile and shard contract. Preserve canonical
 plan metadata and expose a separate reused-run identifier. Forward read-only API
-permissions only to preparation; actual builds and shards retain contents-read.
+permissions through caller inheritance in preparation; actual builds and shards retain contents-read. Older contents-only callers keep normal validation when API scopes are missing.
 The caller remains compatible with the old trusted reusable workflow until merge.
 
 Unit suites require actual successful test steps. Their reuse lookup runs only
@@ -124,4 +124,15 @@ source delivery; merging and activation remain separate actions.
   (Playwright plan recompute, final review handoff) and it flagged
   `test-intl-production` immediately. Contract documented under PR gates in
   `docs/ci-and-deployment.md`.
-- Simplifier, risk review, final review and draft PR remain pending.
+- Simplifier removed redundant event-gate assertions. Risk review confirmed the
+  optional receipt capture and upload corrections; no findings remain there.
+- Final review identified a reusable-workflow permission compatibility issue.
+  Preparation now inherits the caller token; old callers fail open to normal
+  validation when lookup scopes are unavailable. Execution tokens stay pinned.
+  The other findings are addressed by rerun-only unit lookup, removing duplicate
+  assertions and dead cancellation branches, and correcting list formatting.
+  One correction review is pending on the final committed range.
+- PR #5866 (CI queue efficiency) is ready for review against `v3`. Hosted
+  checks ran at the ready transition; the reusable workflow remains pinned
+  to trusted `v3`, so this PR cannot demonstrate activation or measured
+  queue improvement before merge.

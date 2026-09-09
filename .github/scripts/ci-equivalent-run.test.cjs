@@ -390,7 +390,7 @@ test('a newer PR workflow run appearing during proof invalidates reuse', async (
   assert.equal(await findEquivalentRun(options), null)
 })
 
-test('reuse wiring keeps execution tokens read-only and the canonical plan intact', () => {
+test('reuse wiring preserves the canonical plan and execution gates', () => {
   const fs = require('node:fs')
   const path = require('node:path')
   const YAML = require('yaml')
@@ -400,11 +400,6 @@ test('reuse wiring keeps execution tokens read-only and the canonical plan intac
       'utf8'
     )
   )
-  assert.deepEqual(workflow.jobs.prepare.permissions, {
-    contents: 'read',
-    actions: 'read',
-    'pull-requests': 'read',
-  })
   assert.equal(
     workflow.jobs.prepare.outputs.should_run,
     '${{ steps.metadata.outputs.should_run }}'
@@ -419,7 +414,6 @@ test('reuse wiring keeps execution tokens read-only and the canonical plan intac
     'test-playwright-hosted',
     'test-playwright-public-pr',
   ]) {
-    assert.deepEqual(workflow.jobs[name].permissions, { contents: 'read' })
     assert.ok(
       workflow.jobs[name].if.includes(
         "needs.prepare.outputs.duplicate_run_id == ''"

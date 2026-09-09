@@ -90,12 +90,6 @@ jobs:
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # A newer event cancels the old reusable invocation. The surviving
-          # invocation is the required signal for the pull request.
-          if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
-            echo 'Superseded by a newer Playwright invocation.'
-            exit 0
-          fi
           if [ "$EXECUTION_RESULT" != 'success' ]; then
             echo 'Playwright execution envelope failed.'
             exit 1
@@ -184,25 +178,20 @@ jobs:
                   per_page: 100,
                 }
               )
-              const records = jobs
-                .filter(
-                  (job) =>
-                    !job.name.toLowerCase().includes('queue-telemetry')
-                )
-                .map((job) => ({
-                  jobClass: jobClass(job.name),
-                  status: job.status ?? 'unknown',
-                  conclusion: job.conclusion ?? null,
-                  runner: job.runner_name ?? null,
-                  queueSeconds: secondsBetween(
-                    job.created_at,
-                    job.started_at
-                  ),
-                  durationSeconds: secondsBetween(
-                    job.started_at,
-                    job.completed_at
-                  ),
-                }))
+              const records = jobs.map((job) => ({
+                jobClass: jobClass(job.name),
+                status: job.status ?? 'unknown',
+                conclusion: job.conclusion ?? null,
+                runner: job.runner_name ?? null,
+                queueSeconds: secondsBetween(
+                  job.created_at,
+                  job.started_at
+                ),
+                durationSeconds: secondsBetween(
+                  job.started_at,
+                  job.completed_at
+                ),
+              }))
               const queueSeconds = records
                 .map((record) => record.queueSeconds)
                 .filter((value) => value !== null)

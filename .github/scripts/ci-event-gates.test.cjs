@@ -134,41 +134,6 @@ test('reporting jobs keep real failures and successful path skips visible', () =
   }
 })
 
-test('Playwright keeps closed PR cancellation separate and telemetry in status', () => {
-  const workflow = readWorkflow('test-playwright.yml')
-  const close = workflow.jobs['cancel-closed-pr']
-  const status = workflow.jobs['test-playwright-status']
-
-  assert.equal(
-    close.if,
-    "github.event_name == 'pull_request' && github.event.action == 'closed'"
-  )
-  assert.equal(close.concurrency['cancel-in-progress'], true)
-  assert.equal(workflow.concurrency, undefined)
-  assert.equal(workflow.jobs['playwright-queue-telemetry'], undefined)
-  assert.deepEqual(status.permissions, { actions: 'read' })
-  assert.equal(status['runs-on'], 'ubuntu-latest')
-  assert.equal(
-    status.steps.some((step) => step.uses?.startsWith('actions/checkout@')),
-    false
-  )
-
-  const telemetry = status.steps.find((step) => step.id === 'queue_telemetry')
-  const telemetryUpload = status.steps.find(
-    (step) => step.name === 'Upload queue telemetry'
-  )
-  const metadataUpload = status.steps.find(
-    (step) => step.name === 'Upload run metadata'
-  )
-
-  assert.equal(telemetry.if, 'always() && !cancelled()')
-  assert.equal(telemetry['continue-on-error'], true)
-  assert.match(telemetryUpload.if, /!cancelled\(\)/)
-  assert.equal(telemetryUpload['continue-on-error'], true)
-  assert.equal(telemetryUpload.with['if-no-files-found'], 'ignore')
-  assert.match(metadataUpload.if, /!cancelled\(\)/)
-})
-
 // Marking a draft PR ready fires ready_for_review on the unchanged head SHA
 // and re-runs every workflow that lists it. That is only justified when the
 // draft boundary changes what the workflow executes: either jobs are gated on

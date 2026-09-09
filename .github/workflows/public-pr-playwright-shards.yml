@@ -25,18 +25,13 @@ on:
         description: Canonical shard matrix
         value: ${{ jobs.prepare.outputs.shard_matrix }}
 
-permissions:
-  contents: read
-
 env:
   PLAYWRIGHT_CACHE_ENABLED: ${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}
 
 jobs:
   prepare:
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
+    # Inherit the caller token so older contents-only callers remain compatible.
+    # Missing API scopes make the optional reuse lookup fall back to validation.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
