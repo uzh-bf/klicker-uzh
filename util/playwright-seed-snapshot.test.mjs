@@ -226,6 +226,32 @@ test('capture and restore round-trip through the ignored cache directory', () =>
   })
 })
 
+test('schema fingerprints ignore volatile pg_dump restrict tokens', () => {
+  withCacheRoot((cacheRoot) => {
+    const withToken = (token) =>
+      schemaOnlyDumpLines
+        .concat(['', '\\restrict ' + token, '', '\\unrestrict ' + token])
+        .join('\n')
+
+    captureSeedSnapshot({
+      env: baseEnvironment,
+      runDocker: createDockerRunner({
+        schemaDump: withToken('capturetoken'),
+      }),
+      cacheRoot,
+    })
+
+    const restored = restoreSeedSnapshot({
+      env: baseEnvironment,
+      runDocker: createDockerRunner({
+        schemaDump: withToken('differenttoken'),
+      }),
+      cacheRoot,
+    })
+    assert.equal(restored.status, 'restored')
+  })
+})
+
 test('restore reports a controlled miss for every invalid cache state', () => {
   withCacheRoot((cacheRoot) => {
     const docker = createDockerRunner()

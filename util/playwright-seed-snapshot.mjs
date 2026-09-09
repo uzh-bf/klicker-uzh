@@ -220,7 +220,15 @@ function pgDump(runDocker, container, schemaOnly) {
 function normalizeSchemaDump(dump) {
   return dump
     .split(/\r?\n/)
-    .filter((line) => line.trim() !== '' && !line.startsWith('--'))
+    .filter(
+      (line) =>
+        line.trim() !== '' &&
+        !line.startsWith('--') &&
+        // pg_dump emits \restrict/\unrestrict with a random per-invocation
+        // token; the schema content is unchanged between runs.
+        !line.startsWith('\\restrict ') &&
+        !line.startsWith('\\unrestrict ')
+    )
     .join('\n')
 }
 
