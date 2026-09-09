@@ -180,6 +180,7 @@ export const ChatbotStandardModeConfigInput =
       tutorEnabled: t.boolean({ required: true }),
       explainerEnabled: t.boolean({ required: true }),
       quizzerEnabled: t.boolean({ required: true }),
+      writingCoachEnabled: t.boolean({ required: false }),
       courseName: t.string({ required: false }),
       subjectDomain: t.string({ required: false }),
       languageOfInstruction: t.field({
@@ -198,6 +199,7 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
       tutorEnabled: t.exposeBoolean('tutorEnabled'),
       explainerEnabled: t.exposeBoolean('explainerEnabled'),
       quizzerEnabled: t.exposeBoolean('quizzerEnabled'),
+      writingCoachEnabled: t.exposeBoolean('writingCoachEnabled'),
       courseName: t.exposeString('courseName', { nullable: true }),
       subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
       languageOfInstruction: t.expose('languageOfInstruction', {
@@ -238,6 +240,7 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
+  writingCoachUnavailableReason?: string | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
@@ -367,6 +370,10 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
+    writingCoachUnavailableReason: t.exposeString(
+      'writingCoachUnavailableReason',
+      { nullable: true }
+    ),
     standardModeConfig: t.field({
       type: ChatbotStandardModeConfigRef,
       nullable: true,

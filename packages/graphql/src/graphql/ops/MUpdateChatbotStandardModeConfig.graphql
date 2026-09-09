@@ -4,10 +4,12 @@ mutation MUpdateChatbotStandardModeConfig(
 ) {
   updateChatbotStandardModeConfig(chatbotId: $chatbotId, config: $config) {
     id
+    writingCoachUnavailableReason
     standardModeConfig {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction

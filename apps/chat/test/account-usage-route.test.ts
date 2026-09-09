@@ -339,6 +339,7 @@ describe('account usage chat route', () => {
     'tutor',
     'explainer',
     'quizzer',
+    'writing-coach',
   ])('sends full current lecturer context to the %s model on each request', async (mode) => {
     const contexts = ['x'.repeat(1000), 'y'.repeat(1000)]
     for (const [index, scopeNote] of contexts.entries()) {
@@ -348,6 +349,7 @@ describe('account usage chat route', () => {
             tutorEnabled: true,
             explainerEnabled: true,
             quizzerEnabled: true,
+            writingCoachEnabled: true,
             scopeNote,
           },
           mcpConfigurations:

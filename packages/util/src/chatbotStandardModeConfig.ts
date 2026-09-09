@@ -15,6 +15,34 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+/** A stored same-key entry remains a custom persona, including when disabled. */
+export function hasLegacyWritingCoachMode(systemPrompts: unknown): boolean {
+  return (
+    isRecord(systemPrompts) && Object.hasOwn(systemPrompts, 'writing-coach')
+  )
+}
+
+export function getWritingCoachUnavailableReason(
+  systemPrompts: unknown,
+  mcpConfigurations: readonly {
+    chatMode: string
+    isEnabled?: boolean
+    parameters?: unknown
+  }[] = []
+): 'CUSTOM_MODE_COLLISION' | 'REQUIRED_TOOL_BINDING' | null {
+  if (hasLegacyWritingCoachMode(systemPrompts)) return 'CUSTOM_MODE_COLLISION'
+  const requiredBindings = mcpConfigurations.filter(
+    (config) =>
+      config.isEnabled !== false &&
+      isRecord(config.parameters) &&
+      config.parameters.required === true
+  )
+  return requiredBindings.length > 0 &&
+    !requiredBindings.some((config) => config.chatMode === 'writing-coach')
+    ? 'REQUIRED_TOOL_BINDING'
+    : null
+}
+
 function isLegacyModeEnabled(systemPrompts: unknown, mode: string): boolean {
   const prompts = isRecord(systemPrompts) ? systemPrompts : null
   const modeConfig = isRecord(prompts?.[mode]) ? prompts[mode] : null
@@ -26,6 +54,7 @@ function defaultConfig(systemPrompts: unknown): ChatbotStandardModeConfig {
     tutorEnabled: isLegacyModeEnabled(systemPrompts, 'tutor'),
     explainerEnabled: isLegacyModeEnabled(systemPrompts, 'explainer'),
     quizzerEnabled: isLegacyModeEnabled(systemPrompts, 'quizzer'),
+    writingCoachEnabled: false,
     courseName: null,
     subjectDomain: null,
     languageOfInstruction: null,
@@ -98,14 +127,22 @@ function parseConfig(value: unknown): ChatbotStandardModeConfig {
   if (typeof value.quizzerEnabled !== 'boolean') {
     throw new Error('quizzerEnabled must be a boolean')
   }
-  if (!value.tutorEnabled && !value.explainerEnabled) {
-    throw new Error('Tutor or Explainer must remain enabled')
+  if (
+    value.writingCoachEnabled != null &&
+    typeof value.writingCoachEnabled !== 'boolean'
+  ) {
+    throw new Error('writingCoachEnabled must be a boolean')
+  }
+  const writingCoachEnabled = value.writingCoachEnabled === true
+  if (!value.tutorEnabled && !value.explainerEnabled && !writingCoachEnabled) {
+    throw new Error('Tutor, Explainer or Writing Coach must remain enabled')
   }
 
   return {
     tutorEnabled: value.tutorEnabled,
     explainerEnabled: value.explainerEnabled,
     quizzerEnabled: value.quizzerEnabled,
+    writingCoachEnabled,
     courseName: normalizeSingleLineText(
       value.courseName,
       'courseName',

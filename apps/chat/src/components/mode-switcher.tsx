@@ -7,6 +7,7 @@ import {
   GraduationCapIcon,
   LightbulbIcon,
   ListChecksIcon,
+  PencilLineIcon,
   SparklesIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -16,8 +17,13 @@ import {
   resolveSelectedMode,
 } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
+import { useWritingCoachIsCustom } from './mode-options-context'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
+  const writingCoachIsCustom = useWritingCoachIsCustom()
+  if (mode === 'writing-coach' && !writingCoachIsCustom) {
+    return <PencilLineIcon aria-hidden="true" className={className} />
+  }
   if (mode === 'tutor') {
     return <GraduationCapIcon aria-hidden="true" className={className} />
   }
@@ -41,6 +47,7 @@ export function ModeSwitcher({
   testIdPrefix?: string
 } = {}) {
   const t = useTranslations()
+  const writingCoachIsCustom = useWritingCoachIsCustom()
   const storeModeOptions = useSettingsStore((state) => state.modeOptions)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
@@ -51,7 +58,11 @@ export function ModeSwitcher({
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  const selectedLabel = formatModeLabel(t, effectiveSelectedMode)
+  const selectedLabel = formatModeLabel(
+    t,
+    effectiveSelectedMode,
+    writingCoachIsCustom
+  )
 
   return (
     <SelectPrimitive.Root
@@ -90,8 +101,13 @@ export function ModeSwitcher({
         >
           <SelectPrimitive.Viewport className="p-1.5">
             {modeKeys.map((mode) => {
-              const label = formatModeLabel(t, mode)
-              const description = getModeDescription(t, mode, modeOptions)
+              const label = formatModeLabel(t, mode, writingCoachIsCustom)
+              const description = getModeDescription(
+                t,
+                mode,
+                modeOptions,
+                writingCoachIsCustom
+              )
               const descriptionId = `${testIdPrefix}-description-${mode}`
 
               return (

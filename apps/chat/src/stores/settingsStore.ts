@@ -72,6 +72,7 @@ interface SettingsState {
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
   modeOptionsChatbotId: string | null
+  writingCoachIsCustom: boolean
 
   // Actions
   setSelectedModel: (model: ModelID) => void
@@ -79,7 +80,8 @@ interface SettingsState {
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (
     chatbotId: string,
-    initialModeOptions?: Record<string, string>
+    initialModeOptions?: Record<string, string>,
+    initialWritingCoachIsCustom?: boolean
   ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -102,6 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
       modelSelectionEnabled: false,
       modeOptions: {},
       modeOptionsChatbotId: null,
+      writingCoachIsCustom: false,
 
       // available options
       modelOptions: [],
@@ -137,7 +140,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (
         chatbotId: string,
-        initialModeOptions?: Record<string, string>
+        initialModeOptions?: Record<string, string>,
+        initialWritingCoachIsCustom = false
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
         const hasInitialModeOptions = initialModeOptions !== undefined
@@ -148,6 +152,7 @@ export const useSettingsStore = create<SettingsState>()(
           set((state) => ({
             modeOptions: fallbackModeOptions,
             modeOptionsChatbotId: chatbotId,
+            writingCoachIsCustom: initialWritingCoachIsCustom,
             selectedMode: resolveSelectedMode(
               fallbackModeOptions,
               state.selectedMode
@@ -157,6 +162,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
+          writingCoachIsCustom: initialWritingCoachIsCustom,
           modelSelectionEnabled: false,
         })
 
@@ -184,6 +190,7 @@ export const useSettingsStore = create<SettingsState>()(
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
+              writingCoachIsCustom: responseData.writingCoachIsCustom === true,
               modelSelectionEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,

@@ -559,6 +559,8 @@ export class KlickerEvaluationTarget {
     userMessageId,
     assistantMessageId,
     maxStreamBytes,
+    history = [],
+    parentId = null,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
@@ -569,12 +571,15 @@ export class KlickerEvaluationTarget {
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
-          messages: [{ id: userMessageId, role: 'user', content: question }],
+          messages: [
+            ...history,
+            { id: userMessageId, role: 'user', content: question },
+          ],
           threadId,
           selectedModel: this.modelId,
           selectedMode: mode,
           reasoningEffort: 'low',
-          parentId: null,
+          parentId,
           assistantMessageId,
           images: [],
         }),
@@ -588,7 +593,12 @@ export class KlickerEvaluationTarget {
     await drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode) {
+  async readCompletedMessage(
+    threadId,
+    assistantMessageId,
+    mode,
+    expectedSelectedModelId = this.modelId
+  ) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -610,7 +620,7 @@ export class KlickerEvaluationTarget {
       if (message) {
         if (message.chatMode !== mode)
           throw evaluationError('chat_mode_mismatch')
-        if (message.modelId !== this.modelId) {
+        if (message.modelId !== expectedSelectedModelId) {
           throw evaluationError('chat_model_mismatch')
         }
         return message
@@ -622,26 +632,61 @@ export class KlickerEvaluationTarget {
     throw evaluationError('assistant_message_timeout')
   }
 
-  async runQuestion(question) {
-    const metadata = await this.resolveQuestion(question)
+  async runTurn({
+    question,
+    mode,
+    threadId,
+    history = [],
+    parentId = null,
+    expectedSelectedModelId = this.modelId,
+    maxStreamBytes = this.maxStreamBytes,
+  }) {
+    if (!['tutor', 'explainer', 'quizzer', 'writing-coach'].includes(mode)) {
+      throw evaluationError('chat_mode_invalid')
+    }
     await this.ensureSession()
-    const threadId = await this.createThread()
+    const currentThreadId = threadId || (await this.createThread())
     const userMessageId = randomUUID()
     const assistantMessageId = randomUUID()
     await this.submitTurn({
-      question: metadata.question,
-      mode: metadata.mode,
-      threadId,
+      question,
+      mode,
+      threadId: currentThreadId,
       userMessageId,
       assistantMessageId,
-      maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+      maxStreamBytes,
+      history,
+      parentId,
     })
     const message = await this.readCompletedMessage(
-      threadId,
+      currentThreadId,
       assistantMessageId,
-      metadata.mode
+      mode,
+      expectedSelectedModelId
     )
     const result = extractAssistantMessage(message)
+    return {
+      ...result,
+      threadId: currentThreadId,
+      userMessageId,
+      assistantMessageId,
+      requestedModelId: this.modelId,
+      selectedModelId: message.modelId,
+      history: [
+        ...history,
+        { id: userMessageId, role: 'user', content: question },
+        { id: assistantMessageId, role: 'assistant', content: result.answer },
+      ],
+    }
+  }
+
+  async runQuestion(question) {
+    const metadata = await this.resolveQuestion(question)
+    const result = await this.runTurn({
+      question: metadata.question,
+      mode: metadata.mode,
+      maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+    })
     if (
       metadata.source === 'canary' &&
       !result.toolCalls.some((call) => call.name === metadata.expectedTool)
@@ -667,7 +712,7 @@ export class KlickerEvaluationTarget {
     if (!question) throw evaluationError('question_empty')
     const result = await this.runQuestion(question)
     return {
-      payload: completionPayload(this.modelId, result),
+      payload: completionPayload(result.selectedModelId, result),
       source: result.metadata.source,
     }
   }

@@ -5,6 +5,8 @@ import {
   CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getWritingCoachUnavailableReason,
+  hasLegacyWritingCoachMode,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
@@ -401,6 +403,9 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  mcpConfigurations: {
+    select: { chatMode: true, isEnabled: true, parameters: true },
+  },
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
@@ -420,6 +425,11 @@ const chatbotOwnerSelect = {
 type ChatbotWithOwnerCourse = {
   systemPrompts: unknown
   standardModeConfig: unknown
+  mcpConfigurations?: {
+    chatMode: string
+    isEnabled: boolean
+    parameters: unknown
+  }[]
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
@@ -479,11 +489,16 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
   chatbot: T,
   options: { resolveLegacyFixedPolicy?: boolean } = {}
 ) {
-  const { systemPrompts, ...chatbotWithoutSystemPrompts } = chatbot
+  const { systemPrompts, mcpConfigurations, ...chatbotWithoutSystemPrompts } =
+    chatbot
   const resolveLegacyFixedPolicy = options.resolveLegacyFixedPolicy ?? true
 
   return {
     ...chatbotWithoutSystemPrompts,
+    writingCoachUnavailableReason: getWritingCoachUnavailableReason(
+      systemPrompts,
+      mcpConfigurations
+    ),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -526,6 +541,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
           isEnabled: true,
           priority: true,
           allowedTools: true,
+          parameters: true,
           mcpServer: {
             select: {
               id: true,
@@ -1136,7 +1152,12 @@ export async function updateChatbotStandardModeConfig(
 ) {
   const chatbot = await ctx.prisma.chatbot.findFirst({
     where: { id: args.chatbotId, ownerId: ctx.user.sub },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      standardModeConfig: true,
+      systemPrompts: true,
+    },
   })
 
   if (!chatbot) {
@@ -1147,7 +1168,23 @@ export async function updateChatbotStandardModeConfig(
 
   let standardModeConfig: ReturnType<typeof parseChatbotStandardModeConfigInput>
   try {
-    standardModeConfig = parseChatbotStandardModeConfigInput(args.config)
+    standardModeConfig = parseChatbotStandardModeConfigInput({
+      ...args.config,
+      writingCoachEnabled:
+        args.config.writingCoachEnabled ??
+        normalizeChatbotStandardModeConfig(
+          chatbot.standardModeConfig,
+          chatbot.systemPrompts
+        ).writingCoachEnabled,
+    })
+    if (
+      standardModeConfig.writingCoachEnabled &&
+      hasLegacyWritingCoachMode(chatbot.systemPrompts)
+    ) {
+      throw new Error(
+        'Writing Coach cannot be enabled while a custom mode uses its identifier'
+      )
+    }
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1163,6 +1200,11 @@ export async function updateChatbotStandardModeConfig(
         id: chatbot.id,
         ownerId: ctx.user.sub,
         status: { in: metadataAndModelEditableStatuses },
+        // Do not overwrite a newer mode choice or a newly added custom persona.
+        standardModeConfig: {
+          equals: chatbot.standardModeConfig ?? Prisma.AnyNull,
+        },
+        systemPrompts: { equals: chatbot.systemPrompts ?? Prisma.AnyNull },
       },
       data: {
         standardModeConfig:
@@ -1172,7 +1214,7 @@ export async function updateChatbotStandardModeConfig(
 
     if (transition.count === 0) {
       throw chatbotError(
-        'Chatbot standard mode settings could not be saved because its status changed',
+        'Chatbot standard mode settings could not be saved because its settings or status changed',
         'CHATBOT_EDIT_CONFLICT'
       )
     }

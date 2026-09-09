@@ -749,6 +749,155 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       })
     })
 
+    it('preserves an enabled Writing Coach for old-client saves and accepts an explicit disable', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      await updateChatbotStandardModeConfig(
+        {
+          chatbotId: chatbot.id,
+          config: { ...config, writingCoachEnabled: true },
+        },
+        userOneCtx
+      )
+      const scopeNote = 'x'.repeat(1000)
+      await expect(
+        updateChatbotStandardModeConfig(
+          {
+            chatbotId: chatbot.id,
+            config: { ...config, scopeNote },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        updateChatbotStandardModeConfig(
+          {
+            chatbotId: chatbot.id,
+            config: { ...config, writingCoachEnabled: false, scopeNote },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: false, scopeNote },
+      })
+      await expect(
+        updateChatbotStandardModeConfig(
+          {
+            chatbotId: chatbot.id,
+            config: { ...config, scopeNote: `${scopeNote}x` },
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    })
+
+    it('saves Writing Coach alone without creating a stored custom persona', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const standalone = {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+      }
+      await expect(
+        updateChatbotStandardModeConfig(
+          { chatbotId: chatbot.id, config: standalone },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({ standardModeConfig: standalone })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: standalone,
+        systemPrompts: null,
+      })
+    })
+
+    it('preserves a legacy custom persona and rejects enabling the colliding built-in', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const systemPrompts = {
+        'writing-coach': {
+          prompt: 'synthetic-custom-prompt',
+          description: 'synthetic-description',
+          enabled: true,
+        },
+      }
+      await prisma.chatbot.update({
+        where: { id: chatbot.id },
+        data: { systemPrompts },
+      })
+      await expect(
+        updateChatbotStandardModeConfig(
+          { chatbotId: chatbot.id, config },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        writingCoachUnavailableReason: 'CUSTOM_MODE_COLLISION',
+        standardModeConfig: { writingCoachEnabled: false },
+      })
+      await expect(
+        updateChatbotStandardModeConfig(
+          {
+            chatbotId: chatbot.id,
+            config: { ...config, writingCoachEnabled: true },
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        systemPrompts,
+        standardModeConfig: { writingCoachEnabled: false },
+      })
+    })
+
+    it.each([
+      'mode-choice',
+      'custom-persona',
+    ] as const)('rejects a stale save after a concurrent %s change', async (change) => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const changed =
+        change === 'mode-choice'
+          ? { standardModeConfig: { ...config, writingCoachEnabled: true } }
+          : {
+              systemPrompts: {
+                'writing-coach': { prompt: 'synthetic-new-custom' },
+              },
+            }
+      const staleRead = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbot.id },
+      })
+      await prisma.chatbot.update({
+        where: { id: chatbot.id },
+        data: { ...changed, updatedAt: chatbot.updatedAt },
+      })
+      const stalePrisma = new Proxy(prisma, {
+        get(target, property, receiver) {
+          return property === 'chatbot'
+            ? { findFirst: vi.fn().mockResolvedValue(staleRead) }
+            : Reflect.get(target, property, receiver)
+        },
+      })
+      await expect(
+        updateChatbotStandardModeConfig(
+          { chatbotId: chatbot.id, config },
+          { ...userOneCtx, prisma: stalePrisma }
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'CHATBOT_EDIT_CONFLICT' },
+      })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject(changed)
+    })
+
     it('returns null and does not write for a non-owner', async () => {
       const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
 

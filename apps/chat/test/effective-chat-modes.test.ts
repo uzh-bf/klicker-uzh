@@ -383,3 +383,73 @@ describe('effective chatbot modes', () => {
     ).not.toHaveProperty('quizzer')
   })
 })
+
+describe('Writing Coach availability', () => {
+  const config = {
+    tutorEnabled: false,
+    explainerEnabled: false,
+    quizzerEnabled: false,
+    writingCoachEnabled: true,
+  }
+
+  test('requires opt-in and supports a standalone writing chatbot', () => {
+    expect(resolveEffectiveChatModeOptions(null, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    expect(
+      Object.keys(resolveEffectiveChatModeOptions(null, [], config))
+    ).toEqual(['writing-coach'])
+  })
+
+  test('keeps required-tool eligibility on the exact writing mode', () => {
+    const requiredBinding = {
+      chatMode: 'tutor',
+      isEnabled: true,
+      parameters: { required: true },
+      mcpServerId: 'synthetic-server',
+    }
+    expect(
+      resolveEffectiveChatModeOptions(null, [requiredBinding], config)
+    ).toEqual({})
+    expect(
+      Object.keys(
+        resolveEffectiveChatModeOptions(
+          null,
+          [{ ...requiredBinding, chatMode: 'writing-coach' }],
+          config
+        )
+      )
+    ).toEqual(['writing-coach'])
+  })
+
+  test('preserves a same-key custom persona and its exact-key selection', () => {
+    const stored = {
+      'writing-coach': {
+        prompt: 'Synthetic custom instructions.',
+        description: 'Synthetic custom description.',
+        enabled: true,
+      },
+    }
+    const options = resolveEffectiveChatModeOptions(stored, [])
+    expect(options['writing-coach']).toBe(stored['writing-coach'].description)
+    expect(resolveRequestedChatMode(options, 'WRITING-COACH', stored)).toBe(
+      'WRITING-COACH'
+    )
+    expect(resolveRequestedChatMode(options, 'writing-coach', stored)).toBe(
+      'writing-coach'
+    )
+    expect(
+      resolveRequestedChatMode(
+        resolveEffectiveChatModeOptions(null, [], config),
+        'WRITING-COACH'
+      )
+    ).toBe('writing-coach')
+    expect(
+      resolveEffectiveChatModeOptions(
+        { 'writing-coach': { ...stored['writing-coach'], enabled: false } },
+        [],
+        config
+      )
+    ).not.toHaveProperty('writing-coach')
+  })
+})

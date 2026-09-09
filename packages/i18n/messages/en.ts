@@ -14,6 +14,9 @@ export default {
       explainer: 'Explainer',
       explainerDescription:
         'Get direct explanations with definitions and course-based examples.',
+      'writing-coach': 'Writing Coach',
+      'writing-coachDescription':
+        'Get specific feedback and tips on your writing, then make the revisions yourself.',
       quizzer: 'Quizzer',
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
@@ -181,6 +184,13 @@ export default {
       welcomeMode: 'Selected mode: {mode}',
     },
     suggestions: {
+      reviewWriting: 'Get feedback on writing',
+      reviewWritingPrompt:
+        'Give me feedback on the course-writing excerpt below. Explain the most useful improvements and how I can make them myself.\n\n[Paste your excerpt here]',
+      reviewRevision: 'Review my revision',
+      reviewRevisionPrompt:
+        'I have revised my course-writing excerpt. Give feedback on what improved and what I should focus on next.\n\n[Paste your revision here]',
+
       sectionLabel: 'Conversation starters',
       editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
@@ -3866,7 +3876,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+      chatbotModeWritingCoach: 'Writing Coach',
+      chatbotModeWritingCoachDescription:
+        'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
+      chatbotWritingCoachCollision:
+        'Writing Coach is unavailable because an existing custom mode uses the same identifier. That custom mode is preserved. Contact the chatbot administrator to resolve the conflict.',
+      chatbotWritingCoachRequiredTool:
+        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Guides participants with questions, hints, and formative feedback.',
@@ -3876,14 +3893,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
       chatbotModeQuizzerCapabilityNote:
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. Saved context guides the next response in standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. Saved context guides the next response in standard learning modes, including Writing Coach.',
       chatbotFramingExamples: 'Context examples',
       chatbotFramingScientific: 'Scientific writing',
       chatbotFramingScientificExample:

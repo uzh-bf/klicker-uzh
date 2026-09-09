@@ -2,6 +2,7 @@ import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
   CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+  getWritingCoachUnavailableReason,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '../src/chatbotStandardModeConfig.js'
@@ -22,6 +23,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: false,
       quizzerEnabled: true,
+      writingCoachEnabled: false,
       courseName: 'Economics',
       subjectDomain: 'Finance',
       languageOfInstruction: Locale.de,
@@ -29,14 +31,14 @@ describe('chatbot standard mode configuration', () => {
     })
   })
 
-  it('keeps Tutor or Explainer enabled even when Quizzer is enabled', () => {
+  it('rejects Quizzer as the only conversational mode', () => {
     expect(() =>
       parseChatbotStandardModeConfigInput({
         tutorEnabled: false,
         explainerEnabled: false,
         quizzerEnabled: true,
       })
-    ).toThrow('Tutor or Explainer must remain enabled')
+    ).toThrow()
   })
 
   it('requires Quizzer in strict mutation input', () => {
@@ -73,6 +75,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: true,
       quizzerEnabled: true,
+      writingCoachEnabled: false,
       courseName: null,
       subjectDomain: null,
       languageOfInstruction: null,
@@ -118,6 +121,7 @@ describe('chatbot standard mode configuration', () => {
       tutorEnabled: true,
       explainerEnabled: false,
       quizzerEnabled: false,
+      writingCoachEnabled: false,
       courseName: 'Course',
       subjectDomain: 'Domain',
       languageOfInstruction: Locale.en,
@@ -142,15 +146,65 @@ describe('chatbot standard mode configuration', () => {
     })
   })
 
-  it('accepts the full context limit', () => {
+  it('accepts the full context limit and a standalone Writing Coach', () => {
     const scopeNote = 'x'.repeat(CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH)
     const config = {
-      tutorEnabled: true,
+      tutorEnabled: false,
       explainerEnabled: false,
       quizzerEnabled: false,
+      writingCoachEnabled: true,
       scopeNote,
     }
     expect(parseChatbotStandardModeConfigInput(config)).toMatchObject(config)
     expect(normalizeChatbotStandardModeConfig(config)).toMatchObject(config)
+  })
+
+  it.each([
+    null,
+    {},
+    { tutorEnabled: true, explainerEnabled: false, quizzerEnabled: false },
+  ])('keeps Writing Coach off for historical configuration %j', (config) => {
+    expect(normalizeChatbotStandardModeConfig(config).writingCoachEnabled).toBe(
+      false
+    )
+  })
+
+  it('rejects a non-boolean Writing Coach flag', () => {
+    expect(() =>
+      parseChatbotStandardModeConfigInput({
+        tutorEnabled: true,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: 'true',
+      })
+    ).toThrow()
+  })
+
+  it('explains custom collisions and required-tool exclusions without inheriting tools', () => {
+    const requiredTutor = { chatMode: 'tutor', parameters: { required: true } }
+    expect(getWritingCoachUnavailableReason(null)).toBeNull()
+    expect(
+      getWritingCoachUnavailableReason({ 'writing-coach': { enabled: false } })
+    ).toBe('CUSTOM_MODE_COLLISION')
+    expect(getWritingCoachUnavailableReason(null, [requiredTutor])).toBe(
+      'REQUIRED_TOOL_BINDING'
+    )
+    expect(
+      getWritingCoachUnavailableReason(null, [
+        { ...requiredTutor, isEnabled: false },
+      ])
+    ).toBeNull()
+    expect(
+      getWritingCoachUnavailableReason(null, [
+        requiredTutor,
+        { chatMode: 'writing-coach' },
+      ])
+    ).toBe('REQUIRED_TOOL_BINDING')
+    expect(
+      getWritingCoachUnavailableReason(null, [
+        requiredTutor,
+        { ...requiredTutor, chatMode: 'writing-coach' },
+      ])
+    ).toBeNull()
   })
 })

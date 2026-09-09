@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSettingsStore } from '../src/stores/settingsStore'
 
 function deferred<T>() {
@@ -19,11 +19,13 @@ function modesResponse(mode: string) {
 }
 
 describe('settingsStore mode loading', () => {
+  afterEach(() => vi.unstubAllGlobals())
   beforeEach(() => {
     vi.restoreAllMocks()
     useSettingsStore.setState({
       modeOptions: {},
       modeOptionsChatbotId: null,
+      writingCoachIsCustom: false,
       selectedMode: 'tutor',
     })
   })
@@ -150,5 +152,36 @@ describe('settingsStore mode loading', () => {
 
     expect(useSettingsStore.getState().modeOptions).toEqual({})
     expect(useSettingsStore.getState().selectedMode).toBe('')
+  })
+
+  test('selects standalone Writing Coach and retains legacy identity in fallback metadata', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          modeOptions: { 'writing-coach': 'synthetic-description' },
+          writingCoachIsCustom: false,
+        }),
+      })
+    )
+    useSettingsStore.setState({ selectedMode: 'tutor' })
+    await useSettingsStore.getState().loadModeOptions('writing-bot')
+    expect(useSettingsStore.getState().selectedMode).toBe('writing-coach')
+    expect(useSettingsStore.getState().writingCoachIsCustom).toBe(false)
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('synthetic-offline'))
+    )
+    await useSettingsStore
+      .getState()
+      .loadModeOptions(
+        'legacy-bot',
+        { 'writing-coach': 'synthetic-custom-description' },
+        true
+      )
+    expect(useSettingsStore.getState().writingCoachIsCustom).toBe(true)
+    expect(useSettingsStore.getState().modeOptionsChatbotId).toBe('legacy-bot')
   })
 })

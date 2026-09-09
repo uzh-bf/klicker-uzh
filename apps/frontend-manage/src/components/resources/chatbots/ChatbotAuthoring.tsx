@@ -45,12 +45,13 @@ const metadataEditableStatuses = [
 
 const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
 
-type StandardMode = 'tutor' | 'explainer' | 'quizzer'
+type StandardMode = 'tutor' | 'explainer' | 'quizzer' | 'writing-coach'
 
 type StandardModeFormValues = {
   tutorEnabled: boolean
   explainerEnabled: boolean
   quizzerEnabled: boolean
+  writingCoachEnabled: boolean
   courseName: string | null
   subjectDomain: string | null
   languageOfInstruction: LocaleType | null
@@ -64,6 +65,7 @@ function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
     tutorEnabled: config?.tutorEnabled ?? true,
     explainerEnabled: config?.explainerEnabled ?? true,
     quizzerEnabled: config?.quizzerEnabled ?? true,
+    writingCoachEnabled: config?.writingCoachEnabled ?? false,
     courseName: config?.courseName ?? null,
     subjectDomain: config?.subjectDomain ?? null,
     languageOfInstruction: config?.languageOfInstruction ?? null,
@@ -346,6 +348,7 @@ function ChatbotAuthoring({
   const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
+  const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
   const modeReviewItems = [
     {
       mode: 'tutor' as const,
@@ -356,6 +359,11 @@ function ChatbotAuthoring({
       mode: 'explainer' as const,
       title: t('manage.resources.chatbotModeExplainer'),
       enabled: standardModeConfig.explainerEnabled,
+    },
+    {
+      mode: 'writing-coach' as const,
+      title: t('manage.resources.chatbotModeWritingCoach'),
+      enabled: standardModeConfig.writingCoachEnabled,
     },
     {
       mode: 'quizzer' as const,
@@ -731,7 +739,9 @@ function ChatbotAuthoring({
                             )}
                             disabled={
                               controlsDisabled ||
-                              (values.tutorEnabled && !values.explainerEnabled)
+                              (values.tutorEnabled &&
+                                !values.explainerEnabled &&
+                                !values.writingCoachEnabled)
                             }
                             enabled={values.tutorEnabled}
                             mode="tutor"
@@ -752,7 +762,9 @@ function ChatbotAuthoring({
                             )}
                             disabled={
                               controlsDisabled ||
-                              (values.explainerEnabled && !values.tutorEnabled)
+                              (values.explainerEnabled &&
+                                !values.tutorEnabled &&
+                                !values.writingCoachEnabled)
                             }
                             enabled={values.explainerEnabled}
                             mode="explainer"
@@ -785,6 +797,46 @@ function ChatbotAuthoring({
                             )}
                             title={t('manage.resources.chatbotModeQuizzer')}
                           />
+                          <StandardModeCard
+                            description={t(
+                              'manage.resources.chatbotModeWritingCoachDescription'
+                            )}
+                            disabled={
+                              controlsDisabled ||
+                              writingCoachUnavailableReason ===
+                                'CUSTOM_MODE_COLLISION' ||
+                              (values.writingCoachEnabled &&
+                                !values.tutorEnabled &&
+                                !values.explainerEnabled)
+                            }
+                            enabled={values.writingCoachEnabled}
+                            mode="writing-coach"
+                            onChange={(enabled) => {
+                              setModeError(null)
+                              void setFieldValue('writingCoachEnabled', enabled)
+                            }}
+                            statusLabel={t(
+                              values.writingCoachEnabled
+                                ? 'manage.resources.chatbotModeEnabled'
+                                : 'manage.resources.chatbotModeDisabled'
+                            )}
+                            title={t(
+                              'manage.resources.chatbotModeWritingCoach'
+                            )}
+                          />
+                          {writingCoachUnavailableReason && (
+                            <p
+                              className="text-sm text-amber-800"
+                              data-cy="chatbot-writing-coach-unavailable"
+                            >
+                              {t(
+                                writingCoachUnavailableReason ===
+                                  'CUSTOM_MODE_COLLISION'
+                                  ? 'manage.resources.chatbotWritingCoachCollision'
+                                  : 'manage.resources.chatbotWritingCoachRequiredTool'
+                              )}
+                            </p>
+                          )}
                         </div>
                         <p
                           className="text-sm text-gray-600"
@@ -870,6 +922,34 @@ function ChatbotAuthoring({
                       )}
                       title={t('manage.resources.chatbotModeQuizzer')}
                     />
+                    <StandardModeCard
+                      description={t(
+                        'manage.resources.chatbotModeWritingCoachDescription'
+                      )}
+                      disabled
+                      enabled={standardModeConfig.writingCoachEnabled}
+                      mode="writing-coach"
+                      onChange={() => undefined}
+                      statusLabel={t(
+                        standardModeConfig.writingCoachEnabled
+                          ? 'manage.resources.chatbotModeEnabled'
+                          : 'manage.resources.chatbotModeDisabled'
+                      )}
+                      title={t('manage.resources.chatbotModeWritingCoach')}
+                    />
+                    {writingCoachUnavailableReason && (
+                      <p
+                        className="text-sm text-amber-800"
+                        data-cy="chatbot-writing-coach-unavailable"
+                      >
+                        {t(
+                          writingCoachUnavailableReason ===
+                            'CUSTOM_MODE_COLLISION'
+                            ? 'manage.resources.chatbotWritingCoachCollision'
+                            : 'manage.resources.chatbotWritingCoachRequiredTool'
+                        )}
+                      </p>
+                    )}
                   </div>
                   <p
                     className="text-sm text-gray-600"

@@ -2,6 +2,7 @@ import {
   GraduationCap,
   Lightbulb,
   ListChecks,
+  PencilLine,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
@@ -15,11 +16,16 @@ const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
   quizzer: ListChecks,
+  'writing-coach': PencilLine,
 } as const
 
 export type KnownMode = keyof typeof MODE_ICONS
 
-export function isKnownMode(mode: string): mode is KnownMode {
+export function isKnownMode(
+  mode: string,
+  writingCoachIsCustom = false
+): mode is KnownMode {
+  if (mode === 'writing-coach' && writingCoachIsCustom) return false
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
@@ -67,15 +73,19 @@ export function getComposerSubmitMode(
 export function getModeDescription(
   t: ReturnType<typeof useTranslations<never>>,
   mode: string,
-  modeOptions: Record<string, string>
+  modeOptions: Record<string, string>,
+  writingCoachIsCustom = false
 ): string {
-  return isKnownMode(mode)
+  return isKnownMode(mode, writingCoachIsCustom)
     ? t(`chat.modes.${mode}Description`)
     : (modeOptions[mode]?.trim() ?? '')
 }
 
-export function getModeIcon(mode: string): LucideIcon {
-  return isKnownMode(mode) ? MODE_ICONS[mode] : Sparkles
+export function getModeIcon(
+  mode: string,
+  writingCoachIsCustom = false
+): LucideIcon {
+  return isKnownMode(mode, writingCoachIsCustom) ? MODE_ICONS[mode] : Sparkles
 }
 
 /**
@@ -90,9 +100,10 @@ export function formatModeLabel(
   // gets from a bare `useTranslations()`. Without it the generic resolves to a
   // union over every namespace and only relative keys typecheck.
   t: ReturnType<typeof useTranslations<never>>,
-  mode: string
+  mode: string,
+  writingCoachIsCustom = false
 ): string {
-  return isKnownMode(mode)
+  return isKnownMode(mode, writingCoachIsCustom)
     ? t(`chat.modes.${mode}`)
     : mode.charAt(0).toUpperCase() + mode.slice(1)
 }

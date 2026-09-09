@@ -181,6 +181,7 @@ describe('compileSystemPrompt', () => {
     'tutor',
     'explainer',
     'quizzer',
+    'writing-coach',
   ])('preserves full-length serialized context before the fixed contract for %s', (mode) => {
     const scopeNote = `${'x'.repeat(980)}synthetic-tail-value`
     expect(scopeNote).toHaveLength(1000)
@@ -188,6 +189,7 @@ describe('compileSystemPrompt', () => {
       tutorEnabled: true,
       explainerEnabled: true,
       quizzerEnabled: true,
+      writingCoachEnabled: true,
       scopeNote,
     }
     const result = compilePrompt(null, mode, [], config)
@@ -206,6 +208,27 @@ describe('compileSystemPrompt', () => {
       result.indexOf(`${PLATFORM_MODE_MARK} ${mode}`)
     )
     expect(result).toContain(DEFAULT_PROMPT[mode]!.prompt)
+  })
+
+  test('keeps a same-key legacy persona distinct from the built-in Writing Coach', () => {
+    const prompt = 'SYNTHETIC-CUSTOM-PERSONA'
+    const result = compilePrompt(
+      { 'writing-coach': { prompt } },
+      'writing-coach',
+      [],
+      {
+        tutorEnabled: true,
+        explainerEnabled: true,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+        scopeNote: 'SYNTHETIC-STANDARD-CONTEXT',
+      }
+    )
+    expect(result).toContain(prompt)
+    expect(result).toContain(CUSTOM_PERSONA_MARK)
+    expect(result).not.toContain(DEFAULT_PROMPT['writing-coach']!.prompt)
+    expect(result).not.toContain('SYNTHETIC-STANDARD-CONTEXT')
+    expect(result).not.toContain(`${PLATFORM_MODE_MARK} writing-coach`)
   })
 
   test('serializes instruction-like course display names as one data value', () => {
