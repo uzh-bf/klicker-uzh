@@ -16,6 +16,13 @@ import {
 
 type CacheStep = { uses?: string; run?: string; with?: Record<string, string> }
 
+// Git exports repository-local variables to hooks. Fixture commands and the
+// CLI under test must not inherit them or they resolve the caller's
+// repository instead of the temporary candidate.
+const gitEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+)
+
 function fixtureRoot(files: Record<string, string>) {
   const root = fs.mkdtempSync(
     path.join(os.tmpdir(), 'playwright-cache-contract-')
@@ -316,7 +323,10 @@ test('cache identity runs before install from isolated trusted control', (t) => 
     ['init', '-q'],
     ['add', 'package.json'],
   ]) {
-    assert.equal(spawnSync('git', args, { cwd: candidate }).status, 0)
+    assert.equal(
+      spawnSync('git', args, { cwd: candidate, env: gitEnvironment }).status,
+      0
+    )
   }
   const output = path.join(directory, 'output')
   const run = spawnSync(
@@ -325,7 +335,7 @@ test('cache identity runs before install from isolated trusted control', (t) => 
     {
       cwd: directory,
       encoding: 'utf8',
-      env: { ...process.env, GITHUB_OUTPUT: output },
+      env: { ...gitEnvironment, GITHUB_OUTPUT: output },
     }
   )
   assert.equal(run.status, 0, run.stderr)
