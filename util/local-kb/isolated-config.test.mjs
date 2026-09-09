@@ -228,8 +228,24 @@ test('combined provider composition resolves every dependency and named volume',
   }
   const rendered = renderProviderCompose(resolveIsolatedConfig(input))
   assert.equal(rendered.name, input.projectIdentity)
+  for (const name of [
+    'postgres',
+    'redis',
+    'blob',
+    'hatchet',
+    'milvus-etcd',
+    'minio',
+    'milvus',
+    'crawl4ai',
+    'scraping',
+    'ingestion-api',
+    'doc-processing',
+  ]) {
+    assert.ok(rendered.services[name].healthcheck?.test.length > 0)
+    assert.equal(rendered.services[name].healthcheck.disable, undefined)
+  }
   assert.deepEqual(rendered.services.scraping.depends_on, {
-    crawl4ai: { condition: 'service_started' },
+    crawl4ai: { condition: 'service_healthy' },
   })
   assert.deepEqual(rendered.services['ingestion-api'].depends_on, {
     postgres: { condition: 'service_healthy' },
@@ -261,6 +277,15 @@ test('backing services use isolated volumes and keep Hatchet setup separate', ()
   assert.deepEqual(first.services['hatchet-setup'].profiles, ['local-kb-setup'])
   assert.deepEqual(first.services['hatchet-setup'].command, ['setup'])
   assert.deepEqual(first.services.hatchet.command, ['start'])
+  assert.equal(first.services['hatchet-setup'].healthcheck, undefined)
+  assert.equal(first.services.hatchet.environment.SERVER_HEALTHCHECK, 'true')
+  const readiness = new URL(first.services.hatchet.healthcheck.test.at(-1))
+  assert.equal(readiness.hostname, '127.0.0.1')
+  assert.equal(readiness.pathname, '/ready')
+  assert.equal(
+    readiness.port,
+    first.services.hatchet.environment.SERVER_HEALTHCHECK_PORT
+  )
   assert.deepEqual(first.services.hatchet.entrypoint, [
     'bash',
     '/local-kb/hatchet-entrypoint.sh',

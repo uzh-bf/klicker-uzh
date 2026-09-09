@@ -114,7 +114,28 @@ export function renderBackingCompose(config) {
         command: ['setup'],
         profiles: ['local-kb-setup'],
       },
-      hatchet: { ...hatchet, command: ['start'] },
+      hatchet: {
+        ...hatchet,
+        command: ['start'],
+        environment: {
+          SERVER_HEALTHCHECK: 'true',
+          SERVER_HEALTHCHECK_PORT: '8733',
+        },
+        healthcheck: {
+          test: [
+            'CMD',
+            'curl',
+            '--fail',
+            '--silent',
+            '--max-time',
+            '5',
+            'http://127.0.0.1:8733/ready',
+          ],
+          interval: '5s',
+          timeout: '6s',
+          retries: 24,
+        },
+      },
     },
     volumes: Object.fromEntries(
       [

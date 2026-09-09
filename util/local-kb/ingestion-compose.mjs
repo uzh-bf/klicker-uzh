@@ -107,15 +107,28 @@ export function renderIngestionCompose(config) {
         ...service(false, ['python', '-m', 'ingestion_api.migrations']),
         profiles: ['local-kb-setup'],
       },
-      'ingestion-api': service(false, [
-        'uvicorn',
-        'ingestion_api.app:create_app',
-        '--factory',
-        '--host',
-        '0.0.0.0',
-        '--port',
-        '8000',
-      ]),
+      'ingestion-api': {
+        ...service(false, [
+          'uvicorn',
+          'ingestion_api.app:create_app',
+          '--factory',
+          '--host',
+          '0.0.0.0',
+          '--port',
+          '8000',
+        ]),
+        healthcheck: {
+          test: [
+            'CMD',
+            'python',
+            '-c',
+            "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3); assert response.status == 200",
+          ],
+          interval: '5s',
+          timeout: '4s',
+          retries: 24,
+        },
+      },
       'ingestion-callback': service(false, [
         'python',
         '-m',

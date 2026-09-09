@@ -43,7 +43,18 @@ export function renderScrapingCompose(config) {
         mem_limit: '1g',
         pids_limit: 256,
         networks: ['default'],
-        depends_on: { crawl4ai: { condition: 'service_started' } },
+        depends_on: { crawl4ai: { condition: 'service_healthy' } },
+        healthcheck: {
+          test: [
+            'CMD',
+            'python',
+            '-c',
+            "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3); assert response.status == 200",
+          ],
+          interval: '5s',
+          timeout: '4s',
+          retries: 24,
+        },
         environment: {
           PYTHON_DOTENV_DISABLED: '1',
           PYTHONDONTWRITEBYTECODE: '1',
@@ -78,6 +89,18 @@ export function renderScrapingCompose(config) {
         shm_size: '1g',
         networks: ['default'],
         env_file: [{ path: join(generated, 'crawl4ai.env'), required: true }],
+        healthcheck: {
+          test: [
+            'CMD',
+            'python3',
+            '-c',
+            "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:11235/health', timeout=3); assert response.status == 200",
+          ],
+          interval: '5s',
+          timeout: '4s',
+          retries: 24,
+          start_period: '30s',
+        },
       },
     },
     volumes: {
