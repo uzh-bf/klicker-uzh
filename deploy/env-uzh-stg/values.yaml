@@ -187,6 +187,7 @@ chat:
 
   telemetry:
     enabled: false
+    environment: 'staging'
 
   automaticModels:
     primaryId: auto
