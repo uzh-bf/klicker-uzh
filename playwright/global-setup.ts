@@ -39,8 +39,12 @@ import {
   USER_ID_TEST7,
 } from './util/constants.js'
 
+// Seed snapshots stay opt-in: measured against the reference host, a snapshot
+// restore is not faster than the normal cleanup+seed reset, so reseeding
+// remains the default and capture/restore only run when explicitly enabled.
 function seedSnapshotEnvironment() {
   return (
+    process.env.KLICKER_PLAYWRIGHT_SEED_SNAPSHOT === '1' &&
     process.env.KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER !== undefined &&
     !process.env.CI &&
     !process.env.GITHUB_ACTIONS

@@ -24,9 +24,13 @@ interface SeedSnapshotResult {
   elapsedMs?: number
 }
 
-export function captureSeedSnapshot(options?: SnapshotOptions): SeedSnapshotResult
+export function captureSeedSnapshot(
+  options?: SnapshotOptions
+): SeedSnapshotResult
 
-export function restoreSeedSnapshot(options?: SnapshotOptions): SeedSnapshotResult
+export function restoreSeedSnapshot(
+  options?: SnapshotOptions
+): SeedSnapshotResult
 
 export function snapshotEnvironmentState(env?: NodeJS.ProcessEnv): string | null
 

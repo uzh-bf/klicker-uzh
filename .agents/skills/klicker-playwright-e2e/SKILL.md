@@ -81,15 +81,18 @@ arguments. This skips global reset/seed only; selected specs still perform
 their own fixture writes and cleanup. Inspect those fixtures before opting in.
 CI and ordinary invocations retain their existing setup behavior.
 
-Clean local runs capture the seeded baseline into the git-ignored
-`playwright/.cache/seed-snapshot/` cache after a successful seed; later runs,
-including the per-spec CLEANUP resets, restore it in one PostgreSQL
+Clean local runs default to normal cleanup and reseeding on every reset. With
+`KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`, the clean seed is captured into the
+git-ignored `playwright/.cache/seed-snapshot/` cache after a successful seed;
+later runs, including the per-spec CLEANUP resets, restore it in one PostgreSQL
 transaction on the disposable `klicker_test` database instead of reseeding.
-The cache key binds the Prisma schema, migrations, seed sources, lockfile,
-PostgreSQL major version, timezone/year, and a live schema fingerprint; drift,
-CI, and `--preserve-database` fall back to normal cleanup and reseed, and a
-failed restore aborts the run instead of continuing on partial state. Delete
-the cache directory to force a fresh capture.
+Snapshotting stays opt-in because a measured restore is not faster than the
+normal reset; it buys an exact baseline, not speed. The cache key binds the
+Prisma schema, migrations, seed sources, lockfile, PostgreSQL major version,
+timezone/year, and a live schema fingerprint; drift, CI, and
+`--preserve-database` fall back to normal cleanup and reseed, and a failed
+restore aborts the run instead of continuing on partial state. Delete the cache
+directory to force a fresh capture.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a

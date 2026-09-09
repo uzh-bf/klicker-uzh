@@ -64,22 +64,27 @@ worker or a cloned database alone does not provide that isolation.
 Normal runs clean and seed the synthetic database. `--preserve-database` is only
 for debugging an existing baseline; it is not clean-run acceptance evidence.
 
-### Seed snapshots
+### Seed snapshots (opt-in)
 
-The first clean run captures the seeded baseline into the git-ignored
-`playwright/.cache/seed-snapshot/` directory after a successful seed. Later
-runs, including the per-spec `CLEANUP` resets, restore that baseline in a
-single PostgreSQL transaction on the disposable `klicker_test` database
-instead of deleting and re-inserting every row. The launcher passes the exact
-Postgres container to the helper; it never connects to another database.
+Clean runs normally clean and seed the synthetic database on every reset.
+Optionally, set `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1` to capture the seeded
+baseline into the git-ignored `playwright/.cache/seed-snapshot/` directory
+after a successful seed; later runs, including the per-spec `CLEANUP` resets,
+then restore that baseline in a single PostgreSQL transaction on the disposable
+`klicker_test` database instead of deleting and re-inserting every row. The
+launcher passes the exact Postgres container to the helper; it never connects
+to another database.
 
-Restore is refused in CI, under `--preserve-database`, and whenever the cache
-key no longer binds the Prisma schema, migrations, seed implementation, seed
-constants, lockfile, PostgreSQL major version, timezone and year, or when the
-live schema fingerprint drifted. Those runs fall back to the normal cleanup and
-seed path. A restore that fails mid-flight aborts the run instead of continuing
-on partial state. Delete the cache directory to force a fresh capture; a new
-snapshot is captured automatically after the next successful clean seed.
+Snapshotting stays opt-in because, measured on the reference host, a restore is
+not faster than the normal cleanup and seed reset — it is retained for its
+exact-baseline guarantee, not as a speed feature. Restore is refused in CI,
+under `--preserve-database`, and whenever the cache key no longer binds the
+Prisma schema, migrations, seed implementation, seed constants, lockfile,
+PostgreSQL major version, timezone and year, or when the live schema
+fingerprint drifted. Those runs fall back to the normal cleanup and seed path.
+A restore that fails mid-flight aborts the run instead of continuing on partial
+state. Delete the cache directory to force a fresh capture; a new snapshot is
+captured automatically after the next successful clean seed.
 
 ## Useful commands
 
