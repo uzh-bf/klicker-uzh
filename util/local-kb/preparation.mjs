@@ -402,6 +402,31 @@ async function requireStartedInfrastructure(runtime) {
   }
 }
 
+async function readInfrastructureReceipt(runtime, operation, attempt) {
+  let receipt
+  try {
+    receipt = await readOwned(join(attempt, 'complete.json'))
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      throw new Error(
+        `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
+      )
+    }
+    throw error
+  }
+  if (
+    !sameLifecycleReceipt(receipt, lifecycleReceipt(runtime)) ||
+    receipt.operation !== operation ||
+    !Number.isInteger(receipt.cycle) ||
+    receipt.cycle < 0
+  ) {
+    throw new Error(
+      `Infrastructure ${operation} evidence does not match the runtime.`
+    )
+  }
+  return receipt
+}
+
 async function readLatestInfrastructureEvidence(runtime, operation) {
   const root = join(runtime.directory, `infrastructure-${operation}`)
   try {
@@ -426,28 +451,7 @@ async function readLatestInfrastructureEvidence(runtime, operation) {
       if (error.code === 'ENOENT') break
       throw error
     }
-    let receipt
-    try {
-      receipt = await readOwned(join(attempt, 'complete.json'))
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw new Error(
-          `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
-        )
-      }
-      throw error
-    }
-    if (
-      !sameLifecycleReceipt(receipt, lifecycleReceipt(runtime)) ||
-      receipt.operation !== operation ||
-      !Number.isInteger(receipt.cycle) ||
-      receipt.cycle < 0
-    ) {
-      throw new Error(
-        `Infrastructure ${operation} evidence does not match the runtime.`
-      )
-    }
-    latest = receipt
+    latest = await readInfrastructureReceipt(runtime, operation, attempt)
     index += 1
   }
   if (!latest) {
@@ -479,27 +483,7 @@ async function claimInfrastructureAttempt(runtime, operation) {
         attempt,
         `Infrastructure ${operation} attempt is not private.`
       )
-      let receipt
-      try {
-        receipt = await readOwned(join(attempt, 'complete.json'))
-      } catch (receiptError) {
-        if (receiptError.code === 'ENOENT') {
-          throw new Error(
-            `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
-          )
-        }
-        throw receiptError
-      }
-      if (
-        !sameLifecycleReceipt(receipt, lifecycleReceipt(runtime)) ||
-        receipt.operation !== operation ||
-        !Number.isInteger(receipt.cycle) ||
-        receipt.cycle < 0
-      ) {
-        throw new Error(
-          `Infrastructure ${operation} evidence does not match the runtime.`
-        )
-      }
+      await readInfrastructureReceipt(runtime, operation, attempt)
       index += 1
     }
   }
