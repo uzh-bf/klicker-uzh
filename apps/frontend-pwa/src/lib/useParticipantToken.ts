@@ -17,7 +17,7 @@ export default function useParticipantToken({
   useEffect(() => {
     if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
-        if (!sessionStorage.getItem('participant_token')) {
+        if (sessionStorage.getItem('participant_token') !== participantToken) {
           sessionStorage.setItem('participant_token', participantToken)
 
           if (redirectTo) {

@@ -1,3 +1,4 @@
+import { preserveLtiQuery } from '@lib/participantRedirect'
 import { GetServerSidePropsContext } from 'next'
 
 function MicroLearningOverviewRedirected() {
@@ -16,7 +17,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/microLearnings/overview`,
+      destination: preserveLtiQuery(
+        `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/microLearnings/overview`,
+        ctx.query
+      ),
       permanent: false,
     },
   }

@@ -904,23 +904,6 @@ export async function createParticipantAccount(
         },
       })
 
-      // if a courseId is specified, add a participation in the corresponding course
-      if (courseId) {
-        await prisma.participation.upsert({
-          where: {
-            courseId_participantId: {
-              courseId,
-              participantId: participant.id,
-            },
-          },
-          create: {
-            course: { connect: { id: courseId } },
-            participant: { connect: { id: participant.id } },
-          },
-          update: {},
-        })
-      }
-
       return participant
     })
 

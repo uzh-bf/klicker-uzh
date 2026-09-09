@@ -146,6 +146,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
     const result = await apolloClient.query({
       query: GetCoursePublishedPracticeQuizzesDocument,
       variables: {
@@ -160,17 +165,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       return {
         props: {
           isInactive: true,
+          courseId: ctx.params.courseId,
+          participantToken: participantToken ?? null,
+          cookiesAvailable,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
       }
     }
-
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
 
     if (participantToken) {
       return {

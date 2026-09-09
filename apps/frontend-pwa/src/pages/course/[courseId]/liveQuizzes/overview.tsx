@@ -4,6 +4,8 @@ import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/o
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { participantRedirect } from '@lib/participantRedirect'
+import ParticipantRedirect from '../../../../components/ParticipantRedirect'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -17,11 +19,13 @@ function LiveQuizOverview({
   courseId,
   participantToken,
   cookiesAvailable,
+  redirectTo,
 }: {
   isInactive: boolean
   courseId: string
   participantToken?: string
   cookiesAvailable?: boolean
+  redirectTo?: string
 }) {
   const t = useTranslations()
 
@@ -32,8 +36,18 @@ function LiveQuizOverview({
 
   const { data, loading } = useQuery(GetCourseRunningLiveQuizzesDocument, {
     variables: { courseId: courseId },
-    skip: isInactive,
+    skip: isInactive || !!redirectTo,
   })
+
+  if (redirectTo && participantToken) {
+    return (
+      <ParticipantRedirect
+        participantToken={participantToken}
+        redirectTo={redirectTo}
+        cookiesAvailable={cookiesAvailable}
+      />
+    )
+  }
 
   if (loading) {
     return (
@@ -102,6 +116,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
     const result = await apolloClient.query({
       query: GetCourseRunningLiveQuizzesDocument,
       variables: {
@@ -114,6 +133,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       return {
         props: {
           isInactive: true,
+          courseId: ctx.params.courseId,
+          participantToken: participantToken ?? null,
+          cookiesAvailable,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -123,19 +145,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
     // or if linkTo is set, redirect to the specified link
     if (result.data.getCourseRunningLiveQuizzes.length === 1) {
-      return {
-        redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
-          permanent: false,
-        },
-      }
+      return participantRedirect({
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
+        participantToken,
+        cookiesAvailable,
+        locale: ctx.locale,
+      })
     }
-
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
 
     if (participantToken) {
       return {

@@ -59,12 +59,12 @@ user's ruling; infrastructure and live-system changes remain excluded.
 ### Ownership and sequence
 
 One cohesive PR, no stack. Main owns authorization decisions, integration,
-runtime, and delivery. The explore worker owns the route coverage matrix.
+runtime, and delivery. Main completed route mapping after the explore worker failed to converge.
 
 | Workstream | Owner | Paths and handoff | Acceptance |
 | --- | --- | --- | --- |
 | Backend membership boundary (slice 1) | Main | GraphQL courses/accounts services and enrollment tests | No membership from login/signup alone; PIN and LTI membership retained |
-| Supported course launches (slice 2) | Executor | PWA course pages and narrow LTI token/redirect helpers; main integrates browser tests | Complete target/branch matrix below |
+| Supported course launches (slice 2) | Main | PWA course pages and narrow LTI token/redirect helpers; main integrates browser tests | Complete target/branch matrix below |
 | Final proof and delivery (slice 3) | Main | Browser tests, auth-model documentation and plan | Focused checks, independent reviews, draft PR and stopped runtime |
 
 The read-only explore mapping is an input to slice 2, not another implementation
@@ -80,7 +80,7 @@ reviewer inspects the complete verified package.
 2. Preserve automatic LTI enrollment across the complete supported course-page
    matrix. Correct missing entry points only where the route investigation
    establishes the same intended launch contract. Route: executor for the
-   PWA paths in the Delegation Map; main integrates the result. Acceptance: existing LTI
+   PWA paths in the Delegation Map; the executor route readiness probe failed, so main owns this work. Acceptance: existing LTI
    linking suite plus actual local browser launches and persisted membership
    checks for each supported target and its zero/one/multiple activity branches.
 3. Verify, review, document, and publish the whole correction. Route: main plus
@@ -148,8 +148,6 @@ source files, excluding secrets, raw data, restricted course content and prompts
 
 ## Progress
 
-Draft awaiting planner challenge. No implementation committed; no PR exists.
-Route mapping is assigned to the read-only explore worker. The local runtime is
-starting with `pwa,email` for synthetic verification. Strict LTI course-binding
-scope awaits the compatibility answer. Next: finish the bounded mapping and
-planner pass, then execute approved independent corrections.
+Planner approved after one revision covering route early returns, existing sessions, and membership state preservation. Optional AGY review returned no usable artifact because file reads were denied. Explore mapping failed to converge after a narrowed request; main verified the route matrix. OpenCodex executor readiness failed, so main implemented the coupled route changes.
+
+The 15 focused GraphQL tests and PWA/GraphQL typechecks pass. Browser regression coverage is being integrated. Initial bootstrap stalled in backend Rollup; a standalone retry passed, and the exact local bootstrap is being completed. No PR exists yet. Strict course-binding migration remains outside the core correction pending the compatibility answer. Next: browser proof, committed-slice reviews, final review, draft PR, and runtime shutdown.
