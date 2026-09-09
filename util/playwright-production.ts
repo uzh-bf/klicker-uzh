@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import {
+  type ChildProcess,
   execFileSync,
+  type SpawnOptions,
   spawn,
   spawnSync,
-  type ChildProcess,
-  type SpawnOptions,
 } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {

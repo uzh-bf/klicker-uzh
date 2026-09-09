@@ -1,20 +1,25 @@
 import assert from 'node:assert/strict'
-import { chmodSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve, dirname } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   inputIdentity,
+  type ProductionChildCommand,
   productionEnvironment,
   report,
   runChildCommand,
   runProductionLifecycle,
   verify,
   verifyProductionReport,
-  type ProductionChildCommand,
 } from './playwright-production.ts'
 
 type JsonRecord = Record<string, unknown>
@@ -519,7 +524,7 @@ test('report validation retains the four positional artifact contract', () => {
   )
   const sourceSha = 'b'.repeat(40)
   const fakeGit = join(workspaceRoot, 'git')
-  writeFileSync(fakeGit, '#!/bin/sh\nprintf \"%s\\\\n\" \"$SYNTHETIC_SHA\"\n')
+  writeFileSync(fakeGit, '#!/bin/sh\nprintf "%s\\\\n" "$SYNTHETIC_SHA"\n')
   chmodSync(fakeGit, 0o755)
   const env = {
     CANDIDATE_SHA: sourceSha,
