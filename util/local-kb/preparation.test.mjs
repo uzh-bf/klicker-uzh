@@ -28,6 +28,7 @@ import {
   installProviderRouting,
   prepareLocalConfiguration,
   requirePreparation,
+  resumePreparedInfrastructure,
   startPreparedInfrastructure,
   stopPreparedInfrastructure,
 } from './preparation.mjs'
@@ -284,6 +285,89 @@ test('changed managed input prevents all installation writes', async () => {
   await assert.rejects(stat(join(checkout, '.local-kb/managed-installation')), {
     code: 'ENOENT',
   })
+})
+
+test('explicit resume requires stop evidence, serializes operations and retains failures', async () => {
+  const { config, checkout, read } = await installationFixture()
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const writes = []
+  let fail = false
+  let pending
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('ls')) return ''
+    writes.push(args)
+    if (pending) await pending
+    if (fail) throw new Error('synthetic private failure')
+    return ''
+  }
+  const managed = async (args) => {
+    writes.push(args)
+    return JSON.stringify({
+      ...identity,
+      profile: 'manage,chat',
+      stopped: true,
+    })
+  }
+  const resume = () =>
+    resumePreparedInfrastructure(config, revision, managed, docker)
+  await assert.rejects(resume(), { code: 'ENOENT' })
+  assert.equal(writes.length, 0)
+  await stopPreparedInfrastructure(config, revision, managed, docker)
+  await startPreparedInfrastructure(config, revision, managed, docker)
+  await assert.rejects(resume(), /successful stop/)
+  for (let cycle = 0; cycle < 2; cycle++) {
+    await stopPreparedInfrastructure(config, revision, managed, docker)
+    assert.equal((await resume()).workersStarted, false)
+    await assert.rejects(resume(), /successful stop/)
+  }
+  const launches = writes.filter((args) => args.includes('up'))
+  assert.equal(launches.length, 3)
+  for (const launch of launches) assert.deepEqual(launch, launches[0])
+  assert.ok(
+    writes.every(
+      (args) =>
+        !args.some((arg) =>
+          /migrat|seed|callback|dispatcher|doc-query/.test(arg)
+        )
+    )
+  )
+  await stopPreparedInfrastructure(config, revision, managed, docker)
+  let release
+  pending = new Promise((resolve) => {
+    release = resolve
+  })
+  const active = resume()
+  // Wait for the synthetic runner to enter the startup operation.
+  while (writes.filter((args) => args.includes('up')).length < 4) {
+    await new Promise((resolve) => setImmediate(resolve))
+  }
+  await assert.rejects(resume(), { code: 'EEXIST' })
+  await assert.rejects(
+    stopPreparedInfrastructure(config, revision, managed, docker),
+    { code: 'EEXIST' }
+  )
+  fail = true
+  release()
+  await assert.rejects(active, /partial state is retained/)
+  pending = undefined
+  const count = writes.length
+  await assert.rejects(resume(), /incomplete/)
+  await assert.rejects(
+    startPreparedInfrastructure(config, revision, managed, docker),
+    { code: 'EEXIST' }
+  )
+  assert.equal(writes.length, count)
 })
 
 test('status is read-only and stop refuses foreign provider ownership', async () => {

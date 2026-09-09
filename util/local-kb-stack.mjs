@@ -21,6 +21,7 @@ import {
   inspectPreparedInfrastructure,
   installManagedConfiguration,
   prepareLocalConfiguration,
+  resumePreparedInfrastructure,
   startPreparedInfrastructure,
   stopPreparedInfrastructure,
 } from './local-kb/preparation.mjs'
@@ -247,7 +248,7 @@ function configPlan(config) {
 function parseArguments(args) {
   if (
     args.length === 5 &&
-    ['setup', 'start', 'stop', 'status'].includes(args[0]) &&
+    ['setup', 'start', 'resume', 'stop', 'status'].includes(args[0]) &&
     args[1] === '--config' &&
     args[3] === '--candidate' &&
     /^[a-f0-9]{40}$/.test(args[4])
@@ -265,7 +266,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|stop|status> --config <path> --candidate <commit>'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|resume|stop|status> --config <path> --candidate <commit>'
   )
 }
 
@@ -296,11 +297,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             aiQualified: false,
           })
         )
-      } else if (command === 'start') {
+      } else if (command === 'start' || command === 'resume') {
         requireProviderSources(config)
         console.log(
           JSON.stringify(
-            await startPreparedInfrastructure(config, candidateRevision)
+            await (command === 'resume'
+              ? resumePreparedInfrastructure
+              : startPreparedInfrastructure)(config, candidateRevision)
           )
         )
       } else if (command === 'stop') {

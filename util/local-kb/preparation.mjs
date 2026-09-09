@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { lstat, mkdir, open, realpath } from 'node:fs/promises'
+import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
@@ -319,6 +319,192 @@ async function writeExclusive(
   }
 }
 
+async function acquireInfrastructureOperation(runtime, operation) {
+  const path = join(runtime.directory, 'infrastructure-operation')
+  const claim = {
+    operation,
+    candidateRevision: runtime.candidateRevision,
+    configurationDigest: runtime.configurationDigest,
+    sourcePath: runtime.checkout,
+    project: runtime.project,
+    context: runtime.context,
+    workspace: runtime.workspace,
+  }
+  let file
+  try {
+    file = await open(
+      path,
+      constants.O_WRONLY |
+        constants.O_CREAT |
+        constants.O_EXCL |
+        constants.O_NOFOLLOW,
+      0o600
+    )
+    await file.writeFile(JSON.stringify(claim))
+    await file.sync()
+  } catch (error) {
+    if (file) {
+      await file.close().catch(() => {})
+      await unlink(path).catch(() => {})
+    }
+    throw error
+  }
+  await file.close()
+  return async () => {
+    await unlink(path)
+  }
+}
+
+async function withInfrastructureOperation(runtime, operation, callback) {
+  const release = await acquireInfrastructureOperation(runtime, operation)
+  try {
+    return await callback()
+  } finally {
+    await release()
+  }
+}
+
+function lifecycleReceipt(runtime) {
+  return {
+    candidateRevision: runtime.candidateRevision,
+    context: runtime.context,
+    workspace: runtime.workspace,
+  }
+}
+
+function sameLifecycleReceipt(receipt, expected) {
+  return (
+    receipt?.candidateRevision === expected.candidateRevision &&
+    receipt?.context === expected.context &&
+    receipt?.workspace === expected.workspace
+  )
+}
+
+async function requirePrivateDirectory(path, message) {
+  const stat = await lstat(path)
+  if (
+    !stat.isDirectory() ||
+    stat.uid !== process.getuid() ||
+    stat.mode & 0o077
+  ) {
+    throw new Error(message)
+  }
+}
+
+async function requireStartedInfrastructure(runtime) {
+  const started = await readOwned(
+    join(runtime.directory, 'infrastructure-start/complete.json')
+  )
+  if (!sameLifecycleReceipt(started, lifecycleReceipt(runtime))) {
+    throw new Error(
+      'Infrastructure startup evidence does not match the runtime.'
+    )
+  }
+}
+
+async function readLatestInfrastructureEvidence(runtime, operation) {
+  const root = join(runtime.directory, `infrastructure-${operation}`)
+  try {
+    await requirePrivateDirectory(
+      root,
+      `Infrastructure ${operation} evidence is not private.`
+    )
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined
+    throw error
+  }
+  let index = 1
+  let latest
+  while (true) {
+    const attempt = join(root, `attempt-${index}`)
+    try {
+      await requirePrivateDirectory(
+        attempt,
+        `Infrastructure ${operation} attempt is not private.`
+      )
+    } catch (error) {
+      if (error.code === 'ENOENT') break
+      throw error
+    }
+    let receipt
+    try {
+      receipt = await readOwned(join(attempt, 'complete.json'))
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw new Error(
+          `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
+        )
+      }
+      throw error
+    }
+    if (
+      !sameLifecycleReceipt(receipt, lifecycleReceipt(runtime)) ||
+      receipt.operation !== operation ||
+      !Number.isInteger(receipt.cycle) ||
+      receipt.cycle < 0
+    ) {
+      throw new Error(
+        `Infrastructure ${operation} evidence does not match the runtime.`
+      )
+    }
+    latest = receipt
+    index += 1
+  }
+  if (!latest) {
+    throw new Error(`A successful infrastructure ${operation} is required.`)
+  }
+  return latest
+}
+
+async function claimInfrastructureAttempt(runtime, operation) {
+  const root = join(runtime.directory, `infrastructure-${operation}`)
+  try {
+    await mkdir(root, { mode: 0o700 })
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error
+    await requirePrivateDirectory(
+      root,
+      `Infrastructure ${operation} evidence is not private.`
+    )
+  }
+  let index = 1
+  while (true) {
+    const attempt = join(root, `attempt-${index}`)
+    try {
+      await mkdir(attempt, { mode: 0o700 })
+      return attempt
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error
+      await requirePrivateDirectory(
+        attempt,
+        `Infrastructure ${operation} attempt is not private.`
+      )
+      let receipt
+      try {
+        receipt = await readOwned(join(attempt, 'complete.json'))
+      } catch (receiptError) {
+        if (receiptError.code === 'ENOENT') {
+          throw new Error(
+            `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
+          )
+        }
+        throw receiptError
+      }
+      if (
+        !sameLifecycleReceipt(receipt, lifecycleReceipt(runtime)) ||
+        receipt.operation !== operation ||
+        !Number.isInteger(receipt.cycle) ||
+        receipt.cycle < 0
+      ) {
+        throw new Error(
+          `Infrastructure ${operation} evidence does not match the runtime.`
+        )
+      }
+      index += 1
+    }
+  }
+}
+
 // This is a setup-only operation. An interrupted attempt leaves its directory
 // in place so another invocation cannot silently rotate service credentials.
 export async function prepareLocalConfiguration(config, candidateRevision) {
@@ -585,7 +771,15 @@ async function preparedRuntime(config, candidateRevision, runDocker) {
   if (!endpoint.startsWith('unix:///') || /[\r\n]/.test(endpoint)) {
     throw new Error('Prepared runtime requires its local Docker context.')
   }
-  return { checkout, directory, context, workspace }
+  return {
+    checkout,
+    directory,
+    context,
+    workspace,
+    candidateRevision,
+    configurationDigest: prepared.configurationDigest,
+    project: config.project.identity,
+  }
 }
 
 async function observeOwnedProviders(config, runtime, runDocker) {
@@ -699,6 +893,37 @@ export async function stopPreparedInfrastructure(
   runDocker = runLocalDocker
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  return withInfrastructureOperation(runtime, 'stop', async () => {
+    let started = true
+    try {
+      await requireStartedInfrastructure(runtime)
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      started = false
+    }
+    const resumed = await readLatestInfrastructureEvidence(runtime, 'resume')
+    const stopped = await readLatestInfrastructureEvidence(runtime, 'stop')
+    const cycle = resumed?.cycle ?? 0
+    const result = await stopInfrastructure(
+      config,
+      runtime,
+      runManaged,
+      runDocker
+    )
+    // Stopping setup or a partial initial start cannot authorize a later resume.
+    if (started && stopped?.cycle !== cycle) {
+      const attempt = await claimInfrastructureAttempt(runtime, 'stop')
+      await writeExclusive(join(attempt, 'complete.json'), {
+        ...lifecycleReceipt(runtime),
+        operation: 'stop',
+        cycle,
+      })
+    }
+    return result
+  })
+}
+
+async function stopInfrastructure(config, runtime, runManaged, runDocker) {
   await observeOwnedProviders(config, runtime, runDocker)
   const managed = JSON.parse(
     await runManaged(['stop', runtime.checkout, '--json'])
@@ -744,10 +969,62 @@ export async function startPreparedInfrastructure(
   runDocker = runLocalDocker
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  return withInfrastructureOperation(runtime, 'start', async () => {
+    await observeOwnedProviders(config, runtime, runDocker)
+    const attempt = join(runtime.directory, 'infrastructure-start')
+    await mkdir(attempt, { mode: 0o700 })
+    return launchInfrastructure(config, runtime, attempt, runManaged, runDocker)
+  })
+}
+
+export async function resumePreparedInfrastructure(
+  config,
+  candidateRevision,
+  runManaged = runLocalManaged,
+  runDocker = runLocalDocker
+) {
+  const runtime = await preparedRuntime(config, candidateRevision, runDocker)
+  return withInfrastructureOperation(runtime, 'resume', async () => {
+    await requireStartedInfrastructure(runtime)
+    const resumed = await readLatestInfrastructureEvidence(runtime, 'resume')
+    const stopped = await readLatestInfrastructureEvidence(runtime, 'stop')
+    const cycle = resumed?.cycle ?? 0
+    if (!stopped || stopped.cycle !== cycle) {
+      throw new Error(
+        'A successful stop of the current infrastructure cycle is required.'
+      )
+    }
+    const providers = await observeOwnedProviders(config, runtime, runDocker)
+    if (
+      providers.some(
+        ({ state }) => !['exited', 'created', 'dead'].includes(state)
+      )
+    ) {
+      throw new Error(
+        'Infrastructure must remain stopped before explicit resume.'
+      )
+    }
+    const attempt = await claimInfrastructureAttempt(runtime, 'resume')
+    return launchInfrastructure(
+      config,
+      runtime,
+      attempt,
+      runManaged,
+      runDocker,
+      cycle + 1
+    )
+  })
+}
+
+async function launchInfrastructure(
+  config,
+  runtime,
+  attempt,
+  runManaged,
+  runDocker,
+  cycle
+) {
   const { checkout, directory, context, workspace } = runtime
-  await observeOwnedProviders(config, runtime, runDocker)
-  const attempt = join(directory, 'infrastructure-start')
-  await mkdir(attempt, { mode: 0o700 })
   try {
     await runDocker([
       '--context',
@@ -784,9 +1061,10 @@ export async function startPreparedInfrastructure(
       throw new Error('Managed startup identity differs from preparation.')
     }
     await writeExclusive(join(attempt, 'complete.json'), {
-      candidateRevision,
+      candidateRevision: runtime.candidateRevision,
       context,
       workspace,
+      ...(cycle === undefined ? {} : { operation: 'resume', cycle }),
     })
     return {
       infrastructureStarted: true,
