@@ -61,12 +61,15 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
-The launcher defaults to the full devrouter profile, including response-api and
-both Hatchet workers. Focused activity runs may explicitly request
+The launcher infers the runtime profile from explicit spec-file arguments by
+taking the union of their `playwright/profiles.json` entries; broad runs,
+unresolved filters, and unrecognized options use the maximal `playwright`
+profile, and an explicit `--runtime-profile` always wins. Focused activity
+runs may explicitly request
 `pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
-The caller owns profile sufficiency; the launcher does not infer profiles from
-test arguments or preserve an arbitrary previous narrow selection. Put launcher
-options before Playwright arguments; an explicit `--` ends their prefix.
+The caller still owns profile sufficiency for deliberately narrowed
+selections. Put launcher options before Playwright arguments; an explicit
+`--` ends their prefix.
 `--print-env` also reconciles the selected runtime and can start services.
 `--show-report` cannot be combined with a runtime profile.
 Ensure the response processor is not running with
@@ -77,6 +80,16 @@ options `--runtime-profile chat --preserve-database` may precede Playwright
 arguments. This skips global reset/seed only; selected specs still perform
 their own fixture writes and cleanup. Inspect those fixtures before opting in.
 CI and ordinary invocations retain their existing setup behavior.
+
+Clean local runs capture the seeded baseline into the git-ignored
+`playwright/.cache/seed-snapshot/` cache after a successful seed; later runs,
+including the per-spec CLEANUP resets, restore it in one PostgreSQL
+transaction on the disposable `klicker_test` database instead of reseeding.
+The cache key binds the Prisma schema, migrations, seed sources, lockfile,
+PostgreSQL major version, timezone/year, and a live schema fingerprint; drift,
+CI, and `--preserve-database` fall back to normal cleanup and reseed, and a
+failed restore aborts the run instead of continuing on partial state. Delete
+the cache directory to force a fresh capture.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a

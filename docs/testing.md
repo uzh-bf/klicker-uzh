@@ -166,16 +166,29 @@ global cleanup and seed only for a local host-launcher run. An explicit request
 in CI or without the launcher marker fails before setup instead of resetting
 the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
-Without these options, runtime selection and database setup remain unchanged.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Normal database cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
+
+Local host-launcher runs snapshot the clean synthetic seed into the git-ignored
+`playwright/.cache/seed-snapshot/` cache and restore it transactionally
+instead of reseeding. The cache key binds the Prisma schema, migrations, seed
+implementation and constants, lockfile, PostgreSQL major version, timezone and
+year, plus a live schema fingerprint; any drift falls back to cleanup and
+reseed. Snapshots are refused in CI and under `--preserve-database`, and a
+failed restore stops the run rather than continuing on partial state.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| Local command | `pnpm playwright:host -- <args>`                                                                 |
+| Infisical env | `dev-playwright`                                                                                 |
+| Seed          | own `seedDatabase()` in `global-setup.ts`; local runs may restore the captured snapshot baseline |
+| CI            | official Playwright container, 8-way shard, ready PRs                                            |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 

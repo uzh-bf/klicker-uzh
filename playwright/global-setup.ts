@@ -20,6 +20,10 @@ import bcrypt from 'bcryptjs'
 import fs from 'node:fs'
 import { preserveLocalDatabase } from '../util/playwright-host-policy.mjs'
 import {
+  captureSeedSnapshot,
+  restoreSeedSnapshot,
+} from '../util/playwright-seed-snapshot.mjs'
+import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
@@ -34,6 +38,14 @@ import {
   USER_ID_TEST6,
   USER_ID_TEST7,
 } from './util/constants.js'
+
+function seedSnapshotEnvironment() {
+  return (
+    process.env.KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER !== undefined &&
+    !process.env.CI &&
+    !process.env.GITHUB_ACTIONS
+  )
+}
 
 // ---------------------------------------------------------------------------
 // getPrisma — lazily import so DATABASE_URL is read at call time, not at
@@ -579,11 +591,33 @@ export default async function globalSetup() {
     console.log('[global-setup] Preserving the existing local test database.')
     return
   }
+
+  if (seedSnapshotEnvironment()) {
+    const result = restoreSeedSnapshot()
+    console.log(
+      `[global-setup] Seed snapshot restore ${result.status} (${result.elapsedMs ?? 0}ms): ${result.message}`
+    )
+    if (result.status === 'restored') return
+    if (result.status === 'error') {
+      throw new Error(`Seed snapshot restore failed: ${result.message}`)
+    }
+  }
+
   console.log('[global-setup] Ensuring database views...')
+  const seedStartedAt = Date.now()
   await ensureDatabaseViews()
   console.log('[global-setup] Cleaning up database...')
   await cleanupDatabase()
   console.log('[global-setup] Seeding database...')
   await seedDatabase()
+  console.log(
+    `[global-setup] Cleanup and seed completed in ${Date.now() - seedStartedAt}ms.`
+  )
+  if (seedSnapshotEnvironment()) {
+    const result = captureSeedSnapshot()
+    console.log(
+      `[global-setup] Seed snapshot capture ${result.status}: ${result.message}`
+    )
+  }
   console.log('[global-setup] Done.')
 }

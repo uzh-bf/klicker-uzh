@@ -49,6 +49,38 @@ Direct local `playwright test` calls fail before database cleanup. Never run
 Playwright or install its browsers inside the devcontainer. GitHub Actions keeps
 using the official Playwright container directly.
 
+## Fast local iterations
+
+Explicit spec paths automatically select the union of their entries in
+`profiles.json`. Broad runs and filters that cannot be resolved safely use the
+`playwright` runtime profile, which excludes optional AI and email services.
+Override inference with `--runtime-profile` before Playwright arguments.
+
+Use one worker per runtime: specs share seeded identities and database-wide resets.
+Concurrent shards require separate worktrees and complete isolated runtimes,
+including PostgreSQL, Redis, Hatchet and report directories. A second browser
+worker or a cloned database alone does not provide that isolation.
+
+Normal runs clean and seed the synthetic database. `--preserve-database` is only
+for debugging an existing baseline; it is not clean-run acceptance evidence.
+
+### Seed snapshots
+
+The first clean run captures the seeded baseline into the git-ignored
+`playwright/.cache/seed-snapshot/` directory after a successful seed. Later
+runs, including the per-spec `CLEANUP` resets, restore that baseline in a
+single PostgreSQL transaction on the disposable `klicker_test` database
+instead of deleting and re-inserting every row. The launcher passes the exact
+Postgres container to the helper; it never connects to another database.
+
+Restore is refused in CI, under `--preserve-database`, and whenever the cache
+key no longer binds the Prisma schema, migrations, seed implementation, seed
+constants, lockfile, PostgreSQL major version, timezone and year, or when the
+live schema fingerprint drifted. Those runs fall back to the normal cleanup and
+seed path. A restore that fails mid-flight aborts the run instead of continuing
+on partial state. Delete the cache directory to force a fresh capture; a new
+snapshot is captured automatically after the next successful clean seed.
+
 ## Useful commands
 
 ```bash
