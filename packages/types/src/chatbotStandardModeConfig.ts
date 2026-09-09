@@ -1,5 +1,7 @@
 import type { Locale } from '@klicker-uzh/prisma/client'
 
+export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
+
 /**
  * The persisted, platform-constrained configuration for standard chat modes.
  * Persona fields are shared because they describe the course context rather

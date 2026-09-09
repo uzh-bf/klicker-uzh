@@ -9,6 +9,7 @@ import {
   UpdateChatbotDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 import {
   Accordion,
   AccordionContent,
@@ -623,10 +624,13 @@ function ChatbotAuthoring({
                   validate={(values) => {
                     if (
                       values.scopeNote !== standardModeConfig.scopeNote &&
-                      values.scopeNote.length > 200
+                      values.scopeNote.length >
+                        CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
                     ) {
                       return {
-                        scopeNote: t('manage.resources.chatbotFramingTooLong'),
+                        scopeNote: t('manage.resources.chatbotFramingTooLong', {
+                          count: CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+                        }),
                       }
                     }
 
@@ -680,13 +684,45 @@ function ChatbotAuthoring({
                             placeholder={t(
                               'manage.resources.chatbotFramingPlaceholder'
                             )}
-                            maxLength={200}
+                            maxLength={
+                              CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
+                            }
                             maxLengthUnit={t('shared.generic.characters')}
                             data={{ cy: 'chatbot-framing' }}
                           />
                           <p className="text-xs text-gray-500">
                             {t('manage.resources.chatbotFramingDescription')}
                           </p>
+                          <details
+                            className="text-sm text-gray-600"
+                            data-cy="chatbot-framing-examples"
+                          >
+                            <summary className="cursor-pointer py-2 font-medium">
+                              {t('manage.resources.chatbotFramingExamples')}
+                            </summary>
+                            <div className="space-y-3 pt-1">
+                              <p>
+                                <strong>
+                                  {t(
+                                    'manage.resources.chatbotFramingScientific'
+                                  )}
+                                </strong>
+                                <br />
+                                {t(
+                                  'manage.resources.chatbotFramingScientificExample'
+                                )}
+                              </p>
+                              <p>
+                                <strong>
+                                  {t('manage.resources.chatbotFramingInformal')}
+                                </strong>
+                                <br />
+                                {t(
+                                  'manage.resources.chatbotFramingInformalExample'
+                                )}
+                              </p>
+                            </div>
+                          </details>
                         </div>
                         <div className="space-y-3">
                           <StandardModeCard

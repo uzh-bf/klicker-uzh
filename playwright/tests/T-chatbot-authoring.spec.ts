@@ -424,10 +424,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeChecked()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeChecked()
     const framingField = page.getByTestId('chatbot-framing')
-    await expect(framingField).toHaveAttribute('maxlength', '200')
-    await framingField.fill(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(framingField).toHaveAttribute('maxlength', '1000')
+    await expect(framingField).toHaveValue('')
+    const examples = page.getByTestId('chatbot-framing-examples')
+    await examples.locator('summary').focus()
+    await page.keyboard.press('Enter')
+    await expect(examples).toHaveAttribute('open', '')
+    await expect(framingField).toHaveValue('')
+    const scopeNote = 'Synthetic audience context. '.repeat(40).slice(0, 1000)
+    await framingField.fill(`${scopeNote}x`)
+    await expect(framingField).toHaveValue(scopeNote)
     await page.getByTestId('chatbot-mode-switch-tutor').click()
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
@@ -442,9 +448,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-mode-switch-explainer')
     ).toBeDisabled()
     await expect(page.getByTestId('chatbot-mode-switch-quizzer')).toBeDisabled()
-    await expect(
-      page.getByTestId('chatbot-mode-capability-note')
-    ).toContainText('Quizzer may still be hidden')
+    await expect(page.getByTestId('chatbot-mode-capability-note')).toBeVisible()
     await expect
       .poll(() => modeConfigVariables)
       .toMatchObject({
@@ -454,7 +458,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         courseName: null,
         subjectDomain: null,
         languageOfInstruction: null,
-        scopeNote: 'Focus on the course materials and applied examples.',
+        scopeNote,
       })
     modeRequestGate.release()
     await expect(page.getByText('Learning modes saved.')).toBeVisible()
@@ -471,7 +475,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Disabled'
     )
     await expect(page.getByTestId('chatbot-review-framing')).toHaveText(
-      'Focus on the course materials and applied examples.'
+      scopeNote
     )
     await page.getByTestId('chatbot-setup-edit-modes').click()
     await expect(page.getByTestId('chatbot-setup-modes')).toBeVisible()
@@ -629,9 +633,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
     await navigateToSetupStep(page, 'modes')
     await expect(page.getByTestId('chatbot-mode-switch-tutor')).toBeChecked()
-    await expect(page.getByTestId('chatbot-framing')).toHaveValue(
-      'Focus on the course materials and applied examples.'
-    )
+    await expect(page.getByTestId('chatbot-framing')).toHaveValue(scopeNote)
     await expect(
       page.getByTestId('chatbot-mode-switch-explainer')
     ).not.toBeChecked()

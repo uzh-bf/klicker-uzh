@@ -3948,11 +3948,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeDisabled: 'Deaktiviert',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
-        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+        'Beschreiben Sie den Kurs, die Zielgruppe, Vorkenntnisse, typische Aufgaben und Lernschwerpunkte. Der gespeicherte Kontext steuert die nächste Antwort in den Standard-Lernmodi.',
+      chatbotFramingExamples: 'Kontextbeispiele',
+      chatbotFramingScientific: 'Wissenschaftliches Schreiben',
+      chatbotFramingScientificExample:
+        'Dieser Chatbot unterstützt einen Biologie-Laborkurs auf Bachelorstufe. Die Studierenden schreiben kurze Versuchsberichte und interpretieren Abbildungen. Sie kennen die Grundlagen der Genetik und lernen wissenschaftliches Argumentieren. Achten Sie auf die Verbindung von Aussagen und Ergebnissen, die Trennung von Beobachtung und Interpretation sowie den Umgang mit Unsicherheit. Erklären Sie unbekannte Begriffe kurz. Geben Sie direktes, ermutigendes Feedback und beurteilen Sie nur den vorgelegten Ausschnitt.',
+      chatbotFramingInformal: 'Weniger formelles Schreiben',
+      chatbotFramingInformalExample:
+        'Dieser Chatbot unterstützt einen projektbasierten Kommunikationskurs. Die Studierenden schreiben kurze Updates und Reflexionen für Mitstudierende und Projektpartner. Achten Sie auf einen klaren Zweck, konkrete Beispiele, einen logischen Aufbau und gegebenenfalls einen erkennbaren nächsten Schritt. Ein natürlicher Gesprächston passt zu diesen Aufgaben; wissenschaftliche Fachsprache und Quellenangaben sind meist nicht nötig. Geben Sie praktische, ermutigende Rückmeldungen.',
       chatbotFramingPlaceholder:
         'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
       chatbotFramingTooLong:
-        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens {count} Zeichen enthalten.',
       chatbotModesSave: 'Lernmodi speichern',
       chatbotModesSaving: 'Wird gespeichert…',
       chatbotModesSaveSuccess: 'Lernmodi gespeichert.',

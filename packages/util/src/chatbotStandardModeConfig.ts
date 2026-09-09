@@ -1,12 +1,13 @@
 import type { Locale } from '@klicker-uzh/prisma/client'
-import type {
-  ChatbotStandardModeConfig,
-  ChatbotStandardModeConfigInput,
+import {
+  CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+  type ChatbotStandardModeConfig,
+  type ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 
 export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH = 160
-export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
+export { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 
 const supportedLocales = new Set<Locale>(['en', 'de'])
 

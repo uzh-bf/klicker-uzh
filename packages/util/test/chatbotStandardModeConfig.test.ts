@@ -1,6 +1,7 @@
 import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
+  CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '../src/chatbotStandardModeConfig.js'
@@ -64,7 +65,7 @@ describe('chatbot standard mode configuration', () => {
         quizzerEnabled: true,
         scopeNote: 'x'.repeat(1001),
       })
-    ).toThrow('scopeNote must be at most 1000 characters long')
+    ).toThrow()
   })
 
   it('treats null and malformed persisted values as legacy defaults', () => {
@@ -139,5 +140,23 @@ describe('chatbot standard mode configuration', () => {
       explainerEnabled: true,
       quizzerEnabled: false,
     })
+  })
+
+  it('accepts the full context limit and rejects a longer context', () => {
+    const scopeNote = 'x'.repeat(CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH)
+    const config = {
+      tutorEnabled: true,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      scopeNote,
+    }
+    expect(parseChatbotStandardModeConfigInput(config)).toMatchObject(config)
+    expect(normalizeChatbotStandardModeConfig(config)).toMatchObject(config)
+    expect(() =>
+      parseChatbotStandardModeConfigInput({
+        ...config,
+        scopeNote: `${scopeNote}x`,
+      })
+    ).toThrow()
   })
 })

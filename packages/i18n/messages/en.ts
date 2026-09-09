@@ -3883,11 +3883,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeDisabled: 'Disabled',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
-        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+        'Describe the course, audience, prior knowledge, typical tasks and learning priorities. Saved context guides the next response in standard learning modes.',
+      chatbotFramingExamples: 'Context examples',
+      chatbotFramingScientific: 'Scientific writing',
+      chatbotFramingScientificExample:
+        'This chatbot supports a bachelor-level biology lab course. Students write short experiment reports and interpret figures. They know basic genetics but are learning scientific argumentation. Focus on linking claims to results, distinguishing observation from interpretation, and expressing uncertainty. Explain unfamiliar terms briefly. Keep feedback direct and encouraging. Preserve the writer’s voice and assess only the excerpt provided.',
+      chatbotFramingInformal: 'Less formal writing',
+      chatbotFramingInformalExample:
+        'This chatbot supports a project-based communication course. Students write short updates and reflective notes for peers and project partners. Focus on a clear purpose, concrete examples, logical flow and an obvious next action when relevant. A natural, conversational tone is appropriate; academic vocabulary and citations are usually unnecessary. Give practical, encouraging feedback.',
       chatbotFramingPlaceholder:
         'For example: First-year organic chemistry for medical students.',
       chatbotFramingTooLong:
-        'Chatbot framing must be 200 characters or fewer when edited.',
+        'Chatbot framing must be {count} characters or fewer when edited.',
       chatbotModesSave: 'Save learning modes',
       chatbotModesSaving: 'Saving…',
       chatbotModesSaveSuccess: 'Learning modes saved.',
