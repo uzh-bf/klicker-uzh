@@ -252,10 +252,9 @@ function syntheticCommand(
 }
 
 function waitForLifecycleAbort(context: {
-  failure: Promise<never>
-  signal: Promise<never>
+  abort: Promise<never>
 }): Promise<never> {
-  return Promise.race([context.failure, context.signal])
+  return context.abort
 }
 
 test('reports synthetic spawn failures through lifecycle cleanup', async () => {
@@ -350,7 +349,7 @@ async function runSignalLifecycle(signal: 'SIGINT' | 'SIGTERM'): Promise<void> {
     JSON.stringify(moduleUrl) +
     '; const commands=[' +
     commandSource +
-    ']; void runProductionLifecycle(commands, async (context) => { console.log("READY"); await Promise.race([context.failure, context.signal]); }, { cleanupTimeoutMs: 250 }).catch((error) => { process.exitCode = typeof error.exitCode === "number" ? error.exitCode : 1 })'
+    ']; void runProductionLifecycle(commands, async (context) => { console.log("READY"); await context.abort; }, { cleanupTimeoutMs: 250 }).catch((error) => { process.exitCode = typeof error.exitCode === "number" ? error.exitCode : 1 })'
   const child = runChildCommand(
     process.execPath,
     ['--input-type=module', '-e', source],

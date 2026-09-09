@@ -482,8 +482,7 @@ async function cleanupChildren(
 
 export type ProductionLifecycleContext = {
   children: readonly RunningChild[]
-  failure: Promise<never>
-  signal: Promise<never>
+  abort: Promise<never>
   run: (command: ProductionChildCommand) => Promise<void>
   assertRunning: () => void
 }
@@ -514,24 +513,19 @@ export async function runProductionLifecycle(
   const activeChildren = [...children]
   let cleanupStarted = false
   let receivedSignal: NodeJS.Signals | undefined
-  let rejectFailure: (error: unknown) => void = () => undefined
-  let rejectSignal: (error: unknown) => void = () => undefined
-  const failure = new Promise<never>((_, reject) => {
-    rejectFailure = reject
+  let rejectAbort: (error: unknown) => void = () => undefined
+  const abort = new Promise<never>((_, reject) => {
+    rejectAbort = reject
   })
-  const signal = new Promise<never>((_, reject) => {
-    rejectSignal = reject
-  })
-  void failure.catch(() => undefined)
-  void signal.catch(() => undefined)
+  void abort.catch(() => undefined)
   for (const child of children) {
     void child.completion.then(
       (exit) => {
         if (!cleanupStarted)
-          rejectFailure(new Error(formatChildExit(child, exit)))
+          rejectAbort(new Error(formatChildExit(child, exit)))
       },
       (error: unknown) => {
-        if (!cleanupStarted) rejectFailure(error)
+        if (!cleanupStarted) rejectAbort(error)
       }
     )
   }
@@ -540,7 +534,7 @@ export async function runProductionLifecycle(
     const handler = (): void => {
       if (receivedSignal) return
       receivedSignal = name
-      rejectSignal(new LifecycleSignalError(name))
+      rejectAbort(new LifecycleSignalError(name))
     }
     signalHandlers.set(name, handler)
     process.on(name, handler)
@@ -554,12 +548,11 @@ export async function runProductionLifecycle(
       throw new Error('Production lifecycle is already stopping')
     const child = commandFromSpec(command)
     activeChildren.push(child)
-    await Promise.race([waitForSuccessfulChild(child), failure, signal])
+    await Promise.race([waitForSuccessfulChild(child), abort])
   }
   const context: ProductionLifecycleContext = {
     children,
-    failure,
-    signal,
+    abort,
     run,
     assertRunning,
   }
@@ -568,7 +561,7 @@ export async function runProductionLifecycle(
   const taskPromise = Promise.resolve().then(() => task(context))
   void taskPromise.catch(() => undefined)
   try {
-    await Promise.race([taskPromise, failure, signal])
+    await Promise.race([taskPromise, abort])
   } catch (error) {
     taskError = error
   } finally {
@@ -618,7 +611,7 @@ export async function start(
   await runProductionLifecycle(
     productionCommands(env, workspaceRoot),
     async (context) => {
-      await Promise.race([context.failure, context.signal])
+      await context.abort
     }
   )
 }
@@ -754,7 +747,7 @@ export async function test(
   await runProductionLifecycle(
     productionCommands(env, workspaceRoot),
     async (context) => {
-      await readyWithAbort([context.failure, context.signal])
+      await readyWithAbort([context.abort])
       context.assertRunning()
       await runPlaywrightTests(context, env, workspaceRoot, specs)
       context.assertRunning()
