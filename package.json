@@ -26,7 +26,7 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@babel/core": "~7.28.3",
+    "@babel/core": "~7.29.6",
     "@biomejs/biome": "~2.5.2",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
