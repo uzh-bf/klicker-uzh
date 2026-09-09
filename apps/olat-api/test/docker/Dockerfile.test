@@ -16,6 +16,7 @@ RUN echo '#!/bin/bash\n\
   # Install dependencies in-container (linux)\n\
   if [ "$CI" = "true" ]; then\n\
   echo "Using dependencies installed on the CI host..."\n\
+  export pnpm_config_verify_deps_before_run=false\n\
   else\n\
   echo "Installing dependencies..."\n\
   pnpm install --frozen-lockfile\n\
