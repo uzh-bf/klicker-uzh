@@ -22,7 +22,8 @@ test.describe('LTI course enrollment', () => {
   const ownerId = randomUUID()
   const courseIds: string[] = []
   const participantIds: string[] = []
-  let pinSequence = 10000000
+  // PINs must satisfy the 9-digit join-form validation (### ### ###).
+  let pinSequence = 100000000
   let courseId: string
   let subject: string
   let email: string
@@ -313,6 +314,51 @@ test.describe('LTI course enrollment', () => {
         ).sub
       })
     ).toBe(participantId)
+  })
+
+  test('PIN join link enrolls a newly created account after login', async ({
+    page,
+  }) => {
+    const coursePin = pinSequence - 1
+    const username = `join-${randomUUID().slice(0, 8)}`
+    await page.goto(`/course/${courseId}/join?pin=${coursePin}`)
+    await page
+      .locator('input[name="email"]')
+      .fill(`${randomUUID()}@example.com`)
+    await page
+      .locator('[data-cy="username-field-account-creation"]')
+      .fill(username)
+    await page.locator('input[name="password"]').fill('synthetic-password')
+    await page
+      .locator('input[name="passwordRepetition"]')
+      .fill('synthetic-password')
+    await page.locator('[data-cy="tos-checkbox"]').click()
+    await page.locator('[data-cy="create-profile-button"]').click()
+    await page.waitForURL(/\/login/)
+
+    await page.locator('input[name="usernameOrEmail"]').fill(username)
+    await page.locator('input[name="password"]').fill('synthetic-password')
+    await page.locator('[data-cy="submit-login"]').click()
+
+    // Back on the join page, the prefilled PIN form completes the
+    // enrollment that account creation alone no longer performs.
+    await page.waitForURL(
+      new RegExp(`/course/${courseId}/join\\?pin=${coursePin}`)
+    )
+    await expect(page.locator('[data-cy="join-course"]')).toBeEnabled()
+    await page.locator('[data-cy="join-course"]').click()
+    const prisma = await getPrisma()
+    const account = await prisma.participant.findUniqueOrThrow({
+      where: { username },
+    })
+    participantIds.push(account.id)
+    await expect
+      .poll(() =>
+        prisma.participation.count({
+          where: { courseId, participantId: account.id },
+        })
+      )
+      .toBe(1)
   })
 
   test('ordinary participant navigation does not enroll', async ({

@@ -62,6 +62,14 @@ leaderboard scores. Cookie-blocked redirects store the participant session in
 browser session storage before navigating; legacy course aliases preserve the
 query handoff until it reaches an enrollment entry point.
 
+The participant session travels as an HttpOnly cookie when cookies are
+available and falls back to session storage plus a `participantToken` query
+relay when they are not. Course pages reconcile session storage with a freshly
+resolved handoff, so a course link carrying a valid `participantToken` query
+value can replace the stored session of a cookie-blocked browser; signature-
+verified handoffs and server-set cookies are the trusted sources, while the
+raw query value is accepted as-is for legacy relay flows.
+
 The existing LTI identity JWT does not bind a course. Enrollment still accepts
 the course separately, and redirect validation checks the destination host,
 not course entitlement. Both custom and query redirect targets retain this
