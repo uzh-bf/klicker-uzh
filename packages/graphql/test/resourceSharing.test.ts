@@ -13,6 +13,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
@@ -486,6 +487,10 @@ describe('Integration tests for sharing functionalities of resources (e.g. answe
     expect(importedACs2.length).toBe(1)
     expect(importedACs2[0]!.originalId).toBe(AC1!.id)
     expect(importedACs2[0]!.name).toBe(answerCollection1.name)
+    expect(importedACs2[0]).toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+    })
 
     // verify that duplicate requests are not accepted, duplicate imports are not a problem
     const failure4 = await requestCatalogObject(
@@ -519,6 +524,12 @@ describe('Integration tests for sharing functionalities of resources (e.g. answe
     expect(importedACs3[0]!.name).toContain(answerCollection1.name)
     expect(importedACs3[1]!.originalId).toBe(AC1!.id)
     expect(importedACs3[1]!.name).toContain(answerCollection1.name)
+    for (const imported of importedACs3) {
+      expect(imported).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
+    }
   })
 
   it('Verify that user 5 can import the public answer collections in public catalog', async () => {

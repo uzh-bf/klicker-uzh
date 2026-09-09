@@ -1,30 +1,69 @@
 // import { useSentry } from '@envelop/sentry'
+
+import { createRequire } from 'node:module'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  assertImportExportPackageStorageConfig,
+  assertImportExportTokenSecretConfig,
+  type Context,
+  enhanceContext,
+  getImportExportStartupResponsibilities,
+  initializeImportExportRuntimeConfig,
+  isLocalImportExportPackageStorageEnabled,
+  schema,
+} from '@klicker-uzh/graphql'
+import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
-import { createRequire } from 'node:module'
+import {
+  registerImportExportPreflightRoute,
+  registerImportExportRoutes,
+} from './importExportRoutes.js'
+import {
+  getImportExportManageOriginForStartup,
+  shouldMaskGraphqlErrors,
+} from './runtimeSecurityConfig.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+const legacyPersistedOperations = require('@klicker-uzh/graphql/dist/legacy-server.json')
+
+type PrepareAppContext = Omit<Context, 'req' | 'res' | 'tasks' | 'user'> & {
+  tasks: PreparedHatchetTasks
+}
 
 function prepareApp({
   prisma,
   redisExec,
   redisAssessmentExec,
   pubSub,
-  cache,
   emitter,
   hatchet,
   tasks,
   featureFlags,
-}: any) {
+}: PrepareAppContext) {
+  const importExportConfig = initializeImportExportRuntimeConfig()
+  const importExportResponsibilities = getImportExportStartupResponsibilities(
+    'backend',
+    importExportConfig
+  )
+  const importExportEnabled = importExportResponsibilities.userOperations
+  const importExportManageOrigin = getImportExportManageOriginForStartup({
+    userOperations: importExportEnabled,
+  })
+  if (importExportResponsibilities.requiresPackageStorage) {
+    assertImportExportPackageStorageConfig()
+  }
+  if (importExportResponsibilities.requiresTokenSecret) {
+    assertImportExportTokenSecretConfig()
+  }
+
   const armor = new EnvelopArmor({
     maxDepth: {
       enabled: false,
@@ -36,6 +75,12 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
+
+  if (importExportManageOrigin) {
+    registerImportExportPreflightRoute(app, {
+      manageOrigin: importExportManageOrigin,
+    })
+  }
 
   // Share the preload's current membership with the local test browser.
   // No management endpoint is exposed, and production never mounts this route.
@@ -73,8 +118,12 @@ function prepareApp({
   )
 
   // Custom JWT middleware to replace passport-jwt
-  async function jwtMiddleware(req: any, res: any, next: any) {
-    let token = null
+  async function jwtMiddleware(
+    req: express.Request,
+    _res: express.Response,
+    next: express.NextFunction
+  ) {
+    let token: string | null = null
 
     // Assessment mode: only check for student NextAuth cookie
     if (process.env.ASSESSMENT_MODE === 'true') {
@@ -122,9 +171,9 @@ function prepareApp({
     if (token) {
       try {
         user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
+      } catch {
         // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
+        console.log('JWT verification failed')
       }
     }
 
@@ -165,7 +214,10 @@ function prepareApp({
           process.env.NODE_ENV === 'development' ||
           process.env.NODE_ENV === 'test',
         getPersistedOperation(sha256Hash: string) {
-          return persistedOperations[sha256Hash]
+          return (
+            persistedOperations[sha256Hash] ??
+            legacyPersistedOperations[sha256Hash]
+          )
         },
       }),
       // process.env.SENTRY_DSN &&
@@ -198,13 +250,25 @@ function prepareApp({
     }),
     logging: true,
     cors: false,
-    maskedErrors: !process.env.DEBUG,
+    maskedErrors: shouldMaskGraphqlErrors(),
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
+
+  if (importExportManageOrigin) {
+    registerImportExportRoutes(app, {
+      context: {
+        prisma,
+        redisExec,
+      },
+      manageOrigin: importExportManageOrigin,
+      localStorageEnabled: isLocalImportExportPackageStorageEnabled(),
+      uploadBodyTimeoutMs: importExportConfig.timeouts.uploadBodyMs,
+    })
+  }
 
   app.use('/api/graphql', yogaApp as any)
 

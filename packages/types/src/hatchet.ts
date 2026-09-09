@@ -8,6 +8,29 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
+export type RefreshImportExportFingerprintsInput =
+  | {
+      answerCollectionId: number
+      afterElementId?: number
+    }
+  | {
+      elementId: number
+    }
+
+export type ImportExportFingerprintRefreshResult = {
+  processed: number
+  nextAfterElementId?: number
+  stoppedEarly?: true
+}
+
+export type ImportExportFingerprintRepairResult = {
+  processedAnswerCollections: number
+  processedElements: number
+  answerCollectionBacklogRemaining: boolean
+  elementBacklogRemaining: boolean
+  stoppedEarly?: true
+}
+
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -30,6 +53,16 @@ export type CourseDeletionEvent = {
 }
 
 export interface HatchetHandlers {
+  handleRepairImportExportFingerprints: (
+    input: {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<ImportExportFingerprintRepairResult>
+  handleRefreshImportExportFingerprints: (
+    input: RefreshImportExportFingerprintsInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<ImportExportFingerprintRefreshResult>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -52,6 +85,11 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
   handleUpdateWeeklyTimelineEntries: (
     _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleCleanupImportExportPackages: (
+    {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -119,6 +157,14 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  repairImportExportFingerprints: TaskWorkflowDeclaration<
+    {},
+    ImportExportFingerprintRepairResult
+  >
+  refreshImportExportFingerprints: TaskWorkflowDeclaration<
+    RefreshImportExportFingerprintsInput,
+    { success: boolean; processed: number }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {
@@ -160,6 +206,7 @@ export interface PreparedHatchetTasks {
     { liveQuizId: string; blockId: number },
     { success: boolean }
   >
+  cleanupImportExportPackages: TaskWorkflowDeclaration<{}, { success: boolean }>
   processCourseDuplication: TaskWorkflowDeclaration<
     { jobId: string },
     { success: boolean }

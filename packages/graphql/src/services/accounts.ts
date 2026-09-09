@@ -18,6 +18,7 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
+import { ensureElementFingerprintCurrent } from './importExportFingerprints.js'
 import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
 import { sendTeamsNotification } from './notifications.js'
 
@@ -1264,9 +1265,28 @@ export async function changeInitialSettings(
   )
 }
 
+async function createDemoElement(
+  args: { data: DB.Prisma.ElementCreateInput },
+  ctx: PrismaTransactionContextWithUser
+) {
+  const prisma = ctx.prisma
+  const element = await prisma.element.create(args)
+  await ensureElementFingerprintCurrent(element.id, prisma)
+  await recomputeDerivedPermissions(
+    { elementId: element.id, userId: ctx.user.sub },
+    prisma
+  )
+  return element
+}
+
 async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
+  const demoElements = {
+    create: (args: { data: DB.Prisma.ElementCreateInput }) =>
+      createDemoElement(args, ctx),
+  }
+
   // create single choice demo question
-  const questionSC = await ctx.prisma.element.create({
+  const questionSC = await demoElements.create({
     data: {
       name: 'Demoquestion SC',
       type: DB.ElementType.SC,
@@ -1331,13 +1351,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       },
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: questionSC.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create multiple choice demo question
-  const questionMC = await ctx.prisma.element.create({
+  const questionMC = await demoElements.create({
     data: {
       name: 'Demoquestion MC',
       type: DB.ElementType.MC,
@@ -1396,13 +1412,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       },
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: questionMC.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create KPRIM demo question
-  const questionKPRIM = await ctx.prisma.element.create({
+  const questionKPRIM = await demoElements.create({
     data: {
       name: 'Demoquestion KPRIM',
       type: DB.ElementType.KPRIM,
@@ -1459,13 +1471,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       },
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: questionKPRIM.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create Numerical demo question
-  const questionNR = await ctx.prisma.element.create({
+  const questionNR = await demoElements.create({
     data: {
       name: 'Demoquestion NR',
       type: DB.ElementType.NUMERICAL,
@@ -1496,13 +1504,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       },
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: questionNR.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create Free Text demo question
-  const questionFT = await ctx.prisma.element.create({
+  const questionFT = await demoElements.create({
     data: {
       name: 'Demoquestion FT',
       type: DB.ElementType.FREE_TEXT,
@@ -1531,13 +1535,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       },
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: questionFT.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create demo Flashcard
-  const flashcard = await ctx.prisma.element.create({
+  await demoElements.create({
     data: {
       name: 'Demo Flashcard',
       type: DB.ElementType.FLASHCARD,
@@ -1553,13 +1553,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       basePoints: false,
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: flashcard.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   // create demo content element
-  const contentElement = await ctx.prisma.element.create({
+  await demoElements.create({
     data: {
       name: 'Demo Content Element',
       type: DB.ElementType.CONTENT,
@@ -1573,10 +1569,6 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
       basePoints: false,
     },
   })
-  await recomputeDerivedPermissions(
-    { elementId: contentElement.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
 
   const { questionSE, questionCS } =
     await seedDemoSelectionAndCaseStudyElements(ctx)
