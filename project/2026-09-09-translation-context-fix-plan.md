@@ -109,17 +109,19 @@ Validate the release on staging with synthetic DE/EN direct and LTI entry plus t
 
 ## Progress
 
-Execution approved on 2026-09-09. The plan and source slice are committed on rs/translation-context-fix. Source commit: 11dbb6de92a27eb2f1c6cde68bc9999edd1d183b. The root-cause note is committed separately as 4ae89d0c0e; the branch is three commits ahead of origin/v3 and zero behind. No PR exists yet.
+Execution approved on 2026-09-09. The plan and source slice are committed on rs/translation-context-fix. Source commit: 11dbb6de92a27eb2f1c6cde68bc9999edd1d183b. The root-cause note is committed separately as 4ae89d0c0e; the branch is four commits ahead of origin/v3 and zero behind at the latest fetch. No PR exists yet.
 
 The production-pruned baseline reproduces account-page 500. Aligning existing Babel and i18n Next/React peer resolutions fixes that page while its original hook remains. The minimized lockfile passes frozen pruned installation. The source also removes the unused username hook and preserves a single JWT through the course redirect. Direct EN/DE final PWA SSR and three actual HTTP redirect cases pass.
 
 All six local production runner builds pass: PWA, Assessment, Manage, Control, Auth and Chat. Anonymous entry probes pass with networking disabled; Assessment retains its intended account-page redirect. Final PWA DE desktop and EN mobile screenshots show the styled form; inputs and disclosures respond without uncaught browser errors. Account registration, profile continuation and the full shared-consumer matrix are not yet proven. Browser and probe runtimes are stopped.
 
-Main owns dependency correction, source checks, six-app receipts and integration. The harness worker was stopped after the narrowed assignment produced no artifacts. Main now owns the translation regression harness and CI files; both production fixture builds and EN/DE translated SSR probes pass. Restoring the original dependency graph with the hook removal retained reproduces the missing-context 500. The account-coverage task retains registration and synthetic post-launch tests. Its isolated services remain blocked by Docker address-pool capacity. Exact unused-network cleanup was requested separately; no network cleanup is authorized or performed yet.
+Main owns dependency correction, source checks, six-app receipts and integration. The harness worker was stopped after the narrowed assignment produced no artifacts. Main now owns the translation regression harness and CI files; both production fixture builds and EN/DE translated SSR probes pass. Restoring the original dependency graph with the hook removal retained reproduces the missing-context 500. The account-coverage task retains registration and synthetic post-launch tests. Its isolated services are healthy after the user approved a task-local subnet. That task owns all runtime changes, fixture creation and resets. Its production browser launcher remains in progress; development readiness is not production acceptance. No existing network was deleted.
 
-The native simplifier completed with no recommended reduction. The source slice risk review remains active.
+The native simplifier completed with no recommended reduction. The source slice risk review completed with no findings after its sole Docker COPY concern was verified and retracted. Both clean committed PWA and Manage production smoke runs pass at 575d32444659ec2b10d42139126931f4ab8479a5, with EN/DE translated SSR, aligned imports and unchanged pruned installation locks. These local arm64 runs are not GitHub CI receipts.
 
-Remaining gates: synthetic authenticated and iframe flows; complete shared-consumer coverage; completion of the active slice review, then integrated final review after full acceptance; repository checks; and draft PR CI. Evidence is in [implementation receipts](_local/translation-context/implementation-evidence.md). Delivery remains pending, with merge and deployment outside current authority.
+The account task reports and its saved logs confirm 35 package checks and 93 host contract tests passing on the integrated source. Remaining container lint, Syncpack and repository-contract checks also pass. The host-only Devrouter contract failed when initially run in the container and passed through the correct host command. These applicable checks are reused; authenticated browser acceptance remains pending.
+
+Remaining gates: synthetic authenticated and iframe flows; complete shared-consumer coverage; integrated final review after full acceptance; and draft PR CI. Evidence is in [implementation receipts](_local/translation-context/implementation-evidence.md). Delivery remains pending, with merge and deployment outside current authority.
 
 ### Review provenance
 
