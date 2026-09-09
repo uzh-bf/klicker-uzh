@@ -408,9 +408,11 @@ async function readInfrastructureReceipt(runtime, operation, attempt) {
     receipt = await readOwned(join(attempt, 'complete.json'))
   } catch (error) {
     if (error.code === 'ENOENT') {
-      throw new Error(
+      const incomplete = new Error(
         `Infrastructure ${operation} attempt is incomplete; explicit recovery is required.`
       )
+      incomplete.code = 'INCOMPLETE_INFRASTRUCTURE_ATTEMPT'
+      throw incomplete
     }
     throw error
   }
@@ -885,15 +887,25 @@ export async function stopPreparedInfrastructure(
       if (error.code !== 'ENOENT') throw error
       started = false
     }
-    const resumed = await readLatestInfrastructureEvidence(runtime, 'resume')
-    const stopped = await readLatestInfrastructureEvidence(runtime, 'stop')
-    const cycle = resumed?.cycle ?? 0
+    let resumed
+    let stopped
+    let incomplete = false
+    try {
+      resumed = await readLatestInfrastructureEvidence(runtime, 'resume')
+      stopped = await readLatestInfrastructureEvidence(runtime, 'stop')
+    } catch (error) {
+      if (error.code !== 'INCOMPLETE_INFRASTRUCTURE_ATTEMPT') throw error
+      incomplete = true
+    }
     const result = await stopInfrastructure(
       config,
       runtime,
       runManaged,
       runDocker
     )
+    // Shutdown is safe after a partial attempt, but cannot authorize replay.
+    if (incomplete) return result
+    const cycle = resumed?.cycle ?? 0
     // Stopping setup or a partial initial start cannot authorize a later resume.
     if (started && stopped?.cycle !== cycle) {
       const attempt = await claimInfrastructureAttempt(runtime, 'stop')

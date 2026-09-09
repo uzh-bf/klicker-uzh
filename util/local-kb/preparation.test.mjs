@@ -368,6 +368,63 @@ test('explicit resume requires stop evidence, serializes operations and retains 
     { code: 'EEXIST' }
   )
   assert.equal(writes.length, count)
+  fail = false
+  assert.deepEqual(
+    await stopPreparedInfrastructure(config, revision, managed, docker),
+    { stopped: true, dataRetained: true }
+  )
+  await assert.rejects(resume(), /incomplete/)
+})
+
+test('interrupted stop evidence permits shutdown but not resume', async () => {
+  const { config, checkout, read } = await installationFixture()
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const writes = []
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('ls')) return ''
+    writes.push(args)
+    return ''
+  }
+  const managed = async (args) => {
+    writes.push(args)
+    return JSON.stringify({
+      ...identity,
+      profile: 'manage,chat',
+      stopped: true,
+    })
+  }
+  await startPreparedInfrastructure(config, revision, managed, docker)
+  const root = join(checkout, '.local-kb/infrastructure-stop')
+  await mkdir(root, { mode: 0o700 })
+  const attempt = join(root, 'attempt-1')
+  await mkdir(attempt, { mode: 0o700 })
+  for (let retry = 0; retry < 2; retry++) {
+    const before = writes.length
+    assert.deepEqual(
+      await stopPreparedInfrastructure(config, revision, managed, docker),
+      { stopped: true, dataRetained: true }
+    )
+    assert.equal(writes.length, before + 2)
+    assert.ok(writes.slice(before).every((args) => args.includes('stop')))
+    await assert.rejects(
+      resumePreparedInfrastructure(config, revision, managed, docker),
+      /incomplete/
+    )
+    await assert.rejects(stat(join(attempt, 'complete.json')), {
+      code: 'ENOENT',
+    })
+  }
 })
 
 test('status is read-only and stop refuses foreign provider ownership', async () => {
