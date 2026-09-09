@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
-import { LeaderboardType, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  CourseAuthType,
+  LeaderboardType,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -93,7 +97,10 @@ describe('course enrollment authorization', () => {
           ownerId,
           name: 'Synthetic enrollment course',
           displayName: 'Enrollment test',
-          pinCode: isAssessmentEnabled ? pin + 1 : pin,
+          pinCode: isAssessmentEnabled ? null : pin,
+          authType: isAssessmentEnabled
+            ? CourseAuthType.SSO
+            : CourseAuthType.PIN,
           isAssessmentEnabled,
           startDate: new Date(),
           endDate: new Date(),
